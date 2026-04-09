@@ -301,12 +301,47 @@
             position: absolute;
             top: 1rem;
             left: 1rem;
-            font-size: 4rem;
-            font-weight: 800;
-            color: rgba(0, 0, 0, 0.03);
+            font-size: 5rem;
+            font-weight: 900;
+            color: rgba(0, 0, 0, 0.025);
             line-height: 1;
             pointer-events: none;
             font-family: 'Outfit', sans-serif;
+            letter-spacing: -0.05em;
+        }
+
+        /* 卡片装饰波浪线 */
+        .bento-large::after {
+            content: '';
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            width: 120px;
+            height: 60px;
+            background:
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 10px,
+                    rgba(127, 219, 202, 0.1) 10px,
+                    rgba(127, 219, 202, 0.1) 12px
+                );
+            border-radius: 8px;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* 为小卡片添加装饰圆点 */
+        .bento-small::before {
+            content: '';
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
         }
 
         /* 导航栏升级 */
@@ -327,12 +362,14 @@
     <!-- 吉祥物 -->
     <img src="assets/mascot.png" alt="吉祥物" class="mascot-float">
 
-    <!-- 可爱装饰元素 -->
+    <!-- 可爱装饰元素 - 升级为装饰集群 -->
     <div class="cute-decoration" style="top: 15%; left: 10%;">📚</div>
-    <div class="cute-decoration" style="top: 25%; right: 8%;">✨</div>
-    <div class="cute-decoration" style="top: 45%; left: 5%;">🎨</div>
-    <div class="cute-decoration" style="top: 65%; right: 12%;">🌟</div>
-    <div class="cute-decoration" style="top: 85%; left: 15%;">📖</div>
+    <div class="cute-decoration" style="top: 25%; right: 8%; animation-delay: 1s;">✨</div>
+    <div class="cute-decoration" style="top: 45%; left: 5%; animation-delay: 2s;">🎨</div>
+    <div class="cute-decoration" style="top: 65%; right: 12%; animation-delay: 1.5s;">🌟</div>
+    <div class="cute-decoration" style="top: 85%; left: 15%; animation-delay: 0.5s;">📖</div>
+    <div class="cute-decoration" style="top: 35%; right: 20%; animation-delay: 2.5s;">🖋️</div>
+    <div class="cute-decoration" style="top: 55%; left: 18%; animation-delay: 3s;">📜</div>
 
     <!-- Navigation -->
     <nav class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-white/50">
@@ -357,15 +394,15 @@
                     AI驅動的多語言<br>古詩互動教學工具
                 </h1>
             </div>
-            <p class="text-2xl text-gray-700 mb-8 leading-relaxed">
+            <p class="text-2xl mb-8 leading-relaxed" style="color: #64748b;">
                 融合AR、數字人、LLM與具身智能<br>
                 支持普通話、粵語、葡語、英文四語教學
             </p>
             <div class="flex flex-wrap gap-4 justify-center mb-12">
-                <span class="glass-card px-8 py-3 rounded-full text-lg font-medium text-gray-800 hover:scale-105 transition-transform">
+                <span class="glass-card px-8 py-3 rounded-full text-lg font-medium hover:scale-105 transition-transform" style="color: #334155;">
                     🏆 FDCT 0026/2026/ITP1
                 </span>
-                <span class="glass-card px-8 py-3 rounded-full text-lg font-medium text-gray-800 hover:scale-105 transition-transform">
+                <span class="glass-card px-8 py-3 rounded-full text-lg font-medium hover:scale-105 transition-transform" style="color: #334155;">
                     🎓 香港科技園 EASE Fund
                 </span>
             </div>
@@ -382,8 +419,8 @@
             <div class="grid md:grid-cols-2 gap-8">
                 <div class="glass-card rounded-3xl p-10 hover-lift animate-on-scroll">
                     <div class="text-4xl mb-6">🎯</div>
-                    <h3 class="text-2xl font-bold mb-4 text-gray-800">核心問題</h3>
-                    <ul class="space-y-3 text-gray-700 text-lg leading-relaxed">
+                    <h3 class="text-2xl font-bold mb-4" style="color: #334155;">核心問題</h3>
+                    <ul class="space-y-3 text-lg leading-relaxed" style="color: #475569;">
                         <li>• 澳門多語環境下，缺少多語言人工智能輔助古詩教學工具</li>
                         <li>• 傳統古詩教學工具缺乏沉浸式體驗，難以激發學生學習興趣</li>
                         <li>• 教師難以生動呈現古詩意境和傳統文化場景</li>
@@ -391,8 +428,8 @@
                 </div>
                 <div class="glass-card rounded-3xl p-10 hover-lift animate-on-scroll">
                     <div class="text-4xl mb-6">💡</div>
-                    <h3 class="text-2xl font-bold mb-4 text-gray-800">創新方案</h3>
-                    <ul class="space-y-3 text-gray-700 text-lg leading-relaxed">
+                    <h3 class="text-2xl font-bold mb-4" style="color: #334155;">創新方案</h3>
+                    <ul class="space-y-3 text-lg leading-relaxed" style="color: #475569;">
                         <li>• 首次融合具身智能、數字人、AR技術和LLM</li>
                         <li>• 打造澳門專屬四語古詩教具</li>
                         <li>• 革新教學模式，助力經典傳承，提升學習興趣和效率</li>
@@ -410,26 +447,26 @@
                 <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-large animate-on-scroll" style="background: linear-gradient(135deg, rgba(127, 219, 202, 0.15), rgba(255, 255, 255, 0.7));">
                     <div class="card-number">01</div>
                     <div class="text-5xl mb-4">🎯</div>
-                    <h3 class="text-xl font-bold mb-3 text-gray-800">AR增強現實</h3>
-                    <p class="text-gray-600 leading-relaxed">iPad掃描平面觸發3D場景，水墨風角色從平板浮出</p>
+                    <h3 class="text-xl font-bold mb-3" style="color: #334155;">AR增強現實</h3>
+                    <p class="leading-relaxed" style="color: #64748b;">iPad掃描平面觸發3D場景，水墨風角色從平板浮出</p>
                 </div>
                 <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(255, 182, 217, 0.15), rgba(255, 255, 255, 0.7));">
                     <div class="card-number">02</div>
                     <div class="text-5xl mb-4">🤖</div>
-                    <h3 class="text-xl font-bold mb-3 text-gray-800">數字人交互</h3>
-                    <p class="text-gray-600 leading-relaxed">LLM驅動的智能數字人，實時解答學生疑問</p>
+                    <h3 class="text-xl font-bold mb-3" style="color: #334155;">數字人交互</h3>
+                    <p class="leading-relaxed" style="color: #64748b;">LLM驅動的智能數字人，實時解答學生疑問</p>
                 </div>
                 <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(196, 181, 253, 0.15), rgba(255, 255, 255, 0.7));">
                     <div class="card-number">03</div>
                     <div class="text-5xl mb-4">🌍</div>
-                    <h3 class="text-xl font-bold mb-3 text-gray-800">多語言支持</h3>
-                    <p class="text-gray-600 leading-relaxed">支持普通話、粵語、葡語、英文四種語言</p>
+                    <h3 class="text-xl font-bold mb-3" style="color: #334155;">多語言支持</h3>
+                    <p class="leading-relaxed" style="color: #64748b;">支持普通話、粵語、葡語、英文四種語言</p>
                 </div>
                 <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(255, 179, 71, 0.15), rgba(255, 255, 255, 0.7));">
                     <div class="card-number">04</div>
                     <div class="text-5xl mb-4">🎨</div>
-                    <h3 class="text-xl font-bold mb-3 text-gray-800">具身智能體驗</h3>
-                    <p class="text-gray-600 leading-relaxed">AR蓑笠等道具讓學生身臨其境</p>
+                    <h3 class="text-xl font-bold mb-3" style="color: #334155;">具身智能體驗</h3>
+                    <p class="leading-relaxed" style="color: #64748b;">AR蓑笠等道具讓學生身臨其境</p>
                 </div>
             </div>
         </div>
@@ -441,16 +478,16 @@
             <h2 class="text-5xl font-bold text-center mb-16 text-gradient animate-on-scroll">全球首創</h2>
             <div class="grid md:grid-cols-3 gap-8">
                 <div class="glass-card rounded-3xl p-10 hover-lift animate-on-scroll">
-                    <h3 class="text-2xl font-bold mb-4 text-gray-800">專為澳門設計</h3>
-                    <p class="text-gray-700 leading-relaxed">全球首個專為澳門設計的四語智能古詩教學系統</p>
+                    <h3 class="text-2xl font-bold mb-4" style="color: #334155;">專為澳門設計</h3>
+                    <p class="leading-relaxed" style="color: #64748b;">全球首個專為澳門設計的四語智能古詩教學系統</p>
                 </div>
                 <div class="glass-card rounded-3xl p-10 hover-lift animate-on-scroll">
-                    <h3 class="text-2xl font-bold mb-4 text-gray-800">前沿技術融合</h3>
-                    <p class="text-gray-700 leading-relaxed">融合具身智能、數字人、AR和LLM等前沿技術於教學場景</p>
+                    <h3 class="text-2xl font-bold mb-4" style="color: #334155;">前沿技術融合</h3>
+                    <p class="leading-relaxed" style="color: #64748b;">融合具身智能、數字人、AR和LLM等前沿技術於教學場景</p>
                 </div>
                 <div class="glass-card rounded-3xl p-10 hover-lift animate-on-scroll">
-                    <h3 class="text-2xl font-bold mb-4 text-gray-800">智能化學習</h3>
-                    <p class="text-gray-700 leading-relaxed">AI分析學習行為，提供定制化學習路徑與推薦</p>
+                    <h3 class="text-2xl font-bold mb-4" style="color: #334155;">智能化學習</h3>
+                    <p class="leading-relaxed" style="color: #64748b;">AI分析學習行為，提供定制化學習路徑與推薦</p>
                 </div>
             </div>
         </div>
