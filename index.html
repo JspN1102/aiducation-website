@@ -244,14 +244,60 @@
         .text-gradient {
             background: linear-gradient(
                 135deg,
-                #0ea5e9 0%,
-                #06b6d4 50%,
-                #14b8a6 100%
+                #0891b2 0%,
+                #0e7490 30%,
+                #155e75 60%,
+                #164e63 100%
             );
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             font-weight: 700;
+            text-shadow: 0 0 40px rgba(8, 145, 178, 0.3);
+        }
+
+        /* 巨幕背景文字水印 */
+        .hero-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20vw;
+            font-weight: 900;
+            color: rgba(0, 0, 0, 0.02);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
+            letter-spacing: -0.05em;
+            animation: watermark-drift 30s ease-in-out infinite;
+        }
+
+        @keyframes watermark-drift {
+            0%, 100% { transform: translate(-50%, -50%) rotate(-2deg); }
+            50% { transform: translate(-48%, -52%) rotate(2deg); }
+        }
+
+        /* Hero 主标题超大化 */
+        .hero-title {
+            font-size: clamp(4rem, 12vw, 10rem);
+            line-height: 1.1;
+            background: linear-gradient(
+                135deg,
+                #0891b2 0%,
+                #0e7490 30%,
+                #155e75 60%,
+                #164e63 100%
+            );
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 60px rgba(8, 145, 178, 0.4));
+            animation: title-glow 3s ease-in-out infinite;
+        }
+
+        @keyframes title-glow {
+            0%, 100% { filter: drop-shadow(0 0 60px rgba(8, 145, 178, 0.4)); }
+            50% { filter: drop-shadow(0 0 80px rgba(8, 145, 178, 0.6)); }
         }
 
         /* 卡片装饰编号 */
@@ -295,6 +341,138 @@
             height: 100%;
             object-fit: contain;
             filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
+        }
+
+        /* AR 扫描准星装饰 */
+        .ar-scanner {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            width: 80px;
+            height: 80px;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        .ar-scanner::before,
+        .ar-scanner::after {
+            content: '';
+            position: absolute;
+            border: 2px solid currentColor;
+        }
+
+        .ar-scanner::before {
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .ar-scanner::after {
+            bottom: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            border-left: none;
+            border-top: none;
+        }
+
+        /* AI 对话气泡装饰 */
+        .chat-bubbles {
+            position: absolute;
+            bottom: 2rem;
+            left: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            opacity: 0.12;
+            pointer-events: none;
+        }
+
+        .chat-bubble {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .chat-bubble:first-child {
+            width: 60px;
+            height: 12px;
+        }
+
+        .chat-bubble:last-child {
+            width: 80px;
+            height: 12px;
+            align-self: flex-end;
+        }
+
+        /* 语言标签装饰 */
+        .lang-tags {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            display: flex;
+            gap: 0.5rem;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        .lang-tag {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: currentColor;
+        }
+
+        /* 十字星装饰 */
+        .crosshair {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            opacity: 0.1;
+            pointer-events: none;
+        }
+
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background: currentColor;
+        }
+
+        .crosshair::before {
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            transform: translateY(-50%);
+        }
+
+        .crosshair::after {
+            top: 0;
+            left: 50%;
+            width: 1px;
+            height: 100%;
+            transform: translateX(-50%);
+        }
+
+        /* 点阵图案 */
+        .dot-pattern {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            opacity: 0.08;
+            pointer-events: none;
+            background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
+            background-size: 8px 8px;
         }
 
         /* Hero 主视觉展示区 */
@@ -360,10 +538,11 @@
     </nav>
 
     <!-- Hero Section -->
-    <section id="home" class="min-h-screen flex items-center justify-center px-6 py-20 pt-32">
-        <div class="max-w-6xl mx-auto text-center">
+    <section id="home" class="min-h-screen flex items-center justify-center px-6 py-20 pt-32" style="position: relative;">
+        <div class="hero-watermark">AIDUCATION</div>
+        <div class="max-w-6xl mx-auto text-center" style="position: relative; z-index: 1;">
             <div class="float-animation mb-8">
-                <h1 class="text-6xl md:text-7xl font-bold mb-6 text-gradient leading-tight">
+                <h1 class="hero-title font-bold mb-6 leading-tight">
                     AI驅動的多語言<br>古詩互動教學工具
                 </h1>
             </div>
@@ -411,35 +590,52 @@
     </section>
 
     <!-- Features -->
-    <section id="features" class="py-20 px-6">
+    <section id="features" class="py-20 px-6" style="position: relative;">
+        <!-- 打破边界的装饰元素 -->
+        <div class="crosshair" style="top: 5%; left: 10%; color: #14b8a6;"></div>
+        <div class="crosshair" style="top: 15%; right: 8%; color: #ec4899;"></div>
+        <div class="crosshair" style="bottom: 20%; left: 5%; color: #a78bfa;"></div>
+        <div class="dot-pattern" style="top: 10%; right: 15%; color: #0891b2;"></div>
+        <div class="dot-pattern" style="bottom: 15%; left: 12%; color: #f59e0b;"></div>
+
         <div class="max-w-6xl mx-auto">
             <h2 class="text-5xl font-bold text-center mb-16 text-gradient animate-on-scroll">核心技術特點</h2>
             <div class="bento-grid">
-                <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-large animate-on-scroll" style="background: linear-gradient(135deg, rgba(127, 219, 202, 0.15), rgba(255, 255, 255, 0.7));">
+                <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-large animate-on-scroll" style="background: linear-gradient(135deg, rgba(127, 219, 202, 0.15), rgba(255, 255, 255, 0.7)); position: relative;">
                     <div class="card-number">01</div>
+                    <div class="ar-scanner" style="color: #14b8a6;"></div>
                     <div class="premium-icon-placeholder">
                         <i data-lucide="scan" style="color: #14b8a6;"></i>
                     </div>
                     <h3 class="text-xl font-bold mb-3" style="color: #334155;">AR增強現實</h3>
                     <p class="leading-relaxed" style="color: #64748b;">iPad掃描平面觸發3D場景，水墨風角色從平板浮出</p>
                 </div>
-                <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(255, 182, 217, 0.15), rgba(255, 255, 255, 0.7));">
+                <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(255, 182, 217, 0.15), rgba(255, 255, 255, 0.7)); position: relative;">
                     <div class="card-number">02</div>
+                    <div class="chat-bubbles" style="color: #ec4899;">
+                        <div class="chat-bubble"></div>
+                        <div class="chat-bubble"></div>
+                    </div>
                     <div class="premium-icon-placeholder">
                         <i data-lucide="bot" style="color: #ec4899;"></i>
                     </div>
                     <h3 class="text-xl font-bold mb-3" style="color: #334155;">數字人交互</h3>
                     <p class="leading-relaxed" style="color: #64748b;">LLM驅動的智能數字人，實時解答學生疑問</p>
                 </div>
-                <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(196, 181, 253, 0.15), rgba(255, 255, 255, 0.7));">
+                <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(196, 181, 253, 0.15), rgba(255, 255, 255, 0.7)); position: relative;">
                     <div class="card-number">03</div>
+                    <div class="lang-tags" style="color: #a78bfa;">
+                        <span class="lang-tag">EN</span>
+                        <span class="lang-tag">繁</span>
+                        <span class="lang-tag">PT</span>
+                    </div>
                     <div class="premium-icon-placeholder">
                         <i data-lucide="languages" style="color: #a78bfa;"></i>
                     </div>
                     <h3 class="text-xl font-bold mb-3" style="color: #334155;">多語言支持</h3>
                     <p class="leading-relaxed" style="color: #64748b;">支持普通話、粵語、葡語、英文四種語言</p>
                 </div>
-                <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(255, 179, 71, 0.15), rgba(255, 255, 255, 0.7));">
+                <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(255, 179, 71, 0.15), rgba(255, 255, 255, 0.7)); position: relative;">
                     <div class="card-number">04</div>
                     <div class="premium-icon-placeholder">
                         <i data-lucide="sparkles" style="color: #f59e0b;"></i>
