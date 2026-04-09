@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI古詩教學 - AIDUCATION</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            font-family: 'Outfit', 'Noto Sans TC', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #FFF9F0 0%, #F0F8F5 100%);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 背景网格 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
+            -webkit-mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* 光晕层 */
+        .glow-orb-1 {
+            position: fixed;
+            top: -400px;
+            left: -400px;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, #7FDBCA 0%, transparent 70%);
+            filter: blur(150px);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .glow-orb-2 {
+            position: fixed;
+            bottom: -500px;
+            right: -500px;
+            width: 1000px;
+            height: 1000px;
+            background: radial-gradient(circle, #87CEEB 0%, transparent 70%);
+            filter: blur(180px);
+            opacity: 0.4;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* 确保内容在背景之上 */
+        nav, section, footer {
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes float-slow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .float-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .float-slow {
+            animation: float-slow 8s ease-in-out infinite;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        .hover-lift {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-12px) rotateX(2deg);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Bento Box 布局 */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .bento-large {
+            grid-column: span 2;
+        }
+
+        .bento-small {
+            grid-column: span 1;
+        }
+
+        @media (max-width: 768px) {
+            .bento-grid {
+                grid-template-columns: 1fr;
+            }
+            .bento-large {
+                grid-column: span 1;
+            }
+        }
+
+        /* 滚动显现动画 */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+                        transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .animate-on-scroll.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 确保 hover 效果不被覆盖 */
+        .hover-lift.animate-on-scroll.is-visible:hover {
+            transform: translateY(-12px) rotateX(2deg) !important;
+        }
+
+        /* 字体排版优化 */
+        h1, h2, h3 {
+            letter-spacing: -0.02em;
+        }
+
+        p, li {
+            line-height: 1.7;
+            letter-spacing: 0.01em;
+        }
+
+        /* 吉祥物动画 */
+        .mascot-float {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 150px;
+            height: auto;
+            z-index: 100;
+            animation: mascot-bounce 3s ease-in-out infinite;
+            cursor: pointer;
+            transition: transform 0.3s;
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.15));
+            mix-blend-mode: multiply;
+        }
+
+        .mascot-float:hover {
+            transform: scale(1.15) rotate(5deg);
+        }
+
+        @keyframes mascot-bounce {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(-5deg); }
+        }
+
+        /* 可爱的装饰元素 */
+        .cute-decoration {
+            position: absolute;
+            font-size: 3rem;
+            opacity: 0.15;
+            pointer-events: none;
+            animation: float-decoration 8s ease-in-out infinite;
+        }
+
+        @keyframes float-decoration {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(10deg); }
+        }
+
+        /* 彩色圆点装饰 */
+        .dot-decoration {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            opacity: 0.3;
+        }
+
+        .gradient-mint {
+            background: linear-gradient(135deg, #7FDBCA 0%, #5FB8A8 100%);
+        }
+
+        .gradient-sky {
+            background: linear-gradient(135deg, #87CEEB 0%, #6BA5D6 100%);
+        }
+
+        .gradient-warm {
+            background: linear-gradient(135deg, #FFB347 0%, #FF9A3C 100%);
+        }
+
+        .gradient-pink {
+            background: linear-gradient(135deg, #FFB6D9 0%, #FF8DC7 100%);
+        }
+
+        .gradient-purple {
+            background: linear-gradient(135deg, #C4B5FD 0%, #A78BFA 100%);
+        }
+
+        .text-gradient {
+            background: linear-gradient(135deg, #5FB8A8 0%, #87CEEB 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- 光晕层 -->
+    <div class="glow-orb-1"></div>
+    <div class="glow-orb-2"></div>
+
+    <!-- 吉祥物 -->
+    <img src="assets/mascot.png" alt="吉祥物" class="mascot-float">
+
+    <!-- 可爱装饰元素 -->
+    <div class="cute-decoration" style="top: 15%; left: 10%;">📚</div>
+    <div class="cute-decoration" style="top: 25%; right: 8%;">✨</div>
+    <div class="cute-decoration" style="top: 45%; left: 5%;">🎨</div>
+    <div class="cute-decoration" style="top: 65%; right: 12%;">🌟</div>
+    <div class="cute-decoration" style="top: 85%; left: 15%;">📖</div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-white/50">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-gradient">AIDUCATION</div>
+            <ul class="hidden md:flex gap-8 text-lg">
+                <li><a href="#home" class="text-gray-700 hover:text-teal-600 transition-colors">首頁</a></li>
+                <li><a href="#background" class="text-gray-700 hover:text-teal-600 transition-colors">項目背景</a></li>
+                <li><a href="#features" class="text-gray-700 hover:text-teal-600 transition-colors">技術特點</a></li>
+                <li><a href="#demo" class="text-gray-700 hover:text-teal-600 transition-colors">Demo展示</a></li>
+                <li><a href="#team" class="text-gray-700 hover:text-teal-600 transition-colors">核心團隊</a></li>
+                <li><a href="#partners" class="text-gray-700 hover:text-teal-600 transition-colors">合作夥伴</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="min-h-screen flex items-center justify-center px-6 py-20 pt-32">
+        <div class="max-w-6xl mx-auto text-center">
+            <div class="float-animation mb-8">
+                <h1 class="text-6xl md:text-7xl font-bold mb-6 text-gradient leading-tight">
+                    AI驅動的多語言<br>古詩互動教學工具
+                </h1>
+            </div>
+            <p class="text-2xl text-gray-700 mb-8 leading-relaxed">
+                融合AR、數字人、LLM與具身智能<br>
+                支持普通話、粵語、葡語、英文四語教學
+            </p>
+            <div class="flex flex-wrap gap-4 justify-center mb-12">
+                <span class="glass-card px-8 py-3 rounded-full text-lg font-medium text-gray-800 hover:scale-105 transition-transform">
+                    🏆 FDCT 0026/2026/ITP1
+                </span>
+                <span class="glass-card px-8 py-3 rounded-full text-lg font-medium text-gray-800 hover:scale-105 transition-transform">
+                    🎓 香港科技園 EASE Fund
+                </span>
+            </div>
+            <div class="glass-card rounded-3xl p-4 inline-block float-slow">
+                <img src="assets/图片10.png" alt="項目展示" class="rounded-2xl max-w-3xl w-full">
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem & Solution -->
+    <section id="background" class="py-20 px-6">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-5xl font-bold text-center mb-16 text-gradient animate-on-scroll">項目背景</h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="glass-card rounded-3xl p-10 hover-lift animate-on-scroll">
+                    <div class="text-4xl mb-6">🎯</div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">核心問題</h3>
+                    <ul class="space-y-3 text-gray-700 text-lg leading-relaxed">
+                        <li>• 澳門多語環境下，缺少多語言人工智能輔助古詩教學工具</li>
+                        <li>• 傳統古詩教學工具缺乏沉浸式體驗，難以激發學生學習興趣</li>
+                        <li>• 教師難以生動呈現古詩意境和傳統文化場景</li>
+                    </ul>
+                </div>
+                <div class="glass-card rounded-3xl p-10 hover-lift animate-on-scroll">
+                    <div class="text-4xl mb-6">💡</div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">創新方案</h3>
+                    <ul class="space-y-3 text-gray-700 text-lg leading-relaxed">
+                        <li>• 首次融合具身智能、數字人、AR技術和LLM</li>
+                        <li>• 打造澳門專屬四語古詩教具</li>
+                        <li>• 革新教學模式，助力經典傳承，提升學習興趣和效率</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-20 px-6">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-5xl font-bold text-center mb-16 text-gradient animate-on-scroll">核心技術特點</h2>
+            <div class="bento-grid">
+                <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-large animate-on-scroll" style="background: linear-gradient(135deg, rgba(127, 219, 202, 0.15), rgba(255, 255, 255, 0.7));">
+                    <div class="text-5xl mb-4">🎯</div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">AR增強現實</h3>
+                    <p class="text-gray-600 leading-relaxed">iPad掃描平面觸發3D場景，水墨風角色從平板浮出</p>
+                </div>
+                <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(255, 182, 217, 0.15), rgba(255, 255, 255, 0.7));">
+                    <div class="text-5xl mb-4">🤖</div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">數字人交互</h3>
+                    <p class="text-gray-600 leading-relaxed">LLM驅動的智能數字人，實時解答學生疑問</p>
+                </div>
+                <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(196, 181, 253, 0.15), rgba(255, 255, 255, 0.7));">
+                    <div class="text-5xl mb-4">🌍</div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">多語言支持</h3>
+                    <p class="text-gray-600 leading-relaxed">支持普通話、粵語、葡語、英文四種語言</p>
+                </div>
+                <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(255, 179, 71, 0.15), rgba(255, 255, 255, 0.7));">
+                    <div class="text-5xl mb-4">🎨</div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">具身智能體驗</h3>
+                    <p class="text-gray-600 leading-relaxed">AR蓑笠等道具讓學生身臨其境</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Unique Value -->
+    <section class="py-20 px-6">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-5xl font-bold text-center mb-16 text-gradient animate-on-scroll">全球首創</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="glass-card rounded-3xl p-10 hover-lift animate-on-scroll">
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">專為澳門設計</h3>
+                    <p class="text-gray-700 leading-relaxed">全球首個專為澳門設計的四語智能古詩教學系統</p>
+                </div>
+                <div class="glass-card rounded-3xl p-10 hover-lift animate-on-scroll">
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">前沿技術融合</h3>
+                    <p class="text-gray-700 leading-relaxed">融合具身智能、數字人、AR和LLM等前沿技術於教學場景</p>
+                </div>
+                <div class="glass-card rounded-3xl p-10 hover-lift animate-on-scroll">
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">智能化學習</h3>
+                    <p class="text-gray-700 leading-relaxed">AI分析學習行為，提供定制化學習路徑與推薦</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Video -->
+    <section id="demo" class="py-20 px-6">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-5xl font-bold text-center mb-16 text-gradient animate-on-scroll">Demo展示</h2>
+            <div class="glass-card rounded-3xl p-6 hover-lift animate-on-scroll">
+                <video controls poster="assets/图片10.png" class="w-full rounded-2xl">
+                    <source src="assets/视频1.mp4" type="video/mp4">
+                    您的瀏覽器不支持視頻播放
+                </video>
+            </div>
+            <div class="mt-8 glass-card rounded-3xl p-8 animate-on-scroll">
+                <h3 class="text-2xl font-bold mb-4 text-gray-800">《涼州詞》AR互動場景</h3>
+                <ul class="grid md:grid-cols-2 gap-3 text-gray-700 text-lg">
+                    <li>▸ 3D城樓、士兵、樂師等水墨風角色</li>
+                    <li>▸ 中文/粵語/英文實時切換</li>
+                    <li>▸ 註釋卡片智能彈出</li>
+                    <li>▸ 寒山寺AR虛擬場景</li>
+                    <li>▸ 具身體驗：AR蓑笠互動</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team -->
+    <section id="team" class="py-20 px-6">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-5xl font-bold text-center mb-16 text-gradient animate-on-scroll">核心團隊</h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- 范釔君 -->
+                <div class="glass-card rounded-3xl p-8 hover-lift animate-on-scroll">
+                    <div class="w-52 h-52 rounded-full mx-auto mb-6 border-4 border-white shadow-lg bg-white flex items-center justify-center overflow-hidden">
+                        <img src="assets/范釔君.png" alt="范釔君" class="w-full h-full object-cover">
+                    </div>
+                    <h3 class="text-2xl font-bold text-center mb-2 text-gray-800">范釔君</h3>
+                    <p class="text-sm text-gray-600 mb-4 leading-relaxed">
+                        • 聖若瑟大學教育學院高級講師<br>
+                        • AIDUCATION CFO<br>
+                        • 香港教育大學博士候選人<br>
+                        • 榮獲多個國際賽事獎項，致力於AI教育的創新研究
+                    </p>
+                </div>
+                <!-- 金夢瑤 -->
+                <div class="glass-card rounded-3xl p-8 hover-lift animate-on-scroll">
+                    <div class="w-52 h-52 rounded-full mx-auto mb-6 border-4 border-white shadow-lg bg-white flex items-center justify-center overflow-hidden">
+                        <img src="assets/金夢瑤.png" alt="金夢瑤" class="w-full h-full object-cover">
+                    </div>
+                    <h3 class="text-2xl font-bold text-center mb-2 text-gray-800">金夢瑤</h3>
+                    <p class="text-sm text-gray-600 mb-4 leading-relaxed">
+                        • 香港教育大學國學中心聯席總監<br>
+                        • 香港考試及評核局科目委員會委員<br>
+                        • 中文電子化教學專家<br>
+                        • 深耕中文電子化課程改革和評估研究
+                    </p>
+                </div>
+                <!-- Isabel -->
+                <div class="glass-card rounded-3xl p-8 hover-lift animate-on-scroll">
+                    <div class="w-52 h-52 rounded-full mx-auto mb-6 border-4 border-white shadow-lg bg-white flex items-center justify-center overflow-hidden">
+                        <img src="assets/Isabel TCHIANG.png" alt="Isabel TCHIANG" class="w-full h-full object-contain scale-[1.8]">
+                    </div>
+                    <h3 class="text-2xl font-bold text-center mb-2 text-gray-800">Isabel TCHIANG</h3>
+                    <p class="text-sm text-gray-600 mb-4 leading-relaxed">
+                        • 聖若瑟大學教育學院院長<br>
+                        • 教師專業發展中心主任<br>
+                        • 指導多個由澳門基金會資助的專案<br>
+                        • 參與多項教育改革工作
+                    </p>
+                </div>
+                <!-- 杜文才 -->
+                <div class="glass-card rounded-3xl p-8 hover-lift animate-on-scroll">
+                    <div class="w-52 h-52 rounded-full mx-auto mb-6 border-4 border-white shadow-lg bg-white flex items-center justify-center overflow-hidden">
+                        <img src="assets/杜文才.png" alt="杜文才" class="w-full h-full object-contain scale-[1.8]">
+                    </div>
+                    <h3 class="text-2xl font-bold text-center mb-2 text-gray-800">杜文才</h3>
+                    <p class="text-sm text-gray-600 mb-4 leading-relaxed">
+                        • 聖若瑟大學數據工程與科學學院院長<br>
+                        • 前澳門城市大學數據科學學院院長<br>
+                        • 國際IEEE高級會員<br>
+                        • 共主持11項國家級科研專案，累計經費近8000萬
+                    </p>
+                </div>
+                <!-- 吳昊 -->
+                <div class="glass-card rounded-3xl p-8 hover-lift animate-on-scroll">
+                    <div class="w-52 h-52 rounded-full mx-auto mb-6 border-4 border-white shadow-lg bg-white flex items-center justify-center overflow-hidden">
+                        <img src="assets/吳昊.png" alt="吳昊" class="w-full h-full object-cover">
+                    </div>
+                    <h3 class="text-2xl font-bold text-center mb-2 text-gray-800">吳昊</h3>
+                    <p class="text-sm text-gray-600 mb-4 leading-relaxed">
+                        • 聖若瑟大學教育學院助理教授<br>
+                        • 前匈牙利科學院通訊數字學習技術研究員<br>
+                        • 專攻教育資訊通信技術<br>
+                        • 發表多篇國際權威期刊文章
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Partners -->
+    <section id="partners" class="py-20 px-6">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-5xl font-bold text-center mb-16 text-gradient animate-on-scroll">合作夥伴</h2>
+            <div class="grid grid-cols-3 md:grid-cols-5 gap-8 items-center justify-items-center">
+                <img src="assets/图片18.png" alt="合作夥伴" class="max-w-[100px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 hover:scale-110 animate-on-scroll">
+                <img src="assets/图片19.png" alt="合作夥伴" class="max-w-[100px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 hover:scale-110 animate-on-scroll">
+                <img src="assets/图片20.png" alt="合作夥伴" class="max-w-[100px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 hover:scale-110 animate-on-scroll">
+                <img src="assets/图片21.png" alt="合作夥伴" class="max-w-[100px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 hover:scale-110 animate-on-scroll">
+                <img src="assets/图片22.png" alt="合作夥伴" class="max-w-[100px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 hover:scale-110 animate-on-scroll">
+                <img src="assets/图片23.png" alt="合作夥伴" class="max-w-[100px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 hover:scale-110 animate-on-scroll">
+                <img src="assets/图片24.png" alt="合作夥伴" class="max-w-[100px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 hover:scale-110 animate-on-scroll">
+                <img src="assets/图片25.png" alt="合作夥伴" class="max-w-[100px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 hover:scale-110 animate-on-scroll">
+                <img src="assets/图片26.png" alt="合作夥伴" class="max-w-[100px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 hover:scale-110 animate-on-scroll">
+                <img src="assets/图片27.png" alt="合作夥伴" class="max-w-[100px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 hover:scale-110 animate-on-scroll">
+                <img src="assets/图片28.png" alt="合作夥伴" class="max-w-[100px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 hover:scale-110 animate-on-scroll">
+                <img src="assets/图片29.png" alt="合作夥伴" class="max-w-[100px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 hover:scale-110 animate-on-scroll">
+                <img src="assets/图片30.png" alt="合作夥伴" class="max-w-[100px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 hover:scale-110 animate-on-scroll">
+                <img src="assets/图片31.png" alt="合作夥伴" class="max-w-[100px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 hover:scale-110 animate-on-scroll">
+                <img src="assets/图片32.png" alt="合作夥伴" class="max-w-[100px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 hover:scale-110 animate-on-scroll">
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 px-6 bg-gradient-to-r from-teal-500 to-sky-500 text-white">
+        <div class="max-w-6xl mx-auto text-center">
+            <p class="text-xl mb-2">&copy; 2026 AIDUCATION. All rights reserved.</p>
+            <p class="text-lg opacity-90">FDCT 0026/2026/ITP1 | 香港科技園 EASE Fund</p>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Intersection Observer for scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                }
+            });
+        }, observerOptions);
+
+        // Observe all elements with animate-on-scroll class
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.animate-on-scroll').forEach(el => {
+                observer.observe(el);
+            });
+        });
+
+        // Navigation shadow on scroll
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                nav.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.1)';
+            } else {
+                nav.style.boxShadow = 'none';
+            }
+        });
+    </script>
+
+</body>
+</html>
