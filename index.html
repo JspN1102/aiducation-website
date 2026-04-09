@@ -15,76 +15,14 @@
         }
 
         body {
-            background: linear-gradient(135deg, #FFF9F0 0%, #F0F8F5 100%);
+            background: #ffffff;
             position: relative;
             overflow-x: hidden;
         }
 
-        /* 背景网格 - 升级版 */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image:
-                linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
-            mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 0%, transparent 100%);
-            -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 0%, transparent 100%);
-            pointer-events: none;
-            z-index: 0;
-        }
+        /* 背景网格 - 删除 */
 
-        /* 光晕层 - 新中国风色调 */
-        .glow-orb-1 {
-            position: fixed;
-            top: -400px;
-            left: -400px;
-            width: 800px;
-            height: 800px;
-            background: radial-gradient(circle, rgba(106, 168, 156, 0.25) 0%, transparent 70%);
-            filter: blur(150px);
-            opacity: 0.35;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        .glow-orb-2 {
-            position: fixed;
-            bottom: -500px;
-            right: -500px;
-            width: 1000px;
-            height: 1000px;
-            background: radial-gradient(circle, rgba(135, 169, 189, 0.3) 0%, transparent 70%);
-            filter: blur(180px);
-            opacity: 0.4;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* 第三个光晕层 - 中心紫色 */
-        .glow-orb-3 {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 1200px;
-            height: 1200px;
-            background: radial-gradient(circle, rgba(180, 167, 214, 0.12) 0%, transparent 70%);
-            filter: blur(200px);
-            opacity: 0.25;
-            pointer-events: none;
-            z-index: 0;
-            animation: aurora-drift 20s ease-in-out infinite;
-        }
-
-        @keyframes aurora-drift {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-45%, -55%) scale(1.1); }
-        }
+        /* 光晕层 - 删除 */
 
         /* 确保内容在背景之上 */
         nav, section, footer {
@@ -186,34 +124,34 @@
 
         /* 字体排版优化 - 顶级质感 */
         h1 {
-            letter-spacing: -0.04em;
+            letter-spacing: -0.02em;
             font-weight: 700;
-            color: #0f172a;
+            color: #111827;
             line-height: 1.1;
         }
 
         h2 {
-            letter-spacing: -0.03em;
+            letter-spacing: -0.02em;
             font-weight: 700;
-            color: #1e293b;
+            color: #111827;
             line-height: 1.2;
         }
 
         h3 {
-            letter-spacing: -0.02em;
+            letter-spacing: -0.01em;
             font-weight: 600;
-            color: #334155;
+            color: #111827;
             line-height: 1.3;
         }
 
         p {
-            color: #64748b;
+            color: #6b7280;
             line-height: 1.7;
-            letter-spacing: 0.01em;
+            letter-spacing: 0;
         }
 
         li {
-            color: #475569;
+            color: #6b7280;
             line-height: 1.7;
         }
 
@@ -241,283 +179,169 @@
             50% { transform: translateY(-15px) rotate(-5deg); }
         }
 
-        .text-gradient {
-            background: linear-gradient(
-                135deg,
-                #0891b2 0%,
-                #0e7490 30%,
-                #155e75 60%,
-                #164e63 100%
-            );
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-weight: 700;
-            text-shadow: 0 0 40px rgba(8, 145, 178, 0.3);
+        /* 删除所有花哨特效 */
+
+        /* 硬核巨头风格 - 简洁卡片 */
+        .enterprise-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 0;
+            padding: 2.5rem;
+            transition: all 0.3s ease;
         }
 
-        /* 巨幕背景文字水印 */
-        .hero-watermark {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 20vw;
-            font-weight: 900;
-            color: rgba(0, 0, 0, 0.02);
-            white-space: nowrap;
-            pointer-events: none;
-            z-index: 0;
-            letter-spacing: -0.05em;
-            animation: watermark-drift 30s ease-in-out infinite;
+        .enterprise-card:hover {
+            border-color: #0891b2;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
-        @keyframes watermark-drift {
-            0%, 100% { transform: translate(-50%, -50%) rotate(-2deg); }
-            50% { transform: translate(-48%, -52%) rotate(2deg); }
+        /* 4列均等网格 */
+        .enterprise-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
         }
 
-        /* Hero 主标题超大化 */
-        .hero-title {
-            font-size: clamp(4rem, 12vw, 10rem);
-            line-height: 1.1;
-            background: linear-gradient(
-                135deg,
-                #0891b2 0%,
-                #0e7490 30%,
-                #155e75 60%,
-                #164e63 100%
-            );
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            filter: drop-shadow(0 0 60px rgba(8, 145, 178, 0.4));
-            animation: title-glow 3s ease-in-out infinite;
+        @media (max-width: 1024px) {
+            .enterprise-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
-        @keyframes title-glow {
-            0%, 100% { filter: drop-shadow(0 0 60px rgba(8, 145, 178, 0.4)); }
-            50% { filter: drop-shadow(0 0 80px rgba(8, 145, 178, 0.6)); }
+        @media (max-width: 640px) {
+            .enterprise-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
-        /* 卡片装饰编号 */
-        .card-number {
-            position: absolute;
-            top: 1rem;
-            left: 1rem;
-            font-size: 5rem;
-            font-weight: 900;
-            color: rgba(0, 0, 0, 0.025);
-            line-height: 1;
-            pointer-events: none;
-            font-family: 'Outfit', sans-serif;
-            letter-spacing: -0.05em;
+        /* 图标样式 */
+        .enterprise-icon {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1.5rem;
         }
 
-        /* 高级图标占位符 */
-        .premium-icon-placeholder {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
-            border-radius: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow:
-                0 4px 12px rgba(0, 0, 0, 0.05),
-                inset 0 1px 0 rgba(255, 255, 255, 0.6);
-        }
-
-        .premium-icon-placeholder svg {
-            width: 64px;
-            height: 64px;
+        .enterprise-icon svg {
+            width: 100%;
+            height: 100%;
             stroke-width: 1.5;
         }
 
-        .premium-icon-placeholder img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
-        }
-
-        /* AR 扫描准星装饰 */
-        .ar-scanner {
-            position: absolute;
-            top: 2rem;
-            right: 2rem;
-            width: 80px;
-            height: 80px;
-            opacity: 0.15;
-            pointer-events: none;
-        }
-
-        .ar-scanner::before,
-        .ar-scanner::after {
-            content: '';
-            position: absolute;
-            border: 2px solid currentColor;
-        }
-
-        .ar-scanner::before {
-            top: 0;
-            left: 0;
-            width: 20px;
-            height: 20px;
-            border-right: none;
-            border-bottom: none;
-        }
-
-        .ar-scanner::after {
-            bottom: 0;
-            right: 0;
-            width: 20px;
-            height: 20px;
-            border-left: none;
-            border-top: none;
-        }
-
-        /* AI 对话气泡装饰 */
-        .chat-bubbles {
-            position: absolute;
-            bottom: 2rem;
-            left: 2rem;
-            display: flex;
-            flex-direction: column;
+        /* 了解更多链接 */
+        .learn-more {
+            display: inline-flex;
+            align-items: center;
             gap: 0.5rem;
-            opacity: 0.12;
-            pointer-events: none;
-        }
-
-        .chat-bubble {
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(8px);
-            border-radius: 12px;
-            padding: 0.5rem 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .chat-bubble:first-child {
-            width: 60px;
-            height: 12px;
-        }
-
-        .chat-bubble:last-child {
-            width: 80px;
-            height: 12px;
-            align-self: flex-end;
-        }
-
-        /* 语言标签装饰 */
-        .lang-tags {
-            position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
-            display: flex;
-            gap: 0.5rem;
-            opacity: 0.15;
-            pointer-events: none;
-        }
-
-        .lang-tag {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 6px;
-            padding: 0.25rem 0.5rem;
-            font-size: 0.7rem;
+            color: #0891b2;
             font-weight: 600;
-            color: currentColor;
+            font-size: 0.875rem;
+            text-decoration: none;
+            margin-top: 1.5rem;
+            transition: all 0.3s ease;
         }
 
-        /* 十字星装饰 */
-        .crosshair {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            opacity: 0.1;
-            pointer-events: none;
+        .learn-more:hover {
+            gap: 0.75rem;
         }
 
-        .crosshair::before,
-        .crosshair::after {
-            content: '';
-            position: absolute;
-            background: currentColor;
+        .learn-more::after {
+            content: '→';
+            transition: transform 0.3s ease;
         }
 
-        .crosshair::before {
-            top: 50%;
-            left: 0;
+        /* 黑白交替区块 */
+        .section-dark {
+            background: #111827;
+            color: #ffffff;
+        }
+
+        .section-dark h2,
+        .section-dark h3 {
+            color: #ffffff;
+        }
+
+        .section-dark p,
+        .section-dark li {
+            color: #d1d5db;
+        }
+
+        /* Hero 50/50 分栏 */
+        .hero-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            min-height: 80vh;
+        }
+
+        @media (max-width: 768px) {
+            .hero-split {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+        }
+
+        .hero-content {
+            text-align: left;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            line-height: 1.1;
+            color: #111827;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: #6b7280;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .hero-image-placeholder {
             width: 100%;
-            height: 1px;
-            transform: translateY(-50%);
+            height: 500px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            overflow: hidden;
         }
 
-        .crosshair::after {
-            top: 0;
-            left: 50%;
-            width: 1px;
+        .hero-image-placeholder img {
+            width: 100%;
             height: 100%;
-            transform: translateX(-50%);
+            object-fit: cover;
         }
 
-        /* 点阵图案 */
-        .dot-pattern {
-            position: absolute;
-            width: 60px;
-            height: 60px;
-            opacity: 0.08;
-            pointer-events: none;
-            background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
-            background-size: 8px 8px;
+        /* 实心按钮 */
+        .btn-primary {
+            display: inline-block;
+            background: #0891b2;
+            color: #ffffff;
+            padding: 1rem 2rem;
+            font-weight: 600;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: all 0.3s ease;
         }
 
-        /* Hero 主视觉展示区 */
-        .hero-image-showcase {
-            position: relative;
-            max-width: 900px;
-            margin: 3rem auto 0;
-            padding: 2rem;
-            background: linear-gradient(
-                135deg,
-                rgba(255, 255, 255, 0.95) 0%,
-                rgba(255, 255, 255, 0.85) 100%
-            );
-            backdrop-filter: blur(24px) saturate(180%);
-            -webkit-backdrop-filter: blur(24px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 32px;
-            box-shadow:
-                0 8px 32px rgba(0, 0, 0, 0.08),
-                0 20px 60px rgba(0, 0, 0, 0.12),
-                0 40px 100px rgba(0, 0, 0, 0.08),
-                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        .btn-primary:hover {
+            background: #0e7490;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
         }
 
-        .hero-image-showcase img {
-            width: 100%;
-            height: auto;
-            border-radius: 20px;
-            display: block;
-        }
+        /* 删除所有UI碎片装饰 */
 
-        /* 导航栏升级 */
+        /* 导航栏 */
         nav.glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px) saturate(180%);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            background: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
         }
     </style>
 </head>
 <body class="antialiased">
-
-    <!-- 光晕层 -->
-    <div class="glow-orb-1"></div>
-    <div class="glow-orb-2"></div>
-    <div class="glow-orb-3"></div>
 
     <!-- 吉祥物 -->
     <img src="assets/mascot.png" alt="吉祥物" class="mascot-float">
@@ -537,49 +361,49 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section id="home" class="min-h-screen flex items-center justify-center px-6 py-20 pt-32" style="position: relative;">
-        <div class="hero-watermark">AIDUCATION</div>
-        <div class="max-w-6xl mx-auto text-center" style="position: relative; z-index: 1;">
-            <div class="float-animation mb-8">
-                <h1 class="hero-title font-bold mb-6 leading-tight">
-                    AI驅動的多語言<br>古詩互動教學工具
-                </h1>
-            </div>
-            <p class="text-2xl mb-8 leading-relaxed" style="color: #64748b;">
-                融合AR、數字人、LLM與具身智能<br>
-                支持普通話、粵語、葡語、英文四語教學
-            </p>
-            <div class="flex flex-wrap gap-4 justify-center mb-12">
-                <span class="glass-card px-8 py-3 rounded-full text-lg font-medium hover:scale-105 transition-transform" style="color: #334155;">
-                    FDCT 0026/2026/ITP1
-                </span>
-                <span class="glass-card px-8 py-3 rounded-full text-lg font-medium hover:scale-105 transition-transform" style="color: #334155;">
-                    香港科技園 EASE Fund
-                </span>
-            </div>
-            <div class="hero-image-showcase">
-                <img src="assets/图片10.png" alt="項目展示">
+    <!-- Hero Section - 50/50 Split Layout -->
+    <section id="home" class="py-20 pt-32 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="hero-split">
+                <div class="hero-content">
+                    <h1 class="hero-title">
+                        AI驅動的多語言<br>古詩互動教學工具
+                    </h1>
+                    <p class="hero-subtitle">
+                        融合AR、數字人、LLM與具身智能，支持普通話、粵語、葡語、英文四語教學
+                    </p>
+                    <div class="flex gap-4 mb-6">
+                        <a href="#demo" class="btn-primary">查看Demo</a>
+                    </div>
+                    <div class="flex gap-4 text-sm" style="color: #6b7280;">
+                        <span>FDCT 0026/2026/ITP1</span>
+                        <span>|</span>
+                        <span>香港科技園 EASE Fund</span>
+                    </div>
+                </div>
+                <div class="hero-image-placeholder">
+                    <img src="assets/图片10.png" alt="項目展示">
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Problem & Solution -->
-    <section id="background" class="py-20 px-6">
-        <div class="max-w-6xl mx-auto">
-            <h2 class="text-5xl font-bold text-center mb-16 text-gradient animate-on-scroll">項目背景</h2>
-            <div class="grid md:grid-cols-2 gap-8">
-                <div class="glass-card rounded-3xl p-10 hover-lift animate-on-scroll">
-                    <h3 class="text-2xl font-bold mb-4" style="color: #334155;">核心問題</h3>
-                    <ul class="space-y-3 text-lg leading-relaxed" style="color: #475569;">
+    <!-- Problem & Solution - Dark Section -->
+    <section id="background" class="section-dark py-20 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-4xl font-bold mb-16">項目背景</h2>
+            <div class="grid md:grid-cols-2 gap-12">
+                <div>
+                    <h3 class="text-2xl font-bold mb-6">核心問題</h3>
+                    <ul class="space-y-4 text-lg">
                         <li>• 澳門多語環境下，缺少多語言人工智能輔助古詩教學工具</li>
                         <li>• 傳統古詩教學工具缺乏沉浸式體驗，難以激發學生學習興趣</li>
                         <li>• 教師難以生動呈現古詩意境和傳統文化場景</li>
                     </ul>
                 </div>
-                <div class="glass-card rounded-3xl p-10 hover-lift animate-on-scroll">
-                    <h3 class="text-2xl font-bold mb-4" style="color: #334155;">創新方案</h3>
-                    <ul class="space-y-3 text-lg leading-relaxed" style="color: #475569;">
+                <div>
+                    <h3 class="text-2xl font-bold mb-6">創新方案</h3>
+                    <ul class="space-y-4 text-lg">
                         <li>• 首次融合具身智能、數字人、AR技術和LLM</li>
                         <li>• 打造澳門專屬四語古詩教具</li>
                         <li>• 革新教學模式，助力經典傳承，提升學習興趣和效率</li>
@@ -589,59 +413,42 @@
         </div>
     </section>
 
-    <!-- Features -->
-    <section id="features" class="py-20 px-6" style="position: relative;">
-        <!-- 打破边界的装饰元素 -->
-        <div class="crosshair" style="top: 5%; left: 10%; color: #14b8a6;"></div>
-        <div class="crosshair" style="top: 15%; right: 8%; color: #ec4899;"></div>
-        <div class="crosshair" style="bottom: 20%; left: 5%; color: #a78bfa;"></div>
-        <div class="dot-pattern" style="top: 10%; right: 15%; color: #0891b2;"></div>
-        <div class="dot-pattern" style="bottom: 15%; left: 12%; color: #f59e0b;"></div>
-
-        <div class="max-w-6xl mx-auto">
-            <h2 class="text-5xl font-bold text-center mb-16 text-gradient animate-on-scroll">核心技術特點</h2>
-            <div class="bento-grid">
-                <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-large animate-on-scroll" style="background: linear-gradient(135deg, rgba(127, 219, 202, 0.15), rgba(255, 255, 255, 0.7)); position: relative;">
-                    <div class="card-number">01</div>
-                    <div class="ar-scanner" style="color: #14b8a6;"></div>
-                    <div class="premium-icon-placeholder">
-                        <i data-lucide="scan" style="color: #14b8a6;"></i>
+    <!-- Features - 4 Column Grid -->
+    <section id="features" class="py-20 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-4xl font-bold mb-16">核心技術特點</h2>
+            <div class="enterprise-grid">
+                <div class="enterprise-card">
+                    <div class="enterprise-icon">
+                        <i data-lucide="scan" style="color: #0891b2;"></i>
                     </div>
-                    <h3 class="text-xl font-bold mb-3" style="color: #334155;">AR增強現實</h3>
-                    <p class="leading-relaxed" style="color: #64748b;">iPad掃描平面觸發3D場景，水墨風角色從平板浮出</p>
+                    <h3 class="text-xl font-bold mb-3">AR增強現實</h3>
+                    <p class="mb-4">iPad掃描平面觸發3D場景，水墨風角色從平板浮出</p>
+                    <a href="#" class="learn-more">了解更多</a>
                 </div>
-                <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(255, 182, 217, 0.15), rgba(255, 255, 255, 0.7)); position: relative;">
-                    <div class="card-number">02</div>
-                    <div class="chat-bubbles" style="color: #ec4899;">
-                        <div class="chat-bubble"></div>
-                        <div class="chat-bubble"></div>
+                <div class="enterprise-card">
+                    <div class="enterprise-icon">
+                        <i data-lucide="bot" style="color: #0891b2;"></i>
                     </div>
-                    <div class="premium-icon-placeholder">
-                        <i data-lucide="bot" style="color: #ec4899;"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3" style="color: #334155;">數字人交互</h3>
-                    <p class="leading-relaxed" style="color: #64748b;">LLM驅動的智能數字人，實時解答學生疑問</p>
+                    <h3 class="text-xl font-bold mb-3">數字人交互</h3>
+                    <p class="mb-4">LLM驅動的智能數字人，實時解答學生疑問</p>
+                    <a href="#" class="learn-more">了解更多</a>
                 </div>
-                <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(196, 181, 253, 0.15), rgba(255, 255, 255, 0.7)); position: relative;">
-                    <div class="card-number">03</div>
-                    <div class="lang-tags" style="color: #a78bfa;">
-                        <span class="lang-tag">EN</span>
-                        <span class="lang-tag">繁</span>
-                        <span class="lang-tag">PT</span>
+                <div class="enterprise-card">
+                    <div class="enterprise-icon">
+                        <i data-lucide="languages" style="color: #0891b2;"></i>
                     </div>
-                    <div class="premium-icon-placeholder">
-                        <i data-lucide="languages" style="color: #a78bfa;"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3" style="color: #334155;">多語言支持</h3>
-                    <p class="leading-relaxed" style="color: #64748b;">支持普通話、粵語、葡語、英文四種語言</p>
+                    <h3 class="text-xl font-bold mb-3">多語言支持</h3>
+                    <p class="mb-4">支持普通話、粵語、葡語、英文四種語言</p>
+                    <a href="#" class="learn-more">了解更多</a>
                 </div>
-                <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(255, 179, 71, 0.15), rgba(255, 255, 255, 0.7)); position: relative;">
-                    <div class="card-number">04</div>
-                    <div class="premium-icon-placeholder">
-                        <i data-lucide="sparkles" style="color: #f59e0b;"></i>
+                <div class="enterprise-card">
+                    <div class="enterprise-icon">
+                        <i data-lucide="sparkles" style="color: #0891b2;"></i>
                     </div>
-                    <h3 class="text-xl font-bold mb-3" style="color: #334155;">具身智能體驗</h3>
-                    <p class="leading-relaxed" style="color: #64748b;">AR蓑笠等道具讓學生身臨其境</p>
+                    <h3 class="text-xl font-bold mb-3">具身智能體驗</h3>
+                    <p class="mb-4">AR蓑笠等道具讓學生身臨其境</p>
+                    <a href="#" class="learn-more">了解更多</a>
                 </div>
             </div>
         </div>
