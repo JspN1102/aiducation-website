@@ -37,16 +37,16 @@
             z-index: 0;
         }
 
-        /* 光晕层 */
+        /* 光晕层 - 新中国风色调 */
         .glow-orb-1 {
             position: fixed;
             top: -400px;
             left: -400px;
             width: 800px;
             height: 800px;
-            background: radial-gradient(circle, #7FDBCA 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(106, 168, 156, 0.25) 0%, transparent 70%);
             filter: blur(150px);
-            opacity: 0.3;
+            opacity: 0.35;
             pointer-events: none;
             z-index: 0;
         }
@@ -57,7 +57,7 @@
             right: -500px;
             width: 1000px;
             height: 1000px;
-            background: radial-gradient(circle, #87CEEB 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(135, 169, 189, 0.3) 0%, transparent 70%);
             filter: blur(180px);
             opacity: 0.4;
             pointer-events: none;
@@ -72,9 +72,9 @@
             transform: translate(-50%, -50%);
             width: 1200px;
             height: 1200px;
-            background: radial-gradient(circle, rgba(196, 181, 253, 0.15) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(180, 167, 214, 0.12) 0%, transparent 70%);
             filter: blur(200px);
-            opacity: 0.2;
+            opacity: 0.25;
             pointer-events: none;
             z-index: 0;
             animation: aurora-drift 20s ease-in-out infinite;
@@ -240,49 +240,6 @@
             50% { transform: translateY(-15px) rotate(-5deg); }
         }
 
-        /* 可爱的装饰元素 */
-        .cute-decoration {
-            position: absolute;
-            font-size: 3rem;
-            opacity: 0.15;
-            pointer-events: none;
-            animation: float-decoration 8s ease-in-out infinite;
-        }
-
-        @keyframes float-decoration {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-30px) rotate(10deg); }
-        }
-
-        /* 彩色圆点装饰 */
-        .dot-decoration {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            opacity: 0.3;
-        }
-
-        .gradient-mint {
-            background: linear-gradient(135deg, #7FDBCA 0%, #5FB8A8 100%);
-        }
-
-        .gradient-sky {
-            background: linear-gradient(135deg, #87CEEB 0%, #6BA5D6 100%);
-        }
-
-        .gradient-warm {
-            background: linear-gradient(135deg, #FFB347 0%, #FF9A3C 100%);
-        }
-
-        .gradient-pink {
-            background: linear-gradient(135deg, #FFB6D9 0%, #FF8DC7 100%);
-        }
-
-        .gradient-purple {
-            background: linear-gradient(135deg, #C4B5FD 0%, #A78BFA 100%);
-        }
-
         .text-gradient {
             background: linear-gradient(
                 135deg,
@@ -310,38 +267,56 @@
             letter-spacing: -0.05em;
         }
 
-        /* 卡片装饰波浪线 */
-        .bento-large::after {
-            content: '';
-            position: absolute;
-            bottom: 1rem;
-            right: 1rem;
+        /* 高级图标占位符 */
+        .premium-icon-placeholder {
             width: 120px;
-            height: 60px;
-            background:
-                repeating-linear-gradient(
-                    90deg,
-                    transparent,
-                    transparent 10px,
-                    rgba(127, 219, 202, 0.1) 10px,
-                    rgba(127, 219, 202, 0.1) 12px
-                );
-            border-radius: 8px;
-            opacity: 0.5;
-            pointer-events: none;
+            height: 120px;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow:
+                0 4px 12px rgba(0, 0, 0, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
         }
 
-        /* 为小卡片添加装饰圆点 */
-        .bento-small::before {
-            content: '';
-            position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
-            width: 40px;
-            height: 40px;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
-            border-radius: 50%;
-            pointer-events: none;
+        .premium-icon-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
+        }
+
+        /* Hero 主视觉展示区 */
+        .hero-image-showcase {
+            position: relative;
+            max-width: 900px;
+            margin: 3rem auto 0;
+            padding: 2rem;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.95) 0%,
+                rgba(255, 255, 255, 0.85) 100%
+            );
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 32px;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.08),
+                0 20px 60px rgba(0, 0, 0, 0.12),
+                0 40px 100px rgba(0, 0, 0, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+
+        .hero-image-showcase img {
+            width: 100%;
+            height: auto;
+            border-radius: 20px;
+            display: block;
         }
 
         /* 导航栏升级 */
@@ -361,15 +336,6 @@
 
     <!-- 吉祥物 -->
     <img src="assets/mascot.png" alt="吉祥物" class="mascot-float">
-
-    <!-- 可爱装饰元素 - 升级为装饰集群 -->
-    <div class="cute-decoration" style="top: 15%; left: 10%;">📚</div>
-    <div class="cute-decoration" style="top: 25%; right: 8%; animation-delay: 1s;">✨</div>
-    <div class="cute-decoration" style="top: 45%; left: 5%; animation-delay: 2s;">🎨</div>
-    <div class="cute-decoration" style="top: 65%; right: 12%; animation-delay: 1.5s;">🌟</div>
-    <div class="cute-decoration" style="top: 85%; left: 15%; animation-delay: 0.5s;">📖</div>
-    <div class="cute-decoration" style="top: 35%; right: 20%; animation-delay: 2.5s;">🖋️</div>
-    <div class="cute-decoration" style="top: 55%; left: 18%; animation-delay: 3s;">📜</div>
 
     <!-- Navigation -->
     <nav class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-white/50">
@@ -400,14 +366,14 @@
             </p>
             <div class="flex flex-wrap gap-4 justify-center mb-12">
                 <span class="glass-card px-8 py-3 rounded-full text-lg font-medium hover:scale-105 transition-transform" style="color: #334155;">
-                    🏆 FDCT 0026/2026/ITP1
+                    FDCT 0026/2026/ITP1
                 </span>
                 <span class="glass-card px-8 py-3 rounded-full text-lg font-medium hover:scale-105 transition-transform" style="color: #334155;">
-                    🎓 香港科技園 EASE Fund
+                    香港科技園 EASE Fund
                 </span>
             </div>
-            <div class="glass-card rounded-3xl p-4 inline-block float-slow">
-                <img src="assets/图片10.png" alt="項目展示" class="rounded-2xl max-w-3xl w-full">
+            <div class="hero-image-showcase">
+                <img src="assets/图片10.png" alt="項目展示">
             </div>
         </div>
     </section>
@@ -418,7 +384,6 @@
             <h2 class="text-5xl font-bold text-center mb-16 text-gradient animate-on-scroll">項目背景</h2>
             <div class="grid md:grid-cols-2 gap-8">
                 <div class="glass-card rounded-3xl p-10 hover-lift animate-on-scroll">
-                    <div class="text-4xl mb-6">🎯</div>
                     <h3 class="text-2xl font-bold mb-4" style="color: #334155;">核心問題</h3>
                     <ul class="space-y-3 text-lg leading-relaxed" style="color: #475569;">
                         <li>• 澳門多語環境下，缺少多語言人工智能輔助古詩教學工具</li>
@@ -427,7 +392,6 @@
                     </ul>
                 </div>
                 <div class="glass-card rounded-3xl p-10 hover-lift animate-on-scroll">
-                    <div class="text-4xl mb-6">💡</div>
                     <h3 class="text-2xl font-bold mb-4" style="color: #334155;">創新方案</h3>
                     <ul class="space-y-3 text-lg leading-relaxed" style="color: #475569;">
                         <li>• 首次融合具身智能、數字人、AR技術和LLM</li>
@@ -446,25 +410,33 @@
             <div class="bento-grid">
                 <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-large animate-on-scroll" style="background: linear-gradient(135deg, rgba(127, 219, 202, 0.15), rgba(255, 255, 255, 0.7));">
                     <div class="card-number">01</div>
-                    <div class="text-5xl mb-4">🎯</div>
+                    <div class="premium-icon-placeholder">
+                        <!-- 高清 3D 图标占位 -->
+                    </div>
                     <h3 class="text-xl font-bold mb-3" style="color: #334155;">AR增強現實</h3>
                     <p class="leading-relaxed" style="color: #64748b;">iPad掃描平面觸發3D場景，水墨風角色從平板浮出</p>
                 </div>
                 <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(255, 182, 217, 0.15), rgba(255, 255, 255, 0.7));">
                     <div class="card-number">02</div>
-                    <div class="text-5xl mb-4">🤖</div>
+                    <div class="premium-icon-placeholder">
+                        <!-- 高清 3D 图标占位 -->
+                    </div>
                     <h3 class="text-xl font-bold mb-3" style="color: #334155;">數字人交互</h3>
                     <p class="leading-relaxed" style="color: #64748b;">LLM驅動的智能數字人，實時解答學生疑問</p>
                 </div>
                 <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(196, 181, 253, 0.15), rgba(255, 255, 255, 0.7));">
                     <div class="card-number">03</div>
-                    <div class="text-5xl mb-4">🌍</div>
+                    <div class="premium-icon-placeholder">
+                        <!-- 高清 3D 图标占位 -->
+                    </div>
                     <h3 class="text-xl font-bold mb-3" style="color: #334155;">多語言支持</h3>
                     <p class="leading-relaxed" style="color: #64748b;">支持普通話、粵語、葡語、英文四種語言</p>
                 </div>
                 <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(255, 179, 71, 0.15), rgba(255, 255, 255, 0.7));">
                     <div class="card-number">04</div>
-                    <div class="text-5xl mb-4">🎨</div>
+                    <div class="premium-icon-placeholder">
+                        <!-- 高清 3D 图标占位 -->
+                    </div>
                     <h3 class="text-xl font-bold mb-3" style="color: #334155;">具身智能體驗</h3>
                     <p class="leading-relaxed" style="color: #64748b;">AR蓑笠等道具讓學生身臨其境</p>
                 </div>
