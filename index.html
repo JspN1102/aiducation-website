@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         * {
             font-family: 'Outfit', 'Noto Sans TC', sans-serif;
@@ -283,6 +284,12 @@
                 inset 0 1px 0 rgba(255, 255, 255, 0.6);
         }
 
+        .premium-icon-placeholder svg {
+            width: 64px;
+            height: 64px;
+            stroke-width: 1.5;
+        }
+
         .premium-icon-placeholder img {
             width: 100%;
             height: 100%;
@@ -411,7 +418,7 @@
                 <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-large animate-on-scroll" style="background: linear-gradient(135deg, rgba(127, 219, 202, 0.15), rgba(255, 255, 255, 0.7));">
                     <div class="card-number">01</div>
                     <div class="premium-icon-placeholder">
-                        <!-- 高清 3D 图标占位 -->
+                        <i data-lucide="scan" style="color: #14b8a6;"></i>
                     </div>
                     <h3 class="text-xl font-bold mb-3" style="color: #334155;">AR增強現實</h3>
                     <p class="leading-relaxed" style="color: #64748b;">iPad掃描平面觸發3D場景，水墨風角色從平板浮出</p>
@@ -419,7 +426,7 @@
                 <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(255, 182, 217, 0.15), rgba(255, 255, 255, 0.7));">
                     <div class="card-number">02</div>
                     <div class="premium-icon-placeholder">
-                        <!-- 高清 3D 图标占位 -->
+                        <i data-lucide="bot" style="color: #ec4899;"></i>
                     </div>
                     <h3 class="text-xl font-bold mb-3" style="color: #334155;">數字人交互</h3>
                     <p class="leading-relaxed" style="color: #64748b;">LLM驅動的智能數字人，實時解答學生疑問</p>
@@ -427,7 +434,7 @@
                 <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(196, 181, 253, 0.15), rgba(255, 255, 255, 0.7));">
                     <div class="card-number">03</div>
                     <div class="premium-icon-placeholder">
-                        <!-- 高清 3D 图标占位 -->
+                        <i data-lucide="languages" style="color: #a78bfa;"></i>
                     </div>
                     <h3 class="text-xl font-bold mb-3" style="color: #334155;">多語言支持</h3>
                     <p class="leading-relaxed" style="color: #64748b;">支持普通話、粵語、葡語、英文四種語言</p>
@@ -435,7 +442,7 @@
                 <div class="glass-card rounded-3xl p-8 text-center hover-lift bento-small animate-on-scroll" style="background: linear-gradient(135deg, rgba(255, 179, 71, 0.15), rgba(255, 255, 255, 0.7));">
                     <div class="card-number">04</div>
                     <div class="premium-icon-placeholder">
-                        <!-- 高清 3D 图标占位 -->
+                        <i data-lucide="sparkles" style="color: #f59e0b;"></i>
                     </div>
                     <h3 class="text-xl font-bold mb-3" style="color: #334155;">具身智能體驗</h3>
                     <p class="leading-relaxed" style="color: #64748b;">AR蓑笠等道具讓學生身臨其境</p>
@@ -636,6 +643,9 @@
                 nav.style.boxShadow = 'none';
             }
         });
+
+        // Initialize Lucide icons
+        lucide.createIcons();
     </script>
 
 </body>
