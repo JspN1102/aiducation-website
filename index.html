@@ -157,17 +157,16 @@
 
         /* 吉祥物动画 */
         .mascot-float {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 150px;
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 120px;
             height: auto;
-            z-index: 100;
+            z-index: 10;
             animation: mascot-bounce 3s ease-in-out infinite;
             cursor: pointer;
             transition: transform 0.3s;
             filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.15));
-            mix-blend-mode: multiply;
         }
 
         .mascot-float:hover {
@@ -385,9 +384,8 @@
         /* 装饰贴图 */
         .decor-sticker {
             position: absolute;
-            opacity: 0.12;
             pointer-events: none;
-            z-index: 0;
+            z-index: 10;
         }
 
         /* 导航栏 */
@@ -398,9 +396,6 @@
     </style>
 </head>
 <body class="antialiased">
-
-    <!-- 吉祥物 -->
-    <img src="assets/mascot.png" alt="吉祥物" class="mascot-float">
 
     <!-- Navigation -->
     <nav class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-white/50">
@@ -420,12 +415,9 @@
 
     <!-- Hero Section - 50/50 Split Layout -->
     <section id="home" class="py-20 pt-32 px-6 relative">
-        <img src="assets/图片4.png" alt="" class="decor-sticker w-32 top-20 right-10 hidden md:block">
-        <img src="assets/图片5.png" alt="" class="decor-sticker w-28 bottom-10 left-6 hidden md:block">
         <div class="max-w-7xl mx-auto">
             <div class="hero-split">
                 <div class="hero-content">
-                    <img src="assets/图片3.png" alt="AIDUCATION Logo" class="h-24 mb-8">
                     <h1 class="hero-title">
                         AI驅動的多語言<br>古詩互動教學工具
                     </h1>
@@ -442,7 +434,7 @@
                     </div>
                 </div>
                 <div class="hero-image-placeholder">
-                    <img src="assets/图片10.png" alt="項目展示">
+                    <img src="assets/图片3.png" alt="AIDUCATION Logo" class="w-full max-w-md mx-auto">
                 </div>
             </div>
         </div>
@@ -475,8 +467,6 @@
 
     <!-- Features - 4 Column Grid -->
     <section id="features" class="py-24 px-6 relative">
-        <img src="assets/图片6.png" alt="" class="decor-sticker w-36 top-16 left-4 hidden md:block">
-        <img src="assets/图片7.png" alt="" class="decor-sticker w-28 bottom-12 right-8 hidden md:block">
         <div class="max-w-7xl mx-auto">
             <h2 class="text-4xl font-bold mb-16">核心技術特點</h2>
             <div class="enterprise-grid">
@@ -562,8 +552,6 @@
 
     <!-- Team -->
     <section id="team" class="py-24 px-6 relative">
-        <img src="assets/图片8.png" alt="" class="decor-sticker w-32 top-20 right-6 hidden md:block">
-        <img src="assets/图片9.png" alt="" class="decor-sticker w-24 bottom-16 left-10 hidden md:block">
         <div class="max-w-6xl mx-auto">
             <h2 class="text-5xl font-bold text-center mb-16 text-gradient animate-on-scroll">核心團隊</h2>
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -650,10 +638,18 @@
     </section>
 
     <!-- Gallery -->
-    <section id="gallery" class="bg-dark-section py-24 px-6">
-        <div class="max-w-6xl mx-auto">
+    <section id="gallery" class="bg-dark-section py-24 px-6 relative overflow-hidden">
+        <!-- 手账风装饰贴图 -->
+        <img src="assets/图片4.png" alt="" class="decor-sticker w-24 hidden md:block" style="top:3%;left:2%;transform:rotate(-12deg);">
+        <img src="assets/图片5.png" alt="" class="decor-sticker w-20 hidden md:block" style="top:8%;right:3%;transform:rotate(8deg);">
+        <img src="assets/图片6.png" alt="" class="decor-sticker w-28 hidden md:block" style="top:45%;left:1%;transform:rotate(15deg);">
+        <img src="assets/图片7.png" alt="" class="decor-sticker w-22 hidden md:block" style="top:55%;right:1%;transform:rotate(-20deg);">
+        <img src="assets/图片8.png" alt="" class="decor-sticker w-24 hidden md:block" style="bottom:8%;left:4%;transform:rotate(6deg);">
+        <img src="assets/图片9.png" alt="" class="decor-sticker w-20 hidden md:block" style="bottom:5%;right:5%;transform:rotate(-10deg);">
+        <div class="max-w-6xl mx-auto relative z-[1]">
             <h2 class="text-5xl font-bold text-center mb-16 text-gradient animate-on-scroll">活動花絮</h2>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div class="overflow-hidden animate-on-scroll"><img src="assets/图片10.png" alt="活動照片" class="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"></div>
                 <div class="overflow-hidden animate-on-scroll"><img src="assets/图片11.png" alt="活動照片" class="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"></div>
                 <div class="overflow-hidden animate-on-scroll"><img src="assets/图片12.png" alt="活動照片" class="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"></div>
                 <div class="overflow-hidden animate-on-scroll"><img src="assets/图片13.png" alt="活動照片" class="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"></div>
@@ -666,7 +662,8 @@
     </section>
 
     <!-- Partners -->
-    <section id="partners" class="py-24 px-6">
+    <section id="partners" class="py-24 px-6 relative">
+        <img src="assets/mascot.png" alt="吉祥物" class="mascot-float">
         <div class="max-w-6xl mx-auto">
             <h2 class="text-5xl font-bold text-center mb-16 text-gradient animate-on-scroll">合作夥伴</h2>
             <div class="grid grid-cols-3 md:grid-cols-5 gap-8 items-center justify-items-center">
