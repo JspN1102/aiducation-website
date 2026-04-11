@@ -537,7 +537,7 @@ window.initMid3dScene=function(){
   css2dRenderer=new CSS2DRenderer(); css2dRenderer.setSize(W,H);
   css2dRenderer.domElement.classList.add('css2d-layer'); container.appendChild(css2dRenderer.domElement);
   try{composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));bloomPass=new UnrealBloomPass(new THREE.Vector2(W,H),1.5,0.4,0.85);composer.addPass(bloomPass);}catch(e){composer=null;}
-  controls=new OrbitControls(camera,css2dRenderer.domElement);controls.enableDamping=true;controls.dampingFactor=0.05;controls.enablePan=false;controls.minDistance=4;controls.maxDistance=22;
+  controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=0.05;controls.enablePan=false;controls.minDistance=4;controls.maxDistance=22;
   buildHall(); window.addEventListener('resize',onResize);
   const fb=document.getElementById('three-fallback');if(fb)fb.style.display='none';
   window.resumeMid3dScene();
