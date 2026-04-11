@@ -2900,6 +2900,21 @@ nav = function(id) {
 };
 </script>
 
-<script type="module" src="/poetry/mid3d.js"></script>
+<script type="module" src="./mid3d.js" onerror="document.getElementById('p-3d').classList.remove('active');document.getElementById('p-museum').classList.add('active');"></script>
+<script>
+// Fallback: if 3D module hasn't initialized after 8 seconds, show museum
+setTimeout(function(){
+  var p3d = document.getElementById('p-3d');
+  if (p3d && p3d.classList.contains('active') && !document.querySelector('#three-container canvas')) {
+    p3d.classList.remove('active');
+    document.getElementById('p-museum').classList.add('active');
+    var bn3d = document.getElementById('bn-3d');
+    var bnM = document.getElementById('bn-museum');
+    if (bn3d) bn3d.classList.remove('on');
+    if (bnM) bnM.classList.add('on');
+    console.warn('3D module failed to load, falling back to museum');
+  }
+}, 8000);
+</script>
 </body>
 </html>

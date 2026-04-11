@@ -933,5 +933,16 @@ window.pauseMid3dScene = function() {
 
 // Auto-init if p-3d is the active page
 if (document.getElementById('p-3d').classList.contains('active')) {
-  window.initMid3dScene();
+  try {
+    window.initMid3dScene();
+  } catch (e) {
+    console.error('3D init failed:', e);
+    // Fallback to museum page
+    document.getElementById('p-3d').classList.remove('active');
+    document.getElementById('p-museum').classList.add('active');
+    const bn3d = document.getElementById('bn-3d');
+    const bnM = document.getElementById('bn-museum');
+    if (bn3d) bn3d.classList.remove('on');
+    if (bnM) bnM.classList.add('on');
+  }
 }
