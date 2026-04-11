@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>古詩學堂 · 普通話互動學習系統</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
+  }
+}
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700;900&family=Noto+Serif+SC:wght@400;500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;600;700&family=ZCOOL+XiaoWei&family=Ma+Shan+Zheng&display=swap');
 
@@ -1873,6 +1881,118 @@ body {
   .call-response-panel { width: 240px; }
   .game-cam-pip { width: 100px; height: 75px; }
 }
+
+/* ====================================================================
+   MODULE 0: 3D MID-AUTUMN CULTURAL HALL — 中秋文化馆
+   ==================================================================== */
+#p-3d { background: #1a1408; }
+#three-container { width: 100%; height: 100%; position: relative; }
+#three-container canvas { display: block; }
+.css2d-layer { position: absolute !important; inset: 0; pointer-events: none; overflow: hidden; }
+.css2d-layer > div { pointer-events: auto; }
+
+.wood-sign {
+  background: linear-gradient(135deg, #5c3d1e, #8b6914, #5c3d1e);
+  border: 2px solid #3a2510;
+  border-radius: 6px;
+  padding: 12px 22px;
+  color: #f5e6c8;
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 17px;
+  letter-spacing: 3px;
+  cursor: pointer;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,220,150,0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+.wood-sign:hover, .wood-sign:active {
+  transform: scale(1.18);
+  box-shadow: 0 4px 24px rgba(184,150,62,0.5), inset 0 1px 0 rgba(255,220,150,0.3);
+}
+
+.mid3d-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(10,8,4,0.75);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.mid3d-overlay.show { opacity: 1; pointer-events: all; }
+
+.mid3d-popup {
+  background: linear-gradient(145deg, var(--paper-cream), var(--paper-warm));
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  max-width: 480px; width: 90%;
+  max-height: 80vh; overflow-y: auto;
+  box-shadow: var(--shadow-float);
+  position: relative;
+  transform: translateY(30px) scale(0.95);
+  transition: transform 0.4s ease;
+}
+.mid3d-overlay.show .mid3d-popup { transform: translateY(0) scale(1); }
+
+.mid3d-close {
+  position: absolute; top: 12px; right: 14px;
+  background: none; border: none;
+  font-size: 26px; color: var(--ink-40);
+  cursor: pointer; line-height: 1;
+  transition: color 0.2s;
+}
+.mid3d-close:hover { color: var(--seal-red); }
+
+.mid3d-section-title {
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 22px; color: var(--ink-100);
+  letter-spacing: 2px; margin-bottom: 18px;
+  text-align: center;
+}
+
+.mid3d-pinyin {
+  text-align: center;
+  color: var(--seal-red);
+  font-size: 15px;
+  letter-spacing: 4px;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.mid3d-poem-line {
+  text-align: center;
+  font-family: 'Noto Serif TC', 'Noto Serif SC', serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--ink-100);
+  letter-spacing: 6px;
+  margin-bottom: 20px;
+}
+
+.mid3d-explain-list { display: flex; flex-direction: column; gap: 10px; }
+.mid3d-explain-card {
+  display: flex; gap: 10px; align-items: baseline;
+  padding: 8px 12px;
+  background: var(--paper-warm);
+  border-radius: var(--radius-sm);
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 14px; color: var(--ink-80);
+}
+.mid3d-explain-card b {
+  color: var(--ink-100);
+  font-family: 'Noto Serif TC', 'Noto Serif SC', serif;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.mid3d-placeholder {
+  text-align: center;
+  color: var(--ink-40);
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 15px;
+  padding: 24px 0;
+}
+
 </style>
 </head>
 <body>
@@ -1880,8 +2000,25 @@ body {
 <div class="bg-rice-paper"></div>
 <div class="wm">AIDUCATION · 古詩學堂 · 設計稿 v2</div>
 
+<!-- ================= MODULE 0: 3D MID-AUTUMN HALL ================= -->
+<div class="page active" id="p-3d">
+  <div id="three-container"></div>
+</div>
+
+<!-- 3D Hall Popup Overlay -->
+<div class="mid3d-overlay" id="mid3d-overlay" onclick="closeMid3dPopup(event)">
+  <div class="mid3d-popup">
+    <button class="mid3d-close" onclick="closeMid3dPopup()">&times;</button>
+    <div class="mid3d-section-title" id="mid3d-title"></div>
+    <div class="mid3d-pinyin" id="mid3d-pinyin"></div>
+    <div class="mid3d-poem-line" id="mid3d-poem"></div>
+    <div class="divider-ink"></div>
+    <div class="mid3d-explain-list" id="mid3d-explain"></div>
+  </div>
+</div>
+
 <!-- ================= MODULE 1: MUSEUM ================= -->
-<div class="page active" id="p-museum">
+<div class="page" id="p-museum">
   <div class="museum-page">
     <div class="museum-hall">
       <div class="hall-header">
@@ -2348,7 +2485,11 @@ body {
 
 <!-- ================= BOTTOM NAV ================= -->
 <div class="bottom-nav">
-  <button class="bnav-btn on" id="bn-museum" onclick="nav('p-museum')">
+  <button class="bnav-btn on" id="bn-3d" onclick="nav('p-3d')">
+    <span class="bnav-icon">🌕</span>
+    <span>文化館</span>
+  </button>
+  <button class="bnav-btn" id="bn-museum" onclick="nav('p-museum')">
     <span class="bnav-icon">🏛️</span>
     <span>博物館</span>
   </button>
@@ -2373,6 +2514,7 @@ body {
 <script>
 // Navigation
 const pageMap = {
+  'p-3d': 'bn-3d',
   'p-museum': 'bn-museum',
   'p-learn': 'bn-learn',
   'p-anim': 'bn-anim',
@@ -2739,6 +2881,8 @@ function toggleCallMic() {
 const _origNav = nav;
 nav = function(id) {
   _origNav(id);
+  if (id === 'p-3d') { if (typeof initMid3dScene === 'function') { initMid3dScene(); resumeMid3dScene(); } }
+  else { if (typeof pauseMid3dScene === 'function') pauseMid3dScene(); }
   if (id === 'p-game') startGame();
   if (id === 'p-call') {
     (async () => {
@@ -2749,6 +2893,227 @@ nav = function(id) {
     })();
   }
 };
+</script>
+
+<script type="module">
+// ====== 3D 中秋文化馆 Three.js Module ======
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+let scene, camera, renderer, css2dRenderer, composer, controls;
+let animFrameId = null, mid3dInited = false, elapsed = 0;
+const signObjects = [];
+
+// 五个木牌的内容
+const SIGN_CONTENT = {
+  '節日介紹': {
+    title: '中秋節',
+    pinyin: 'zhōng qiū jié',
+    poem: '中秋節',
+    explain: [
+      { word: '時間', meaning: '農曆八月十五' },
+      { word: '別稱', meaning: '月夕、秋節、仲秋節、團圓節' },
+      { word: '起源', meaning: '源於古代對月亮的崇拜，盛行於唐宋' },
+      { word: '意義', meaning: '闔家團圓、共賞明月的傳統佳節' }
+    ]
+  },
+  '中秋習俗': {
+    title: '中秋習俗',
+    pinyin: 'shǎng yuè · chī yuè bǐng',
+    poem: '賞月 · 吃月餅',
+    explain: [
+      { word: '賞月', meaning: '全家圍坐，仰望明月，寄託思念' },
+      { word: '月餅', meaning: '圓形糕點，象徵團圓美滿' },
+      { word: '提燈籠', meaning: '兒童提花燈遊玩，增添節日氣氛' },
+      { word: '猜燈謎', meaning: '燈籠上掛謎語，猜中有獎' }
+    ]
+  },
+  '傳說故事': {
+    title: '嫦娥奔月',
+    pinyin: 'cháng é bēn yuè',
+    poem: '嫦娥奔月',
+    explain: [
+      { word: '后羿', meaning: '射下九個太陽的英雄' },
+      { word: '嫦娥', meaning: '后羿之妻，吞下仙藥飛上月宮' },
+      { word: '玉兔', meaning: '月宮中陪伴嫦娥搗藥的白兔' },
+      { word: '吳剛', meaning: '月宮中永遠砍不倒桂樹的仙人' }
+    ]
+  },
+  '詩詞欣賞': {
+    title: '水調歌頭 · 蘇軾',
+    pinyin: 'míng yuè jǐ shí yǒu',
+    poem: '明月幾時有',
+    explain: [
+      { word: '明月', meaning: '明亮的月亮，指中秋滿月' },
+      { word: '幾時', meaning: '什麼時候' },
+      { word: '把酒', meaning: '端起酒杯' },
+      { word: '問青天', meaning: '向天空發問，表達對宇宙的好奇' }
+    ]
+  },
+  '製作教程': {
+    title: '手工月餅製作',
+    pinyin: 'shǒu gōng yuè bǐng',
+    poem: '手工月餅',
+    explain: [
+      { word: '餅皮', meaning: '麵粉、轉化糖漿、花生油混合揉成' },
+      { word: '餡料', meaning: '蓮蓉、豆沙、蛋黃等傳統口味' },
+      { word: '模具', meaning: '用木質模具壓出花紋圖案' },
+      { word: '烘烤', meaning: '180°C 烤 20 分鐘至金黃' }
+    ]
+  }
+};
+const SIGN_LABELS = Object.keys(SIGN_CONTENT);
+
+// ---- Scene initialization (lazy, called once) ----
+window.initMid3dScene = function() {
+  if (mid3dInited) return;
+  mid3dInited = true;
+  const container = document.getElementById('three-container');
+  const W = container.clientWidth, H = container.clientHeight;
+
+  // 场景 — 暗金色夜空
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1a1408);
+  scene.fog = new THREE.FogExp2(0x1a1408, 0.012);
+
+  // 相机
+  camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 1000);
+  camera.position.set(0, 2, 12);
+
+  // WebGL 渲染器
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  container.appendChild(renderer.domElement);
+
+  // CSS2D 渲染器（HTML 标签叠加层）
+  css2dRenderer = new CSS2DRenderer();
+  css2dRenderer.setSize(W, H);
+  css2dRenderer.domElement.classList.add('css2d-layer');
+  container.appendChild(css2dRenderer.domElement);
+
+  // 后期处理 — Bloom 泛光
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(new THREE.Vector2(W, H), 1.5, 0.4, 0.85);
+  composer.addPass(bloom);
+
+  // 轨道控制器
+  controls = new OrbitControls(camera, css2dRenderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.enablePan = false;
+  controls.minDistance = 6;
+  controls.maxDistance = 20;
+  controls.target.set(0, 1.5, 0);
+
+  // ---- 月亮 ----
+  const moonGeo = new THREE.SphereGeometry(2.5, 64, 64);
+  const moonMat = new THREE.MeshStandardMaterial({
+    color: 0xfff4d6, emissive: 0xffd080, emissiveIntensity: 0.8,
+    roughness: 0.7, metalness: 0.0
+  });
+  const moon = new THREE.Mesh(moonGeo, moonMat);
+  moon.position.set(0, 2, 0);
+  scene.add(moon);
+
+  // 灯光
+  scene.add(new THREE.AmbientLight(0x332200, 0.3));
+  const pl = new THREE.PointLight(0xffd080, 2, 50);
+  pl.position.copy(moon.position);
+  scene.add(pl);
+
+  // ---- 五个木牌环绕月亮 ----
+  const radius = 5;
+  SIGN_LABELS.forEach((label, i) => {
+    const theta = (i / SIGN_LABELS.length) * Math.PI * 2;
+    const div = document.createElement('div');
+    div.className = 'wood-sign';
+    div.textContent = label;
+    div.addEventListener('click', () => openMid3dPopup(label));
+    const obj = new CSS2DObject(div);
+    obj.position.set(
+      Math.sin(theta) * radius,
+      2 + Math.sin(i * 1.2) * 0.4,
+      Math.cos(theta) * radius
+    );
+    obj.userData = { baseTheta: theta, radius };
+    scene.add(obj);
+    signObjects.push(obj);
+  });
+
+  // ---- 星空粒子 ----
+  const starGeo = new THREE.BufferGeometry();
+  const verts = [];
+  for (let i = 0; i < 400; i++) {
+    verts.push((Math.random()-0.5)*80, Math.random()*40+5, (Math.random()-0.5)*80);
+  }
+  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffeedd, size: 0.15 })));
+
+  // 窗口缩放
+  window.addEventListener('resize', onResize);
+  resumeMid3dScene();
+};
+
+function onResize() {
+  const c = document.getElementById('three-container');
+  if (!c || !camera) return;
+  const W = c.clientWidth, H = c.clientHeight;
+  camera.aspect = W / H;
+  camera.updateProjectionMatrix();
+  renderer.setSize(W, H);
+  css2dRenderer.setSize(W, H);
+  composer.setSize(W, H);
+}
+
+// ---- 动画循环 ----
+function animate() {
+  animFrameId = requestAnimationFrame(animate);
+  elapsed += 0.002;
+  signObjects.forEach(obj => {
+    const t = obj.userData.baseTheta + elapsed;
+    obj.position.x = Math.sin(t) * obj.userData.radius;
+    obj.position.z = Math.cos(t) * obj.userData.radius;
+  });
+  controls.update();
+  composer.render();
+  css2dRenderer.render(scene, camera);
+}
+
+window.resumeMid3dScene = function() {
+  if (animFrameId === null && mid3dInited) animate();
+};
+window.pauseMid3dScene = function() {
+  if (animFrameId !== null) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+};
+
+// ---- 弹窗逻辑 ----
+window.openMid3dPopup = function(label) {
+  const data = SIGN_CONTENT[label];
+  const overlay = document.getElementById('mid3d-overlay');
+  document.getElementById('mid3d-title').textContent = data.title;
+  document.getElementById('mid3d-pinyin').textContent = data.pinyin;
+  document.getElementById('mid3d-poem').textContent = data.poem;
+  document.getElementById('mid3d-explain').innerHTML = data.explain
+    .map(e => '<div class="mid3d-explain-card"><b>' + e.word + '</b>' + e.meaning + '</div>').join('');
+  overlay.classList.add('show');
+};
+window.closeMid3dPopup = function(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('mid3d-overlay').classList.remove('show');
+};
+
+// 默认首页自动初始化
+if (document.getElementById('p-3d').classList.contains('active')) {
+  window.initMid3dScene();
+}
 </script>
 </body>
 </html>
