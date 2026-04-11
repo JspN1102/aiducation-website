@@ -90,7 +90,7 @@ body {
   display: inline-block;
   border: 2px solid var(--seal-red);
   color: var(--seal-red);
-  font-family: 'Ma Shan Zheng', cursive;
+  font-family: 'ZCOOL XiaoWei', serif;
   padding: 2px 6px;
   font-size: 13px;
   letter-spacing: 1px;
@@ -105,7 +105,7 @@ body {
 }
 
 .brush-heading {
-  font-family: 'Ma Shan Zheng', cursive;
+  font-family: 'ZCOOL XiaoWei', serif;
   font-weight: 400;
   letter-spacing: 3px;
 }
@@ -160,7 +160,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Ma Shan Zheng', cursive;
+  font-family: 'ZCOOL XiaoWei', serif;
   color: white;
   font-size: 26px;
   box-shadow: 0 2px 8px rgba(194,58,46,0.3);
@@ -542,7 +542,7 @@ body {
 }
 
 .poem-main-title {
-  font-family: 'Ma Shan Zheng', cursive;
+  font-family: 'ZCOOL XiaoWei', serif;
   font-size: 38px;
   color: var(--ink-100);
   margin-bottom: 24px;
@@ -726,7 +726,7 @@ body {
 }
 
 .wc-char {
-  font-family: 'Ma Shan Zheng', cursive;
+  font-family: 'ZCOOL XiaoWei', serif;
   font-size: 32px;
   color: var(--seal-red);
   letter-spacing: 2px;
@@ -1161,7 +1161,7 @@ body {
 
 .game-q-highlight {
   color: var(--gold-light);
-  font-family: 'Ma Shan Zheng', cursive;
+  font-family: 'ZCOOL XiaoWei', serif;
   font-size: 36px;
   margin-bottom: 24px;
   letter-spacing: 3px;
@@ -1331,7 +1331,7 @@ body {
 }
 
 .celeb-title {
-  font-family: 'Ma Shan Zheng', cursive;
+  font-family: 'ZCOOL XiaoWei', serif;
   font-size: 30px;
   color: var(--gold-light);
   margin-bottom: 6px;
@@ -1465,7 +1465,7 @@ body {
 }
 
 .libai-name {
-  font-family: 'Ma Shan Zheng', cursive;
+  font-family: 'ZCOOL XiaoWei', serif;
   font-size: 28px;
   color: var(--paper-cream);
   letter-spacing: 4px;
@@ -1593,7 +1593,7 @@ body {
 }
 
 .cq-target-char {
-  font-family: 'Ma Shan Zheng', cursive;
+  font-family: 'ZCOOL XiaoWei', serif;
   font-size: 36px;
   color: var(--seal-red-light);
 }
@@ -2095,17 +2095,9 @@ body {
     <div class="anim-stage">
       <div class="anim-poem-label">靜夜思 · 李白</div>
       <div class="anim-player">
-        <div class="anim-player-inner">
-          <div class="anim-landscape"></div>
-          <div class="anim-mountains">
-            <div class="anim-mountain"></div>
-            <div class="anim-mountain"></div>
-            <div class="anim-mountain"></div>
-          </div>
-          <div class="anim-moon"></div>
-          <div class="anim-play-btn" onclick="this.textContent='⏸'; setTimeout(()=>this.textContent='▶',2000)">▶</div>
-          <div class="anim-label">點擊播放動畫</div>
-        </div>
+        <video controls playsinline style="width:100%;height:100%;object-fit:contain;background:#000;">
+          <source src="水墨唐朝书生思乡月夜.mp4" type="video/mp4">
+        </video>
       </div>
     </div>
 
@@ -2162,8 +2154,8 @@ body {
 
       <div class="game-camera-area">
         <div class="camera-preview">
-          <div class="camera-hand">🖐️</div>
-          <div class="camera-label">攝像頭手勢追蹤</div>
+          <video id="game-cam" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;border-radius:inherit;"></video>
+          <div class="camera-label" style="position:absolute;bottom:6px;left:0;right:0;text-align:center;">攝像頭手勢追蹤</div>
         </div>
         <div class="gesture-hint">
           <strong>隔空操作</strong><br>
@@ -2194,13 +2186,13 @@ body {
       <div class="call-video-main">
         <div class="call-bg-scene"></div>
 
-        <div class="call-self-view">
-          🧑‍🎓
-          <span class="self-view-label">我</span>
+        <div class="call-self-view" style="overflow:hidden;">
+          <video id="call-cam" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;border-radius:inherit;"></video>
+          <span class="self-view-label" style="position:absolute;bottom:4px;left:0;right:0;text-align:center;">我</span>
         </div>
 
         <div class="libai-avatar-area">
-          <div class="libai-frame">👲</div>
+          <div class="libai-frame"><img src="李白.png" alt="李白" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
           <div class="libai-name">李 白</div>
           <div class="libai-desc">唐代詩仙 · AI 數字人</div>
         </div>
@@ -2388,6 +2380,26 @@ function toggleCallMic() {
     btn.innerHTML = '🎤 按住說出你的答案';
   }
 }
+
+// Camera: start when navigating to game or call page
+let camStream = null;
+async function startCam(videoId) {
+  try {
+    const v = document.getElementById(videoId);
+    if (!v) return;
+    if (!camStream) {
+      camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    }
+    v.srcObject = camStream;
+  } catch(e) { console.warn('Camera not available:', e); }
+}
+
+const _origNav = nav;
+nav = function(id) {
+  _origNav(id);
+  if (id === 'p-game') startCam('game-cam');
+  if (id === 'p-call') startCam('call-cam');
+};
 </script>
 </body>
 </html>
