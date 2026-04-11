@@ -318,7 +318,7 @@ body {
 }
 
 .gallery-title {
-  font-family: 'Ma Shan Zheng', cursive;
+  font-family: 'ZCOOL XiaoWei', serif;
   font-size: 26px;
   color: var(--ink-100);
   letter-spacing: 3px;
@@ -542,7 +542,7 @@ body {
 }
 
 .poem-main-title {
-  font-family: 'Ma Shan Zheng', cursive;
+  font-family: 'ZCOOL XiaoWei', serif;
   font-size: 38px;
   color: var(--ink-100);
   margin-bottom: 24px;
@@ -1231,6 +1231,72 @@ body {
   background: linear-gradient(90deg, transparent, var(--seal-red), transparent);
   opacity: 0.5;
 }
+
+/* Game Tutorial Overlay */
+.game-tutorial {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(28,23,16,0.95);
+  padding: 32px;
+  text-align: center;
+}
+.game-tutorial.show { display: flex; animation: fadeIn 0.4s ease; }
+.game-tutorial-icon { font-size: 56px; margin-bottom: 16px; }
+.game-tutorial-title {
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 28px;
+  color: var(--gold-light);
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+}
+.game-tutorial-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 28px;
+  max-width: 360px;
+}
+.game-tutorial-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  color: rgba(255,255,255,0.85);
+  font-size: 15px;
+  font-family: 'Noto Sans SC', sans-serif;
+  line-height: 1.5;
+}
+.game-tutorial-step-num {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+.game-tutorial-start {
+  background: var(--gold);
+  color: white;
+  border: none;
+  padding: 12px 36px;
+  border-radius: 24px;
+  font-size: 16px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.game-tutorial-start:hover { background: var(--gold-light); transform: scale(1.05); }
 
 .game-cam-pip {
   position: absolute;
@@ -2167,6 +2233,17 @@ body {
         <div class="pip-label">手勢追蹤</div>
       </div>
       <div class="finger-cursor" id="finger-cursor"><div class="hover-ring"></div></div>
+
+      <div class="game-tutorial show" id="g-tutorial">
+        <div class="game-tutorial-icon">🎮</div>
+        <div class="game-tutorial-title">拼音接字遊戲</div>
+        <div class="game-tutorial-steps">
+          <div class="game-tutorial-step"><span class="game-tutorial-step-num">1</span>畫面上方會顯示一個拼音讀音</div>
+          <div class="game-tutorial-step"><span class="game-tutorial-step-num">2</span>漢字會從上方掉落，點擊對應讀音的字</div>
+          <div class="game-tutorial-step"><span class="game-tutorial-step-num">3</span>答得越快分數越高，連續答對有連擊加分</div>
+        </div>
+        <button class="game-tutorial-start" onclick="dismissTutorial()">開始挑戰 →</button>
+      </div>
     </div>
 
     <div class="game-celebration" id="g-celeb">
@@ -2391,10 +2468,17 @@ function shuffleArray(arr) {
 }
 
 function startGame() {
-  gRound = 0; gScore = 0; gCombo = 0; gActive = true;
+  gRound = 0; gScore = 0; gCombo = 0; gActive = false;
   document.getElementById('g-final').style.display = 'none';
   document.getElementById('g-celeb').classList.remove('show');
+  document.getElementById('g-fall-zone').innerHTML = '';
+  document.getElementById('g-tutorial').classList.add('show');
   shuffleArray(gameQuestions);
+}
+
+function dismissTutorial() {
+  document.getElementById('g-tutorial').classList.remove('show');
+  gActive = true;
   initHands();
   loadRound();
 }
