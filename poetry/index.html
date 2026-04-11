@@ -2002,10 +2002,10 @@ body {
 <!-- ================= MODULE 0: 3D MID-AUTUMN HALL ================= -->
 <div class="page active" id="p-3d">
   <div id="three-container"></div>
-  <div id="three-fallback" style="display:none; position:absolute; inset:0; background:#1a1408; color:#d4b35a; font-family:'ZCOOL XiaoWei',serif; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:16px;">
+  <div id="three-fallback" style="position:absolute; inset:0; background:#1a1408; color:#d4b35a; font-family:'ZCOOL XiaoWei',serif; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:16px; z-index:10;">
     <div style="font-size:64px;">🌕</div>
     <div style="font-size:24px; letter-spacing:4px;">中秋文化館</div>
-    <div style="font-size:14px; color:rgba(255,255,255,0.4); max-width:300px; line-height:1.8;">3D 場景載入中…<br>如長時間無反應，請切換至其他模塊</div>
+    <div id="three-fallback-msg" style="font-size:14px; color:rgba(255,255,255,0.4); max-width:300px; line-height:1.8;">3D 場景載入中…</div>
     <button onclick="nav('p-museum')" style="margin-top:12px; background:rgba(184,150,62,0.2); border:1px solid rgba(184,150,62,0.4); color:#d4b35a; padding:10px 24px; border-radius:20px; font-size:14px; cursor:pointer; font-family:'Noto Sans SC',sans-serif;">進入博物館 →</button>
   </div>
   <button class="scene-back-btn" id="scene-back-btn" onclick="window.switchToHall && window.switchToHall()">← 返回大廳</button>
@@ -2892,7 +2892,11 @@ function toggleCallMic() {
 const _origNav = nav;
 nav = function(id) {
   _origNav(id);
-  if (id === 'p-3d') { if (typeof window.initMid3dScene === 'function') { window.initMid3dScene(); window.resumeMid3dScene(); } }
+  if (id === 'p-3d') {
+    if (typeof window.initMid3dScene === 'function') { window.initMid3dScene(); window.resumeMid3dScene(); }
+    var fb = document.getElementById('three-fallback');
+    if (fb && document.querySelector('#three-container canvas')) fb.style.display = 'none';
+  }
   else { if (typeof window.pauseMid3dScene === 'function') window.pauseMid3dScene(); }
   if (id === 'p-game') startGame();
   if (id === 'p-call') {
@@ -2908,24 +2912,14 @@ nav = function(id) {
 
 <script type="module" src="./mid3d.js" onerror="document.getElementById('p-3d').classList.remove('active');document.getElementById('p-museum').classList.add('active');"></script>
 <script>
-// Show fallback UI immediately (hidden by JS if 3D loads successfully)
-(function(){
-  var fb = document.getElementById('three-fallback');
-  if (fb) fb.style.display = 'flex';
-})();
-// Fallback: if 3D module hasn't initialized after 6 seconds, switch to museum
+// If 3D hasn't loaded after 15s, update message (don't auto-switch — let user decide)
 setTimeout(function(){
   var p3d = document.getElementById('p-3d');
+  var msg = document.getElementById('three-fallback-msg');
   if (p3d && p3d.classList.contains('active') && !document.querySelector('#three-container canvas')) {
-    p3d.classList.remove('active');
-    document.getElementById('p-museum').classList.add('active');
-    var bn3d = document.getElementById('bn-3d');
-    var bnM = document.getElementById('bn-museum');
-    if (bn3d) bn3d.classList.remove('on');
-    if (bnM) bnM.classList.add('on');
-    console.warn('3D module failed to load, falling back to museum');
+    if (msg) msg.innerHTML = '載入時間較長，請稍候…<br>或點擊下方按鈕進入博物館';
   }
-}, 6000);
+}, 10000);
 </script>
 </body>
 </html>
