@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>3D Test</title>
+<title>3D Test - mid3d.js</title>
 <script type="importmap">
 {
   "imports": {
@@ -11,74 +11,56 @@
   }
 }
 </script>
+<style>
+body { margin:0; background:#1a1408; color:#fff; font-family:sans-serif; }
+#status { position:fixed; top:0; left:0; right:0; padding:12px 20px; background:rgba(0,0,0,0.8); z-index:9999; font-size:13px; word-break:break-all; }
+.page { position:absolute; inset:0; }
+#three-container { width:100%; height:100%; position:absolute; inset:0; }
+.css2d-layer { position:absolute !important; inset:0; pointer-events:none; overflow:hidden; }
+.css2d-layer > div { pointer-events:auto; }
+.wood-sign { background:#5c3d1e; border:2px solid #3a2510; border-radius:6px; padding:12px 22px; color:#f5e6c8; font-size:17px; cursor:pointer; white-space:nowrap; }
+.scene-transition { position:fixed; inset:0; z-index:2000; opacity:0; pointer-events:none; }
+.scene-back-btn { display:none; }
+.mid3d-overlay { position:fixed; inset:0; z-index:1000; opacity:0; pointer-events:none; display:flex; align-items:center; justify-content:center; }
+</style>
 </head>
-<body style="margin:0;background:#000;color:#fff;font-family:sans-serif;">
-<div id="status" style="padding:20px;">Loading Three.js...</div>
-<div id="container" style="width:100vw;height:100vh;"></div>
+<body>
+<div id="status">Loading mid3d.js...</div>
+
+<!-- DOM elements that mid3d.js expects -->
+<div class="page active" id="p-3d">
+  <div id="three-container"></div>
+  <button class="scene-back-btn" id="scene-back-btn">back</button>
+</div>
+<div class="scene-transition" id="scene-transition">
+  <div id="scene-transition-text"></div>
+</div>
+<div class="mid3d-overlay" id="mid3d-overlay">
+  <div>
+    <button class="mid3d-close">x</button>
+    <div id="mid3d-title"></div>
+    <div id="mid3d-pinyin"></div>
+    <div id="mid3d-poem"></div>
+    <div id="mid3d-explain"></div>
+  </div>
+</div>
+
 <script type="module">
 const status = document.getElementById('status');
 try {
-  status.textContent = 'Step 1: importing three...';
-  const THREE = await import('three');
-  status.textContent = 'Step 2: three loaded! Version: ' + THREE.REVISION;
-
-  status.textContent += ' | importing OrbitControls...';
-  const { OrbitControls } = await import('three/addons/controls/OrbitControls.js');
-  status.textContent += ' OK';
-
-  status.textContent += ' | importing CSS2DRenderer...';
-  const { CSS2DRenderer } = await import('three/addons/renderers/CSS2DRenderer.js');
-  status.textContent += ' OK';
-
-  status.textContent += ' | importing EffectComposer...';
-  const { EffectComposer } = await import('three/addons/postprocessing/EffectComposer.js');
-  status.textContent += ' OK';
-
-  status.textContent += ' | importing RenderPass...';
-  const { RenderPass } = await import('three/addons/postprocessing/RenderPass.js');
-  status.textContent += ' OK';
-
-  status.textContent += ' | importing UnrealBloomPass...';
-  const { UnrealBloomPass } = await import('three/addons/postprocessing/UnrealBloomPass.js');
-  status.textContent += ' OK';
-
-  status.textContent = 'All imports OK! Creating scene...';
-
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x1a1408);
-  const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 3, 14);
-
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setClearColor(0x1a1408);
-  document.getElementById('container').appendChild(renderer.domElement);
-
-  // Simple moon
-  const moon = new THREE.Mesh(
-    new THREE.SphereGeometry(2.5, 32, 32),
-    new THREE.MeshBasicMaterial({ color: 0xfff4d6 })
-  );
-  moon.position.set(0, 3, 0);
-  scene.add(moon);
-  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-
-  renderer.render(scene, camera);
-  status.textContent = 'SUCCESS - Scene rendered!';
-  status.style.color = '#4ade80';
-
-  // Animate
-  function animate() {
-    requestAnimationFrame(animate);
-    moon.rotation.y += 0.01;
-    renderer.render(scene, camera);
+  status.textContent = 'Importing mid3d.js module...';
+  await import('./mid3d.js');
+  status.textContent = 'mid3d.js executed! initMid3dScene=' + typeof window.initMid3dScene;
+  if (typeof window.initMid3dScene === 'function') {
+    status.textContent += ' | Calling initMid3dScene()...';
+    window.initMid3dScene();
+    status.textContent += ' | SUCCESS! Canvas created: ' + !!document.querySelector('#three-container canvas');
+    status.style.color = '#4ade80';
   }
-  animate();
-
 } catch(e) {
-  status.textContent = 'ERROR: ' + e.message;
+  status.textContent = 'FAILED: ' + e.message;
   status.style.color = '#f87171';
-  console.error(e);
+  console.error('Full error:', e);
 }
 </script>
 </body>
