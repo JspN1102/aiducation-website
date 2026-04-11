@@ -7,8 +7,8 @@
 <script type="importmap">
 {
   "imports": {
-    "three": "https://unpkg.com/three@0.162.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.162.0/examples/jsm/"
+    "three": "./lib/three/three.module.js",
+    "three/addons/": "./lib/three/"
   }
 }
 </script>
@@ -1885,8 +1885,8 @@ body {
 /* ====================================================================
    MODULE 0: 3D MID-AUTUMN CULTURAL HALL — 中秋文化馆
    ==================================================================== */
-#p-3d { background: #1a1408; position: relative; }
-#three-container { width: 100%; height: 100%; position: relative; }
+#p-3d { background: #1a1408; }
+#three-container { width: 100%; height: 100%; position: absolute; inset: 0; }
 #three-container canvas { display: block; }
 .css2d-layer { position: absolute !important; inset: 0; pointer-events: none; overflow: hidden; }
 .css2d-layer > div { pointer-events: auto; }
@@ -2002,6 +2002,12 @@ body {
 <!-- ================= MODULE 0: 3D MID-AUTUMN HALL ================= -->
 <div class="page active" id="p-3d">
   <div id="three-container"></div>
+  <div id="three-fallback" style="display:none; position:absolute; inset:0; background:#1a1408; color:#d4b35a; font-family:'ZCOOL XiaoWei',serif; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:16px;">
+    <div style="font-size:64px;">🌕</div>
+    <div style="font-size:24px; letter-spacing:4px;">中秋文化館</div>
+    <div style="font-size:14px; color:rgba(255,255,255,0.4); max-width:300px; line-height:1.8;">3D 場景載入中…<br>如長時間無反應，請切換至其他模塊</div>
+    <button onclick="nav('p-museum')" style="margin-top:12px; background:rgba(184,150,62,0.2); border:1px solid rgba(184,150,62,0.4); color:#d4b35a; padding:10px 24px; border-radius:20px; font-size:14px; cursor:pointer; font-family:'Noto Sans SC',sans-serif;">進入博物館 →</button>
+  </div>
   <button class="scene-back-btn" id="scene-back-btn" onclick="window.switchToHall && window.switchToHall()">← 返回大廳</button>
 </div>
 
@@ -2902,7 +2908,12 @@ nav = function(id) {
 
 <script type="module" src="./mid3d.js" onerror="document.getElementById('p-3d').classList.remove('active');document.getElementById('p-museum').classList.add('active');"></script>
 <script>
-// Fallback: if 3D module hasn't initialized after 8 seconds, show museum
+// Show fallback UI immediately (hidden by JS if 3D loads successfully)
+(function(){
+  var fb = document.getElementById('three-fallback');
+  if (fb) fb.style.display = 'flex';
+})();
+// Fallback: if 3D module hasn't initialized after 6 seconds, switch to museum
 setTimeout(function(){
   var p3d = document.getElementById('p-3d');
   if (p3d && p3d.classList.contains('active') && !document.querySelector('#three-container canvas')) {
@@ -2914,7 +2925,7 @@ setTimeout(function(){
     if (bnM) bnM.classList.add('on');
     console.warn('3D module failed to load, falling back to museum');
   }
-}, 8000);
+}, 6000);
 </script>
 </body>
 </html>

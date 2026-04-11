@@ -909,6 +909,9 @@ window.initMid3dScene = function() {
 
   buildHall();
   window.addEventListener('resize', onResize);
+  // Hide fallback UI since 3D loaded successfully
+  const fb = document.getElementById('three-fallback');
+  if (fb) fb.style.display = 'none';
   window.resumeMid3dScene();
 };
 
