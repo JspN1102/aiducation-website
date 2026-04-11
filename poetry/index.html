@@ -1,0 +1,2393 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>古詩學堂 · 普通話互動學習系統</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;600;700&family=ZCOOL+XiaoWei&family=Ma+Shan+Zheng&display=swap');
+
+/* ====== DESIGN TOKENS ====== */
+:root {
+  /* Paper & Ink palette - traditional Chinese stationery */
+  --paper-cream: #f7f1e6;
+  --paper-warm: #f0e8d8;
+  --paper-tan: #e6dbc8;
+  --paper-deep: #d9ccb4;
+  --ink-100: #1c1710;
+  --ink-90: #2e2820;
+  --ink-80: #4a4238;
+  --ink-60: #726a5e;
+  --ink-40: #9e9688;
+  --ink-20: #c5bfb4;
+
+  /* Seal Red - 印章朱砂 */
+  --seal-red: #c23a2e;
+  --seal-red-light: #d4554a;
+  --seal-red-bg: rgba(194,58,46,0.08);
+  --seal-red-glow: rgba(194,58,46,0.15);
+
+  /* Jade Green - 翡翠 */
+  --jade: #4a7c6f;
+  --jade-light: #6a9e8f;
+  --jade-bg: rgba(74,124,111,0.08);
+
+  /* Gold - 金 */
+  --gold: #b8963e;
+  --gold-light: #d4b35a;
+  --gold-bg: rgba(184,150,62,0.1);
+
+  /* Ink Blue - 靛青 */
+  --indigo: #3d5a80;
+  --indigo-light: #5a7fa0;
+
+  --radius-lg: 12px;
+  --radius-md: 8px;
+  --radius-sm: 4px;
+  --shadow-paper: 0 1px 4px rgba(28,23,16,0.06), 0 4px 16px rgba(28,23,16,0.04);
+  --shadow-card: 0 2px 8px rgba(28,23,16,0.08), 0 8px 24px rgba(28,23,16,0.06);
+  --shadow-float: 0 4px 16px rgba(28,23,16,0.1), 0 16px 48px rgba(28,23,16,0.08);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Noto Sans SC', sans-serif;
+  background: var(--paper-cream);
+  color: var(--ink-100);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ====== BACKGROUND TEXTURE ====== */
+.bg-rice-paper {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(28,23,16,0.008) 3px, rgba(28,23,16,0.008) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 5px, rgba(28,23,16,0.005) 5px, rgba(28,23,16,0.005) 6px),
+    radial-gradient(ellipse at 25% 25%, rgba(184,150,62,0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 75%, rgba(194,58,46,0.02) 0%, transparent 50%);
+}
+
+/* ====== PAGE SYSTEM ====== */
+.page {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+  overflow: hidden;
+}
+.page.active { opacity: 1; pointer-events: all; }
+
+/* ====== COMMON ELEMENTS ====== */
+.seal-stamp {
+  display: inline-block;
+  border: 2px solid var(--seal-red);
+  color: var(--seal-red);
+  font-family: 'Ma Shan Zheng', cursive;
+  padding: 2px 6px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  transform: rotate(-3deg);
+  line-height: 1.2;
+}
+
+.divider-ink {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ink-20), transparent);
+  margin: 16px 0;
+}
+
+.brush-heading {
+  font-family: 'Ma Shan Zheng', cursive;
+  font-weight: 400;
+  letter-spacing: 3px;
+}
+
+.serif-text {
+  font-family: 'Noto Serif SC', serif;
+}
+
+/* ====================================================================
+   MODULE 1: VIRTUAL MUSEUM — 古詩博物館
+   ==================================================================== */
+.museum-page { display: flex; height: 100vh; }
+
+/* Left: Museum Hall Sidebar */
+.museum-hall {
+  width: 300px;
+  background: var(--ink-100);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.museum-hall::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(184,150,62,0.06) 0%, transparent 40%),
+    linear-gradient(0deg, rgba(194,58,46,0.04) 0%, transparent 30%);
+  pointer-events: none;
+}
+
+.hall-header {
+  padding: 28px 24px 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.hall-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.logo-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--seal-red);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Ma Shan Zheng', cursive;
+  color: white;
+  font-size: 26px;
+  box-shadow: 0 2px 8px rgba(194,58,46,0.3);
+}
+
+.logo-text {
+  color: var(--paper-cream);
+}
+
+.logo-text-main {
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 20px;
+  letter-spacing: 4px;
+  display: block;
+}
+
+.logo-text-sub {
+  font-size: 11px;
+  color: var(--ink-40);
+  letter-spacing: 1px;
+  margin-top: 2px;
+  display: block;
+}
+
+.hall-grade {
+  display: inline-block;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 5px 14px;
+  border-radius: 20px;
+  color: var(--gold-light);
+  font-size: 13px;
+}
+
+/* Guide Character */
+.guide-section {
+  padding: 0 24px 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.guide-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  background: radial-gradient(circle, rgba(184,150,62,0.15), transparent);
+  position: relative;
+}
+
+.guide-avatar::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(184,150,62,0.3);
+}
+
+.guide-name {
+  text-align: center;
+  color: var(--paper-cream);
+  font-family: 'Noto Serif SC', serif;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.guide-role {
+  text-align: center;
+  color: var(--ink-40);
+  font-size: 12px;
+  margin-bottom: 14px;
+}
+
+.guide-bubble {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  color: rgba(255,255,255,0.75);
+  font-size: 13px;
+  line-height: 1.8;
+  position: relative;
+}
+
+.guide-bubble::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: rgba(255,255,255,0.06);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  border-left: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Progress */
+.hall-progress {
+  margin-top: auto;
+  padding: 20px 24px 24px;
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.progress-row {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ink-40);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.progress-track {
+  height: 5px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill-bar {
+  height: 100%;
+  width: 30%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+  border-radius: 3px;
+}
+
+.hall-stars {
+  text-align: center;
+  margin-top: 10px;
+  color: var(--gold-light);
+  font-size: 13px;
+}
+
+/* Right: Poem Gallery */
+.museum-gallery {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 30px 100px;
+  position: relative;
+  z-index: 1;
+}
+
+.gallery-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.gallery-title {
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 26px;
+  color: var(--ink-100);
+  letter-spacing: 3px;
+}
+
+.gallery-subtitle {
+  font-size: 13px;
+  color: var(--ink-40);
+  margin-bottom: 22px;
+}
+
+.poem-scroll {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+/* Individual Poem Card - Scroll/Paper style */
+.poem-entry {
+  background: white;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--paper-tan);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.poem-entry:hover {
+  box-shadow: var(--shadow-card);
+  transform: translateY(-2px);
+  border-color: var(--seal-red);
+}
+
+.poem-entry-accent {
+  height: 3px;
+  width: 100%;
+}
+
+.poem-entry:nth-child(1) .poem-entry-accent { background: var(--seal-red); }
+.poem-entry:nth-child(2) .poem-entry-accent { background: var(--jade); }
+.poem-entry:nth-child(3) .poem-entry-accent { background: var(--gold); }
+.poem-entry:nth-child(4) .poem-entry-accent { background: var(--indigo); }
+.poem-entry:nth-child(5) .poem-entry-accent { background: var(--seal-red-light); }
+.poem-entry:nth-child(6) .poem-entry-accent { background: var(--jade-light); }
+.poem-entry:nth-child(7) .poem-entry-accent { background: #8b6fb0; }
+.poem-entry:nth-child(8) .poem-entry-accent { background: var(--gold); }
+.poem-entry:nth-child(9) .poem-entry-accent { background: var(--indigo-light); }
+.poem-entry:nth-child(10) .poem-entry-accent { background: var(--seal-red); }
+
+.poem-entry-body {
+  padding: 16px 18px 14px;
+}
+
+.poem-entry-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.poem-entry-num {
+  font-size: 11px;
+  color: var(--ink-40);
+  background: var(--paper-warm);
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-family: 'Noto Serif SC', serif;
+}
+
+.poem-entry-stars {
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.poem-entry-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink-100);
+  margin-bottom: 4px;
+}
+
+.poem-entry-author {
+  font-size: 13px;
+  color: var(--ink-60);
+  margin-bottom: 8px;
+}
+
+.poem-entry-preview {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 13px;
+  color: var(--ink-40);
+  line-height: 1.7;
+}
+
+.poem-entry-tags {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.ptag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--paper-warm);
+  color: var(--ink-60);
+  border: 1px solid var(--paper-tan);
+}
+
+.poem-entry.locked {
+  opacity: 0.55;
+}
+
+.poem-entry.locked::after {
+  content: '🔒';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 28px;
+  filter: grayscale(0.5);
+}
+
+/* ====================================================================
+   MODULE 1B: POEM DETAIL — 古詩學習
+   ==================================================================== */
+.learn-page { display: flex; flex-direction: column; height: 100vh; background: white; }
+
+.learn-topbar {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--paper-tan);
+  background: white;
+  flex-shrink: 0;
+}
+
+.topbar-back {
+  font-size: 14px;
+  color: var(--seal-red);
+  cursor: pointer;
+  font-weight: 500;
+  background: none;
+  border: none;
+  font-family: 'Noto Sans SC', sans-serif;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.topbar-back:hover { background: var(--seal-red-bg); }
+
+.topbar-title {
+  flex: 1;
+  text-align: center;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.topbar-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--paper-tan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  cursor: pointer;
+  background: none;
+  transition: all 0.2s;
+}
+
+.topbar-icon:hover { background: var(--paper-warm); }
+
+.learn-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Poem Reading Section */
+.poem-reading {
+  flex: 0 0 56%;
+  padding: 28px 32px;
+  overflow-y: auto;
+  border-right: 1px solid var(--paper-tan);
+}
+
+.poem-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.dynasty-label {
+  display: inline-block;
+  background: var(--seal-red);
+  color: white;
+  padding: 3px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Noto Serif SC', serif;
+}
+
+.author-label {
+  font-size: 15px;
+  color: var(--ink-60);
+  font-family: 'Noto Serif SC', serif;
+}
+
+.poem-main-title {
+  font-family: 'Ma Shan Zheng', cursive;
+  font-size: 38px;
+  color: var(--ink-100);
+  margin-bottom: 24px;
+  letter-spacing: 6px;
+}
+
+.poem-body { display: flex; flex-direction: column; gap: 18px; }
+
+.poem-verse {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  align-items: flex-end;
+}
+
+.ch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 3px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 42px;
+}
+
+.ch:hover { background: var(--paper-warm); }
+.ch.active { background: var(--seal-red-bg); }
+
+.ch-py {
+  font-size: 13px;
+  color: var(--seal-red);
+  font-weight: 500;
+  height: 20px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.ch-py.visible { opacity: 1; }
+
+.ch-char {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.ch.key .ch-char {
+  color: var(--seal-red);
+  position: relative;
+}
+
+.ch.key .ch-char::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--seal-red);
+  opacity: 0.3;
+  border-radius: 1px;
+}
+
+.verse-punct {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 30px;
+  color: var(--ink-40);
+  align-self: flex-end;
+  line-height: 1.4;
+}
+
+/* Action Buttons */
+.poem-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 26px;
+  flex-wrap: wrap;
+}
+
+.act-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  font-family: 'Noto Sans SC', sans-serif;
+  transition: all 0.2s;
+}
+
+.act-btn.red {
+  background: var(--seal-red);
+  color: white;
+}
+.act-btn.red:hover { background: var(--seal-red-light); box-shadow: 0 4px 12px rgba(194,58,46,0.25); }
+
+.act-btn.outline {
+  background: white;
+  color: var(--ink-80);
+  border: 1.5px solid var(--paper-tan);
+}
+.act-btn.outline:hover { border-color: var(--seal-red); color: var(--seal-red); }
+
+.act-btn.dark {
+  background: var(--ink-100);
+  color: white;
+}
+
+/* Right Panel */
+.poem-sidebar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper-cream);
+  overflow: hidden;
+}
+
+.sidebar-tabs {
+  display: flex;
+  background: white;
+  border-bottom: 1px solid var(--paper-tan);
+  flex-shrink: 0;
+}
+
+.stab {
+  flex: 1;
+  padding: 13px 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--ink-40);
+  cursor: pointer;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.stab.on {
+  color: var(--seal-red);
+  border-bottom-color: var(--seal-red);
+}
+
+.sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px;
+}
+
+/* Annotation Cards */
+.anno-placeholder {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--ink-40);
+}
+
+.anno-placeholder-icon { font-size: 32px; margin-bottom: 10px; }
+.anno-placeholder-text { font-size: 14px; line-height: 1.7; }
+.anno-placeholder-text em { color: var(--seal-red); font-style: normal; font-weight: 600; }
+
+.word-card {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-paper);
+  border-left: 3px solid var(--seal-red);
+  display: none;
+}
+
+.word-card.show { display: block; animation: slideUp 0.3s ease; }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.wc-char {
+  font-family: 'Ma Shan Zheng', cursive;
+  font-size: 32px;
+  color: var(--seal-red);
+  letter-spacing: 2px;
+}
+
+.wc-pinyin {
+  font-size: 14px;
+  color: var(--seal-red-light);
+  margin-bottom: 8px;
+}
+
+.wc-meaning {
+  font-size: 14px;
+  color: var(--ink-80);
+  line-height: 1.7;
+}
+
+.wc-example {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--paper-warm);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--ink-60);
+  line-height: 1.6;
+  border-left: 3px solid var(--gold);
+}
+
+/* Reading Panel */
+.read-panel { display: none; }
+.read-panel.show { display: block; }
+
+.mic-area {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.mic-circle {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--seal-red), var(--seal-red-light));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  font-size: 32px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(194,58,46,0.25);
+  transition: transform 0.2s;
+}
+
+.mic-circle:hover { transform: scale(1.05); }
+
+.mic-circle.recording {
+  animation: mic-pulse 1.4s ease infinite;
+}
+
+@keyframes mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(194,58,46,0.3); }
+  50% { box-shadow: 0 0 0 14px rgba(194,58,46,0); }
+}
+
+.mic-hint {
+  font-size: 14px;
+  color: var(--ink-40);
+  margin-bottom: 14px;
+}
+
+.attempt-dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.att-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--paper-deep);
+}
+.att-dot.done { background: var(--jade); }
+.att-dot.now { background: var(--seal-red); box-shadow: 0 0 0 3px rgba(194,58,46,0.15); }
+
+.score-card {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 18px;
+  margin-top: 18px;
+  box-shadow: var(--shadow-paper);
+}
+
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.score-ring {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: conic-gradient(var(--jade) 0% 85%, var(--paper-deep) 85% 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.score-ring::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: white;
+}
+
+.score-val {
+  position: relative;
+  z-index: 1;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--jade);
+  font-family: 'Noto Serif SC', serif;
+}
+
+.score-info {}
+.score-info-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--jade);
+  margin-bottom: 4px;
+}
+
+.score-info-detail {
+  font-size: 13px;
+  color: var(--ink-60);
+  line-height: 1.6;
+}
+
+.teacher-tip {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--paper-warm);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--ink-60);
+  line-height: 1.7;
+  border-left: 3px solid var(--gold);
+}
+
+.teacher-tip strong { color: var(--ink-80); }
+
+/* ====================================================================
+   MODULE 2: ANIMATION — 動畫欣賞
+   ==================================================================== */
+.anim-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--ink-100);
+  position: relative;
+  overflow: hidden;
+}
+
+.anim-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(184,150,62,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse at 20% 80%, rgba(61,90,128,0.04) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.anim-topbar {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  position: relative;
+  z-index: 2;
+}
+
+.anim-back {
+  color: rgba(255,255,255,0.7);
+  font-size: 14px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+
+.anim-topbar-title {
+  flex: 1;
+  text-align: center;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 16px;
+  color: var(--paper-cream);
+  font-weight: 600;
+}
+
+.anim-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 40px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Simulated video player area */
+.anim-player {
+  width: 100%;
+  max-width: 680px;
+  aspect-ratio: 16/9;
+  background: var(--ink-90);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255,255,255,0.08);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+}
+
+.anim-player-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(184,150,62,0.08) 0%, transparent 60%);
+}
+
+/* Ink wash landscape illustration inside player */
+.anim-landscape {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  opacity: 0.15;
+  background: linear-gradient(0deg,
+    var(--ink-80) 0%,
+    transparent 40%
+  );
+}
+
+.anim-mountains {
+  position: absolute;
+  bottom: 15%;
+  left: 0;
+  right: 0;
+  height: 35%;
+}
+
+.anim-mountain {
+  position: absolute;
+  bottom: 0;
+  border-left: 60px solid transparent;
+  border-right: 60px solid transparent;
+  border-bottom: 80px solid rgba(255,255,255,0.04);
+}
+
+.anim-mountain:nth-child(1) { left: 10%; border-bottom-width: 100px; border-left-width: 70px; border-right-width: 70px; }
+.anim-mountain:nth-child(2) { left: 35%; border-bottom-width: 70px; }
+.anim-mountain:nth-child(3) { right: 15%; border-bottom-width: 90px; border-left-width: 80px; border-right-width: 50px; }
+
+.anim-moon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,248,220,0.9), rgba(255,248,220,0.2));
+  box-shadow: 0 0 40px rgba(255,248,220,0.15), 0 0 80px rgba(255,248,220,0.05);
+  position: absolute;
+  top: 18%;
+  right: 25%;
+}
+
+.anim-play-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  transition: all 0.3s;
+  backdrop-filter: blur(4px);
+}
+
+.anim-play-btn:hover {
+  background: rgba(255,255,255,0.25);
+  transform: scale(1.08);
+}
+
+.anim-label {
+  position: relative;
+  z-index: 2;
+  margin-top: 14px;
+  color: rgba(255,255,255,0.5);
+  font-size: 13px;
+}
+
+.anim-poem-label {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 18px;
+  color: var(--gold-light);
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 2;
+  letter-spacing: 2px;
+}
+
+.anim-bottom-info {
+  padding: 20px 40px;
+  position: relative;
+  z-index: 1;
+}
+
+.anim-description {
+  text-align: center;
+  color: rgba(255,255,255,0.4);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.anim-note-badge {
+  display: inline-block;
+  margin-top: 10px;
+  background: rgba(184,150,62,0.15);
+  border: 1px solid rgba(184,150,62,0.25);
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--gold-light);
+}
+
+/* ====================================================================
+   MODULE 3: GESTURE GAME — 隔空手勢小遊戲
+   ==================================================================== */
+.game-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: linear-gradient(175deg, #1c1710 0%, #2e2820 60%, #1c1710 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.game-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(194,58,46,0.05) 0%, transparent 40%),
+    radial-gradient(ellipse at 70% 80%, rgba(74,124,111,0.05) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.game-topbar {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: relative;
+  z-index: 2;
+}
+
+.game-back-btn {
+  color: rgba(255,255,255,0.6);
+  font-size: 14px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+
+.game-hud {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.game-hud-stars { font-size: 16px; letter-spacing: 2px; }
+.game-hud-qnum { font-size: 13px; color: rgba(255,255,255,0.5); }
+
+.game-main {
+  flex: 1;
+  display: flex;
+  position: relative;
+  z-index: 1;
+  padding: 0 30px;
+}
+
+/* Left: Question Area */
+.game-question-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-right: 20px;
+}
+
+.game-instruction {
+  color: var(--gold-light);
+  font-size: 14px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.game-q-text {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 20px;
+  color: var(--paper-cream);
+  text-align: center;
+  line-height: 1.6;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.game-q-highlight {
+  color: var(--gold-light);
+  font-family: 'Ma Shan Zheng', cursive;
+  font-size: 36px;
+  margin-bottom: 24px;
+  letter-spacing: 3px;
+}
+
+.game-audio-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 10px 20px;
+  border-radius: 24px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 28px;
+  font-family: 'Noto Sans SC', sans-serif;
+  transition: all 0.2s;
+}
+
+.game-audio-btn:hover { background: rgba(255,255,255,0.12); }
+
+.game-choices {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.game-choice {
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-md);
+  padding: 18px 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s;
+  color: white;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+
+.game-choice:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.2);
+  transform: translateY(-2px);
+}
+
+.gc-char {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 32px;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.gc-py {
+  font-size: 13px;
+  color: rgba(255,255,255,0.4);
+}
+
+.game-choice.right {
+  background: rgba(74,124,111,0.25);
+  border-color: var(--jade);
+  box-shadow: 0 0 20px rgba(74,124,111,0.15);
+}
+
+.game-choice.wrong {
+  background: rgba(194,58,46,0.2);
+  border-color: var(--seal-red);
+}
+
+/* Right: Camera / Gesture Preview */
+.game-camera-area {
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.camera-preview {
+  width: 220px;
+  height: 165px;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.camera-preview::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 6px rgba(74,222,128,0.5);
+}
+
+.camera-hand {
+  font-size: 52px;
+  margin-bottom: 4px;
+  animation: hand-wave 2s ease-in-out infinite;
+}
+
+@keyframes hand-wave {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.camera-label {
+  font-size: 12px;
+  color: rgba(255,255,255,0.3);
+}
+
+.gesture-hint {
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+  text-align: center;
+  line-height: 1.6;
+  max-width: 200px;
+}
+
+.gesture-hint strong {
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+/* Celebration Overlay */
+.game-celebration {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(28,23,16,0.92);
+}
+
+.game-celebration.show {
+  display: flex;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.celeb-icon {
+  font-size: 64px;
+  margin-bottom: 12px;
+  animation: celeb-bounce 0.5s ease;
+}
+
+@keyframes celeb-bounce {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.25); }
+}
+
+.celeb-title {
+  font-family: 'Ma Shan Zheng', cursive;
+  font-size: 30px;
+  color: var(--gold-light);
+  margin-bottom: 6px;
+  letter-spacing: 2px;
+}
+
+.celeb-detail {
+  font-size: 14px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 22px;
+}
+
+.celeb-next {
+  background: var(--gold);
+  color: var(--ink-100);
+  border: none;
+  padding: 11px 28px;
+  border-radius: 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+
+/* ====================================================================
+   MODULE 4: AI VIDEO CALL — AI數字人通話
+   ==================================================================== */
+.call-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: linear-gradient(180deg, #0f0e0c 0%, #1c1a16 100%);
+  position: relative;
+}
+
+.call-topbar {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 2;
+}
+
+.call-back-btn {
+  color: rgba(255,255,255,0.5);
+  font-size: 14px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+
+.call-status {
+  color: rgba(255,255,255,0.4);
+  font-size: 13px;
+}
+
+.call-status .dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  margin-right: 6px;
+  animation: blink 1.5s ease infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.call-body {
+  flex: 1;
+  display: flex;
+  position: relative;
+  z-index: 1;
+  padding: 10px 24px 20px;
+  gap: 20px;
+}
+
+/* Li Bai Video Frame */
+.call-video-main {
+  flex: 1;
+  background: #18160f;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255,255,255,0.06);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.call-bg-scene {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(184,150,62,0.06) 0%, transparent 50%),
+    linear-gradient(0deg, rgba(15,14,12,0.8) 0%, transparent 40%);
+}
+
+/* Stylized Li Bai avatar */
+.libai-avatar-area {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.libai-frame {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 80px;
+  background: radial-gradient(circle, rgba(184,150,62,0.12), transparent);
+  position: relative;
+}
+
+.libai-frame::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(184,150,62,0.25);
+}
+
+.libai-name {
+  font-family: 'Ma Shan Zheng', cursive;
+  font-size: 28px;
+  color: var(--paper-cream);
+  letter-spacing: 4px;
+  margin-bottom: 4px;
+}
+
+.libai-desc {
+  font-size: 13px;
+  color: rgba(255,255,255,0.35);
+}
+
+/* Speech Bubble from Li Bai */
+.call-speech {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  z-index: 2;
+}
+
+.speech-bubble {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+}
+
+.speech-who {
+  font-size: 12px;
+  color: var(--gold-light);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.speech-text {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 16px;
+  color: var(--paper-cream);
+  line-height: 1.7;
+}
+
+.speech-text em {
+  color: var(--gold-light);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 20px;
+}
+
+/* Student self-view */
+.call-self-view {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 120px;
+  height: 90px;
+  background: rgba(255,255,255,0.05);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  z-index: 3;
+}
+
+.self-view-label {
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+}
+
+/* Right: Response Panel */
+.call-response-panel {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.call-panel-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 16px;
+  color: var(--paper-cream);
+  font-weight: 600;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Question Card */
+.call-question-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.cq-label {
+  font-size: 12px;
+  color: var(--gold-light);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.cq-poem-ref {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.cq-target {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(194,58,46,0.1);
+  border: 1px solid rgba(194,58,46,0.2);
+  border-radius: var(--radius-sm);
+}
+
+.cq-target-char {
+  font-family: 'Ma Shan Zheng', cursive;
+  font-size: 36px;
+  color: var(--seal-red-light);
+}
+
+.cq-target-info {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.6;
+}
+
+.cq-target-info strong {
+  color: var(--paper-cream);
+  font-weight: 600;
+}
+
+/* Speak Button */
+.call-speak-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--seal-red);
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: 'Noto Sans SC', sans-serif;
+  box-shadow: 0 4px 16px rgba(194,58,46,0.3);
+  transition: all 0.2s;
+}
+
+.call-speak-btn:hover {
+  background: var(--seal-red-light);
+  transform: translateY(-1px);
+}
+
+.call-speak-btn.recording-state {
+  animation: mic-pulse 1.4s ease infinite;
+}
+
+/* Result Card */
+.call-result {
+  background: rgba(74,124,111,0.1);
+  border: 1px solid rgba(74,124,111,0.2);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.cr-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.cr-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--jade);
+  color: white;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cr-score-text {
+  font-size: 14px;
+  color: var(--jade-light);
+  font-weight: 600;
+}
+
+.cr-feedback {
+  font-size: 13px;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.7;
+}
+
+.cr-feedback strong { color: var(--paper-cream); }
+
+/* Call bottom controls */
+.call-controls {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 16px 0;
+}
+
+.call-ctrl {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.call-ctrl.end {
+  background: var(--seal-red);
+  color: white;
+  box-shadow: 0 4px 12px rgba(194,58,46,0.3);
+}
+
+.call-ctrl.mute {
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.call-ctrl.next-q {
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* ====== BOTTOM NAV ====== */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 54px;
+  background: var(--ink-100);
+  display: flex;
+  z-index: 999;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.bnav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: rgba(255,255,255,0.35);
+  font-size: 10px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: 'Noto Sans SC', sans-serif;
+  transition: color 0.2s;
+}
+
+.bnav-btn .bnav-icon { font-size: 19px; }
+.bnav-btn.on { color: var(--gold-light); }
+.bnav-btn:hover { color: rgba(255,255,255,0.6); }
+
+/* Watermark */
+.wm {
+  position: fixed;
+  top: 10px;
+  right: 14px;
+  font-size: 10px;
+  color: rgba(0,0,0,0.15);
+  z-index: 1000;
+  pointer-events: none;
+  font-family: 'Noto Sans SC', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+/* ====== RESPONSIVE ====== */
+@media (max-width: 900px) {
+  .museum-hall { width: 240px; }
+  .game-camera-area { width: 180px; }
+  .call-response-panel { width: 260px; }
+}
+@media (max-width: 768px) {
+  .museum-hall { width: 200px; }
+  .poem-scroll { grid-template-columns: 1fr; }
+  .game-camera-area { display: none; }
+  .call-response-panel { width: 240px; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-rice-paper"></div>
+<div class="wm">AIDUCATION · 古詩學堂 · 設計稿 v2</div>
+
+<!-- ================= MODULE 1: MUSEUM ================= -->
+<div class="page active" id="p-museum">
+  <div class="museum-page">
+    <div class="museum-hall">
+      <div class="hall-header">
+        <div class="hall-logo">
+          <div class="logo-icon">詩</div>
+          <div class="logo-text">
+            <span class="logo-text-main">古詩學堂</span>
+            <span class="logo-text-sub">普通話互動學習</span>
+          </div>
+        </div>
+        <div class="hall-grade">📖 小學四年級 · 上學期</div>
+      </div>
+
+      <div class="guide-section">
+        <div class="guide-avatar">👨‍🏫</div>
+        <div class="guide-name">詩文先生</div>
+        <div class="guide-role">AI 普通話導師</div>
+        <div class="guide-bubble">
+          歡迎來到古詩博物館！👋<br>
+          點選右邊的古詩，<br>一起用普通話朗讀學習吧。
+        </div>
+      </div>
+
+      <div class="hall-progress">
+        <div class="progress-row">
+          <span>學習進度</span>
+          <span>3 / 10 首</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill-bar"></div>
+        </div>
+        <div class="hall-stars">⭐ 已獲 12 顆星</div>
+      </div>
+    </div>
+
+    <div class="museum-gallery">
+      <div class="gallery-header">
+        <div class="gallery-title">詩 詞 展 廳</div>
+      </div>
+      <div class="gallery-subtitle">共十首經典古詩 · 點擊進入學習</div>
+
+      <div class="poem-scroll">
+        <div class="poem-entry" onclick="nav('p-learn')">
+          <div class="poem-entry-accent"></div>
+          <div class="poem-entry-body">
+            <div class="poem-entry-top">
+              <span class="poem-entry-num">第一首</span>
+              <span class="poem-entry-stars">⭐⭐⭐</span>
+            </div>
+            <div class="poem-entry-title">靜夜思</div>
+            <div class="poem-entry-author">唐 · 李白</div>
+            <div class="poem-entry-preview">床前明月光，疑是地上霜…</div>
+            <div class="poem-entry-tags"><span class="ptag">五言絕句</span><span class="ptag">思鄉</span></div>
+          </div>
+        </div>
+
+        <div class="poem-entry" onclick="nav('p-learn')">
+          <div class="poem-entry-accent"></div>
+          <div class="poem-entry-body">
+            <div class="poem-entry-top">
+              <span class="poem-entry-num">第二首</span>
+              <span class="poem-entry-stars">⭐⭐</span>
+            </div>
+            <div class="poem-entry-title">春曉</div>
+            <div class="poem-entry-author">唐 · 孟浩然</div>
+            <div class="poem-entry-preview">春眠不覺曉，處處聞啼鳥…</div>
+            <div class="poem-entry-tags"><span class="ptag">五言絕句</span><span class="ptag">春天</span></div>
+          </div>
+        </div>
+
+        <div class="poem-entry" onclick="nav('p-learn')">
+          <div class="poem-entry-accent"></div>
+          <div class="poem-entry-body">
+            <div class="poem-entry-top">
+              <span class="poem-entry-num">第三首</span>
+              <span class="poem-entry-stars">⭐</span>
+            </div>
+            <div class="poem-entry-title">登鸛雀樓</div>
+            <div class="poem-entry-author">唐 · 王之渙</div>
+            <div class="poem-entry-preview">白日依山盡，黃河入海流…</div>
+            <div class="poem-entry-tags"><span class="ptag">五言絕句</span><span class="ptag">哲理</span></div>
+          </div>
+        </div>
+
+        <div class="poem-entry locked" onclick="nav('p-learn')">
+          <div class="poem-entry-accent"></div>
+          <div class="poem-entry-body">
+            <div class="poem-entry-top">
+              <span class="poem-entry-num">第四首</span>
+              <span class="poem-entry-stars"></span>
+            </div>
+            <div class="poem-entry-title">憫農</div>
+            <div class="poem-entry-author">唐 · 李紳</div>
+            <div class="poem-entry-preview">鋤禾日當午，汗滴禾下土…</div>
+            <div class="poem-entry-tags"><span class="ptag">五言絕句</span><span class="ptag">勤勞</span></div>
+          </div>
+        </div>
+
+        <div class="poem-entry locked" onclick="nav('p-learn')">
+          <div class="poem-entry-accent"></div>
+          <div class="poem-entry-body">
+            <div class="poem-entry-top">
+              <span class="poem-entry-num">第五首</span>
+              <span class="poem-entry-stars"></span>
+            </div>
+            <div class="poem-entry-title">詠鵝</div>
+            <div class="poem-entry-author">唐 · 駱賓王</div>
+            <div class="poem-entry-preview">鵝鵝鵝，曲項向天歌…</div>
+            <div class="poem-entry-tags"><span class="ptag">古體詩</span><span class="ptag">動物</span></div>
+          </div>
+        </div>
+
+        <div class="poem-entry locked" onclick="nav('p-learn')">
+          <div class="poem-entry-accent"></div>
+          <div class="poem-entry-body">
+            <div class="poem-entry-top">
+              <span class="poem-entry-num">第六首</span>
+              <span class="poem-entry-stars"></span>
+            </div>
+            <div class="poem-entry-title">江南</div>
+            <div class="poem-entry-author">漢 · 樂府詩</div>
+            <div class="poem-entry-preview">江南可採蓮，蓮葉何田田…</div>
+            <div class="poem-entry-tags"><span class="ptag">樂府</span><span class="ptag">自然</span></div>
+          </div>
+        </div>
+
+        <div class="poem-entry locked" onclick="nav('p-learn')">
+          <div class="poem-entry-accent"></div>
+          <div class="poem-entry-body">
+            <div class="poem-entry-top">
+              <span class="poem-entry-num">第七首</span>
+              <span class="poem-entry-stars"></span>
+            </div>
+            <div class="poem-entry-title">望廬山瀑布</div>
+            <div class="poem-entry-author">唐 · 李白</div>
+            <div class="poem-entry-preview">日照香爐生紫煙…</div>
+            <div class="poem-entry-tags"><span class="ptag">七言絕句</span><span class="ptag">山水</span></div>
+          </div>
+        </div>
+
+        <div class="poem-entry locked" onclick="nav('p-learn')">
+          <div class="poem-entry-accent"></div>
+          <div class="poem-entry-body">
+            <div class="poem-entry-top">
+              <span class="poem-entry-num">第八首</span>
+              <span class="poem-entry-stars"></span>
+            </div>
+            <div class="poem-entry-title">遊子吟</div>
+            <div class="poem-entry-author">唐 · 孟郊</div>
+            <div class="poem-entry-preview">慈母手中線，遊子身上衣…</div>
+            <div class="poem-entry-tags"><span class="ptag">五言古詩</span><span class="ptag">親情</span></div>
+          </div>
+        </div>
+
+        <div class="poem-entry locked" onclick="nav('p-learn')">
+          <div class="poem-entry-accent"></div>
+          <div class="poem-entry-body">
+            <div class="poem-entry-top">
+              <span class="poem-entry-num">第九首</span>
+              <span class="poem-entry-stars"></span>
+            </div>
+            <div class="poem-entry-title">絕句</div>
+            <div class="poem-entry-author">唐 · 杜甫</div>
+            <div class="poem-entry-preview">兩個黃鸝鳴翠柳…</div>
+            <div class="poem-entry-tags"><span class="ptag">七言絕句</span><span class="ptag">自然</span></div>
+          </div>
+        </div>
+
+        <div class="poem-entry locked" onclick="nav('p-learn')">
+          <div class="poem-entry-accent"></div>
+          <div class="poem-entry-body">
+            <div class="poem-entry-top">
+              <span class="poem-entry-num">第十首</span>
+              <span class="poem-entry-stars"></span>
+            </div>
+            <div class="poem-entry-title">楓橋夜泊</div>
+            <div class="poem-entry-author">唐 · 張繼</div>
+            <div class="poem-entry-preview">月落烏啼霜滿天…</div>
+            <div class="poem-entry-tags"><span class="ptag">七言絕句</span><span class="ptag">夜景</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODULE 1B: POEM LEARN ================= -->
+<div class="page" id="p-learn">
+  <div class="learn-page">
+    <div class="learn-topbar">
+      <button class="topbar-back" onclick="nav('p-museum')">← 返回展廳</button>
+      <div class="topbar-title">靜夜思 · 學習</div>
+      <div class="topbar-actions">
+        <button class="topbar-icon">♡</button>
+        <button class="topbar-icon">⚙</button>
+      </div>
+    </div>
+    <div class="learn-content">
+      <div class="poem-reading">
+        <div class="poem-meta-line">
+          <span class="dynasty-label">唐</span>
+          <span class="author-label">李白</span>
+        </div>
+        <div class="poem-main-title">靜 夜 思</div>
+
+        <div class="poem-body">
+          <div class="poem-verse">
+            <div class="ch key" onclick="clickCh(this,'床','chuáng','本義指坐臥傢具。此詩中「床」有多種說法：井欄、坐榻或窗前臥榻。','「起床」「河床」「苗床」——不同語境有不同含義。')"><span class="ch-py">chuáng</span><span class="ch-char">床</span></div>
+            <div class="ch" onclick="clickCh(this)"><span class="ch-py">qián</span><span class="ch-char">前</span></div>
+            <div class="ch key" onclick="clickCh(this,'明','míng','明亮、光明。形容月光皎潔。','「明天」「明白」「光明」')"><span class="ch-py">míng</span><span class="ch-char">明</span></div>
+            <div class="ch" onclick="clickCh(this)"><span class="ch-py">yuè</span><span class="ch-char">月</span></div>
+            <div class="ch" onclick="clickCh(this)"><span class="ch-py">guāng</span><span class="ch-char">光</span></div>
+            <span class="verse-punct">，</span>
+          </div>
+
+          <div class="poem-verse">
+            <div class="ch key" onclick="clickCh(this,'疑','yí','懷疑、以為。詩人半夢半醒間，把月光誤認為地上白霜。','「懷疑」「疑問」「疑惑」')"><span class="ch-py">yí</span><span class="ch-char">疑</span></div>
+            <div class="ch" onclick="clickCh(this)"><span class="ch-py">shì</span><span class="ch-char">是</span></div>
+            <div class="ch" onclick="clickCh(this)"><span class="ch-py">dì</span><span class="ch-char">地</span></div>
+            <div class="ch" onclick="clickCh(this)"><span class="ch-py">shàng</span><span class="ch-char">上</span></div>
+            <div class="ch key" onclick="clickCh(this,'霜','shuāng','水蒸氣在地面凝結成的白色冰晶，秋冬常見。注意翹舌音 sh-。','「霜降」「風霜」「冰霜」')"><span class="ch-py">shuāng</span><span class="ch-char">霜</span></div>
+            <span class="verse-punct">。</span>
+          </div>
+
+          <div class="poem-verse">
+            <div class="ch key" onclick="clickCh(this,'舉','jǔ','抬起、舉起。詩人抬頭仰望明月。','「舉手」「舉辦」「舉例」')"><span class="ch-py">jǔ</span><span class="ch-char">舉</span></div>
+            <div class="ch" onclick="clickCh(this)"><span class="ch-py">tóu</span><span class="ch-char">頭</span></div>
+            <div class="ch" onclick="clickCh(this)"><span class="ch-py">wàng</span><span class="ch-char">望</span></div>
+            <div class="ch" onclick="clickCh(this)"><span class="ch-py">míng</span><span class="ch-char">明</span></div>
+            <div class="ch" onclick="clickCh(this)"><span class="ch-py">yuè</span><span class="ch-char">月</span></div>
+            <span class="verse-punct">，</span>
+          </div>
+
+          <div class="poem-verse">
+            <div class="ch" onclick="clickCh(this)"><span class="ch-py">dī</span><span class="ch-char">低</span></div>
+            <div class="ch" onclick="clickCh(this)"><span class="ch-py">tóu</span><span class="ch-char">頭</span></div>
+            <div class="ch" onclick="clickCh(this)"><span class="ch-py">sī</span><span class="ch-char">思</span></div>
+            <div class="ch key" onclick="clickCh(this,'故鄉','gù xiāng','家鄉、老家。詩人遠在他鄉，月夜思念故鄉。','「故鄉」「故人」「故事」——「故」有「舊的、原來的」含義。')"><span class="ch-py">gù</span><span class="ch-char">故</span></div>
+            <div class="ch" onclick="clickCh(this)"><span class="ch-py">xiāng</span><span class="ch-char">鄉</span></div>
+            <span class="verse-punct">。</span>
+          </div>
+        </div>
+
+        <div class="poem-actions">
+          <button class="act-btn red" onclick="animateRead()">🔊 全詩朗讀</button>
+          <button class="act-btn outline" id="py-toggle" onclick="toggleAllPy()">拼 顯示拼音</button>
+          <button class="act-btn outline" onclick="showTab('read')">🎤 跟讀練習</button>
+          <button class="act-btn outline" onclick="nav('p-anim')">🎬 觀看動畫</button>
+          <button class="act-btn outline" onclick="nav('p-game')">🎮 趣味挑戰</button>
+        </div>
+      </div>
+
+      <div class="poem-sidebar">
+        <div class="sidebar-tabs">
+          <button class="stab on" id="stab-anno" onclick="showTab('anno')">📖 注釋詳解</button>
+          <button class="stab" id="stab-read" onclick="showTab('read')">🎤 跟讀評分</button>
+        </div>
+        <div class="sidebar-body">
+          <div id="panel-anno">
+            <div class="anno-placeholder" id="anno-hint">
+              <div class="anno-placeholder-icon">👆</div>
+              <div class="anno-placeholder-text">點擊左側<em>紅色重點字詞</em><br>查看拼音與詳細注釋</div>
+            </div>
+            <div class="word-card" id="wcard">
+              <div class="wc-char" id="wc-char"></div>
+              <div class="wc-pinyin" id="wc-py"></div>
+              <div class="wc-meaning" id="wc-mean"></div>
+              <div class="wc-example" id="wc-ex"></div>
+            </div>
+          </div>
+          <div class="read-panel" id="panel-read">
+            <div class="mic-area">
+              <div class="mic-circle" id="mic" onclick="toggleMic()">🎤</div>
+              <div class="mic-hint">點擊麥克風，用普通話朗讀全詩</div>
+              <div class="attempt-dots">
+                <div class="att-dot done"></div>
+                <div class="att-dot now"></div>
+                <div class="att-dot"></div>
+              </div>
+            </div>
+            <div class="score-card">
+              <div class="score-row">
+                <div class="score-ring"><span class="score-val">85</span></div>
+                <div class="score-info">
+                  <div class="score-info-title">發音評分：優秀 👏</div>
+                  <div class="score-info-detail">聲調準確率 90%<br>發音清晰度 82%<br>流暢度 83%</div>
+                </div>
+              </div>
+              <div class="teacher-tip">
+                💡 <strong>詩文先生：</strong>「霜」(shuāng) 的翹舌音再練練，舌頭要捲起來哦！「疑」(yí) 讀得很標準，繼續保持！
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODULE 2: ANIMATION ================= -->
+<div class="page" id="p-anim">
+  <div class="anim-page">
+    <div class="anim-topbar">
+      <button class="anim-back" onclick="nav('p-learn')">← 返回學習</button>
+      <div class="anim-topbar-title">動畫欣賞</div>
+      <div style="width:60px"></div>
+    </div>
+
+    <div class="anim-stage">
+      <div class="anim-poem-label">靜夜思 · 李白</div>
+      <div class="anim-player">
+        <div class="anim-player-inner">
+          <div class="anim-landscape"></div>
+          <div class="anim-mountains">
+            <div class="anim-mountain"></div>
+            <div class="anim-mountain"></div>
+            <div class="anim-mountain"></div>
+          </div>
+          <div class="anim-moon"></div>
+          <div class="anim-play-btn" onclick="this.textContent='⏸'; setTimeout(()=>this.textContent='▶',2000)">▶</div>
+          <div class="anim-label">點擊播放動畫</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="anim-bottom-info">
+      <div class="anim-description">
+        透過精美水墨風動畫，帶你走進李白的月夜世界<br>感受詩人遊子思鄉的深情
+      </div>
+      <div style="text-align:center; margin-top:10px;">
+        <span class="anim-note-badge">🎨 動畫由專業團隊製作</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODULE 3: GESTURE GAME ================= -->
+<div class="page" id="p-game">
+  <div class="game-page">
+    <div class="game-topbar">
+      <button class="game-back-btn" onclick="nav('p-learn')">← 返回學習</button>
+      <div class="game-hud">
+        <div class="game-hud-stars">⭐⭐⭐☆☆</div>
+        <div class="game-hud-qnum">第 3 / 5 題</div>
+      </div>
+    </div>
+
+    <div class="game-main">
+      <div class="game-question-area">
+        <div class="game-instruction">🖐️ 用手勢指向正確的字 · 或直接點擊選擇</div>
+        <div class="game-q-text">「床前明月光，疑是地上霜」<br>哪個字的讀音是——</div>
+        <div class="game-q-highlight">shuāng</div>
+        <button class="game-audio-btn" onclick="this.style.transform='scale(0.95)';setTimeout(()=>this.style.transform='',150)">
+          🔊 再聽一次
+        </button>
+
+        <div class="game-choices">
+          <div class="game-choice" onclick="pick(this,false)">
+            <span class="gc-char">床</span>
+            <span class="gc-py">chuáng</span>
+          </div>
+          <div class="game-choice" onclick="pick(this,true)">
+            <span class="gc-char">霜</span>
+            <span class="gc-py">shuāng</span>
+          </div>
+          <div class="game-choice" onclick="pick(this,false)">
+            <span class="gc-char">光</span>
+            <span class="gc-py">guāng</span>
+          </div>
+          <div class="game-choice" onclick="pick(this,false)">
+            <span class="gc-char">鄉</span>
+            <span class="gc-py">xiāng</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="game-camera-area">
+        <div class="camera-preview">
+          <div class="camera-hand">🖐️</div>
+          <div class="camera-label">攝像頭手勢追蹤</div>
+        </div>
+        <div class="gesture-hint">
+          <strong>隔空操作</strong><br>
+          舉起手指指向答案<br>停留 1 秒確認選擇
+        </div>
+      </div>
+    </div>
+
+    <div class="game-celebration" id="g-celeb">
+      <div class="celeb-icon">🎉</div>
+      <div class="celeb-title">答對了！太棒了！</div>
+      <div class="celeb-detail">「霜」shuāng —— 記住翹舌音 sh 哦！</div>
+      <button class="celeb-next" onclick="closeCeleb()">繼續下一題 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODULE 4: AI VIDEO CALL ================= -->
+<div class="page" id="p-call">
+  <div class="call-page">
+    <div class="call-topbar">
+      <button class="call-back-btn" onclick="nav('p-museum')">← 返回展廳</button>
+      <div class="call-status"><span class="dot"></span>AI 視像通話中</div>
+      <div style="width:60px;"></div>
+    </div>
+
+    <div class="call-body">
+      <div class="call-video-main">
+        <div class="call-bg-scene"></div>
+
+        <div class="call-self-view">
+          🧑‍🎓
+          <span class="self-view-label">我</span>
+        </div>
+
+        <div class="libai-avatar-area">
+          <div class="libai-frame">👲</div>
+          <div class="libai-name">李 白</div>
+          <div class="libai-desc">唐代詩仙 · AI 數字人</div>
+        </div>
+
+        <div class="call-speech">
+          <div class="speech-bubble">
+            <div class="speech-who">李白 說：</div>
+            <div class="speech-text">
+              小友你好！我來考考你——<br>
+              王昌齡《出塞》中「秦時明月漢時關」的<br>
+              「<em>塞</em>」字，用普通話怎麼念？
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="call-response-panel">
+        <div class="call-panel-title">📋 本題內容</div>
+
+        <div class="call-question-card">
+          <div class="cq-label">出自《出塞》· 王昌齡</div>
+          <div class="cq-poem-ref">
+            秦時明月漢時關，<br>萬里長征人未還。
+          </div>
+          <div class="cq-target">
+            <div class="cq-target-char">塞</div>
+            <div class="cq-target-info">
+              <strong>請朗讀此字的正確讀音</strong><br>
+              提示：邊塞的「塞」
+            </div>
+          </div>
+        </div>
+
+        <button class="call-speak-btn" id="call-mic" onclick="toggleCallMic()">
+          🎤 按住說出你的答案
+        </button>
+
+        <div class="call-result">
+          <div class="cr-header">
+            <span class="cr-badge">✓ 正確</span>
+            <span class="cr-score-text">發音得分 92</span>
+          </div>
+          <div class="cr-feedback">
+            <strong>李白：</strong>「塞」讀 <strong>sài</strong>，第四聲，很好！邊塞詩是我們唐代最豪邁的詩體，你讀得鏗鏘有力！下一題準備好了嗎？
+          </div>
+        </div>
+
+        <div class="call-controls">
+          <button class="call-ctrl mute" title="靜音">🔇</button>
+          <button class="call-ctrl end" title="結束通話" onclick="nav('p-museum')">📕</button>
+          <button class="call-ctrl next-q" title="下一題">➡️</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= BOTTOM NAV ================= -->
+<div class="bottom-nav">
+  <button class="bnav-btn on" id="bn-museum" onclick="nav('p-museum')">
+    <span class="bnav-icon">🏛️</span>
+    <span>博物館</span>
+  </button>
+  <button class="bnav-btn" id="bn-learn" onclick="nav('p-learn')">
+    <span class="bnav-icon">📖</span>
+    <span>學習</span>
+  </button>
+  <button class="bnav-btn" id="bn-anim" onclick="nav('p-anim')">
+    <span class="bnav-icon">🎬</span>
+    <span>動畫</span>
+  </button>
+  <button class="bnav-btn" id="bn-game" onclick="nav('p-game')">
+    <span class="bnav-icon">🎮</span>
+    <span>遊戲</span>
+  </button>
+  <button class="bnav-btn" id="bn-call" onclick="nav('p-call')">
+    <span class="bnav-icon">📞</span>
+    <span>AI通話</span>
+  </button>
+</div>
+
+<script>
+// Navigation
+const pageMap = {
+  'p-museum': 'bn-museum',
+  'p-learn': 'bn-learn',
+  'p-anim': 'bn-anim',
+  'p-game': 'bn-game',
+  'p-call': 'bn-call'
+};
+
+function nav(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('on'));
+  const bn = document.getElementById(pageMap[id]);
+  if (bn) bn.classList.add('on');
+}
+
+// Pinyin per character
+function clickCh(el, char, py, meaning, example) {
+  const pyEl = el.querySelector('.ch-py');
+  if (pyEl) pyEl.classList.toggle('visible');
+
+  if (char) {
+    document.getElementById('anno-hint').style.display = 'none';
+    const wc = document.getElementById('wcard');
+    wc.classList.remove('show');
+    void wc.offsetWidth;
+    wc.classList.add('show');
+    document.getElementById('wc-char').textContent = char;
+    document.getElementById('wc-py').textContent = py;
+    document.getElementById('wc-mean').textContent = meaning;
+    document.getElementById('wc-ex').textContent = example;
+    showTab('anno');
+  }
+}
+
+// Toggle all pinyin
+let allPy = false;
+function toggleAllPy() {
+  allPy = !allPy;
+  document.querySelectorAll('.ch-py').forEach(p => p.classList.toggle('visible', allPy));
+  const btn = document.getElementById('py-toggle');
+  btn.textContent = allPy ? '拼 隱藏拼音' : '拼 顯示拼音';
+  if (allPy) btn.classList.add('dark'); else btn.classList.remove('dark');
+}
+
+// Tabs
+function showTab(t) {
+  const sa = document.getElementById('stab-anno');
+  const sr = document.getElementById('stab-read');
+  const pa = document.getElementById('panel-anno');
+  const pr = document.getElementById('panel-read');
+  if (t === 'anno') {
+    sa.classList.add('on'); sr.classList.remove('on');
+    pa.style.display = 'block'; pr.classList.remove('show');
+  } else {
+    sr.classList.add('on'); sa.classList.remove('on');
+    pa.style.display = 'none'; pr.classList.add('show');
+  }
+}
+
+// Mic toggle
+function toggleMic() {
+  document.getElementById('mic').classList.toggle('recording');
+}
+
+// Animate read
+function animateRead() {
+  const chars = document.querySelectorAll('.poem-reading .ch');
+  chars.forEach((c, i) => {
+    setTimeout(() => {
+      c.classList.add('active');
+      c.querySelector('.ch-py').classList.add('visible');
+      setTimeout(() => c.classList.remove('active'), 500);
+    }, i * 300);
+  });
+}
+
+// Game
+function pick(el, correct) {
+  if (el.classList.contains('right') || el.classList.contains('wrong')) return;
+  if (correct) {
+    el.classList.add('right');
+    setTimeout(() => document.getElementById('g-celeb').classList.add('show'), 350);
+  } else {
+    el.classList.add('wrong');
+    setTimeout(() => el.classList.remove('wrong'), 700);
+  }
+}
+
+function closeCeleb() {
+  document.getElementById('g-celeb').classList.remove('show');
+  document.querySelectorAll('.game-choice').forEach(c => c.classList.remove('right','wrong'));
+}
+
+// Call mic
+function toggleCallMic() {
+  const btn = document.getElementById('call-mic');
+  btn.classList.toggle('recording-state');
+  if (btn.classList.contains('recording-state')) {
+    btn.innerHTML = '🔴 正在聆聽…請說出答案';
+  } else {
+    btn.innerHTML = '🎤 按住說出你的答案';
+  }
+}
+</script>
+</body>
+</html>
