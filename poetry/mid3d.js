@@ -207,7 +207,7 @@ function buildHall() {
   const moonPL = new THREE.PointLight(0xffd080, 2.5, 40);
   moonPL.position.set(0, 4, 0); scene.add(moonPL);
   animCallbacks.push(() => {
-    bloomPass.strength = 1.3 + 0.4 * Math.sin(elapsed * 0.8);
+    if (bloomPass) bloomPass.strength = 1.3 + 0.4 * Math.sin(elapsed * 0.8);
   });
 
   // ---- LANTERNS (12) ----
@@ -870,14 +870,16 @@ window.initMid3dScene = function() {
   if (mid3dInited) return;
   mid3dInited = true;
   const container = document.getElementById('three-container');
-  const W = container.clientWidth, H = container.clientHeight;
+  const W = container.clientWidth || window.innerWidth;
+  const H = container.clientHeight || window.innerHeight;
 
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 1000);
 
-  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.setSize(W, H);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x1a1408, 1);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
   container.appendChild(renderer.domElement);
@@ -887,10 +889,16 @@ window.initMid3dScene = function() {
   css2dRenderer.domElement.classList.add('css2d-layer');
   container.appendChild(css2dRenderer.domElement);
 
-  composer = new EffectComposer(renderer);
-  composer.addPass(new RenderPass(scene, camera));
-  bloomPass = new UnrealBloomPass(new THREE.Vector2(W, H), 1.5, 0.4, 0.85);
-  composer.addPass(bloomPass);
+  // Bloom pass — graceful fallback if GPU doesn't support it
+  try {
+    composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    bloomPass = new UnrealBloomPass(new THREE.Vector2(W, H), 1.5, 0.4, 0.85);
+    composer.addPass(bloomPass);
+  } catch (e) {
+    console.warn('Bloom pass failed, using basic renderer:', e);
+    composer = null;
+  }
 
   controls = new OrbitControls(camera, css2dRenderer.domElement);
   controls.enableDamping = true;
@@ -907,21 +915,42 @@ window.initMid3dScene = function() {
 function onResize() {
   const c = document.getElementById('three-container');
   if (!c || !camera) return;
-  const W = c.clientWidth, H = c.clientHeight;
+  const W = c.clientWidth || window.innerWidth;
+  const H = c.clientHeight || window.innerHeight;
   camera.aspect = W / H;
   camera.updateProjectionMatrix();
   renderer.setSize(W, H);
   css2dRenderer.setSize(W, H);
-  composer.setSize(W, H);
+  if (composer) composer.setSize(W, H);
 }
 
 function animate() {
   animFrameId = requestAnimationFrame(animate);
   elapsed += 0.008;
-  animCallbacks.forEach(fn => fn());
-  controls.update();
-  composer.render();
-  css2dRenderer.render(scene, camera);
+  try {
+    animCallbacks.forEach(fn => fn());
+    controls.update();
+    if (composer) {
+      composer.render();
+      // Detect white screen on first few frames — if WebGL readback shows all white, disable bloom
+      if (elapsed < 0.05) {
+        const gl = renderer.getContext();
+        const pixel = new Uint8Array(4);
+        gl.readPixels(Math.floor(renderer.domElement.width/2), Math.floor(renderer.domElement.height/2), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+        if (pixel[0] > 250 && pixel[1] > 250 && pixel[2] > 250) {
+          console.warn('Bloom producing white output, falling back to basic renderer');
+          composer = null;
+        }
+      }
+    } else {
+      renderer.render(scene, camera);
+    }
+    css2dRenderer.render(scene, camera);
+  } catch (e) {
+    console.error('Render error:', e);
+    // If composer is causing issues, disable it
+    if (composer) { composer = null; }
+  }
 }
 
 window.resumeMid3dScene = function() {
