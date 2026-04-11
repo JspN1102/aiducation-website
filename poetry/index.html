@@ -318,7 +318,7 @@ body {
 }
 
 .gallery-title {
-  font-family: 'ZCOOL XiaoWei', serif;
+  font-family: 'Ma Shan Zheng', cursive;
   font-size: 26px;
   color: var(--ink-100);
   letter-spacing: 3px;
@@ -542,7 +542,7 @@ body {
 }
 
 .poem-main-title {
-  font-family: 'ZCOOL XiaoWei', serif;
+  font-family: 'Ma Shan Zheng', cursive;
   font-size: 38px;
   color: var(--ink-100);
   margin-bottom: 24px;
@@ -1121,50 +1121,39 @@ body {
   gap: 18px;
 }
 
-.game-hud-stars { font-size: 16px; letter-spacing: 2px; }
-.game-hud-qnum { font-size: 13px; color: rgba(255,255,255,0.5); }
+.game-hud-score { font-size: 14px; color: var(--gold-light); font-weight: 600; }
+.game-hud-round { font-size: 13px; color: rgba(255,255,255,0.5); }
+.game-hud-timer { font-size: 14px; color: var(--seal-red-light); font-weight: 600; }
+.game-hud-combo { font-size: 13px; color: var(--jade-light); font-weight: 600; }
 
-.game-main {
-  flex: 1;
-  display: flex;
-  position: relative;
-  z-index: 1;
-  padding: 0 30px;
-}
-
-/* Left: Question Area */
-.game-question-area {
+.game-arena {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding-right: 20px;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
 }
 
-.game-instruction {
-  color: var(--gold-light);
-  font-size: 14px;
-  margin-bottom: 10px;
-  font-weight: 500;
-}
-
-.game-q-text {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 20px;
-  color: var(--paper-cream);
+.game-prompt {
   text-align: center;
-  line-height: 1.6;
-  margin-bottom: 10px;
-  font-weight: 600;
+  padding: 16px 0 8px;
+  position: relative;
+  z-index: 2;
 }
 
-.game-q-highlight {
+.game-prompt-label {
+  color: rgba(255,255,255,0.5);
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.game-prompt-pinyin {
   color: var(--gold-light);
   font-family: 'ZCOOL XiaoWei', serif;
-  font-size: 36px;
-  margin-bottom: 24px;
+  font-size: 42px;
   letter-spacing: 3px;
+  margin-bottom: 8px;
 }
 
 .game-audio-btn {
@@ -1173,131 +1162,138 @@ body {
   gap: 8px;
   background: rgba(255,255,255,0.08);
   border: 1px solid rgba(255,255,255,0.12);
-  padding: 10px 20px;
+  padding: 8px 18px;
   border-radius: 24px;
   color: white;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
-  margin-bottom: 28px;
   font-family: 'Noto Sans SC', sans-serif;
   transition: all 0.2s;
 }
-
 .game-audio-btn:hover { background: rgba(255,255,255,0.12); }
 
-.game-choices {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  width: 100%;
-  max-width: 400px;
-}
-
-.game-choice {
-  background: rgba(255,255,255,0.06);
-  border: 2px solid rgba(255,255,255,0.1);
-  border-radius: var(--radius-md);
-  padding: 18px 14px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.25s;
-  color: white;
-  font-family: 'Noto Sans SC', sans-serif;
-}
-
-.game-choice:hover {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.2);
-  transform: translateY(-2px);
-}
-
-.gc-char {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 32px;
-  font-weight: 700;
-  display: block;
-  margin-bottom: 4px;
-}
-
-.gc-py {
-  font-size: 13px;
-  color: rgba(255,255,255,0.4);
-}
-
-.game-choice.right {
-  background: rgba(74,124,111,0.25);
-  border-color: var(--jade);
-  box-shadow: 0 0 20px rgba(74,124,111,0.15);
-}
-
-.game-choice.wrong {
-  background: rgba(194,58,46,0.2);
-  border-color: var(--seal-red);
-}
-
-/* Right: Camera / Gesture Preview */
-.game-camera-area {
-  width: 240px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-}
-
-.camera-preview {
-  width: 220px;
-  height: 165px;
-  background: rgba(255,255,255,0.04);
-  border: 1.5px solid rgba(255,255,255,0.1);
-  border-radius: var(--radius-md);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+.game-fall-zone {
+  flex: 1;
   position: relative;
   overflow: hidden;
 }
 
-.camera-preview::before {
-  content: '';
+.falling-char {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #4ade80;
-  box-shadow: 0 0 6px rgba(74,222,128,0.5);
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 34px;
+  font-weight: 700;
+  color: white;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  user-select: none;
+  z-index: 3;
+}
+.falling-char:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.3);
+}
+.falling-char.right {
+  background: rgba(74,124,111,0.35);
+  border-color: var(--jade);
+  box-shadow: 0 0 24px rgba(74,124,111,0.3);
+}
+.falling-char.wrong {
+  background: rgba(194,58,46,0.3);
+  border-color: var(--seal-red);
+  animation: shake 0.4s ease;
+}
+.falling-char.hovered {
+  border-color: var(--gold-light);
+  box-shadow: 0 0 16px rgba(184,150,62,0.3);
 }
 
-.camera-hand {
-  font-size: 52px;
-  margin-bottom: 4px;
-  animation: hand-wave 2s ease-in-out infinite;
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
 }
 
-@keyframes hand-wave {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+.game-deadline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--seal-red), transparent);
+  opacity: 0.5;
 }
 
-.camera-label {
-  font-size: 12px;
-  color: rgba(255,255,255,0.3);
+.game-cam-pip {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 160px;
+  height: 120px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid rgba(255,255,255,0.15);
+  overflow: hidden;
+  z-index: 5;
+  background: rgba(0,0,0,0.3);
 }
-
-.gesture-hint {
-  font-size: 12px;
-  color: rgba(255,255,255,0.35);
+.game-cam-pip video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+.game-cam-pip canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(-1);
+}
+.game-cam-pip .pip-label {
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  right: 0;
   text-align: center;
-  line-height: 1.6;
-  max-width: 200px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
 }
 
-.gesture-hint strong {
-  color: var(--gold-light);
-  font-weight: 600;
+.finger-cursor {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(184,150,62,0.5);
+  border: 2px solid var(--gold-light);
+  pointer-events: none;
+  z-index: 10;
+  transform: translate(-50%, -50%);
+  transition: left 0.08s, top 0.08s;
+  display: none;
+}
+.finger-cursor.active { display: block; }
+.finger-cursor .hover-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--gold-light);
+  opacity: 0;
+}
+.finger-cursor.locking .hover-ring {
+  animation: lock-ring 1s linear forwards;
+}
+@keyframes lock-ring {
+  from { opacity: 1; transform: scale(1.5); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 /* Celebration Overlay */
@@ -1354,6 +1350,40 @@ body {
   font-weight: 600;
   cursor: pointer;
   font-family: 'Noto Sans SC', sans-serif;
+}
+.celeb-next.outline {
+  background: transparent;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.7);
+}
+
+.game-final {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(28,23,16,0.95);
+}
+.game-final.show { display: flex; }
+.final-icon { font-size: 64px; margin-bottom: 12px; }
+.final-title {
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 30px;
+  color: var(--gold-light);
+  margin-bottom: 8px;
+}
+.final-score {
+  font-size: 18px;
+  color: white;
+  margin-bottom: 6px;
+}
+.final-stars {
+  font-size: 28px;
+  letter-spacing: 4px;
+  margin-bottom: 20px;
 }
 
 /* ====================================================================
@@ -1763,14 +1793,14 @@ body {
 /* ====== RESPONSIVE ====== */
 @media (max-width: 900px) {
   .museum-hall { width: 240px; }
-  .game-camera-area { width: 180px; }
   .call-response-panel { width: 260px; }
+  .game-cam-pip { width: 120px; height: 90px; }
 }
 @media (max-width: 768px) {
   .museum-hall { width: 200px; }
   .poem-scroll { grid-template-columns: 1fr; }
-  .game-camera-area { display: none; }
   .call-response-panel { width: 240px; }
+  .game-cam-pip { width: 100px; height: 75px; }
 }
 </style>
 </head>
@@ -2109,63 +2139,50 @@ body {
   </div>
 </div>
 
-<!-- ================= MODULE 3: GESTURE GAME ================= -->
+<!-- ================= MODULE 3: FALLING CHARACTERS GAME ================= -->
 <div class="page" id="p-game">
   <div class="game-page">
     <div class="game-topbar">
-      <button class="game-back-btn" onclick="nav('p-learn')">← 返回學習</button>
+      <button class="game-back-btn" onclick="exitGame(); nav('p-learn')">← 返回學習</button>
       <div class="game-hud">
-        <div class="game-hud-stars">⭐⭐⭐☆☆</div>
-        <div class="game-hud-qnum">第 3 / 5 題</div>
+        <span class="game-hud-score" id="g-score">0 分</span>
+        <span class="game-hud-round" id="g-round">第 1/7 題</span>
+        <span class="game-hud-timer" id="g-timer">⏱ 5s</span>
+        <span class="game-hud-combo" id="g-combo"></span>
       </div>
     </div>
 
-    <div class="game-main">
-      <div class="game-question-area">
-        <div class="game-instruction">🖐️ 用手勢指向正確的字 · 或直接點擊選擇</div>
-        <div class="game-q-text">「床前明月光，疑是地上霜」<br>哪個字的讀音是——</div>
-        <div class="game-q-highlight">shuāng</div>
-        <button class="game-audio-btn" onclick="this.style.transform='scale(0.95)';setTimeout(()=>this.style.transform='',150)">
-          🔊 再聽一次
-        </button>
-
-        <div class="game-choices">
-          <div class="game-choice" onclick="pick(this,false)">
-            <span class="gc-char">床</span>
-            <span class="gc-py">chuáng</span>
-          </div>
-          <div class="game-choice" onclick="pick(this,true)">
-            <span class="gc-char">霜</span>
-            <span class="gc-py">shuāng</span>
-          </div>
-          <div class="game-choice" onclick="pick(this,false)">
-            <span class="gc-char">光</span>
-            <span class="gc-py">guāng</span>
-          </div>
-          <div class="game-choice" onclick="pick(this,false)">
-            <span class="gc-char">鄉</span>
-            <span class="gc-py">xiāng</span>
-          </div>
-        </div>
+    <div class="game-arena" id="g-arena">
+      <div class="game-prompt">
+        <div class="game-prompt-label">找出這個讀音的字</div>
+        <div class="game-prompt-pinyin" id="g-pinyin">shuāng</div>
+        <button class="game-audio-btn" onclick="this.style.transform='scale(0.95)';setTimeout(()=>this.style.transform='',150)">🔊 再聽一次</button>
       </div>
+      <div class="game-fall-zone" id="g-fall-zone"></div>
+      <div class="game-deadline"></div>
 
-      <div class="game-camera-area">
-        <div class="camera-preview">
-          <video id="game-cam" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;border-radius:inherit;"></video>
-          <div class="camera-label" style="position:absolute;bottom:6px;left:0;right:0;text-align:center;">攝像頭手勢追蹤</div>
-        </div>
-        <div class="gesture-hint">
-          <strong>隔空操作</strong><br>
-          舉起手指指向答案<br>停留 1 秒確認選擇
-        </div>
+      <div class="game-cam-pip" id="g-cam-pip" style="display:none;">
+        <video id="game-cam" autoplay playsinline muted></video>
+        <canvas id="game-cam-canvas"></canvas>
+        <div class="pip-label">手勢追蹤</div>
       </div>
+      <div class="finger-cursor" id="finger-cursor"><div class="hover-ring"></div></div>
     </div>
 
     <div class="game-celebration" id="g-celeb">
-      <div class="celeb-icon">🎉</div>
-      <div class="celeb-title">答對了！太棒了！</div>
-      <div class="celeb-detail">「霜」shuāng —— 記住翹舌音 sh 哦！</div>
-      <button class="celeb-next" onclick="closeCeleb()">繼續下一題 →</button>
+      <div class="celeb-icon" id="celeb-icon">🎉</div>
+      <div class="celeb-title" id="celeb-title">答對了！太棒了！</div>
+      <div class="celeb-detail" id="celeb-detail"></div>
+      <button class="celeb-next" onclick="nextRound()">繼續下一題 →</button>
+    </div>
+
+    <div class="game-final" id="g-final" style="display:none;">
+      <div class="final-icon">🏆</div>
+      <div class="final-title">挑戰完成！</div>
+      <div class="final-score" id="final-score"></div>
+      <div class="final-stars" id="final-stars"></div>
+      <button class="celeb-next" onclick="restartGame()">再玩一次 🔄</button>
+      <button class="celeb-next outline" style="margin-top:8px;" onclick="exitGame(); nav('p-learn')">返回學習</button>
     </div>
   </div>
 </div>
@@ -2199,8 +2216,8 @@ body {
             <div class="speech-who">李白 說：</div>
             <div class="speech-text">
               小友你好！我來考考你——<br>
-              王昌齡《出塞》中「秦時明月漢時關」的<br>
-              「<em>塞</em>」字，用普通話怎麼念？
+              我的《靜夜思》中「疑是地上霜」的<br>
+              「<em>疑</em>」字，用普通話怎麼念？
             </div>
           </div>
         </div>
@@ -2210,15 +2227,15 @@ body {
         <div class="call-panel-title">📋 本題內容</div>
 
         <div class="call-question-card">
-          <div class="cq-label">出自《出塞》· 王昌齡</div>
+          <div class="cq-label">出自《靜夜思》· 李白</div>
           <div class="cq-poem-ref">
-            秦時明月漢時關，<br>萬里長征人未還。
+            床前明月光，<br>疑是地上霜。
           </div>
           <div class="cq-target">
-            <div class="cq-target-char">塞</div>
+            <div class="cq-target-char">疑</div>
             <div class="cq-target-info">
               <strong>請朗讀此字的正確讀音</strong><br>
-              提示：邊塞的「塞」
+              提示：懷疑的「疑」，第二聲
             </div>
           </div>
         </div>
@@ -2233,7 +2250,7 @@ body {
             <span class="cr-score-text">發音得分 92</span>
           </div>
           <div class="cr-feedback">
-            <strong>李白：</strong>「塞」讀 <strong>sài</strong>，第四聲，很好！邊塞詩是我們唐代最豪邁的詩體，你讀得鏗鏘有力！下一題準備好了嗎？
+            <strong>李白：</strong>「疑」讀 <strong>yí</strong>，第二聲，很好！我當年在月下寫這首詩時，正是「疑」惑月光為霜的那一刻觸動了思鄉之情。你讀得很準確！
           </div>
         </div>
 
@@ -2350,21 +2367,273 @@ function animateRead() {
   });
 }
 
-// Game
-function pick(el, correct) {
-  if (el.classList.contains('right') || el.classList.contains('wrong')) return;
+// ====== FALLING CHARACTERS GAME ======
+const gameQuestions = [
+  { pinyin:'shuāng', answer:'霜', choices:['床','霜','光','鄉'], hint:'翹舌音 sh，第一聲' },
+  { pinyin:'yí',     answer:'疑', choices:['疑','是','地','低'], hint:'第二聲，懷疑的疑' },
+  { pinyin:'jǔ',     answer:'舉', choices:['舉','頭','望','故'], hint:'第三聲，舉起的舉' },
+  { pinyin:'chuáng', answer:'床', choices:['床','霜','前','鄉'], hint:'翹舌音 ch，第二聲' },
+  { pinyin:'gù',     answer:'故', choices:['故','光','月','明'], hint:'第四聲，故鄉的故' },
+  { pinyin:'wàng',   answer:'望', choices:['望','明','月','思'], hint:'第四聲，望月的望' },
+  { pinyin:'míng',   answer:'明', choices:['明','前','低','上'], hint:'第二聲，明亮的明' },
+];
+
+let gRound = 0, gScore = 0, gCombo = 0, gTimer = null, gFallTimers = [], gActive = false;
+let gTimeLeft = 5;
+let handTracker = null, camStream = null, fingerPos = null, hoverTarget = null, hoverStart = 0;
+
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function startGame() {
+  gRound = 0; gScore = 0; gCombo = 0; gActive = true;
+  document.getElementById('g-final').style.display = 'none';
+  document.getElementById('g-celeb').classList.remove('show');
+  shuffleArray(gameQuestions);
+  initHands();
+  loadRound();
+}
+
+function exitGame() {
+  gActive = false;
+  clearInterval(gTimer);
+  gFallTimers.forEach(t => cancelAnimationFrame(t));
+  gFallTimers = [];
+  if (handTracker) { handTracker.close(); handTracker = null; }
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+  document.getElementById('g-cam-pip').style.display = 'none';
+  document.getElementById('finger-cursor').classList.remove('active');
+}
+
+function loadRound() {
+  if (gRound >= gameQuestions.length) { showFinal(); return; }
+  const q = gameQuestions[gRound];
+  document.getElementById('g-pinyin').textContent = q.pinyin;
+  document.getElementById('g-round').textContent = '第 ' + (gRound+1) + '/' + gameQuestions.length + ' 題';
+  document.getElementById('g-score').textContent = gScore + ' 分';
+  document.getElementById('g-combo').textContent = gCombo >= 2 ? 'x' + gCombo + ' 連擊!' : '';
+  document.getElementById('g-celeb').classList.remove('show');
+  gTimeLeft = 5;
+  document.getElementById('g-timer').textContent = '⏱ ' + gTimeLeft + 's';
+  spawnChars(q);
+  gTimer = setInterval(() => {
+    gTimeLeft--;
+    document.getElementById('g-timer').textContent = '⏱ ' + gTimeLeft + 's';
+    if (gTimeLeft <= 0) { clearInterval(gTimer); onTimeout(); }
+  }, 1000);
+}
+function spawnChars(q) {
+  const zone = document.getElementById('g-fall-zone');
+  zone.innerHTML = '';
+  gFallTimers.forEach(t => cancelAnimationFrame(t));
+  gFallTimers = [];
+  const shuffled = shuffleArray([...q.choices]);
+  const zoneW = zone.offsetWidth;
+  const cols = shuffled.length;
+  const charW = 72;
+  const gap = Math.max(20, (zoneW - cols * charW) / (cols + 1));
+
+  shuffled.forEach((ch, i) => {
+    const el = document.createElement('div');
+    el.className = 'falling-char';
+    el.textContent = ch;
+    el.dataset.char = ch;
+    el.dataset.correct = ch === q.answer ? '1' : '0';
+    const left = gap + i * (charW + gap);
+    el.style.left = left + 'px';
+    el.style.top = '-80px';
+    el.onclick = () => pickChar(el);
+    zone.appendChild(el);
+
+    // Animate falling
+    const startDelay = i * 200;
+    const duration = 4500 + Math.random() * 1000;
+    const startTime = performance.now() + startDelay;
+    const zoneH = zone.offsetHeight;
+    function fall(now) {
+      if (!gActive) return;
+      const elapsed = now - startTime;
+      if (elapsed < 0) { gFallTimers.push(requestAnimationFrame(fall)); return; }
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = progress * progress * 0.3 + progress * 0.7;
+      el.style.top = (-80 + eased * (zoneH + 80)) + 'px';
+      if (progress < 1) gFallTimers.push(requestAnimationFrame(fall));
+    }
+    gFallTimers.push(requestAnimationFrame(fall));
+  });
+}
+
+function pickChar(el) {
+  if (!gActive || el.classList.contains('right') || el.classList.contains('wrong')) return;
+  clearInterval(gTimer);
+  gFallTimers.forEach(t => cancelAnimationFrame(t));
+  gFallTimers = [];
+  const correct = el.dataset.correct === '1';
   if (correct) {
     el.classList.add('right');
-    setTimeout(() => document.getElementById('g-celeb').classList.add('show'), 350);
+    gCombo++;
+    const bonus = gCombo >= 3 ? 15 : gCombo >= 2 ? 10 : 0;
+    const timeBonus = gTimeLeft * 2;
+    gScore += 10 + bonus + timeBonus;
+    const q = gameQuestions[gRound];
+    document.getElementById('celeb-icon').textContent = '🎉';
+    document.getElementById('celeb-title').textContent = '答對了！太棒了！';
+    document.getElementById('celeb-detail').textContent =
+      '「' + q.answer + '」' + q.pinyin + ' —— ' + q.hint +
+      (bonus > 0 ? ' (連擊 +' + bonus + ')' : '') +
+      (timeBonus > 0 ? ' (速度 +' + timeBonus + ')' : '');
+    setTimeout(() => document.getElementById('g-celeb').classList.add('show'), 300);
   } else {
     el.classList.add('wrong');
-    setTimeout(() => el.classList.remove('wrong'), 700);
+    gCombo = 0;
+    setTimeout(() => { el.classList.remove('wrong'); }, 500);
+    // Resume timer
+    gTimer = setInterval(() => {
+      gTimeLeft--;
+      document.getElementById('g-timer').textContent = '⏱ ' + gTimeLeft + 's';
+      if (gTimeLeft <= 0) { clearInterval(gTimer); onTimeout(); }
+    }, 1000);
+    // Resume falling
+    const zone = document.getElementById('g-fall-zone');
+    const chars = zone.querySelectorAll('.falling-char:not(.right)');
+    chars.forEach(c => {
+      const curTop = parseFloat(c.style.top);
+      const zoneH = zone.offsetHeight;
+      const remaining = zoneH + 80 - curTop;
+      const duration = remaining / (zoneH + 80) * 4500;
+      const startTime = performance.now();
+      function fall(now) {
+        if (!gActive) return;
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        c.style.top = (curTop + progress * remaining) + 'px';
+        if (progress < 1) gFallTimers.push(requestAnimationFrame(fall));
+      }
+      gFallTimers.push(requestAnimationFrame(fall));
+    });
+  }
+}
+function onTimeout() {
+  gFallTimers.forEach(t => cancelAnimationFrame(t));
+  gFallTimers = [];
+  gCombo = 0;
+  const q = gameQuestions[gRound];
+  document.getElementById('celeb-icon').textContent = '⏰';
+  document.getElementById('celeb-title').textContent = '時間到！';
+  document.getElementById('celeb-detail').textContent =
+    '正確答案：「' + q.answer + '」' + q.pinyin + ' —— ' + q.hint;
+  setTimeout(() => document.getElementById('g-celeb').classList.add('show'), 200);
+}
+
+function nextRound() {
+  gRound++;
+  document.getElementById('g-celeb').classList.remove('show');
+  if (gRound >= gameQuestions.length) { showFinal(); return; }
+  loadRound();
+}
+
+function showFinal() {
+  gActive = false;
+  const maxScore = gameQuestions.length * 20;
+  const pct = gScore / maxScore;
+  const stars = pct >= 0.9 ? 5 : pct >= 0.7 ? 4 : pct >= 0.5 ? 3 : pct >= 0.3 ? 2 : 1;
+  document.getElementById('final-score').textContent = '總分：' + gScore;
+  document.getElementById('final-stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(5 - stars);
+  document.getElementById('g-final').style.display = 'flex';
+}
+
+function restartGame() {
+  document.getElementById('g-final').style.display = 'none';
+  startGame();
+}
+
+// ====== MEDIAPIPE HANDS ======
+async function initHands() {
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 }, audio: false });
+    const vid = document.getElementById('game-cam');
+    vid.srcObject = camStream;
+    document.getElementById('g-cam-pip').style.display = 'block';
+
+    const { Hands } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js');
+    handTracker = new Hands({ locateFile: f =>
+      'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/' + f
+    });
+    handTracker.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 0,
+      minDetectionConfidence: 0.6,
+      minTrackingConfidence: 0.5
+    });
+    handTracker.onResults(onHandResults);
+
+    const canvas = document.getElementById('game-cam-canvas');
+    async function detect() {
+      if (!gActive || !handTracker) return;
+      try { await handTracker.send({ image: vid }); } catch(e) {}
+      requestAnimationFrame(detect);
+    }
+    vid.onloadeddata = () => requestAnimationFrame(detect);
+  } catch(e) {
+    console.warn('Hand tracking not available:', e);
+    document.getElementById('g-cam-pip').style.display = 'none';
   }
 }
 
-function closeCeleb() {
-  document.getElementById('g-celeb').classList.remove('show');
-  document.querySelectorAll('.game-choice').forEach(c => c.classList.remove('right','wrong'));
+function onHandResults(results) {
+  const cursor = document.getElementById('finger-cursor');
+  if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+    cursor.classList.remove('active');
+    fingerPos = null;
+    return;
+  }
+  const tip = results.multiHandLandmarks[0][8]; // index finger tip
+  const arena = document.getElementById('g-arena');
+  const rect = arena.getBoundingClientRect();
+  // Mirror X since camera is mirrored
+  const x = (1 - tip.x) * rect.width;
+  const y = tip.y * rect.height;
+  fingerPos = { x, y };
+
+  cursor.classList.add('active');
+  cursor.style.left = x + 'px';
+  cursor.style.top = y + 'px';
+
+  // Check hover on falling chars
+  const chars = document.querySelectorAll('#g-fall-zone .falling-char:not(.right):not(.wrong)');
+  let found = null;
+  chars.forEach(el => {
+    const er = el.getBoundingClientRect();
+    const ex = er.left - rect.left + er.width / 2;
+    const ey = er.top - rect.top + er.height / 2;
+    const dist = Math.sqrt((x - ex) ** 2 + (y - ey) ** 2);
+    if (dist < 50) found = el;
+  });
+
+  if (found) {
+    if (hoverTarget !== found) {
+      hoverTarget = found;
+      hoverStart = performance.now();
+      cursor.classList.add('locking');
+      document.querySelectorAll('.falling-char').forEach(c => c.classList.remove('hovered'));
+      found.classList.add('hovered');
+    } else if (performance.now() - hoverStart > 1000) {
+      cursor.classList.remove('locking');
+      pickChar(found);
+      hoverTarget = null;
+    }
+  } else {
+    hoverTarget = null;
+    hoverStart = 0;
+    cursor.classList.remove('locking');
+    document.querySelectorAll('.falling-char').forEach(c => c.classList.remove('hovered'));
+  }
 }
 
 // Call mic
@@ -2378,24 +2647,18 @@ function toggleCallMic() {
   }
 }
 
-// Camera: start when navigating to game or call page
-let camStream = null;
-async function startCam(videoId) {
-  try {
-    const v = document.getElementById(videoId);
-    if (!v) return;
-    if (!camStream) {
-      camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-    }
-    v.srcObject = camStream;
-  } catch(e) { console.warn('Camera not available:', e); }
-}
-
 const _origNav = nav;
 nav = function(id) {
   _origNav(id);
-  if (id === 'p-game') startCam('game-cam');
-  if (id === 'p-call') startCam('call-cam');
+  if (id === 'p-game') startGame();
+  if (id === 'p-call') {
+    (async () => {
+      try {
+        if (!camStream) camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        document.getElementById('call-cam').srcObject = camStream;
+      } catch(e) { console.warn('Camera not available:', e); }
+    })();
+  }
 };
 </script>
 </body>
