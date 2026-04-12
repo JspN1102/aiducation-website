@@ -134,21 +134,18 @@ const waterVertShader = `
 const waterFragShader = `
   uniform float uTime; varying vec2 vUv;
   void main(){
-    vec3 base = vec3(0.04, 0.10, 0.28);
-    // Stepped specular streaks
-    float streak1 = step(0.75, sin(vUv.x*25.0 + uTime*1.5 + vUv.y*8.0));
-    float streak2 = step(0.82, sin(vUv.x*15.0 - uTime*1.0 + vUv.y*5.0));
-    vec3 highlight = vec3(0.3, 0.7, 0.9) * (streak1*0.3 + streak2*0.2);
-    // Moon reflection — hard circle
+    vec3 base = vec3(0.06, 0.04, 0.12);
+    // Subtle moving specular streaks
+    float streak1 = step(0.8, sin(vUv.x*25.0 + uTime*1.5 + vUv.y*8.0));
+    float streak2 = step(0.85, sin(vUv.x*15.0 - uTime*1.0 + vUv.y*5.0));
+    vec3 highlight = vec3(0.15, 0.25, 0.35) * (streak1*0.25 + streak2*0.15);
+    // Moon reflection — soft circle
     vec2 moonUv = vUv - vec2(0.5, 0.5);
     float moonDist = length(moonUv * vec2(1.0, 2.5));
-    float moonRefl = step(moonDist, 0.08) * 0.6;
-    float moonRing = step(moonDist, 0.12) * step(0.08, moonDist) * 0.15;
-    vec3 moonCol = vec3(1.0, 0.92, 0.7) * (moonRefl + moonRing);
-    // Foam ring at platform edge
-    float dist = length(vUv - 0.5) * 2.0;
-    float foam = step(0.28, dist) * step(dist, 0.34) * 0.4;
-    vec3 col = base + highlight + moonCol + vec3(0.6, 0.8, 1.0) * foam;
+    float moonRefl = step(moonDist, 0.06) * 0.3;
+    float moonRing = step(moonDist, 0.1) * step(0.06, moonDist) * 0.08;
+    vec3 moonCol = vec3(0.7, 0.65, 0.5) * (moonRefl + moonRing);
+    vec3 col = base + highlight + moonCol;
     gl_FragColor = vec4(col, 0.92);
   }`;
 const cloudFragShader = `
@@ -292,16 +289,16 @@ function buildHall() {
         vec2 sp=vUv*6.0; float n1=fbm(sp); float n2=fbm(sp*2.3+3.7);
         float craters=smoothstep(0.55,0.7,n1)*0.25;
         float maria=smoothstep(0.3,0.5,n2)*0.15;
-        vec3 bright=vec3(1.0,0.97,0.88); vec3 dark=vec3(0.82,0.78,0.65);
+        vec3 bright=vec3(0.75,0.72,0.65); vec3 dark=vec3(0.55,0.52,0.42);
         vec3 col=mix(bright,dark,craters+maria);
         float rim=pow(1.0-max(dot(vNormal,vec3(0,0,1)),0.0),2.0);
-        col+=vec3(1.0,0.9,0.6)*rim*0.4;
+        col+=vec3(0.8,0.7,0.4)*rim*0.3;
         float pulse=0.92+0.08*sin(uTime*0.6);
         gl_FragColor=vec4(col*pulse,1.0);
       }`
   });
-  const moon = new THREE.Mesh(new THREE.SphereGeometry(3.0, 64, 64), moonMat);
-  moon.position.set(0, 6, -3); scene.add(moon);
+  const moon = new THREE.Mesh(new THREE.SphereGeometry(2.5, 64, 64), moonMat);
+  moon.position.set(0, 7, -5); scene.add(moon);
   animCallbacks.push(() => { moonMat.uniforms.uTime.value = elapsed; });
   // Huge dreamy glow
   const glowCanvas = document.createElement('canvas'); glowCanvas.width = 256; glowCanvas.height = 256;
@@ -310,9 +307,9 @@ function buildHall() {
   gGrad.addColorStop(0,'rgba(255,230,160,0.4)'); gGrad.addColorStop(0.3,'rgba(255,200,100,0.15)'); gGrad.addColorStop(1,'rgba(200,150,80,0)');
   gCtx.fillStyle = gGrad; gCtx.fillRect(0,0,256,256);
   const glowSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(glowCanvas), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
-  glowSprite.scale.set(10, 10, 1); glowSprite.position.copy(moon.position); scene.add(glowSprite);
+  glowSprite.scale.set(8, 8, 1); glowSprite.position.copy(moon.position); scene.add(glowSprite);
   // Moon light
-  const moonPL = new THREE.PointLight(0xffd080, 1.5, 40);
+  const moonPL = new THREE.PointLight(0xffd080, 0.8, 30);
   moonPL.position.copy(moon.position); scene.add(moonPL);
   animCallbacks.push(() => { if (bloomPass) bloomPass.strength = 0.7 + 0.2 * Math.sin(elapsed * 0.6); });
 
