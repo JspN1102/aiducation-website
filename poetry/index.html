@@ -1885,7 +1885,7 @@ body {
 /* ====================================================================
    MODULE 0: 3D MID-AUTUMN CULTURAL HALL — 中秋文化馆
    ==================================================================== */
-#p-3d { background: #1a1408; }
+#p-3d { background: #1a0e30; }
 #three-container { width: 100%; height: 100%; position: absolute; inset: 0; }
 #three-container canvas { display: block; }
 .css2d-layer { position: absolute !important; inset: 0; pointer-events: none; overflow: hidden; }
@@ -1916,6 +1916,17 @@ body {
 }
 .scene-back-btn:hover { background: rgba(184,150,62,0.2); border-color: var(--gold-light); }
 .scene-back-btn.show { display: block; }
+
+/* Graphics quality toggle */
+#gfx-toggle {
+  position: fixed; top: 16px; right: 16px; z-index: 500;
+  background: rgba(26,20,8,0.7); border: 1px solid rgba(184,150,62,0.3);
+  color: var(--gold-light); padding: 8px 14px; border-radius: 20px;
+  font-family: 'Noto Sans SC', sans-serif; font-size: 13px;
+  cursor: pointer; backdrop-filter: blur(8px);
+  transition: all 0.3s;
+}
+#gfx-toggle:hover { background: rgba(184,150,62,0.2); border-color: var(--gold-light); }
 
 /* Wood sign labels */
 .wood-sign {
@@ -2002,13 +2013,14 @@ body {
 <!-- ================= MODULE 0: 3D MID-AUTUMN HALL ================= -->
 <div class="page active" id="p-3d">
   <div id="three-container"></div>
-  <div id="three-fallback" style="position:absolute; inset:0; background:#1a1408; color:#d4b35a; font-family:'ZCOOL XiaoWei',serif; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:16px; z-index:10;">
+  <div id="three-fallback" style="position:absolute; inset:0; background:#1a0e30; color:#d4b35a; font-family:'ZCOOL XiaoWei',serif; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:16px; z-index:10;">
     <div style="font-size:64px;">🌕</div>
     <div style="font-size:24px; letter-spacing:4px;">中秋文化館</div>
     <div id="three-fallback-msg" style="font-size:14px; color:rgba(255,255,255,0.4); max-width:300px; line-height:1.8;">3D 場景載入中…</div>
     <button onclick="nav('p-museum')" style="margin-top:12px; background:rgba(184,150,62,0.2); border:1px solid rgba(184,150,62,0.4); color:#d4b35a; padding:10px 24px; border-radius:20px; font-size:14px; cursor:pointer; font-family:'Noto Sans SC',sans-serif;">進入博物館 →</button>
   </div>
   <button class="scene-back-btn" id="scene-back-btn" onclick="window.switchToHall && window.switchToHall()">← 返回大廳</button>
+  <button id="gfx-toggle" onclick="window.toggleGraphics && window.toggleGraphics()">画质: 高</button>
 </div>
 
 <!-- Scene transition overlay -->
