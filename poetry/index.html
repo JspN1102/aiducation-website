@@ -1254,13 +1254,14 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #000;
+  background: rgba(28,23,16,0.92);
 }
 .game-intro-video.show { display: flex; }
 .game-intro-video video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  width: 80%;
+  max-width: 560px;
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
 }
 .game-intro-skip {
   position: absolute;
@@ -2697,6 +2698,8 @@ function finishIntroVideo() {
   const vid = document.getElementById('g-intro-vid');
   vid.pause();
   vid.onended = null;
+  vid.removeAttribute('src');
+  vid.load();
   overlay.classList.remove('show');
   document.getElementById('g-tutorial').classList.add('show');
 }
@@ -2715,6 +2718,10 @@ function exitGame() {
   clearInterval(gTimer);
   gFallTimers.forEach(t => cancelAnimationFrame(t));
   gFallTimers = [];
+  // Stop intro video if still playing
+  const introVid = document.getElementById('g-intro-vid');
+  introVid.pause(); introVid.removeAttribute('src'); introVid.load();
+  document.getElementById('g-intro-video').classList.remove('show');
   if (handTracker) { handTracker.close(); handTracker = null; }
   if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
   document.getElementById('g-cam-pip').style.display = 'none';
@@ -2968,6 +2975,7 @@ nav = function(id) {
   }
   else { if (typeof window.pauseMid3dScene === 'function') window.pauseMid3dScene(); }
   if (id === 'p-game') startGame();
+  else { var iv = document.getElementById('g-intro-vid'); if (iv) { iv.pause(); iv.removeAttribute('src'); iv.load(); } document.getElementById('g-intro-video').classList.remove('show'); }
   if (id === 'p-call') {
     (async () => {
       try {
