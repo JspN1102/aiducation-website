@@ -134,19 +134,8 @@ const waterVertShader = `
 const waterFragShader = `
   uniform float uTime; varying vec2 vUv;
   void main(){
-    vec3 base = vec3(0.06, 0.04, 0.12);
-    // Subtle moving specular streaks
-    float streak1 = step(0.8, sin(vUv.x*25.0 + uTime*1.5 + vUv.y*8.0));
-    float streak2 = step(0.85, sin(vUv.x*15.0 - uTime*1.0 + vUv.y*5.0));
-    vec3 highlight = vec3(0.15, 0.25, 0.35) * (streak1*0.25 + streak2*0.15);
-    // Moon reflection — soft circle
-    vec2 moonUv = vUv - vec2(0.5, 0.5);
-    float moonDist = length(moonUv * vec2(1.0, 2.5));
-    float moonRefl = step(moonDist, 0.06) * 0.3;
-    float moonRing = step(moonDist, 0.1) * step(0.06, moonDist) * 0.08;
-    vec3 moonCol = vec3(0.7, 0.65, 0.5) * (moonRefl + moonRing);
-    vec3 col = base + highlight + moonCol;
-    gl_FragColor = vec4(col, 0.92);
+    vec3 col = vec3(0.10, 0.06, 0.18);
+    gl_FragColor = vec4(col, 0.95);
   }`;
 const cloudFragShader = `
   uniform float uTime; uniform float uOpacity; varying vec2 vUv;
