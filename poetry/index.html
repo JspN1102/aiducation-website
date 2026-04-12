@@ -1245,6 +1245,39 @@ body {
   opacity: 0.5;
 }
 
+/* Game Intro Video Overlay */
+.game-intro-video {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 250;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+.game-intro-video.show { display: flex; }
+.game-intro-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.game-intro-skip {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 260;
+  transition: background 0.2s;
+}
+.game-intro-skip:hover { background: rgba(255,255,255,0.25); }
+
 /* Game Tutorial Overlay */
 .game-tutorial {
   display: none;
@@ -2399,6 +2432,11 @@ body {
       </div>
       <div class="finger-cursor" id="finger-cursor"><div class="hover-ring"></div></div>
 
+      <div class="game-intro-video" id="g-intro-video">
+        <video id="g-intro-vid" playsinline></video>
+        <button class="game-intro-skip" onclick="skipIntroVideo()">跳過 ▸</button>
+      </div>
+
       <div class="game-tutorial show" id="g-tutorial">
         <div class="game-tutorial-icon">🎮</div>
         <div class="game-tutorial-title">拼音接字遊戲</div>
@@ -2642,9 +2680,28 @@ function startGame() {
   document.getElementById('g-final').style.display = 'none';
   document.getElementById('g-celeb').classList.remove('show');
   document.getElementById('g-fall-zone').innerHTML = '';
-  document.getElementById('g-tutorial').classList.add('show');
+  document.getElementById('g-tutorial').classList.remove('show');
   shuffleArray(gameQuestions);
+  // Show intro video first
+  const overlay = document.getElementById('g-intro-video');
+  const vid = document.getElementById('g-intro-vid');
+  vid.src = '/assets/sed.mp4';
+  overlay.classList.add('show');
+  vid.currentTime = 0;
+  vid.play().catch(() => {});
+  vid.onended = function() { finishIntroVideo(); };
 }
+
+function finishIntroVideo() {
+  const overlay = document.getElementById('g-intro-video');
+  const vid = document.getElementById('g-intro-vid');
+  vid.pause();
+  vid.onended = null;
+  overlay.classList.remove('show');
+  document.getElementById('g-tutorial').classList.add('show');
+}
+
+function skipIntroVideo() { finishIntroVideo(); }
 
 function dismissTutorial() {
   document.getElementById('g-tutorial').classList.remove('show');
