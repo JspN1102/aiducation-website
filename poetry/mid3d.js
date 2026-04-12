@@ -81,7 +81,7 @@ function makeLantern(color, r, h, intensity) {
   // Flat bright body — bloom makes it glow
   const body = new THREE.Mesh(
     new THREE.CylinderGeometry(r, r * 0.85, h, 12),
-    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.92, side: THREE.DoubleSide })
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.75, side: THREE.DoubleSide })
   );
   g.add(body);
   const capMat = toonMat(0xc8a030, toonGrad3);
@@ -183,7 +183,7 @@ function rebuildComposer() {
   composer.addPass(new RenderPass(scene, camera));
   // Dreamy anime bloom — large radius, low threshold
   if (Q().bloom) {
-    bloomPass = new UnrealBloomPass(new THREE.Vector2(W, H), 1.6, 0.9, 0.25);
+    bloomPass = new UnrealBloomPass(new THREE.Vector2(W, H), 0.8, 0.6, 0.7);
     composer.addPass(bloomPass);
   }
   // Outline (ink lines on architecture)
@@ -214,7 +214,7 @@ function buildHall() {
 
   // Anime lighting: purple ambient + warm gold moon directional
   scene.add(new THREE.AmbientLight(0x3a2860, 0.5));
-  const dir = new THREE.DirectionalLight(0xffeebb, 0.8);
+  const dir = new THREE.DirectionalLight(0xffeebb, 0.5);
   dir.position.set(2, 12, 5);
   if (Q().shadows) {
     dir.castShadow = true; dir.shadow.mapSize.set(1024, 1024);
@@ -307,14 +307,14 @@ function buildHall() {
   const glowCanvas = document.createElement('canvas'); glowCanvas.width = 256; glowCanvas.height = 256;
   const gCtx = glowCanvas.getContext('2d');
   const gGrad = gCtx.createRadialGradient(128,128,15,128,128,128);
-  gGrad.addColorStop(0,'rgba(255,230,160,0.7)'); gGrad.addColorStop(0.3,'rgba(255,200,100,0.3)'); gGrad.addColorStop(1,'rgba(200,150,80,0)');
+  gGrad.addColorStop(0,'rgba(255,230,160,0.4)'); gGrad.addColorStop(0.3,'rgba(255,200,100,0.15)'); gGrad.addColorStop(1,'rgba(200,150,80,0)');
   gCtx.fillStyle = gGrad; gCtx.fillRect(0,0,256,256);
   const glowSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(glowCanvas), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
-  glowSprite.scale.set(18, 18, 1); glowSprite.position.copy(moon.position); scene.add(glowSprite);
+  glowSprite.scale.set(10, 10, 1); glowSprite.position.copy(moon.position); scene.add(glowSprite);
   // Moon light
-  const moonPL = new THREE.PointLight(0xffd080, 3.0, 50);
+  const moonPL = new THREE.PointLight(0xffd080, 1.5, 40);
   moonPL.position.copy(moon.position); scene.add(moonPL);
-  animCallbacks.push(() => { if (bloomPass) bloomPass.strength = 1.4 + 0.4 * Math.sin(elapsed * 0.6); });
+  animCallbacks.push(() => { if (bloomPass) bloomPass.strength = 0.7 + 0.2 * Math.sin(elapsed * 0.6); });
 
   // ---- ANIME CLOUDS (solid puffy shapes) ----
   for (let i = 0; i < 8; i++) {
@@ -552,7 +552,7 @@ window.initMid3dScene=function(){
   renderer=new THREE.WebGLRenderer({antialias:false,alpha:false});
   renderer.setSize(W,H); renderer.setPixelRatio(Q().pixelRatio);
   renderer.setClearColor(0x1a0e30,1);
-  renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.1;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=0.9;
   if(Q().shadows){renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;}
   container.appendChild(renderer.domElement);
   renderer.domElement.addEventListener('pointerdown',onPointerDown);
