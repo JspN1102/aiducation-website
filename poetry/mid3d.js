@@ -125,17 +125,16 @@ function makeSignSprite(text, sceneName) {
 
 // ==================== ANIME SHADER SOURCES ====================
 const waterVertShader = `
-  uniform float uTime; varying vec2 vUv;
+  varying vec2 vUv;
   void main(){
-    vUv = uv; vec3 p = position;
-    p.y += sin(p.x*3.0+uTime*1.2)*0.04 + sin(p.z*2.0+uTime*0.8)*0.03;
-    gl_Position = projectionMatrix*modelViewMatrix*vec4(p,1.0);
+    vUv = uv;
+    gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0);
   }`;
 const waterFragShader = `
-  uniform float uTime; varying vec2 vUv;
+  varying vec2 vUv;
   void main(){
-    vec3 col = vec3(0.10, 0.06, 0.18);
-    gl_FragColor = vec4(col, 0.95);
+    vec3 col = vec3(0.08, 0.07, 0.06);
+    gl_FragColor = vec4(col, 1.0);
   }`;
 const cloudFragShader = `
   uniform float uTime; uniform float uOpacity; varying vec2 vUv;
@@ -214,16 +213,15 @@ function buildHall() {
   rim.position.set(0, 5, -10); scene.add(rim);
 
   // ---- ANIME WATER ----
-  const waterGeo = new THREE.PlaneGeometry(60, 60, 80, 80);
+  const waterGeo = new THREE.PlaneGeometry(60, 60);
   const waterMat = new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 } },
+    uniforms: {},
     vertexShader: waterVertShader, fragmentShader: waterFragShader,
-    transparent: true, side: THREE.DoubleSide
+    side: THREE.DoubleSide
   });
   const water = new THREE.Mesh(waterGeo, waterMat);
   water.rotation.x = -Math.PI / 2; water.position.y = -2;
   scene.add(water);
-  animCallbacks.push(() => { waterMat.uniforms.uTime.value = elapsed; });
 
   // ---- STONE PLATFORM (toon) ----
   const platform = new THREE.Mesh(new THREE.CylinderGeometry(8, 8.5, 0.6, 32), toonMat(0x4a4050, toonGrad5));
@@ -439,9 +437,8 @@ function buildPoetry() {
   camera.position.set(0, 4, 12); controls.target.set(0, 2, 0);
   scene.add(new THREE.AmbientLight(0x2a3060, 0.5));
   scene.add(place(new THREE.DirectionalLight(0xffeebb, 0.6), 2, 10, 4));
-  const wMat = new THREE.ShaderMaterial({uniforms:{uTime:{value:0}},vertexShader:waterVertShader,fragmentShader:waterFragShader,transparent:true,side:THREE.DoubleSide});
-  const w2 = new THREE.Mesh(new THREE.PlaneGeometry(40,40,60,60),wMat); w2.rotation.x=-Math.PI/2; w2.position.y=-0.3; scene.add(w2);
-  animCallbacks.push(()=>{wMat.uniforms.uTime.value=elapsed;});
+  const wMat = new THREE.ShaderMaterial({uniforms:{},vertexShader:waterVertShader,fragmentShader:waterFragShader,side:THREE.DoubleSide});
+  const w2 = new THREE.Mesh(new THREE.PlaneGeometry(40,40),wMat); w2.rotation.x=-Math.PI/2; w2.position.y=-0.3; scene.add(w2);
   const pavG = new THREE.Group();
   const pavFloor = new THREE.Mesh(new THREE.CylinderGeometry(3,3,0.15,8), toonMat(0x4a3a28, toonGrad5));
   pavG.add(place(pavFloor,0,0.08,0)); outlineObjects.push(pavFloor);
