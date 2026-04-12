@@ -2678,6 +2678,9 @@ function shuffleArray(arr) {
 
 function startGame() {
   gRound = 0; gScore = 0; gCombo = 0; gActive = false;
+  clearInterval(gTimer);
+  gFallTimers.forEach(t => cancelAnimationFrame(t));
+  gFallTimers = [];
   document.getElementById('g-final').style.display = 'none';
   document.getElementById('g-celeb').classList.remove('show');
   document.getElementById('g-fall-zone').innerHTML = '';
