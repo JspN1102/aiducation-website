@@ -123,6 +123,81 @@ function makeSignSprite(text, sceneName) {
   return sprite;
 }
 
+function buildHorizon() {
+  const sky = scene.background;
+  const skyC = new THREE.Color(sky);
+  const mtC = new THREE.Color(skyC).multiplyScalar(0.4);
+  for (let i = 0; i < 4; i++) {
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uSkyColor: { value: new THREE.Vector3(skyC.r, skyC.g, skyC.b) },
+        uMountainColor: { value: new THREE.Vector3(mtC.r, mtC.g, mtC.b) },
+        uLayerIndex: { value: i }
+      },
+      vertexShader: waterVertShader, fragmentShader: horizonFragShader,
+      transparent: true, depthWrite: false, side: THREE.DoubleSide
+    });
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(80, 15), mat);
+    plane.position.set((i - 1.5) * 3, 5 + i * 1.5, -30 - i * 5);
+    scene.add(plane);
+  }
+}
+
+function buildFallingParticles(count, color, spread, yMax) {
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    pos[i * 3] = (Math.random() - 0.5) * spread;
+    pos[i * 3 + 1] = Math.random() * yMax;
+    pos[i * 3 + 2] = (Math.random() - 0.5) * spread;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({
+    color, size: 0.12, transparent: true, opacity: 0.8,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  scene.add(new THREE.Points(geo, mat));
+  animCallbacks.push(() => {
+    const p = geo.attributes.position.array;
+    for (let i = 0; i < count; i++) {
+      p[i * 3] += Math.sin(elapsed * 0.4 + i) * 0.005 + 0.003;
+      p[i * 3 + 1] -= 0.015;
+      p[i * 3 + 2] += Math.cos(elapsed * 0.3 + i * 0.5) * 0.003;
+      if (p[i * 3 + 1] < 0) {
+        p[i * 3] = (Math.random() - 0.5) * spread;
+        p[i * 3 + 1] = yMax + Math.random() * 2;
+        p[i * 3 + 2] = (Math.random() - 0.5) * spread;
+      }
+    }
+    geo.attributes.position.needsUpdate = true;
+    mat.opacity = 0.6 + 0.3 * Math.sin(elapsed * 1.5);
+  });
+}
+
+function buildClutter(configs) {
+  const dummy = new THREE.Object3D();
+  configs.forEach(cfg => {
+    const im = new THREE.InstancedMesh(cfg.geometry, cfg.material, cfg.count);
+    for (let i = 0; i < cfg.count; i++) {
+      const xr = cfg.xRange, zr = cfg.zRange;
+      dummy.position.set(
+        xr[0] + Math.random() * (xr[1] - xr[0]),
+        cfg.yBase + Math.random() * 0.02,
+        zr[0] + Math.random() * (zr[1] - zr[0])
+      );
+      const s = cfg.scaleRange[0] + Math.random() * (cfg.scaleRange[1] - cfg.scaleRange[0]);
+      dummy.scale.setScalar(s);
+      dummy.rotation.y = Math.random() * Math.PI * 2;
+      dummy.updateMatrix();
+      im.setMatrixAt(i, dummy.matrix);
+    }
+    im.instanceMatrix.needsUpdate = true;
+    im.castShadow = true;
+    scene.add(im);
+    outlineObjects.push(im);
+  });
+}
+
 // ==================== ANIME SHADER SOURCES ====================
 const waterVertShader = `
   varying vec2 vUv;
@@ -157,6 +232,68 @@ const cloudFragShader = `
     vec3 col = bodyCol * solid + rimCol * rim;
     float alpha = (solid * 0.7 + rim * 0.5) * uOpacity * edgeFade;
     gl_FragColor = vec4(col, alpha);
+  }`;
+
+const horizonFragShader = `
+  uniform vec3 uSkyColor;
+  uniform vec3 uMountainColor;
+  uniform float uLayerIndex;
+  varying vec2 vUv;
+  float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+  float noise(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.0-2.0*f);
+    return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y); }
+  void main(){
+    float freq = 3.0 + uLayerIndex * 1.5;
+    float height = 0.3 + noise(vec2(vUv.x * freq, uLayerIndex)) * 0.4
+                       + noise(vec2(vUv.x * freq * 2.0, uLayerIndex + 5.0)) * 0.15;
+    float alpha = step(vUv.y, height);
+    float fade = uLayerIndex / 3.0;
+    vec3 col = mix(uMountainColor, uSkyColor, fade * 0.7);
+    gl_FragColor = vec4(col, alpha);
+  }`;
+
+const windCanopyVertShader = `
+  uniform float uTime;
+  varying vec2 vUv;
+  void main(){
+    vUv = uv;
+    vec3 pos = position;
+    float wave = sin(pos.x * 3.0 + uTime * 2.5) * 0.12
+               + sin(pos.y * 2.0 + uTime * 1.8) * 0.08;
+    pos.z += wave * uv.x * 0.8;
+    pos.y += wave * uv.x * 0.25;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+  }`;
+const windCanopyFragShader = `
+  varying vec2 vUv;
+  uniform vec3 uColor;
+  void main(){
+    float shade = 0.85 + 0.15 * vUv.y;
+    gl_FragColor = vec4(uColor * shade, 1.0);
+  }`;
+
+const cobblestoneFragShader = `
+  varying vec2 vUv;
+  uniform vec3 uBaseColor;
+  uniform vec3 uLineColor;
+  vec2 hash2(vec2 p){ return fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5453); }
+  float voronoi(vec2 p){
+    vec2 n=floor(p), f=fract(p); float md=8.0;
+    for(int j=-1;j<=1;j++) for(int i=-1;i<=1;i++){
+      vec2 g=vec2(float(i),float(j));
+      vec2 o=hash2(n+g);
+      vec2 r=g+o-f;
+      md=min(md,dot(r,r));
+    }
+    return md;
+  }
+  void main(){
+    vec2 uv = vUv * 12.0;
+    float v = voronoi(uv);
+    float edge = 1.0 - smoothstep(0.02, 0.08, v);
+    vec3 col = mix(uBaseColor, uLineColor, edge);
+    col *= 0.9 + 0.1 * fract(sin(dot(floor(uv), vec2(12.9, 78.2))) * 43758.5);
+    gl_FragColor = vec4(col, 1.0);
   }`;
 
 // ==================== COMPOSER BUILDER ====================
@@ -381,6 +518,12 @@ function buildHall() {
     ffMat.opacity = 0.7 + 0.25 * Math.sin(elapsed * 2.5 + Math.random());
   });
 
+  // ---- HORIZON MOUNTAINS ----
+  buildHorizon();
+
+  // ---- FALLING LEAVES (golden autumn) ----
+  buildFallingParticles(200, 0xffcc44, 18, 12);
+
   // Update outline pass
   if (outlinePass) outlinePass.selectedObjects = outlineObjects;
   document.getElementById('scene-back-btn').classList.remove('show');
@@ -392,7 +535,11 @@ function buildHistory() {
   camera.position.set(0, 3, 10); controls.target.set(0, 1.5, 0);
   scene.add(new THREE.AmbientLight(0x3a2860, 0.4));
   scene.add(place(new THREE.DirectionalLight(0xffeebb, 0.6), 2, 8, 4));
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(20,20), toonMat(0x2a2035, toonGrad5));
+  const floorMat = new THREE.ShaderMaterial({
+    uniforms: { uBaseColor: { value: new THREE.Vector3(0.17, 0.13, 0.21) }, uLineColor: { value: new THREE.Vector3(0.08, 0.05, 0.10) } },
+    vertexShader: waterVertShader, fragmentShader: cobblestoneFragShader, side: THREE.DoubleSide
+  });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(20,20), floorMat);
   floor.receiveShadow = true; scene.add(place(floor,0,0,0,-Math.PI/2)); outlineObjects.push(floor);
   const scrollTex = makeCanvasTexture('中秋節源於上古天象崇拜\n至唐宋時期盛行全國\n明清已成為主要節日',512,512,'36px serif','#3a2510','#f0e0c0');
   const scroll = new THREE.Mesh(new THREE.PlaneGeometry(4,3), new THREE.MeshBasicMaterial({map:scrollTex,side:THREE.DoubleSide}));
@@ -407,6 +554,13 @@ function buildHistory() {
     lbl.addEventListener('click',()=>window.openMid3dPopup(a.name,'',a.name,[{w:a.name,m:'歷史文物展品'}]));
     const lo = new CSS2DObject(lbl); lo.position.set(a.x,2,0.5); scene.add(lo);
   });
+
+  // ---- MICRO-CLUTTER ----
+  buildClutter([
+    { geometry: new THREE.SphereGeometry(0.05,6,6), material: toonMat(0x4a4050,toonGrad3), count: 30, xRange:[-8,8], zRange:[-8,8], yBase:0.05, scaleRange:[0.8,1.5] },
+    { geometry: new THREE.BoxGeometry(0.07,0.07,0.07), material: toonMat(0x3a3040,toonGrad3), count: 20, xRange:[-8,8], zRange:[-8,8], yBase:0.04, scaleRange:[0.7,1.2] }
+  ]);
+
   if (outlinePass) outlinePass.selectedObjects = outlineObjects;
   document.getElementById('scene-back-btn').classList.add('show');
 }
@@ -417,16 +571,46 @@ function buildStreet() {
   camera.position.set(0, 4, 12); controls.target.set(0, 1.5, -2);
   scene.add(new THREE.AmbientLight(0x3a2860, 0.4));
   scene.add(place(new THREE.DirectionalLight(0xffeebb, 0.5), 2, 8, 4));
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(12,30), toonMat(0x3a2a38, toonGrad5));
-  floor.receiveShadow = true; scene.add(place(floor,0,0,0,-Math.PI/2)); outlineObjects.push(floor);
+
+  // ---- COBBLESTONE FLOOR ----
+  const floorMat = new THREE.ShaderMaterial({
+    uniforms: { uBaseColor: { value: new THREE.Vector3(0.23, 0.17, 0.22) }, uLineColor: { value: new THREE.Vector3(0.12, 0.08, 0.10) } },
+    vertexShader: waterVertShader, fragmentShader: cobblestoneFragShader, side: THREE.DoubleSide
+  });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 30), floorMat);
+  floor.receiveShadow = true; scene.add(place(floor, 0, 0, 0, -Math.PI / 2)); outlineObjects.push(floor);
+
   const stalls = [{name:'月餅坊',x:-3.5,z:-4},{name:'茶館',x:3.5,z:-4},{name:'燈謎攤',x:-3.5,z:1},{name:'小吃攤',x:3.5,z:1}];
+  const canopyMats = [];
   stalls.forEach((s) => {
     scene.add(place(new THREE.PointLight(0xffaa44,0.5,5),s.x,2,s.z));
     const lbl = document.createElement('div'); lbl.className='obj-label'; lbl.textContent=s.name;
     lbl.addEventListener('click',()=>window.openMid3dPopup(s.name,'',s.name,[{w:s.name,m:'古街夜市攤位'}]));
     const lo = new CSS2DObject(lbl); lo.position.set(s.x,2.5,s.z); scene.add(lo);
+
+    // ---- WIND CANOPY ----
+    const cMat = new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Vector3(0.7, 0.2, 0.15) } },
+      vertexShader: windCanopyVertShader, fragmentShader: windCanopyFragShader, side: THREE.DoubleSide
+    });
+    canopyMats.push(cMat);
+    const canopy = new THREE.Mesh(new THREE.PlaneGeometry(2, 1.2, 10, 10), cMat);
+    canopy.position.set(s.x, 2.8, s.z); canopy.rotation.x = -Math.PI / 2;
+    scene.add(canopy);
   });
+  animCallbacks.push(() => { canopyMats.forEach(m => { m.uniforms.uTime.value = elapsed; }); });
+
   for(let i=0;i<25;i++){const l=makeLantern([0xff3322,0xff5533,0xffaa22][i%3],0.15,0.3,0.3);l.position.set((Math.random()-0.5)*10,2.8+Math.random()*1.5,(Math.random()-0.5)*14);scene.add(l);const by=l.position.y;animCallbacks.push(()=>{l.position.y=by+Math.sin(elapsed*0.8+i*0.7)*0.1;});}
+
+  // ---- HORIZON MOUNTAINS ----
+  buildHorizon();
+
+  // ---- MICRO-CLUTTER ----
+  buildClutter([
+    { geometry: new THREE.BoxGeometry(0.08,0.08,0.08), material: toonMat(0x5a4a40,toonGrad3), count: 40, xRange:[-5,5], zRange:[-12,12], yBase:0.04, scaleRange:[0.8,1.5] },
+    { geometry: new THREE.CylinderGeometry(0.04,0.04,0.06,6), material: toonMat(0x6a5a50,toonGrad3), count: 30, xRange:[-5,5], zRange:[-12,12], yBase:0.03, scaleRange:[0.7,1.3] }
+  ]);
+
   if (outlinePass) outlinePass.selectedObjects = outlineObjects;
   document.getElementById('scene-back-btn').classList.add('show');
 }
@@ -449,6 +633,13 @@ function buildPoetry() {
   const moon=new THREE.Mesh(new THREE.SphereGeometry(2,32,32),new THREE.MeshBasicMaterial({color:0xfff4d6}));moon.position.set(0,10,-15);scene.add(moon);
   const poems=[{title:'水調歌頭',ex:[{w:'明月',m:'中秋滿月'},{w:'把酒',m:'端起酒杯'}]},{title:'靜夜思',ex:[{w:'疑',m:'懷疑'},{w:'霜',m:'白色冰晶'}]}];
   poems.forEach((p,i)=>{const a=(i/poems.length)*Math.PI*2;const lbl=document.createElement('div');lbl.className='obj-label';lbl.textContent=p.title;lbl.addEventListener('click',()=>window.openMid3dPopup(p.title,'','',p.ex));const lo=new CSS2DObject(lbl);lo.position.set(Math.sin(a)*5,3,Math.cos(a)*5);scene.add(lo);});
+
+  // ---- HORIZON MOUNTAINS ----
+  buildHorizon();
+
+  // ---- FALLING PETALS (pink) ----
+  buildFallingParticles(150, 0xffaacc, 12, 10);
+
   if (outlinePass) outlinePass.selectedObjects = outlineObjects;
   document.getElementById('scene-back-btn').classList.add('show');
 }
@@ -490,6 +681,13 @@ function buildCraft() {
     const lbl=document.createElement('div');lbl.className='obj-label';lbl.textContent=s.name;
     lbl.addEventListener('click',()=>window.openMid3dPopup(s.name,'','',[]));
     const lo=new CSS2DObject(lbl);lo.position.set(s.x,2,0.8);scene.add(lo);});
+
+  // ---- MICRO-CLUTTER (table items + floor debris) ----
+  buildClutter([
+    { geometry: new THREE.CylinderGeometry(0.03,0.03,0.05,6), material: toonMat(0xd4a030,toonGrad3), count: 25, xRange:[-2.5,2.5], zRange:[-1,1], yBase:1.1, scaleRange:[0.8,1.5] },
+    { geometry: new THREE.BoxGeometry(0.06,0.06,0.06), material: toonMat(0x5a4a40,toonGrad3), count: 25, xRange:[-3,3], zRange:[-2,2], yBase:0.03, scaleRange:[0.7,1.3] }
+  ]);
+
   if (outlinePass) outlinePass.selectedObjects = outlineObjects;
   document.getElementById('scene-back-btn').classList.add('show');
 }
