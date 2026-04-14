@@ -23,7 +23,7 @@
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    const { useState, useMemo } = React;
+    const { useState, useEffect, useCallback } = React;
     const { motion } = Motion;
 
     const sentences = [
@@ -33,73 +33,121 @@
       "不久后，树上开出了一簇簇洁白的小花。",
       "到了丰收的季节，枝丫间挂满了酸甜多汁的黄柠檬。",
     ];
-
-    /* flatten all chars with sentence index */
-    const allChars = sentences.flatMap((s, si) =>
-      [...s].map((ch, ci) => ({ ch, si, ci }))
-    );
+    const allChars = sentences.flatMap((s, si) => [...s].map((ch, ci) => ({ ch, si, ci })));
     const totalChars = allChars.length;
-
-    /* clamp helper */
     const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-    /* map progress sub-range [lo,hi] → 0..1 */
     const sub = (p, lo, hi) => clamp((p - lo) / (hi - lo), 0, 1);
 
-    /* ---- Continuous SVG Scene ---- */
-    function Scene({ progress }) {
-      const p = progress; /* 0 → 1 */
+    /* ---- SVG Defs ---- */
+    const Defs = () => (
+      <defs>
+        <linearGradient id="groundGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#A68B6B" />
+          <stop offset="100%" stopColor="#8B7355" />
+        </linearGradient>
+        <linearGradient id="trunkGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#6D4C41" />
+          <stop offset="50%" stopColor="#8D6E63" />
+          <stop offset="100%" stopColor="#5D4037" />
+        </linearGradient>
+        <radialGradient id="lemonGrad" cx="35%" cy="35%">
+          <stop offset="0%" stopColor="#FFF176" />
+          <stop offset="60%" stopColor="#FDD835" />
+          <stop offset="100%" stopColor="#F9A825" />
+        </radialGradient>
+        <radialGradient id="leafGrad1" cx="40%" cy="30%">
+          <stop offset="0%" stopColor="#81C784" />
+          <stop offset="100%" stopColor="#388E3C" />
+        </radialGradient>
+        <radialGradient id="leafGrad2" cx="50%" cy="40%">
+          <stop offset="0%" stopColor="#A5D6A7" />
+          <stop offset="100%" stopColor="#43A047" />
+        </radialGradient>
+        <radialGradient id="leafGrad3" cx="45%" cy="35%">
+          <stop offset="0%" stopColor="#C8E6C9" />
+          <stop offset="100%" stopColor="#66BB6A" />
+        </radialGradient>
+        <radialGradient id="seedGrad" cx="40%" cy="35%">
+          <stop offset="0%" stopColor="#A68B6B" />
+          <stop offset="100%" stopColor="#5D4037" />
+        </radialGradient>
+        <filter id="dropShadow"><feDropShadow dx="0" dy="2" stdDeviation="2.5" floodOpacity="0.15" /></filter>
+        <filter id="paperNoise">
+          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" result="n" />
+          <feColorMatrix type="saturate" values="0" in="n" result="g" />
+          <feBlend in="SourceGraphic" in2="g" mode="multiply" />
+        </filter>
+      </defs>
+    );
 
-      /* seed: visible 0–25%, fades out 20–25% */
+    /* ---- Organic Path Constants ---- */
+    const GROUND = "M0,268 C60,258 130,278 200,262 C270,248 340,272 400,260 L400,400 L0,400 Z";
+    const SEED = "M0,-7 C5,-7 9,-2 9,1 C9,5 5,9 0,10 C-5,9 -9,5 -9,1 C-9,-2 -5,-7 0,-7";
+    const TRUNK = "M192,260 C190,220 188,180 191,140 L209,140 C212,180 210,220 208,260 Z";
+    const CANOPY = [
+      { d: "M200,55 C260,50 310,80 300,120 C295,150 260,165 200,168 C140,165 105,150 100,120 C90,80 140,50 200,55Z", fill: "url(#leafGrad1)", op: 0.85 },
+      { d: "M155,75 C190,60 130,100 120,130 C115,150 140,168 175,165 C140,170 100,155 95,125 C88,95 110,70 155,75Z", fill: "url(#leafGrad2)", op: 0.7 },
+      { d: "M245,80 C280,70 305,95 300,125 C296,150 270,168 235,165 C265,160 290,140 292,118 C295,90 275,72 245,80Z", fill: "url(#leafGrad3)", op: 0.75 },
+      { d: "M170,95 C200,85 235,88 240,110 C245,135 220,155 195,158 C170,155 150,135 155,112 C158,98 165,92 170,95Z", fill: "url(#leafGrad2)", op: 0.6 },
+    ];
+    const PETAL = "M0,0 C-3.5,-5 -2,-11 0,-13 C2,-11 3.5,-5 0,0";
+    const LEMON = "M0,-11 C7,-9 12,-4 11,1 C10,6 5,12 0,13 C-5,12 -10,6 -11,1 C-12,-4 -7,-9 0,-11";
+    const flowers = [[152,92],[198,68],[248,88],[168,125],[232,118],[200,108]];
+    const lemons  = [[148,98],[212,72],[258,92],[172,132],[238,122],[198,52]];
+
+    /* ---- Scene ---- */
+    function Scene({ progress, pulse }) {
+      const p = progress;
       const seedOp = p < 0.20 ? 1 : 1 - sub(p, 0.20, 0.28);
       const seedScale = sub(p, 0, 0.06);
-
-      /* sprout: grows 15–35% */
       const sproutP = sub(p, 0.15, 0.38);
       const sproutOp = p < 0.38 ? sproutP : 1 - sub(p, 0.38, 0.46);
       const stemH = sproutP * 55;
-
-      /* tree: grows 35–60% */
       const treeP = sub(p, 0.35, 0.60);
-      const treeScale = treeP;
       const trunkH = treeP * 120;
-
-      /* flowers: 58–78% */
       const flowerP = sub(p, 0.58, 0.78);
-
-      /* fruit: 75–100% */
       const fruitP = sub(p, 0.75, 1.0);
 
-      const flowers = [[155,90],[200,70],[245,85],[170,120],[230,115],[200,105]];
-      const lemons  = [[150,100],[210,75],[255,95],[175,130],[235,125],[195,55]];
-
       return (
-        <g>
+        <motion.g key={pulse} animate={{ scale: [1, 1.012, 1] }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          style={{ transformOrigin: "200px 250px" }}>
+
+          {/* paper texture */}
+          <rect x="0" y="0" width="400" height="400" fill="#F9F9F6" filter="url(#paperNoise)" opacity="0.04" />
+          {[{x:45,y:30,r:1.5},{x:320,y:55,r:2},{x:180,y:15,r:1},{x:90,y:380,r:1.8},
+            {x:350,y:350,r:1.2},{x:260,y:20,r:1.5},{x:30,y:200,r:2},{x:370,y:180,r:1}].map((d,i) =>
+            <circle key={i} cx={d.x} cy={d.y} r={d.r} fill="#C4A882" opacity="0.06" />
+          )}
+
           {/* ground */}
-          <rect x="0" y="260" width="400" height="140" rx="8" fill="#C4A882" />
-          <line x1="40" y1="300" x2="100" y2="300" stroke="#A68B6B" strokeWidth="2" opacity="0.4" />
-          <line x1="200" y1="320" x2="280" y2="320" stroke="#A68B6B" strokeWidth="2" opacity="0.4" />
-          <line x1="300" y1="290" x2="360" y2="290" stroke="#A68B6B" strokeWidth="2" opacity="0.4" />
+          <path d={GROUND} fill="url(#groundGrad)" />
+          <path d="M30,300 Q80,292 130,300" fill="none" stroke="#A68B6B" strokeWidth="1.5" opacity="0.3" />
+          <path d="M200,320 Q250,312 300,322" fill="none" stroke="#A68B6B" strokeWidth="1.2" opacity="0.25" />
+          <path d="M280,295 Q330,288 370,296" fill="none" stroke="#9E8E7E" strokeWidth="1" opacity="0.2" />
 
           {/* seed */}
           {seedOp > 0.01 && (
-            <ellipse cx="200" cy="280" rx={12 * seedScale} ry={8 * seedScale}
-              fill="#8B6914" opacity={seedOp} />
+            <g transform="translate(200,278)" opacity={seedOp}>
+              <path d={SEED} fill="url(#seedGrad)" transform={`scale(${seedScale})`} />
+              <line x1="-2" y1="-2" x2="2" y2="3" stroke="#4E342E" strokeWidth="0.5" opacity={0.4 * seedScale} />
+            </g>
           )}
 
           {/* sprout */}
           {sproutOp > 0.01 && (
             <g opacity={sproutOp}>
-              <line x1="200" y1="260" x2="200" y2={260 - stemH}
-                stroke="#6B8E23" strokeWidth="4" strokeLinecap="round" />
+              <path d={`M200,260 C198,${260-stemH*0.5} 202,${260-stemH*0.8} 200,${260-stemH}`}
+                fill="none" stroke="#6B8E23" strokeWidth="3.5" strokeLinecap="round" />
               {sproutP > 0.4 && (
-                <ellipse cx="188" cy={260 - stemH + 8} rx={14 * sub(sproutP,0.4,0.7)}
-                  ry={6 * sub(sproutP,0.4,0.7)} fill="#7CB342"
-                  transform={`rotate(-30 188 ${260 - stemH + 8})`} />
+                <g transform={`translate(193,${260-stemH+6}) rotate(-35) scale(${sub(sproutP,0.4,0.7)})`}>
+                  <path d="M0,0 C-5,-3 -8,-10 0,-14 C8,-10 5,-3 0,0" fill="#7CB342" />
+                </g>
               )}
               {sproutP > 0.55 && (
-                <ellipse cx="212" cy={260 - stemH + 12} rx={12 * sub(sproutP,0.55,0.85)}
-                  ry={5 * sub(sproutP,0.55,0.85)} fill="#8BC34A"
-                  transform={`rotate(25 212 ${260 - stemH + 12})`} />
+                <g transform={`translate(207,${260-stemH+10}) rotate(30) scale(${sub(sproutP,0.55,0.85)})`}>
+                  <path d="M0,0 C-4,-3 -7,-9 0,-12 C7,-9 4,-3 0,0" fill="#8BC34A" />
+                </g>
               )}
             </g>
           )}
@@ -107,89 +155,107 @@
           {/* tree */}
           {treeP > 0.01 && (
             <g opacity={treeP}>
-              <rect x="190" y={260 - trunkH} width="20" height={trunkH} rx="4" fill="#8D6E63" />
+              <path d={TRUNK} fill="url(#trunkGrad)" transform={`translate(0,${120-trunkH}) scale(1,${treeP})`}
+                style={{ transformOrigin: "200px 260px" }} />
               {treeP > 0.4 && (
                 <g opacity={sub(treeP, 0.4, 0.7)}>
-                  <line x1="200" y1="180" x2="150" y2="150" stroke="#8D6E63" strokeWidth="6" strokeLinecap="round" />
-                  <line x1="200" y1="170" x2="255" y2="140" stroke="#8D6E63" strokeWidth="5" strokeLinecap="round" />
-                  <line x1="200" y1="195" x2="140" y2="175" stroke="#8D6E63" strokeWidth="4" strokeLinecap="round" />
-                  <line x1="200" y1="190" x2="260" y2="170" stroke="#8D6E63" strokeWidth="4" strokeLinecap="round" />
+                  <path d="M198,185 Q170,165 145,152" fill="none" stroke="#6D4C41" strokeWidth="5" strokeLinecap="round" />
+                  <path d="M202,175 Q230,155 258,142" fill="none" stroke="#6D4C41" strokeWidth="4.5" strokeLinecap="round" />
+                  <path d="M197,200 Q165,185 135,178" fill="none" stroke="#6D4C41" strokeWidth="3.5" strokeLinecap="round" />
+                  <path d="M203,195 Q235,178 262,172" fill="none" stroke="#6D4C41" strokeWidth="3.5" strokeLinecap="round" />
                 </g>
               )}
-              {treeP > 0.5 && (
-                <g opacity={sub(treeP, 0.5, 0.85)}>
-                  <ellipse cx="200" cy="110" rx={90 * sub(treeP,0.5,1)} ry={70 * sub(treeP,0.5,1)} fill="#66BB6A" />
-                  <ellipse cx="160" cy="130" rx={50 * sub(treeP,0.6,1)} ry={40 * sub(treeP,0.6,1)} fill="#81C784" />
-                  <ellipse cx="245" cy="125" rx={45 * sub(treeP,0.65,1)} ry={38 * sub(treeP,0.65,1)} fill="#81C784" />
-                </g>
-              )}
+              {treeP > 0.5 && CANOPY.map((c, i) => (
+                <path key={i} d={c.d} fill={c.fill} opacity={c.op * sub(treeP, 0.5 + i*0.05, 0.85 + i*0.05)} />
+              ))}
             </g>
           )}
 
           {/* flowers */}
           {flowerP > 0.01 && flowers.map(([cx,cy], i) => {
-            const fp = sub(flowerP, i * 0.12, i * 0.12 + 0.5);
+            const fp = sub(flowerP, i*0.12, i*0.12+0.5);
             const fadeOut = sub(fruitP, 0, 0.4);
             return fp > 0.01 && (
-              <g key={"f"+i} opacity={fp * (1 - fadeOut * 0.8)}>
-                <circle cx={cx} cy={cy} r={6 * fp} fill="white" />
-                <circle cx={cx} cy={cy} r={2.5 * fp} fill="#FFF176" />
+              <g key={"f"+i} transform={`translate(${cx},${cy}) scale(${fp})`} opacity={fp * (1 - fadeOut*0.8)}>
+                {[0,72,144,216,288].map(a => (
+                  <path key={a} d={PETAL} fill="white" opacity="0.9" transform={`rotate(${a})`} />
+                ))}
+                <circle cx="0" cy="0" r="2.5" fill="#FFF176" />
               </g>
             );
           })}
 
           {/* lemons */}
           {fruitP > 0.01 && lemons.map(([cx,cy], i) => {
-            const lp = sub(fruitP, i * 0.1, i * 0.1 + 0.5);
+            const lp = sub(fruitP, i*0.1, i*0.1+0.5);
             return lp > 0.01 && (
-              <g key={"l"+i} opacity={lp}>
-                <ellipse cx={cx} cy={cy} rx={10 * lp} ry={13 * lp} fill="#FDD835"
-                  transform={`rotate(${15*i} ${cx} ${cy})`} />
-                <ellipse cx={cx-2} cy={cy-3} rx={3 * lp} ry={5 * lp} fill="#FFEE58" opacity="0.6"
-                  transform={`rotate(${15*i} ${cx} ${cy})`} />
+              <g key={"l"+i} transform={`translate(${cx},${cy}) rotate(${15*i}) scale(${lp})`}
+                opacity={lp} filter="url(#dropShadow)">
+                <path d={LEMON} fill="url(#lemonGrad)" />
+                {/* stem + tiny leaf */}
+                <line x1="0" y1="-11" x2="1" y2="-15" stroke="#5D4037" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M1,-15 C3,-17 6,-16 4,-14 C3,-13 1,-14 1,-15" fill="#66BB6A" />
               </g>
             );
           })}
-        </g>
+        </motion.g>
       );
     }
 
     /* ---- Main App ---- */
     function App() {
       const [readCount, setReadCount] = useState(0);
+      const [pulse, setPulse] = useState(0);
       const progress = readCount / totalChars;
       const isFinished = readCount >= totalChars;
 
-      const handleClick = () => {
-        if (!isFinished) setReadCount(r => r + 1);
-      };
-      const restart = () => setReadCount(0);
+      const advance = useCallback(() => {
+        if (readCount < totalChars) { setReadCount(r => r + 1); setPulse(p => p + 1); }
+      }, [readCount]);
+      const goBack = useCallback(() => {
+        if (readCount > 0) { setReadCount(r => r - 1); setPulse(p => p + 1); }
+      }, [readCount]);
+      const restart = () => { setReadCount(0); setPulse(p => p + 1); };
 
-      /* figure out which sentence we're in */
+      useEffect(() => {
+        const onKey = (e) => {
+          if (e.key === "ArrowRight") { e.preventDefault(); advance(); }
+          if (e.key === "ArrowLeft") { e.preventDefault(); goBack(); }
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+      }, [advance, goBack]);
+
       const currentChar = allChars[readCount] || allChars[totalChars - 1];
       const activeSentence = isFinished ? sentences.length - 1 : currentChar.si;
+
+      /* precompute sentence start indices for O(1) lookup */
+      const sentenceStarts = sentences.reduce((acc, s, i) => {
+        acc.push(i === 0 ? 0 : acc[i-1] + sentences[i-1].length);
+        return acc;
+      }, []);
 
       return (
         <div className="min-h-screen flex flex-col items-center justify-center px-4 select-none">
           <h1 className="font-serif text-sm tracking-widest text-gray-400 mb-4 mt-6">柠檬的一生</h1>
 
-          {/* progress bar */}
-          <div className="w-full max-w-md h-1 rounded-full bg-gray-200 mb-6 overflow-hidden">
-            <motion.div className="h-full rounded-full bg-green-500"
-              animate={{ width: `${progress * 100}%` }} transition={{ duration: 0.15 }} />
+          <div className="w-full max-w-md h-1.5 rounded-full bg-gray-200 mb-6 overflow-hidden">
+            <motion.div className="h-full rounded-full"
+              style={{ background: "linear-gradient(90deg, #81C784, #43A047)" }}
+              animate={{ width: `${progress * 100}%` }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }} />
           </div>
 
-          {/* text area — show all sentences, highlight current */}
           <div className="w-full max-w-lg mb-4 space-y-3">
             {sentences.map((s, si) => (
               <p key={si} className="font-serif text-xl md:text-2xl text-center leading-relaxed"
-                style={{ opacity: si <= activeSentence ? 1 : 0.25, transition: "opacity 0.4s" }}>
+                style={{ opacity: si <= activeSentence ? 1 : 0.2, transition: "opacity 0.4s" }}>
                 {[...s].map((ch, ci) => {
-                  const globalIdx = allChars.findIndex(c => c.si === si && c.ci === ci);
+                  const globalIdx = sentenceStarts[si] + ci;
                   const isRead = globalIdx < readCount;
                   const isNext = globalIdx === readCount;
                   return (
-                    <span key={ci} onClick={isNext ? handleClick : undefined}
+                    <span key={ci} onClick={isNext ? advance : undefined}
                       style={{
                         color: isRead ? "#2E7D32" : isNext ? "#333" : "#ccc",
                         cursor: isNext ? "pointer" : "default",
@@ -206,14 +272,13 @@
             ))}
           </div>
 
-          {/* SVG visual */}
           <div className="w-full max-w-sm flex items-center justify-center" style={{ height: 340 }}>
             <svg viewBox="0 0 400 400" width="100%" height="100%">
-              <Scene progress={progress} />
+              <Defs />
+              <Scene progress={progress} pulse={pulse} />
             </svg>
           </div>
 
-          {/* footer */}
           <div className="h-14 flex items-center">
             {isFinished ? (
               <motion.button onClick={restart}
@@ -223,7 +288,7 @@
               </motion.button>
             ) : (
               <p className="text-gray-400 text-sm font-serif">
-                点击高亮的字逐字朗读 · {readCount} / {totalChars}
+                点击文字或按 → 键朗读 · {readCount} / {totalChars}
               </p>
             )}
           </div>
