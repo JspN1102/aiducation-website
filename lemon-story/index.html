@@ -3,396 +3,532 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>柠檬的一生 — AIDUCATION</title>
+  <title>言灵之树 — AIDUCATION</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      min-height: 100vh;
-      background: #ece7db;
-      display: flex; align-items: center; justify-content: center;
-      padding: 24px;
+      background: #fcfaf2; overflow: hidden; height: 100vh;
       font-family: 'Noto Serif SC', serif;
     }
-
-    #lemon-wrap {
-      width: 100%; max-width: 560px;
-      background: #f5f0e8; border-radius: 20px; overflow: hidden;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+    canvas#main-canvas { position: fixed; inset: 0; z-index: 0; display: block; }
+    #text-overlay {
+      position: fixed; top: 6vh; left: 50%; transform: translateX(-50%);
+      width: 90%; max-width: 560px; z-index: 1;
+      font-size: 20px; line-height: 2.4; color: #5a4a3a;
+      letter-spacing: 0.1em; text-align: center;
+      pointer-events: auto; user-select: none;
     }
-
-    /* ── 场景区 ── */
-    #scene { width: 100%; height: 340px; position: relative; overflow: hidden; }
-
-    #sky {
-      position: absolute; inset: 0 0 80px 0;
-      background: #b8d5e8; transition: background 1.5s ease;
+    .char { display: inline; cursor: pointer; transition: opacity 0.25s ease, color 0.2s ease; }
+    .char.pending { color: #c8bc9e; cursor: default; }
+    .char.active { color: #3d2e1a; font-weight: 600; }
+    .char.read { opacity: 0; pointer-events: none; }
+    #hint-bar {
+      position: fixed; bottom: 3vh; left: 50%; transform: translateX(-50%);
+      z-index: 2; font-size: 13px; color: #b0a590; letter-spacing: 0.08em;
+      display: flex; align-items: center; gap: 12px;
     }
-    #ground {
-      position: absolute; bottom: 0; left: 0; right: 0; height: 90px;
-      background: #6b4c2a;
+    #mic-btn {
+      background: none; border: 1.5px solid #c8bc9e; border-radius: 50%;
+      width: 32px; height: 32px; cursor: pointer; color: #a09580;
+      font-size: 16px; display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.3s, color 0.3s;
     }
-    #ground::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0;
-      height: 18px; background: #8a6535;
-    }
-
-    /* 雨 */
-    #rain-layer { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
-    .raindrop {
-      position: absolute; width: 1.5px; height: 12px;
-      background: #a8d4ee; border-radius: 1px; opacity: 0;
-      animation: fall 0.7s linear infinite;
-    }
-    @keyframes fall { 0% { transform: translateY(-20px); opacity: 0.6; } 100% { transform: translateY(360px); opacity: 0; } }
-
-    /* 太阳 */
-    #sun {
-      position: absolute; width: 60px; height: 60px; border-radius: 50%;
-      background: #ffd04d; top: 30px; right: 60px;
-      opacity: 0; transform: scale(0.5);
-      transition: opacity 1.5s ease, transform 1.5s ease; z-index: 2;
-    }
-
-    /* 幼苗 */
-    #sprout {
-      position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%);
-      width: 8px; height: 0px; background: #4a8c3a; border-radius: 4px;
-      opacity: 0; transition: height 1s ease, opacity 0.5s ease; z-index: 5;
-    }
-    #sprout.leafy::after {
-      content: ''; position: absolute; top: 0; left: -5px;
-      width: 16px; height: 14px; background: #5ab04a;
-      border-radius: 50% 50% 50% 0; transform: rotate(-30deg);
-    }
-
-    /* 树 */
-    #tree-container {
-      position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%);
-      width: 220px; display: flex; flex-direction: column; align-items: center; z-index: 4;
-    }
-    #trunk {
-      width: 14px; height: 0px; background: #5c3d1a; border-radius: 3px;
-      transition: height 1.2s cubic-bezier(.22,.68,0,1.2); position: relative; z-index: 2;
-    }
-    #canopy {
-      position: relative; width: 0px; height: 0px;
-      transition: width 1.2s ease, height 1.2s ease; overflow: visible;
-    }
-    /* 叶片团 */
-    .leaf-cluster {
-      position: absolute; background: #3d8f32; border-radius: 50%;
-      opacity: 0; transform: scale(0);
-      transition: opacity 0.8s ease, transform 0.8s cubic-bezier(.34,1.56,.64,1);
-    }
-    /* 花 */
-    .flower {
-      position: absolute; width: 12px; height: 12px;
-      opacity: 0; transform: scale(0);
-      transition: opacity 0.5s ease, transform 0.5s cubic-bezier(.34,1.56,.64,1); z-index: 6;
-    }
-    .flower::before {
-      content: ''; position: absolute; inset: 0;
-      background: white; border-radius: 50%;
-      box-shadow: 0 -5px 0 0 white, 0 5px 0 0 white, -5px 0 0 0 white, 5px 0 0 0 white;
-    }
-    .flower::after {
-      content: ''; position: absolute; top: 2px; left: 2px;
-      width: 8px; height: 8px; background: #ffd04d; border-radius: 50%;
-    }
-    /* 柠檬 */
-    .lemon {
-      position: absolute; width: 0px; height: 0px;
-      background: #e8d44d; border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
-      opacity: 0; transition: all 1.2s cubic-bezier(.34,1.2,.64,1); z-index: 7;
-    }
-    .lemon.ripe { background: #f0c830; }
-    /* 蜜蜂 */
-    .bee {
-      position: absolute; width: 16px; height: 10px;
-      opacity: 0; transition: opacity 0.6s ease; z-index: 10;
-    }
-    .bee::before {
-      content: ''; position: absolute; inset: 0;
-      background: #ffc107; border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
-      border: 1.5px solid #e6a800;
-    }
-    .bee::after {
-      content: ''; position: absolute; top: -6px; left: 1px;
-      width: 14px; height: 8px; background: rgba(200,230,255,0.7); border-radius: 50%;
-    }
-
-    /* ── 文字面板 ── */
-    #text-panel {
-      padding: 20px 28px 12px; background: #f5f0e8;
-      min-height: 130px; border-top: 1px solid #e0d5c0;
-    }
-    #poem-text {
-      font-size: 18px; line-height: 2.2; color: #3d2e1a;
-      letter-spacing: 0.08em; min-height: 56px;
-    }
-    .char {
-      display: inline; cursor: pointer; transition: color 0.15s, opacity 0.15s;
-    }
-    .char.read { color: #2E7D32; }
-    .char.next { color: #3d2e1a; font-weight: 600; border-bottom: 2px solid #8a6535; }
-    .char.unread { color: #c8bc9e; cursor: default; }
-
-    #progress-bar { display: flex; gap: 6px; margin-top: 14px; }
-    .prog-dot {
-      height: 3px; flex: 1; background: #c8bc9e; border-radius: 2px;
-      transition: background 0.4s ease;
-    }
-    .prog-dot.active { background: #8a6535; }
-
-    #hint {
-      text-align: center; padding: 10px 0 18px;
-      font-size: 13px; color: #a09580; letter-spacing: 0.1em;
-    }
-</style>
+    #mic-btn.listening { border-color: #e05050; color: #e05050; }
+    #mic-btn:hover { border-color: #8a6535; color: #8a6535; }
+  </style>
 </head>
 <body>
-<div id="lemon-wrap">
-  <div id="scene">
-    <div id="sky"></div>
-    <div id="rain-layer"></div>
-    <div id="sun"></div>
-    <div id="sprout"></div>
-    <div id="tree-container">
-      <div id="canopy"></div>
-      <div id="trunk"></div>
-    </div>
-    <div id="ground"></div>
-  </div>
-  <div id="text-panel">
-    <div id="poem-text"></div>
-    <div id="progress-bar"></div>
-  </div>
-  <div id="hint">点击文字或按 → 键逐字朗读</div>
+<canvas id="main-canvas"></canvas>
+<div id="text-overlay"></div>
+<div id="hint-bar">
+  <span id="hint-text">点击文字 或 按空格键朗读</span>
+  <button id="mic-btn" title="语音朗读">&#x1F399;</button>
 </div>
 <script>
-/* ══ 剧本：7 阶段，按进度百分比触发 ══ */
-const sentences = [
-  "在松软的果园泥土中，藏着一粒柠檬籽。",
-  "一阵清凉的夏雨过后，金灿灿的阳光洒满大地。",
-  "吸足了水分的幼苗，悄悄地钻出了地面。",
-  "它一天天长高，变成了一棵枝繁叶茂的小树。",
-  "不久后，树上开出了一簇簇洁白的小花。",
-  "贪玩的小蜜蜂闻香而来，在树上忙碌地飞舞。",
-  "到了丰收的季节，枝丫间挂满了酸甜多汁的黄柠檬。",
-];
+/* ═══ 1. CONFIG ═══ */
+const STORY = "在世界最初的清晨，文字如萤火般飘落大地。它们沉入泥土化为养分，唤醒了沉睡千年的言灵之树，树上结出的每颗果实，都藏着一个未被讲述的故事。";
+const GRAVITY = 420;
+const GROUND_RATIO = 0.78;
+const LERP_SPEED = 0.025;
+const WIND_STRENGTH = 4;
+const PUNCTUATION = /[，。、！？；：""''《》（）\s]/;
 
-/* 拍平所有字符 */
-const allChars = [];
-sentences.forEach((s, si) => [...s].forEach((ch, ci) => allChars.push({ ch, si, ci })));
-const totalChars = allChars.length;
-
-/* 每句起始 index */
-const sentenceStarts = [];
-let acc = 0;
-sentences.forEach(s => { sentenceStarts.push(acc); acc += s.length; });
-
-/* ══ DOM ══ */
-const skyEl     = document.getElementById('sky');
-const sunEl     = document.getElementById('sun');
-const rainLayer = document.getElementById('rain-layer');
-const sproutEl  = document.getElementById('sprout');
-const trunkEl   = document.getElementById('trunk');
-const canopyEl  = document.getElementById('canopy');
-const poemEl    = document.getElementById('poem-text');
-const progressBar = document.getElementById('progress-bar');
-const hintEl    = document.getElementById('hint');
-
-/* 进度点 */
-sentences.forEach((_, i) => {
-  const dot = document.createElement('div');
-  dot.className = 'prog-dot'; dot.id = 'dot-' + i;
-  progressBar.appendChild(dot);
-});
-
-/* ══ 场景控制函数 ══ */
-function setSky(c) { skyEl.style.background = c; }
-function showSun(v) { sunEl.style.opacity = v?'1':'0'; sunEl.style.transform = v?'scale(1)':'scale(0.5)'; }
-
-let rainDrops = [];
-function showRain(v) {
-  if (v && rainDrops.length === 0) {
-    for (let i = 0; i < 22; i++) {
-      const d = document.createElement('div');
-      d.className = 'raindrop';
-      d.style.left = (Math.random()*100)+'%';
-      d.style.animationDelay = (Math.random()*0.7)+'s';
-      d.style.animationDuration = (0.5+Math.random()*0.4)+'s';
-      rainLayer.appendChild(d); rainDrops.push(d);
-    }
-  } else if (!v) { rainDrops.forEach(d=>d.remove()); rainDrops=[]; }
+/* ═══ 2. UTILS ═══ */
+const lerp = (a,b,t) => a + (b - a) * t;
+const clamp = (v,lo,hi) => Math.max(lo, Math.min(hi, v));
+const rand = (lo,hi) => lo + Math.random() * (hi - lo);
+function quadBez(p0, p1, p2, t) {
+  const u = 1 - t;
+  return { x: u*u*p0.x + 2*u*t*p1.x + t*t*p2.x, y: u*u*p0.y + 2*u*t*p1.y + t*t*p2.y };
 }
 
-function setSprout(h, leaf) {
-  sproutEl.style.height = h+'px'; sproutEl.style.opacity = h>0?'1':'0';
-  leaf ? sproutEl.classList.add('leafy') : sproutEl.classList.remove('leafy');
-}
-function setTrunk(h) { trunkEl.style.height = h+'px'; }
+/* ═══ 3. CANVAS SETUP ═══ */
+const canvas = document.getElementById('main-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, dpr, groundY, treeBaseX, treeBaseY;
 
-let flowersEls=[], lemonsEls=[], beeEls=[], beeTimers=[];
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  groundY = H * GROUND_RATIO;
+  treeBaseX = W / 2;
+  treeBaseY = groundY;
+  initMoundPoints();
+}
+window.addEventListener('resize', resize);
 
-function hideCanopy() {
-  canopyEl.innerHTML=''; flowersEls=[]; lemonsEls=[];
-  canopyEl.style.width='0px'; canopyEl.style.height='0px';
-}
-function showCanopy() {
-  canopyEl.style.width='200px'; canopyEl.style.height='160px';
-  const clusters = [
-    {left:50,top:30,w:90,h:80,delay:0},{left:10,top:60,w:70,h:65,delay:.15},
-    {left:120,top:60,w:70,h:65,delay:.2},{left:60,top:80,w:80,h:60,delay:.3},
-    {left:20,top:90,w:55,h:50,delay:.4},{left:125,top:90,w:55,h:50,delay:.45},
-  ];
-  clusters.forEach(c => {
-    const el = document.createElement('div');
-    el.className = 'leaf-cluster';
-    el.style.cssText = `left:${c.left}px;top:${c.top}px;width:${c.w}px;height:${c.h}px;transition-delay:${c.delay}s`;
-    canopyEl.appendChild(el);
-    setTimeout(() => { el.style.opacity='1'; el.style.transform='scale(1)'; }, 30);
-  });
-  const fpos = [{left:55,top:20},{left:100,top:35},{left:140,top:55},{left:35,top:65},
-    {left:75,top:75},{left:120,top:85},{left:55,top:100},{left:95,top:110},{left:160,top:80},{left:25,top:90}];
-  fpos.forEach(p => {
-    const f = document.createElement('div'); f.className='flower';
-    f.style.left=p.left+'px'; f.style.top=p.top+'px';
-    canopyEl.appendChild(f); flowersEls.push(f);
-  });
-  const lpos = [{left:53,top:18},{left:98,top:33},{left:138,top:53},{left:33,top:63},
-    {left:73,top:73},{left:118,top:83},{left:53,top:98},{left:93,top:108},{left:158,top:78},{left:23,top:88}];
-  lpos.forEach(p => {
-    const l = document.createElement('div'); l.className='lemon';
-    l.style.left=p.left+'px'; l.style.top=p.top+'px';
-    canopyEl.appendChild(l); lemonsEls.push(l);
-  });
-}
-
-function showFlowers(v) {
-  flowersEls.forEach((f,i) => setTimeout(() => {
-    f.style.opacity=v?'1':'0'; f.style.transform=v?'scale(1)':'scale(0)';
-  }, i*60));
-}
-function showLemons(v) {
-  lemonsEls.forEach((l,i) => setTimeout(() => {
-    l.style.opacity=v?'1':'0'; l.style.width=v?'22px':'0'; l.style.height=v?'18px':'0';
-    if(v) setTimeout(()=>l.classList.add('ripe'),800);
-  }, i*80));
-}
-function showBees(v) {
-  if(!v||beeEls.length>0) return;
-  [{left:-20,top:50},{left:230,top:90},{left:100,top:-10}].forEach((pos,i) => {
-    const bee = document.createElement('div'); bee.className='bee';
-    bee.style.left=pos.left+'px'; bee.style.top=pos.top+'px';
-    canopyEl.appendChild(bee); beeEls.push(bee);
-    setTimeout(() => { bee.style.opacity='1'; animBee(bee); }, i*400);
-  });
-}
-function animBee(bee) {
-  (function move() {
-    const tx=20+Math.random()*160, ty=10+Math.random()*130, dur=800+Math.random()*1200;
-    bee.style.transition=`left ${dur}ms ease-in-out, top ${dur}ms ease-in-out`;
-    bee.style.left=tx+'px'; bee.style.top=ty+'px';
-    beeTimers.push(setTimeout(move, dur+100));
-  })();
-}
-function hideBees() { beeTimers.forEach(clearTimeout); beeTimers=[]; beeEls.forEach(b=>b.remove()); beeEls=[]; }
-
-/* ══ 阶段触发器（按句子 index） ══ */
-let triggeredStages = new Set();
-
-const stageActions = [
-  () => { setSky('#b8d5e8'); showRain(true); },
-  () => { showRain(false); showSun(true); setSky('#d4eaf7'); },
-  () => { setSprout(24, true); },
-  () => { setSprout(0, false); setTimeout(()=>{ setTrunk(90); setTimeout(showCanopy, 700); }, 200); },
-  () => { showFlowers(true); },
-  () => { showBees(true); },
-  () => { showFlowers(false); hideBees(); setTimeout(()=>showLemons(true), 600); setSky('#e8f4d4'); },
-];
-
-function triggerStage(si) {
-  if (triggeredStages.has(si)) return;
-  triggeredStages.add(si);
-  if (stageActions[si]) stageActions[si]();
-}
-
-/* ══ 渲染文字 ══ */
-let readCount = 0;
+/* ═══ 4. TEXT OVERLAY ═══ */
+const overlay = document.getElementById('text-overlay');
+const hintText = document.getElementById('hint-text');
+const chars = [...STORY];
+const totalChars = chars.length;
 let charSpans = [];
+let readCount = 0;
+let absorbedCount = 0;
+let targetGrowth = 0, currentGrowth = 0;
 
-function renderText() {
-  poemEl.innerHTML = '';
+function buildText() {
+  overlay.innerHTML = '';
   charSpans = [];
-  sentences.forEach((s, si) => {
-    const p = document.createElement('p');
-    p.style.margin = '0 0 6px';
-    [...s].forEach((ch, ci) => {
-      const span = document.createElement('span');
-      span.className = 'char';
-      span.textContent = ch;
-      const gIdx = sentenceStarts[si] + ci;
-      span.dataset.idx = gIdx;
-      p.appendChild(span);
-      charSpans.push(span);
-    });
-    poemEl.appendChild(p);
+  chars.forEach((ch, i) => {
+    const span = document.createElement('span');
+    span.className = 'char pending';
+    span.textContent = ch;
+    span.dataset.idx = i;
+    overlay.appendChild(span);
+    charSpans.push(span);
   });
-  updateChars();
+  updateCharStyles();
 }
 
-function updateChars() {
-  charSpans.forEach((span, i) => {
-    span.classList.remove('read','next','unread');
-    if (i < readCount) span.classList.add('read');
-    else if (i === readCount) span.classList.add('next');
-    else span.classList.add('unread');
+function updateCharStyles() {
+  charSpans.forEach((s, i) => {
+    s.classList.remove('read', 'active', 'pending');
+    if (i < readCount) s.classList.add('read');
+    else if (i === readCount) s.classList.add('active');
+    else s.classList.add('pending');
   });
-  /* 更新进度点 */
-  const curSi = readCount < totalChars ? allChars[readCount].si : sentences.length - 1;
-  document.querySelectorAll('.prog-dot').forEach((d,i) => d.classList.toggle('active', i <= curSi));
-  /* 触发当前句子的场景 */
-  triggerStage(curSi);
-  /* 提示 */
-  hintEl.textContent = readCount >= totalChars
-    ? '故事结束 · 按 ← 回退 或点击重新开始'
-    : `点击文字或按 → 键朗读 · ${readCount}/${totalChars}`;
+  hintText.textContent = readCount >= totalChars
+    ? '故事讲完了 · 言灵之树已长成'
+    : `点击文字 或 按空格键 · ${readCount}/${totalChars}`;
 }
 
-function advance() {
-  if (readCount < totalChars) { readCount++; updateChars(); }
-}
-function goBack() {
-  if (readCount > 0) { readCount--; updateChars(); }
-}
-function restart() {
-  readCount = 0; triggeredStages.clear();
-  hideBees(); hideCanopy(); showRain(false); showSun(false);
-  setSky('#b8d5e8'); setTrunk(0); setSprout(0, false);
-  renderText();
+/* ═══ 5. PARTICLE SYSTEM ═══ */
+let particles = [];
+
+function spawnParticle(idx) {
+  const span = charSpans[idx];
+  if (!span) return;
+  const rect = span.getBoundingClientRect();
+  particles.push({
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2,
+    vx: rand(-25, 25), vy: rand(-30, 0),
+    ch: chars[idx], fontSize: 18,
+    opacity: 1, alive: true, landed: false, landTimer: 0
+  });
 }
 
-/* 点击文字 */
-poemEl.addEventListener('click', e => {
-  const span = e.target.closest('.char.next');
-  if (span) advance();
+function updateParticles(dt) {
+  for (const p of particles) {
+    if (!p.alive) continue;
+    if (!p.landed) {
+      p.vy += GRAVITY * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      if (p.y >= groundY) {
+        p.y = groundY; p.landed = true; p.landTimer = 0;
+        absorbMound(p.x);
+        absorbedCount++;
+        targetGrowth = absorbedCount / totalChars;
+      }
+    } else {
+      p.landTimer += dt;
+      p.opacity = Math.max(0, 1 - p.landTimer / 0.4);
+      if (p.opacity <= 0) p.alive = false;
+    }
+  }
+  particles = particles.filter(p => p.alive);
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    ctx.save();
+    ctx.globalAlpha = p.opacity * 0.85;
+    ctx.font = `${p.fontSize}px 'Noto Serif SC', serif`;
+    ctx.fillStyle = '#5a4a3a';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(p.ch, p.x, p.y);
+    ctx.restore();
+  }
+}
+
+/* ═══ 6. MOUND SYSTEM ═══ */
+const MOUND_POINTS = 40;
+let moundHeights = [];
+
+function initMoundPoints() {
+  moundHeights = new Array(MOUND_POINTS).fill(0);
+}
+
+function absorbMound(px) {
+  const idx = Math.round((px / W) * (MOUND_POINTS - 1));
+  const ci = clamp(idx, 0, MOUND_POINTS - 1);
+  for (let d = -3; d <= 3; d++) {
+    const j = ci + d;
+    if (j >= 0 && j < MOUND_POINTS) {
+      moundHeights[j] += (4 - Math.abs(d)) * 1.2;
+    }
+  }
+}
+
+function drawMound(time) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  ctx.lineTo(0, groundY);
+  for (let i = 0; i < MOUND_POINTS; i++) {
+    const x = (i / (MOUND_POINTS - 1)) * W;
+    const tremble = Math.sin(time * 6 + i * 1.7) * 0.8;
+    const y = groundY - moundHeights[i] - tremble;
+    if (i === 0) ctx.lineTo(x, y);
+    else {
+      const px = ((i - 0.5) / (MOUND_POINTS - 1)) * W;
+      const prevY = groundY - moundHeights[Math.max(0, i-1)] - Math.sin(time * 6 + (i-1) * 1.7) * 0.8;
+      ctx.quadraticCurveTo(px, (prevY + y) / 2, x, y);
+    }
+  }
+  ctx.lineTo(W, groundY); ctx.lineTo(W, H); ctx.closePath();
+  ctx.fillStyle = 'rgba(107, 142, 80, 0.30)';
+  ctx.fill();
+  // subtle moss lines
+  for (let i = 0; i < MOUND_POINTS; i++) {
+    if (moundHeights[i] < 2) continue;
+    const x = (i / (MOUND_POINTS - 1)) * W;
+    const baseY = groundY - moundHeights[i];
+    for (let k = 0; k < 3; k++) {
+      const lx = x + rand(-6, 6);
+      const ly = baseY + rand(-2, 2);
+      const lh = rand(3, 8 + moundHeights[i] * 0.3);
+      const sway = Math.sin(time * 4 + lx * 0.1 + k) * 2;
+      ctx.beginPath();
+      ctx.moveTo(lx, ly);
+      ctx.quadraticCurveTo(lx + sway, ly - lh * 0.6, lx + sway * 0.5, ly - lh);
+      ctx.strokeStyle = `rgba(90, 130, 65, ${rand(0.15, 0.3)})`;
+      ctx.lineWidth = rand(0.8, 1.5);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+/* ═══ 7. TREE RENDERER ═══ */
+const MAX_DEPTH = 5;
+const BRANCH_SHRINK = 0.62;
+const BRANCH_ANGLE_SPREAD = 0.55;
+
+// seeded pseudo-random for stable tree structure
+let _seed = 1;
+function srand(s) { _seed = s; }
+function srand_next() { _seed = (_seed * 16807 + 0) % 2147483647; return (_seed & 0x7fffffff) / 0x7fffffff; }
+function srand_range(lo, hi) { return lo + srand_next() * (hi - lo); }
+
+function wind(x, y, time) {
+  return Math.sin(time * 1.2 + y * 0.008) * WIND_STRENGTH + Math.sin(time * 0.5 + x * 0.003) * 1.5;
+}
+
+function stageProgress(growth, lo, hi) {
+  return clamp((growth - lo) / (hi - lo), 0, 1);
+}
+
+function drawTree(time) {
+  if (currentGrowth < 0.001) return;
+
+  const seedP = stageProgress(currentGrowth, 0, 0.05);
+  const sproutP = stageProgress(currentGrowth, 0.05, 0.15);
+  const trunkP = stageProgress(currentGrowth, 0.15, 0.45);
+  const leafP = stageProgress(currentGrowth, 0.45, 0.65);
+  const flowerP = stageProgress(currentGrowth, 0.65, 0.80);
+  const fruitP = stageProgress(currentGrowth, 0.80, 1.0);
+
+  // Seed
+  if (seedP > 0 && sproutP < 1) {
+    const r = lerp(2, 5, seedP);
+    ctx.beginPath();
+    ctx.arc(treeBaseX, treeBaseY - r, r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(110, 75, 35, ${1 - sproutP})`;
+    ctx.fill();
+  }
+
+  // Sprout
+  if (sproutP > 0 && trunkP < 0.3) {
+    const h = lerp(0, 35, sproutP);
+    const sw = wind(treeBaseX, treeBaseY - h, time) * 0.3;
+    ctx.beginPath();
+    ctx.moveTo(treeBaseX, treeBaseY);
+    ctx.quadraticCurveTo(treeBaseX + sw, treeBaseY - h * 0.6, treeBaseX + sw * 0.5, treeBaseY - h);
+    ctx.strokeStyle = `rgba(74, 140, 58, ${1 - trunkP * 3})`;
+    ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.stroke();
+    // tiny leaf
+    if (sproutP > 0.5) {
+      const tip = { x: treeBaseX + sw * 0.5, y: treeBaseY - h };
+      drawLeafShape(tip.x - 4, tip.y - 3, 10, 7, -0.5 + sw * 0.02, `rgba(90, 176, 74, ${sproutP})`, time);
+    }
+  }
+
+  // Trunk + branches
+  if (trunkP > 0) {
+    srand(42); // reset seed each frame for stable structure
+    const trunkLen = lerp(0, H * 0.28, Math.min(trunkP, 1));
+    drawBranch(
+      treeBaseX, treeBaseY,
+      -Math.PI / 2, trunkLen,
+      0, MAX_DEPTH, trunkP, leafP, flowerP, fruitP, time, 8
+    );
+  }
+}
+
+function drawBranch(x, y, angle, length, depth, maxD, trunkP, leafP, flowerP, fruitP, time, width) {
+  if (depth > maxD || length < 4) return;
+
+  const depthGrowth = stageProgress(trunkP, depth * 0.12, depth * 0.12 + 0.4);
+  if (depthGrowth <= 0) return;
+
+  const len = length * depthGrowth;
+  const ex = x + Math.cos(angle) * len;
+  const ey = y + Math.sin(angle) * len;
+  const w = wind(ex, ey, time) * (depth + 1) * 0.4;
+
+  const cpx = (x + ex) / 2 + Math.sin(angle + 1) * len * 0.15 + w;
+  const cpy = (y + ey) / 2 + Math.cos(angle + 1) * len * 0.1;
+
+  const endX = ex + w * 0.6;
+  const endY = ey;
+
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.quadraticCurveTo(cpx, cpy, endX, endY);
+  const lw = width * (1 - depth / (maxD + 1)) * 0.85;
+  ctx.lineWidth = Math.max(lw, 1);
+  ctx.strokeStyle = depth < 2 ? '#5c3d1a' : '#7a5a30';
+  ctx.lineCap = 'round'; ctx.stroke();
+
+  // Terminal nodes: leaves, flowers, apples
+  if (depth >= maxD - 1) {
+    if (leafP > 0) {
+      const lSize = lerp(0, 1, leafP);
+      drawLeafShape(endX, endY, 14 * lSize, 9 * lSize, angle + 0.3 + w * 0.03,
+        `rgba(60, 145, 50, ${0.7 * leafP})`, time);
+      drawLeafShape(endX - 4, endY + 2, 11 * lSize, 7 * lSize, angle - 0.5 + w * 0.03,
+        `rgba(75, 160, 55, ${0.6 * leafP})`, time);
+    }
+    if (flowerP > 0 && fruitP < 1) {
+      drawFlower(endX, endY, lerp(0, 6, flowerP) * (1 - fruitP), time);
+    }
+    if (fruitP > 0) {
+      drawApple(endX, endY + 2, lerp(0, 7, fruitP), time);
+    }
+  }
+
+  // Recurse children
+  if (depth < maxD) {
+    const childLen = length * BRANCH_SHRINK;
+    const spread = BRANCH_ANGLE_SPREAD + srand_range(-0.1, 0.1);
+    drawBranch(endX, endY, angle - spread, childLen, depth + 1, maxD, trunkP, leafP, flowerP, fruitP, time, width);
+    drawBranch(endX, endY, angle + spread, childLen, depth + 1, maxD, trunkP, leafP, flowerP, fruitP, time, width);
+    if (depth < 2 && depthGrowth > 0.7) {
+      drawBranch(endX, endY, angle + srand_range(-0.2, 0.2), childLen * 0.8, depth + 2, maxD, trunkP, leafP, flowerP, fruitP, time, width);
+    }
+  }
+}
+
+/* ═══ 8. LEAF / FLOWER / APPLE SHAPES ═══ */
+function drawLeafShape(x, y, w, h, angle, color, time) {
+  const sway = Math.sin(time * 2.5 + x * 0.05) * 0.08;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle + sway);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.quadraticCurveTo(w * 0.5, -h * 0.6, w, 0);
+  ctx.quadraticCurveTo(w * 0.5, h * 0.6, 0, 0);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawFlower(x, y, r, time) {
+  if (r < 0.5) return;
+  const sway = Math.sin(time * 2 + x * 0.1) * 0.1;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(sway);
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
+    const px = Math.cos(a) * r;
+    const py = Math.sin(a) * r;
+    ctx.beginPath();
+    ctx.ellipse(px, py, r * 0.7, r * 0.45, a, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 225, 235, 0.85)';
+    ctx.fill();
+  }
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.35, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffd04d';
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawApple(x, y, r, time) {
+  if (r < 0.5) return;
+  const sway = Math.sin(time * 1.5 + x * 0.08) * 1.5;
+  ctx.save();
+  ctx.translate(x + sway, y);
+  // stem
+  ctx.beginPath();
+  ctx.moveTo(0, -r);
+  ctx.quadraticCurveTo(2, -r - 5, -1, -r - 8);
+  ctx.strokeStyle = '#5c3d1a'; ctx.lineWidth = 1.2; ctx.stroke();
+  // body
+  const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
+  grad.addColorStop(0, '#f05050');
+  grad.addColorStop(1, '#c02020');
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  // highlight
+  ctx.beginPath();
+  ctx.arc(-r * 0.3, -r * 0.35, r * 0.25, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.fill();
+  ctx.restore();
+}
+
+/* ═══ 9. SPEECH RECOGNITION ═══ */
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null, isListening = false;
+const micBtn = document.getElementById('mic-btn');
+
+function stripPunct(s) { return s.replace(/[，。、！？；：""''《》（）\s]/g, ''); }
+
+if (SpeechRec) {
+  recognition = new SpeechRec();
+  recognition.lang = 'zh-CN';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  let lastMatchLen = 0;
+
+  recognition.onresult = (e) => {
+    let transcript = '';
+    for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+    const clean = stripPunct(transcript);
+    const sourceClean = stripPunct(STORY);
+    // greedy forward match
+    let mi = 0, si = 0;
+    while (mi < clean.length && si < sourceClean.length) {
+      if (clean[mi] === sourceClean[si]) { si++; mi++; }
+      else mi++;
+    }
+    // map sourceClean index back to STORY index
+    if (si > lastMatchLen) {
+      let mapped = 0, count = 0;
+      for (let k = 0; k < STORY.length && count < si; k++) {
+        if (!PUNCTUATION.test(STORY[k])) count++;
+        mapped = k + 1;
+      }
+      // also peel any trailing punctuation
+      while (mapped < STORY.length && PUNCTUATION.test(STORY[mapped])) mapped++;
+      while (readCount < mapped) peelNext();
+      lastMatchLen = si;
+    }
+  };
+  recognition.onend = () => { if (isListening && readCount < totalChars) recognition.start(); };
+}
+
+micBtn.addEventListener('click', () => {
+  if (!recognition) { hintText.textContent = '浏览器不支持语音识别'; return; }
+  if (isListening) {
+    recognition.stop(); isListening = false;
+    micBtn.classList.remove('listening');
+    hintText.textContent = '语音已暂停';
+  } else {
+    recognition.start(); isListening = true;
+    micBtn.classList.add('listening');
+    hintText.textContent = '请朗读上方文字...';
+  }
 });
 
-/* 键盘 */
-document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowRight') { e.preventDefault(); advance(); }
-  if (e.key === 'ArrowLeft') { e.preventDefault(); goBack(); }
+/* ═══ 10. PEEL + INPUT ═══ */
+function peelNext() {
+  if (readCount >= totalChars) return;
+  const idx = readCount;
+  charSpans[idx].classList.remove('active', 'pending');
+  charSpans[idx].classList.add('read');
+  if (!PUNCTUATION.test(chars[idx])) spawnParticle(idx);
+  readCount++;
+  updateCharStyles();
+  // auto-peel following punctuation
+  while (readCount < totalChars && PUNCTUATION.test(chars[readCount])) {
+    charSpans[readCount].classList.remove('active', 'pending');
+    charSpans[readCount].classList.add('read');
+    readCount++;
+    updateCharStyles();
+  }
+}
+
+function unpeelLast() {
+  if (readCount <= 0) return;
+  readCount--;
+  // skip back over punctuation
+  while (readCount > 0 && PUNCTUATION.test(chars[readCount])) readCount--;
+  absorbedCount = Math.max(0, absorbedCount - 1);
+  targetGrowth = absorbedCount / totalChars;
+  updateCharStyles();
+}
+
+overlay.addEventListener('click', (e) => {
+  const span = e.target.closest('.char.active');
+  if (span) peelNext();
 });
 
-/* 提示区点击重新开始 */
-hintEl.addEventListener('click', () => { if (readCount >= totalChars) restart(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === ' ' || e.key === 'ArrowRight') { e.preventDefault(); peelNext(); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); unpeelLast(); }
+});
 
-/* 初始化 */
-renderText();
-triggerStage(0);
+/* ═══ 11. MAIN LOOP ═══ */
+let lastTime = 0;
+
+function frame(ts) {
+  const dt = Math.min((ts - lastTime) / 1000, 0.05);
+  lastTime = ts;
+  const time = ts / 1000;
+
+  // smooth growth
+  currentGrowth = lerp(currentGrowth, targetGrowth, 1 - Math.pow(1 - LERP_SPEED, dt * 60));
+
+  // update
+  updateParticles(dt);
+
+  // draw
+  ctx.clearRect(0, 0, W, H);
+  drawMound(time);
+  drawTree(time);
+  drawParticles();
+
+  requestAnimationFrame(frame);
+}
+
+/* ═══ 12. INIT ═══ */
+resize();
+buildText();
+requestAnimationFrame(frame);
 </script>
 </body>
 </html>
