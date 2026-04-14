@@ -23,159 +23,208 @@
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    const { useState } = React;
-    const { motion, AnimatePresence } = Motion;
+    const { useState, useMemo } = React;
+    const { motion } = Motion;
 
-    const storyData = [
-      { id: 1, text: "在松软的果园泥土中，藏着一粒柠檬籽。", visualState: "seed" },
-      { id: 2, text: "吸足了水分的幼苗，悄悄地钻出了地面。", visualState: "sprout" },
-      { id: 3, text: "它一天天长高，变成了一棵枝繁叶茂的小树。", visualState: "tree" },
-      { id: 4, text: "不久后，树上开出了一簇簇洁白的小花。", visualState: "flower" },
-      { id: 5, text: "到了丰收的季节，枝丫间挂满了酸甜多汁的黄柠檬。", visualState: "fruit" },
+    const sentences = [
+      "在松软的果园泥土中，藏着一粒柠檬籽。",
+      "吸足了水分的幼苗，悄悄地钻出了地面。",
+      "它一天天长高，变成了一棵枝繁叶茂的小树。",
+      "不久后，树上开出了一簇簇洁白的小花。",
+      "到了丰收的季节，枝丫间挂满了酸甜多汁的黄柠檬。",
     ];
 
-    /* ---- SVG Visual Components ---- */
-
-    const Ground = () => (
-      <rect x="0" y="260" width="400" height="140" rx="8" fill="#C4A882" />
+    /* flatten all chars with sentence index */
+    const allChars = sentences.flatMap((s, si) =>
+      [...s].map((ch, ci) => ({ ch, si, ci }))
     );
+    const totalChars = allChars.length;
 
-    const SeedScene = () => (
-      <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-        <Ground />
-        {/* soil texture lines */}
-        <line x1="40" y1="300" x2="100" y2="300" stroke="#A68B6B" strokeWidth="2" opacity="0.5" />
-        <line x1="200" y1="320" x2="280" y2="320" stroke="#A68B6B" strokeWidth="2" opacity="0.5" />
-        <line x1="300" y1="290" x2="360" y2="290" stroke="#A68B6B" strokeWidth="2" opacity="0.5" />
-        {/* seed */}
-        <motion.ellipse cx="200" cy="280" rx="12" ry="8" fill="#8B6914"
-          initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: "spring" }} />
-      </motion.g>
-    );
+    /* clamp helper */
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    /* map progress sub-range [lo,hi] → 0..1 */
+    const sub = (p, lo, hi) => clamp((p - lo) / (hi - lo), 0, 1);
 
-    const SproutScene = () => (
-      <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-        <Ground />
-        {/* stem */}
-        <motion.line x1="200" y1="260" x2="200" y2="210" stroke="#6B8E23" strokeWidth="4" strokeLinecap="round"
-          initial={{ pathLength: 0, y2: 260 }} animate={{ y2: 210 }} transition={{ duration: 0.8 }} />
-        {/* left leaf */}
-        <motion.ellipse cx="188" cy="220" rx="14" ry="6" fill="#7CB342" transform="rotate(-30 188 220)"
-          initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.5 }} />
-        {/* right leaf */}
-        <motion.ellipse cx="212" cy="225" rx="12" ry="5" fill="#8BC34A" transform="rotate(25 212 225)"
-          initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.7 }} />
-      </motion.g>
-    );
+    /* ---- Continuous SVG Scene ---- */
+    function Scene({ progress }) {
+      const p = progress; /* 0 → 1 */
 
-    const TreeBase = () => (
-      <>
-        <Ground />
-        {/* trunk */}
-        <rect x="190" y="140" width="20" height="120" rx="4" fill="#8D6E63" />
-        {/* branches */}
-        <line x1="200" y1="180" x2="150" y2="150" stroke="#8D6E63" strokeWidth="6" strokeLinecap="round" />
-        <line x1="200" y1="170" x2="255" y2="140" stroke="#8D6E63" strokeWidth="5" strokeLinecap="round" />
-        <line x1="200" y1="195" x2="140" y2="175" stroke="#8D6E63" strokeWidth="4" strokeLinecap="round" />
-        <line x1="200" y1="190" x2="260" y2="170" stroke="#8D6E63" strokeWidth="4" strokeLinecap="round" />
-        {/* canopy */}
-        <ellipse cx="200" cy="110" rx="90" ry="70" fill="#66BB6A" />
-        <ellipse cx="160" cy="130" rx="50" ry="40" fill="#81C784" />
-        <ellipse cx="245" cy="125" rx="45" ry="38" fill="#81C784" />
-      </>
-    );
+      /* seed: visible 0–25%, fades out 20–25% */
+      const seedOp = p < 0.20 ? 1 : 1 - sub(p, 0.20, 0.28);
+      const seedScale = sub(p, 0, 0.06);
 
-    const TreeScene = () => (
-      <motion.g initial={{ scale: 0.3, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        exit={{ opacity: 0 }} transition={{ type: "spring", duration: 0.8 }}>
-        <TreeBase />
-      </motion.g>
-    );
+      /* sprout: grows 15–35% */
+      const sproutP = sub(p, 0.15, 0.38);
+      const sproutOp = p < 0.38 ? sproutP : 1 - sub(p, 0.38, 0.46);
+      const stemH = sproutP * 55;
 
-    const FlowerScene = () => (
-      <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-        <TreeBase />
-        {/* flowers */}
-        {[[155,90],[200,70],[245,85],[170,120],[230,115],[200,105]].map(([cx,cy],i) => (
-          <motion.g key={i} initial={{ scale: 0 }} animate={{ scale: 1 }}
-            transition={{ delay: 0.2 + i * 0.12, type: "spring" }}>
-            <circle cx={cx} cy={cy} r="6" fill="white" />
-            <circle cx={cx} cy={cy} r="2.5" fill="#FFF176" />
-          </motion.g>
-        ))}
-      </motion.g>
-    );
+      /* tree: grows 35–60% */
+      const treeP = sub(p, 0.35, 0.60);
+      const treeScale = treeP;
+      const trunkH = treeP * 120;
 
-    const FruitScene = () => (
-      <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-        <TreeBase />
-        {/* lemons */}
-        {[[150,100],[210,75],[255,95],[175,130],[235,125],[195,55]].map(([cx,cy],i) => (
-          <motion.g key={i} initial={{ scale: 0, y: -10 }} animate={{ scale: 1, y: 0 }}
-            transition={{ delay: 0.15 + i * 0.1, type: "spring", stiffness: 200 }}>
-            <ellipse cx={cx} cy={cy} rx="10" ry="13" fill="#FDD835" transform={`rotate(${15*i} ${cx} ${cy})`} />
-            <ellipse cx={cx-2} cy={cy-3} rx="3" ry="5" fill="#FFEE58" opacity="0.6"
-              transform={`rotate(${15*i} ${cx} ${cy})`} />
-          </motion.g>
-        ))}
-      </motion.g>
-    );
+      /* flowers: 58–78% */
+      const flowerP = sub(p, 0.58, 0.78);
 
-    const scenes = { seed: SeedScene, sprout: SproutScene, tree: TreeScene, flower: FlowerScene, fruit: FruitScene };
+      /* fruit: 75–100% */
+      const fruitP = sub(p, 0.75, 1.0);
+
+      const flowers = [[155,90],[200,70],[245,85],[170,120],[230,115],[200,105]];
+      const lemons  = [[150,100],[210,75],[255,95],[175,130],[235,125],[195,55]];
+
+      return (
+        <g>
+          {/* ground */}
+          <rect x="0" y="260" width="400" height="140" rx="8" fill="#C4A882" />
+          <line x1="40" y1="300" x2="100" y2="300" stroke="#A68B6B" strokeWidth="2" opacity="0.4" />
+          <line x1="200" y1="320" x2="280" y2="320" stroke="#A68B6B" strokeWidth="2" opacity="0.4" />
+          <line x1="300" y1="290" x2="360" y2="290" stroke="#A68B6B" strokeWidth="2" opacity="0.4" />
+
+          {/* seed */}
+          {seedOp > 0.01 && (
+            <ellipse cx="200" cy="280" rx={12 * seedScale} ry={8 * seedScale}
+              fill="#8B6914" opacity={seedOp} />
+          )}
+
+          {/* sprout */}
+          {sproutOp > 0.01 && (
+            <g opacity={sproutOp}>
+              <line x1="200" y1="260" x2="200" y2={260 - stemH}
+                stroke="#6B8E23" strokeWidth="4" strokeLinecap="round" />
+              {sproutP > 0.4 && (
+                <ellipse cx="188" cy={260 - stemH + 8} rx={14 * sub(sproutP,0.4,0.7)}
+                  ry={6 * sub(sproutP,0.4,0.7)} fill="#7CB342"
+                  transform={`rotate(-30 188 ${260 - stemH + 8})`} />
+              )}
+              {sproutP > 0.55 && (
+                <ellipse cx="212" cy={260 - stemH + 12} rx={12 * sub(sproutP,0.55,0.85)}
+                  ry={5 * sub(sproutP,0.55,0.85)} fill="#8BC34A"
+                  transform={`rotate(25 212 ${260 - stemH + 12})`} />
+              )}
+            </g>
+          )}
+
+          {/* tree */}
+          {treeP > 0.01 && (
+            <g opacity={treeP}>
+              <rect x="190" y={260 - trunkH} width="20" height={trunkH} rx="4" fill="#8D6E63" />
+              {treeP > 0.4 && (
+                <g opacity={sub(treeP, 0.4, 0.7)}>
+                  <line x1="200" y1="180" x2="150" y2="150" stroke="#8D6E63" strokeWidth="6" strokeLinecap="round" />
+                  <line x1="200" y1="170" x2="255" y2="140" stroke="#8D6E63" strokeWidth="5" strokeLinecap="round" />
+                  <line x1="200" y1="195" x2="140" y2="175" stroke="#8D6E63" strokeWidth="4" strokeLinecap="round" />
+                  <line x1="200" y1="190" x2="260" y2="170" stroke="#8D6E63" strokeWidth="4" strokeLinecap="round" />
+                </g>
+              )}
+              {treeP > 0.5 && (
+                <g opacity={sub(treeP, 0.5, 0.85)}>
+                  <ellipse cx="200" cy="110" rx={90 * sub(treeP,0.5,1)} ry={70 * sub(treeP,0.5,1)} fill="#66BB6A" />
+                  <ellipse cx="160" cy="130" rx={50 * sub(treeP,0.6,1)} ry={40 * sub(treeP,0.6,1)} fill="#81C784" />
+                  <ellipse cx="245" cy="125" rx={45 * sub(treeP,0.65,1)} ry={38 * sub(treeP,0.65,1)} fill="#81C784" />
+                </g>
+              )}
+            </g>
+          )}
+
+          {/* flowers */}
+          {flowerP > 0.01 && flowers.map(([cx,cy], i) => {
+            const fp = sub(flowerP, i * 0.12, i * 0.12 + 0.5);
+            const fadeOut = sub(fruitP, 0, 0.4);
+            return fp > 0.01 && (
+              <g key={"f"+i} opacity={fp * (1 - fadeOut * 0.8)}>
+                <circle cx={cx} cy={cy} r={6 * fp} fill="white" />
+                <circle cx={cx} cy={cy} r={2.5 * fp} fill="#FFF176" />
+              </g>
+            );
+          })}
+
+          {/* lemons */}
+          {fruitP > 0.01 && lemons.map(([cx,cy], i) => {
+            const lp = sub(fruitP, i * 0.1, i * 0.1 + 0.5);
+            return lp > 0.01 && (
+              <g key={"l"+i} opacity={lp}>
+                <ellipse cx={cx} cy={cy} rx={10 * lp} ry={13 * lp} fill="#FDD835"
+                  transform={`rotate(${15*i} ${cx} ${cy})`} />
+                <ellipse cx={cx-2} cy={cy-3} rx={3 * lp} ry={5 * lp} fill="#FFEE58" opacity="0.6"
+                  transform={`rotate(${15*i} ${cx} ${cy})`} />
+              </g>
+            );
+          })}
+        </g>
+      );
+    }
 
     /* ---- Main App ---- */
     function App() {
-      const [currentStep, setCurrentStep] = useState(0);
-      const isFinished = currentStep >= storyData.length;
-      const current = storyData[currentStep] || storyData[storyData.length - 1];
-      const SceneComponent = scenes[current.visualState];
+      const [readCount, setReadCount] = useState(0);
+      const progress = readCount / totalChars;
+      const isFinished = readCount >= totalChars;
 
-      const advance = () => {
-        if (!isFinished) setCurrentStep(s => s + 1);
+      const handleClick = () => {
+        if (!isFinished) setReadCount(r => r + 1);
       };
-      const restart = () => setCurrentStep(0);
+      const restart = () => setReadCount(0);
+
+      /* figure out which sentence we're in */
+      const currentChar = allChars[readCount] || allChars[totalChars - 1];
+      const activeSentence = isFinished ? sentences.length - 1 : currentChar.si;
 
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center px-4 select-none"
-          onClick={!isFinished ? advance : undefined} style={{ cursor: !isFinished ? 'pointer' : 'default' }}>
+        <div className="min-h-screen flex flex-col items-center justify-center px-4 select-none">
+          <h1 className="font-serif text-sm tracking-widest text-gray-400 mb-4 mt-6">柠檬的一生</h1>
 
-          {/* Title */}
-          <h1 className="font-serif text-sm tracking-widest text-gray-400 mb-6 mt-8">柠檬的一生</h1>
-
-          {/* Text area */}
-          <div className="w-full max-w-lg h-24 flex items-center justify-center">
-            <AnimatePresence mode="wait">
-              <motion.p key={current.id}
-                className="font-serif text-xl md:text-2xl text-gray-700 text-center leading-relaxed"
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.5 }}>
-                {current.text}
-              </motion.p>
-            </AnimatePresence>
+          {/* progress bar */}
+          <div className="w-full max-w-md h-1 rounded-full bg-gray-200 mb-6 overflow-hidden">
+            <motion.div className="h-full rounded-full bg-green-500"
+              animate={{ width: `${progress * 100}%` }} transition={{ duration: 0.15 }} />
           </div>
 
-          {/* Visual area */}
-          <div className="w-full max-w-md flex items-center justify-center my-4" style={{ height: 400 }}>
+          {/* text area — show all sentences, highlight current */}
+          <div className="w-full max-w-lg mb-4 space-y-3">
+            {sentences.map((s, si) => (
+              <p key={si} className="font-serif text-xl md:text-2xl text-center leading-relaxed"
+                style={{ opacity: si <= activeSentence ? 1 : 0.25, transition: "opacity 0.4s" }}>
+                {[...s].map((ch, ci) => {
+                  const globalIdx = allChars.findIndex(c => c.si === si && c.ci === ci);
+                  const isRead = globalIdx < readCount;
+                  const isNext = globalIdx === readCount;
+                  return (
+                    <span key={ci} onClick={isNext ? handleClick : undefined}
+                      style={{
+                        color: isRead ? "#2E7D32" : isNext ? "#333" : "#ccc",
+                        cursor: isNext ? "pointer" : "default",
+                        fontWeight: isNext ? 700 : 400,
+                        borderBottom: isNext ? "2px solid #66BB6A" : "none",
+                        transition: "color 0.2s",
+                        padding: "0 1px",
+                      }}>
+                      {ch}
+                    </span>
+                  );
+                })}
+              </p>
+            ))}
+          </div>
+
+          {/* SVG visual */}
+          <div className="w-full max-w-sm flex items-center justify-center" style={{ height: 340 }}>
             <svg viewBox="0 0 400 400" width="100%" height="100%">
-              <AnimatePresence mode="wait">
-                <SceneComponent key={current.visualState} />
-              </AnimatePresence>
+              <Scene progress={progress} />
             </svg>
           </div>
 
-          {/* Controls */}
-          <div className="h-16 flex items-center">
+          {/* footer */}
+          <div className="h-14 flex items-center">
             {isFinished ? (
-              <motion.button onClick={(e) => { e.stopPropagation(); restart(); }}
+              <motion.button onClick={restart}
                 className="px-8 py-3 rounded-full bg-green-600 text-white font-serif text-lg hover:bg-green-700 transition-colors"
                 initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>
                 重新开始
               </motion.button>
             ) : (
-              <motion.div className="text-gray-400 text-sm font-serif tracking-wide"
-                animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 2 }}>
-                点击任意处继续 · {currentStep + 1} / {storyData.length}
-              </motion.div>
+              <p className="text-gray-400 text-sm font-serif">
+                点击高亮的字逐字朗读 · {readCount} / {totalChars}
+              </p>
             )}
           </div>
         </div>
