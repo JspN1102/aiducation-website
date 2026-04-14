@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>柠檬的一生 — AIDUCATION</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/framer-motion@10.18.0/dist/framer-motion.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: { serif: ['"Noto Serif SC"', 'serif'] } } }
+    }
+  </script>
+  <style>
+    body { background: #F9F9F6; margin: 0; font-family: 'Noto Serif SC', serif; }
+    * { box-sizing: border-box; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState } = React;
+    const { motion, AnimatePresence } = window["framer-motion"] || framerMotion;
+
+    const storyData = [
+      { id: 1, text: "在松软的果园泥土中，藏着一粒柠檬籽。", visualState: "seed" },
+      { id: 2, text: "吸足了水分的幼苗，悄悄地钻出了地面。", visualState: "sprout" },
+      { id: 3, text: "它一天天长高，变成了一棵枝繁叶茂的小树。", visualState: "tree" },
+      { id: 4, text: "不久后，树上开出了一簇簇洁白的小花。", visualState: "flower" },
+      { id: 5, text: "到了丰收的季节，枝丫间挂满了酸甜多汁的黄柠檬。", visualState: "fruit" },
+    ];
+
+    /* ---- SVG Visual Components ---- */
+
+    const Ground = () => (
+      <rect x="0" y="260" width="400" height="140" rx="8" fill="#C4A882" />
+    );
+
+    const SeedScene = () => (
+      <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <Ground />
+        {/* soil texture lines */}
+        <line x1="40" y1="300" x2="100" y2="300" stroke="#A68B6B" strokeWidth="2" opacity="0.5" />
+        <line x1="200" y1="320" x2="280" y2="320" stroke="#A68B6B" strokeWidth="2" opacity="0.5" />
+        <line x1="300" y1="290" x2="360" y2="290" stroke="#A68B6B" strokeWidth="2" opacity="0.5" />
+        {/* seed */}
+        <motion.ellipse cx="200" cy="280" rx="12" ry="8" fill="#8B6914"
+          initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: "spring" }} />
+      </motion.g>
+    );
+
+    const SproutScene = () => (
+      <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <Ground />
+        {/* stem */}
+        <motion.line x1="200" y1="260" x2="200" y2="210" stroke="#6B8E23" strokeWidth="4" strokeLinecap="round"
+          initial={{ pathLength: 0, y2: 260 }} animate={{ y2: 210 }} transition={{ duration: 0.8 }} />
+        {/* left leaf */}
+        <motion.ellipse cx="188" cy="220" rx="14" ry="6" fill="#7CB342" transform="rotate(-30 188 220)"
+          initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.5 }} />
+        {/* right leaf */}
+        <motion.ellipse cx="212" cy="225" rx="12" ry="5" fill="#8BC34A" transform="rotate(25 212 225)"
+          initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.7 }} />
+      </motion.g>
+    );
+
+    const TreeBase = () => (
+      <>
+        <Ground />
+        {/* trunk */}
+        <rect x="190" y="140" width="20" height="120" rx="4" fill="#8D6E63" />
+        {/* branches */}
+        <line x1="200" y1="180" x2="150" y2="150" stroke="#8D6E63" strokeWidth="6" strokeLinecap="round" />
+        <line x1="200" y1="170" x2="255" y2="140" stroke="#8D6E63" strokeWidth="5" strokeLinecap="round" />
+        <line x1="200" y1="195" x2="140" y2="175" stroke="#8D6E63" strokeWidth="4" strokeLinecap="round" />
+        <line x1="200" y1="190" x2="260" y2="170" stroke="#8D6E63" strokeWidth="4" strokeLinecap="round" />
+        {/* canopy */}
+        <ellipse cx="200" cy="110" rx="90" ry="70" fill="#66BB6A" />
+        <ellipse cx="160" cy="130" rx="50" ry="40" fill="#81C784" />
+        <ellipse cx="245" cy="125" rx="45" ry="38" fill="#81C784" />
+      </>
+    );
+
+    const TreeScene = () => (
+      <motion.g initial={{ scale: 0.3, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        exit={{ opacity: 0 }} transition={{ type: "spring", duration: 0.8 }}>
+        <TreeBase />
+      </motion.g>
+    );
+
+    const FlowerScene = () => (
+      <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <TreeBase />
+        {/* flowers */}
+        {[[155,90],[200,70],[245,85],[170,120],[230,115],[200,105]].map(([cx,cy],i) => (
+          <motion.g key={i} initial={{ scale: 0 }} animate={{ scale: 1 }}
+            transition={{ delay: 0.2 + i * 0.12, type: "spring" }}>
+            <circle cx={cx} cy={cy} r="6" fill="white" />
+            <circle cx={cx} cy={cy} r="2.5" fill="#FFF176" />
+          </motion.g>
+        ))}
+      </motion.g>
+    );
+
+    const FruitScene = () => (
+      <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <TreeBase />
+        {/* lemons */}
+        {[[150,100],[210,75],[255,95],[175,130],[235,125],[195,55]].map(([cx,cy],i) => (
+          <motion.g key={i} initial={{ scale: 0, y: -10 }} animate={{ scale: 1, y: 0 }}
+            transition={{ delay: 0.15 + i * 0.1, type: "spring", stiffness: 200 }}>
+            <ellipse cx={cx} cy={cy} rx="10" ry="13" fill="#FDD835" transform={`rotate(${15*i} ${cx} ${cy})`} />
+            <ellipse cx={cx-2} cy={cy-3} rx="3" ry="5" fill="#FFEE58" opacity="0.6"
+              transform={`rotate(${15*i} ${cx} ${cy})`} />
+          </motion.g>
+        ))}
+      </motion.g>
+    );
+
+    const scenes = { seed: SeedScene, sprout: SproutScene, tree: TreeScene, flower: FlowerScene, fruit: FruitScene };
+
+    /* ---- Main App ---- */
+    function App() {
+      const [currentStep, setCurrentStep] = useState(0);
+      const isFinished = currentStep >= storyData.length;
+      const current = storyData[currentStep] || storyData[storyData.length - 1];
+      const SceneComponent = scenes[current.visualState];
+
+      const advance = () => {
+        if (!isFinished) setCurrentStep(s => s + 1);
+      };
+      const restart = () => setCurrentStep(0);
+
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center px-4 select-none"
+          onClick={!isFinished ? advance : undefined} style={{ cursor: !isFinished ? 'pointer' : 'default' }}>
+
+          {/* Title */}
+          <h1 className="font-serif text-sm tracking-widest text-gray-400 mb-6 mt-8">柠檬的一生</h1>
+
+          {/* Text area */}
+          <div className="w-full max-w-lg h-24 flex items-center justify-center">
+            <AnimatePresence mode="wait">
+              <motion.p key={current.id}
+                className="font-serif text-xl md:text-2xl text-gray-700 text-center leading-relaxed"
+                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.5 }}>
+                {current.text}
+              </motion.p>
+            </AnimatePresence>
+          </div>
+
+          {/* Visual area */}
+          <div className="w-full max-w-md flex items-center justify-center my-4" style={{ height: 400 }}>
+            <svg viewBox="0 0 400 400" width="100%" height="100%">
+              <AnimatePresence mode="wait">
+                <SceneComponent key={current.visualState} />
+              </AnimatePresence>
+            </svg>
+          </div>
+
+          {/* Controls */}
+          <div className="h-16 flex items-center">
+            {isFinished ? (
+              <motion.button onClick={(e) => { e.stopPropagation(); restart(); }}
+                className="px-8 py-3 rounded-full bg-green-600 text-white font-serif text-lg hover:bg-green-700 transition-colors"
+                initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>
+                重新开始
+              </motion.button>
+            ) : (
+              <motion.div className="text-gray-400 text-sm font-serif tracking-wide"
+                animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 2 }}>
+                点击任意处继续 · {currentStep + 1} / {storyData.length}
+              </motion.div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
