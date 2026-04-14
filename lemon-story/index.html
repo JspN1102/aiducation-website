@@ -254,7 +254,7 @@ function drawTree(time){
   if(curP<.001)return;
   const trunkP=stg(curP,0,.45);
   const leafP=stg(curP,.35,.65);
-  const flowerP=stg(curP,.75,1);
+  const flowerP=stg(curP,.55,1);
 
   // seed
   if(curP<.08){
@@ -304,14 +304,14 @@ function branch(x,y,ang,len,d,tp,lp,fp,time,w){
   cx.restore();
 
   // leaves at tips
-  if(d>=MAX_D-1&&lp>0){
+  if(d>=MAX_D-2&&lp>0){
     const sz=lp;
     drawLeaf(fx,fy,13*sz,8*sz,ang+.3+wf*.02,lp,time);
     drawLeaf(fx-3,fy+1,10*sz,6*sz,ang-.6+wf*.02,lp*.8,time);
   }
-  // flowers
-  if(d>=MAX_D-1&&fp>0){
-    drawFlower(fx,fy-2,fp*5.5,time);
+  // flowers — bloom from depth 3+
+  if(d>=MAX_D-2&&fp>0){
+    drawFlower(fx,fy-2,fp*6,time);
   }
 
   if(d<MAX_D){
@@ -341,19 +341,17 @@ function drawFlower(x,y,r,time){
   if(r<.4)return;
   const sw=Math.sin(time*1.8+x*.07)*.08;
   cx.save();cx.translate(x,y);cx.rotate(sw);
-  cx.globalCompositeOperation='lighter';
-  cx.globalAlpha=.45;
+  cx.globalAlpha=.7;
   for(let i=0;i<5;i++){
     const a=(i/5)*Math.PI*2-Math.PI/2;
     const px=Math.cos(a)*r,py=Math.sin(a)*r;
     cx.beginPath();
-    cx.ellipse(px,py,r*.65,r*.4,a,0,Math.PI*2);
-    cx.fillStyle='rgba(255,235,240,.7)';cx.fill();
+    cx.ellipse(px,py,r*.7,r*.42,a,0,Math.PI*2);
+    cx.fillStyle='rgba(235,180,190,.75)';cx.fill();
   }
-  cx.globalCompositeOperation='source-over';
-  cx.globalAlpha=.6;
-  cx.beginPath();cx.arc(0,0,r*.3,0,Math.PI*2);
-  cx.fillStyle='#eed88a';cx.fill();
+  cx.globalAlpha=.85;
+  cx.beginPath();cx.arc(0,0,r*.32,0,Math.PI*2);
+  cx.fillStyle='#eec870';cx.fill();
   cx.restore();
 }
 
