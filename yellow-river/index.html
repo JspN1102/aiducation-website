@@ -215,16 +215,11 @@ const CH=[
    pt:'浪淘沙·其一',au:'劉禹錫'}
 ];
 const SEASONS=['春','夏','秋','冬'];
-/* 四季滤镜:刻意拉开差异,一眼区分。
-   春:嫩绿青翠 (hue 向绿旋转 + 亮度饱和度提升)
-   夏:浓烈鲜艳 (高饱和高对比,微暖)
-   秋:金黄温热 (重 sepia + 红橙偏移 + 略暗)
-   冬:苍白冷蓝 (大幅褪色 + 蓝紫色相 + 提亮) */
 const SFILTER={
-  春:'sepia(.05) hue-rotate(55deg) saturate(1.45) brightness(1.07) contrast(1.02)',
-  夏:'sepia(.02) saturate(1.55) contrast(1.14) brightness(1.03) hue-rotate(-8deg)',
-  秋:'sepia(.6) hue-rotate(-15deg) saturate(1.3) brightness(.92) contrast(1.06)',
-  冬:'sepia(.05) saturate(.35) hue-rotate(190deg) brightness(1.15) contrast(.98)'
+  春:'sepia(.08) saturate(.97) contrast(1.04) brightness(.98) hue-rotate(-6deg) saturate(1.05) brightness(1.03)',
+  夏:'sepia(.08) saturate(1.04) contrast(1.09) brightness(.98)',
+  秋:'sepia(.26) saturate(1.0) contrast(1.04) brightness(.94)',
+  冬:'sepia(.08) saturate(.57) contrast(.99) brightness(1.04) hue-rotate(6deg)'
 };
 
 /* ═══ STATE ═══ */
