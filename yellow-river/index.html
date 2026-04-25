@@ -3,199 +3,138 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<title>黃河萬里圖 · 數字長卷</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+<title>黃河萬里圖</title>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
 <style>
-/* ═══ TOKENS ═══ */
-:root{
-  --paper:#f7f1e6;--ink:#1c1710;--ink-90:#2e2820;--ink-60:#726a5e;--ink-40:#9e9688;
-  --gold:#b8963e;--gold-lt:#d4b35a;--seal:#c23a2e;
-}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{overflow:hidden;height:100vh;width:100vw}
-body{font-family:'Noto Serif SC',serif;background:#1a1714;cursor:grab;user-select:none}
-body.dragging{cursor:grabbing}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{overflow:hidden;height:100vh;width:100vw;background:#000}
+body{font-family:'Noto Serif TC','Noto Serif SC',serif;cursor:default;user-select:none}
+
+/* ═══ LETTERBOX ═══ */
+.lbox{position:fixed;left:0;right:0;height:10vh;background:#000;z-index:100;pointer-events:none}
+.lbox-t{top:0}.lbox-b{bottom:0}
 
 /* ═══ SCROLL STRIP ═══ */
-#strip-wrap{position:fixed;inset:0;overflow:hidden}
+#viewport{position:fixed;top:10vh;left:0;right:0;bottom:10vh;overflow:hidden}
 #strip{position:absolute;top:0;left:0;height:100%;display:flex;will-change:transform;
-  transition:filter 1.5s ease}
-#strip img{height:100%;width:3000px;object-fit:cover;flex-shrink:0;display:block;pointer-events:none}
-/* blend seams */
-.seam{position:absolute;top:0;height:100%;width:200px;z-index:2;pointer-events:none}
+  filter:sepia(.08) saturate(.92) contrast(1.04) brightness(.98);
+  transition:filter 2.2s cubic-bezier(.4,0,.2,1)}
+#strip img{height:100%;width:2800px;object-fit:cover;flex-shrink:0;display:block;pointer-events:none}
+.seam{position:absolute;top:0;height:100%;width:220px;z-index:1;pointer-events:none}
 
-/* ═══ WATER TURBULENCE (SVG filter on lower 30%) ═══ */
-#water-zone{position:fixed;left:0;right:0;bottom:0;height:30vh;z-index:3;pointer-events:none;
-  filter:url(#waterDistort);opacity:.55;mix-blend-mode:soft-light}
+/* ═══ VIGNETTE ═══ */
+#vig{position:fixed;top:10vh;left:0;right:0;bottom:10vh;z-index:10;pointer-events:none;
+  background:radial-gradient(ellipse 75% 75% at 50% 50%,transparent 40%,rgba(0,0,0,.55) 100%)}
 
-/* ═══ CANVAS LAYERS ═══ */
-#fx-canvas{position:fixed;inset:0;z-index:10;pointer-events:none}
-#ripple-canvas{position:fixed;inset:0;z-index:11;pointer-events:none}
+/* ═══ PAPER NOISE ═══ */
+#noise{position:fixed;top:10vh;left:0;right:0;bottom:10vh;z-index:11;pointer-events:none;
+  opacity:.06;mix-blend-mode:multiply}
 
-/* ═══ OVERLAYS ═══ */
-#time-overlay{position:fixed;inset:0;z-index:8;pointer-events:none;mix-blend-mode:multiply;
-  transition:background 1.5s ease}
-#vignette{position:fixed;inset:0;z-index:9;pointer-events:none;
-  background:radial-gradient(ellipse 70% 70% at 50% 50%,transparent 50%,rgba(10,8,5,.45) 100%)}
-#focus-mask{position:fixed;inset:0;z-index:7;pointer-events:none;opacity:0;transition:opacity .6s;
-  backdrop-filter:blur(2.5px);-webkit-backdrop-filter:blur(2.5px);
-  mask-image:radial-gradient(circle 300px at 50% 50%,transparent 60%,black 100%);
-  -webkit-mask-image:radial-gradient(circle 300px at 50% 50%,transparent 60%,black 100%)}
+/* ═══ FX CANVAS ═══ */
+#fx{position:fixed;top:10vh;left:0;right:0;bottom:10vh;z-index:12;pointer-events:none}
 
-/* ═══ PAPER TEXTURE ═══ */
-#paper-tex{position:fixed;inset:0;z-index:12;pointer-events:none;opacity:.06;mix-blend-mode:multiply}
+/* ═══ FOCUS MASK ═══ */
+#focus{position:fixed;top:10vh;left:0;right:0;bottom:10vh;z-index:9;pointer-events:none;
+  opacity:0;transition:opacity .25s ease;
+  backdrop-filter:blur(2.5px) brightness(.82);-webkit-backdrop-filter:blur(2.5px) brightness(.82);
+  mask-image:radial-gradient(circle 350px at 50% 50%,transparent 55%,black 100%);
+  -webkit-mask-image:radial-gradient(circle 350px at 50% 50%,transparent 55%,black 100%)}
 
-/* ═══ SCROLL RODS ═══ */
-.rod{position:fixed;left:0;right:0;height:28px;z-index:20;pointer-events:none;
-  background:linear-gradient(180deg,#e0d4b8,#c8b890,#b8a878);
-  box-shadow:0 0 20px rgba(0,0,0,.4)}
-.rod::after{content:'';position:absolute;inset:0;
-  background:repeating-linear-gradient(90deg,rgba(140,120,80,.12) 0,rgba(140,120,80,.12) 1px,transparent 1px,transparent 50px)}
-.rod-t{top:0;box-shadow:0 4px 20px rgba(0,0,0,.4)}
-.rod-b{bottom:0;box-shadow:0 -4px 20px rgba(0,0,0,.4)}
+/* ═══ TRANSITION BLACK ═══ */
+#curtain{position:fixed;top:10vh;left:0;right:0;bottom:10vh;z-index:80;pointer-events:none;
+  background:#000;opacity:0;transition:opacity .15s ease}
+#curtain.on{opacity:1}
+#curtain.slow{transition:opacity .55s ease}
 
-/* ═══ EDGE FADE (scroll ends) ═══ */
-.edge{position:fixed;top:0;bottom:0;width:100px;z-index:15;pointer-events:none}
-.edge-l{left:0;background:linear-gradient(90deg,#1a1714,transparent)}
-.edge-r{right:0;background:linear-gradient(270deg,#1a1714,transparent)}
+/* ═══ INTRO ═══ */
+#intro{position:fixed;inset:0;z-index:200;background:#000;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;cursor:pointer}
+#intro-title{font-family:'Ma Shan Zheng',cursive;font-size:96px;color:#d4c5a0;
+  letter-spacing:.3em;opacity:0;transition:opacity 2.5s cubic-bezier(.4,0,.2,1)}
+#intro-sub{font-size:14px;color:rgba(212,197,160,.7);letter-spacing:.5em;margin-top:60px;
+  height:1.4em;overflow:hidden}
+#intro-sub span{opacity:0;transition:opacity .3s ease}
+#intro-hint{position:absolute;bottom:15vh;font-size:12px;color:rgba(212,197,160,.35);
+  letter-spacing:.3em}
+#intro.phase2 #intro-title{opacity:1}
+#intro.fadeout{transition:opacity 2s cubic-bezier(.4,0,.2,1);opacity:0;pointer-events:none}
 
-/* ═══ TITLE ═══ */
-#title{position:fixed;top:36px;left:50%;transform:translateX(-50%);z-index:25;text-align:center;
-  pointer-events:none;white-space:nowrap}
-#title h1{font-family:'Ma Shan Zheng',cursive;font-size:36px;color:var(--paper);
-  text-shadow:0 2px 16px rgba(0,0,0,.7),0 0 60px rgba(0,0,0,.3);letter-spacing:.18em}
-#title .sub{font-family:'ZCOOL XiaoWei',serif;font-size:12px;color:rgba(255,255,255,.35);
-  letter-spacing:.5em;margin-top:3px}
-.seal{display:inline-block;border:2px solid var(--seal);color:var(--seal);font-size:10px;
-  padding:1px 4px;margin-left:10px;font-family:'Ma Shan Zheng',cursive;
-  transform:rotate(-3deg);opacity:.65;vertical-align:middle}
+/* ═══ TOP BRAND ═══ */
+#brand{position:fixed;top:0;left:0;height:10vh;display:flex;align-items:center;padding-left:24px;
+  z-index:101;pointer-events:none}
+#brand span{font-size:13px;color:rgba(212,197,160,.5);letter-spacing:.15em;
+  font-family:'Ma Shan Zheng',cursive}
+
+/* ═══ PROGRESS (inside bottom letterbox) ═══ */
+#prog-wrap{position:fixed;bottom:0;left:0;right:0;height:10vh;z-index:101;
+  display:flex;align-items:flex-start;justify-content:center;padding-top:12px}
+#prog-line{position:relative;width:70%;height:1px;background:rgba(212,197,160,.2)}
+.prog-dot{position:absolute;top:50%;width:6px;height:6px;border-radius:50%;
+  background:rgba(212,197,160,.35);transform:translate(-50%,-50%);cursor:pointer;
+  transition:all .3s ease}
+.prog-dot:hover{background:rgba(212,197,160,.7);transform:translate(-50%,-50%) scale(1.4)}
+.prog-tip{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  writing-mode:vertical-rl;font-size:10px;color:rgba(212,197,160,.6);letter-spacing:.1em;
+  opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.prog-dot:hover .prog-tip{opacity:1}
+#prog-cur{position:absolute;top:50%;width:9px;height:9px;border-radius:50%;
+  background:#d4c5a0;transform:translate(-50%,-50%);transition:left .3s ease;pointer-events:none}
 </style>
 <style>
-/* ═══ PROGRESS ═══ */
-#prog{position:fixed;top:28px;left:6%;right:6%;height:2px;z-index:25;border-radius:1px;
-  background:rgba(255,255,255,.06)}
-#prog-fill{height:100%;width:0;border-radius:1px;
-  background:linear-gradient(90deg,var(--gold),var(--gold-lt));transition:width .12s linear}
-#prog-labels{position:fixed;top:32px;left:6%;right:6%;z-index:25;display:flex;pointer-events:none}
-.plbl{flex:1;text-align:center;font-size:9px;color:rgba(255,255,255,.18);letter-spacing:.1em;
-  transition:color .5s}.plbl.on{color:var(--gold-lt)}
+/* ═══ CONTROLS (bottom-right, inside letterbox) ═══ */
+#ctrls{position:fixed;bottom:0;right:20px;height:10vh;z-index:101;
+  display:flex;flex-direction:row;align-items:center;gap:10px}
+.ctrl{width:32px;height:32px;border-radius:50%;border:1px solid rgba(212,197,160,.2);
+  background:transparent;color:rgba(212,197,160,.5);cursor:pointer;
+  font-size:13px;display:flex;align-items:center;justify-content:center;
+  transition:all .3s ease;font-family:'Noto Serif TC',serif}
+.ctrl:hover{color:rgba(212,197,160,1);border-color:rgba(212,197,160,.4)}
 
-/* ═══ CONTROLS ═══ */
-.cpanel{position:fixed;z-index:25;display:flex;flex-direction:column;gap:3px}
-.cgroup{padding:7px;border-radius:8px;background:rgba(20,18,14,.55);backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);border:1px solid rgba(184,150,62,.1);
-  display:flex;flex-direction:column;gap:2px}
-.clbl{font-size:8px;color:var(--gold);letter-spacing:.25em;text-align:center;
-  font-family:'ZCOOL XiaoWei',serif}
-.cbtn{background:rgba(255,255,255,.03);border:1px solid rgba(184,150,62,.15);color:rgba(240,232,216,.6);
-  padding:4px 7px;border-radius:3px;cursor:pointer;font-family:'Noto Serif SC',serif;font-size:10px;
-  transition:all .3s;text-align:center}
-.cbtn:hover{background:rgba(184,150,62,.12);border-color:rgba(184,150,62,.4);color:var(--paper)}
-.cbtn.on{background:rgba(184,150,62,.18);border-color:var(--gold);color:var(--gold-lt);
-  box-shadow:inset 0 0 6px rgba(184,150,62,.08)}
-#p-season{right:8px;top:calc(50% - 160px)}
-#p-time{right:8px;top:calc(50% - 20px)}
-#p-weather{right:8px;top:calc(50% + 100px)}
-
-/* ═══ CHAPTERS ═══ */
-#chapters{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:25;
-  display:flex;gap:2px;padding:4px 8px;border-radius:18px;
-  background:rgba(20,18,14,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border:1px solid rgba(184,150,62,.08)}
-.chbtn{background:transparent;border:1px solid rgba(184,150,62,.12);color:rgba(255,255,255,.4);
-  padding:4px 11px;border-radius:12px;cursor:pointer;font-family:'Noto Serif SC',serif;font-size:10px;
-  transition:all .4s;white-space:nowrap}
-.chbtn:hover{background:rgba(184,150,62,.1);color:var(--paper)}
-.chbtn.on{background:rgba(184,150,62,.18);border-color:var(--gold);color:var(--gold-lt)}
-
-/* ═══ FABS ═══ */
-.fab{position:fixed;z-index:25;width:34px;height:34px;border-radius:50%;
-  background:rgba(20,18,14,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border:1px solid rgba(184,150,62,.15);color:rgba(240,232,216,.6);cursor:pointer;font-size:13px;
+/* ═══ POEM PANEL ═══ */
+#poem-panel{position:fixed;top:10vh;right:0;bottom:10vh;width:360px;z-index:90;
+  background:rgba(20,16,12,.65);backdrop-filter:blur(24px) saturate(1.2);
+  -webkit-backdrop-filter:blur(24px) saturate(1.2);
+  transform:translateX(100%);transition:transform .6s cubic-bezier(.4,0,.2,1);
+  padding:50px;display:flex;flex-direction:column;overflow:hidden}
+#poem-panel.open{transform:translateX(0)}
+#poem-panel::before{content:'';position:absolute;left:0;top:0;bottom:0;width:1px;
+  background:rgba(212,197,160,.15);box-shadow:0 0 8px rgba(212,197,160,.08)}
+.pp-chapter{font-family:'Ma Shan Zheng',cursive;font-size:36px;color:#d4c5a0;
+  letter-spacing:.2em;margin-bottom:16px}
+.pp-line{width:30px;height:1px;background:rgba(212,197,160,.3);margin-bottom:28px}
+.pp-poem-wrap{flex:1;display:flex;justify-content:flex-end;gap:28px;overflow:hidden;
+  writing-mode:vertical-rl;direction:ltr}
+.pp-poem-col{font-size:22px;line-height:1.8;color:rgba(212,197,160,.85);letter-spacing:.12em}
+.pp-poem-col span{opacity:0;transition:opacity .35s ease}
+.pp-author{writing-mode:horizontal-tb;font-size:16px;color:rgba(212,197,160,.45);
+  margin-top:20px;letter-spacing:.15em;text-align:right}
+.pp-play{writing-mode:horizontal-tb;margin-top:16px;align-self:flex-end;
+  width:28px;height:28px;border-radius:50%;border:1px solid rgba(212,197,160,.25);
+  background:transparent;color:rgba(212,197,160,.5);cursor:pointer;font-size:11px;
   display:flex;align-items:center;justify-content:center;transition:all .3s}
-.fab:hover{background:rgba(184,150,62,.18);border-color:var(--gold);color:var(--paper)}
-.fab.on{background:rgba(184,150,62,.22);border-color:var(--gold);
-  box-shadow:0 0 14px rgba(184,150,62,.2);color:var(--gold-lt)}
-#btn-tour{left:12px;bottom:12px}
-#btn-music{left:52px;bottom:12px}
+.pp-play:hover{color:rgba(212,197,160,1);border-color:rgba(212,197,160,.5)}
 
-/* ═══ HOTSPOTS ═══ */
-.hs{position:absolute;width:26px;height:26px;border-radius:50%;cursor:pointer;z-index:6;
-  transform:translate(-50%,-50%)}
-.hs-ring{position:absolute;inset:-5px;border-radius:50%;border:1.5px solid rgba(184,150,62,.45);
-  animation:pulse 3s ease-in-out infinite}
-.hs-core{position:absolute;inset:7px;border-radius:50%;
-  background:radial-gradient(circle,rgba(212,179,90,.85),rgba(184,150,62,.3));
-  box-shadow:0 0 12px rgba(184,150,62,.35)}
-.hs-tip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
-  white-space:nowrap;font-size:10px;color:var(--gold-lt);background:rgba(20,18,14,.75);
-  padding:2px 9px;border-radius:8px;opacity:0;transition:opacity .3s;pointer-events:none;
-  backdrop-filter:blur(8px);border:1px solid rgba(184,150,62,.15)}
-.hs:hover .hs-tip{opacity:1}
-@keyframes pulse{0%,100%{transform:scale(1);opacity:.45}50%{transform:scale(1.7);opacity:0}}
-
-/* ═══ POPUP ═══ */
-#pop-bg{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;
-  background:rgba(12,10,6,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-#pop-bg.open{display:flex}
-.pop{position:relative;background:var(--paper);color:var(--ink-90);border-radius:4px;
-  padding:32px 44px;max-width:420px;width:88%;
-  box-shadow:0 16px 64px rgba(0,0,0,.5);animation:popIn .4s cubic-bezier(.16,1,.3,1)}
-@keyframes popIn{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
-.pop-bind{position:absolute;top:8%;bottom:8%;width:2.5px;
-  background:repeating-linear-gradient(180deg,var(--gold) 0,var(--gold) 5px,transparent 5px,transparent 9px)}
-.pop-bl{left:12px}.pop-br{right:12px}
-.pop-x{position:absolute;top:8px;right:12px;background:none;border:none;font-size:18px;
-  color:var(--ink-40);cursor:pointer;transition:color .2s}.pop-x:hover{color:var(--ink)}
-.pop-place{font-family:'Ma Shan Zheng',cursive;font-size:24px;color:var(--ink)}
-.pop-prov{font-size:10px;color:var(--ink-40);letter-spacing:.12em;margin:1px 0 8px}
-.pop-hr{height:1px;background:linear-gradient(90deg,transparent,var(--paper-deep,#d9ccb4),transparent);margin:8px 0}
-.pop-pt{font-size:11px;color:var(--ink-60);margin-bottom:3px}
-.pop-poem{font-size:14px;line-height:2.2;color:#4a4238;letter-spacing:.08em;white-space:pre-line}
-.pop-desc{font-size:12px;line-height:1.9;color:var(--ink-60)}
-.pop-speak{display:inline-flex;align-items:center;gap:4px;margin-top:10px;padding:4px 12px;
-  background:rgba(184,150,62,.08);border:1px solid var(--gold);border-radius:12px;cursor:pointer;
-  font-family:'Noto Serif SC',serif;font-size:10px;color:var(--gold);transition:all .3s}
-.pop-speak:hover{background:rgba(184,150,62,.2)}
-
-/* ═══ BIRDS ═══ */
-.bird-wrap{position:fixed;z-index:14;pointer-events:none}
-.bird-body{animation:flap .8s ease-in-out infinite alternate}
-@keyframes flap{0%{transform:scaleY(1)}100%{transform:scaleY(.6)}}
-
-/* ═══ HINT ═══ */
-#hint{position:fixed;bottom:54px;left:50%;transform:translateX(-50%);z-index:25;
-  font-size:10px;color:rgba(255,255,255,.22);letter-spacing:.2em;
-  animation:hintOut 5s ease 3.5s forwards}
-@keyframes hintOut{to{opacity:0}}
-
-/* ═══ TRANSITION OVERLAY ═══ */
-#trans{position:fixed;inset:0;z-index:40;pointer-events:none;background:rgba(15,12,8,.35);
-  opacity:0;transition:opacity .4s ease}
-#trans.on{opacity:1}
+/* ═══ BIRD ═══ */
+.bird-svg{position:fixed;z-index:13;pointer-events:none}
+.bird-wing{animation:flap .7s ease-in-out infinite alternate}
+@keyframes flap{0%{transform:scaleY(1)}100%{transform:scaleY(.55)}}
 </style>
-<!-- BODY -->
 </head>
 <body>
 
-<!-- WATER TURBULENCE SVG FILTER -->
-<svg style="position:absolute;width:0;height:0">
-  <defs>
-    <filter id="waterDistort" x="-5%" y="-5%" width="110%" height="110%">
-      <feTurbulence id="wTurb" type="fractalNoise" baseFrequency=".015 .003" numOctaves="3" seed="3" result="t">
-        <animate attributeName="baseFrequency" values=".015 .003;.020 .005;.015 .003" dur="8s" repeatCount="indefinite"/>
-      </feTurbulence>
-      <feDisplacementMap in="SourceGraphic" in2="t" scale="10" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-    <filter id="paperNoise">
-      <feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="4" stitchTiles="stitch"/>
-      <feColorMatrix type="saturate" values="0"/>
-    </filter>
-  </defs>
-</svg>
+<!-- INTRO -->
+<div id="intro">
+  <div id="intro-title">黃河萬里圖</div>
+  <div id="intro-sub"></div>
+  <div id="intro-hint">點擊進入</div>
+</div>
 
-<!-- SCROLL STRIP -->
-<div id="strip-wrap">
+<!-- LETTERBOX -->
+<div class="lbox lbox-t"></div>
+<div class="lbox lbox-b"></div>
+
+<!-- VIEWPORT -->
+<div id="viewport">
   <div id="strip">
     <img src="section1-qinghai.png" alt="青海">
     <img src="section2-gansu.png" alt="甘肅">
@@ -205,509 +144,453 @@ body.dragging{cursor:grabbing}
   </div>
 </div>
 
-<!-- WATER ZONE -->
-<div id="water-zone"></div>
-<div id="fog-overlay"></div>
-
-<!-- FX CANVASES -->
-<canvas id="fx-canvas"></canvas>
-<canvas id="ripple-canvas"></canvas>
-
 <!-- OVERLAYS -->
-<div id="time-overlay"></div>
-<div id="vignette"></div>
-<div id="focus-mask"></div>
-<div id="trans"></div>
+<div id="vig"></div>
+<svg id="noise" width="100%" height="100%"><filter id="nf">
+  <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/>
+  <feColorMatrix type="saturate" values="0"/></filter>
+  <rect width="100%" height="100%" filter="url(#nf)"/></svg>
+<canvas id="fx"></canvas>
+<div id="focus"></div>
+<div id="curtain"></div>
 
-<!-- PAPER TEXTURE -->
-<svg id="paper-tex" width="100%" height="100%">
-  <rect width="100%" height="100%" filter="url(#paperNoise)"/>
-</svg>
-
-<!-- SCROLL RODS + EDGES -->
-<div class="rod rod-t"></div>
-<div class="rod rod-b"></div>
-<div class="edge edge-l"></div>
-<div class="edge edge-r"></div>
-
-<!-- TITLE -->
-<div id="title">
-  <h1>黃河萬里圖 · 數字長卷<span class="seal">數字藝術</span></h1>
-  <div class="sub">DIGITAL PANORAMIC SCROLL OF THE YELLOW RIVER</div>
+<!-- UI -->
+<div id="brand"><span>黃河萬里圖</span></div>
+<div id="prog-wrap"><div id="prog-line"><div id="prog-cur"></div></div></div>
+<div id="ctrls">
+  <button class="ctrl" id="btn-tour" title="自動漫遊">⏸</button>
+  <button class="ctrl" id="btn-audio" title="音頻">♪</button>
+  <button class="ctrl" id="btn-season" title="季節">春</button>
+  <button class="ctrl" id="btn-poem" title="詩詞">詩</button>
 </div>
 
-<div id="prog"><div id="prog-fill"></div></div>
-<div id="prog-labels"></div>
-
-<!-- CONTROLS -->
-<div id="p-season" class="cpanel"><div class="cgroup">
-  <div class="clbl">四 季</div>
-  <button class="cbtn on" data-s="spring">春</button>
-  <button class="cbtn" data-s="summer">夏</button>
-  <button class="cbtn" data-s="autumn">秋</button>
-  <button class="cbtn" data-s="winter">冬</button>
-</div></div>
-<div id="p-time" class="cpanel"><div class="cgroup">
-  <div class="clbl">時 辰</div>
-  <button class="cbtn" data-t="dawn">晨</button>
-  <button class="cbtn on" data-t="day">晝</button>
-  <button class="cbtn" data-t="dusk">夕</button>
-  <button class="cbtn" data-t="night">夜</button>
-</div></div>
-<div id="p-weather" class="cpanel"><div class="cgroup">
-  <div class="clbl">天 氣</div>
-  <button class="cbtn on" data-w="clear">晴</button>
-  <button class="cbtn" data-w="rain">雨</button>
-  <button class="cbtn" data-w="snow">雪</button>
-  <button class="cbtn" data-w="fog">霧</button>
-</div></div>
-
-<div id="chapters"></div>
-<button id="btn-tour" class="fab" title="自動漫遊">▶</button>
-<button id="btn-music" class="fab" title="背景音樂">♪</button>
-<div id="hint">← 拖拽或滾輪瀏覽長卷 →</div>
-
-<!-- POPUP -->
-<div id="pop-bg">
-  <div class="pop">
-    <div class="pop-bind pop-bl"></div><div class="pop-bind pop-br"></div>
-    <button class="pop-x">&times;</button>
-    <div class="pop-place"></div><div class="pop-prov"></div>
-    <div class="pop-hr"></div>
-    <div class="pop-pt"></div><div class="pop-poem"></div>
-    <div class="pop-hr"></div>
-    <div class="pop-desc"></div>
-    <button class="pop-speak">&#9654; 朗讀詩詞</button>
-  </div>
+<!-- POEM PANEL -->
+<div id="poem-panel">
+  <div class="pp-chapter"></div>
+  <div class="pp-line"></div>
+  <div class="pp-poem-wrap"></div>
+  <div class="pp-author"></div>
+  <button class="pp-play">▶</button>
 </div>
 
 <script>
-const SEC_W=3000,NUM=5,TW=SEC_W*NUM;
-const SECS=[
-  {name:'源頭·青海',x:0},{name:'峽谷·甘肅',x:3000},{name:'壺口·陝西',x:6000},
-  {name:'中原·河南',x:9000},{name:'入海·山東',x:12000}
+/* ═══ CONSTANTS ═══ */
+const SW=2800,N=5,TW=SW*N;
+const CH=[
+  {name:'源頭·青海',focus:1400,poem:'白日依山盡，\n黃河入海流。\n欲窮千里目，\n更上一層樓。',
+   pt:'登鸛雀樓',au:'王之渙'},
+  {name:'峽谷·甘肅',focus:SW+1400,poem:'黃河遠上白雲間，\n一片孤城萬仞山。\n羌笛何須怨楊柳，\n春風不度玉門關。',
+   pt:'涼州詞',au:'王之渙'},
+  {name:'壺口·陝西',focus:SW*2+1400,poem:'君不見黃河之水天上來，\n奔流到海不復回。\n君不見高堂明鏡悲白髮，\n朝如青絲暮成雪。',
+   pt:'將進酒（節選）',au:'李白'},
+  {name:'中原·河南',focus:SW*3+1400,poem:'風急天高猿嘯哀，\n渚清沙白鳥飛回。\n無邊落木蕭蕭下，\n不盡長江滾滾來。',
+   pt:'登高',au:'杜甫'},
+  {name:'入海·山東',focus:SW*4+1400,poem:'九曲黃河萬里沙，\n浪淘風簸自天涯。\n如今直上銀河去，\n同到牽牛織女家。',
+   pt:'浪淘沙·其一',au:'劉禹錫'}
 ];
-const HS=[
-  {x:600,y:.4,title:'日月山',prov:'青海',pt:'涼州詞',au:'王之渙',
-   poem:'黃河遠上白雲間，\n一片孤城萬仞山。\n羌笛何須怨楊柳，\n春風不度玉門關。',
-   desc:'日月山位於青海湖東側，海拔3520米，文成公主入藏時曾在此回望長安。'},
-  {x:2200,y:.35,title:'嘉峪關',prov:'甘肅',pt:'使至塞上',au:'王維',
-   poem:'單車欲問邊，屬國過居延。\n征蓬出漢塞，歸雁入胡天。\n大漠孤煙直，長河落日圓。\n蕭關逢候騎，都護在燕然。',
-   desc:'嘉峪關是明長城西端起點，扼守河西走廊咽喉，素有「天下第一雄關」之稱。'},
-  {x:4000,y:.42,title:'炳靈寺',prov:'甘肅',pt:'渡黃河',au:'宋琬',
-   poem:'倒瀉銀河事有無，\n掀天濁浪只須臾。\n人間更有風濤險，\n翻說黃河是畏途。',
-   desc:'炳靈寺石窟始建於西秦，黃河穿峽而過，石窟依崖而鑿，保存千年佛教造像。'},
-  {x:6800,y:.32,title:'壺口瀑布',prov:'陝西',pt:'將進酒（節選）',au:'李白',
-   poem:'君不見黃河之水天上來，\n奔流到海不復回。\n君不見高堂明鏡悲白髮，\n朝如青絲暮成雪。',
-   desc:'壺口瀑布是黃河上最大的瀑布，河水驟然收束跌入深槽，氣勢磅礴，聲震數里。'},
-  {x:8400,y:.38,title:'黃河小浪底',prov:'河南',pt:'登鸛雀樓',au:'王之渙',
-   poem:'白日依山盡，\n黃河入海流。\n欲窮千里目，\n更上一層樓。',
-   desc:'小浪底水利樞紐是黃河治理的關鍵工程，每年調水調沙場面震撼人心。'},
-  {x:9800,y:.45,title:'開封古城',prov:'河南',pt:'題臨安邸',au:'林升',
-   poem:'山外青山樓外樓，\n西湖歌舞幾時休。\n暖風薰得遊人醉，\n直把杭州作汴州。',
-   desc:'開封曾為北宋都城汴京，城下疊壓六座古城，清明上河圖描繪的正是此城繁華。'},
-  {x:12500,y:.3,title:'泰山',prov:'山東',pt:'望嶽',au:'杜甫',
-   poem:'岱宗夫如何？齊魯青未了。\n造化鍾神秀，陰陽割昏曉。\n蕩胸生曾雲，決眥入歸鳥。\n會當凌絕頂，一覽眾山小。',
-   desc:'泰山為五嶽之首，自秦始皇起歷代帝王封禪於此，是中華民族精神的象徵。'},
-  {x:14200,y:.5,title:'黃河入海口',prov:'山東',pt:'浪淘沙',au:'劉禹錫',
-   poem:'九曲黃河萬里沙，\n浪淘風簸自天涯。\n如今直上銀河去，\n同到牽牛織女家。',
-   desc:'黃河入海口位於山東東營，河水攜帶泥沙匯入渤海，每年新造陸地約25平方公里。'}
-];
-const SF={spring:'hue-rotate(-10deg) saturate(1.1) brightness(1.05)',summer:'saturate(1.2) contrast(1.05)',
-  autumn:'sepia(.3) saturate(1.15) brightness(.95)',winter:'saturate(.7) brightness(1.05) contrast(.95) hue-rotate(10deg)'};
-const TC={dawn:'rgba(255,200,150,.15)',day:'transparent',dusk:'rgba(255,130,80,.25)',night:'rgba(20,30,60,.55)'};
+const SEASONS=['春','夏','秋','冬'];
+const SFILTER={
+  春:'sepia(.08) saturate(.97) contrast(1.04) brightness(.98) hue-rotate(-6deg) saturate(1.05) brightness(1.03)',
+  夏:'sepia(.08) saturate(1.04) contrast(1.09) brightness(.98)',
+  秋:'sepia(.26) saturate(1.0) contrast(1.04) brightness(.94)',
+  冬:'sepia(.08) saturate(.57) contrast(.99) brightness(1.04) hue-rotate(6deg)'
+};
 
+/* ═══ STATE ═══ */
 const S={x:0,tx:0,drag:false,dsx:0,dcx:0,vel:0,lpx:0,lpt:0,
-  season:'spring',time:'day',weather:'clear',
-  tour:false,tt:0,ts:1,ty:0,tts:1,tty:0,
-  musicOn:false,pop:-1,fx:-1,fy:-1,fi:0,fon:false,trans:false};
-let W,H,dpr;
+  auto:true,userIdle:0,scale:1,tScale:1,
+  season:0,audioOn:false,poemOpen:false,curCh:0,
+  focusX:-1,focusY:-1,idle:0,focusOn:false,
+  introOver:false,started:false,
+  pauseT:0,paused:false,pauseCh:-1};
+let W,H,dpr,VH;
 const strip=document.getElementById('strip');
-const fxC=document.getElementById('fx-canvas'),rpC=document.getElementById('ripple-canvas');
-const fxX=fxC.getContext('2d'),rpX=rpC.getContext('2d');
-// ── RESIZE ──
+const fxC=document.getElementById('fx');
+const fxX=fxC.getContext('2d');
+const focusEl=document.getElementById('focus');
+const curtain=document.getElementById('curtain');
+/* ═══ RESIZE ═══ */
 function resize(){
-  W=innerWidth;H=innerHeight;dpr=devicePixelRatio||1;
-  [fxC,rpC].forEach(c=>{c.width=W*dpr;c.height=H*dpr;c.style.width=W+'px';c.style.height=H+'px';
-    c.getContext('2d').setTransform(dpr,0,0,dpr,0,0)});
-  S.tx=clamp(S.tx);
+  dpr=devicePixelRatio||1;W=innerWidth;H=innerHeight;
+  VH=H*.8;
+  fxC.width=W*dpr;fxC.height=VH*dpr;
+  fxC.style.width=W+'px';fxC.style.height=VH+'px';
+  fxX.setTransform(dpr,0,0,dpr,0,0);
 }
-function clamp(v){return Math.max(-(TW-W),Math.min(0,v))}
-function applyStrip(){
-  strip.style.transform=`translate3d(${S.x}px,${S.ty}px,0) scale(${S.ts})`;
-}
+addEventListener('resize',resize);resize();
 
-// ── SEAM BLENDERS (CSS gradient overlays between sections) ──
+/* ═══ SEAMS ═══ */
 function buildSeams(){
-  for(let i=1;i<NUM;i++){
+  strip.querySelectorAll('.seam').forEach(s=>s.remove());
+  for(let i=1;i<N;i++){
     const d=document.createElement('div');d.className='seam';
-    d.style.left=(i*SEC_W-100)+'px';d.style.width='200px';
-    d.style.background='linear-gradient(90deg,transparent,rgba(26,23,20,.4) 40%,rgba(26,23,20,.4) 60%,transparent)';
+    d.style.left=(i*SW-110)+'px';
+    d.style.background='linear-gradient(to right,transparent,#e8dcc4 40%,#e8dcc4 60%,transparent)';
+    d.style.opacity='.45';
     strip.appendChild(d);
   }
 }
+buildSeams();
 
-// ── SCROLL INPUT ──
-document.addEventListener('wheel',e=>{
-  e.preventDefault();S.tx=clamp(S.tx-e.deltaY*2.2);
-  if(S.tour) toggleTour();
-},{passive:false});
-
-document.addEventListener('pointerdown',e=>{
-  if(e.target.closest('.cpanel,.chbtn,.fab,#pop-bg,.hs')) return;
-  S.drag=true;S.dsx=e.clientX;S.dcx=S.x;S.vel=0;S.lpx=e.clientX;S.lpt=performance.now();
-  document.body.classList.add('dragging');
-});
-document.addEventListener('pointermove',e=>{
-  S.fx=e.clientX;S.fy=e.clientY;S.fi=0;
-  if(!S.drag) return;
-  S.x=clamp(S.dcx+(e.clientX-S.dsx));S.tx=S.x;
-  const now=performance.now(),dt=now-S.lpt;
-  if(dt>0) S.vel=(e.clientX-S.lpx)/dt*16;
-  S.lpx=e.clientX;S.lpt=now;
-  if(S.tour) toggleTour();
-});
-document.addEventListener('pointerup',()=>{
-  if(!S.drag) return;S.drag=false;document.body.classList.remove('dragging');
-  S.tx=clamp(S.x+S.vel*18);
-});
-
-// ── PROGRESS + CHAPTERS ──
-const chapEl=document.getElementById('chapters');
-const pLabels=document.getElementById('prog-labels');
-SECS.forEach((s,i)=>{
-  const b=document.createElement('button');b.className='chbtn';b.textContent=s.name;
-  b.addEventListener('click',()=>jumpTo(s.x));chapEl.appendChild(b);
-  const l=document.createElement('div');l.className='plbl';l.textContent=s.name;
-  pLabels.appendChild(l);
-});
-function updateProg(){
-  const pos=-S.x;
-  document.getElementById('prog-fill').style.width=Math.min(100,Math.max(0,pos/(TW-W)*100))+'%';
-  const ls=pLabels.children,cs=chapEl.children;
-  for(let i=0;i<SECS.length;i++){
-    const on=pos>=SECS[i].x&&(i===SECS.length-1||pos<SECS[i+1].x);
-    ls[i].classList.toggle('on',on);cs[i].classList.toggle('on',on);
-  }
-}
-
-// ── CINEMATIC CHAPTER JUMP ──
-function jumpTo(target){
-  if(S.trans) return;
-  if(S.tour) toggleTour();
-  S.trans=true;
-  document.getElementById('trans').classList.add('on');
-  // pluck sound
-  pluck();
-  setTimeout(()=>{
-    S.tx=-target;S.x=S.tx;
-    document.getElementById('trans').classList.remove('on');
-    setTimeout(()=>{S.trans=false},400);
-  },400);
-}
-
-// ── SEASON / TIME / WEATHER ──
-function setBtn(sel,el){document.querySelectorAll(sel).forEach(b=>b.classList.toggle('on',b===el))}
-document.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{
-  S.season=b.dataset.s;setBtn('[data-s]',b);strip.style.filter=SF[S.season];
-}));
-document.querySelectorAll('[data-t]').forEach(b=>b.addEventListener('click',()=>{
-  S.time=b.dataset.t;setBtn('[data-t]',b);
-  document.getElementById('time-overlay').style.background=TC[S.time];
-}));
-let wSpawn=false;
-document.querySelectorAll('[data-w]').forEach(b=>b.addEventListener('click',()=>{
-  S.weather=b.dataset.w;setBtn('[data-w]',b);
-  document.getElementById('fog-overlay').classList.toggle('on',S.weather==='fog');
-  if(S.weather==='rain'||S.weather==='snow'){wSpawn=true;particles=[]}
-  else wSpawn=false;
-}));
-// ── 3.1 FOG MIST PARTICLES ──
-let mists=[];
-function tickMist(dt){
-  while(mists.length<10){
-    mists.push({x:Math.random()*W,y:H*(.15+Math.random()*.6),r:80+Math.random()*100,
-      vx:.08+Math.random()*.12,o:0,maxO:.04+Math.random()*.08,life:0,max:18+Math.random()*8,phase:Math.random()*6.28});
-  }
-  for(let i=mists.length-1;i>=0;i--){
-    const m=mists[i];m.life+=dt;m.x+=m.vx;
-    m.r+=Math.sin(m.phase+=.005)*.15;
-    const t=m.life/m.max;
-    m.o=t<.15?m.maxO*(t/.15):t>.85?m.maxO*(1-(t-.85)/.15):m.maxO;
-    if(m.life>=m.max){mists.splice(i,1);continue}
-    const g=fxX.createRadialGradient(m.x,m.y,0,m.x,m.y,m.r);
-    g.addColorStop(0,`rgba(220,215,205,${m.o})`);g.addColorStop(1,'rgba(220,215,205,0)');
-    fxX.fillStyle=g;fxX.beginPath();fxX.arc(m.x,m.y,m.r,0,6.28);fxX.fill();
-  }
-}
-
-// ── 3.2 WEATHER PARTICLES (rain/snow + seasonal leaves) ──
-let particles=[];
-function spawnP(){
-  if(!wSpawn&&S.season!=='autumn'&&S.season!=='winter'&&S.season!=='spring') return;
-  const isWeather=wSpawn&&(S.weather==='rain'||S.weather==='snow');
-  const isSeason=!isWeather&&(S.season==='autumn'||S.season==='winter'||S.season==='spring');
-  const max=isWeather?(S.weather==='rain'?250:120):(isSeason?40:0);
-  while(particles.length<max){
-    const z=Math.random();
-    if(S.weather==='rain'&&wSpawn)
-      particles.push({x:Math.random()*W*1.3,y:-Math.random()*H,vx:-1.2-z,vy:11+z*7,
-        len:8+z*10,o:.15+z*.3,type:'rain'});
-    else if(S.weather==='snow'&&wSpawn)
-      particles.push({x:Math.random()*W,y:-Math.random()*H,vx:0,vy:.3+z*1,
-        r:1.5+z*3,ph:Math.random()*6.28,o:.3+z*.35,type:'snow'});
-    else if(S.season==='autumn')
-      particles.push({x:Math.random()*W,y:-Math.random()*H*.3,vx:.2+Math.random()*.3,
-        vy:.8+Math.random()*1.2,r:3+Math.random()*3,rot:Math.random()*6.28,
-        rv:.02+Math.random()*.03,o:.4+Math.random()*.3,type:'leaf'});
-    else if(S.season==='winter')
-      particles.push({x:Math.random()*W,y:-Math.random()*H,vx:0,vy:.2+z*.8,
-        r:1+z*2.5,ph:Math.random()*6.28,o:.25+z*.3,type:'snow'});
-    else if(S.season==='spring')
-      particles.push({x:Math.random()*W,y:-Math.random()*H*.3,vx:.1+Math.random()*.2,
-        vy:.5+Math.random()*.8,r:2+Math.random()*2,rot:Math.random()*6.28,
-        rv:.01+Math.random()*.02,o:.3+Math.random()*.25,type:'petal'});
-  }
-}
-function tickP(){
-  for(let i=particles.length-1;i>=0;i--){
-    const p=particles[i];
-    if(p.type==='rain'){
-      p.x+=p.vx;p.y+=p.vy;
-      fxX.strokeStyle=`rgba(190,200,215,${p.o})`;fxX.lineWidth=.7;
-      fxX.beginPath();fxX.moveTo(p.x,p.y);fxX.lineTo(p.x+p.vx*2,p.y+p.len);fxX.stroke();
-    }else if(p.type==='snow'){
-      p.x+=Math.sin(p.ph+=.008)*.35;p.y+=p.vy;
-      fxX.fillStyle=`rgba(255,255,255,${p.o})`;
-      fxX.beginPath();fxX.arc(p.x,p.y,p.r,0,6.28);fxX.fill();
-    }else if(p.type==='leaf'){
-      p.x+=p.vx+Math.sin(p.rot)*.3;p.y+=p.vy;p.rot+=p.rv;
-      fxX.save();fxX.translate(p.x,p.y);fxX.rotate(p.rot);
-      fxX.fillStyle=`rgba(200,120,40,${p.o})`;
-      fxX.beginPath();fxX.ellipse(0,0,p.r,p.r*.5,0,0,6.28);fxX.fill();
-      fxX.restore();
-    }else if(p.type==='petal'){
-      p.x+=p.vx+Math.sin(p.rot)*.2;p.y+=p.vy;p.rot+=p.rv;
-      fxX.save();fxX.translate(p.x,p.y);fxX.rotate(p.rot);
-      fxX.fillStyle=`rgba(240,180,190,${p.o})`;
-      fxX.beginPath();fxX.ellipse(0,0,p.r,p.r*.6,0,0,6.28);fxX.fill();
-      fxX.restore();
-    }
-    if(p.y>H+20||p.x>W+40||p.x<-40){
-      if(wSpawn||S.season==='autumn'||S.season==='winter'||S.season==='spring'){p.y=-15;p.x=Math.random()*W*1.2}
-      else particles.splice(i,1);
-    }
-  }
-}
-
-// ── 3.3 FLYING BIRDS ──
-let birds=[];let lastBird=0;
-function tickBirds(dt){
-  const now=performance.now();
-  if(birds.length<2&&now-lastBird>14000+Math.random()*6000){
-    lastBird=now;
-    const y=H*(.08+Math.random()*.28);
-    birds.push({x:W+40,y,vx:-.6-Math.random()*.4,vy:Math.sin(Math.random()*3)*.1,
-      wing:0,wingD:1,life:0});
-  }
-  for(let i=birds.length-1;i>=0;i--){
-    const b=birds[i];b.x+=b.vx;b.y+=Math.sin(b.life+=dt)*.15;
-    b.wing+=.12*b.wingD;if(b.wing>1||b.wing<-1) b.wingD*=-1;
-    if(b.x<-60){birds.splice(i,1);continue}
-    fxX.save();fxX.translate(b.x,b.y);
-    fxX.strokeStyle='rgba(44,36,24,.35)';fxX.lineWidth=1.5;fxX.lineCap='round';
-    fxX.beginPath();
-    fxX.moveTo(-12,b.wing*4);fxX.quadraticCurveTo(-6,-2+b.wing*2,0,0);
-    fxX.quadraticCurveTo(6,-2+b.wing*2,12,b.wing*4);
-    fxX.stroke();fxX.restore();
-  }
-}
-
-// ── 3.4 MOUSE RIPPLES ──
-let ripples=[],lastRip=0;
-document.addEventListener('pointermove',e=>{
-  if(S.drag) return;
-  if(e.clientY/H<.55) return;
-  const now=performance.now();
-  if(now-lastRip<200) return;lastRip=now;
-  ripples.push({x:e.clientX,y:e.clientY,r:0,max:50+Math.random()*30,o:.45});
-});
-function tickRip(){
-  rpX.clearRect(0,0,W,H);
-  rpX.globalCompositeOperation='lighter';
-  for(let i=ripples.length-1;i>=0;i--){
-    const r=ripples[i];r.r+=.6;r.o=.45*(1-r.r/r.max);
-    if(r.o<=0){ripples.splice(i,1);continue}
-    for(let j=0;j<3;j++){
-      const rr=r.r-j*6;if(rr<0) continue;
-      rpX.strokeStyle=`rgba(200,210,220,${r.o*(1-j*.3)})`;rpX.lineWidth=1-j*.25;
-      rpX.beginPath();rpX.arc(r.x,r.y,rr,0,6.28);rpX.stroke();
-    }
-  }
-  rpX.globalCompositeOperation='source-over';
-}
-
-// ── 3.5 CLOUD SUMMON (click on mountains) ──
-let clouds=[];
-document.getElementById('strip-wrap').addEventListener('click',e=>{
-  if(e.target.closest('.hs')) return;
-  if(e.clientY/H>.55) return;
-  for(let i=0;i<18;i++){
-    clouds.push({x:e.clientX+(-30+Math.random()*60),y:e.clientY+Math.random()*8,
-      vx:(-1+Math.random()*2)*.2,vy:-.35-Math.random()*.4,
-      r:10+Math.random()*25,o:.28,life:0,max:120+Math.random()*60});
-  }
-});
-function tickClouds(){
-  for(let i=clouds.length-1;i>=0;i--){
-    const c=clouds[i];c.x+=c.vx;c.y+=c.vy;c.life++;c.r+=.1;
-    c.o=.28*(1-c.life/c.max);
-    if(c.life>=c.max){clouds.splice(i,1);continue}
-    const g=fxX.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r);
-    g.addColorStop(0,`rgba(225,220,210,${c.o})`);g.addColorStop(1,'rgba(225,220,210,0)');
-    fxX.fillStyle=g;fxX.beginPath();fxX.arc(c.x,c.y,c.r,0,6.28);fxX.fill();
-  }
-}
-// ── DEPTH-OF-FIELD FOCUS ──
-const focusMask=document.getElementById('focus-mask');
-function tickFocus(dt){
-  if(S.fx<0) return;
-  S.fi+=dt;
-  if(S.fi>1.5&&!S.fon){
-    S.fon=true;focusMask.style.opacity='1';
-  }
-  if(S.fon){
-    focusMask.style.maskImage=`radial-gradient(circle 300px at ${S.fx}px ${S.fy}px,transparent 60%,black 100%)`;
-    focusMask.style.webkitMaskImage=focusMask.style.maskImage;
-  }
-}
-document.addEventListener('pointermove',()=>{
-  S.fi=0;
-  if(S.fon){S.fon=false;focusMask.style.opacity='0'}
-});
-
-// ── HOTSPOTS ──
-function buildHS(){
-  HS.forEach((h,i)=>{
-    const d=document.createElement('div');d.className='hs';
-    d.style.left=h.x+'px';d.style.top=(h.y*100)+'%';
-    d.innerHTML=`<div class="hs-ring"></div><div class="hs-core"></div><div class="hs-tip">${h.title}</div>`;
-    let dx=0,dy=0;
-    d.addEventListener('pointerdown',e=>{dx=e.clientX;dy=e.clientY});
-    d.addEventListener('pointerup',e=>{
-      if(Math.abs(e.clientX-dx)+Math.abs(e.clientY-dy)<8) openPop(i)});
-    strip.appendChild(d);
+/* ═══ PROGRESS DOTS ═══ */
+const progLine=document.getElementById('prog-line');
+const progCur=document.getElementById('prog-cur');
+function buildDots(){
+  CH.forEach((c,i)=>{
+    const d=document.createElement('div');d.className='prog-dot';
+    d.style.left=((c.focus/TW)*100)+'%';
+    const tip=document.createElement('div');tip.className='prog-tip';
+    tip.textContent=c.name;d.appendChild(tip);
+    d.addEventListener('click',()=>jumpTo(i));
+    progLine.appendChild(d);
   });
 }
-const popBg=document.getElementById('pop-bg');
-function openPop(i){
-  S.pop=i;const h=HS[i];
-  popBg.querySelector('.pop-place').textContent=h.title;
-  popBg.querySelector('.pop-prov').textContent=h.prov;
-  popBg.querySelector('.pop-pt').textContent=`${h.pt} · ${h.au}`;
-  popBg.querySelector('.pop-poem').textContent=h.poem;
-  popBg.querySelector('.pop-desc').textContent=h.desc;
-  popBg.classList.add('open');
-}
-function closePop(){S.pop=-1;popBg.classList.remove('open');speechSynthesis.cancel()}
-popBg.querySelector('.pop-x').addEventListener('click',closePop);
-popBg.addEventListener('click',e=>{if(e.target===popBg) closePop()});
-popBg.querySelector('.pop-speak').addEventListener('click',()=>{
-  if(S.pop<0) return;speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(HS[S.pop].poem.replace(/\n/g,'，'));
-  u.lang='zh-CN';u.rate=.8;
-  const zh=speechSynthesis.getVoices().find(v=>v.lang.startsWith('zh'));
-  if(zh) u.voice=zh;speechSynthesis.speak(u);
+buildDots();
+
+/* ═══ SCROLL ENGINE ═══ */
+function clamp(v){return Math.max(0,Math.min(TW-W,v))}
+function applyStrip(){strip.style.transform=`translateX(${-S.x}px) scale(${S.scale})`}
+function updateProg(){progCur.style.left=((S.x/(TW-W))*100)+'%'}
+
+/* wheel */
+document.getElementById('viewport').addEventListener('wheel',e=>{
+  e.preventDefault();
+  userTakeover();
+  S.tx=clamp(S.tx+(e.deltaY||e.deltaX)*1.8);
+},{passive:false});
+
+/* drag / pointer */
+const vp=document.getElementById('viewport');
+vp.addEventListener('pointerdown',e=>{
+  if(e.button!==0)return;
+  S.drag=true;S.dsx=S.x;S.dcx=e.clientX;S.lpx=e.clientX;S.lpt=performance.now();
+  S.vel=0;userTakeover();vp.setPointerCapture(e.pointerId);
+});
+vp.addEventListener('pointermove',e=>{
+  if(!S.drag)return;
+  const dx=e.clientX-S.dcx;
+  S.tx=clamp(S.dsx-dx);
+  const now=performance.now(),dt=now-S.lpt;
+  if(dt>0){S.vel=(S.lpx-e.clientX)/dt*16;S.lpx=e.clientX;S.lpt=now}
+});
+vp.addEventListener('pointerup',e=>{
+  if(!S.drag)return;S.drag=false;
+  S.tx=clamp(S.tx+S.vel*8);
+  vp.releasePointerCapture(e.pointerId);
 });
 
-// ── KEN BURNS AUTO-TOUR ──
-function toggleTour(){
-  S.tour=!S.tour;
-  document.getElementById('btn-tour').classList.toggle('on',S.tour);
-  document.getElementById('btn-tour').textContent=S.tour?'⏸':'▶';
-  if(S.tour) S.tt=0;
-  else{S.tts=1;S.tty=0}
-}
-document.getElementById('btn-tour').addEventListener('click',toggleTour);
-function tickTour(dt){
-  if(!S.tour) return;
-  S.tt+=dt;
-  const cycle=10;
-  const p=(S.tt%cycle)/cycle;
-  if(p<.3){S.tts=1+.08*Math.sin(p/.3*Math.PI);S.tty=10*Math.sin(p/.3*Math.PI)}
-  else if(p<.7){S.tts=1;S.tty=0}
-  else{S.tts=1+.04*Math.sin((p-.7)/.3*Math.PI);S.tty=-8*Math.sin((p-.7)/.3*Math.PI)}
-  S.tx=clamp(S.tx-.7);
-  if(S.tx<=clamp(-Infinity)){S.tx=0;S.tt=0}
+/* touch */
+let _ts=0;
+vp.addEventListener('touchstart',e=>{_ts=e.touches[0].clientX;userTakeover()},{passive:true});
+vp.addEventListener('touchmove',e=>{
+  const dx=e.touches[0].clientX-_ts;_ts=e.touches[0].clientX;
+  S.tx=clamp(S.tx-dx*1.5);
+},{passive:true});
+
+/* ═══ JUMP TO CHAPTER ═══ */
+function jumpTo(i){
+  curtain.classList.add('on');
+  setTimeout(()=>{
+    S.tx=clamp(CH[i].focus-W/2);S.x=S.tx;applyStrip();
+    curtain.classList.add('slow');curtain.classList.remove('on');
+    setTimeout(()=>curtain.classList.remove('slow'),600);
+    openPoem(i);
+  },180);
 }
 
-// ── AMBIENT MUSIC ──
-let aCtx=null,mG=null,mOn=false;
-function toggleMusic(){
-  if(mOn){aCtx.suspend();mOn=false}
-  else if(aCtx){aCtx.resume();mOn=true}
-  else{
-    aCtx=new(AudioContext||webkitAudioContext)();
-    mG=aCtx.createGain();mG.gain.value=.09;mG.connect(aCtx.destination);
-    const ns=[293.66,349.23,392,440,523.25,587.33,698.46];let ni=0;
-    (function play(){
-      if(!aCtx||aCtx.state==='closed') return;
-      const o=aCtx.createOscillator(),g=aCtx.createGain();
-      o.type='sine';o.frequency.value=ns[ni++%ns.length];
-      g.gain.setValueAtTime(.1,aCtx.currentTime);
-      g.gain.exponentialRampToValueAtTime(.001,aCtx.currentTime+3);
-      o.connect(g);g.connect(mG);o.start();o.stop(aCtx.currentTime+3.2);
-      setTimeout(play,1500+Math.random()*1500);
-    })();mOn=true;
+/* ═══ USER TAKEOVER / HANDBACK ═══ */
+function userTakeover(){
+  if(S.auto){S.auto=false;document.getElementById('btn-tour').textContent='▶'}
+  S.userIdle=0;
+}
+/* ═══ AUTO TOUR ═══ */
+const TOUR_SPD=22,ZOOM_LO=1.0,ZOOM_HI=1.035,ZOOM_T=35,FOCUS_ZOOM=1.06,FOCUS_DUR=5;
+let tourT=0,focusTimer=0,focusingCh=-1;
+
+function tourTick(dt){
+  if(!S.auto||!S.introOver)return;
+  tourT+=dt;
+  // Ken Burns micro-zoom
+  S.tScale=ZOOM_LO+(ZOOM_HI-ZOOM_LO)*(.5+.5*Math.sin(tourT*2*Math.PI/ZOOM_T));
+
+  // chapter focus pause
+  if(S.paused){
+    focusTimer-=dt;
+    if(focusTimer<=0){S.paused=false;S.pauseCh=focusingCh;focusingCh=-1;S.tScale=ZOOM_LO}
+    return;
   }
-  document.getElementById('btn-music').classList.toggle('on',mOn);
-  document.getElementById('btn-music').textContent=mOn?'♫':'♪';
+  S.tx=clamp(S.tx+TOUR_SPD*dt);
+  // check chapter proximity
+  for(let i=0;i<N;i++){
+    if(i===S.pauseCh)continue;
+    const cx=CH[i].focus-W/2;
+    if(Math.abs(S.tx-cx)<30){
+      S.paused=true;focusTimer=FOCUS_DUR;focusingCh=i;
+      S.tScale=FOCUS_ZOOM;S.tx=cx;
+      openPoem(i);break;
+    }
+  }
+  // loop back
+  if(S.tx>=TW-W-10){S.tx=0;S.x=0;S.pauseCh=-1;tourT=0}
 }
-document.getElementById('btn-music').addEventListener('click',toggleMusic);
 
-function pluck(){
-  if(!aCtx){aCtx=new(AudioContext||webkitAudioContext)();
-    mG=aCtx.createGain();mG.gain.value=.09;mG.connect(aCtx.destination)}
-  const o=aCtx.createOscillator(),g=aCtx.createGain();
-  o.type='sine';o.frequency.value=587.33;
-  g.gain.setValueAtTime(.15,aCtx.currentTime);
-  g.gain.exponentialRampToValueAtTime(.001,aCtx.currentTime+1.5);
-  o.connect(g);g.connect(aCtx.destination);o.start();o.stop(aCtx.currentTime+1.6);
+document.getElementById('btn-tour').addEventListener('click',()=>{
+  S.auto=!S.auto;
+  document.getElementById('btn-tour').textContent=S.auto?'⏸':'▶';
+  if(S.auto){S.pauseCh=-1;S.paused=false}
+});
+
+/* ═══ INTRO SEQUENCE (12s) ═══ */
+const intro=document.getElementById('intro');
+const introTitle=document.getElementById('intro-title');
+const introSub=document.getElementById('intro-sub');
+const SUB_TEXT='從青海源頭到山東入海 · 五千年文明的數字長卷';
+
+function startIntro(){
+  setTimeout(()=>intro.classList.add('phase2'),800);
+  // typewriter subtitle at 4s
+  setTimeout(()=>{
+    let ci=0;
+    const iv=setInterval(()=>{
+      if(ci>=SUB_TEXT.length){clearInterval(iv);return}
+      const sp=document.createElement('span');
+      sp.textContent=SUB_TEXT[ci];introSub.appendChild(sp);
+      requestAnimationFrame(()=>sp.style.opacity='1');
+      ci++;
+    },80);
+  },4000);
+  // crossfade at 10s
+  setTimeout(()=>{
+    intro.classList.add('fadeout');
+    S.introOver=true;S.started=true;
+    setTimeout(()=>intro.remove(),2500);
+  },10000);
+}
+startIntro();
+
+/* ═══ PARTICLES: DUST MOTES (15) ═══ */
+const DUST_N=15;
+let dusts=[];
+function initDust(){
+  dusts=[];
+  for(let i=0;i<DUST_N;i++){
+    dusts.push({
+      x:Math.random()*W,y:Math.random()*VH,
+      vx:.08+Math.random()*.12,vy:-.02+Math.random()*.04,
+      r:.4+Math.random()*.8,a:.06+Math.random()*.12,
+      phase:Math.random()*Math.PI*2
+    });
+  }
+}
+function tickDust(dt,t){
+  for(const d of dusts){
+    d.x+=d.vx*60*dt+Math.sin(t*.3+d.phase)*.15;
+    d.y+=d.vy*60*dt+Math.cos(t*.2+d.phase)*.1;
+    if(d.x>W+5)d.x=-5;if(d.x<-5)d.x=W+5;
+    if(d.y<-5)d.y=VH+5;if(d.y>VH+5)d.y=-5;
+  }
+}
+function drawDust(){
+  for(const d of dusts){
+    fxX.beginPath();fxX.arc(d.x,d.y,d.r,0,Math.PI*2);
+    fxX.fillStyle=`rgba(212,197,160,${d.a})`;fxX.fill();
+  }
+}
+/* ═══ FOG WISPS (4) ═══ */
+const FOG_N=4;
+let fogs=[];
+function initFog(){
+  fogs=[];
+  for(let i=0;i<FOG_N;i++){
+    fogs.push({
+      x:Math.random()*W,y:VH*.3+Math.random()*VH*.4,
+      w:180+Math.random()*220,h:30+Math.random()*40,
+      vx:.12+Math.random()*.08,a:.04+Math.random()*.04,
+      phase:Math.random()*Math.PI*2
+    });
+  }
+}
+function tickFog(dt,t){
+  for(const f of fogs){
+    f.x+=f.vx*60*dt;
+    if(f.x>W+f.w)f.x=-f.w;
+  }
+}
+function drawFog(t){
+  for(const f of fogs){
+    const ya=f.y+Math.sin(t*.15+f.phase)*8;
+    const g=fxX.createRadialGradient(f.x,ya,0,f.x,ya,f.w/2);
+    g.addColorStop(0,`rgba(232,220,196,${f.a})`);
+    g.addColorStop(1,'rgba(232,220,196,0)');
+    fxX.fillStyle=g;
+    fxX.fillRect(f.x-f.w/2,ya-f.h/2,f.w,f.h);
+  }
 }
 
-// ── MAIN LOOP ──
-let prev=0;
-function tick(t){
-  const dt=Math.min((t-prev)/1000,.05);prev=t;
+/* ═══ BIRD (max 1) ═══ */
+let bird=null,birdTimer=0;
+function spawnBird(){
+  bird={x:-30,y:VH*.15+Math.random()*VH*.2,vx:.6+Math.random()*.3,phase:Math.random()*Math.PI*2,size:8+Math.random()*4};
+}
+function tickBird(dt,t){
+  birdTimer-=dt;
+  if(!bird&&birdTimer<=0){spawnBird();birdTimer=25+Math.random()*35}
+  if(!bird)return;
+  bird.x+=bird.vx*60*dt;
+  bird.y+=Math.sin(t*1.2+bird.phase)*.3;
+  if(bird.x>W+50)bird=null;
+}
+function drawBird(t){
+  if(!bird)return;
+  const b=bird,s=b.size;
+  const flap=Math.sin(t*5+b.phase)*.4;
+  fxX.save();fxX.translate(b.x,b.y);fxX.globalAlpha=.35;
+  fxX.strokeStyle='rgba(60,50,40,.5)';fxX.lineWidth=1;fxX.lineCap='round';
+  fxX.beginPath();fxX.moveTo(-s,flap*s*.5);fxX.quadraticCurveTo(-s*.3,-s*.3+flap*s*.3,0,0);
+  fxX.stroke();
+  fxX.beginPath();fxX.moveTo(s,flap*s*.5);fxX.quadraticCurveTo(s*.3,-s*.3+flap*s*.3,0,0);
+  fxX.stroke();
+  fxX.restore();
+}
 
-  if(!S.drag){S.x+=(S.tx-S.x)*.08;if(Math.abs(S.tx-S.x)<.3) S.x=S.tx}
-  S.ts+=(S.tts-S.ts)*.04;S.ty+=(S.tty-S.ty)*.04;
+/* ═══ DEPTH-OF-FIELD (mouse only) ═══ */
+vp.addEventListener('mousemove',e=>{
+  S.focusX=e.clientX;S.focusY=e.clientY-H*.1;
+  S.idle=0;S.focusOn=true;
+});
+vp.addEventListener('mouseleave',()=>{S.focusOn=false});
+function tickFocus(dt){
+  if(S.focusOn&&S.idle<.5){
+    focusEl.style.opacity='1';
+    focusEl.style.maskImage=`radial-gradient(circle 350px at ${S.focusX}px ${S.focusY}px,transparent 55%,black 100%)`;
+    focusEl.style.webkitMaskImage=focusEl.style.maskImage;
+  }else{
+    focusEl.style.opacity='0';
+  }
+  S.idle+=dt;
+}
 
-  tickTour(dt);
-  applyStrip();
-  updateProg();
+/* ═══ POEM PANEL ═══ */
+const poemPanel=document.getElementById('poem-panel');
+const ppChapter=poemPanel.querySelector('.pp-chapter');
+const ppWrap=poemPanel.querySelector('.pp-poem-wrap');
+const ppAuthor=poemPanel.querySelector('.pp-author');
+const ppPlay=poemPanel.querySelector('.pp-play');
 
-  fxX.clearRect(0,0,W,H);
-  fxX.globalCompositeOperation='screen';
-  tickMist(dt);
-  fxX.globalCompositeOperation='source-over';
-  spawnP();tickP();
-  tickBirds(dt);
-  tickClouds();
-  tickRip();
+function openPoem(i){
+  const c=CH[i];S.curCh=i;
+  ppChapter.textContent=c.name;
+  ppAuthor.textContent='— '+c.au+'《'+c.pt+'》';
+  ppWrap.innerHTML='';
+  const lines=c.poem.split('\n');
+  lines.forEach(line=>{
+    const col=document.createElement('div');col.className='pp-poem-col';
+    [...line].forEach((ch,ci)=>{
+      const sp=document.createElement('span');sp.textContent=ch;
+      col.appendChild(sp);
+      setTimeout(()=>sp.style.opacity='1',300+ci*120);
+    });
+    ppWrap.appendChild(col);
+  });
+  if(!S.poemOpen){S.poemOpen=true;poemPanel.classList.add('open')}
+}
+function closePoem(){S.poemOpen=false;poemPanel.classList.remove('open')}
+
+document.getElementById('btn-poem').addEventListener('click',()=>{
+  if(S.poemOpen)closePoem();else openPoem(S.curCh);
+});
+
+/* speech */
+ppPlay.addEventListener('click',()=>{
+  const c=CH[S.curCh];
+  const u=new SpeechSynthesisUtterance(c.poem.replace(/\n/g,''));
+  u.lang='zh-TW';u.rate=.7;u.pitch=.9;
+  speechSynthesis.cancel();speechSynthesis.speak(u);
+});
+/* ═══ SEASON ═══ */
+document.getElementById('btn-season').addEventListener('click',()=>{
+  S.season=(S.season+1)%4;
+  document.getElementById('btn-season').textContent=SEASONS[S.season];
+  strip.style.filter=SFILTER[SEASONS[S.season]];
+});
+
+/* ═══ WEB AUDIO: 65Hz DRONE + WIND ═══ */
+let audioCtx,droneGain,windGain;
+function initAudio(){
+  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  // drone
+  const osc=audioCtx.createOscillator();
+  osc.type='sine';osc.frequency.value=65;
+  droneGain=audioCtx.createGain();droneGain.gain.value=.06;
+  osc.connect(droneGain).connect(audioCtx.destination);osc.start();
+  // wind (white noise → lowpass)
+  const buf=audioCtx.createBuffer(1,audioCtx.sampleRate*4,audioCtx.sampleRate);
+  const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  const src=audioCtx.createBufferSource();src.buffer=buf;src.loop=true;
+  const lp=audioCtx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=400;
+  windGain=audioCtx.createGain();windGain.gain.value=.03;
+  src.connect(lp).connect(windGain).connect(audioCtx.destination);src.start();
+  audioCtx.suspend();
+}
+document.getElementById('btn-audio').addEventListener('click',()=>{
+  if(!audioCtx)initAudio();
+  S.audioOn=!S.audioOn;
+  if(S.audioOn)audioCtx.resume();else audioCtx.suspend();
+  document.getElementById('btn-audio').textContent=S.audioOn?'♫':'♪';
+});
+
+/* ═══ CHAPTER DETECTION ═══ */
+function detectChapter(){
+  const cx=S.x+W/2;
+  let best=0,bestD=Infinity;
+  for(let i=0;i<N;i++){
+    const d=Math.abs(CH[i].focus-cx);
+    if(d<bestD){bestD=d;best=i}
+  }
+  if(best!==S.curCh){S.curCh=best}
+}
+
+/* ═══ MAIN LOOP ═══ */
+let lastT=0;
+function frame(ts){
+  requestAnimationFrame(frame);
+  if(!S.started){lastT=ts;return}
+  const dt=Math.min((ts-lastT)/1000,.05);
+  lastT=ts;
+  const t=ts/1000;
+
+  // smooth scroll
+  S.x+=(S.tx-S.x)*.08;
+  // smooth zoom
+  S.scale+=(S.tScale-S.scale)*.03;
+
+  applyStrip();updateProg();
+  tourTick(dt);
+  detectChapter();
+
+  // user idle handback
+  if(!S.auto){
+    S.userIdle+=dt;
+    if(S.userIdle>20){S.auto=true;S.pauseCh=-1;document.getElementById('btn-tour').textContent='⏸'}
+  }
+
+  // fx canvas
+  fxX.clearRect(0,0,W,VH);
+  tickDust(dt,t);drawDust();
+  tickFog(dt,t);drawFog(t);
+  tickBird(dt,t);drawBird(t);
   tickFocus(dt);
 
-  requestAnimationFrame(tick);
+  // wind gain modulation
+  if(windGain){
+    const wv=.02+.015*Math.sin(t*.08);
+    windGain.gain.value=wv;
+  }
 }
 
-// ── INIT ──
-resize();
-buildSeams();
-buildHS();
-strip.style.filter=SF.spring;
-requestAnimationFrame(tick);
-window.addEventListener('resize',resize);
-speechSynthesis.getVoices();
+/* ═══ INIT ═══ */
+initDust();initFog();
+requestAnimationFrame(frame);
 </script>
 </body>
 </html>
