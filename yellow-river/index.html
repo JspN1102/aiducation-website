@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>黃河萬里圖</title>
-<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@400;600;700&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{overflow:hidden;height:100vh;width:100vw;background:#000}
@@ -51,8 +51,8 @@ body{font-family:'Noto Serif TC','Noto Serif SC','PingFang TC','微軟正黑體'
 /* ═══ INTRO ═══ */
 #intro{position:fixed;inset:0;z-index:200;background:#000;display:flex;flex-direction:column;
   align-items:center;justify-content:center;cursor:pointer}
-#intro-title{font-family:'Ma Shan Zheng',cursive;font-size:96px;color:#d4c5a0;
-  letter-spacing:.3em;opacity:0;transition:opacity 2.5s cubic-bezier(.4,0,.2,1)}
+#intro-title{font-family:'Noto Serif TC','Noto Serif SC','Ma Shan Zheng',serif;font-size:96px;color:#d4c5a0;
+  font-weight:700;letter-spacing:.3em;opacity:0;transition:opacity 2.5s cubic-bezier(.4,0,.2,1)}
 #intro-sub{font-size:14px;color:rgba(212,197,160,.7);letter-spacing:.5em;margin-top:60px;
   height:1.4em;overflow:hidden}
 #intro-sub span{opacity:0;transition:opacity .3s ease}
@@ -65,7 +65,7 @@ body{font-family:'Noto Serif TC','Noto Serif SC','PingFang TC','微軟正黑體'
 #brand{position:fixed;top:0;left:0;height:10vh;display:flex;align-items:center;padding-left:24px;
   z-index:101;pointer-events:none}
 #brand span{font-size:13px;color:rgba(212,197,160,.5);letter-spacing:.15em;
-  font-family:'Ma Shan Zheng',cursive}
+  font-family:'Noto Serif TC','Noto Serif SC','Ma Shan Zheng',serif}
 
 /* ═══ PROGRESS (inside bottom letterbox) ═══ */
 #prog-wrap{position:fixed;bottom:0;left:0;right:0;height:10vh;z-index:101;
@@ -101,8 +101,8 @@ body{font-family:'Noto Serif TC','Noto Serif SC','PingFang TC','微軟正黑體'
 #poem-panel.open{transform:translateX(0)}
 #poem-panel::before{content:'';position:absolute;left:0;top:0;bottom:0;width:1px;
   background:rgba(212,197,160,.15);box-shadow:0 0 8px rgba(212,197,160,.08)}
-.pp-chapter{font-family:'Ma Shan Zheng','Noto Serif TC',cursive;font-size:36px;color:#d4c5a0;
-  letter-spacing:.2em;margin-bottom:16px}
+.pp-chapter{font-family:'Noto Serif TC','Noto Serif SC','Ma Shan Zheng',serif;font-size:36px;color:#d4c5a0;
+  font-weight:600;letter-spacing:.2em;margin-bottom:16px}
 .pp-line{width:30px;height:1px;background:rgba(212,197,160,.3);margin-bottom:28px}
 .pp-poem-wrap{flex:1;display:flex;flex-direction:row-reverse;justify-content:flex-start;
   align-items:flex-start;gap:22px;overflow:hidden;padding-top:10px}
@@ -132,7 +132,7 @@ body{font-family:'Noto Serif TC','Noto Serif SC','PingFang TC','微軟正黑體'
 #ch-indicator{position:fixed;bottom:10vh;left:0;right:0;height:0;z-index:102;
   pointer-events:none;text-align:center}
 #ch-name{display:inline-block;position:relative;top:-44px;
-  font-family:'Ma Shan Zheng','Noto Serif TC',cursive;font-size:22px;
+  font-family:'Noto Serif TC','Noto Serif SC','Ma Shan Zheng',serif;font-size:22px;
   color:rgba(212,197,160,.9);letter-spacing:.35em;padding-right:.35em;
   text-shadow:0 2px 14px rgba(0,0,0,.7);transition:opacity .7s ease}
 </style>
