@@ -581,62 +581,66 @@ const BoatMgr={
   }
 };
 
-/* ─── 4. GooseMgr — 雁阵 (PNG翅膀帧切换) ─── */
+/* ─── 4. GooseMgr — 雁阵 (PNG翅膀帧切换, 多队) ─── */
 const GooseMgr={
-  flock:null,timer:15,dir:-1,
-  spawn(){
+  flocks:[],timer:8,maxFlocks:3,
+  spawnOne(){
     const n=5+Math.floor(Math.random()*3);
-    const startSeason=SEASONS[S.season];
-    this.dir=(startSeason==='秋'||startSeason==='冬')?1:-1;
-    const startX=this.dir<0?S.x+W+300:S.x-300;
-    const baseY=VH*(.15+Math.random()*.15);
+    const season=SEASONS[S.season];
+    const dir=(season==='秋'||season==='冬')?1:-1;
+    const startX=dir<0?S.x+W+300+Math.random()*400:S.x-300-Math.random()*400;
+    const baseY=VH*(.10+Math.random()*0.22);
     const members=[];
     for(let i=0;i<n;i++){
       const wing=i%2===0?1:-1;
       const row=Math.ceil(i/2);
       members.push({
-        offX:-row*28*this.dir,offY:wing*row*14,
+        offX:-row*28*dir,offY:wing*row*14,
         phase:Math.random()*Math.PI*2,size:i===0?28:22+Math.random()*6
       });
     }
-    this.flock={worldX:startX,baseY,members,age:0,fadeOut:false,fadeA:1};
+    this.flocks.push({worldX:startX,baseY,members,age:0,fadeOut:false,fadeA:1,dir});
   },
   tick(dt,t){
     this.timer-=dt;
-    if(!this.flock&&this.timer<=0){this.spawn();this.timer=45+Math.random()*20}
-    if(!this.flock)return;
-    const f=this.flock;
-    f.age+=dt;
-    const speed=(W+600)/25;
-    f.worldX+=this.dir*speed*dt;
-    f.baseY+=Math.sin(t*.4)*.15;
-    if(f.fadeOut){f.fadeA=Math.max(0,f.fadeA-dt*.25);if(f.fadeA<=0)this.flock=null}
-    else if(f.age>26)this.flock=null;
+    if(this.flocks.length<this.maxFlocks&&this.timer<=0){
+      this.spawnOne();
+      this.timer=18+Math.random()*15;
+    }
+    for(const f of this.flocks){
+      f.age+=dt;
+      const speed=(W+600)/25;
+      f.worldX+=f.dir*speed*dt;
+      f.baseY+=Math.sin(t*.4+f.members[0].phase)*.15;
+      if(f.fadeOut){f.fadeA=Math.max(0,f.fadeA-dt*.25)}
+    }
+    this.flocks=this.flocks.filter(f=>f.fadeA>0&&f.age<28);
   },
   draw(ctx,t){
-    if(!this.flock||!assetsReady||!IMG.goose||!IMG.goose.length)return;
-    const f=this.flock;
-    ctx.save();
-    ctx.globalAlpha=.6*f.fadeA;
-    for(const m of f.members){
-      const mx=toScreen(f.worldX+m.offX);
-      const my=f.baseY+m.offY+Math.sin(t*.4+m.phase)*3;
-      if(mx<-100||mx>W+100)continue;
-      const frame=Math.floor(t*5+m.phase)%2;
-      const gimg=IMG.goose[frame];
-      const s=m.size;
-      const h=s*(gimg.naturalHeight/gimg.naturalWidth)||s*.6;
+    if(!assetsReady||!IMG.goose||!IMG.goose.length)return;
+    for(const f of this.flocks){
       ctx.save();
-      ctx.translate(mx,my);
-      if(this.dir>0)ctx.scale(-1,1);
-      ctx.shadowColor='rgba(60,50,35,.12)';ctx.shadowBlur=6;
-      ctx.drawImage(gimg,-s/2,-h/2,s,h);
+      ctx.globalAlpha=.6*f.fadeA;
+      for(const m of f.members){
+        const mx=toScreen(f.worldX+m.offX);
+        const my=f.baseY+m.offY+Math.sin(t*.4+m.phase)*3;
+        if(mx<-100||mx>W+100)continue;
+        const frame=Math.floor(t*5+m.phase)%2;
+        const gimg=IMG.goose[frame];
+        const s=m.size;
+        const h=s*(gimg.naturalHeight/gimg.naturalWidth)||s*.6;
+        ctx.save();
+        ctx.translate(mx,my);
+        if(f.dir>0)ctx.scale(-1,1);
+        ctx.shadowColor='rgba(60,50,35,.12)';ctx.shadowBlur=6;
+        ctx.drawImage(gimg,-s/2,-h/2,s,h);
+        ctx.restore();
+      }
       ctx.restore();
     }
-    ctx.restore();
   },
   onSeasonChange(){
-    if(this.flock)this.flock.fadeOut=true;
+    for(const f of this.flocks)f.fadeOut=true;
     this.timer=4;
   }
 };
