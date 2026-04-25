@@ -484,17 +484,44 @@ const ASSETS={
 };
 const IMG={};
 let assetsReady=false;
+
+/* 去白边: 抠图时残留的"低 alpha + 接近白"的 matte 像素抹成全透,
+   保留 body(alpha≥80) 和深色边缘。snow/willow 内部是高 alpha 白,不会被误伤。 */
+function decontaminate(img){
+  const c=document.createElement('canvas');
+  c.width=img.naturalWidth;c.height=img.naturalHeight;
+  const cx=c.getContext('2d');
+  cx.drawImage(img,0,0);
+  try{
+    const d=cx.getImageData(0,0,c.width,c.height);
+    const px=d.data;
+    for(let i=0;i<px.length;i+=4){
+      const a=px[i+3];
+      if(a>0&&a<80&&px[i]>230&&px[i+1]>230&&px[i+2]>230){
+        px[i+3]=0;
+      }
+    }
+    cx.putImageData(d,0,0);
+  }catch(e){}
+  // 保持与 Image 接口兼容(后续代码用 naturalWidth/Height)
+  c.naturalWidth=c.width;c.naturalHeight=c.height;
+  return c;
+}
+
 function preloadAssets(cb){
   let total=0,loaded=0;
   for(const k in ASSETS){
     IMG[k]=[];
-    ASSETS[k].forEach(src=>{
+    ASSETS[k].forEach((src,idx)=>{
       total++;
       const im=new Image();
-      im.onload=()=>{loaded++;if(loaded===total){assetsReady=true;cb()}};
+      IMG[k].push(im);  // placeholder, 加载完替换为 decontaminated canvas
+      im.onload=()=>{
+        IMG[k][idx]=decontaminate(im);
+        loaded++;if(loaded===total){assetsReady=true;cb()}
+      };
       im.onerror=()=>{loaded++;if(loaded===total){assetsReady=true;cb()}};
       im.src='assets/'+src;
-      IMG[k].push(im);
     });
   }
 }
