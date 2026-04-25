@@ -929,13 +929,19 @@ function frame(ts){
   }
 
   // fx canvas — 渲染顺序: cloud → smoke → boat → geese → floater → dust
+  // ENTITIES_DISABLED: 暂时隐藏所有动态生灵,只保留季节滤镜切换。
+  // 原因: PNG 抠图残留半透白雾 + snow-1 源素材太糊,小尺寸只剩白方块。
+  // 修好/换素材后改回 false 即可恢复。
+  const ENTITIES_DISABLED = true;
   fxX.clearRect(0,0,W,VH);
-  CloudMgr.tick(dt,t);CloudMgr.draw(fxX,t);
-  SmokeMgr.tick(dt,t);SmokeMgr.draw(fxX,t);
-  BoatMgr.tick(dt,t);BoatMgr.draw(fxX,t);
-  GooseMgr.tick(dt,t);GooseMgr.draw(fxX,t);
-  FloaterMgr.tick(dt,t);FloaterMgr.draw(fxX);
-  tickDust(dt,t);drawDust();
+  if (!ENTITIES_DISABLED) {
+    CloudMgr.tick(dt,t);CloudMgr.draw(fxX,t);
+    SmokeMgr.tick(dt,t);SmokeMgr.draw(fxX,t);
+    BoatMgr.tick(dt,t);BoatMgr.draw(fxX,t);
+    GooseMgr.tick(dt,t);GooseMgr.draw(fxX,t);
+    FloaterMgr.tick(dt,t);FloaterMgr.draw(fxX);
+    tickDust(dt,t);drawDust();
+  }
   tickFocus(dt);
 
   // wind gain modulation
