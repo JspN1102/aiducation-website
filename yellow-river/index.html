@@ -33,8 +33,10 @@ body{font-family:'Noto Serif TC','Noto Serif SC','PingFang TC','微軟正黑體'
   opacity:.06;mix-blend-mode:multiply}
 
 /* ═══ FX CANVAS ═══ */
+/* 不再用 darken：白色雪/云/柳絮在 darken 下被棕黄背景吃光。
+   改回 normal+稍降 opacity 以保留"贴在画上"的融入感。 */
 #fx{position:fixed;top:10vh;left:0;right:0;bottom:10vh;z-index:12;pointer-events:none;
-  mix-blend-mode:darken;opacity:.92}
+  opacity:.88}
 
 /* ═══ FOCUS MASK ═══ */
 #focus{position:fixed;top:10vh;left:0;right:0;bottom:10vh;z-index:14;pointer-events:none;
@@ -500,7 +502,7 @@ function preloadAssets(cb){
 /* ─── 1. CloudMgr — 山间云海 (PNG) ─── */
 const CloudMgr={
   clouds:[],
-  anchors:[700,3400,6800,10200,12800],
+  anchors:[600,1800,3000,4200,5400,6600,7800,9000,10200,11400,12600,13500],
   curve(t){return VH*(.2+.08*Math.sin(t*Math.PI*2.5))},
   init(){
     this.clouds=this.anchors.map((wx,i)=>({
@@ -687,17 +689,17 @@ const GooseMgr={
   }
 };
 
-/* ─── 5. FloaterMgr — 季节飘物 (PNG) ─── */
+/* ─── 5. FloaterMgr — 季节飘物 (PNG, 持续飘) ─── */
 const FloaterMgr={
-  particles:[],active:false,timer:0,maxTime:12,
+  particles:[],season:null,
   trigger(season){
-    this.particles=[];this.active=true;this.timer=this.maxTime;
+    this.season=season;this.particles=[];
     if(season==='夏'||!assetsReady)return;
-    const n=season==='冬'?40:season==='秋'?15:30;
+    const n=season==='冬'?60:season==='秋'?30:40;
     const imgKey=season==='冬'?'snow':season==='秋'?'leaf':'willow';
     for(let i=0;i<n;i++){
       this.particles.push({
-        x:Math.random()*W,y:-Math.random()*VH*.5,
+        x:Math.random()*W,y:-Math.random()*VH,
         vx:(Math.random()-.5)*.8,
         vy:season==='冬'?.3+Math.random()*.5:season==='秋'?.4+Math.random()*.3:.15+Math.random()*.2,
         size:season==='冬'?6+Math.random()*4:season==='秋'?12+Math.random()*10:8+Math.random()*4,
@@ -709,22 +711,21 @@ const FloaterMgr={
     }
   },
   tick(dt,t){
-    if(!this.active)return;
-    this.timer-=dt;
-    const fade=this.timer<2?this.timer/2:1;
+    if(!this.particles.length)return;
     for(const p of this.particles){
       p.x+=p.vx*60*dt+Math.sin(t*1.5+p.phase)*.5*p.depth;
       p.y+=p.vy*60*dt*p.depth;
       p.rot+=p.rotV;
-      p.fade=fade;
+      // 上下/左右循环，持续飘不消失
       if(p.y>VH+20){p.y=-20;p.x=Math.random()*W}
+      if(p.x<-30)p.x=W+30;
+      if(p.x>W+30)p.x=-30;
     }
-    if(this.timer<=0){this.active=false;this.particles=[]}
   },
   draw(ctx){
-    if(!this.active||!assetsReady)return;
+    if(!this.particles.length||!assetsReady)return;
     for(const p of this.particles){
-      const a=(p.fade||1)*(.3+p.depth*.4);
+      const a=(.35+p.depth*.45);
       const s=p.size;
       const h=s*(p.img.naturalHeight/p.img.naturalWidth)||s;
       ctx.save();
@@ -923,6 +924,7 @@ preloadAssets(()=>{
   CloudMgr.init();
   BoatMgr.init();
   SmokeMgr.init();
+  FloaterMgr.trigger(SEASONS[S.season]);  // 初始就有当季飘物（默认春→柳絮）
 });
 requestAnimationFrame(frame);
 </script>
