@@ -418,13 +418,40 @@ function drawDust(){
 }
 
 /* ═══════════════════════════════════════════════
-   ENTITY SYSTEM — 画中生灵
+   ENTITY SYSTEM — 画中生灵 (PNG素材版)
    渲染顺序: cloud → smoke → boat → geese → floater
    ═══════════════════════════════════════════════ */
-function inView(wx){return wx>S.x-200&&wx<S.x+W+200}
+function inView(wx){return wx>S.x-300&&wx<S.x+W+300}
 function toScreen(wx){return wx-S.x}
 
-/* ─── 1. CloudMgr — 山间云海 ─── */
+/* ─── Asset Preloader ─── */
+const ASSETS={
+  raft:['boat-raft-1.png'],
+  junk:['boat-junk-1.png','boat-junk-2.png'],
+  fishing:['boat-fishing-1.png'],
+  goose:['bird-goose-1.png','bird-goose-2.png'],
+  smoke:['smoke-1.png','smoke-2.png'],
+  cloud:['cloud-1.png','cloud-2.png','cloud-3.png'],
+  leaf:['leaf-1.png'],snow:['snow-1.png'],willow:['willow-1.png']
+};
+const IMG={};
+let assetsReady=false;
+function preloadAssets(cb){
+  let total=0,loaded=0;
+  for(const k in ASSETS){
+    IMG[k]=[];
+    ASSETS[k].forEach(src=>{
+      total++;
+      const im=new Image();
+      im.onload=()=>{loaded++;if(loaded===total){assetsReady=true;cb()}};
+      im.onerror=()=>{loaded++;if(loaded===total){assetsReady=true;cb()}};
+      im.src='assets/'+src;
+      IMG[k].push(im);
+    });
+  }
+}
+
+/* ─── 1. CloudMgr — 山间云海 (PNG) ─── */
 const CloudMgr={
   clouds:[],
   anchors:[700,3400,6800,10200,12800],
@@ -432,107 +459,96 @@ const CloudMgr={
   init(){
     this.clouds=this.anchors.map((wx,i)=>({
       worldX:wx,baseY:this.curve(i/this.anchors.length),
-      w:260+Math.random()*180,h:40+Math.random()*30,
       depth:.25+Math.random()*.3,phase:Math.random()*Math.PI*2,
-      vx:.4+Math.random()*.3
+      vx:.4+Math.random()*.3,
+      img:IMG.cloud[Math.floor(Math.random()*IMG.cloud.length)]
     }));
   },
   tick(dt,t){
     for(const c of this.clouds){
       c.worldX+=c.vx*dt*60*c.depth;
-      if(c.worldX>TW+c.w)c.worldX=-c.w;
+      if(c.worldX>TW+400)c.worldX=-400;
       c.baseY=this.curve((c.worldX/TW)+Math.sin(t*.05+c.phase)*.08);
     }
   },
   draw(ctx,t){
+    if(!assetsReady)return;
     for(const c of this.clouds){
       if(!inView(c.worldX))continue;
       const sx=toScreen(c.worldX);
       const sy=c.baseY+Math.sin(t*.12+c.phase)*6;
-      const a=(.12+c.depth*.08)*(.7+.3*Math.sin(t*.08+c.phase));
+      const a=(.25+c.depth*.25)*(.7+.3*Math.sin(t*.08+c.phase));
+      const w=400+c.depth*200;
+      const h=w*(c.img.naturalHeight/c.img.naturalWidth)||w*.3;
       ctx.save();
       ctx.globalAlpha=a;
-      const g=ctx.createRadialGradient(sx,sy,0,sx,sy,c.w/2);
-      g.addColorStop(0,`rgba(232,220,196,.5)`);
-      g.addColorStop(.6,`rgba(232,220,196,.2)`);
-      g.addColorStop(1,'rgba(232,220,196,0)');
-      ctx.fillStyle=g;
-      ctx.fillRect(sx-c.w/2,sy-c.h/2,c.w,c.h);
+      ctx.drawImage(c.img,sx-w/2,sy-h/2,w,h);
       ctx.restore();
     }
   }
 };
 
-/* ─── 2. SmokeMgr — 炊烟 ─── */
+/* ─── 2. SmokeMgr — 炊烟 (PNG双层循环) ─── */
 const SmokeMgr={
-  sources:[
-    {worldX:950,baseY:.68,depth:.8},
-    {worldX:6200,baseY:.72,depth:.75},
-    {worldX:9800,baseY:.66,depth:.85},
-    {worldX:12400,baseY:.70,depth:.9}
-  ],
-  particles:[],
-  timers:[0,0,0,0],
-  tick(dt,t){
+  sources:[],
+  init(){
+    const defs=[
+      {worldX:950,baseY:.68,depth:.8},
+      {worldX:6200,baseY:.72,depth:.75},
+      {worldX:9800,baseY:.66,depth:.85},
+      {worldX:12400,baseY:.70,depth:.9}
+    ];
+    this.sources=defs.map(d=>({
+      worldX:d.worldX,baseY:d.baseY*VH,depth:d.depth,
+      sprites:[
+        {phase:0,img:IMG.smoke[0]},
+        {phase:.5,img:IMG.smoke[1]}
+      ]
+    }));
+  },
+  tick(){},
+  draw(ctx,t){
+    if(!assetsReady)return;
     const isWinter=SEASONS[S.season]==='冬';
-    const interval=isWinter?.15:.3;
-    for(let si=0;si<this.sources.length;si++){
-      this.timers[si]-=dt;
-      if(this.timers[si]<=0&&this.particles.length<30){
-        this.timers[si]=interval+Math.random()*.2;
-        const src=this.sources[si];
-        this.particles.push({
-          worldX:src.worldX,y:src.baseY*VH,
-          vx:.3+Math.random()*.5,vy:-(1.2+Math.random()*.6),
-          age:0,maxAge:3.5+Math.random()*1.5,
-          size:3+Math.random()*3,depth:src.depth,
-          baseA:isWinter?.55:.35
-        });
+    const baseMul=isWinter?1.5:1;
+    for(const src of this.sources){
+      if(!inView(src.worldX))continue;
+      const sx=toScreen(src.worldX);
+      for(const sp of src.sprites){
+        const local=((t/8+sp.phase)%1);
+        const yOff=-local*180;
+        const opacity=Math.sin(local*Math.PI)*.45*baseMul*(0.4+src.depth*0.5);
+        const sc=.6+local*.6;
+        const iw=sp.img.naturalWidth||100;
+        const ih=sp.img.naturalHeight||300;
+        const dw=80*sc;
+        const dh=dw*(ih/iw);
+        ctx.save();
+        ctx.globalAlpha=Math.max(0,opacity);
+        ctx.globalCompositeOperation='screen';
+        ctx.drawImage(sp.img,sx-dw/2,src.baseY+yOff-dh,dw,dh);
+        ctx.restore();
       }
     }
-    for(const p of this.particles){
-      p.age+=dt;
-      p.vx+=.015;
-      p.worldX+=p.vx*60*dt;
-      p.y+=p.vy*60*dt;
-      p.size+=dt*2.5;
-    }
-    this.particles=this.particles.filter(p=>p.age<p.maxAge);
-  },
-  draw(ctx){
-    ctx.save();
-    ctx.globalCompositeOperation='screen';
-    for(const p of this.particles){
-      if(!inView(p.worldX))continue;
-      const sx=toScreen(p.worldX);
-      const prog=p.age/p.maxAge;
-      const a=p.baseA*(1-prog)*(0.4+p.depth*0.5);
-      const r=p.size;
-      const g=ctx.createRadialGradient(sx,p.y,0,sx,p.y,r);
-      g.addColorStop(0,`rgba(220,210,195,${a})`);
-      g.addColorStop(1,'rgba(220,210,195,0)');
-      ctx.fillStyle=g;
-      ctx.beginPath();ctx.arc(sx,p.y,r,0,Math.PI*2);ctx.fill();
-    }
-    ctx.restore();
   }
 };
 
-/* ─── 3. BoatMgr — 行船 ─── */
+/* ─── 3. BoatMgr — 行船 (PNG) ─── */
 const BoatMgr={
   boats:[],
   init(){
     const defs=[
-      {wx:1800,type:'raft'},{wx:4200,type:'raft'},{wx:5800,type:'raft'},
-      {wx:8400,type:'junk'},{wx:10600,type:'junk'},{wx:13200,type:'junk'}
+      {wx:1800,type:'raft'},{wx:4200,type:'fishing'},{wx:5800,type:'raft'},
+      {wx:8400,type:'junk'},{wx:10600,type:'junk'},{wx:13200,type:'fishing'}
     ];
     this.boats=defs.map(d=>{
       const depth=.55+Math.random()*.3;
+      const pool=IMG[d.type]||IMG.raft;
       return{
         worldX:d.wx,type:d.type,depth,
         baseY:VH*(.60+Math.random()*.18),
         phase:Math.random()*Math.PI*2,
-        rot:0
+        img:pool[Math.floor(Math.random()*pool.length)]
       };
     });
   },
@@ -540,45 +556,29 @@ const BoatMgr={
     for(const b of this.boats){
       b.worldX+=8*b.depth*dt;
       if(b.worldX>TW+100)b.worldX=-100;
-      b.rot=Math.sin(t*.6+b.phase)*.04;
     }
   },
   draw(ctx,t){
+    if(!assetsReady)return;
     for(const b of this.boats){
       if(!inView(b.worldX))continue;
       const sx=toScreen(b.worldX);
       const sy=b.baseY+Math.sin(t*.8+b.phase)*2*b.depth;
-      const sc=.4+b.depth*.8;
-      const alpha=.4+b.depth*.5;
+      const baseW=80;
+      const w=baseW*(.5+b.depth*.7);
+      const h=w*(b.img.naturalHeight/b.img.naturalWidth)||w*.7;
+      const rot=Math.sin(t*.6+b.phase)*.03;
       ctx.save();
-      ctx.translate(sx,sy);ctx.rotate(b.rot);
-      ctx.globalAlpha=alpha;
-      if(b.type==='raft'){
-        const bw=28*sc,bh=8*sc;
-        ctx.fillStyle='#8b6f4a';
-        ctx.beginPath();ctx.ellipse(0,0,bw/2,bh/2,0,0,Math.PI*2);ctx.fill();
-        const ph=bw*.8;
-        ctx.fillStyle='#3a2818';
-        ctx.fillRect(-2,-ph,4,ph);
-        ctx.beginPath();ctx.arc(0,-ph,2.5*sc,0,Math.PI*2);ctx.fill();
-      }else{
-        const bw=36*sc,bh=10*sc;
-        ctx.fillStyle='#5a4a38';
-        ctx.beginPath();
-        ctx.moveTo(-bw/2,0);ctx.lineTo(-bw/2+4,-bh);
-        ctx.lineTo(bw/2-2,-bh);ctx.lineTo(bw/2+3,0);
-        ctx.closePath();ctx.fill();
-        ctx.fillStyle='rgba(232,220,196,0.85)';
-        ctx.beginPath();
-        ctx.moveTo(bw*.1,-bh);ctx.lineTo(bw*.1,-bh-bw*.7);
-        ctx.lineTo(bw*.35,-bh);ctx.closePath();ctx.fill();
-      }
+      ctx.globalAlpha=.65+b.depth*.3;
+      ctx.translate(sx,sy);
+      ctx.rotate(rot);
+      ctx.drawImage(b.img,-w/2,-h/2,w,h);
       ctx.restore();
     }
   }
 };
 
-/* ─── 4. GooseMgr — 雁阵 ─── */
+/* ─── 4. GooseMgr — 雁阵 (PNG翅膀帧切换) ─── */
 const GooseMgr={
   flock:null,timer:15,dir:-1,
   spawn(){
@@ -593,7 +593,7 @@ const GooseMgr={
       const row=Math.ceil(i/2);
       members.push({
         offX:-row*28*this.dir,offY:wing*row*14,
-        phase:Math.random()*Math.PI*2,size:i===0?24:18+Math.random()*6
+        phase:Math.random()*Math.PI*2,size:i===0?28:22+Math.random()*6
       });
     }
     this.flock={worldX:startX,baseY,members,age:0,fadeOut:false,fadeA:1};
@@ -611,24 +611,22 @@ const GooseMgr={
     else if(f.age>26)this.flock=null;
   },
   draw(ctx,t){
-    if(!this.flock)return;
+    if(!this.flock||!assetsReady||!IMG.goose||!IMG.goose.length)return;
     const f=this.flock;
     ctx.save();
-    ctx.globalAlpha=.55*f.fadeA;
+    ctx.globalAlpha=.6*f.fadeA;
     for(const m of f.members){
       const mx=toScreen(f.worldX+m.offX);
       const my=f.baseY+m.offY+Math.sin(t*.4+m.phase)*3;
       if(mx<-100||mx>W+100)continue;
-      const s=m.size/2;
-      const flap=Math.sin(t*5.5+m.phase)*.45;
-      ctx.save();ctx.translate(mx,my);
-      ctx.strokeStyle='rgba(40,32,22,.7)';ctx.lineWidth=1.2;ctx.lineCap='round';
-      ctx.beginPath();ctx.moveTo(-s,flap*s*.4);
-      ctx.quadraticCurveTo(-s*.35,-s*.35+flap*s*.25,0,0);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(s,flap*s*.4);
-      ctx.quadraticCurveTo(s*.35,-s*.35+flap*s*.25,0,0);ctx.stroke();
-      ctx.beginPath();ctx.arc(0,0,1.2,0,Math.PI*2);
-      ctx.fillStyle='rgba(40,32,22,.5)';ctx.fill();
+      const frame=Math.floor(t*5+m.phase)%2;
+      const gimg=IMG.goose[frame];
+      const s=m.size;
+      const h=s*(gimg.naturalHeight/gimg.naturalWidth)||s*.6;
+      ctx.save();
+      ctx.translate(mx,my);
+      if(this.dir>0)ctx.scale(-1,1);
+      ctx.drawImage(gimg,-s/2,-h/2,s,h);
       ctx.restore();
     }
     ctx.restore();
@@ -639,22 +637,24 @@ const GooseMgr={
   }
 };
 
-/* ─── 5. FloaterMgr — 季节飘物 ─── */
+/* ─── 5. FloaterMgr — 季节飘物 (PNG) ─── */
 const FloaterMgr={
   particles:[],active:false,timer:0,maxTime:12,
   trigger(season){
     this.particles=[];this.active=true;this.timer=this.maxTime;
-    if(season==='夏')return;
+    if(season==='夏'||!assetsReady)return;
     const n=season==='冬'?40:season==='秋'?15:30;
+    const imgKey=season==='冬'?'snow':season==='秋'?'leaf':'willow';
     for(let i=0;i<n;i++){
       this.particles.push({
         x:Math.random()*W,y:-Math.random()*VH*.5,
         vx:(Math.random()-.5)*.8,
         vy:season==='冬'?.3+Math.random()*.5:season==='秋'?.4+Math.random()*.3:.15+Math.random()*.2,
-        size:season==='冬'?1+Math.random():season==='秋'?4+Math.random()*5:2+Math.random(),
+        size:season==='冬'?6+Math.random()*4:season==='秋'?12+Math.random()*10:8+Math.random()*4,
         rot:Math.random()*Math.PI*2,rotV:season==='秋'?.03:.01,
         phase:Math.random()*Math.PI*2,
-        type:season,depth:.3+Math.random()*.7
+        depth:.3+Math.random()*.7,
+        img:IMG[imgKey][0]
       });
     }
   },
@@ -671,25 +671,16 @@ const FloaterMgr={
     }
     if(this.timer<=0){this.active=false;this.particles=[]}
   },
-  draw(ctx,t){
-    if(!this.active)return;
+  draw(ctx){
+    if(!this.active||!assetsReady)return;
     for(const p of this.particles){
-      const a=(p.fade||1)*(.3+p.depth*.3);
-      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.globalAlpha=a;
-      if(p.type==='春'){
-        ctx.beginPath();ctx.arc(0,0,p.size,0,Math.PI*2);
-        ctx.fillStyle='rgba(255,255,245,.6)';ctx.fill();
-      }else if(p.type==='秋'){
-        const s=p.size;
-        ctx.beginPath();ctx.moveTo(0,-s);
-        ctx.quadraticCurveTo(s*.6,0,0,s);
-        ctx.quadraticCurveTo(-s*.6,0,0,-s);
-        const hue=Math.random()>.5?'rgba(180,80,40,.7)':'rgba(200,140,50,.65)';
-        ctx.fillStyle=hue;ctx.fill();
-      }else if(p.type==='冬'){
-        ctx.beginPath();ctx.arc(0,0,p.size,0,Math.PI*2);
-        ctx.fillStyle='rgba(255,255,255,.55)';ctx.fill();
-      }
+      const a=(p.fade||1)*(.3+p.depth*.4);
+      const s=p.size;
+      const h=s*(p.img.naturalHeight/p.img.naturalWidth)||s;
+      ctx.save();
+      ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+      ctx.globalAlpha=a;
+      ctx.drawImage(p.img,-s/2,-h/2,s,h);
       ctx.restore();
     }
   }
@@ -851,10 +842,10 @@ function frame(ts){
   // fx canvas — 渲染顺序: cloud → smoke → boat → geese → floater → dust
   fxX.clearRect(0,0,W,VH);
   CloudMgr.tick(dt,t);CloudMgr.draw(fxX,t);
-  SmokeMgr.tick(dt,t);SmokeMgr.draw(fxX);
+  SmokeMgr.tick(dt,t);SmokeMgr.draw(fxX,t);
   BoatMgr.tick(dt,t);BoatMgr.draw(fxX,t);
   GooseMgr.tick(dt,t);GooseMgr.draw(fxX,t);
-  FloaterMgr.tick(dt,t);FloaterMgr.draw(fxX,t);
+  FloaterMgr.tick(dt,t);FloaterMgr.draw(fxX);
   tickDust(dt,t);drawDust();
   tickFocus(dt);
 
@@ -867,8 +858,11 @@ function frame(ts){
 
 /* ═══ INIT ═══ */
 initDust();
-CloudMgr.init();
-BoatMgr.init();
+preloadAssets(()=>{
+  CloudMgr.init();
+  BoatMgr.init();
+  SmokeMgr.init();
+});
 requestAnimationFrame(frame);
 </script>
 </body>
