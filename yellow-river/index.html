@@ -6,660 +6,738 @@
 <title>黃河萬里圖 · 數字長卷</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
 <style>
+/* ═══════════════════════════════════════
+   DESIGN TOKENS
+   ═══════════════════════════════════════ */
 :root{
-  --paper-cream:#f7f1e6;--paper-warm:#f0e8d8;--paper-tan:#e6dbc8;--paper-deep:#d9ccb4;
+  --paper:#f7f1e6;--paper-warm:#f0e8d8;--paper-tan:#e6dbc8;--paper-deep:#d9ccb4;
   --ink-100:#1c1710;--ink-90:#2e2820;--ink-80:#4a4238;--ink-60:#726a5e;--ink-40:#9e9688;--ink-20:#c5bfb4;
-  --gold:#b8963e;--gold-light:#d4b35a;--seal-red:#c23a2e;
+  --gold:#b8963e;--gold-light:#d4b35a;--seal:#c23a2e;
+  --sky-top:#c8ccd4;--sky-bot:#ddd8cc;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:'Noto Serif SC',serif;background:#2a2520;color:var(--ink-100);overflow:hidden;height:100vh;width:100vw;cursor:grab}
+html,body{overflow:hidden;height:100vh;width:100vw}
+body{font-family:'Noto Serif SC',serif;background:var(--ink-100);color:var(--ink-100);cursor:grab}
 body.dragging{cursor:grabbing}
 
-/* ═══ SCROLL VIEWPORT ═══ */
-#scroll-viewport{position:fixed;inset:0;overflow:hidden}
-#scroll-track{position:absolute;width:10000px;height:700px;top:50%;transform:translateY(-50%) translateX(0px);
-  background:linear-gradient(180deg,#e8dcc8 0%,#ddd0b8 20%,#d4c4a0 40%,#c8b890 60%,#b0a070 80%,#8a7648 100%);
-  transition:filter .6s ease}
-.scroll-border{position:fixed;left:0;right:0;height:38px;z-index:10;
-  background:linear-gradient(180deg,#f5edd5,#e0d4b8);pointer-events:none}
-.scroll-border-top{top:calc(50% - 350px - 38px);box-shadow:0 4px 16px rgba(0,0,0,.25)}
-.scroll-border-bottom{top:calc(50% + 350px);box-shadow:0 -4px 16px rgba(0,0,0,.25)}
-.scroll-border::after{content:'';position:absolute;left:0;right:0;height:6px;
-  background:repeating-linear-gradient(90deg,#c8b080,#c8b080 20px,#b8a070 20px,#b8a070 22px)}
-.scroll-border-top::after{bottom:0}
-.scroll-border-bottom::after{top:0}
+/* ═══ 3D SCENE CONTAINER ═══ */
+#scene{position:fixed;inset:0;perspective:1500px;perspective-origin:50% 50%;overflow:hidden}
+#scene-inner{position:absolute;width:100%;height:100%;transform-style:preserve-3d}
+
+/* ═══ PARALLAX LAYERS ═══ */
+.p-layer{position:absolute;top:0;left:0;height:100%;transform-style:preserve-3d;will-change:transform;
+  transition:filter .8s ease}
+.p-layer svg{display:block;height:100%}
+.p-layer img{display:block;height:100%;position:absolute;top:0;left:0;object-fit:cover}
+#layer1{z-index:1;filter:blur(1.5px)}
+#layer2{z-index:2;filter:blur(.6px)}
+#layer3{z-index:3}
+#layer4{z-index:4}
+#layer5{z-index:5}
+
+/* ═══ SKY GRADIENT (behind everything) ═══ */
+#sky{position:fixed;inset:0;z-index:0;
+  background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-bot) 55%,#d4ccb8 100%);
+  transition:background 1s ease}
+
+/* ═══ PAPER TEXTURE OVERLAY ═══ */
+#paper-tex{position:fixed;inset:0;z-index:30;pointer-events:none;opacity:.08;mix-blend-mode:multiply}
+
+/* ═══ SCROLL EDGE FADE ═══ */
+#edge-fade-l,#edge-fade-r{position:fixed;top:0;bottom:0;width:120px;z-index:25;pointer-events:none}
+#edge-fade-l{left:0;background:linear-gradient(90deg,var(--ink-100) 0%,transparent 100%)}
+#edge-fade-r{right:0;background:linear-gradient(270deg,var(--ink-100) 0%,transparent 100%)}
+
+/* ═══ SCROLL BORDERS (top/bottom) ═══ */
+.scroll-rod{position:fixed;left:0;right:0;height:32px;z-index:28;
+  background:linear-gradient(180deg,#e8dcc0,#d4c8a8,#c8b890);pointer-events:none}
+.scroll-rod::before{content:'';position:absolute;left:0;right:0;height:4px;
+  background:linear-gradient(180deg,rgba(0,0,0,.15),transparent)}
+.scroll-rod::after{content:'';position:absolute;left:0;right:0;height:100%;
+  background:repeating-linear-gradient(90deg,rgba(160,140,100,.15) 0,rgba(160,140,100,.15) 1px,transparent 1px,transparent 40px)}
+.scroll-rod-top{top:0}.scroll-rod-top::before{bottom:0}
+.scroll-rod-bot{bottom:0}.scroll-rod-bot::before{top:0}
 
 /* ═══ CANVASES ═══ */
-#weather-canvas,#ripple-canvas{position:fixed;inset:0;z-index:5;pointer-events:none}
-#ripple-canvas{z-index:6}
-#time-overlay{position:fixed;inset:0;z-index:4;pointer-events:none;transition:background .6s ease}
-#fog-overlay{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;transition:opacity .8s ease;
-  background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(240,235,220,.35),rgba(255,255,255,.4))}
-#fog-overlay.active{opacity:1}
+#particle-canvas{position:fixed;inset:0;z-index:20;pointer-events:none}
+#ripple-canvas{position:fixed;inset:0;z-index:21;pointer-events:none}
+#time-overlay{position:fixed;inset:0;z-index:22;pointer-events:none;transition:background 1s ease}
+#fog-overlay{position:fixed;inset:0;z-index:22;pointer-events:none;opacity:0;transition:opacity 1s ease;
+  background:radial-gradient(ellipse at 50% 60%,rgba(230,225,210,.5),rgba(200,195,180,.3),transparent 70%)}
+#fog-overlay.on{opacity:1}
+/* ═══ FLYING BIRDS ═══ */
+.bird{position:fixed;z-index:19;pointer-events:none;opacity:.35}
+.bird svg{width:30px;height:auto}
+@keyframes birdFly{0%{transform:translate(110vw,10vh) scaleX(-1)}100%{transform:translate(-20vw,8vh) scaleX(-1)}}
+@keyframes birdFly2{0%{transform:translate(120vw,18vh)}100%{transform:translate(-15vw,14vh)}}
+@keyframes birdFly3{0%{transform:translate(105vw,6vh) scaleX(-1)}100%{transform:translate(-25vw,12vh) scaleX(-1)}}
+.bird:nth-child(1){animation:birdFly 45s linear infinite}
+.bird:nth-child(2){animation:birdFly2 55s linear 8s infinite;opacity:.25}
+.bird:nth-child(3){animation:birdFly3 65s linear 20s infinite;opacity:.2}
 
 /* ═══ TITLE ═══ */
-#title-bar{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:20;text-align:center;pointer-events:none}
-#title-bar h1{font-family:'Ma Shan Zheng',cursive;font-size:32px;color:var(--paper-cream);
-  text-shadow:0 2px 8px rgba(0,0,0,.5);letter-spacing:.15em;white-space:nowrap}
-#title-bar .subtitle{font-size:13px;color:var(--ink-20);letter-spacing:.3em;margin-top:2px}
+#title-bar{position:fixed;top:40px;left:50%;transform:translateX(-50%);z-index:35;text-align:center;pointer-events:none}
+#title-bar h1{font-family:'Ma Shan Zheng',cursive;font-size:38px;color:var(--paper);
+  text-shadow:0 2px 12px rgba(0,0,0,.6),0 0 40px rgba(0,0,0,.2);letter-spacing:.2em}
+#title-bar .sub{font-family:'ZCOOL XiaoWei',serif;font-size:13px;color:var(--ink-20);letter-spacing:.4em;margin-top:4px}
+.seal-stamp{display:inline-block;border:2px solid var(--seal);color:var(--seal);font-size:11px;
+  padding:2px 5px;margin-left:12px;font-family:'Ma Shan Zheng',cursive;letter-spacing:.05em;
+  transform:rotate(-4deg);opacity:.7;vertical-align:middle}
 
 /* ═══ PROGRESS BAR ═══ */
-#progress-bar{position:fixed;top:calc(50% - 350px - 38px - 32px);left:5%;right:5%;height:24px;z-index:20;
-  display:flex;border-radius:12px;overflow:hidden;background:rgba(0,0,0,.3);backdrop-filter:blur(4px)}
-.prog-seg{flex:1;display:flex;align-items:center;justify-content:center;font-size:11px;
-  color:rgba(255,255,255,.5);letter-spacing:.08em;transition:all .4s ease;cursor:pointer;position:relative}
-.prog-seg.active{color:#fff;background:rgba(184,150,62,.35)}
-.prog-seg:hover{background:rgba(255,255,255,.1)}
-.prog-fill{position:absolute;left:0;top:0;bottom:0;background:rgba(184,150,62,.25);transition:width .3s ease}
+#progress{position:fixed;top:36px;left:4%;right:4%;height:3px;z-index:35;border-radius:2px;
+  background:rgba(255,255,255,.08)}
+#progress-fill{height:100%;width:0%;border-radius:2px;background:linear-gradient(90deg,var(--gold),var(--gold-light));
+  transition:width .15s linear}
+#progress-labels{position:fixed;top:42px;left:4%;right:4%;z-index:35;display:flex;pointer-events:none}
+.prog-label{flex:1;text-align:center;font-size:10px;color:rgba(255,255,255,.25);letter-spacing:.08em;
+  transition:color .4s}.prog-label.active{color:var(--gold-light)}
 
 /* ═══ CONTROL PANELS ═══ */
-.ctrl-panel{position:fixed;z-index:20;display:flex;flex-direction:column;gap:6px}
-.ctrl-group{display:flex;flex-direction:column;gap:3px;padding:8px;border-radius:8px;
-  background:rgba(28,23,16,.55);backdrop-filter:blur(8px);border:1px solid rgba(184,150,62,.25)}
-.ctrl-label{font-size:10px;color:var(--gold-light);letter-spacing:.15em;text-align:center;margin-bottom:2px}
-.ctrl-btn{background:rgba(28,23,16,.4);border:1px solid rgba(184,150,62,.3);color:var(--paper-cream);
-  padding:6px 10px;border-radius:4px;cursor:pointer;font-family:'Noto Serif SC',serif;font-size:12px;
-  transition:all .3s ease;text-align:center;white-space:nowrap}
-.ctrl-btn:hover{background:rgba(184,150,62,.2);border-color:var(--gold)}
-.ctrl-btn.active{background:rgba(184,150,62,.3);border-color:var(--gold);color:var(--gold-light);
-  box-shadow:0 0 8px rgba(184,150,62,.2)}
-#season-panel{right:12px;top:calc(50% - 200px)}
-#time-panel{right:12px;top:calc(50% - 40px)}
-#weather-panel{right:12px;top:calc(50% + 100px)}
+.ctrl-panel{position:fixed;z-index:35;display:flex;flex-direction:column;gap:3px}
+.ctrl-group{padding:8px;border-radius:8px;background:rgba(28,23,16,.5);backdrop-filter:blur(10px);
+  border:1px solid rgba(184,150,62,.15);display:flex;flex-direction:column;gap:3px}
+.ctrl-label{font-size:9px;color:var(--gold);letter-spacing:.2em;text-align:center;margin-bottom:1px;
+  font-family:'ZCOOL XiaoWei',serif}
+.ctrl-btn{background:rgba(255,255,255,.04);border:1px solid rgba(184,150,62,.2);color:var(--paper-warm);
+  padding:5px 8px;border-radius:3px;cursor:pointer;font-family:'Noto Serif SC',serif;font-size:11px;
+  transition:all .3s;text-align:center}
+.ctrl-btn:hover{background:rgba(184,150,62,.15);border-color:rgba(184,150,62,.5)}
+.ctrl-btn.on{background:rgba(184,150,62,.2);border-color:var(--gold);color:var(--gold-light);
+  box-shadow:inset 0 0 8px rgba(184,150,62,.1)}
+#season-panel{right:10px;top:calc(50% - 180px)}
+#time-panel{right:10px;top:calc(50% - 30px)}
+#weather-panel{right:10px;top:calc(50% + 100px)}
 
 /* ═══ CHAPTER NAV ═══ */
-#chapter-nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:20;
-  display:flex;gap:4px;padding:6px 10px;border-radius:24px;
-  background:rgba(28,23,16,.55);backdrop-filter:blur(8px);border:1px solid rgba(184,150,62,.2)}
-.chap-btn{background:transparent;border:1px solid rgba(184,150,62,.25);color:var(--paper-cream);
-  padding:6px 14px;border-radius:16px;cursor:pointer;font-family:'Noto Serif SC',serif;font-size:12px;
-  transition:all .3s ease;white-space:nowrap}
-.chap-btn:hover{background:rgba(184,150,62,.2);border-color:var(--gold)}
-.chap-btn.active{background:rgba(184,150,62,.3);border-color:var(--gold);color:var(--gold-light)}
-</style>
-<style>
-/* ═══ AUTO-TOUR + MUSIC BUTTONS ═══ */
-#auto-tour-btn,#music-btn{position:fixed;z-index:20;width:40px;height:40px;border-radius:50%;
-  background:rgba(28,23,16,.55);backdrop-filter:blur(8px);border:1px solid rgba(184,150,62,.3);
-  color:var(--paper-cream);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;
-  transition:all .3s ease}
-#auto-tour-btn{left:16px;bottom:16px}
-#music-btn{left:64px;bottom:16px}
-#auto-tour-btn:hover,#music-btn:hover{background:rgba(184,150,62,.25);border-color:var(--gold)}
-#auto-tour-btn.active{background:rgba(184,150,62,.35);border-color:var(--gold);box-shadow:0 0 12px rgba(184,150,62,.3)}
+#chapters{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:35;
+  display:flex;gap:2px;padding:5px 8px;border-radius:20px;
+  background:rgba(28,23,16,.5);backdrop-filter:blur(10px);border:1px solid rgba(184,150,62,.12)}
+.ch-btn{background:transparent;border:1px solid rgba(184,150,62,.15);color:rgba(255,255,255,.5);
+  padding:5px 12px;border-radius:14px;cursor:pointer;font-family:'Noto Serif SC',serif;font-size:11px;
+  transition:all .3s;white-space:nowrap}
+.ch-btn:hover{background:rgba(184,150,62,.12);color:var(--paper)}
+.ch-btn.on{background:rgba(184,150,62,.2);border-color:var(--gold);color:var(--gold-light)}
+
+/* ═══ FLOATING BUTTONS ═══ */
+.fab{position:fixed;z-index:35;width:36px;height:36px;border-radius:50%;
+  background:rgba(28,23,16,.5);backdrop-filter:blur(10px);border:1px solid rgba(184,150,62,.2);
+  color:var(--paper);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;
+  transition:all .3s}
+.fab:hover{background:rgba(184,150,62,.2);border-color:var(--gold)}
+.fab.on{background:rgba(184,150,62,.25);border-color:var(--gold);box-shadow:0 0 12px rgba(184,150,62,.2)}
+#btn-tour{left:14px;bottom:14px}
+#btn-music{left:58px;bottom:14px}
+#btn-focus{left:102px;bottom:14px;font-size:11px}
 
 /* ═══ HOTSPOTS ═══ */
-.hotspot{position:absolute;width:24px;height:24px;border-radius:50%;cursor:pointer;z-index:8;
+.hotspot{position:absolute;width:28px;height:28px;border-radius:50%;cursor:pointer;z-index:15;
   transform:translate(-50%,-50%)}
-.hotspot-glow{position:absolute;inset:-4px;border-radius:50%;border:2px solid rgba(184,150,62,.6);
-  animation:breathe 2.5s ease-in-out infinite;pointer-events:none}
-.hotspot-dot{position:absolute;inset:6px;border-radius:50%;background:rgba(184,150,62,.8);
-  box-shadow:0 0 8px rgba(184,150,62,.5)}
-.hotspot-title{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
-  white-space:nowrap;font-size:12px;color:var(--gold-light);background:rgba(28,23,16,.7);
+.hs-ring{position:absolute;inset:-6px;border-radius:50%;border:1.5px solid rgba(184,150,62,.5);
+  animation:hsPulse 3s ease-in-out infinite}
+.hs-dot{position:absolute;inset:8px;border-radius:50%;
+  background:radial-gradient(circle,rgba(212,179,90,.9),rgba(184,150,62,.4));
+  box-shadow:0 0 10px rgba(184,150,62,.4)}
+.hs-label{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);
+  white-space:nowrap;font-size:11px;color:var(--gold-light);background:rgba(28,23,16,.75);
   padding:3px 10px;border-radius:10px;opacity:0;transition:opacity .3s;pointer-events:none;
-  border:1px solid rgba(184,150,62,.3)}
-.hotspot:hover .hotspot-title{opacity:1}
-@keyframes breathe{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.5);opacity:.2}}
+  backdrop-filter:blur(6px);border:1px solid rgba(184,150,62,.2)}
+.hotspot:hover .hs-label{opacity:1}
+@keyframes hsPulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.6);opacity:0}}
 
 /* ═══ POPUP ═══ */
-#popup-overlay{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;
-  background:rgba(20,16,10,.6);backdrop-filter:blur(4px)}
-#popup-overlay.open{display:flex}
-.popup-card{position:relative;background:var(--paper-cream);color:var(--ink-90);
-  border:2px solid var(--paper-deep);border-radius:4px;padding:36px 48px;max-width:440px;width:90%;
-  box-shadow:0 8px 40px rgba(0,0,0,.4);animation:popIn .35s ease}
-@keyframes popIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
-.popup-binding{position:absolute;top:8%;bottom:8%;width:3px;
-  background:repeating-linear-gradient(180deg,var(--gold) 0,var(--gold) 6px,transparent 6px,transparent 10px)}
-.popup-binding-l{left:14px}.popup-binding-r{right:14px}
-.popup-close{position:absolute;top:10px;right:14px;background:none;border:none;font-size:22px;
-  color:var(--ink-40);cursor:pointer;transition:color .2s}.popup-close:hover{color:var(--ink-100)}
-.popup-place{font-family:'Ma Shan Zheng',cursive;font-size:26px;color:var(--ink-100);margin-bottom:2px}
-.popup-province{font-size:12px;color:var(--ink-40);letter-spacing:.1em;margin-bottom:12px}
-.popup-divider{height:1px;background:linear-gradient(90deg,transparent,var(--paper-deep),transparent);margin:12px 0}
-.popup-poem-head{font-size:13px;color:var(--ink-60);margin-bottom:6px}
+#popup-bg{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;
+  background:rgba(15,12,8,.65);backdrop-filter:blur(6px)}
+#popup-bg.open{display:flex}
+.popup{position:relative;background:var(--paper);color:var(--ink-90);border-radius:4px;
+  padding:36px 48px;max-width:440px;width:88%;box-shadow:0 12px 60px rgba(0,0,0,.5);
+  animation:popUp .4s cubic-bezier(.16,1,.3,1)}
+@keyframes popUp{from{opacity:0;transform:translateY(20px) scale(.95)}to{opacity:1;transform:none}}
+.popup-bind{position:absolute;top:8%;bottom:8%;width:3px;
+  background:repeating-linear-gradient(180deg,var(--gold) 0,var(--gold) 5px,transparent 5px,transparent 9px)}
+.popup-bind-l{left:14px}.popup-bind-r{right:14px}
+.popup-x{position:absolute;top:8px;right:14px;background:none;border:none;font-size:20px;
+  color:var(--ink-40);cursor:pointer;transition:color .2s}.popup-x:hover{color:var(--ink-100)}
+.popup-place{font-family:'Ma Shan Zheng',cursive;font-size:26px;color:var(--ink-100)}
+.popup-prov{font-size:11px;color:var(--ink-40);letter-spacing:.12em;margin:2px 0 10px}
+.popup-hr{height:1px;background:linear-gradient(90deg,transparent,var(--paper-deep),transparent);margin:10px 0}
+.popup-pt{font-size:12px;color:var(--ink-60);margin-bottom:4px}
 .popup-poem{font-size:15px;line-height:2.2;color:var(--ink-80);letter-spacing:.08em;white-space:pre-line}
-.popup-desc{font-size:13px;line-height:1.9;color:var(--ink-60);margin-top:4px}
-.popup-speak{display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:6px 16px;
-  background:rgba(184,150,62,.12);border:1px solid var(--gold);border-radius:16px;cursor:pointer;
-  font-family:'Noto Serif SC',serif;font-size:12px;color:var(--gold);transition:all .3s}
-.popup-speak:hover{background:rgba(184,150,62,.25)}
+.popup-desc{font-size:12.5px;line-height:1.9;color:var(--ink-60)}
+.popup-speak{display:inline-flex;align-items:center;gap:5px;margin-top:12px;padding:5px 14px;
+  background:rgba(184,150,62,.1);border:1px solid var(--gold);border-radius:14px;cursor:pointer;
+  font-family:'Noto Serif SC',serif;font-size:11px;color:var(--gold);transition:all .3s}
+.popup-speak:hover{background:rgba(184,150,62,.22)}
 
-/* ═══ SCROLL HINT ═══ */
-#scroll-hint{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:20;
-  font-size:12px;color:rgba(255,255,255,.4);letter-spacing:.15em;animation:fadeHint 4s ease 2s forwards}
-@keyframes fadeHint{to{opacity:0;pointer-events:none}}
+/* ═══ HINT ═══ */
+#hint{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:35;
+  font-size:11px;color:rgba(255,255,255,.3);letter-spacing:.2em;
+  animation:hintFade 5s ease 3s forwards}
+@keyframes hintFade{to{opacity:0}}
 </style>
 </head>
 <body>
 
-<!-- ═══ SCROLL VIEWPORT ═══ -->
-<div id="scroll-viewport">
-  <div class="scroll-border scroll-border-top"></div>
-  <div class="scroll-border scroll-border-bottom"></div>
-  <div id="scroll-track">
-    <!-- SVG landscape injected by JS -->
-    <!-- Hotspots injected by JS -->
+<!-- SKY -->
+<div id="sky"></div>
+
+<!-- 3D SCENE -->
+<div id="scene">
+  <div id="scene-inner">
+    <div id="layer1" class="p-layer"></div>
+    <div id="layer2" class="p-layer"></div>
+    <div id="layer3" class="p-layer"></div>
+    <div id="layer4" class="p-layer"></div>
+    <div id="layer5" class="p-layer"></div>
   </div>
-  <canvas id="weather-canvas"></canvas>
-  <canvas id="ripple-canvas"></canvas>
-  <div id="time-overlay"></div>
-  <div id="fog-overlay"></div>
 </div>
 
-<!-- ═══ UI LAYER ═══ -->
+<!-- OVERLAYS -->
+<canvas id="particle-canvas"></canvas>
+<canvas id="ripple-canvas"></canvas>
+<div id="time-overlay"></div>
+<div id="fog-overlay"></div>
+
+<!-- PAPER TEXTURE (generated by SVG feTurbulence) -->
+<svg id="paper-tex" width="100%" height="100%">
+  <filter id="noise"><feTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="3" stitchTiles="stitch"/>
+  <feColorMatrix type="saturate" values="0"/></filter>
+  <rect width="100%" height="100%" filter="url(#noise)"/>
+</svg>
+
+<!-- SCROLL RODS -->
+<div class="scroll-rod scroll-rod-top"></div>
+<div class="scroll-rod scroll-rod-bot"></div>
+
+<!-- EDGE FADES -->
+<div id="edge-fade-l"></div>
+<div id="edge-fade-r"></div>
+
+<!-- BIRDS -->
+<div class="bird"><svg viewBox="0 0 40 16"><path d="M0 8Q8 0 16 6Q20 2 24 6Q28 0 40 8Q28 6 24 10Q20 6 16 10Q8 6 0 8Z" fill="rgba(40,35,25,.6)"/></svg></div>
+<div class="bird"><svg viewBox="0 0 40 16"><path d="M0 8Q8 0 16 6Q20 2 24 6Q28 0 40 8Q28 6 24 10Q20 6 16 10Q8 6 0 8Z" fill="rgba(40,35,25,.5)"/></svg></div>
+<div class="bird"><svg viewBox="0 0 40 16"><path d="M0 8Q8 0 16 6Q20 2 24 6Q28 0 40 8Q28 6 24 10Q20 6 16 10Q8 6 0 8Z" fill="rgba(40,35,25,.4)"/></svg></div>
+
+<!-- UI -->
 <div id="title-bar">
-  <h1>黃河萬里圖 · 數字長卷</h1>
-  <div class="subtitle">YELLOW RIVER PANORAMIC SCROLL</div>
+  <h1>黃河萬里圖 · 數字長卷<span class="seal-stamp">數字藝術</span></h1>
+  <div class="sub">DIGITAL PANORAMIC SCROLL OF THE YELLOW RIVER</div>
 </div>
 
-<div id="progress-bar"></div>
+<div id="progress"><div id="progress-fill"></div></div>
+<div id="progress-labels"></div>
 
-<div id="season-panel" class="ctrl-panel">
-  <div class="ctrl-group">
-    <div class="ctrl-label">四 季</div>
-    <button class="ctrl-btn active" data-season="spring">春</button>
-    <button class="ctrl-btn" data-season="summer">夏</button>
-    <button class="ctrl-btn" data-season="autumn">秋</button>
-    <button class="ctrl-btn" data-season="winter">冬</button>
-  </div>
-</div>
+<div id="season-panel" class="ctrl-panel"><div class="ctrl-group">
+  <div class="ctrl-label">四 季</div>
+  <button class="ctrl-btn on" data-season="spring">春</button>
+  <button class="ctrl-btn" data-season="summer">夏</button>
+  <button class="ctrl-btn" data-season="autumn">秋</button>
+  <button class="ctrl-btn" data-season="winter">冬</button>
+</div></div>
 
-<div id="time-panel" class="ctrl-panel">
-  <div class="ctrl-group">
-    <div class="ctrl-label">時 辰</div>
-    <button class="ctrl-btn" data-time="dawn">晨</button>
-    <button class="ctrl-btn active" data-time="day">昼</button>
-    <button class="ctrl-btn" data-time="dusk">夕</button>
-    <button class="ctrl-btn" data-time="night">夜</button>
-  </div>
-</div>
+<div id="time-panel" class="ctrl-panel"><div class="ctrl-group">
+  <div class="ctrl-label">時 辰</div>
+  <button class="ctrl-btn" data-time="dawn">晨</button>
+  <button class="ctrl-btn on" data-time="day">晝</button>
+  <button class="ctrl-btn" data-time="dusk">夕</button>
+  <button class="ctrl-btn" data-time="night">夜</button>
+</div></div>
 
-<div id="weather-panel" class="ctrl-panel">
-  <div class="ctrl-group">
-    <div class="ctrl-label">天 氣</div>
-    <button class="ctrl-btn active" data-weather="clear">晴</button>
-    <button class="ctrl-btn" data-weather="rain">雨</button>
-    <button class="ctrl-btn" data-weather="snow">雪</button>
-    <button class="ctrl-btn" data-weather="fog">霧</button>
-  </div>
-</div>
+<div id="weather-panel" class="ctrl-panel"><div class="ctrl-group">
+  <div class="ctrl-label">天 氣</div>
+  <button class="ctrl-btn on" data-weather="clear">晴</button>
+  <button class="ctrl-btn" data-weather="rain">雨</button>
+  <button class="ctrl-btn" data-weather="snow">雪</button>
+  <button class="ctrl-btn" data-weather="fog">霧</button>
+</div></div>
 
-<div id="chapter-nav"></div>
-<button id="auto-tour-btn" title="自動漫遊">▶</button>
-<button id="music-btn" title="背景音樂">♪</button>
-<div id="scroll-hint">← 拖拽或滾輪瀏覽長卷 →</div>
+<div id="chapters"></div>
+<button id="btn-tour" class="fab" title="自動漫遊">▶</button>
+<button id="btn-music" class="fab" title="背景音樂">♪</button>
+<button id="btn-focus" class="fab" title="景深模式">景深</button>
+<div id="hint">← 拖拽或滾輪瀏覽長卷 →</div>
 
-<!-- ═══ POPUP ═══ -->
-<div id="popup-overlay">
-  <div class="popup-card">
-    <div class="popup-binding popup-binding-l"></div>
-    <div class="popup-binding popup-binding-r"></div>
-    <button class="popup-close">&times;</button>
+<!-- POPUP -->
+<div id="popup-bg">
+  <div class="popup">
+    <div class="popup-bind popup-bind-l"></div>
+    <div class="popup-bind popup-bind-r"></div>
+    <button class="popup-x">&times;</button>
     <div class="popup-place"></div>
-    <div class="popup-province"></div>
-    <div class="popup-divider"></div>
-    <div class="popup-poem-head"></div>
+    <div class="popup-prov"></div>
+    <div class="popup-hr"></div>
+    <div class="popup-pt"></div>
     <div class="popup-poem"></div>
-    <div class="popup-divider"></div>
+    <div class="popup-hr"></div>
     <div class="popup-desc"></div>
     <button class="popup-speak">&#9654; 朗讀詩詞</button>
   </div>
 </div>
 
 <script>
-/* ═══════════════════════════════════════════════════
-   黃河萬里圖 · 數字長卷
-   Interactive Yellow River Panoramic Scroll
-   ═══════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   黃河萬里圖 · 數字長卷  —  Multi-layer Parallax 3D Scroll
+   ═══════════════════════════════════════════════════════════ */
 
-// ── 0. CONSTANTS ──
-const SW=10000, SH=700, SECTIONS=[
-  {name:'源頭·青海',start:0,end:1667},
-  {name:'上游·甘肅',start:1667,end:3333},
-  {name:'河套·寧夏',start:3333,end:5000},
-  {name:'黃土·陝西',start:5000,end:6667},
-  {name:'中原·河南',start:6667,end:8333},
-  {name:'入海·山東',start:8333,end:10000}
+// ── CONSTANTS ──
+const LW=12000, LH=900;
+const PARALLAX=[.15,.35,.6,.82,1.0];
+const Z_DEPTHS=[-600,-300,0,180,350];
+const Z_SCALES=[1.4,1.2,1,.88,.77];
+const BLUR_BASE=[1.5,.6,0,.4,1.2];
+
+const SECTIONS=[
+  {name:'源頭·青海',start:0,end:2000},
+  {name:'上游·甘肅',start:2000,end:4000},
+  {name:'河套·寧夏',start:4000,end:6000},
+  {name:'黃土·陝西',start:6000,end:8000},
+  {name:'中原·河南',start:8000,end:10000},
+  {name:'入海·山東',start:10000,end:12000}
 ];
 
 const HOTSPOTS=[
-  {x:800,y:280,title:'日月山',province:'青海',
-   poemTitle:'涼州詞',author:'王之渙',
+  {x:900,y:.42,layer:3,title:'日月山',province:'青海',
+   pt:'涼州詞',author:'王之渙',
    poem:'黃河遠上白雲間，\n一片孤城萬仞山。\n羌笛何須怨楊柳，\n春風不度玉門關。',
-   desc:'日月山位於青海湖東側，是古代中原通往西域的要道。文成公主入藏時曾在此回望長安，山因此得名。海拔3520米，是農牧區的天然分界線。'},
-  {x:2200,y:250,title:'炳靈寺石窟',province:'甘肅',
-   poemTitle:'使至塞上',author:'王維',
+   desc:'日月山位於青海湖東側，海拔3520米，是農牧區天然分界線。文成公主入藏時曾在此回望長安。'},
+  {x:2800,y:.38,layer:3,title:'炳靈寺石窟',province:'甘肅',
+   pt:'使至塞上',author:'王維',
    poem:'單車欲問邊，屬國過居延。\n征蓬出漢塞，歸雁入胡天。\n大漠孤煙直，長河落日圓。\n蕭關逢候騎，都護在燕然。',
-   desc:'炳靈寺石窟位於甘肅永靖縣，始建於西秦。黃河穿峽而過，石窟依崖而鑿，保存千年佛教造像，是絲綢之路上的藝術明珠。'},
-  {x:3800,y:300,title:'沙坡頭',province:'寧夏',
-   poemTitle:'渡黃河',author:'宋琬',
+   desc:'炳靈寺石窟始建於西秦，黃河穿峽而過，石窟依崖而鑿，保存千年佛教造像。'},
+  {x:4800,y:.45,layer:3,title:'沙坡頭',province:'寧夏',
+   pt:'渡黃河',author:'宋琬',
    poem:'倒瀉銀河事有無，\n掀天濁浪只須臾。\n人間更有風濤險，\n翻說黃河是畏途。',
-   desc:'沙坡頭位於寧夏中衛，騰格里沙漠與黃河在此交匯。這裡是治沙奇蹟的誕生地，也是古絲路要衝，大漠孤煙與長河落日並存。'},
-  {x:5400,y:220,title:'壺口瀑布',province:'陝西',
-   poemTitle:'將進酒（節選）',author:'李白',
+   desc:'沙坡頭位於寧夏中衛，騰格里沙漠與黃河在此交匯，是治沙奇蹟的誕生地。'},
+  {x:6600,y:.35,layer:3,title:'壺口瀑布',province:'陝西',
+   pt:'將進酒（節選）',author:'李白',
    poem:'君不見黃河之水天上來，\n奔流到海不復回。\n君不見高堂明鏡悲白髮，\n朝如青絲暮成雪。',
-   desc:'壺口瀑布是黃河上最大的瀑布，河水從寬闊河面驟然收束跌入深槽，氣勢磅礴，聲震數里，被譽為「天下黃河一壺收」。'},
-  {x:6500,y:260,title:'龍門石窟',province:'河南',
-   poemTitle:'登鸛雀樓',author:'王之渙',
+   desc:'壺口瀑布是黃河上最大的瀑布，河水驟然收束跌入深槽，氣勢磅礴，聲震數里。'},
+  {x:8200,y:.4,layer:3,title:'龍門石窟',province:'河南',
+   pt:'登鸛雀樓',author:'王之渙',
    poem:'白日依山盡，\n黃河入海流。\n欲窮千里目，\n更上一層樓。',
-   desc:'龍門石窟位於洛陽伊河兩岸，始鑿於北魏，現存窟龕兩千餘個。盧舍那大佛雍容端莊，是中國石刻藝術的巔峰之作。'},
-  {x:7500,y:320,title:'開封古城',province:'河南',
-   poemTitle:'題臨安邸',author:'林升',
+   desc:'龍門石窟位於洛陽，始鑿於北魏，現存窟龕兩千餘個，盧舍那大佛為巔峰之作。'},
+  {x:9200,y:.48,layer:3,title:'開封古城',province:'河南',
+   pt:'題臨安邸',author:'林升',
    poem:'山外青山樓外樓，\n西湖歌舞幾時休。\n暖風薰得遊人醉，\n直把杭州作汴州。',
-   desc:'開封曾為北宋都城汴京，黃河多次改道經此，城下疊壓六座古城。清明上河圖描繪的正是這座城市的繁華盛景。'},
-  {x:8800,y:200,title:'泰山',province:'山東',
-   poemTitle:'望嶽',author:'杜甫',
+   desc:'開封曾為北宋都城汴京，城下疊壓六座古城，清明上河圖描繪的正是此城繁華。'},
+  {x:10600,y:.32,layer:3,title:'泰山',province:'山東',
+   pt:'望嶽',author:'杜甫',
    poem:'岱宗夫如何？齊魯青未了。\n造化鍾神秀，陰陽割昏曉。\n蕩胸生曾雲，決眥入歸鳥。\n會當凌絕頂，一覽眾山小。',
-   desc:'泰山為五嶽之首，位於山東泰安。自秦始皇起歷代帝王封禪於此，是中華民族精神的象徵，聯合國教科文組織世界遺產。'},
-  {x:9600,y:350,title:'黃河入海口',province:'山東',
-   poemTitle:'浪淘沙',author:'劉禹錫',
+   desc:'泰山為五嶽之首，自秦始皇起歷代帝王封禪於此，是中華民族精神的象徵。'},
+  {x:11400,y:.52,layer:3,title:'黃河入海口',province:'山東',
+   pt:'浪淘沙',author:'劉禹錫',
    poem:'九曲黃河萬里沙，\n浪淘風簸自天涯。\n如今直上銀河去，\n同到牽牛織女家。',
-   desc:'黃河入海口位於山東東營，河水攜帶泥沙在此匯入渤海，每年新造陸地約25平方公里，是中國最年輕的土地。'}
+   desc:'黃河入海口位於山東東營，河水攜帶泥沙匯入渤海，每年新造陸地約25平方公里。'}
 ];
 
 const SEASON_FILTERS={
-  spring:'hue-rotate(-8deg) saturate(1.15) brightness(1.05)',
-  summer:'saturate(1.4) brightness(1.05) contrast(1.05)',
-  autumn:'sepia(.3) saturate(1.2) hue-rotate(-15deg) brightness(.95)',
-  winter:'saturate(.35) brightness(.85) hue-rotate(15deg) contrast(1.1)'
+  spring:'hue-rotate(-5deg) saturate(1.1) brightness(1.03)',
+  summer:'saturate(1.35) brightness(1.04) contrast(1.04)',
+  autumn:'sepia(.25) saturate(1.15) hue-rotate(-12deg) brightness(.93)',
+  winter:'saturate(.3) brightness(.82) hue-rotate(18deg) contrast(1.08)'
+};
+const SKY_COLORS={
+  spring:['#c8ccd4','#ddd8cc','#d4ccb8'],
+  summer:['#a0b8d0','#c8d0c0','#d4ccb0'],
+  autumn:['#c8b8a0','#d8c8a8','#d0c0a0'],
+  winter:['#b0b8c8','#c0c4d0','#c8c8d0']
 };
 const TIME_BG={
-  dawn:'linear-gradient(180deg,rgba(255,180,100,.2),rgba(255,140,60,.15),transparent)',
+  dawn:'linear-gradient(180deg,rgba(255,170,90,.18),rgba(255,130,50,.12),transparent)',
   day:'none',
-  dusk:'linear-gradient(180deg,rgba(200,80,40,.25),rgba(180,60,30,.2),rgba(40,20,60,.15))',
-  night:'linear-gradient(180deg,rgba(10,15,40,.55),rgba(15,20,50,.5),rgba(10,15,40,.6))'
+  dusk:'linear-gradient(180deg,rgba(190,70,30,.22),rgba(170,50,20,.18),rgba(30,15,50,.12))',
+  night:'linear-gradient(180deg,rgba(8,12,35,.55),rgba(12,16,45,.5),rgba(8,12,35,.58))'
+};
+const SKY_TIME={
+  dawn:['#d4a878','#e0c8a0','#d8c0a0'],
+  day:null,
+  dusk:['#c08060','#d0a070','#b08060'],
+  night:['#1a1e30','#252838','#202535']
 };
 
-// ── 1. STATE ──
-const S={scrollX:0,targetX:0,dragging:false,dragSX:0,dragSS:0,velX:0,lastDragX:0,lastDragT:0,
-  season:'spring',time:'day',weather:'clear',autoTour:false,musicOn:false,popupIdx:-1};
-// ── 2. DOM REFS ──
-const track=document.getElementById('scroll-track');
-const wCanvas=document.getElementById('weather-canvas');
+// ── STATE ──
+const S={
+  camX:0,targetX:0,dragging:false,dragSX:0,dragCamX:0,velX:0,lastPX:0,lastPT:0,
+  season:'spring',time:'day',weather:'clear',
+  autoTour:false,tourPhase:0,tourT:0,
+  musicOn:false,focusMode:false,focusLayer:2,
+  popupIdx:-1,camScale:1,targetScale:1
+};
+
+let W,H,dpr;
+const layers=[];
+// ── IMAGE LAYER BUILDER (5 PNG layers replacing SVG) ──
+const LAYER_IMGS=[
+  'layer1-farmt.png',   // 远山轮廓 1672x941
+  'layer2-clouds.png',  // 云海雾气 1254x1254
+  'layer3-main.png',    // 主山脉黄河 1254x1254
+  'layer4-shore.png',   // 岸边村落 1448x1086
+  'layer5-fg.png'       // 树木人物 1254x1254
+];
+const LAYER_WIDTHS=[1672,1254,1254,1448,1254];
+const LAYER_HEIGHTS=[941,1254,1254,1086,1254];
+
+function buildImageLayers(){
+  for(let i=0;i<5;i++){
+    const container=document.getElementById('layer'+(i+1));
+    const imgW=LAYER_WIDTHS[i];
+    const imgH=LAYER_HEIGHTS[i];
+    // tile images to fill LW (12000px)
+    const tilesNeeded=Math.ceil(LW/imgW)+1;
+    // use a wide inner div to hold tiled images
+    const strip=document.createElement('div');
+    strip.style.cssText=`position:absolute;top:0;left:0;width:${tilesNeeded*imgW}px;height:100%;display:flex`;
+    for(let t=0;t<tilesNeeded;t++){
+      const img=document.createElement('img');
+      img.src=LAYER_IMGS[i];
+      img.style.cssText=`width:${imgW}px;height:100%;object-fit:cover;flex-shrink:0`;
+      // alternate: flip every other tile for seamless feel
+      if(t%2===1) img.style.transform='scaleX(-1)';
+      img.draggable=false;
+      strip.appendChild(img);
+    }
+    container.appendChild(strip);
+  }
+}
+buildImageLayers();
+// ── CANVAS SETUP ──
+const pCanvas=document.getElementById('particle-canvas');
 const rCanvas=document.getElementById('ripple-canvas');
-const wCtx=wCanvas.getContext('2d');
+const pCtx=pCanvas.getContext('2d');
 const rCtx=rCanvas.getContext('2d');
-const timeOv=document.getElementById('time-overlay');
-const fogOv=document.getElementById('fog-overlay');
-const progBar=document.getElementById('progress-bar');
-const chapNav=document.getElementById('chapter-nav');
-const popupOv=document.getElementById('popup-overlay');
-const autoBtn=document.getElementById('auto-tour-btn');
-const musicBtn=document.getElementById('music-btn');
-let W=window.innerWidth, H=window.innerHeight, dpr=window.devicePixelRatio||1;
 
-function resizeCanvases(){
-  W=window.innerWidth;H=window.innerHeight;dpr=window.devicePixelRatio||1;
-  [wCanvas,rCanvas].forEach(c=>{c.width=W*dpr;c.height=H*dpr;c.style.width=W+'px';c.style.height=H+'px';
-    c.getContext('2d').scale(dpr,dpr)});
-}
-
-// ── 3. SVG LANDSCAPE GENERATOR ──
-function buildLandscape(){
-  const ns='http://www.w3.org/2000/svg';
-  const svg=document.createElementNS(ns,'svg');
-  svg.setAttribute('viewBox','0 0 10000 700');
-  svg.setAttribute('width','10000');svg.setAttribute('height','700');
-  svg.style.cssText='position:absolute;inset:0;width:100%;height:100%';
-
-  const defs=document.createElementNS(ns,'defs');
-  // water gradient
-  const wg=document.createElementNS(ns,'linearGradient');wg.id='waterG';
-  wg.setAttribute('x1','0');wg.setAttribute('y1','0');wg.setAttribute('x2','1');wg.setAttribute('y2','0');
-  [[0,'#5a8a7a'],[.3,'#6a9a88'],[.6,'#7aaa96'],[1,'#5a8a7a']].forEach(([o,c])=>{
-    const s=document.createElementNS(ns,'stop');s.setAttribute('offset',o);s.setAttribute('stop-color',c);
-    s.setAttribute('stop-opacity','0.4');wg.appendChild(s)});
-  defs.appendChild(wg);
-  svg.appendChild(defs);
-
-  const sectionData=[
-    {bg:'#8a9aaa',layers:[
-      {d:'M0 250Q200 180 400 220Q600 150 800 200Q1000 120 1200 180Q1400 100 1667 160L1667 700L0 700Z',fill:'rgba(80,90,100,.15)'},
-      {d:'M0 320Q250 240 500 280Q750 200 1000 260Q1250 180 1500 230Q1667 210 1667 700L0 700Z',fill:'rgba(70,80,90,.25)'},
-      {d:'M0 400Q200 350 450 380Q700 320 900 370Q1100 340 1400 360Q1667 350 1667 700L0 700Z',fill:'rgba(60,70,80,.35)'},
-      {d:'M0 520Q400 500 800 510Q1200 490 1667 505L1667 580Q1200 570 800 575Q400 565 0 570Z',fill:'url(#waterG)'}
-    ]},
-    {bg:'#9a8a70',layers:[
-      {d:'M1667 200Q1900 130 2100 180Q2300 100 2500 160Q2700 80 2900 140Q3100 110 3333 170L3333 700L1667 700Z',fill:'rgba(120,100,70,.15)'},
-      {d:'M1667 300Q1850 230 2050 270Q2300 190 2550 250Q2800 200 3050 240Q3333 220 3333 700L1667 700Z',fill:'rgba(110,90,60,.25)'},
-      {d:'M1667 400Q1900 360 2150 390Q2400 350 2650 380Q2900 360 3150 370Q3333 365 3333 700L1667 700Z',fill:'rgba(100,80,50,.4)'},
-      {d:'M1667 510Q2000 495 2333 505Q2667 490 3000 500Q3333 495 3333 575Q2667 565 2000 570Q1667 560 1667 570Z',fill:'url(#waterG)'}
-    ]},
-    {bg:'#a0a080',layers:[
-      {d:'M3333 280Q3550 250 3750 270Q3950 240 4150 260Q4350 230 4550 255Q4750 240 5000 250L5000 700L3333 700Z',fill:'rgba(100,110,80,.12)'},
-      {d:'M3333 370Q3600 340 3850 360Q4100 330 4350 350Q4600 335 4850 345Q5000 340 5000 700L3333 700Z',fill:'rgba(90,100,70,.22)'},
-      {d:'M3333 430Q3550 410 3800 425Q4050 405 4300 420Q4550 410 4800 418Q5000 415 5000 700L3333 700Z',fill:'rgba(80,90,60,.35)'},
-      {d:'M3333 500Q3667 485 4000 495Q4333 480 4667 490Q5000 485 5000 570Q4667 560 4333 565Q4000 555 3667 560Q3333 555 3333 565Z',fill:'url(#waterG)'}
-    ]},
-    {bg:'#b09060',layers:[
-      {d:'M5000 220Q5200 150 5400 190Q5550 120 5700 170Q5900 100 6100 160Q6300 130 6500 150Q6667 140 6667 700L5000 700Z',fill:'rgba(140,110,60,.15)'},
-      {d:'M5000 320Q5250 260 5500 300Q5700 240 5900 280Q6100 250 6350 270Q6667 260 6667 700L5000 700Z',fill:'rgba(130,100,50,.28)'},
-      {d:'M5000 400Q5200 370 5450 390Q5700 360 5950 385Q6200 370 6450 380Q6667 375 6667 700L5000 700Z',fill:'rgba(120,90,40,.4)'},
-      {d:'M5000 505Q5333 490 5667 500Q6000 488 6333 498Q6667 492 6667 575Q6333 565 6000 568Q5667 558 5333 563Q5000 558 5000 568Z',fill:'url(#waterG)'}
-    ]},
-    {bg:'#90a070',layers:[
-      {d:'M6667 300Q6900 270 7100 290Q7300 260 7500 280Q7700 265 7900 275Q8100 260 8333 270L8333 700L6667 700Z',fill:'rgba(90,120,60,.12)'},
-      {d:'M6667 380Q6900 355 7150 370Q7400 345 7650 360Q7900 350 8150 358Q8333 355 8333 700L6667 700Z',fill:'rgba(80,110,50,.22)'},
-      {d:'M6667 440Q6900 420 7150 435Q7400 418 7650 430Q7900 422 8150 428Q8333 425 8333 700L6667 700Z',fill:'rgba(70,100,40,.35)'},
-      {d:'M6667 495Q7000 480 7333 490Q7667 478 8000 488Q8333 482 8333 568Q8000 558 7667 562Q7333 552 7000 557Q6667 552 6667 562Z',fill:'url(#waterG)'}
-    ]},
-    {bg:'#8aaab0',layers:[
-      {d:'M8333 310Q8550 280 8750 300Q8950 270 9150 290Q9350 275 9550 285Q9750 270 10000 280L10000 700L8333 700Z',fill:'rgba(80,110,120,.1)'},
-      {d:'M8333 390Q8600 365 8850 380Q9100 360 9350 375Q9600 365 9850 370Q10000 368 10000 700L8333 700Z',fill:'rgba(70,100,110,.2)'},
-      {d:'M8333 450Q8550 435 8800 445Q9050 430 9300 440Q9550 432 9800 438Q10000 435 10000 700L8333 700Z',fill:'rgba(60,90,100,.32)'},
-      {d:'M8333 490Q8667 475 9000 485Q9333 472 9667 482Q10000 478 10000 565Q9667 555 9333 558Q9000 548 8667 553Q8333 548 8333 558Z',fill:'url(#waterG)'}
-    ]}
-  ];
-
-  sectionData.forEach(sec=>{
-    sec.layers.forEach(l=>{
-      const p=document.createElementNS(ns,'path');p.setAttribute('d',l.d);p.setAttribute('fill',l.fill);
-      svg.appendChild(p)});
+function resize(){
+  W=innerWidth;H=innerHeight;dpr=devicePixelRatio||1;
+  [pCanvas,rCanvas].forEach(c=>{
+    c.width=W*dpr;c.height=H*dpr;c.style.width=W+'px';c.style.height=H+'px';
+    c.getContext('2d').setTransform(dpr,0,0,dpr,0,0);
   });
-
-  // decorative trees (simple triangles)
-  const trees=[[300,380],[600,370],[1100,360],[1900,350],[2400,340],[2800,355],
-    [3600,400],[4200,395],[4700,405],[5300,370],[5800,375],[6200,365],
-    [6900,420],[7300,415],[7800,425],[8600,430],[9200,425],[9700,435]];
-  trees.forEach(([tx,ty])=>{
-    const g=document.createElementNS(ns,'g');
-    const trunk=document.createElementNS(ns,'rect');
-    trunk.setAttribute('x',tx-2);trunk.setAttribute('y',ty);trunk.setAttribute('width',4);trunk.setAttribute('height',15);
-    trunk.setAttribute('fill','rgba(60,50,30,.4)');
-    const crown=document.createElementNS(ns,'path');
-    crown.setAttribute('d',`M${tx} ${ty-25}L${tx-12} ${ty+2}L${tx+12} ${ty+2}Z`);
-    crown.setAttribute('fill','rgba(60,80,40,.3)');
-    g.appendChild(trunk);g.appendChild(crown);svg.appendChild(g)});
-
-  track.insertBefore(svg,track.firstChild);
-}
-// ── 4. SCROLL ENGINE ──
-function clampX(x){return Math.max(-(SW-W),Math.min(0,x))}
-function applyScroll(){
-  track.style.transform=`translateY(-50%) translateX(${S.scrollX}px)`;
-  updateProgress();
-}
-function scrollTo(x,smooth){
-  S.targetX=clampX(x);
-  if(!smooth) S.scrollX=S.targetX;
+  S.targetX=clamp(S.targetX);
 }
 
-// wheel
+// ── PARALLAX SCROLL ENGINE ──
+function maxScroll(){return LW*PARALLAX[4]-W/Z_SCALES[4]}
+function clamp(x){return Math.max(-maxScroll(),Math.min(0,x))}
+
+function applyParallax(){
+  for(let i=0;i<5;i++){
+    const layer=document.getElementById('layer'+(i+1));
+    const tx=S.camX*PARALLAX[i];
+    const tz=Z_DEPTHS[i];
+    const sc=Z_SCALES[i];
+    layer.style.transform=`translate3d(${tx}px,0,${tz}px) scale(${sc*S.camScale})`;
+  }
+}
+
+function updateProgress(){
+  const pos=-S.camX*PARALLAX[2];
+  const pct=Math.min(100,Math.max(0,pos/(LW-W/Z_SCALES[2])*100));
+  document.getElementById('progress-fill').style.width=pct+'%';
+  const labels=document.getElementById('progress-labels').children;
+  const chaps=document.getElementById('chapters').children;
+  for(let i=0;i<SECTIONS.length;i++){
+    const s=SECTIONS[i],active=pos>=s.start&&pos<s.end;
+    labels[i].classList.toggle('active',active);
+    chaps[i].classList.toggle('on',active);
+  }
+}
+
+// ── INPUT: WHEEL ──
 document.addEventListener('wheel',e=>{
   e.preventDefault();
-  S.targetX=clampX(S.targetX - e.deltaY*1.5);
-  if(S.autoTour) toggleAutoTour();
+  S.targetX=clamp(S.targetX-e.deltaY*2);
+  if(S.autoTour) toggleTour();
 },{passive:false});
 
-// drag
+// ── INPUT: DRAG ──
 document.addEventListener('pointerdown',e=>{
-  if(e.target.closest('.ctrl-panel,.ctrl-btn,.chap-btn,#auto-tour-btn,#music-btn,#popup-overlay,.hotspot')) return;
-  S.dragging=true;S.dragSX=e.clientX;S.dragSS=S.scrollX;S.velX=0;S.lastDragX=e.clientX;S.lastDragT=Date.now();
+  if(e.target.closest('.ctrl-panel,.ch-btn,.fab,#popup-bg,.hotspot')) return;
+  S.dragging=true;S.dragSX=e.clientX;S.dragCamX=S.camX;S.velX=0;S.lastPX=e.clientX;S.lastPT=performance.now();
   document.body.classList.add('dragging');
 });
 document.addEventListener('pointermove',e=>{
   if(!S.dragging) return;
-  const dx=e.clientX-S.dragSX;
-  S.scrollX=clampX(S.dragSS+dx);S.targetX=S.scrollX;
-  const now=Date.now(),dt=now-S.lastDragT;
-  if(dt>0) S.velX=(e.clientX-S.lastDragX)/dt*16;
-  S.lastDragX=e.clientX;S.lastDragT=now;
-  if(S.autoTour) toggleAutoTour();
+  S.camX=clamp(S.dragCamX+(e.clientX-S.dragSX));
+  S.targetX=S.camX;
+  const now=performance.now(),dt=now-S.lastPT;
+  if(dt>0) S.velX=(e.clientX-S.lastPX)/dt*16;
+  S.lastPX=e.clientX;S.lastPT=now;
+  if(S.autoTour) toggleTour();
 });
 document.addEventListener('pointerup',()=>{
   if(!S.dragging) return;
   S.dragging=false;document.body.classList.remove('dragging');
-  S.targetX=clampX(S.scrollX+S.velX*12);
+  S.targetX=clamp(S.camX+S.velX*15);
 });
 
-// ── 5. PROGRESS BAR + CHAPTER NAV ──
+// ── CHAPTER NAV + PROGRESS ──
+const chapEl=document.getElementById('chapters');
+const progLabels=document.getElementById('progress-labels');
 SECTIONS.forEach((sec,i)=>{
-  const d=document.createElement('div');d.className='prog-seg';d.textContent=sec.name;
-  d.addEventListener('click',()=>scrollTo(-sec.start,true));
-  progBar.appendChild(d);
-  const b=document.createElement('button');b.className='chap-btn';b.textContent=sec.name;
-  b.addEventListener('click',()=>scrollTo(-sec.start,true));
-  chapNav.appendChild(b);
+  const b=document.createElement('button');b.className='ch-btn';b.textContent=sec.name;
+  b.addEventListener('click',()=>{S.targetX=-sec.start/PARALLAX[2];if(S.autoTour) toggleTour()});
+  chapEl.appendChild(b);
+  const l=document.createElement('div');l.className='prog-label';l.textContent=sec.name;
+  progLabels.appendChild(l);
 });
-function updateProgress(){
-  const pos=-S.scrollX;
-  const segs=progBar.children;const chaps=chapNav.children;
-  for(let i=0;i<SECTIONS.length;i++){
-    const s=SECTIONS[i],active=pos>=s.start&&pos<s.end;
-    segs[i].classList.toggle('active',active);
-    chaps[i].classList.toggle('active',active);
-  }
-}
 
-// ── 6. SEASON / TIME / WEATHER ──
+// ── SEASON / TIME / WEATHER ──
+function setBtn(sel,el){document.querySelectorAll(sel).forEach(b=>b.classList.toggle('on',b===el))}
+
 document.querySelectorAll('[data-season]').forEach(b=>b.addEventListener('click',()=>{
-  S.season=b.dataset.season;
-  document.querySelectorAll('[data-season]').forEach(x=>x.classList.toggle('active',x===b));
-  track.style.filter=SEASON_FILTERS[S.season];
+  S.season=b.dataset.season;setBtn('[data-season]',b);
+  for(let i=0;i<5;i++) document.getElementById('layer'+(i+1)).style.filter=
+    `${SEASON_FILTERS[S.season]} blur(${S.focusMode?getFocusBlur(i):BLUR_BASE[i]}px)`;
+  const sc=SKY_COLORS[S.season];
+  document.getElementById('sky').style.background=`linear-gradient(180deg,${sc[0]},${sc[1]} 55%,${sc[2]})`;
 }));
+
 document.querySelectorAll('[data-time]').forEach(b=>b.addEventListener('click',()=>{
-  S.time=b.dataset.time;
-  document.querySelectorAll('[data-time]').forEach(x=>x.classList.toggle('active',x===b));
-  timeOv.style.background=TIME_BG[S.time];
+  S.time=b.dataset.time;setBtn('[data-time]',b);
+  document.getElementById('time-overlay').style.background=TIME_BG[S.time];
+  const st=SKY_TIME[S.time];
+  if(st) document.getElementById('sky').style.background=`linear-gradient(180deg,${st[0]},${st[1]} 55%,${st[2]})`;
+  else{const sc=SKY_COLORS[S.season];
+    document.getElementById('sky').style.background=`linear-gradient(180deg,${sc[0]},${sc[1]} 55%,${sc[2]})`}
 }));
+
+let weatherSpawning=false;
 document.querySelectorAll('[data-weather]').forEach(b=>b.addEventListener('click',()=>{
-  S.weather=b.dataset.weather;
-  document.querySelectorAll('[data-weather]').forEach(x=>x.classList.toggle('active',x===b));
-  fogOv.classList.toggle('active',S.weather==='fog');
-  if(S.weather==='clear'||S.weather==='fog') weatherSpawning=false;
-  else{weatherSpawning=true;weatherParticles=[];spawnWeather()}
+  S.weather=b.dataset.weather;setBtn('[data-weather]',b);
+  document.getElementById('fog-overlay').classList.toggle('on',S.weather==='fog');
+  if(S.weather==='rain'||S.weather==='snow'){weatherSpawning=true;particles=[]}
+  else weatherSpawning=false;
 }));
 
-// ── 7. WEATHER PARTICLES ──
-let weatherParticles=[],weatherSpawning=false;
-function spawnWeather(){
+// ── DEPTH-OF-FIELD (FOCUS MODE) ──
+function getFocusBlur(i){
+  const dist=Math.abs(i-S.focusLayer);
+  return dist*2.5;
+}
+function applyFocus(){
+  for(let i=0;i<5;i++){
+    const blur=S.focusMode?getFocusBlur(i):BLUR_BASE[i];
+    document.getElementById('layer'+(i+1)).style.filter=`${SEASON_FILTERS[S.season]} blur(${blur}px)`;
+  }
+}
+document.getElementById('btn-focus').addEventListener('click',()=>{
+  S.focusMode=!S.focusMode;
+  document.getElementById('btn-focus').classList.toggle('on',S.focusMode);
+  applyFocus();
+});
+document.addEventListener('pointermove',e=>{
+  if(!S.focusMode) return;
+  const yRatio=e.clientY/H;
+  if(yRatio<.25) S.focusLayer=0;
+  else if(yRatio<.4) S.focusLayer=1;
+  else if(yRatio<.6) S.focusLayer=2;
+  else if(yRatio<.75) S.focusLayer=3;
+  else S.focusLayer=4;
+  applyFocus();
+});
+// ── WEATHER PARTICLES (with Z-depth for 3D feel) ──
+let particles=[];
+function spawnParticles(){
   if(!weatherSpawning) return;
-  const n=S.weather==='rain'?250:120;
-  while(weatherParticles.length<n){
+  const max=S.weather==='rain'?280:130;
+  while(particles.length<max){
+    const z=Math.random();
     if(S.weather==='rain')
-      weatherParticles.push({x:Math.random()*W*1.2,y:Math.random()*H-H,
-        vx:-1.5-Math.random(),vy:12+Math.random()*6,len:10+Math.random()*8,
-        o:.2+Math.random()*.4,type:'rain'});
+      particles.push({x:Math.random()*W*1.3,y:-Math.random()*H,
+        vx:-1.2-z,vy:10+z*8,len:8+z*10,o:.15+z*.35,z,type:'rain'});
     else
-      weatherParticles.push({x:Math.random()*W,y:Math.random()*H-H,
-        vx:0,vy:.4+Math.random()*1.2,r:1.5+Math.random()*2.5,phase:Math.random()*Math.PI*2,
-        o:.4+Math.random()*.4,type:'snow'});
+      particles.push({x:Math.random()*W,y:-Math.random()*H,
+        vx:0,vy:.3+z*1.2,r:1+z*3,phase:Math.random()*6.28,o:.3+z*.4,z,type:'snow'});
   }
 }
-function updateWeather(dt){
-  for(let i=weatherParticles.length-1;i>=0;i--){
-    const p=weatherParticles[i];
-    if(p.type==='rain'){p.x+=p.vx;p.y+=p.vy}
-    else{p.x+=Math.sin(p.phase+=.01)*.3;p.y+=p.vy}
-    if(p.y>H+20||p.x<-30){
-      if(weatherSpawning){p.y=-20;p.x=Math.random()*W*1.2}
-      else weatherParticles.splice(i,1);
-    }
-  }
-}
-function drawWeather(){
-  wCtx.clearRect(0,0,W,H);
-  weatherParticles.forEach(p=>{
+function tickParticles(){
+  pCtx.clearRect(0,0,W,H);
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
     if(p.type==='rain'){
-      wCtx.strokeStyle=`rgba(200,210,220,${p.o})`;wCtx.lineWidth=1;
-      wCtx.beginPath();wCtx.moveTo(p.x,p.y);wCtx.lineTo(p.x+p.vx*1.5,p.y+p.len);wCtx.stroke();
+      p.x+=p.vx;p.y+=p.vy;
+      pCtx.strokeStyle=`rgba(190,200,210,${p.o})`;pCtx.lineWidth=.8+p.z*.5;
+      pCtx.beginPath();pCtx.moveTo(p.x,p.y);pCtx.lineTo(p.x+p.vx*2,p.y+p.len);pCtx.stroke();
     }else{
-      wCtx.fillStyle=`rgba(255,255,255,${p.o})`;
-      wCtx.beginPath();wCtx.arc(p.x,p.y,p.r,0,Math.PI*2);wCtx.fill();
+      p.x+=Math.sin(p.phase+=.008)*.4;p.y+=p.vy;
+      pCtx.fillStyle=`rgba(255,255,255,${p.o})`;
+      pCtx.beginPath();pCtx.arc(p.x,p.y,p.r,0,6.28);pCtx.fill();
     }
-  });
+    if(p.y>H+20||p.x<-40){
+      if(weatherSpawning){p.y=-20;p.x=Math.random()*W*1.3}
+      else particles.splice(i,1);
+    }
+  }
 }
 
-// ── 8. WATER RIPPLES ──
-let ripples=[],lastRippleT=0;
+// ── WATER RIPPLES ──
+let ripples=[],lastRipT=0;
 document.addEventListener('pointermove',e=>{
-  const trackRect=track.getBoundingClientRect();
-  const relY=e.clientY-trackRect.top;
-  if(relY<SH*.5||relY>SH) return;
-  const now=Date.now();
-  if(now-lastRippleT<150) return;
-  lastRippleT=now;
-  ripples.push({x:e.clientX,y:e.clientY,r:0,maxR:40+Math.random()*30,o:.5,born:now});
+  if(S.dragging) return;
+  const yRatio=e.clientY/H;
+  if(yRatio<.55||yRatio>.9) return;
+  const now=performance.now();
+  if(now-lastRipT<120) return;
+  lastRipT=now;
+  ripples.push({x:e.clientX,y:e.clientY,r:0,max:35+Math.random()*25,o:.45});
 });
-function updateRipples(){
-  for(let i=ripples.length-1;i>=0;i--){
-    const rp=ripples[i];
-    rp.r+=.8;rp.o=Math.max(0,.5*(1-rp.r/rp.maxR));
-    if(rp.o<=0) ripples.splice(i,1);
-  }
-}
-function drawRipples(){
+function tickRipples(){
   rCtx.clearRect(0,0,W,H);
   rCtx.globalCompositeOperation='lighter';
-  ripples.forEach(rp=>{
+  for(let i=ripples.length-1;i>=0;i--){
+    const rp=ripples[i];
+    rp.r+=.7;rp.o=.45*(1-rp.r/rp.max);
+    if(rp.o<=0){ripples.splice(i,1);continue}
     for(let j=0;j<3;j++){
-      const rr=rp.r-j*8;if(rr<0) continue;
-      rCtx.strokeStyle=`rgba(180,200,210,${rp.o*(1-j*.3)})`;
-      rCtx.lineWidth=1.5-j*.4;
-      rCtx.beginPath();rCtx.arc(rp.x,rp.y,rr,0,Math.PI*2);rCtx.stroke();
+      const rr=rp.r-j*7;if(rr<0) continue;
+      rCtx.strokeStyle=`rgba(170,195,205,${rp.o*(1-j*.3)})`;
+      rCtx.lineWidth=1.2-j*.3;
+      rCtx.beginPath();rCtx.arc(rp.x,rp.y,rr,0,6.28);rCtx.stroke();
     }
-  });
+  }
   rCtx.globalCompositeOperation='source-over';
 }
-// ── 9. HOTSPOTS ──
-let hotspotEls=[];
+
+// ── CLOUD RISING (click on mountains) ──
+let clouds=[];
+document.getElementById('scene').addEventListener('click',e=>{
+  if(e.target.closest('.hotspot')) return;
+  const yR=e.clientY/H;
+  if(yR>.6) return;
+  for(let i=0;i<6;i++){
+    clouds.push({x:e.clientX+(-25+Math.random()*50),y:e.clientY+Math.random()*10,
+      vx:(-1+Math.random()*2)*.25,vy:-.4-Math.random()*.4,
+      r:12+Math.random()*22,o:.3,life:0,max:200});
+  }
+});
+function tickClouds(){
+  for(let i=clouds.length-1;i>=0;i--){
+    const c=clouds[i];c.x+=c.vx;c.y+=c.vy;c.life++;c.r+=.12;
+    c.o=.3*(1-c.life/c.max);
+    if(c.life>=c.max){clouds.splice(i,1);continue}
+    const g=pCtx.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r);
+    g.addColorStop(0,`rgba(230,225,215,${c.o})`);g.addColorStop(1,'rgba(230,225,215,0)');
+    pCtx.fillStyle=g;pCtx.beginPath();pCtx.arc(c.x,c.y,c.r,0,6.28);pCtx.fill();
+  }
+}
+
+// ── HOTSPOTS ──
 function buildHotspots(){
   HOTSPOTS.forEach((h,i)=>{
-    const el=document.createElement('div');el.className='hotspot';
-    el.style.left=h.x+'px';el.style.top=h.y+'px';
-    el.innerHTML=`<div class="hotspot-glow"></div><div class="hotspot-dot"></div><div class="hotspot-title">${h.title}</div>`;
-    let downX=0,downY=0;
-    el.addEventListener('pointerdown',e=>{downX=e.clientX;downY=e.clientY});
-    el.addEventListener('pointerup',e=>{
-      if(Math.abs(e.clientX-downX)+Math.abs(e.clientY-downY)<8) openPopup(i);
-    });
-    track.appendChild(el);hotspotEls.push(el);
+    const dot=document.createElement('div');dot.className='hotspot';
+    dot.style.left=h.x+'px';dot.style.top=(h.y*LH)+'px';
+    dot.innerHTML=`<div class="hs-ring"></div><div class="hs-dot"></div><div class="hs-label">${h.title}</div>`;
+    let dx=0,dy=0;
+    dot.addEventListener('pointerdown',e=>{dx=e.clientX;dy=e.clientY});
+    dot.addEventListener('pointerup',e=>{
+      if(Math.abs(e.clientX-dx)+Math.abs(e.clientY-dy)<8) openPopup(i)});
+    document.getElementById('layer'+(h.layer+1)).appendChild(dot);
   });
 }
+
+const popBg=document.getElementById('popup-bg');
 function openPopup(i){
   S.popupIdx=i;const h=HOTSPOTS[i];
-  popupOv.querySelector('.popup-place').textContent=h.title;
-  popupOv.querySelector('.popup-province').textContent=h.province;
-  popupOv.querySelector('.popup-poem-head').textContent=`${h.poemTitle} · ${h.author}`;
-  popupOv.querySelector('.popup-poem').textContent=h.poem;
-  popupOv.querySelector('.popup-desc').textContent=h.desc;
-  popupOv.classList.add('open');
+  popBg.querySelector('.popup-place').textContent=h.title;
+  popBg.querySelector('.popup-prov').textContent=h.province;
+  popBg.querySelector('.popup-pt').textContent=`${h.pt} · ${h.author}`;
+  popBg.querySelector('.popup-poem').textContent=h.poem;
+  popBg.querySelector('.popup-desc').textContent=h.desc;
+  popBg.classList.add('open');
 }
-function closePopup(){S.popupIdx=-1;popupOv.classList.remove('open');speechSynthesis.cancel()}
-popupOv.querySelector('.popup-close').addEventListener('click',closePopup);
-popupOv.addEventListener('click',e=>{if(e.target===popupOv) closePopup()});
-popupOv.querySelector('.popup-speak').addEventListener('click',()=>{
-  if(S.popupIdx<0) return;
-  speechSynthesis.cancel();
+function closePopup(){S.popupIdx=-1;popBg.classList.remove('open');speechSynthesis.cancel()}
+popBg.querySelector('.popup-x').addEventListener('click',closePopup);
+popBg.addEventListener('click',e=>{if(e.target===popBg) closePopup()});
+popBg.querySelector('.popup-speak').addEventListener('click',()=>{
+  if(S.popupIdx<0) return;speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(HOTSPOTS[S.popupIdx].poem.replace(/\n/g,'，'));
   u.lang='zh-CN';u.rate=.8;
-  const voices=speechSynthesis.getVoices();
-  const zh=voices.find(v=>v.lang.startsWith('zh'));
+  const zh=speechSynthesis.getVoices().find(v=>v.lang.startsWith('zh'));
   if(zh) u.voice=zh;
   speechSynthesis.speak(u);
 });
 
-// ── 10. AUTO-TOUR ──
-function toggleAutoTour(){
+// ── AUTO-TOUR (cinematic camera) ──
+function toggleTour(){
   S.autoTour=!S.autoTour;
-  autoBtn.classList.toggle('active',S.autoTour);
-  autoBtn.textContent=S.autoTour?'⏸':'▶';
+  document.getElementById('btn-tour').classList.toggle('on',S.autoTour);
+  document.getElementById('btn-tour').textContent=S.autoTour?'⏸':'▶';
+  if(S.autoTour){S.tourPhase=0;S.tourT=0;S.targetScale=1}
 }
-autoBtn.addEventListener('click',toggleAutoTour);
+document.getElementById('btn-tour').addEventListener('click',toggleTour);
 
-// ── 11. CLOUD RISING EFFECT ──
-let clouds=[];
-track.addEventListener('click',e=>{
-  const rect=track.getBoundingClientRect();
-  const rx=e.clientX-rect.left, ry=e.clientY-rect.top;
-  if(ry>SH*.6) return;
-  for(let i=0;i<5;i++){
-    clouds.push({x:e.clientX+(-20+Math.random()*40),y:e.clientY,
-      vx:(-1+Math.random()*2)*.3,vy:-.5-Math.random()*.5,
-      r:15+Math.random()*20,o:.35,life:0,maxLife:180});
-  }
-});
-function updateClouds(){
-  for(let i=clouds.length-1;i>=0;i--){
-    const c=clouds[i];c.x+=c.vx;c.y+=c.vy;c.life++;c.r+=.15;
-    c.o=.35*(1-c.life/c.maxLife);
-    if(c.life>=c.maxLife) clouds.splice(i,1);
-  }
-}
-function drawClouds(){
-  clouds.forEach(c=>{
-    const g=wCtx.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r);
-    g.addColorStop(0,`rgba(240,235,220,${c.o})`);g.addColorStop(1,`rgba(240,235,220,0)`);
-    wCtx.fillStyle=g;wCtx.beginPath();wCtx.arc(c.x,c.y,c.r,0,Math.PI*2);wCtx.fill();
-  });
+function tickTour(dt){
+  if(!S.autoTour) return;
+  S.tourT+=dt;
+  // cinematic: slow zoom in → pan → zoom out → pan cycle
+  const cycle=25;
+  const phase=(S.tourT%cycle)/cycle;
+  if(phase<.15) S.targetScale=1+.06*Math.sin(phase/.15*Math.PI);
+  else if(phase<.85) S.targetScale=1;
+  else S.targetScale=1+.04*Math.sin((phase-.85)/.15*Math.PI);
+  S.targetX=clamp(S.targetX-.8);
+  if(S.targetX<=clamp(-Infinity)){S.targetX=0;S.tourT=0}
 }
 
-// ── 12. AMBIENT MUSIC (Web Audio API pentatonic) ──
-let audioCtx=null,musicGain=null,musicStarted=false;
-function startMusic(){
-  if(musicStarted){
-    if(S.musicOn){audioCtx.suspend();S.musicOn=false}
-    else{audioCtx.resume();S.musicOn=true}
-    musicBtn.textContent=S.musicOn?'♫':'♪';return;
+// ── AMBIENT MUSIC (Web Audio pentatonic) ──
+let aCtx=null,mGain=null,mStarted=false;
+function toggleMusic(){
+  if(mStarted){
+    if(S.musicOn){aCtx.suspend();S.musicOn=false}
+    else{aCtx.resume();S.musicOn=true}
+  }else{
+    aCtx=new(AudioContext||webkitAudioContext)();
+    mGain=aCtx.createGain();mGain.gain.value=.1;mGain.connect(aCtx.destination);
+    const notes=[293.66,349.23,392,440,523.25,587.33,698.46];
+    let ni=0;
+    (function play(){
+      if(aCtx.state==='closed') return;
+      const o=aCtx.createOscillator(),g=aCtx.createGain();
+      o.type='sine';o.frequency.value=notes[ni++%notes.length];
+      g.gain.setValueAtTime(.12,aCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(.001,aCtx.currentTime+2.8);
+      o.connect(g);g.connect(mGain);o.start();o.stop(aCtx.currentTime+3);
+      setTimeout(play,1600+Math.random()*1400);
+    })();
+    mStarted=true;S.musicOn=true;
   }
-  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  musicGain=audioCtx.createGain();musicGain.gain.value=.12;musicGain.connect(audioCtx.destination);
-  const notes=[293.66,349.23,392.00,440.00,523.25,587.33,698.46];
-  let noteIdx=0;
-  function playNote(){
-    if(audioCtx.state==='closed') return;
-    const osc=audioCtx.createOscillator();
-    const g=audioCtx.createGain();
-    osc.type='sine';osc.frequency.value=notes[noteIdx%notes.length];
-    g.gain.setValueAtTime(.15,audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+2.5);
-    osc.connect(g);g.connect(musicGain);
-    osc.start();osc.stop(audioCtx.currentTime+2.8);
-    noteIdx++;
-    setTimeout(playNote,1800+Math.random()*1200);
-  }
-  playNote();musicStarted=true;S.musicOn=true;musicBtn.textContent='♫';
+  document.getElementById('btn-music').classList.toggle('on',S.musicOn);
+  document.getElementById('btn-music').textContent=S.musicOn?'♫':'♪';
 }
-musicBtn.addEventListener('click',startMusic);
+document.getElementById('btn-music').addEventListener('click',toggleMusic);
 
-// ── 13. MAIN LOOP ──
-let lastT=0;
+// ── MAIN LOOP ──
+let prevT=0;
 function tick(t){
-  const dt=Math.min((t-lastT)/1000,.05);lastT=t;
-  // smooth scroll
+  const dt=Math.min((t-prevT)/1000,.05);prevT=t;
+
+  // smooth camera
   if(!S.dragging){
-    S.scrollX+=(S.targetX-S.scrollX)*.12;
-    if(Math.abs(S.targetX-S.scrollX)<.5) S.scrollX=S.targetX;
+    S.camX+=(S.targetX-S.camX)*.08;
+    if(Math.abs(S.targetX-S.camX)<.3) S.camX=S.targetX;
   }
-  // auto-tour
-  if(S.autoTour){
-    S.targetX=clampX(S.targetX-.6);
-    if(S.targetX<=-(SW-W)) toggleAutoTour();
-  }
-  applyScroll();
-  // weather
-  if(weatherSpawning) spawnWeather();
-  updateWeather(dt);
-  drawWeather();
-  updateClouds();drawClouds();
-  // ripples
-  updateRipples();drawRipples();
+  S.camScale+=(S.targetScale-S.camScale)*.05;
+
+  tickTour(dt);
+  applyParallax();
+  updateProgress();
+
+  // particles
+  if(weatherSpawning) spawnParticles();
+  tickParticles();
+  tickClouds();
+  tickRipples();
+
   requestAnimationFrame(tick);
 }
 
-// ── 14. INIT ──
-function init(){
-  resizeCanvases();
-  buildLandscape();
-  buildHotspots();
-  track.style.filter=SEASON_FILTERS.spring;
-  requestAnimationFrame(tick);
-  window.addEventListener('resize',()=>{resizeCanvases();S.targetX=clampX(S.targetX)});
-  speechSynthesis.getVoices();
-}
-init();
+// ── INIT ──
+resize();
+buildHotspots();
+applyFocus();
+requestAnimationFrame(tick);
+window.addEventListener('resize',resize);
+speechSynthesis.getVoices();
 </script>
 </body>
 </html>
