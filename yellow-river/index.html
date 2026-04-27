@@ -245,6 +245,8 @@ const fxC=document.getElementById('fx');
 const fxX=fxC.getContext('2d');
 const focusEl=document.getElementById('focus');
 const curtain=document.getElementById('curtain');
+const progLine=document.getElementById('prog-line');
+const progCur=document.getElementById('prog-cur');
 /* ═══ RESIZE ═══ */
 function resize(){
   dpr=devicePixelRatio||1;W=innerWidth;H=innerHeight;
@@ -269,8 +271,6 @@ function buildSeams(){
 }
 
 /* ═══ PROGRESS DOTS ═══ */
-const progLine=document.getElementById('prog-line');
-const progCur=document.getElementById('prog-cur');
 function buildDots(){
   progLine.querySelectorAll('.prog-dot').forEach(d=>d.remove());
   CH.forEach((c,i)=>{
