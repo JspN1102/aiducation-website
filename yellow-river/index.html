@@ -21,7 +21,7 @@ body{font-family:'Noto Serif TC','Noto Serif SC','PingFang TC','微軟正黑體'
   transform-style:preserve-3d;backface-visibility:hidden;
   filter:sepia(.08) saturate(.92) contrast(1.04) brightness(.98);
   transition:filter 2.2s cubic-bezier(.4,0,.2,1)}
-#strip img{height:100%;width:2800px;object-fit:cover;flex-shrink:0;display:block;pointer-events:none}
+#strip img{height:100%;width:auto;flex-shrink:0;display:block;pointer-events:none}
 .seam{position:absolute;top:0;height:100%;width:220px;z-index:1;pointer-events:none}
 
 /* ═══ VIGNETTE ═══ */
@@ -201,19 +201,28 @@ body{font-family:'Noto Serif TC','Noto Serif SC','PingFang TC','微軟正黑體'
 
 <script>
 /* ═══ CONSTANTS ═══ */
-const SW=2800,N=5,TW=SW*N;
-const CH=[
-  {name:'源頭·青海',focus:1400,poem:'白日依山盡，\n黃河入海流。\n欲窮千里目，\n更上一層樓。',
-   pt:'登鸛雀樓',au:'王之渙'},
-  {name:'峽谷·甘肅',focus:SW+1400,poem:'黃河遠上白雲間，\n一片孤城萬仞山。\n羌笛何須怨楊柳，\n春風不度玉門關。',
-   pt:'涼州詞',au:'王之渙'},
-  {name:'壺口·陝西',focus:SW*2+1400,poem:'君不見黃河之水天上來，\n奔流到海不復回。\n君不見高堂明鏡悲白髮，\n朝如青絲暮成雪。',
-   pt:'將進酒（節選）',au:'李白'},
-  {name:'中原·河南',focus:SW*3+1400,poem:'風急天高猿嘯哀，\n渚清沙白鳥飛回。\n無邊落木蕭蕭下，\n不盡長江滾滾來。',
-   pt:'登高',au:'杜甫'},
-  {name:'入海·山東',focus:SW*4+1400,poem:'九曲黃河萬里沙，\n浪淘風簸自天涯。\n如今直上銀河去，\n同到牽牛織女家。',
-   pt:'浪淘沙·其一',au:'劉禹錫'}
+// Images are 1916×821px. SW is computed dynamically from viewport height in resize().
+const IMG_ASPECT=1916/821;
+const N=5;
+let SW,TW;
+const CH_DEF=[
+  {name:'源頭·青海',poem:'白日依山盡，\n黃河入海流。\n欲窮千里目，\n更上一層樓。',pt:'登鸛雀樓',au:'王之渙'},
+  {name:'峽谷·甘肅',poem:'黃河遠上白雲間，\n一片孤城萬仞山。\n羌笛何須怨楊柳，\n春風不度玉門關。',pt:'涼州詞',au:'王之渙'},
+  {name:'壺口·陝西',poem:'君不見黃河之水天上來，\n奔流到海不復回。\n君不見高堂明鏡悲白髮，\n朝如青絲暮成雪。',pt:'將進酒（節選）',au:'李白'},
+  {name:'中原·河南',poem:'風急天高猿嘯哀，\n渚清沙白鳥飛回。\n無邊落木蕭蕭下，\n不盡長江滾滾來。',pt:'登高',au:'杜甫'},
+  {name:'入海·山東',poem:'九曲黃河萬里沙，\n浪淘風簸自天涯。\n如今直上銀河去，\n同到牽牛織女家。',pt:'浪淘沙·其一',au:'劉禹錫'}
 ];
+let CH=[];
+function rebuildLayout(){
+  SW=Math.round(H*0.8*IMG_ASPECT);
+  TW=SW*N;
+  CH=CH_DEF.map((c,i)=>Object.assign({},c,{focus:SW*i+SW/2}));
+  // clamp scroll position to new bounds
+  if(typeof S!=='undefined'){S.tx=clamp(S.tx);S.x=clamp(S.x)}
+  buildSeams();
+  buildDots();
+}
+
 const SEASONS=['春','夏','秋','冬'];
 const SFILTER={
   春:'sepia(.08) saturate(.97) contrast(1.04) brightness(.98) hue-rotate(-6deg) saturate(1.05) brightness(1.03)',
@@ -243,6 +252,7 @@ function resize(){
   fxC.width=W*dpr;fxC.height=VH*dpr;
   fxC.style.width=W+'px';fxC.style.height=VH+'px';
   fxX.setTransform(dpr,0,0,dpr,0,0);
+  rebuildLayout();
 }
 addEventListener('resize',resize);resize();
 
@@ -257,12 +267,12 @@ function buildSeams(){
     strip.appendChild(d);
   }
 }
-buildSeams();
 
 /* ═══ PROGRESS DOTS ═══ */
 const progLine=document.getElementById('prog-line');
 const progCur=document.getElementById('prog-cur');
 function buildDots(){
+  progLine.querySelectorAll('.prog-dot').forEach(d=>d.remove());
   CH.forEach((c,i)=>{
     const d=document.createElement('div');d.className='prog-dot';
     d.style.left=((c.focus/TW)*100)+'%';
@@ -272,7 +282,6 @@ function buildDots(){
     progLine.appendChild(d);
   });
 }
-buildDots();
 
 /* ═══ DRAGGABLE PROGRESS BAR ═══ */
 let progDrag=false;
