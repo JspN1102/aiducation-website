@@ -19,33 +19,23 @@ module.exports = async function handler(req, res) {
     `${w.c}(${w.p}) ${w.score}分 ${w.status === 'ok' ? '正確' : w.error || '偏誤'}`
   ).join('、');
 
-  const prompt = `你是一位專業的普通話語音教師，正在為香港小學四年級學生撰寫朗讀診斷報告。
+  const prompt = `你是普通話語音教師，為香港小四學生寫朗讀診斷。
+學生朗讀唐詩《${poem || '楓橋夜泊'}》：
+總分${soeResult.total_score}/100（${soeResult.grade}），聲韻${soeResult.dimensions.phone_score}，聲調${soeResult.dimensions.tone_score}，流暢度${soeResult.dimensions.fluency_score}，完整度${soeResult.dimensions.integrity_score}。
+逐字：${wordDetail}
 
-學生剛朗讀了唐詩《${poem || '楓橋夜泊'}》，以下是AI語音評測的數據：
-
-總分：${soeResult.total_score}/100（等第：${soeResult.grade}）
-聲韻準確度：${soeResult.dimensions.phone_score}
-聲調準確度：${soeResult.dimensions.tone_score}
-流暢度：${soeResult.dimensions.fluency_score}
-完整度：${soeResult.dimensions.integrity_score}
-
-逐字評分：${wordDetail}
-
-請用繁體中文撰寫一份詳細的診斷報告，包含：
-1. 整體表現評價（2-3句）
-2. 聲母韻母分析：哪些字的聲母或韻母發音有問題，具體是什麼問題
-3. 聲調分析：哪些字的聲調不準確，正確聲調是什麼，學生可能的偏誤模式
-4. 流暢度與節奏分析
-5. 具體改進建議（針對每個問題字給出練習方法）
-6. 鼓勵語（適合小學生的正面鼓勵）
-
-語氣要專業但親切，適合給家長和老師看。不要用markdown格式，用純文字。`;
+用繁體中文寫診斷報告（200字內），包含：
+1. 整體評價（1句）
+2. 哪些字發音有問題，具體什麼問題
+3. 針對每個問題字的練習建議
+4. 一句鼓勵語
+語氣親切專業，純文字不要markdown。`;
 
   const payload = JSON.stringify({
     model: 'gpt-5.4',
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.7,
-    max_tokens: 1500
+    max_tokens: 800
   });
 
   return new Promise((resolve) => {
