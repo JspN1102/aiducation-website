@@ -11,19 +11,13 @@ function encodeParam(v) {
 
 function buildWsUrl(params, secretKey) {
   const appid = params.appid;
-  const signParts = ['soe.cloud.tencent.com/soe/api/' + appid + '?'];
-  const queryParts = [];
-  for (const [k, v] of Object.entries(params)) {
-    if (k === 'appid') continue;
-    queryParts.push(k + '=' + String(v));
-  }
-  const signStr = signParts[0] + queryParts.join('&');
+  const sortedKeys = Object.keys(params).filter(k => k !== 'appid').sort();
+
+  const signStr = 'soe.cloud.tencent.com/soe/api/' + appid + '?' +
+    sortedKeys.map(k => k + '=' + String(params[k])).join('&');
   const signature = sign(signStr, secretKey);
 
-  const urlQuery = Object.entries(params)
-    .filter(([k]) => k !== 'appid')
-    .map(([k, v]) => k + '=' + encodeParam(v))
-    .join('&');
+  const urlQuery = sortedKeys.map(k => k + '=' + encodeParam(params[k])).join('&');
 
   return {
     url: 'wss://soe.cloud.tencent.com/soe/api/' + appid + '?' + urlQuery + '&signature=' + encodeParam(signature),
