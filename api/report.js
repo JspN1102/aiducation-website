@@ -19,23 +19,22 @@ module.exports = async function handler(req, res) {
     `${w.c}(${w.p}) ${w.score}分 ${w.status === 'ok' ? '正確' : w.error || '偏誤'}`
   ).join('、');
 
-  const prompt = `你是普通話語音教師，為香港小四學生寫朗讀診斷。
-學生朗讀唐詩《${poem || '楓橋夜泊'}》：
+  const prompt = `你是普通話語音教師，為香港小四學生寫朗讀診斷報告。
+學生朗讀唐詩《${poem || '楓橋夜泊'}》，AI評測數據如下：
 總分${soeResult.total_score}/100（${soeResult.grade}），聲韻${soeResult.dimensions.phone_score}，聲調${soeResult.dimensions.tone_score}，流暢度${soeResult.dimensions.fluency_score}，完整度${soeResult.dimensions.integrity_score}。
-逐字：${wordDetail}
+逐字評分：${wordDetail}
 
-用繁體中文寫診斷報告（200字內），包含：
-1. 整體評價（1句）
-2. 哪些字發音有問題，具體什麼問題
-3. 針對每個問題字的練習建議
-4. 一句鼓勵語
-語氣親切專業，純文字不要markdown。`;
+用繁體中文寫約300字的診斷報告，結構如下：
+1. 整體評價（2句，概括表現和主要問題方向）
+2. 逐字問題分析：列出每個有問題的字，說明是聲母、韻母還是聲調問題，正確讀法是什麼
+3. 練習建議：針對每個問題字給出具體練習方法（如跟讀詞語、對比練習等）
+4. 鼓勵語（1句，適合小學生）
+語氣親切專業，適合家長和老師閱讀。純文字，不要用markdown格式。`;
 
   const payload = JSON.stringify({
     model: 'gpt-5.4',
     messages: [{ role: 'user', content: prompt }],
-    temperature: 0.7,
-    max_tokens: 800
+    temperature: 0.7
   });
 
   return new Promise((resolve) => {
