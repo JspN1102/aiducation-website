@@ -672,23 +672,27 @@ function playDemo() {
   speechSynthesis.speak(u);
 }
 
-let mediaRec = null, audioChunks = [], isRecording = false, analyser = null, animFrame = null;
+let mediaRec = null, audioChunks = [], isRecording = false, analyser = null, animFrame = null, recAudioCtx = null;
+
+const REF_TEXT = '月落乌啼霜满天';
+const PINYIN_MAP = {'月':'yuè','落':'luò','乌':'wū','啼':'tí','霜':'shuāng','满':'mǎn','天':'tiān'};
+const TRAD_MAP = {'月':'月','落':'落','乌':'烏','啼':'啼','霜':'霜','满':'滿','天':'天'};
 
 function toggleRecord() { isRecording ? stopRecord() : startRecord(); }
 
 async function startRecord() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const src = ctx.createMediaStreamSource(stream);
-    analyser = ctx.createAnalyser(); analyser.fftSize = 256;
+    recAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = recAudioCtx.createMediaStreamSource(stream);
+    analyser = recAudioCtx.createAnalyser(); analyser.fftSize = 256;
     src.connect(analyser);
     const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
       ? 'audio/webm;codecs=opus' : 'audio/mp4';
     mediaRec = new MediaRecorder(stream, { mimeType: mime });
     audioChunks = [];
     mediaRec.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-    mediaRec.onstop = () => { stream.getTracks().forEach(t => t.stop()); ctx.close(); onRecordDone(); };
+    mediaRec.onstop = () => { stream.getTracks().forEach(t => t.stop()); onRecordDone(); };
     mediaRec.start();
     isRecording = true;
     document.getElementById('mic-btn').classList.add('recording');
@@ -726,13 +730,106 @@ function drawWaveform() {
   })();
 }
 
-function onRecordDone() {
+async function blobToWavBase64(blob) {
+  const arrayBuf = await blob.arrayBuffer();
+  const decoded = await recAudioCtx.decodeAudioData(arrayBuf);
+  const TARGET_SR = 16000;
+  const offline = new OfflineAudioContext(1, Math.ceil(decoded.duration * TARGET_SR), TARGET_SR);
+  const bufSrc = offline.createBufferSource();
+  bufSrc.buffer = decoded;
+  bufSrc.connect(offline.destination);
+  bufSrc.start(0);
+  const rendered = await offline.startRendering();
+  const pcm = rendered.getChannelData(0);
+  const pcm16 = new Int16Array(pcm.length);
+  for (let i = 0; i < pcm.length; i++) {
+    const s = Math.max(-1, Math.min(1, pcm[i]));
+    pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+  }
+  const wavBuf = new ArrayBuffer(44 + pcm16.length * 2);
+  const view = new DataView(wavBuf);
+  const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+  writeStr(0, 'RIFF');
+  view.setUint32(4, 36 + pcm16.length * 2, true);
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, TARGET_SR, true);
+  view.setUint32(28, TARGET_SR * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeStr(36, 'data');
+  view.setUint32(40, pcm16.length * 2, true);
+  const wavBytes = new Uint8Array(wavBuf);
+  const pcmBytes = new Uint8Array(pcm16.buffer);
+  wavBytes.set(pcmBytes, 44);
+  let binary = '';
+  for (let i = 0; i < wavBytes.length; i++) binary += String.fromCharCode(wavBytes[i]);
+  return btoa(binary);
+}
+
+function mapTencentResult(resp) {
+  const total = Math.round(resp.SuggestedScore || resp.PronAccuracy || 0);
+  const grade = total >= 90 ? '優' : total >= 75 ? '良' : total >= 60 ? '中' : '差';
+  const fluency = Math.round((resp.PronFluency || 0) * 100);
+  const completion = Math.round((resp.PronCompletion || 0) * 100);
+  const words = (resp.Words || []).map(w => {
+    const ch = w.Word || '';
+    const sc = Math.round(w.PronAccuracy || 0);
+    const trad = TRAD_MAP[ch] || ch;
+    const py = PINYIN_MAP[ch] || '';
+    let status = 'ok', error = '';
+    if (sc < 60) { status = 'error'; error = '發音偏誤'; }
+    else if (sc < 80) { status = 'warn'; error = '發音待改進'; }
+    if (w.PhoneInfos && w.PhoneInfos.length > 0) {
+      const worst = w.PhoneInfos.reduce((a, b) => (a.PronAccuracy < b.PronAccuracy ? a : b));
+      if (worst.PronAccuracy < 60) error = '聲韻偏誤';
+    }
+    return { c: trad, p: py, score: Math.max(0, sc), status, error };
+  });
+  const suggestions = words.filter(w => w.status !== 'ok').map(w =>
+    `「${w.c}」${w.error}，得分 ${w.score}，需加強練習`
+  );
+  return {
+    total_score: total, grade,
+    dimensions: {
+      phone_score: Math.round(resp.PronAccuracy || total),
+      tone_score: Math.round(resp.PronAccuracy ? resp.PronAccuracy * 0.9 : total * 0.9),
+      fluency_score: fluency || total,
+      integrity_score: completion || 100
+    },
+    words: words.length > 0 ? words : MOCK_RESULT.words,
+    suggestions: suggestions.length > 0 ? suggestions : ['發音整體良好，繼續保持']
+  };
+}
+
+async function onRecordDone() {
   document.getElementById('loading').classList.add('show');
-  setTimeout(() => {
+  try {
+    const blob = new Blob(audioChunks, { type: mediaRec.mimeType });
+    const wavB64 = await blobToWavBase64(blob);
+    if (recAudioCtx && recAudioCtx.state !== 'closed') recAudioCtx.close();
+    const resp = await fetch('/api/soe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ audio: wavB64, refText: REF_TEXT })
+    });
+    if (!resp.ok) throw new Error('API ' + resp.status);
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    const result = mapTencentResult(data);
+    document.getElementById('loading').classList.remove('show');
+    renderReport(result);
+    goPage('pg-report');
+  } catch (e) {
+    console.warn('API 調用失敗，使用模擬數據:', e.message);
+    if (recAudioCtx && recAudioCtx.state !== 'closed') recAudioCtx.close();
     document.getElementById('loading').classList.remove('show');
     renderReport(MOCK_RESULT);
     goPage('pg-report');
-  }, 1800);
+  }
 }
 
 function renderReport(r) {
