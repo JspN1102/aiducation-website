@@ -681,6 +681,7 @@ const TRAD_MAP = {'月':'月','落':'落','乌':'烏','啼':'啼','霜':'霜','�
 function toggleRecord() { isRecording ? stopRecord() : startRecord(); }
 
 async function startRecord() {
+  speechSynthesis.cancel();
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     recAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
