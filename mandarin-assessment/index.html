@@ -495,6 +495,13 @@ body {
   font-family: var(--font-sans); font-size: 13px;
   color: var(--ink-60); letter-spacing: 2px;
 }
+.gpt-report {
+  background: #fff; border-radius: var(--radius-sm);
+  padding: 18px 16px; box-shadow: var(--shadow-sm);
+  font-family: var(--font-sans); font-size: 13px;
+  color: var(--ink-80); line-height: 2; margin-bottom: 24px;
+  border-left: 3px solid var(--green);
+}
 </style>
 </head>
 <body>
@@ -552,8 +559,8 @@ body {
       <div class="top-spacer"></div>
     </header>
     <div class="record-target">
-      <p class="record-label">請朗讀以下詩句</p>
-      <div class="record-line" id="record-line"></div>
+      <p class="record-label">請朗讀全詩</p>
+      <div id="record-line"></div>
     </div>
     <div class="record-area">
       <canvas id="waveform" width="280" height="60"></canvas>
@@ -654,9 +661,12 @@ function renderPoem() {
     return `<div class="poem-line-wrap">${chars}<span class="ch-punct">${line.punct}</span></div>`;
   }).join('');
   const rl = document.getElementById('record-line');
-  rl.innerHTML = POEM[0].chars.map(ch =>
-    `<div class="ch"><span class="ch-py">${ch.p}</span><span class="ch-char">${ch.c}</span></div>`
-  ).join('');
+  rl.innerHTML = POEM.map(line => {
+    const chars = line.chars.map(ch =>
+      `<div class="ch"><span class="ch-py">${ch.p}</span><span class="ch-char">${ch.c}</span></div>`
+    ).join('');
+    return `<div class="poem-line-wrap">${chars}<span class="ch-punct">${line.punct}</span></div>`;
+  }).join('');
 }
 
 function playDemo() {
@@ -674,9 +684,9 @@ function playDemo() {
 
 let mediaRec = null, audioChunks = [], isRecording = false, analyser = null, animFrame = null, recAudioCtx = null;
 
-const REF_TEXT = '月落乌啼霜满天';
-const PINYIN_MAP = {'月':'yuè','落':'luò','乌':'wū','啼':'tí','霜':'shuāng','满':'mǎn','天':'tiān'};
-const TRAD_MAP = {'月':'月','落':'落','乌':'烏','啼':'啼','霜':'霜','满':'滿','天':'天'};
+const REF_TEXT = '月落乌啼霜满天，江枫渔火对愁眠。姑苏城外寒山寺，夜半钟声到客船。';
+const PINYIN_MAP = {'月':'yuè','落':'luò','乌':'wū','啼':'tí','霜':'shuāng','满':'mǎn','天':'tiān','江':'jiāng','枫':'fēng','渔':'yú','火':'huǒ','对':'duì','愁':'chóu','眠':'mián','姑':'gū','苏':'sū','城':'chéng','外':'wài','寒':'hán','山':'shān','寺':'sì','夜':'yè','半':'bàn','钟':'zhōng','声':'shēng','到':'dào','客':'kè','船':'chuán'};
+const TRAD_MAP = {'月':'月','落':'落','乌':'烏','啼':'啼','霜':'霜','满':'滿','天':'天','江':'江','枫':'楓','渔':'漁','火':'火','对':'對','愁':'愁','眠':'眠','姑':'姑','苏':'蘇','城':'城','外':'外','寒':'寒','山':'山','寺':'寺','夜':'夜','半':'半','钟':'鐘','声':'聲','到':'到','客':'客','船':'船'};
 
 function toggleRecord() { isRecording ? stopRecord() : startRecord(); }
 
@@ -808,6 +818,7 @@ function mapTencentResult(resp) {
 
 async function onRecordDone() {
   document.getElementById('loading').classList.add('show');
+  document.querySelector('.loading-text').textContent = 'AI 評測中';
   try {
     const blob = new Blob(audioChunks, { type: mediaRec.mimeType });
     const wavB64 = await blobToWavBase64(blob);
@@ -821,6 +832,20 @@ async function onRecordDone() {
     const data = await resp.json();
     if (data.error) throw new Error(data.error);
     const result = mapTencentResult(data);
+    document.querySelector('.loading-text').textContent = 'AI 生成診斷報告中';
+    let gptReport = '';
+    try {
+      const rr = await fetch('/api/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ soeResult: result, poem: '楓橋夜泊' })
+      });
+      if (rr.ok) {
+        const rd = await rr.json();
+        gptReport = rd.report || '';
+      }
+    } catch (_) {}
+    result.gptReport = gptReport;
     document.getElementById('loading').classList.remove('show');
     renderReport(result);
     goPage('pg-report');
@@ -861,7 +886,10 @@ function renderReport(r) {
         </div>`).join('')}
     </div>
     <p class="section-title">糾正建議</p>
-    <ul class="suggestions">${r.suggestions.map(s => `<li>${s}</li>`).join('')}</ul>`;
+    <ul class="suggestions">${r.suggestions.map(s => `<li>${s}</li>`).join('')}</ul>
+    ${r.gptReport ? `
+    <p class="section-title" style="margin-top:24px">AI 診斷報告</p>
+    <div class="gpt-report">${r.gptReport.replace(/\n/g, '<br>')}</div>` : ''}`;
   drawRing(r.total_score, gc);
 }
 
