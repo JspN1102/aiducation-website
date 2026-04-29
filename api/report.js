@@ -52,14 +52,16 @@ module.exports = async function handler(req, res) {
     };
 
     const apiReq = https.request(reqOpts, (apiRes) => {
-      let body = '';
-      apiRes.on('data', chunk => body += chunk);
+      const chunks = [];
+      apiRes.on('data', chunk => chunks.push(chunk));
       apiRes.on('end', () => {
         try {
+          const body = Buffer.concat(chunks).toString('utf8');
           const data = JSON.parse(body);
           const report = data.choices?.[0]?.message?.content || '';
           res.status(200).json({ report });
         } catch (e) {
+          const body = Buffer.concat(chunks).toString('utf8');
           res.status(502).json({ error: 'Invalid GPT response', detail: body.slice(0, 300) });
         }
         resolve();

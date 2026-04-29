@@ -555,8 +555,8 @@ body {
 .btn-gpt:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
 .gpt-loading {
-  display: flex; align-items: center; justify-content: center;
-  gap: 8px; padding: 16px; color: var(--ink-40);
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px; padding: 20px 16px; color: var(--ink-60);
   font-family: var(--font-sans); font-size: 13px; letter-spacing: 1px;
 }
 .gpt-loading .spinner {
@@ -565,6 +565,20 @@ body {
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.gpt-progress-wrap {
+  width: 100%; background: var(--ink-10); border-radius: 6px;
+  height: 6px; overflow: hidden;
+}
+.gpt-progress-bar {
+  height: 100%; border-radius: 6px; width: 0%;
+  background: linear-gradient(90deg, var(--green), var(--green-light));
+  transition: width 0.3s ease;
+}
+.gpt-progress-text {
+  font-family: var(--font-sans); font-size: 12px;
+  color: var(--ink-40); letter-spacing: 1px;
+}
 
 /* Word grid grouped by line */
 .word-line-group { margin-bottom: 8px; }
@@ -1041,7 +1055,25 @@ async function generateGptReport() {
   const area = document.getElementById('gpt-area');
   btn.disabled = true;
   btn.textContent = '報告生成中…';
-  area.innerHTML = '<div class="gpt-loading"><div class="spinner"></div>AI 老師正在分析您的朗讀…</div>';
+  area.innerHTML = `<div class="gpt-loading">
+    <div class="gpt-progress-wrap"><div class="gpt-progress-bar" id="gpt-bar"></div></div>
+    <p class="gpt-progress-text" id="gpt-stage">正在分析發音數據…</p>
+  </div>`;
+
+  const bar = document.getElementById('gpt-bar');
+  const stage = document.getElementById('gpt-stage');
+  const stages = [
+    { pct: 15, text: '正在分析發音數據…', delay: 400 },
+    { pct: 35, text: '比對聲韻聲調標準…', delay: 1200 },
+    { pct: 55, text: 'AI 老師撰寫診斷中…', delay: 2500 },
+    { pct: 75, text: '生成練習建議…', delay: 4500 },
+    { pct: 88, text: '即將完成…', delay: 6500 }
+  ];
+  const timers = stages.map(s => setTimeout(() => {
+    bar.style.width = s.pct + '%';
+    stage.textContent = s.text;
+  }, s.delay));
+
   try {
     const resp = await fetch('/api/report', {
       method: 'POST',
@@ -1052,11 +1084,16 @@ async function generateGptReport() {
     const data = await resp.json();
     const report = data.report || '';
     if (!report) throw new Error('Empty report');
+    timers.forEach(clearTimeout);
+    bar.style.width = '100%';
+    stage.textContent = '報告生成完成！';
+    await new Promise(r => setTimeout(r, 500));
     btn.style.display = 'none';
     area.innerHTML = `
       <p class="section-title" style="margin-top:8px">AI 老師診斷</p>
       <div class="gpt-report">${report.replace(/\n/g, '<br>')}</div>`;
   } catch (e) {
+    timers.forEach(clearTimeout);
     console.warn('GPT 報告生成失敗:', e.message);
     btn.disabled = false;
     btn.textContent = '重試生成報告';
