@@ -83,10 +83,7 @@ module.exports = async function handler(req, res) {
 
     ws.on('open', () => {
       const audioBuf = Buffer.from(audio, 'base64');
-      const CHUNK = 32000;
-      for (let i = 0; i < audioBuf.length; i += CHUNK) {
-        ws.send(audioBuf.slice(i, i + CHUNK));
-      }
+      ws.send(audioBuf);
       ws.send(JSON.stringify({ type: 'end' }));
     });
 
