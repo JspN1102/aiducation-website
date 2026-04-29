@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700;900&family=Noto+Sans+TC:wght@300;400;500;600&family=Inter:wght@400;500;600;700&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 <style>
 :root {
   --paper: #f5f0e6;
@@ -583,6 +584,70 @@ body {
 /* Word grid grouped by line */
 .word-line-group { margin-bottom: 8px; }
 .word-line-group:last-child { margin-bottom: 0; }
+
+/* Playback buttons */
+.playback-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; margin-bottom: 24px; flex-wrap: wrap;
+}
+.btn-play-line {
+  display: flex; align-items: center; gap: 5px;
+  font-family: var(--font-sans); font-size: 12px;
+  color: var(--green); background: var(--green-bg);
+  border: 1.5px solid var(--green); border-radius: 20px;
+  padding: 6px 14px; cursor: pointer; transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+.btn-play-line:hover { background: var(--green); color: #fff; }
+.btn-play-line.playing { background: var(--green); color: #fff; }
+.btn-play-line svg { width: 14px; height: 14px; }
+
+/* Practice section */
+.practice-section { margin-bottom: 24px; }
+.practice-word-row {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.practice-word-card {
+  background: #fff; border-radius: var(--radius-sm);
+  padding: 12px 16px; box-shadow: var(--shadow-sm);
+  display: flex; flex-direction: column; align-items: center;
+  gap: 4px; cursor: pointer; transition: all 0.2s;
+  border: 1.5px solid transparent; min-width: 70px;
+}
+.practice-word-card:hover { border-color: var(--green); }
+.practice-word-card .pw-char {
+  font-family: var(--font-serif); font-weight: 600;
+  font-size: 22px; color: var(--ink);
+}
+.practice-word-card .pw-py {
+  font-family: var(--font-sans); font-size: 11px; color: var(--red);
+}
+.practice-word-card .pw-hint {
+  font-family: var(--font-sans); font-size: 10px; color: var(--ink-40);
+}
+
+/* Error book card on cover */
+.error-book-card {
+  width: 100%; max-width: 320px; background: var(--red-bg);
+  border-radius: var(--radius); padding: 16px 20px;
+  margin-bottom: 20px; text-align: center;
+  border: 1px solid rgba(183,62,58,0.15);
+}
+.error-book-card p {
+  font-family: var(--font-sans); font-size: 13px;
+  color: var(--ink-80); line-height: 1.8; margin-bottom: 10px;
+}
+.error-book-chars {
+  display: flex; justify-content: center; gap: 12px; margin-bottom: 12px;
+}
+.error-book-char {
+  font-family: var(--font-serif); font-weight: 700;
+  font-size: 24px; color: var(--red);
+  background: #fff; border-radius: 8px;
+  width: 44px; height: 44px; display: flex;
+  align-items: center; justify-content: center;
+  box-shadow: var(--shadow-sm);
+}
 </style>
 </head>
 <body>
@@ -731,7 +796,7 @@ const TEACHER_DATA = {
 function goPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  if (id === 'pg-teacher') setTimeout(drawDistChart, 300);
+  if (id === 'pg-teacher') setTimeout(() => { drawDistChart(); drawRadarChart(); }, 300);
   if (id === 'pg-record') resetRecording();
 }
 
@@ -749,17 +814,16 @@ function renderPoem() {
 function playDemo() {
   const btn = document.querySelector('.btn-listen');
   if (btn.classList.contains('playing')) return;
-  const text = POEM.map(l => l.chars.map(c => c.c).join('')).join('，');
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'zh-CN'; u.rate = 0.8; u.pitch = 1;
-  u.onstart = () => btn.classList.add('playing');
-  u.onend = () => btn.classList.remove('playing');
-  u.onerror = () => btn.classList.remove('playing');
-  speechSynthesis.cancel();
-  speechSynthesis.speak(u);
+  const audio = new Audio('demo.mp3');
+  btn.classList.add('playing');
+  audio.onended = () => btn.classList.remove('playing');
+  audio.onerror = () => btn.classList.remove('playing');
+  audio.play();
 }
 
 let mediaRec = null, audioChunks = [], isRecording = false, analyser = null, animFrame = null, recAudioCtx = null;
+let recordedBlobs = [null, null, null, null];
+let playbackAudio = null;
 
 const LINES = [
   { ref: '月落乌啼霜满天', chars: POEM[0].chars, punct: '，' },
@@ -797,6 +861,7 @@ function renderRecordPage() {
 function resetRecording() {
   currentLine = 0;
   lineResults = [null, null, null, null];
+  recordedBlobs = [null, null, null, null];
   mergedResult = null;
   renderRecordPage();
 }
@@ -937,6 +1002,7 @@ function mapTencentResult(resp) {
 
 async function onRecordDone() {
   if (currentLine >= 4) return;
+  recordedBlobs[currentLine] = new Blob(audioChunks, { type: mediaRec.mimeType });
   document.getElementById('loading').classList.add('show');
   document.querySelector('.loading-text').textContent = `第 ${currentLine + 1} 句評測中`;
   try {
@@ -1035,6 +1101,10 @@ function renderReport(r) {
       <div class="dim-card tone"><p class="dim-label">聲調</p><p class="dim-score">${r.dimensions.tone_score}</p></div>
       <div class="dim-card fluency"><p class="dim-label">流暢度</p><p class="dim-score">${r.dimensions.fluency_score}</p></div>
     </div>
+    <div class="playback-row">
+      ${LINES.map((l, i) => recordedBlobs[i] ? `<button class="btn-play-line" onclick="playLineRecording(${i})"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg>第${i+1}句</button>` : '').join('')}
+      ${recordedBlobs.some(b => b) ? `<button class="btn-play-line" onclick="playAllRecordings()" style="border-color:var(--gold);color:var(--gold);background:var(--gold-bg)"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg>全部回放</button>` : ''}
+    </div>
     <p class="section-title">逐字分析</p>
     ${wordGroups.map(group => `
       <div class="word-line-group">
@@ -1049,8 +1119,11 @@ function renderReport(r) {
     <p class="section-title">糾正建議</p>
     <ul class="suggestions">${r.suggestions.map(s => `<li>${s}</li>`).join('')}</ul>
     <button class="btn-gpt" id="btn-gpt" onclick="generateGptReport()">生成 AI 診斷報告</button>
-    <div id="gpt-area"></div>`;
+    <div id="gpt-area"></div>
+    <div id="practice-area"></div>`;
   drawRing(r.total_score, gc);
+  renderPracticeSection(r);
+  saveErrorBook(r);
 }
 
 async function generateGptReport() {
@@ -1104,6 +1177,144 @@ async function generateGptReport() {
   }
 }
 
+function playLineRecording(idx) {
+  if (playbackAudio) { playbackAudio.pause(); playbackAudio = null; }
+  document.querySelectorAll('.btn-play-line').forEach(b => b.classList.remove('playing'));
+  if (!recordedBlobs[idx]) return;
+  const url = URL.createObjectURL(recordedBlobs[idx]);
+  playbackAudio = new Audio(url);
+  const btn = document.querySelectorAll('.btn-play-line')[idx];
+  if (btn) btn.classList.add('playing');
+  playbackAudio.onended = () => { if (btn) btn.classList.remove('playing'); URL.revokeObjectURL(url); playbackAudio = null; };
+  playbackAudio.play();
+}
+
+function playAllRecordings() {
+  if (playbackAudio) { playbackAudio.pause(); playbackAudio = null; }
+  document.querySelectorAll('.btn-play-line').forEach(b => b.classList.remove('playing'));
+  const blobs = recordedBlobs.filter(b => b);
+  if (!blobs.length) return;
+  let i = 0;
+  function playNext() {
+    if (i >= blobs.length) { playbackAudio = null; return; }
+    const url = URL.createObjectURL(blobs[i]);
+    playbackAudio = new Audio(url);
+    playbackAudio.onended = () => { URL.revokeObjectURL(url); i++; playNext(); };
+    playbackAudio.play();
+  }
+  playNext();
+}
+
+const PRACTICE_MAP = {
+  '霜':['山','是','詩'],'烏':['我','問','忘'],'滿':['馬','買','美'],
+  '啼':['題','提','踢'],'愁':['抽','醜','臭'],'眠':['棉','面','明'],
+  '楓':['風','飛','方'],'漁':['魚','雨','語'],'對':['堆','隊','大'],
+  '姑':['古','故','鼓'],'蘇':['書','數','速'],'城':['成','程','稱'],
+  '寒':['含','汗','喊'],'寺':['四','死','思'],'鐘':['中','種','重'],
+  '聲':['生','勝','省'],'客':['課','可','科'],'船':['穿','床','窗'],
+  '月':['越','約','樂'],'落':['路','六','綠'],'天':['甜','田','聽'],
+  '江':['講','將','獎'],'火':['或','活','話'],'外':['歪','萬','忘'],
+  '夜':['也','頁','業'],'半':['班','搬','辦'],'到':['刀','島','倒']
+};
+
+function renderPracticeSection(r) {
+  const area = document.getElementById('practice-area');
+  const errorWords = r.words.filter(w => w.status !== 'ok');
+  if (!errorWords.length) { area.innerHTML = ''; return; }
+  area.innerHTML = `
+    <p class="section-title" style="margin-top:20px">定向練習</p>
+    <div class="practice-section">
+      <p style="font-size:12px;color:var(--ink-60);margin-bottom:12px">以下是需要加強的字，點擊可單獨錄音練習</p>
+      ${errorWords.map(w => {
+        const trad = TRAD_MAP[w.c] || w.c;
+        const peers = PRACTICE_MAP[trad] || PRACTICE_MAP[w.c] || [];
+        return `<div style="margin-bottom:16px">
+          <p style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:8px">${trad}（${w.p}）— 得分 ${w.score}</p>
+          <div class="practice-word-row">
+            <div class="practice-word-card" onclick="practiceSingleChar('${w.c}')">
+              <span class="pw-char">${trad}</span>
+              <span class="pw-py">${w.p}</span>
+              <span class="pw-hint">再練一次</span>
+            </div>
+            ${peers.map(pc => `<div class="practice-word-card" onclick="practiceSingleChar('${pc}')">
+              <span class="pw-char">${pc}</span>
+              <span class="pw-py">${PINYIN_MAP[pc] || ''}</span>
+              <span class="pw-hint">同類練習</span>
+            </div>`).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+let practiceStream = null;
+async function practiceSingleChar(ch) {
+  if (practiceStream) { practiceStream.getTracks().forEach(t => t.stop()); practiceStream = null; }
+  try {
+    practiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    if (!recAudioCtx) recAudioCtx = new AudioContext();
+    const rec = new MediaRecorder(practiceStream);
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    rec.onstop = async () => {
+      practiceStream.getTracks().forEach(t => t.stop());
+      practiceStream = null;
+      const blob = new Blob(chunks, { type: rec.mimeType });
+      try {
+        const base64 = await blobToWavBase64(blob);
+        const resp = await fetch('/api/soe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audio: base64, refText: ch })
+        });
+        const data = await resp.json();
+        const score = Math.round(data.SuggestedScore || data.PronAccuracy || 0);
+        alert(`「${TRAD_MAP[ch] || ch}」得分：${score} 分`);
+      } catch (e) { alert('評測失敗：' + e.message); }
+    };
+    rec.start();
+    alert(`正在錄音「${TRAD_MAP[ch] || ch}」，3秒後自動停止…`);
+    setTimeout(() => { if (rec.state === 'recording') rec.stop(); }, 3000);
+  } catch (e) { alert('無法使用麥克風：' + e.message); }
+}
+
+function saveErrorBook(r) {
+  try {
+    const existing = JSON.parse(localStorage.getItem('errorBook') || '{}');
+    const today = new Date().toISOString().slice(0, 10);
+    r.words.forEach(w => {
+      if (w.score < 70) {
+        const key = TRAD_MAP[w.c] || w.c;
+        if (existing[key]) {
+          existing[key].count++;
+          existing[key].lastScore = w.score;
+          existing[key].lastDate = today;
+        } else {
+          existing[key] = { count: 1, lastScore: w.score, lastDate: today, pinyin: w.p };
+        }
+      }
+    });
+    localStorage.setItem('errorBook', JSON.stringify(existing));
+  } catch (_) {}
+}
+
+function showErrorBookCard() {
+  try {
+    const data = JSON.parse(localStorage.getItem('errorBook') || '{}');
+    const entries = Object.entries(data).sort((a, b) => b[1].count - a[1].count).slice(0, 6);
+    if (!entries.length) return;
+    const card = document.createElement('div');
+    card.className = 'error-book-card';
+    card.innerHTML = `
+      <p>上次有 ${entries.length} 個字需要重點突破：</p>
+      <div class="error-book-chars">${entries.slice(0, 4).map(([ch]) => `<span class="error-book-char">${ch}</span>`).join('')}</div>
+      <button class="btn-play-line" onclick="goPage('pg-demo')" style="margin:0 auto;border-color:var(--red);color:var(--red);background:var(--red-bg)">先去練習</button>`;
+    const wrap = document.querySelector('.cover-wrap');
+    const btn = wrap.querySelector('.btn-primary');
+    wrap.insertBefore(card, btn);
+  } catch (_) {}
+}
+
 function drawRing(score, color) {
   const canvas = document.getElementById('ring-canvas');
   if (!canvas) return;
@@ -1132,7 +1343,9 @@ function renderTeacher() {
       <div class="stat-card"><p class="stat-value">${d.excellentRate}%</p><p class="stat-label">優秀率</p></div>
     </div>
     <p class="section-title">成績分佈</p>
-    <div class="chart-card"><canvas id="dist-chart"></canvas></div>
+    <div class="chart-card"><div id="dist-chart" style="width:100%;height:200px"></div></div>
+    <p class="section-title">班級維度雷達</p>
+    <div class="chart-card"><div id="radar-chart" style="width:100%;height:240px"></div></div>
     <p class="section-title">高頻錯字 Top 4</p>
     <div class="error-chars">
       ${d.errorChars.map(ec => `
@@ -1159,45 +1372,61 @@ function renderTeacher() {
 }
 
 function drawDistChart() {
-  const canvas = document.getElementById('dist-chart');
-  if (!canvas) return;
-  const parent = canvas.parentElement;
-  const W = parent.clientWidth - 20 || 360;
-  const H = 160;
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = W * dpr; canvas.height = H * dpr;
-  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
-  const c = canvas.getContext('2d');
-  c.scale(dpr, dpr);
+  const el = document.getElementById('dist-chart');
+  if (!el) return;
+  const chart = echarts.init(el);
   const data = TEACHER_DATA.distribution;
-  const maxCount = Math.max(...data.map(d => d.count));
-  const barW = W * 0.13, gap = W * 0.07;
-  const totalW = data.length * barW + (data.length - 1) * gap;
-  const startX = (W - totalW) / 2;
-  const rawColors = ['#9e9488','#b8923f','#2f5d4f','#2f5d4f'];
-  c.clearRect(0, 0, W, H);
-  c.strokeStyle = '#e2ddd5'; c.lineWidth = 1;
-  c.beginPath(); c.moveTo(startX - 10, H - 30); c.lineTo(startX + totalW + 10, H - 30); c.stroke();
-  data.forEach((d, i) => {
-    const x = startX + i * (barW + gap);
-    const barH = (d.count / maxCount) * (H - 60);
-    const y = H - 30 - barH, rad = 4;
-    c.fillStyle = rawColors[i];
-    c.beginPath();
-    c.moveTo(x + rad, y); c.lineTo(x + barW - rad, y);
-    c.quadraticCurveTo(x + barW, y, x + barW, y + rad);
-    c.lineTo(x + barW, H - 30); c.lineTo(x, H - 30);
-    c.lineTo(x, y + rad); c.quadraticCurveTo(x, y, x + rad, y);
-    c.fill();
-    c.fillStyle = '#1a1612'; c.font = '600 13px Inter'; c.textAlign = 'center';
-    c.fillText(d.count, x + barW / 2, y - 6);
-    c.fillStyle = '#9e9488'; c.font = '11px "Noto Sans TC"';
-    c.fillText(d.range, x + barW / 2, H - 12);
+  const colors = ['#9e9488','#b8923f','#2f5d4f','#2f5d4f'];
+  chart.setOption({
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: 10, right: 10, top: 20, bottom: 24, containLabel: true },
+    xAxis: { type: 'category', data: data.map(d => d.range), axisLine: { lineStyle: { color: '#e2ddd5' } }, axisLabel: { color: '#9e9488', fontSize: 11 } },
+    yAxis: { type: 'value', show: false },
+    series: [{
+      type: 'bar', barWidth: '45%',
+      data: data.map((d, i) => ({
+        value: d.count,
+        itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors[i] }, { offset: 1, color: colors[i] + '88' }]), borderRadius: [4, 4, 0, 0] }
+      })),
+      label: { show: true, position: 'top', fontWeight: 600, fontSize: 13, color: '#1a1612' },
+      animationDuration: 800, animationEasing: 'cubicOut'
+    }]
+  });
+}
+
+function drawRadarChart() {
+  const el = document.getElementById('radar-chart');
+  if (!el) return;
+  const chart = echarts.init(el);
+  const d = TEACHER_DATA;
+  chart.setOption({
+    tooltip: {},
+    radar: {
+      indicator: [
+        { name: '聲韻', max: 100 }, { name: '聲調', max: 100 },
+        { name: '流暢度', max: 100 }, { name: '完整度', max: 100 }, { name: '總分', max: 100 }
+      ],
+      shape: 'circle',
+      splitArea: { areaStyle: { color: ['rgba(47,93,79,0.02)', 'rgba(47,93,79,0.05)'] } },
+      axisName: { color: '#6b6259', fontSize: 11 }
+    },
+    series: [{
+      type: 'radar',
+      data: [{
+        value: [82, 78, 85, 90, d.avg],
+        name: '班級平均',
+        areaStyle: { color: 'rgba(47,93,79,0.15)' },
+        lineStyle: { color: '#2f5d4f', width: 2 },
+        itemStyle: { color: '#2f5d4f' }
+      }],
+      animationDuration: 1000
+    }]
   });
 }
 
 renderPoem();
 renderTeacher();
+showErrorBookCard();
 </script>
 </body>
 </html>
