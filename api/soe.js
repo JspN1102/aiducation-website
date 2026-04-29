@@ -40,10 +40,8 @@ module.exports = async function handler(req, res) {
   const secretKey = process.env.TENCENT_SECRET_KEY;
   const appId = process.env.TENCENT_APP_ID;
   if (!secretId || !secretKey || !appId) {
-    return res.status(500).json({ error: 'API credentials not configured', has: { id: !!secretId, key: !!secretKey, app: !!appId } });
+    return res.status(500).json({ error: 'API credentials not configured' });
   }
-
-  console.log('SOE request:', { refText, audioLen: audio.length, appId });
 
   const now = Math.floor(Date.now() / 1000);
   const voiceId = crypto.randomUUID();
@@ -105,7 +103,6 @@ module.exports = async function handler(req, res) {
           ws.close();
         } else if (msg.result) {
           result = msg;
-        }
         }
       } catch (_) {}
     });
