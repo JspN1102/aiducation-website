@@ -100,8 +100,12 @@ module.exports = async function handler(req, res) {
           }
           return;
         }
-        if (msg.final === 1 || msg.result) {
+        if (msg.final === 1) {
           result = msg;
+          ws.close();
+        } else if (msg.result) {
+          result = msg;
+        }
         }
       } catch (_) {}
     });
