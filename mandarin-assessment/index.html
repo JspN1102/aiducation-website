@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>枫桥夜泊 · 普通话朗读测评</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;600&family=Inter:wght@400;500;600;700&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #f5f0e6;
+  --paper-warm: #efe8da;
+  --ink: #1a1612;
+  --ink-80: #3d3630;
+  --ink-60: #6b6259;
+  --ink-40: #9e9488;
+  --ink-20: #c9c1b5;
+  --ink-10: #e2ddd5;
+  --green: #2f5d4f;
+  --green-light: #4a8a76;
+  --green-bg: rgba(47,93,79,0.08);
+  --red: #b73e3a;
+  --red-light: #d05550;
+  --red-bg: rgba(183,62,58,0.06);
+  --gold: #b8923f;
+  --gold-light: #d4ad55;
+  --gold-bg: rgba(184,146,63,0.08);
+  --radius: 12px;
+  --radius-sm: 6px;
+  --shadow-sm: 0 1px 3px rgba(26,22,18,0.06);
+  --shadow-md: 0 4px 16px rgba(26,22,18,0.08);
+  --shadow-lg: 0 8px 32px rgba(26,22,18,0.1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Noto Sans SC', -apple-system, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  overflow: hidden;
+  height: 100dvh;
+  width: 100vw;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Background texture - rice paper */
+.bg-texture {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(26,22,18,0.007) 3px, rgba(26,22,18,0.007) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 5px, rgba(26,22,18,0.004) 5px, rgba(26,22,18,0.004) 6px),
+    radial-gradient(ellipse at 20% 20%, rgba(184,146,63,0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(183,62,58,0.02) 0%, transparent 50%);
+}
+
+/* Page system */
+.page {
+  position: absolute; inset: 0; z-index: 1;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.5s ease;
+  display: flex; flex-direction: column; align-items: center;
+  overflow: hidden;
+}
+.page.active { opacity: 1; pointer-events: all; }
+.page:has(.page-scroll) { overflow: visible; }
+.page-inner {
+  width: 100%; max-width: 480px; padding: 0 24px;
+  display: flex; flex-direction: column; align-items: center;
+  height: 100%; overflow: hidden;
+}
+.page-scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 24px; }
+
+/* ===== COVER PAGE ===== */
+.cover-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; height: 100%; padding: 40px 24px; gap: 0;
+}
+.cover-seal {
+  font-family: 'Inter', sans-serif; font-weight: 600; font-size: 11px;
+  letter-spacing: 3px; color: var(--red);
+  border: 1.5px solid var(--red); padding: 3px 10px;
+  transform: rotate(-2deg); margin-bottom: 48px; opacity: 0.85;
+}
+.cover-title {
+  font-family: 'Noto Serif TC', serif; font-weight: 900;
+  font-size: clamp(42px, 10vw, 56px); letter-spacing: 12px;
+  color: var(--ink); line-height: 1.2; margin-bottom: 12px;
+}
+.cover-author {
+  font-family: 'Noto Serif TC', serif; font-weight: 400;
+  font-size: 18px; color: var(--ink-60); letter-spacing: 4px;
+  margin-bottom: 32px;
+}
+.cover-divider {
+  width: 48px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ink-20), transparent);
+  margin-bottom: 32px;
+}
+.cover-school {
+  font-family: 'Noto Sans SC', sans-serif; font-weight: 400;
+  font-size: 14px; color: var(--ink-60); text-align: center;
+  line-height: 1.8; letter-spacing: 1px; margin-bottom: 48px;
+}
+.cover-class { font-size: 12px; color: var(--ink-40); }
+.cover-footer {
+  position: absolute; bottom: 32px;
+  font-size: 11px; color: var(--ink-40); letter-spacing: 2px;
+}
+
+/* ===== BUTTONS ===== */
+.btn-primary {
+  font-family: 'Noto Sans SC', sans-serif; font-weight: 500;
+  font-size: 15px; letter-spacing: 2px;
+  color: #fff; background: var(--green);
+  border: none; border-radius: 28px;
+  padding: 14px 40px; cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 12px rgba(47,93,79,0.2);
+}
+.btn-primary:hover { background: var(--green-light); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-outline {
+  font-family: 'Noto Sans SC', sans-serif; font-weight: 500;
+  font-size: 14px; letter-spacing: 1px;
+  color: var(--green); background: transparent;
+  border: 1.5px solid var(--green); border-radius: 24px;
+  padding: 10px 28px; cursor: pointer;
+  transition: all 0.3s ease;
+}
+.btn-outline:hover { background: var(--green-bg); }
+
+.btn-back {
+  font-size: 20px; color: var(--ink-60); background: none;
+  border: none; cursor: pointer; padding: 8px; line-height: 1;
+  transition: color 0.2s;
+}
+.btn-back:hover { color: var(--ink); }
+
+/* ===== TOP BAR ===== */
+.top-bar {
+  display: flex; align-items: center; width: 100%;
+  padding: 16px 0; margin-bottom: 8px;
+}
+.top-title {
+  flex: 1; text-align: center;
+  font-family: 'Noto Serif TC', serif; font-weight: 600;
+  font-size: 17px; letter-spacing: 2px; color: var(--ink-80);
+}
+.top-spacer { width: 36px; }
+
+/* ===== POEM CARD ===== */
+.poem-card {
+  width: 100%; background: #fff;
+  border-radius: var(--radius); padding: 28px 24px;
+  box-shadow: var(--shadow-md); margin-bottom: 32px;
+  position: relative;
+}
+.poem-card::before {
+  content: ''; position: absolute; top: 0; left: 24px; right: 24px;
+  height: 2px; background: linear-gradient(90deg, var(--red), var(--gold), var(--green));
+  border-radius: 1px;
+}
+.poem-title-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 24px;
+}
+.poem-badge {
+  font-size: 11px; color: var(--green); background: var(--green-bg);
+  padding: 3px 10px; border-radius: 10px; letter-spacing: 1px;
+}
+.poem-dynasty {
+  font-family: 'Noto Serif TC', serif; font-size: 12px;
+  color: var(--ink-40); letter-spacing: 1px;
+}
+
+/* Poem lines with pinyin */
+.poem-lines { margin-bottom: 24px; }
+.poem-line-wrap {
+  display: flex; justify-content: center; gap: 2px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+.poem-line-wrap:last-child { margin-bottom: 0; }
+.ch {
+  display: flex; flex-direction: column; align-items: center;
+  width: 44px; cursor: default;
+}
+.ch-py {
+  font-family: 'Noto Sans SC', sans-serif; font-size: 11px;
+  color: var(--red); letter-spacing: 0; line-height: 1.2;
+  margin-bottom: 4px; min-height: 14px;
+  white-space: nowrap;
+}
+.ch-char {
+  font-family: 'Noto Serif TC', serif; font-weight: 600;
+  font-size: 22px; color: var(--ink); line-height: 1.3;
+}
+.ch-punct {
+  font-family: 'Noto Serif TC', serif; font-size: 22px;
+  color: var(--ink-40); width: 16px; text-align: center;
+  align-self: flex-end; padding-bottom: 2px;
+}
+
+.btn-listen {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 12px; border: 1.5px solid var(--ink-10);
+  border-radius: var(--radius-sm); background: none;
+  font-family: 'Noto Sans SC', sans-serif; font-size: 14px;
+  color: var(--ink-60); cursor: pointer; transition: all 0.2s;
+  letter-spacing: 1px;
+}
+.btn-listen:hover { border-color: var(--green); color: var(--green); }
+.btn-listen.playing { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+
+/* ===== RECORD PAGE ===== */
+.record-target {
+  width: 100%; background: #fff;
+  border-radius: var(--radius); padding: 24px;
+  box-shadow: var(--shadow-md); margin-bottom: 32px; text-align: center;
+}
+.record-label {
+  font-size: 13px; color: var(--ink-40); letter-spacing: 1px; margin-bottom: 16px;
+}
+.record-line {
+  display: flex; justify-content: center; gap: 2px; flex-wrap: wrap;
+}
+.record-line .ch-char { font-size: 26px; }
+.record-line .ch { width: 48px; }
+.record-line .ch-py { font-size: 12px; }
+
+.record-area {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 20px; flex: 1; justify-content: center; padding-bottom: 60px;
+}
+#waveform { opacity: 0.4; transition: opacity 0.3s; }
+#waveform.active { opacity: 1; }
+
+.mic-btn {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: var(--red); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(183,62,58,0.3);
+  position: relative;
+}
+.mic-btn:hover { transform: scale(1.05); }
+.mic-btn.recording { background: var(--ink-80); animation: mic-pulse 1.5s ease infinite; }
+.mic-btn.recording::before {
+  content: ''; position: absolute; inset: -8px;
+  border-radius: 50%; border: 2px solid var(--red);
+  animation: mic-ring 1.5s ease infinite;
+}
+@keyframes mic-pulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(183,62,58,0.3); }
+  50% { box-shadow: 0 4px 32px rgba(183,62,58,0.5); }
+}
+@keyframes mic-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+.mic-hint {
+  font-size: 13px; color: var(--ink-40); letter-spacing: 1px;
+}
+
+/* ===== REPORT PAGE ===== */
+.report-content { width: 100%; padding-bottom: 24px; }
+
+.score-ring-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  margin: 16px 0 28px;
+}
+.score-ring { position: relative; width: 140px; height: 140px; }
+.score-ring canvas { width: 140px; height: 140px; }
+.score-ring-inner {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.score-num {
+  font-family: 'Inter', sans-serif; font-weight: 700;
+  font-size: 42px; color: var(--ink); line-height: 1;
+}
+.score-grade {
+  font-family: 'Noto Serif TC', serif; font-size: 16px;
+  color: var(--green); margin-top: 4px; letter-spacing: 2px;
+}
+
+.dim-cards {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; margin-bottom: 24px;
+}
+.dim-card {
+  background: #fff; border-radius: var(--radius-sm);
+  padding: 16px 8px; text-align: center;
+  box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+}
+.dim-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+}
+.dim-card.phone::before { background: var(--green); }
+.dim-card.tone::before { background: var(--red); }
+.dim-card.fluency::before { background: var(--gold); }
+.dim-label {
+  font-size: 11px; color: var(--ink-40); letter-spacing: 1px; margin-bottom: 8px;
+}
+.dim-score {
+  font-family: 'Inter', sans-serif; font-weight: 600;
+  font-size: 28px; color: var(--ink);
+}
+
+.section-title {
+  font-family: 'Noto Serif TC', serif; font-weight: 600;
+  font-size: 15px; color: var(--ink-80); letter-spacing: 2px;
+  margin-bottom: 12px; padding-left: 2px;
+}
+
+.word-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 6px; margin-bottom: 24px;
+}
+.word-cell {
+  background: #fff; border-radius: var(--radius-sm);
+  padding: 10px 4px; text-align: center;
+  box-shadow: var(--shadow-sm); transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+}
+.word-cell.ok { border-bottom-color: var(--green); }
+.word-cell.warn { border-bottom-color: var(--gold); }
+.word-cell.error { border-bottom-color: var(--red); }
+.word-cell .wc-char {
+  font-family: 'Noto Serif TC', serif; font-weight: 600;
+  font-size: 18px; color: var(--ink); margin-bottom: 4px;
+}
+.word-cell .wc-score {
+  font-family: 'Inter', sans-serif; font-weight: 600;
+  font-size: 14px;
+}
+.word-cell.ok .wc-score { color: var(--green); }
+.word-cell.warn .wc-score { color: var(--gold); }
+.word-cell.error .wc-score { color: var(--red); }
+.word-cell .wc-py {
+  font-size: 10px; color: var(--ink-40); margin-top: 2px;
+}
+
+.suggestions {
+  background: var(--red-bg); border-radius: var(--radius-sm);
+  padding: 16px 18px; margin-bottom: 24px;
+}
+.suggestions li {
+  font-size: 13px; color: var(--ink-80); line-height: 1.8;
+  list-style: none; padding-left: 16px; position: relative;
+}
+.suggestions li::before {
+  content: ''; position: absolute; left: 0; top: 9px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--red);
+}
+
+.report-actions {
+  display: flex; gap: 12px; justify-content: center;
+  padding: 8px 0 32px; width: 100%;
+}
+
+/* ===== TEACHER DASHBOARD ===== */
+.teacher-content { width: 100%; padding-bottom: 32px; }
+
+.stats-row {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; margin-bottom: 20px;
+}
+.stat-card {
+  background: #fff; border-radius: var(--radius-sm);
+  padding: 16px 12px; text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.stat-value {
+  font-family: 'Inter', sans-serif; font-weight: 700;
+  font-size: 26px; color: var(--ink); margin-bottom: 4px;
+}
+.stat-label {
+  font-size: 11px; color: var(--ink-40); letter-spacing: 1px;
+}
+.stat-card.highlight .stat-value { color: var(--green); }
+
+.chart-card {
+  background: #fff; border-radius: var(--radius);
+  padding: 20px; box-shadow: var(--shadow-sm); margin-bottom: 20px;
+}
+.chart-card canvas { width: 100%; height: 160px; display: block; }
+
+.error-chars {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 10px; margin-bottom: 20px;
+}
+.error-char-card {
+  background: #fff; border-radius: var(--radius-sm);
+  padding: 14px; display: flex; align-items: center; gap: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.ec-char {
+  font-family: 'Noto Serif TC', serif; font-weight: 700;
+  font-size: 28px; color: var(--red); width: 40px; text-align: center;
+}
+.ec-info { flex: 1; }
+.ec-type { font-size: 11px; color: var(--ink-40); }
+.ec-rate {
+  font-family: 'Inter', sans-serif; font-weight: 600;
+  font-size: 14px; color: var(--ink-80);
+}
+
+.student-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.student-card {
+  background: #fff; border-radius: var(--radius-sm);
+  padding: 14px; display: flex; align-items: center; gap: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.student-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Noto Serif TC', serif; font-weight: 600;
+  font-size: 14px; color: #fff;
+}
+.student-info { flex: 1; }
+.student-name { font-size: 13px; font-weight: 500; color: var(--ink); }
+.student-score {
+  font-family: 'Inter', sans-serif; font-weight: 600;
+  font-size: 13px;
+}
+.student-grade-tag {
+  font-size: 10px; padding: 1px 6px; border-radius: 8px;
+  letter-spacing: 1px;
+}
+.grade-excellent { background: rgba(47,93,79,0.1); color: var(--green); }
+.grade-good { background: rgba(184,146,63,0.1); color: var(--gold); }
+.grade-pass { background: rgba(26,22,18,0.06); color: var(--ink-60); }
+.grade-fail { background: rgba(183,62,58,0.08); color: var(--red); }
+
+/* ===== LOADING OVERLAY ===== */
+.loading-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(245,240,230,0.85);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.loading-overlay.show { opacity: 1; pointer-events: all; }
+.loading-dots { display: flex; gap: 8px; margin-bottom: 16px; }
+.loading-dots span {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); animation: dot-bounce 1.2s ease infinite;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+.loading-text { font-size: 14px; color: var(--ink-60); letter-spacing: 2px; }
+</style>
+</head>
+<body>
+<div class="bg-texture"></div>
+
+<!-- Page 1: Cover -->
+<section class="page active" id="pg-cover">
+  <div class="cover-wrap">
+    <div class="cover-seal">AIDUCATION</div>
+    <h1 class="cover-title">枫桥夜泊</h1>
+    <p class="cover-author">唐 · 张继</p>
+    <div class="cover-divider"></div>
+    <p class="cover-school">马鞍山灵粮小学<br><span class="cover-class">四年级普通话课程</span></p>
+    <button class="btn-primary" onclick="goPage('pg-demo')">开始学习</button>
+    <p class="cover-footer">AIDUCATION · 爱教育有限公司</p>
+  </div>
+</section>
+
+<!-- Page 2: Demo / Listen -->
+<section class="page" id="pg-demo">
+  <div class="page-inner">
+    <header class="top-bar">
+      <button class="btn-back" onclick="goPage('pg-cover')">&#8592;</button>
+      <h2 class="top-title">诗文示范</h2>
+      <div class="top-spacer"></div>
+    </header>
+    <div class="poem-card">
+      <div class="poem-title-row">
+        <span class="poem-badge">七言绝句</span>
+        <span class="poem-dynasty">唐</span>
+      </div>
+      <div class="poem-lines" id="poem-lines"></div>
+      <button class="btn-listen" onclick="playDemo()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        聆听标准朗读
+      </button>
+    </div>
+    <button class="btn-primary" onclick="goPage('pg-record')">开始跟读测评</button>
+  </div>
+</section>
+
+<!-- Page 3: Record -->
+<section class="page" id="pg-record">
+  <div class="page-inner">
+    <header class="top-bar">
+      <button class="btn-back" onclick="goPage('pg-demo')">&#8592;</button>
+      <h2 class="top-title">跟读测评</h2>
+      <div class="top-spacer"></div>
+    </header>
+    <div class="record-target">
+      <p class="record-label">请朗读以下诗句</p>
+      <div class="record-line" id="record-line"></div>
+    </div>
+    <div class="record-area">
+      <canvas id="waveform" width="280" height="60"></canvas>
+      <button class="mic-btn" id="mic-btn" onclick="toggleRecord()">
+        <svg class="mic-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="1" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+      </button>
+      <p class="mic-hint" id="mic-hint">点击麦克风开始录音</p>
+    </div>
+  </div>
+</section>
+
+<!-- Page 4: Report -->
+<section class="page" id="pg-report">
+  <div class="page-inner page-scroll">
+    <header class="top-bar">
+      <button class="btn-back" onclick="goPage('pg-record')">&#8592;</button>
+      <h2 class="top-title">测评报告</h2>
+      <div class="top-spacer"></div>
+    </header>
+    <div class="report-content" id="report-content"></div>
+    <div class="report-actions">
+      <button class="btn-outline" onclick="goPage('pg-record')">重新录音</button>
+      <button class="btn-outline" onclick="goPage('pg-teacher')">教师后台</button>
+    </div>
+  </div>
+</section>
+
+<!-- Page 5: Teacher Dashboard -->
+<section class="page" id="pg-teacher">
+  <div class="page-inner page-scroll">
+    <header class="top-bar">
+      <button class="btn-back" onclick="goPage('pg-report')">&#8592;</button>
+      <h2 class="top-title">教师后台</h2>
+      <div class="top-spacer"></div>
+    </header>
+    <div class="teacher-content" id="teacher-content"></div>
+  </div>
+</section>
+
+<div class="loading-overlay" id="loading">
+  <div class="loading-dots"><span></span><span></span><span></span></div>
+  <p class="loading-text">AI 评测中</p>
+</div>
+
+<script>
+const POEM = [
+  {chars:[{c:'月',p:'yuè'},{c:'落',p:'luò'},{c:'乌',p:'wū'},{c:'啼',p:'tí'},{c:'霜',p:'shuāng'},{c:'满',p:'mǎn'},{c:'天',p:'tiān'}], punct:'，'},
+  {chars:[{c:'江',p:'jiāng'},{c:'枫',p:'fēng'},{c:'渔',p:'yú'},{c:'火',p:'huǒ'},{c:'对',p:'duì'},{c:'愁',p:'chóu'},{c:'眠',p:'mián'}], punct:'。'},
+  {chars:[{c:'姑',p:'gū'},{c:'苏',p:'sū'},{c:'城',p:'chéng'},{c:'外',p:'wài'},{c:'寒',p:'hán'},{c:'山',p:'shān'},{c:'寺',p:'sì'}], punct:'，'},
+  {chars:[{c:'夜',p:'yè'},{c:'半',p:'bàn'},{c:'钟',p:'zhōng'},{c:'声',p:'shēng'},{c:'到',p:'dào'},{c:'客',p:'kè'},{c:'船',p:'chuán'}], punct:'。'}
+];
+
+const MOCK_RESULT = {
+  total_score: 82, grade: '良',
+  dimensions: { phone_score: 85, tone_score: 76, fluency_score: 88, integrity_score: 100 },
+  words: [
+    {c:'月',p:'yuè',score:92,status:'ok'},
+    {c:'落',p:'luò',score:88,status:'ok'},
+    {c:'乌',p:'wū',score:61,status:'warn',error:'声母偏误'},
+    {c:'啼',p:'tí',score:85,status:'ok'},
+    {c:'霜',p:'shuāng',score:55,status:'error',error:'声调偏误'},
+    {c:'满',p:'mǎn',score:78,status:'warn',error:'声调偏误'},
+    {c:'天',p:'tiān',score:95,status:'ok'}
+  ],
+  suggestions: [
+    '「乌」声母 w 发音需更圆润，舌位略后',
+    '「霜」声调应为阴平（一声），保持高平调',
+    '「满」声调应为上声（三声），注意先降后升'
+  ]
+};
+
+const TEACHER_DATA = {
+  className: '4A班', total: 32, avg: 78.5, passRate: 85, excellentRate: 32,
+  distribution: [{range:'60-69',count:5},{range:'70-79',count:10},{range:'80-89',count:12},{range:'90-100',count:5}],
+  errorChars: [
+    {c:'霜',type:'声调偏误',rate:'62%'},{c:'啼',type:'韵母偏误',rate:'41%'},
+    {c:'乌',type:'声母偏误',rate:'38%'},{c:'满',type:'声调偏误',rate:'35%'}
+  ],
+  students: [
+    {name:'陈思琪',score:95,grade:'优'},{name:'林浩然',score:88,grade:'良'},
+    {name:'王子萱',score:82,grade:'良'},{name:'张铭轩',score:79,grade:'良'},
+    {name:'李欣怡',score:74,grade:'中'},{name:'黄俊杰',score:71,grade:'中'},
+    {name:'刘雨桐',score:65,grade:'中'},{name:'吴嘉欣',score:58,grade:'差'}
+  ]
+};
+
+/* ===== PAGE NAV ===== */
+function goPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'pg-teacher') setTimeout(drawDistChart, 300);
+}
+
+/* ===== RENDER POEM ===== */
+function renderPoem() {
+  const el = document.getElementById('poem-lines');
+  el.innerHTML = POEM.map(line => {
+    const chars = line.chars.map(ch =>
+      `<div class="ch"><span class="ch-py">${ch.p}</span><span class="ch-char">${ch.c}</span></div>`
+    ).join('');
+    return `<div class="poem-line-wrap">${chars}<span class="ch-punct">${line.punct}</span></div>`;
+  }).join('');
+
+  const rl = document.getElementById('record-line');
+  rl.innerHTML = POEM[0].chars.map(ch =>
+    `<div class="ch"><span class="ch-py">${ch.p}</span><span class="ch-char">${ch.c}</span></div>`
+  ).join('');
+}
+
+/* ===== TTS DEMO ===== */
+function playDemo() {
+  const btn = document.querySelector('.btn-listen');
+  if (btn.classList.contains('playing')) return;
+  const text = POEM.map(l => l.chars.map(c => c.c).join('')).join('，');
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'zh-CN'; u.rate = 0.8; u.pitch = 1;
+  u.onstart = () => btn.classList.add('playing');
+  u.onend = () => btn.classList.remove('playing');
+  u.onerror = () => btn.classList.remove('playing');
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+
+/* ===== RECORDING ===== */
+let mediaRec = null, audioChunks = [], isRecording = false, analyser = null, animFrame = null;
+
+function toggleRecord() {
+  isRecording ? stopRecord() : startRecord();
+}
+
+async function startRecord() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = ctx.createMediaStreamSource(stream);
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = 256;
+    src.connect(analyser);
+
+    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus' : 'audio/mp4';
+    mediaRec = new MediaRecorder(stream, { mimeType: mime });
+    audioChunks = [];
+    mediaRec.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRec.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      ctx.close();
+      onRecordDone();
+    };
+    mediaRec.start();
+    isRecording = true;
+    document.getElementById('mic-btn').classList.add('recording');
+    document.getElementById('mic-hint').textContent = '录音中，再次点击结束';
+    document.getElementById('waveform').classList.add('active');
+    drawWaveform();
+  } catch (e) {
+    alert('无法访问麦克风，请检查浏览器权限设置');
+  }
+}
+
+function stopRecord() {
+  if (mediaRec && mediaRec.state === 'recording') mediaRec.stop();
+  isRecording = false;
+  cancelAnimationFrame(animFrame);
+  document.getElementById('mic-btn').classList.remove('recording');
+  document.getElementById('mic-hint').textContent = '点击麦克风开始录音';
+  document.getElementById('waveform').classList.remove('active');
+}
+
+function drawWaveform() {
+  const canvas = document.getElementById('waveform');
+  const c = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const buf = new Uint8Array(analyser.frequencyBinCount);
+  function draw() {
+    animFrame = requestAnimationFrame(draw);
+    analyser.getByteTimeDomainData(buf);
+    c.clearRect(0, 0, W, H);
+    c.beginPath();
+    c.strokeStyle = '#2f5d4f';
+    c.lineWidth = 2;
+    const step = W / buf.length;
+    for (let i = 0; i < buf.length; i++) {
+      const y = (buf[i] / 255) * H;
+      i === 0 ? c.moveTo(0, y) : c.lineTo(i * step, y);
+    }
+    c.stroke();
+  }
+  draw();
+}
+
+function onRecordDone() {
+  const ld = document.getElementById('loading');
+  ld.classList.add('show');
+  setTimeout(() => {
+    ld.classList.remove('show');
+    renderReport(MOCK_RESULT);
+    goPage('pg-report');
+  }, 1800);
+}
+
+/* ===== REPORT ===== */
+function renderReport(r) {
+  const el = document.getElementById('report-content');
+  const gradeColor = r.total_score >= 90 ? 'var(--green)' : r.total_score >= 70 ? 'var(--gold)' : 'var(--red)';
+  el.innerHTML = `
+    <div class="score-ring-wrap">
+      <div class="score-ring">
+        <canvas id="ring-canvas" width="280" height="280"></canvas>
+        <div class="score-ring-inner">
+          <span class="score-num">${r.total_score}</span>
+          <span class="score-grade" style="color:${gradeColor}">${r.grade}</span>
+        </div>
+      </div>
+    </div>
+    <div class="dim-cards">
+      <div class="dim-card phone"><p class="dim-label">声韵</p><p class="dim-score">${r.dimensions.phone_score}</p></div>
+      <div class="dim-card tone"><p class="dim-label">声调</p><p class="dim-score">${r.dimensions.tone_score}</p></div>
+      <div class="dim-card fluency"><p class="dim-label">流畅度</p><p class="dim-score">${r.dimensions.fluency_score}</p></div>
+    </div>
+    <p class="section-title">逐字分析</p>
+    <div class="word-grid">
+      ${r.words.map(w => `
+        <div class="word-cell ${w.status}">
+          <div class="wc-char">${w.c}</div>
+          <div class="wc-score">${w.score}</div>
+          <div class="wc-py">${w.p}</div>
+        </div>
+      `).join('')}
+    </div>
+    <p class="section-title">纠正建议</p>
+    <ul class="suggestions">${r.suggestions.map(s => `<li>${s}</li>`).join('')}</ul>
+  `;
+  drawRing(r.total_score, gradeColor);
+}
+
+function drawRing(score, color) {
+  const canvas = document.getElementById('ring-canvas');
+  if (!canvas) return;
+  const c = canvas.getContext('2d');
+  const cx = 140, cy = 140, r = 120, lw = 10;
+  c.clearRect(0, 0, 280, 280);
+  c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2);
+  c.strokeStyle = '#e8e3da'; c.lineWidth = lw; c.lineCap = 'round'; c.stroke();
+  const angle = (score / 100) * Math.PI * 2 - Math.PI / 2;
+  c.beginPath(); c.arc(cx, cy, r, -Math.PI / 2, angle);
+  c.strokeStyle = color; c.lineWidth = lw; c.lineCap = 'round'; c.stroke();
+}
+
+/* ===== TEACHER DASHBOARD ===== */
+function renderTeacher() {
+  const d = TEACHER_DATA, el = document.getElementById('teacher-content');
+  const bgColors = ['#2f5d4f','#b8923f','#6b6259','#b73e3a'];
+  const scoreColors = {'优':'var(--green)','良':'var(--gold)','中':'var(--ink-60)','差':'var(--red)'};
+  el.innerHTML = `
+    <div class="stats-row">
+      <div class="stat-card highlight"><p class="stat-value">${d.avg}</p><p class="stat-label">班均分</p></div>
+      <div class="stat-card"><p class="stat-value">${d.passRate}%</p><p class="stat-label">合格率</p></div>
+      <div class="stat-card"><p class="stat-value">${d.excellentRate}%</p><p class="stat-label">优秀率</p></div>
+    </div>
+    <p class="section-title">成绩分布</p>
+    <div class="chart-card"><canvas id="dist-chart" width="400" height="160"></canvas></div>
+    <p class="section-title">高频错字 Top 4</p>
+    <div class="error-chars">
+      ${d.errorChars.map(ec => `
+        <div class="error-char-card">
+          <span class="ec-char">${ec.c}</span>
+          <div class="ec-info"><p class="ec-type">${ec.type}</p><p class="ec-rate">错误率 ${ec.rate}</p></div>
+        </div>
+      `).join('')}
+    </div>
+    <p class="section-title">学生成绩</p>
+    <div class="student-grid">
+      ${d.students.map((s, i) => {
+        const gc = s.grade === '优' ? 'excellent' : s.grade === '良' ? 'good' : s.grade === '中' ? 'pass' : 'fail';
+        return `
+        <div class="student-card">
+          <div class="student-avatar" style="background:${bgColors[i % 4]}">${s.name[0]}</div>
+          <div class="student-info">
+            <p class="student-name">${s.name}</p>
+            <p><span class="student-score" style="color:${scoreColors[s.grade]}">${s.score}</span>
+            <span class="student-grade-tag grade-${gc}">${s.grade}</span></p>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+  setTimeout(drawDistChart, 50);
+}
+
+function drawDistChart() {
+  const canvas = document.getElementById('dist-chart');
+  if (!canvas) return;
+  const parent = canvas.parentElement;
+  const W = parent.clientWidth - 40 || 360;
+  const H = 160;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  const c = canvas.getContext('2d');
+  c.scale(dpr, dpr);
+  const data = TEACHER_DATA.distribution;
+  const maxCount = Math.max(...data.map(d => d.count));
+  const barW = W * 0.12, gap = W * 0.08;
+  const totalW = data.length * barW + (data.length - 1) * gap;
+  const startX = (W - totalW) / 2;
+  const rawColors = ['#9e9488','#b8923f','#2f5d4f','#2f5d4f'];
+
+  c.clearRect(0, 0, W, H);
+  c.strokeStyle = '#e2ddd5'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(startX - 10, H - 30); c.lineTo(startX + totalW + 10, H - 30); c.stroke();
+
+  data.forEach((d, i) => {
+    const x = startX + i * (barW + gap);
+    const barH = (d.count / maxCount) * (H - 60);
+    const y = H - 30 - barH;
+    const rad = 4;
+    c.fillStyle = rawColors[i];
+    c.beginPath();
+    c.moveTo(x + rad, y); c.lineTo(x + barW - rad, y);
+    c.quadraticCurveTo(x + barW, y, x + barW, y + rad);
+    c.lineTo(x + barW, H - 30); c.lineTo(x, H - 30);
+    c.lineTo(x, y + rad); c.quadraticCurveTo(x, y, x + rad, y);
+    c.fill();
+    c.fillStyle = '#1a1612'; c.font = '600 13px Inter'; c.textAlign = 'center';
+    c.fillText(d.count, x + barW / 2, y - 6);
+    c.fillStyle = '#9e9488'; c.font = '11px "Noto Sans SC"';
+    c.fillText(d.range, x + barW / 2, H - 12);
+  });
+}
+
+renderPoem();
+renderTeacher();
+</script>
+</body>
+</html>
