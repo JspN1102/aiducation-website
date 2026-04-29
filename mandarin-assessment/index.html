@@ -249,12 +249,12 @@ body {
   font-family: var(--font-sans); font-size: 12px;
   color: var(--ink-40); letter-spacing: 2px; margin-bottom: 16px;
 }
-.record-line {
-  display: flex; justify-content: center; gap: 0; flex-wrap: wrap;
-}
-.record-line .ch-char { font-size: 28px; }
-.record-line .ch { width: 48px; }
-.record-line .ch-py { font-size: 12px; }
+.record-line-row .ch-char { font-size: 24px; }
+.record-line-row .ch { width: 42px; }
+.record-line-row .ch-py { font-size: 11px; }
+.record-line-row.active .ch-char { font-size: 28px; }
+.record-line-row.active .ch { width: 48px; }
+.record-line-row.active .ch-py { font-size: 12px; }
 
 .record-area {
   display: flex; flex-direction: column; align-items: center;
@@ -502,6 +502,73 @@ body {
   color: var(--ink-80); line-height: 2; margin-bottom: 24px;
   border-left: 3px solid var(--green);
 }
+
+/* Line progress dots */
+.line-progress {
+  display: flex; align-items: center; gap: 10px;
+  justify-content: center; margin-bottom: 16px;
+}
+.line-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--ink-10); transition: all 0.3s;
+}
+.line-dot.done { background: var(--green); }
+.line-dot.current { background: var(--red); animation: dot-pulse 1.2s ease infinite; }
+@keyframes dot-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(183,62,58,0.3); }
+  50% { transform: scale(1.3); box-shadow: 0 0 0 6px rgba(183,62,58,0); }
+}
+.line-progress-text {
+  font-family: var(--font-sans); font-size: 12px;
+  color: var(--ink-40); letter-spacing: 1px;
+}
+
+/* Record line states */
+.record-lines-wrap { width: 100%; }
+.record-line-row {
+  display: flex; justify-content: center; gap: 0;
+  margin-bottom: 10px; transition: all 0.3s;
+}
+.record-line-row.inactive { opacity: 0.25; transform: scale(0.92); }
+.record-line-row.active { opacity: 1; transform: scale(1); }
+.record-line-row.completed { opacity: 0.5; }
+.record-line-row.completed .ch-char { color: var(--green); }
+
+.line-check {
+  display: none; font-size: 20px; color: var(--green);
+  margin-left: 4px; align-self: center;
+}
+.record-line-row.completed .line-check { display: inline; }
+
+/* GPT report button */
+.btn-gpt {
+  font-family: var(--font-sans); font-weight: 500;
+  font-size: 14px; letter-spacing: 2px;
+  color: #fff; background: linear-gradient(135deg, var(--green), var(--green-light));
+  border: none; border-radius: 28px;
+  padding: 14px 32px; cursor: pointer;
+  transition: all 0.3s ease; width: 100%;
+  box-shadow: 0 3px 16px rgba(47,93,79,0.25);
+  margin-bottom: 16px;
+}
+.btn-gpt:hover { transform: translateY(-1px); box-shadow: 0 5px 24px rgba(47,93,79,0.3); }
+.btn-gpt:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.gpt-loading {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; padding: 16px; color: var(--ink-40);
+  font-family: var(--font-sans); font-size: 13px; letter-spacing: 1px;
+}
+.gpt-loading .spinner {
+  width: 16px; height: 16px; border: 2px solid var(--ink-10);
+  border-top-color: var(--green); border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Word grid grouped by line */
+.word-line-group { margin-bottom: 8px; }
+.word-line-group:last-child { margin-bottom: 0; }
 </style>
 </head>
 <body>
@@ -559,15 +626,16 @@ body {
       <div class="top-spacer"></div>
     </header>
     <div class="record-target">
-      <p class="record-label">請朗讀全詩</p>
-      <div id="record-line"></div>
+      <div class="line-progress" id="line-progress"></div>
+      <p class="record-label" id="record-label">第 1/4 句</p>
+      <div class="record-lines-wrap" id="record-lines"></div>
     </div>
     <div class="record-area">
       <canvas id="waveform" width="280" height="60"></canvas>
       <button class="mic-btn" id="mic-btn" onclick="toggleRecord()">
         <svg class="mic-icon" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="1" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
       </button>
-      <p class="mic-hint" id="mic-hint">點擊麥克風開始錄音</p>
+      <p class="mic-hint" id="mic-hint">第 1 句，點擊麥克風錄音</p>
     </div>
   </div>
 </section>
@@ -650,6 +718,7 @@ function goPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (id === 'pg-teacher') setTimeout(drawDistChart, 300);
+  if (id === 'pg-record') resetRecording();
 }
 
 function renderPoem() {
@@ -660,13 +729,7 @@ function renderPoem() {
     ).join('');
     return `<div class="poem-line-wrap">${chars}<span class="ch-punct">${line.punct}</span></div>`;
   }).join('');
-  const rl = document.getElementById('record-line');
-  rl.innerHTML = POEM.map(line => {
-    const chars = line.chars.map(ch =>
-      `<div class="ch"><span class="ch-py">${ch.p}</span><span class="ch-char">${ch.c}</span></div>`
-    ).join('');
-    return `<div class="poem-line-wrap">${chars}<span class="ch-punct">${line.punct}</span></div>`;
-  }).join('');
+  renderRecordPage();
 }
 
 function playDemo() {
@@ -684,11 +747,50 @@ function playDemo() {
 
 let mediaRec = null, audioChunks = [], isRecording = false, analyser = null, animFrame = null, recAudioCtx = null;
 
-const REF_TEXT = '月落乌啼霜满天，江枫渔火对愁眠。姑苏城外寒山寺，夜半钟声到客船。';
+const LINES = [
+  { ref: '月落乌啼霜满天', chars: POEM[0].chars, punct: '，' },
+  { ref: '江枫渔火对愁眠', chars: POEM[1].chars, punct: '。' },
+  { ref: '姑苏城外寒山寺', chars: POEM[2].chars, punct: '，' },
+  { ref: '夜半钟声到客船', chars: POEM[3].chars, punct: '。' }
+];
+let currentLine = 0;
+let lineResults = [null, null, null, null];
+let mergedResult = null;
+
 const PINYIN_MAP = {'月':'yuè','落':'luò','乌':'wū','啼':'tí','霜':'shuāng','满':'mǎn','天':'tiān','江':'jiāng','枫':'fēng','渔':'yú','火':'huǒ','对':'duì','愁':'chóu','眠':'mián','姑':'gū','苏':'sū','城':'chéng','外':'wài','寒':'hán','山':'shān','寺':'sì','夜':'yè','半':'bàn','钟':'zhōng','声':'shēng','到':'dào','客':'kè','船':'chuán'};
 const TRAD_MAP = {'月':'月','落':'落','乌':'烏','啼':'啼','霜':'霜','满':'滿','天':'天','江':'江','枫':'楓','渔':'漁','火':'火','对':'對','愁':'愁','眠':'眠','姑':'姑','苏':'蘇','城':'城','外':'外','寒':'寒','山':'山','寺':'寺','夜':'夜','半':'半','钟':'鐘','声':'聲','到':'到','客':'客','船':'船'};
 
-function toggleRecord() { isRecording ? stopRecord() : startRecord(); }
+function renderRecordPage() {
+  const prog = document.getElementById('line-progress');
+  prog.innerHTML = LINES.map((_, i) => {
+    const cls = i < currentLine ? 'done' : i === currentLine ? 'current' : '';
+    return `<span class="line-dot ${cls}"></span>`;
+  }).join('') + `<span class="line-progress-text">${currentLine < 4 ? (currentLine + 1) + '/4' : '完成'}</span>`;
+
+  document.getElementById('record-label').textContent =
+    currentLine < 4 ? `第 ${currentLine + 1}/4 句` : '全部完成！';
+
+  const wrap = document.getElementById('record-lines');
+  wrap.innerHTML = LINES.map((line, i) => {
+    const state = i < currentLine ? 'completed' : i === currentLine ? 'active' : 'inactive';
+    const chars = line.chars.map(ch =>
+      `<div class="ch"><span class="ch-py">${ch.p}</span><span class="ch-char">${ch.c}</span></div>`
+    ).join('');
+    return `<div class="record-line-row ${state}">${chars}<span class="ch-punct">${line.punct}</span><span class="line-check">✓</span></div>`;
+  }).join('');
+}
+
+function resetRecording() {
+  currentLine = 0;
+  lineResults = [null, null, null, null];
+  mergedResult = null;
+  renderRecordPage();
+}
+
+function toggleRecord() {
+  if (currentLine >= 4) return;
+  isRecording ? stopRecord() : startRecord();
+}
 
 async function startRecord() {
   speechSynthesis.cancel();
@@ -719,7 +821,7 @@ function stopRecord() {
   if (mediaRec && mediaRec.state === 'recording') mediaRec.stop();
   isRecording = false; cancelAnimationFrame(animFrame);
   document.getElementById('mic-btn').classList.remove('recording');
-  document.getElementById('mic-hint').textContent = '點擊麥克風開始錄音';
+  document.getElementById('mic-hint').textContent = '處理中…';
   document.getElementById('waveform').classList.remove('active');
 }
 
@@ -817,8 +919,9 @@ function mapTencentResult(resp) {
 }
 
 async function onRecordDone() {
+  if (currentLine >= 4) return;
   document.getElementById('loading').classList.add('show');
-  document.querySelector('.loading-text').textContent = 'AI 評測中';
+  document.querySelector('.loading-text').textContent = `第 ${currentLine + 1} 句評測中`;
   try {
     const blob = new Blob(audioChunks, { type: mediaRec.mimeType });
     const wavB64 = await blobToWavBase64(blob);
@@ -826,41 +929,80 @@ async function onRecordDone() {
     const resp = await fetch('/api/soe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ audio: wavB64, refText: REF_TEXT })
+      body: JSON.stringify({ audio: wavB64, refText: LINES[currentLine].ref })
     });
     if (!resp.ok) throw new Error('API ' + resp.status);
     const data = await resp.json();
     if (data.error) throw new Error(data.error);
-    const result = mapTencentResult(data);
-    document.querySelector('.loading-text').textContent = 'AI 生成診斷報告中';
-    let gptReport = '';
-    try {
-      const rr = await fetch('/api/report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ soeResult: result, poem: '楓橋夜泊' })
-      });
-      if (rr.ok) {
-        const rd = await rr.json();
-        gptReport = rd.report || '';
-      }
-    } catch (_) {}
-    result.gptReport = gptReport;
-    document.getElementById('loading').classList.remove('show');
-    renderReport(result);
-    goPage('pg-report');
+    lineResults[currentLine] = mapTencentResult(data);
   } catch (e) {
-    console.warn('API 調用失敗，使用模擬數據:', e.message);
-    if (recAudioCtx && recAudioCtx.state !== 'closed') recAudioCtx.close();
-    document.getElementById('loading').classList.remove('show');
-    renderReport(MOCK_RESULT);
-    goPage('pg-report');
+    console.warn(`第 ${currentLine + 1} 句 API 失敗:`, e.message);
+    lineResults[currentLine] = makeMockLine(currentLine);
   }
+  document.getElementById('loading').classList.remove('show');
+  currentLine++;
+  renderRecordPage();
+
+  if (currentLine >= 4) {
+    mergedResult = mergeLineResults(lineResults);
+    setTimeout(() => {
+      renderReport(mergedResult);
+      goPage('pg-report');
+    }, 800);
+  } else {
+    document.getElementById('mic-hint').textContent = `第 ${currentLine + 1} 句，點擊麥克風錄音`;
+  }
+}
+
+function makeMockLine(idx) {
+  const line = LINES[idx];
+  return {
+    total_score: MOCK_RESULT.total_score,
+    grade: MOCK_RESULT.grade,
+    dimensions: { ...MOCK_RESULT.dimensions },
+    words: line.chars.map(ch => {
+      const mock = MOCK_RESULT.words.find(w => w.c === ch.c);
+      return mock || { c: ch.c, p: ch.p, score: 80, status: 'ok', error: '' };
+    }),
+    suggestions: []
+  };
+}
+
+function mergeLineResults(results) {
+  const allWords = results.flatMap(r => r.words);
+  const dims = { phone_score: 0, tone_score: 0, fluency_score: 0, integrity_score: 0 };
+  let totalScore = 0;
+  results.forEach(r => {
+    totalScore += r.total_score;
+    dims.phone_score += r.dimensions.phone_score;
+    dims.tone_score += r.dimensions.tone_score;
+    dims.fluency_score += r.dimensions.fluency_score;
+    dims.integrity_score += r.dimensions.integrity_score;
+  });
+  const n = results.length;
+  totalScore = Math.round(totalScore / n);
+  dims.phone_score = Math.round(dims.phone_score / n);
+  dims.tone_score = Math.round(dims.tone_score / n);
+  dims.fluency_score = Math.round(dims.fluency_score / n);
+  dims.integrity_score = Math.round(dims.integrity_score / n);
+  const grade = totalScore >= 90 ? '優' : totalScore >= 75 ? '良' : totalScore >= 60 ? '中' : '差';
+  const suggestions = allWords.filter(w => w.status !== 'ok').map(w =>
+    `「${w.c}」${w.error}，得分 ${w.score}，需加強練習`
+  );
+  return {
+    total_score: totalScore, grade, dimensions: dims,
+    words: allWords,
+    suggestions: suggestions.length > 0 ? suggestions : ['發音整體良好，繼續保持']
+  };
 }
 
 function renderReport(r) {
   const el = document.getElementById('report-content');
   const gc = r.total_score >= 90 ? 'var(--green)' : r.total_score >= 70 ? 'var(--gold)' : 'var(--red)';
+  const wordGroups = [];
+  for (let i = 0; i < r.words.length; i += 7) {
+    wordGroups.push(r.words.slice(i, i + 7));
+  }
   el.innerHTML = `
     <div class="score-ring-wrap">
       <div class="score-ring">
@@ -877,20 +1019,49 @@ function renderReport(r) {
       <div class="dim-card fluency"><p class="dim-label">流暢度</p><p class="dim-score">${r.dimensions.fluency_score}</p></div>
     </div>
     <p class="section-title">逐字分析</p>
-    <div class="word-grid">
-      ${r.words.map(w => `
-        <div class="word-cell ${w.status}">
-          <div class="wc-char">${w.c}</div>
-          <div class="wc-score">${w.score}</div>
-          <div class="wc-py">${w.p}</div>
-        </div>`).join('')}
-    </div>
+    ${wordGroups.map(group => `
+      <div class="word-line-group">
+        <div class="word-grid">${group.map(w => `
+          <div class="word-cell ${w.status}">
+            <div class="wc-char">${w.c}</div>
+            <div class="wc-score">${w.score}</div>
+            <div class="wc-py">${w.p}</div>
+          </div>`).join('')}
+        </div>
+      </div>`).join('')}
     <p class="section-title">糾正建議</p>
     <ul class="suggestions">${r.suggestions.map(s => `<li>${s}</li>`).join('')}</ul>
-    ${r.gptReport ? `
-    <p class="section-title" style="margin-top:24px">AI 診斷報告</p>
-    <div class="gpt-report">${r.gptReport.replace(/\n/g, '<br>')}</div>` : ''}`;
+    <button class="btn-gpt" id="btn-gpt" onclick="generateGptReport()">生成 AI 診斷報告</button>
+    <div id="gpt-area"></div>`;
   drawRing(r.total_score, gc);
+}
+
+async function generateGptReport() {
+  const btn = document.getElementById('btn-gpt');
+  const area = document.getElementById('gpt-area');
+  btn.disabled = true;
+  btn.textContent = '報告生成中…';
+  area.innerHTML = '<div class="gpt-loading"><div class="spinner"></div>AI 老師正在分析您的朗讀…</div>';
+  try {
+    const resp = await fetch('/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ soeResult: mergedResult, poem: '楓橋夜泊' })
+    });
+    if (!resp.ok) throw new Error('API ' + resp.status);
+    const data = await resp.json();
+    const report = data.report || '';
+    if (!report) throw new Error('Empty report');
+    btn.style.display = 'none';
+    area.innerHTML = `
+      <p class="section-title" style="margin-top:8px">AI 老師診斷</p>
+      <div class="gpt-report">${report.replace(/\n/g, '<br>')}</div>`;
+  } catch (e) {
+    console.warn('GPT 報告生成失敗:', e.message);
+    btn.disabled = false;
+    btn.textContent = '重試生成報告';
+    area.innerHTML = '<p style="text-align:center;color:var(--red);font-size:13px;padding:8px 0">報告生成失敗，請重試</p>';
+  }
 }
 
 function drawRing(score, color) {
