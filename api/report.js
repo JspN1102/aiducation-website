@@ -29,7 +29,7 @@ module.exports = async function handler(req, res) {
 2. 逐字問題分析：列出每個有問題的字，說明是聲母、韻母還是聲調問題，正確讀法是什麼
 3. 練習建議：針對每個問題字給出具體練習方法（如跟讀詞語、對比練習等）
 4. 鼓勵語（1句，適合小學生）
-語氣親切專業，適合家長和老師閱讀。純文字，不要用markdown格式。`;
+語氣親切專業，適合家長和老師閱讀。純文字，不要用markdown格式，不要用星號*或任何符號標記。`;
 
   const payload = JSON.stringify({
     model: 'gpt-5.4',
@@ -58,7 +58,7 @@ module.exports = async function handler(req, res) {
         try {
           const body = Buffer.concat(chunks).toString('utf8');
           const data = JSON.parse(body);
-          const report = data.choices?.[0]?.message?.content || '';
+          const report = (data.choices?.[0]?.message?.content || '').replace(/\*/g, '');
           res.status(200).json({ report });
         } catch (e) {
           const body = Buffer.concat(chunks).toString('utf8');

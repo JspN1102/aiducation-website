@@ -902,7 +902,10 @@ function mapTencentResult(resp) {
   const grade = total >= 90 ? '優' : total >= 75 ? '良' : total >= 60 ? '中' : '差';
   const fluency = Math.round((resp.PronFluency || 0) * 100);
   const completion = Math.round((resp.PronCompletion || 0) * 100);
-  const words = (resp.Words || []).map(w => {
+  const words = (resp.Words || []).filter(w => {
+    const ch = w.Word || '';
+    return /[一-鿿]/.test(ch);
+  }).map(w => {
     const ch = w.Word || '';
     const sc = Math.round(w.PronAccuracy || 0);
     const trad = TRAD_MAP[ch] || ch;
