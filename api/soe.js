@@ -48,20 +48,19 @@ module.exports = async function handler(req, res) {
 
   const params = {
     appid: appId,
-    server_engine_type: '16k_zh',
-    text_mode: 0,
+    eval_mode: 1,
+    expired: now + 86400,
+    nonce: String(now),
     rec_mode: 1,
     ref_text: refText,
-    keyword: '',
-    eval_mode: 1,
     score_coeff: 1.5,
-    sentence_info_enabled: 0,
     secretid: secretId,
-    voice_format: 2,
-    voice_id: voiceId,
+    sentence_info_enabled: 0,
+    server_engine_type: '16k_zh',
+    text_mode: 0,
     timestamp: String(now),
-    nonce: String(now),
-    expired: now + 86400
+    voice_format: 1,
+    voice_id: voiceId
   };
 
   const { url } = buildWsUrl(params, secretKey);
