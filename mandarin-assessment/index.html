@@ -611,7 +611,7 @@ body {
   background: #fff; border-radius: var(--radius-sm);
   padding: 12px 16px; box-shadow: var(--shadow-sm);
   display: flex; flex-direction: column; align-items: center;
-  gap: 4px; cursor: pointer; transition: all 0.2s;
+  gap: 4px; transition: all 0.2s;
   border: 1.5px solid transparent; min-width: 70px;
 }
 .practice-word-card:hover { border-color: var(--green); }
@@ -621,9 +621,6 @@ body {
 }
 .practice-word-card .pw-py {
   font-family: var(--font-sans); font-size: 11px; color: var(--red);
-}
-.practice-word-card .pw-hint {
-  font-family: var(--font-sans); font-size: 10px; color: var(--ink-40);
 }
 
 /* Error book card on cover */
@@ -1224,58 +1221,25 @@ function renderPracticeSection(r) {
   area.innerHTML = `
     <p class="section-title" style="margin-top:20px">定向練習</p>
     <div class="practice-section">
-      <p style="font-size:12px;color:var(--ink-60);margin-bottom:12px">以下是需要加強的字，點擊可單獨錄音練習</p>
+      <p style="font-size:12px;color:var(--ink-60);margin-bottom:12px">以下是需要加強的字及同類字對比</p>
       ${errorWords.map(w => {
         const trad = TRAD_MAP[w.c] || w.c;
         const peers = PRACTICE_MAP[trad] || PRACTICE_MAP[w.c] || [];
         return `<div style="margin-bottom:16px">
           <p style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:8px">${trad}（${w.p}）— 得分 ${w.score}</p>
           <div class="practice-word-row">
-            <div class="practice-word-card" onclick="practiceSingleChar('${w.c}')">
+            <div class="practice-word-card" style="border-color:var(--red)">
               <span class="pw-char">${trad}</span>
               <span class="pw-py">${w.p}</span>
-              <span class="pw-hint">再練一次</span>
             </div>
-            ${peers.map(pc => `<div class="practice-word-card" onclick="practiceSingleChar('${pc}')">
+            ${peers.map(pc => `<div class="practice-word-card">
               <span class="pw-char">${pc}</span>
               <span class="pw-py">${PINYIN_MAP[pc] || ''}</span>
-              <span class="pw-hint">同類練習</span>
             </div>`).join('')}
           </div>
         </div>`;
       }).join('')}
     </div>`;
-}
-
-let practiceStream = null;
-async function practiceSingleChar(ch) {
-  if (practiceStream) { practiceStream.getTracks().forEach(t => t.stop()); practiceStream = null; }
-  try {
-    practiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    if (!recAudioCtx) recAudioCtx = new AudioContext();
-    const rec = new MediaRecorder(practiceStream);
-    const chunks = [];
-    rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-    rec.onstop = async () => {
-      practiceStream.getTracks().forEach(t => t.stop());
-      practiceStream = null;
-      const blob = new Blob(chunks, { type: rec.mimeType });
-      try {
-        const base64 = await blobToWavBase64(blob);
-        const resp = await fetch('/api/soe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ audio: base64, refText: ch })
-        });
-        const data = await resp.json();
-        const score = Math.round(data.SuggestedScore || data.PronAccuracy || 0);
-        alert(`「${TRAD_MAP[ch] || ch}」得分：${score} 分`);
-      } catch (e) { alert('評測失敗：' + e.message); }
-    };
-    rec.start();
-    alert(`正在錄音「${TRAD_MAP[ch] || ch}」，3秒後自動停止…`);
-    setTimeout(() => { if (rec.state === 'recording') rec.stop(); }, 3000);
-  } catch (e) { alert('無法使用麥克風：' + e.message); }
 }
 
 function saveErrorBook(r) {
