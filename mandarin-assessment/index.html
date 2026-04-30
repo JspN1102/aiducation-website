@@ -611,7 +611,7 @@ body {
   background: #fff; border-radius: var(--radius-sm);
   padding: 12px 16px; box-shadow: var(--shadow-sm);
   display: flex; flex-direction: column; align-items: center;
-  gap: 4px; transition: all 0.2s;
+  gap: 4px; cursor: pointer; transition: all 0.2s;
   border: 1.5px solid transparent; min-width: 70px;
 }
 .practice-word-card:hover { border-color: var(--green); }
@@ -1219,6 +1219,13 @@ const PRACTICE_MAP = {
   '到':[['刀','dāo'],['島','dǎo'],['倒','dào']]
 };
 
+function speakChar(ch) {
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(ch);
+  u.lang = 'zh-CN'; u.rate = 0.6;
+  speechSynthesis.speak(u);
+}
+
 function renderPracticeSection(r) {
   const area = document.getElementById('practice-area');
   const errorWords = r.words.filter(w => w.status !== 'ok');
@@ -1233,11 +1240,11 @@ function renderPracticeSection(r) {
         return `<div style="margin-bottom:16px">
           <p style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:8px">${trad}（${w.p}）— 得分 ${w.score}</p>
           <div class="practice-word-row">
-            <div class="practice-word-card" style="border-color:var(--red)">
+            <div class="practice-word-card" style="border-color:var(--red)" onclick="speakChar('${trad}')">
               <span class="pw-char">${trad}</span>
               <span class="pw-py">${w.p}</span>
             </div>
-            ${peers.map(([pc, py]) => `<div class="practice-word-card">
+            ${peers.map(([pc, py]) => `<div class="practice-word-card" onclick="speakChar('${pc}')">
               <span class="pw-char">${pc}</span>
               <span class="pw-py">${py}</span>
             </div>`).join('')}
