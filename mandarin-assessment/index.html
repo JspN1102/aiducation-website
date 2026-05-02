@@ -96,8 +96,8 @@ body {
   font-family: var(--font-num); font-weight: 600; font-size: 9px;
   letter-spacing: 3px; color: var(--fire);
   border: 1px solid rgba(232,145,58,0.4); padding: 2px 8px;
-  position: absolute; bottom: 60px; right: 32px;
   opacity: 0.5; transform: rotate(-2deg);
+  margin-bottom: 24px;
 }
 .cover-title {
   font-family: var(--font-serif); font-weight: 900;
@@ -696,6 +696,7 @@ body {
     <p class="cover-author">唐 · 張繼</p>
     <div class="cover-divider"></div>
     <p class="cover-school">香港馬鞍山靈糧小學<br><span class="cover-class">四年級普通話課程</span></p>
+    <div class="cover-seal">AIDUCATION</div>
     <svg class="cover-scene" viewBox="0 0 360 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M0 70 Q40 45 80 60 Q120 40 160 55 Q200 35 240 50 Q280 38 320 48 Q340 42 360 50 L360 100 L0 100Z" fill="rgba(232,220,200,0.06)"/>
       <path d="M0 80 Q60 65 120 72 Q180 60 240 68 Q300 58 360 65 L360 100 L0 100Z" fill="rgba(232,220,200,0.04)"/>
@@ -707,7 +708,6 @@ body {
       <circle cx="60" cy="25" r="12" fill="rgba(232,220,200,0.06)" stroke="rgba(232,220,200,0.1)" stroke-width="0.5"/>
     </svg>
     <button class="btn-primary" onclick="goPage('pg-demo')">開始學習</button>
-    <div class="cover-seal">AIDUCATION</div>
     <p class="cover-footer">AIDUCATION · 愛教育有限公司</p>
   </div>
 </section>
@@ -857,14 +857,15 @@ function renderPoem() {
   renderRecordPage();
 }
 
+let demoAudio = null;
 function playDemo() {
   const btn = document.querySelector('.btn-listen');
   if (btn.classList.contains('playing')) return;
-  const audio = new Audio('demo.mp3');
+  demoAudio = new Audio('demo.mp3');
   btn.classList.add('playing');
-  audio.onended = () => btn.classList.remove('playing');
-  audio.onerror = () => btn.classList.remove('playing');
-  audio.play();
+  demoAudio.onended = () => { btn.classList.remove('playing'); demoAudio = null; };
+  demoAudio.onerror = () => { btn.classList.remove('playing'); demoAudio = null; };
+  demoAudio.play();
 }
 
 let mediaRec = null, audioChunks = [], isRecording = false, analyser = null, animFrame = null, recAudioCtx = null;
@@ -919,6 +920,7 @@ function toggleRecord() {
 
 async function startRecord() {
   speechSynthesis.cancel();
+  if (demoAudio) { demoAudio.pause(); demoAudio = null; const b = document.querySelector('.btn-listen'); if (b) b.classList.remove('playing'); }
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     recAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
