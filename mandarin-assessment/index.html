@@ -840,6 +840,7 @@ const TEACHER_DATA = {
 };
 
 function goPage(id) {
+  if (demoAudio) { demoAudio.pause(); demoAudio = null; const b = document.querySelector('.btn-listen'); if (b) b.classList.remove('playing'); }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (id === 'pg-teacher') setTimeout(() => { drawDistChart(); drawRadarChart(); }, 300);
@@ -920,7 +921,6 @@ function toggleRecord() {
 
 async function startRecord() {
   speechSynthesis.cancel();
-  if (demoAudio) { demoAudio.pause(); demoAudio = null; const b = document.querySelector('.btn-listen'); if (b) b.classList.remove('playing'); }
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     recAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
