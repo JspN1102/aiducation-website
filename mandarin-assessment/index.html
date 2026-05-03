@@ -723,14 +723,32 @@ body {
 
 #pg-record .page-inner { position: relative; z-index: 2; }
 #pg-record .record-target {
-  background: rgba(255,255,255,0.82);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  background: transparent;
 }
 #pg-record .record-area {
-  background: rgba(255,255,255,0.6);
-  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-  border-radius: var(--radius); padding: 20px;
+  background: transparent;
 }
+#pg-record .top-bar { background: transparent; }
+#pg-record .record-label { color: var(--moon); text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+#pg-record .mic-hint { color: var(--moon-dim); text-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+#pg-record .record-line-row .ch-char { color: var(--moon); text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+#pg-record .record-line-row .ch-py { color: var(--moon-dim); }
+#pg-record .record-line-row.active .ch-char { color: #fff; }
+#pg-record .record-line-row.active .ch-py { color: var(--fire); }
+#pg-record .record-line-row.completed .ch-char { color: var(--green); }
+#pg-record .btn-back { color: var(--moon); }
+#pg-record .top-title { color: var(--moon); }
+#pg-record .line-progress-text { color: var(--moon-dim); }
+.btn-next-report {
+  margin-top: 16px; padding: 12px 40px;
+  background: var(--green); color: #fff; border: none;
+  border-radius: 8px; font-family: var(--font-sans);
+  font-size: 14px; cursor: pointer; letter-spacing: 2px;
+  box-shadow: 0 4px 16px rgba(42,90,74,0.3);
+  transition: all 0.3s;
+}
+.btn-next-report:hover { transform: scale(1.03); }
+.btn-next-report:active { transform: scale(0.97); }
 </style>
 </head>
 <body>
@@ -1086,6 +1104,9 @@ function resetRecording() {
   lineResults = [null, null, null, null];
   recordedBlobs = [null, null, null, null];
   mergedResult = null;
+  document.getElementById('mic-btn').style.display = '';
+  const nb = document.querySelector('.btn-next-report');
+  if (nb) nb.remove();
   renderRecordPage();
   resetScene();
 }
@@ -1253,10 +1274,16 @@ async function onRecordDone() {
 
   if (currentLine >= 4) {
     mergedResult = mergeLineResults(lineResults);
-    setTimeout(() => {
-      renderReport(mergedResult);
-      goPage('pg-report');
-    }, 800);
+    document.getElementById('mic-hint').textContent = '朗讀完成';
+    document.getElementById('mic-btn').style.display = 'none';
+    const area = document.querySelector('#pg-record .record-area');
+    if (area && !area.querySelector('.btn-next-report')) {
+      const btn = document.createElement('button');
+      btn.className = 'btn-next-report';
+      btn.textContent = '查看評測報告 →';
+      btn.onclick = () => { renderReport(mergedResult); goPage('pg-report'); };
+      area.appendChild(btn);
+    }
   } else {
     document.getElementById('mic-hint').textContent = `第 ${currentLine + 1} 句，點擊麥克風錄音`;
   }
