@@ -564,7 +564,7 @@ body {
   display: flex; justify-content: center; gap: 0;
   margin-bottom: 10px; transition: all 0.4s ease;
 }
-.record-line-row.inactive { opacity: 0.3; transform: scale(0.88); }
+.record-line-row.inactive { opacity: 0.15; transform: scale(0.88); filter: blur(0.5px); }
 .record-line-row.active { opacity: 1; transform: scale(1.05); }
 .record-line-row.completed { opacity: 0.45; }
 .record-line-row.completed .ch-char { color: var(--green); }
@@ -721,40 +721,16 @@ body {
 }
 .scene-flash.fire { animation: white-flash 0.6s ease-out forwards; }
 
-.scene-full {
-  z-index: 2; transition: opacity 2s ease, filter 2s ease;
-}
-.scene-full.revealed { opacity: 1; filter: blur(0px) saturate(1); }
-
 #pg-record .page-inner { position: relative; z-index: 2; }
 #pg-record .record-target {
-  background: transparent;
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
 #pg-record .record-area {
-  background: transparent;
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  border-radius: var(--radius); padding: 20px;
 }
-#pg-record .top-bar { background: transparent; }
-#pg-record .record-label { color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
-#pg-record .mic-hint { color: rgba(255,255,255,0.85); text-shadow: 0 1px 4px rgba(0,0,0,0.6); }
-#pg-record .record-line-row .ch-char { color: rgba(255,255,255,0.9); text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
-#pg-record .record-line-row .ch-py { color: rgba(255,255,255,0.7); text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
-#pg-record .record-line-row.active .ch-char { color: #fff; text-shadow: 0 0 10px rgba(232,145,58,0.5); }
-#pg-record .record-line-row.active .ch-py { color: var(--fire); text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
-#pg-record .record-line-row.completed .ch-char { color: var(--green); text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
-#pg-record .record-line-row.completed .ch-py { color: rgba(42,90,74,0.8); }
-#pg-record .btn-back { color: #fff; }
-#pg-record .top-title { color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
-#pg-record .line-progress-text { color: rgba(255,255,255,0.7); }
-.btn-next-report {
-  margin-top: 16px; padding: 12px 40px;
-  background: var(--green); color: #fff; border: none;
-  border-radius: 8px; font-family: var(--font-sans);
-  font-size: 14px; cursor: pointer; letter-spacing: 2px;
-  box-shadow: 0 4px 16px rgba(42,90,74,0.3);
-  transition: all 0.3s;
-}
-.btn-next-report:hover { transform: scale(1.03); }
-.btn-next-report:active { transform: scale(0.97); }
 </style>
 </head>
 <body>
@@ -820,7 +796,6 @@ body {
     <img class="scene-layer" id="scene-layer-2" src="img/layer-2-river.png" alt="">
     <img class="scene-layer" id="scene-layer-3" src="img/layer-3-temple.png" alt="">
     <img class="scene-layer" id="scene-layer-4" src="img/layer-4-boat.png" alt="">
-    <img class="scene-layer scene-full" id="scene-full" src="img/full-scene.png" alt="">
     <canvas class="scene-canvas" id="scene-canvas"></canvas>
     <div class="scene-flash"></div>
   </div>
@@ -1072,10 +1047,6 @@ function revealSceneLayer(n) {
       setTimeout(() => sceneAnim.addBellRipple(), 400);
       setTimeout(() => sceneAnim.addBellRipple(), 800);
     }
-    setTimeout(() => {
-      const full = document.getElementById('scene-full');
-      if (full) full.classList.add('revealed');
-    }, 1200);
   }
   if (sceneAnim) sceneAnim.setLayers(n);
 }
@@ -1085,8 +1056,6 @@ function resetScene() {
     const el = document.getElementById('scene-layer-' + i);
     if (el) { el.classList.remove('revealed', 'ink-wash'); el.style.animation = ''; }
   }
-  const full = document.getElementById('scene-full');
-  if (full) full.classList.remove('revealed');
   const flash = document.querySelector('.scene-flash');
   if (flash) flash.classList.remove('fire');
   if (sceneAnim) sceneAnim.reset();
@@ -1117,9 +1086,6 @@ function resetRecording() {
   lineResults = [null, null, null, null];
   recordedBlobs = [null, null, null, null];
   mergedResult = null;
-  document.getElementById('mic-btn').style.display = '';
-  const nb = document.querySelector('.btn-next-report');
-  if (nb) nb.remove();
   renderRecordPage();
   resetScene();
 }
@@ -1287,16 +1253,10 @@ async function onRecordDone() {
 
   if (currentLine >= 4) {
     mergedResult = mergeLineResults(lineResults);
-    document.getElementById('mic-hint').textContent = '朗讀完成';
-    document.getElementById('mic-btn').style.display = 'none';
-    const area = document.querySelector('#pg-record .record-area');
-    if (area && !area.querySelector('.btn-next-report')) {
-      const btn = document.createElement('button');
-      btn.className = 'btn-next-report';
-      btn.textContent = '查看評測報告 →';
-      btn.onclick = () => { renderReport(mergedResult); goPage('pg-report'); };
-      area.appendChild(btn);
-    }
+    setTimeout(() => {
+      renderReport(mergedResult);
+      goPage('pg-report');
+    }, 800);
   } else {
     document.getElementById('mic-hint').textContent = `第 ${currentLine + 1} 句，點擊麥克風錄音`;
   }
