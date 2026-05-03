@@ -684,53 +684,6 @@ body {
   width: 40px; height: 40px; display: flex;
   align-items: center; justify-content: center;
 }
-
-/* --- poem scene background (record page) --- */
-.poem-scene {
-  position: absolute; inset: 0; z-index: 0;
-  overflow: hidden; pointer-events: none;
-}
-.scene-layer {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%; object-fit: cover;
-  opacity: 0; filter: blur(6px) saturate(0.3);
-  transition: opacity 1.2s ease, filter 1.2s ease;
-}
-.scene-layer.revealed {
-  opacity: 0.7; filter: blur(0px) saturate(1);
-}
-.scene-canvas {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-}
-@keyframes ink-wash-in {
-  0%   { clip-path: circle(0% at 50% 50%); opacity: 0; }
-  100% { clip-path: circle(75% at 50% 50%); opacity: 0.7; }
-}
-.scene-layer.ink-wash {
-  animation: ink-wash-in 1.5s ease-out forwards;
-  filter: blur(0px) saturate(1);
-}
-@keyframes white-flash {
-  0%   { opacity: 0.8; }
-  100% { opacity: 0; }
-}
-.scene-flash {
-  position: absolute; inset: 0; z-index: 1;
-  background: #fff; opacity: 0; pointer-events: none;
-}
-.scene-flash.fire { animation: white-flash 0.6s ease-out forwards; }
-
-#pg-record .page-inner { position: relative; z-index: 2; }
-#pg-record .record-target {
-  background: rgba(255,255,255,0.82);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-}
-#pg-record .record-area {
-  background: rgba(255,255,255,0.6);
-  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-  border-radius: var(--radius); padding: 20px;
-}
 </style>
 </head>
 <body>
@@ -791,14 +744,6 @@ body {
 
 <!-- Page 3: Record -->
 <section class="page" id="pg-record">
-  <div class="poem-scene" id="poem-scene">
-    <img class="scene-layer" id="scene-layer-1" src="img/layer-1-sky.png" alt="">
-    <img class="scene-layer" id="scene-layer-2" src="img/layer-2-river.png" alt="">
-    <img class="scene-layer" id="scene-layer-3" src="img/layer-3-temple.png" alt="">
-    <img class="scene-layer" id="scene-layer-4" src="img/layer-4-boat.png" alt="">
-    <canvas class="scene-canvas" id="scene-canvas"></canvas>
-    <div class="scene-flash"></div>
-  </div>
   <div class="page-inner">
     <header class="top-bar">
       <button class="btn-back" onclick="goPage('pg-demo')">&#8592;</button>
@@ -896,7 +841,6 @@ const TEACHER_DATA = {
 
 function goPage(id) {
   if (demoAudio) { demoAudio.pause(); demoAudio = null; const b = document.querySelector('.btn-listen'); if (b) b.classList.remove('playing'); }
-  if (id !== 'pg-record' && sceneAnim) sceneAnim.stop();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (id === 'pg-teacher') setTimeout(() => { drawDistChart(); drawRadarChart(); }, 300);
@@ -942,125 +886,6 @@ let mergedResult = null;
 const PINYIN_MAP = {'月':'yuè','落':'luò','乌':'wū','啼':'tí','霜':'shuāng','满':'mǎn','天':'tiān','江':'jiāng','枫':'fēng','渔':'yú','火':'huǒ','对':'duì','愁':'chóu','眠':'mián','姑':'gū','苏':'sū','城':'chéng','外':'wài','寒':'hán','山':'shān','寺':'sì','夜':'yè','半':'bàn','钟':'zhōng','声':'shēng','到':'dào','客':'kè','船':'chuán'};
 const TRAD_MAP = {'月':'月','落':'落','乌':'烏','啼':'啼','霜':'霜','满':'滿','天':'天','江':'江','枫':'楓','渔':'漁','火':'火','对':'對','愁':'愁','眠':'眠','姑':'姑','苏':'蘇','城':'城','外':'外','寒':'寒','山':'山','寺':'寺','夜':'夜','半':'半','钟':'鐘','声':'聲','到':'到','客':'客','船':'船'};
 
-let sceneAnim = null;
-
-class SceneCanvas {
-  constructor(canvas) {
-    this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
-    this.dpr = window.devicePixelRatio || 1;
-    this.running = false;
-    this.t = 0;
-    this.layers = 0;
-    this.ripples = [];
-    this.resize();
-    window.addEventListener('resize', () => this.resize());
-  }
-  resize() {
-    const r = this.canvas.parentElement.getBoundingClientRect();
-    this.w = r.width; this.h = r.height;
-    this.canvas.width = this.w * this.dpr;
-    this.canvas.height = this.h * this.dpr;
-    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-  }
-  start() {
-    if (this.running) return;
-    this.running = true; this.t = 0; this._raf();
-  }
-  stop() {
-    this.running = false;
-    if (this._rafId) cancelAnimationFrame(this._rafId);
-  }
-  reset() {
-    this.stop(); this.layers = 0; this.ripples = [];
-    this.ctx.clearRect(0, 0, this.w, this.h);
-  }
-  setLayers(n) { this.layers = n; }
-  addBellRipple() {
-    this.ripples.push({ cx: this.w * 0.5, cy: this.h * 0.7, r: 0, maxR: this.w * 0.4, alpha: 0.5 });
-  }
-  _raf() {
-    if (!this.running) return;
-    this._rafId = requestAnimationFrame(() => { this.t += 1/30; this._draw(); this._raf(); });
-  }
-  _draw() {
-    const { ctx, w, h, t, layers } = this;
-    ctx.clearRect(0, 0, w, h);
-    if (layers >= 1) {
-      const flicker = 0.6 + 0.4 * Math.sin(t * 3) * Math.sin(t * 1.7);
-      const grd = ctx.createRadialGradient(w*0.75, h*0.55, 0, w*0.75, h*0.55, 60);
-      grd.addColorStop(0, `rgba(232,145,58,${(0.35*flicker).toFixed(3)})`);
-      grd.addColorStop(1, 'rgba(232,145,58,0)');
-      ctx.fillStyle = grd; ctx.fillRect(0, 0, w, h);
-    }
-    if (layers >= 2) {
-      const pulse = 0.8 + 0.2 * Math.sin(t * 0.5);
-      const mg = ctx.createRadialGradient(w*0.3, h*0.15, 0, w*0.3, h*0.15, 120);
-      mg.addColorStop(0, `rgba(232,220,200,${(0.12*pulse).toFixed(3)})`);
-      mg.addColorStop(1, 'rgba(232,220,200,0)');
-      ctx.fillStyle = mg; ctx.fillRect(0, 0, w, h);
-    }
-    if (layers >= 3) {
-      ctx.save(); ctx.globalAlpha = 0.08;
-      ctx.strokeStyle = '#e8dcc8'; ctx.lineWidth = 1;
-      for (let y = h*0.6; y < h*0.85; y += 12) {
-        ctx.beginPath();
-        for (let x = 0; x <= w; x += 4) {
-          const dy = Math.sin(x*0.02 + t*1.5 + y*0.1) * 3;
-          x === 0 ? ctx.moveTo(x, y+dy) : ctx.lineTo(x, y+dy);
-        }
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-    for (let i = this.ripples.length - 1; i >= 0; i--) {
-      const rp = this.ripples[i];
-      rp.r += 1.5; rp.alpha -= 0.004;
-      if (rp.alpha <= 0) { this.ripples.splice(i, 1); continue; }
-      ctx.beginPath(); ctx.arc(rp.cx, rp.cy, rp.r, 0, Math.PI*2);
-      ctx.strokeStyle = `rgba(232,220,200,${rp.alpha.toFixed(3)})`;
-      ctx.lineWidth = 1.5; ctx.stroke();
-    }
-  }
-}
-
-function initScene() {
-  const c = document.getElementById('scene-canvas');
-  if (!c) return;
-  sceneAnim = new SceneCanvas(c);
-}
-
-function revealSceneLayer(n) {
-  const el = document.getElementById('scene-layer-' + n);
-  if (!el) return;
-  if (n === 1) {
-    el.classList.add('ink-wash');
-    if (sceneAnim) sceneAnim.start();
-  } else {
-    el.classList.add('revealed');
-  }
-  if (n === 4) {
-    const flash = document.querySelector('.scene-flash');
-    if (flash) { flash.classList.remove('fire'); void flash.offsetWidth; flash.classList.add('fire'); }
-    if (sceneAnim) {
-      sceneAnim.addBellRipple();
-      setTimeout(() => sceneAnim.addBellRipple(), 400);
-      setTimeout(() => sceneAnim.addBellRipple(), 800);
-    }
-  }
-  if (sceneAnim) sceneAnim.setLayers(n);
-}
-
-function resetScene() {
-  for (let i = 1; i <= 4; i++) {
-    const el = document.getElementById('scene-layer-' + i);
-    if (el) { el.classList.remove('revealed', 'ink-wash'); el.style.animation = ''; }
-  }
-  const flash = document.querySelector('.scene-flash');
-  if (flash) flash.classList.remove('fire');
-  if (sceneAnim) sceneAnim.reset();
-}
-
 function renderRecordPage() {
   const prog = document.getElementById('line-progress');
   prog.innerHTML = LINES.map((_, i) => {
@@ -1087,7 +912,6 @@ function resetRecording() {
   recordedBlobs = [null, null, null, null];
   mergedResult = null;
   renderRecordPage();
-  resetScene();
 }
 
 function toggleRecord() {
@@ -1248,7 +1072,6 @@ async function onRecordDone() {
   }
   document.getElementById('loading').classList.remove('show');
   currentLine++;
-  revealSceneLayer(currentLine);
   renderRecordPage();
 
   if (currentLine >= 4) {
@@ -1642,7 +1465,6 @@ function drawRadarChart() {
 renderPoem();
 renderTeacher();
 showErrorBookCard();
-initScene();
 </script>
 </body>
 </html>
