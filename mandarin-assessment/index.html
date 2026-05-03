@@ -1155,7 +1155,7 @@ function renderReport(r) {
       <div class="dim-card fluency"><p class="dim-label">流暢度</p><p class="dim-score">${r.dimensions.fluency_score}</p></div>
     </div>
     <div class="playback-row">
-      ${LINES.map((l, i) => recordedBlobs[i] ? `<button class="btn-play-line" onclick="playLineRecording(${i})"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg>第${i+1}句</button>` : '').join('')}
+      ${LINES.map((l, i) => recordedBlobs[i] ? `<button class="btn-play-line" onclick="playLineRecording(${i},this)"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg>第${i+1}句</button>` : '').join('')}
       ${recordedBlobs.some(b => b) ? `<button class="btn-play-line" onclick="playAllRecordings()" style="border-color:var(--gold);color:var(--gold);background:var(--gold-bg)"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg>全部回放</button>` : ''}
     </div>
     <p class="section-title">逐字分析</p>
@@ -1230,21 +1230,20 @@ async function generateGptReport() {
   }
 }
 
-function playLineRecording(idx) {
+function playLineRecording(idx, el) {
   if (playbackAudio) { playbackAudio.pause(); playbackAudio = null; }
-  document.querySelectorAll('.btn-play-line').forEach(b => b.classList.remove('playing'));
+  document.querySelectorAll('.playback-row .btn-play-line').forEach(b => { b.classList.remove('playing'); b.style.removeProperty('color'); b.style.removeProperty('background'); b.style.removeProperty('border-color'); });
   if (!recordedBlobs[idx]) return;
   const url = URL.createObjectURL(recordedBlobs[idx]);
   playbackAudio = new Audio(url);
-  const btn = document.querySelectorAll('.btn-play-line')[idx];
-  if (btn) btn.classList.add('playing');
-  playbackAudio.onended = () => { if (btn) btn.classList.remove('playing'); URL.revokeObjectURL(url); playbackAudio = null; };
+  if (el) el.classList.add('playing');
+  playbackAudio.onended = () => { if (el) el.classList.remove('playing'); URL.revokeObjectURL(url); playbackAudio = null; };
   playbackAudio.play();
 }
 
 function playAllRecordings() {
   if (playbackAudio) { playbackAudio.pause(); playbackAudio = null; }
-  document.querySelectorAll('.btn-play-line').forEach(b => b.classList.remove('playing'));
+  document.querySelectorAll('.playback-row .btn-play-line').forEach(b => { b.classList.remove('playing'); b.style.removeProperty('color'); b.style.removeProperty('background'); b.style.removeProperty('border-color'); });
   const blobs = recordedBlobs.filter(b => b);
   if (!blobs.length) return;
   let i = 0;
