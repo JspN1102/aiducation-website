@@ -79,8 +79,7 @@ body {
 .page-scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 32px; }
 
 /* ===== COVER ===== */
-#pg-cover { background: var(--night); }
-#pg-cover .bg-texture { display: none; }
+#pg-cover { background: var(--paper); }
 .cover-wrap {
   display: flex; flex-direction: column; align-items: center;
   justify-content: center; height: 100%; padding: 40px 24px; gap: 0;
@@ -89,38 +88,37 @@ body {
 .cover-avatar {
   width: 56px; height: 56px; border-radius: 50%;
   object-fit: cover; object-position: center top;
-  border: 2px solid rgba(232,220,200,0.3);
+  border: 2px solid var(--ink-10);
   margin-bottom: 20px; opacity: 0.9;
 }
 .cover-seal {
   font-family: var(--font-num); font-weight: 600; font-size: 9px;
   letter-spacing: 3px; color: var(--fire);
   border: 1px solid rgba(232,145,58,0.4); padding: 2px 8px;
-  opacity: 0.5; transform: rotate(-2deg);
+  opacity: 0.6; transform: rotate(-2deg);
   margin-bottom: 24px;
 }
 .cover-title {
   font-family: var(--font-serif); font-weight: 900;
   font-size: clamp(48px, 11vw, 64px); letter-spacing: 14px;
-  color: var(--moon); line-height: 1.2; margin-bottom: 12px;
-  text-shadow: 0 0 40px rgba(232,220,200,0.1);
+  color: var(--ink); line-height: 1.2; margin-bottom: 12px;
 }
 .cover-author {
   font-family: var(--font-serif); font-weight: 400;
-  font-size: 14px; color: var(--moon-dim); letter-spacing: 6px;
+  font-size: 14px; color: var(--ink-60); letter-spacing: 6px;
   margin-bottom: 20px;
 }
 .cover-divider {
   width: 32px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(232,220,200,0.25), transparent);
+  background: linear-gradient(90deg, transparent, var(--ink-20), transparent);
   margin-bottom: 20px;
 }
 .cover-school {
   font-family: var(--font-sans); font-weight: 300;
-  font-size: 12px; color: rgba(232,220,200,0.4); text-align: center;
+  font-size: 12px; color: var(--ink-40); text-align: center;
   line-height: 2; letter-spacing: 1px; margin-bottom: 32px;
 }
-.cover-class { font-size: 11px; color: rgba(232,220,200,0.3); }
+.cover-class { font-size: 11px; color: var(--ink-40); }
 .cover-scene {
   width: 100%; max-width: 360px; height: 100px;
   margin-bottom: 28px; opacity: 0.7;
@@ -128,7 +126,7 @@ body {
 .cover-footer {
   position: absolute; bottom: 24px;
   font-family: var(--font-num); font-size: 9px;
-  color: rgba(232,220,200,0.2); letter-spacing: 2px;
+  color: var(--ink-20); letter-spacing: 2px;
 }
 
 /* ===== BUTTONS ===== */
@@ -145,12 +143,11 @@ body {
 .btn-primary:active { transform: scale(0.96) translateY(0); box-shadow: 0 1px 8px rgba(42,90,74,0.2); }
 
 #pg-cover .btn-primary {
-  background: transparent; color: var(--moon);
-  border: 1.5px solid rgba(232,220,200,0.35);
-  box-shadow: none; border-radius: var(--radius-sm);
+  background: var(--green); color: #fff;
+  border: none; border-radius: var(--radius-sm);
 }
-#pg-cover .btn-primary:hover { background: rgba(232,220,200,0.08); border-color: var(--moon-dim); }
-#pg-cover .btn-primary:active { transform: scale(0.96); background: rgba(232,220,200,0.12); }
+#pg-cover .btn-primary:hover { background: var(--green-light); }
+#pg-cover .btn-primary:active { transform: scale(0.96); }
 
 .btn-outline {
   font-family: var(--font-sans); font-weight: 500;
@@ -639,7 +636,6 @@ body {
 .btn-play-line.playing { background: var(--green); color: #fff; border-color: var(--green); }
 .btn-play-line:active { transform: scale(0.95); }
 .btn-play-line svg { width: 12px; height: 12px; }
-}
 
 /* Practice section */
 .practice-section { margin-bottom: 24px; }
@@ -698,14 +694,14 @@ body {
     <p class="cover-school">香港馬鞍山靈糧小學<br><span class="cover-class">四年級普通話課程</span></p>
     <div class="cover-seal">AIDUCATION</div>
     <svg class="cover-scene" viewBox="0 0 360 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M0 70 Q40 45 80 60 Q120 40 160 55 Q200 35 240 50 Q280 38 320 48 Q340 42 360 50 L360 100 L0 100Z" fill="rgba(232,220,200,0.06)"/>
-      <path d="M0 80 Q60 65 120 72 Q180 60 240 68 Q300 58 360 65 L360 100 L0 100Z" fill="rgba(232,220,200,0.04)"/>
-      <line x1="0" y1="78" x2="360" y2="78" stroke="rgba(232,220,200,0.08)" stroke-width="0.5"/>
-      <line x1="0" y1="80" x2="360" y2="80" stroke="rgba(232,220,200,0.05)" stroke-width="0.3"/>
+      <path d="M0 70 Q40 45 80 60 Q120 40 160 55 Q200 35 240 50 Q280 38 320 48 Q340 42 360 50 L360 100 L0 100Z" fill="rgba(26,22,18,0.04)"/>
+      <path d="M0 80 Q60 65 120 72 Q180 60 240 68 Q300 58 360 65 L360 100 L0 100Z" fill="rgba(26,22,18,0.03)"/>
+      <line x1="0" y1="78" x2="360" y2="78" stroke="rgba(26,22,18,0.06)" stroke-width="0.5"/>
+      <line x1="0" y1="80" x2="360" y2="80" stroke="rgba(26,22,18,0.04)" stroke-width="0.3"/>
       <circle cx="280" cy="62" r="2.5" fill="#e8913a" opacity="0.8"/>
       <circle cx="280" cy="62" r="6" fill="#e8913a" opacity="0.15"/>
       <circle cx="120" cy="68" r="1.5" fill="#e8913a" opacity="0.4"/>
-      <circle cx="60" cy="25" r="12" fill="rgba(232,220,200,0.06)" stroke="rgba(232,220,200,0.1)" stroke-width="0.5"/>
+      <circle cx="60" cy="25" r="12" fill="rgba(26,22,18,0.03)" stroke="rgba(26,22,18,0.06)" stroke-width="0.5"/>
     </svg>
     <button class="btn-primary" onclick="goPage('pg-demo')">開始學習</button>
     <p class="cover-footer">AIDUCATION · 愛教育有限公司</p>
