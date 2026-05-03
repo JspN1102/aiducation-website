@@ -911,6 +911,9 @@ function resetRecording() {
   lineResults = [null, null, null, null];
   recordedBlobs = [null, null, null, null];
   mergedResult = null;
+  document.getElementById('mic-btn').style.display = '';
+  const nb = document.querySelector('.btn-next-report');
+  if (nb) nb.remove();
   renderRecordPage();
 }
 
@@ -1076,10 +1079,16 @@ async function onRecordDone() {
 
   if (currentLine >= 4) {
     mergedResult = mergeLineResults(lineResults);
-    setTimeout(() => {
-      renderReport(mergedResult);
-      goPage('pg-report');
-    }, 800);
+    document.getElementById('mic-hint').textContent = '朗讀完成';
+    document.getElementById('mic-btn').style.display = 'none';
+    const area = document.querySelector('#pg-record .record-area');
+    if (area && !area.querySelector('.btn-next-report')) {
+      const btn = document.createElement('button');
+      btn.className = 'btn-primary btn-next-report';
+      btn.textContent = '查看評測報告 →';
+      btn.onclick = () => { renderReport(mergedResult); goPage('pg-report'); };
+      area.appendChild(btn);
+    }
   } else {
     document.getElementById('mic-hint').textContent = `第 ${currentLine + 1} 句，點擊麥克風錄音`;
   }
@@ -1267,7 +1276,8 @@ const PRACTICE_MAP = {
   '天':[['甜','tián'],['田','tián'],['聽','tīng']],'江':[['講','jiǎng'],['將','jiāng'],['獎','jiǎng']],
   '火':[['或','huò'],['活','huó'],['話','huà']],'外':[['歪','wāi'],['萬','wàn'],['忘','wàng']],
   '夜':[['也','yě'],['頁','yè'],['業','yè']],'半':[['班','bān'],['搬','bān'],['辦','bàn']],
-  '到':[['刀','dāo'],['島','dǎo'],['倒','dào']]
+  '到':[['刀','dāo'],['島','dǎo'],['倒','dào']],
+  '山':[['三','sān'],['善','shàn'],['閃','shǎn']]
 };
 
 function speakChar(ch) {
