@@ -319,25 +319,24 @@ body {
 
 /* --- scene window (record page) --- */
 .scene-window {
-  width: 100%; max-width: 400px; height: 180px;
+  width: 100%; aspect-ratio: 16/9;
   border-radius: var(--radius); overflow: hidden;
   position: relative; margin-top: 8px; margin-bottom: 16px;
   background: var(--night); box-shadow: var(--shadow-md);
   flex-shrink: 0;
 }
-.scene-window .scene-layer {
+.scene-img {
   position: absolute; inset: 0;
-  width: 100%; height: 100%; object-fit: cover;
-  opacity: 0; transition: opacity 1.2s ease;
+  width: 100%; height: 100%; object-fit: contain;
+  transition: opacity 1.2s ease;
 }
-.scene-window .scene-layer.revealed { opacity: 1; }
-.scene-window .scene-layer:first-child { opacity: 0.3; }
-.scene-window .scene-layer:first-child.revealed { opacity: 1; }
+.scene-front { opacity: 1; z-index: 1; }
+.scene-back { opacity: 0; z-index: 0; }
 .scene-hint {
-  position: absolute; inset: 0;
+  position: absolute; inset: 0; z-index: 2;
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font-serif); font-size: 12px;
-  color: rgba(232,220,200,0.4); letter-spacing: 2px;
+  color: rgba(232,220,200,0.5); letter-spacing: 2px;
   pointer-events: none; transition: opacity 0.8s;
 }
 .scene-hint.hidden { opacity: 0; }
@@ -791,11 +790,9 @@ body {
       <p class="mic-hint" id="mic-hint">第 1 句，點擊麥克風錄音</p>
     </div>
     <div class="scene-window" id="scene-window">
-      <img class="scene-layer" id="scene-layer-1" src="img/layer-1-sky.png" alt="">
-      <img class="scene-layer" id="scene-layer-2" src="img/layer-2-river.png" alt="">
-      <img class="scene-layer" id="scene-layer-3" src="img/layer-3-temple.png" alt="">
-      <img class="scene-layer" id="scene-layer-4" src="img/layer-4-boat.png" alt="">
-      <p class="scene-hint">每完成一句，畫卷徐徐展開…</p>
+      <img class="scene-img scene-front" id="scene-front" src="img/layer-1.png" alt="">
+      <img class="scene-img scene-back" id="scene-back" src="img/layer-1.png" alt="">
+      <p class="scene-hint" id="scene-hint">每完成一句，畫卷徐徐展開…</p>
     </div>
   </div>
 </section>
@@ -960,21 +957,31 @@ function renderRecordPage() {
   }).join('');
 }
 
+const SCENE_SRCS = ['img/layer-1.png','img/layer-2.png','img/layer-3.png','img/layer-4.png'];
+
 function revealSceneLayer(n) {
-  const el = document.getElementById('scene-layer-' + n);
-  if (el) el.classList.add('revealed');
-  if (n >= 1) {
-    const hint = document.querySelector('.scene-hint');
-    if (hint) hint.classList.add('hidden');
-  }
+  if (n < 1 || n > 4) return;
+  const front = document.getElementById('scene-front');
+  const back = document.getElementById('scene-back');
+  const hint = document.getElementById('scene-hint');
+  if (!front || !back) return;
+  if (hint) hint.classList.add('hidden');
+  back.src = SCENE_SRCS[n - 1];
+  back.style.opacity = '1';
+  front.style.opacity = '0';
+  setTimeout(() => {
+    front.src = SCENE_SRCS[n - 1];
+    front.style.opacity = '1';
+    back.style.opacity = '0';
+  }, 1300);
 }
 
 function resetScene() {
-  for (let i = 1; i <= 4; i++) {
-    const el = document.getElementById('scene-layer-' + i);
-    if (el) el.classList.remove('revealed');
-  }
-  const hint = document.querySelector('.scene-hint');
+  const front = document.getElementById('scene-front');
+  const back = document.getElementById('scene-back');
+  const hint = document.getElementById('scene-hint');
+  if (front) { front.src = SCENE_SRCS[0]; front.style.opacity = '1'; }
+  if (back) { back.src = SCENE_SRCS[0]; back.style.opacity = '0'; }
   if (hint) hint.classList.remove('hidden');
 }
 
