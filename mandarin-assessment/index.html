@@ -889,7 +889,7 @@ let demoAudio = null;
 function playDemo() {
   const btn = document.querySelector('.btn-listen');
   if (btn.classList.contains('playing')) return;
-  demoAudio = new Audio('recital.mp4');
+  demoAudio = new Audio('recital-audio.mp4');
   btn.classList.add('playing');
   demoAudio.onended = () => { btn.classList.remove('playing'); demoAudio = null; };
   demoAudio.onerror = () => { btn.classList.remove('playing'); demoAudio = null; };
