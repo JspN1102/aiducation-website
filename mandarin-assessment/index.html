@@ -1128,11 +1128,13 @@ function mapTencentResult(resp) {
       const worst = phones.reduce((a, b) => a.score < b.score ? a : b);
       if (worst.score < 60) {
         const ph = worst.phone;
+        const PHONE_DISPLAY = {v:'ü',ve:'üe',vn:'ün',van:'üan',i2:'i',a1:'a',o1:'o',e1:'e',u1:'u'};
+        const display = PHONE_DISPLAY[ph] || ph.replace(/[0-9]/g, '');
         const isInitial = /^(b|p|m|f|d|t|n|l|g|k|h|j|q|x|zh|ch|sh|r|z|c|s|y|w)$/i.test(ph);
         const isTone = /^[1-5]$/.test(ph);
-        if (isInitial) error = `聲母偏誤，正確聲母為 ${ph}`;
+        if (isInitial) error = `聲母偏誤（${display}）`;
         else if (isTone) error = `聲調偏誤，應為第${ph}聲`;
-        else error = `韻母偏誤，正確韻母為 ${ph.replace(/[0-9]/g, '')}`;
+        else error = `韻母偏誤（${display}）`;
       }
     }
     return { c: trad, p: py, score: Math.max(0, sc), status, error, phones };
@@ -1212,6 +1214,7 @@ function playbackLine(idx) {
 function reRecordLine(idx) {
   recordedBlobs[idx] = null;
   lineResults[idx] = null;
+  currentLine = idx;
   clearLineReview();
   document.getElementById('mic-btn').style.display = '';
   document.getElementById('mic-hint').textContent = `第 ${idx + 1} 句，重新錄音`;
