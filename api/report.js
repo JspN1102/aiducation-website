@@ -38,15 +38,10 @@ module.exports = async function handler(req, res) {
 語氣親切專業，適合家長和老師閱讀。純文字，不要用markdown格式，不要用星號*或任何符號標記。`;
 
   const payload = JSON.stringify({
-    model: 'gpt-4o-mini',
+    model: 'gpt-5.4',
     messages: [{ role: 'user', content: prompt }],
-    temperature: 0.7,
-    stream: true
+    temperature: 0.7
   });
-
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
 
   return new Promise((resolve) => {
     const url = new URL(apiBase);
@@ -63,45 +58,30 @@ module.exports = async function handler(req, res) {
     };
 
     const apiReq = https.request(reqOpts, (apiRes) => {
-      let buf = '';
-      apiRes.on('data', chunk => {
-        buf += chunk.toString('utf8');
-        const lines = buf.split('\n');
-        buf = lines.pop();
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith('data: ')) continue;
-          const data = trimmed.slice(6);
-          if (data === '[DONE]') {
-            res.write('data: [DONE]\n\n');
-            continue;
-          }
-          try {
-            const parsed = JSON.parse(data);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              const clean = content.replace(/\*/g, '');
-              res.write(`data: ${JSON.stringify({ t: clean })}\n\n`);
-            }
-          } catch (_) {}
-        }
-      });
+      const chunks = [];
+      apiRes.on('data', chunk => chunks.push(chunk));
       apiRes.on('end', () => {
-        res.end();
+        try {
+          const body = Buffer.concat(chunks).toString('utf8');
+          const data = JSON.parse(body);
+          const report = (data.choices?.[0]?.message?.content || '').replace(/\*/g, '');
+          res.status(200).json({ report });
+        } catch (e) {
+          const body = Buffer.concat(chunks).toString('utf8');
+          res.status(502).json({ error: 'Invalid GPT response', detail: body.slice(0, 300) });
+        }
         resolve();
       });
     });
 
     apiReq.on('error', (e) => {
-      res.write(`data: ${JSON.stringify({ error: e.message })}\n\n`);
-      res.end();
+      res.status(502).json({ error: e.message });
       resolve();
     });
 
     apiReq.setTimeout(30000, () => {
       apiReq.destroy();
-      res.write(`data: ${JSON.stringify({ error: 'timeout' })}\n\n`);
-      res.end();
+      res.status(504).json({ error: 'GPT timeout' });
       resolve();
     });
 
