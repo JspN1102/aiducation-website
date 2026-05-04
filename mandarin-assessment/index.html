@@ -848,24 +848,6 @@ const POEM = [
   {chars:[{c:'夜',p:'yè'},{c:'半',p:'bàn'},{c:'鐘',p:'zhōng'},{c:'聲',p:'shēng'},{c:'到',p:'dào'},{c:'客',p:'kè'},{c:'船',p:'chuán'}], punct:'。'}
 ];
 
-const MOCK_RESULT = {
-  total_score: 82, grade: '良',
-  dimensions: { phone_score: 85, tone_score: 76, fluency_score: 88, integrity_score: 100 },
-  words: [
-    {c:'月',p:'yuè',score:92,status:'ok'},
-    {c:'落',p:'luò',score:88,status:'ok'},
-    {c:'烏',p:'wū',score:61,status:'warn',error:'聲母偏誤'},
-    {c:'啼',p:'tí',score:85,status:'ok'},
-    {c:'霜',p:'shuāng',score:55,status:'error',error:'聲調偏誤'},
-    {c:'滿',p:'mǎn',score:78,status:'warn',error:'聲調偏誤'},
-    {c:'天',p:'tiān',score:95,status:'ok'}
-  ],
-  suggestions: [
-    '「烏」聲母 w 發音需更圓潤，舌位略後',
-    '「霜」聲調應為陰平（一聲），保持高平調',
-    '「滿」聲調應為上聲（三聲），注意先降後升'
-  ]
-};
 
 const TEACHER_DATA = {
   className: '4A班', total: 32, avg: 78.5, passRate: 85, excellentRate: 32,
@@ -1159,7 +1141,7 @@ function mapTencentResult(resp) {
       fluency_score: fluency || total,
       integrity_score: completion || 100
     },
-    words: words.length > 0 ? words : MOCK_RESULT.words,
+    words: words,
     suggestions: suggestions.length > 0 ? suggestions : ['發音整體良好，繼續保持']
   };
 }
@@ -1184,9 +1166,13 @@ async function onRecordDone() {
     lineResults[currentLine] = mapTencentResult(data);
   } catch (e) {
     console.warn(`第 ${currentLine + 1} 句 API 失敗:`, e.message);
-    lineResults[currentLine] = makeMockLine(currentLine);
+    lineResults[currentLine] = null;
   }
   document.getElementById('loading').classList.remove('show');
+  if (!lineResults[currentLine]) {
+    document.getElementById('mic-hint').textContent = `第 ${currentLine + 1} 句評測失敗，請重新錄音`;
+    return;
+  }
   revealSceneLayer(currentLine + 1);
   showLineReview(currentLine);
 }
@@ -1251,21 +1237,10 @@ function clearLineReview() {
   if (r) r.remove();
 }
 
-function makeMockLine(idx) {
-  const line = LINES[idx];
-  return {
-    total_score: MOCK_RESULT.total_score,
-    grade: MOCK_RESULT.grade,
-    dimensions: { ...MOCK_RESULT.dimensions },
-    words: line.chars.map(ch => {
-      const mock = MOCK_RESULT.words.find(w => w.c === ch.c);
-      return mock || { c: ch.c, p: ch.p, score: 80, status: 'ok', error: '' };
-    }),
-    suggestions: []
-  };
-}
 
 function mergeLineResults(results) {
+  results = results.filter(Boolean);
+  if (results.length === 0) return { total_score: 0, grade: '差', dimensions: { phone_score: 0, tone_score: 0, fluency_score: 0, integrity_score: 0 }, words: [], suggestions: [] };
   const allWords = results.flatMap(r => r.words);
   const dims = { phone_score: 0, tone_score: 0, fluency_score: 0, integrity_score: 0 };
   let totalScore = 0;
