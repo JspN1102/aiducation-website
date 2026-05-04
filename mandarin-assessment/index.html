@@ -326,11 +326,11 @@ body {
   flex-shrink: 0;
 }
 .scene-img {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%; object-fit: contain;
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%; object-fit: cover;
   transition: opacity 1.2s ease;
 }
-.scene-front { opacity: 1; z-index: 1; }
+.scene-front { opacity: 0; z-index: 1; }
 .scene-back { opacity: 0; z-index: 0; }
 .scene-hint {
   position: absolute; inset: 0; z-index: 2;
@@ -790,8 +790,8 @@ body {
       <p class="mic-hint" id="mic-hint">第 1 句，點擊麥克風錄音</p>
     </div>
     <div class="scene-window" id="scene-window">
-      <img class="scene-img scene-front" id="scene-front" src="img/layer-1.png" alt="">
-      <img class="scene-img scene-back" id="scene-back" src="img/layer-1.png" alt="">
+      <img class="scene-img scene-front" id="scene-front" src="" alt="">
+      <img class="scene-img scene-back" id="scene-back" src="" alt="">
       <p class="scene-hint" id="scene-hint">每完成一句，畫卷徐徐展開…</p>
     </div>
   </div>
@@ -958,6 +958,7 @@ function renderRecordPage() {
 }
 
 const SCENE_SRCS = ['img/layer-1.png','img/layer-2.png','img/layer-3.png','img/layer-4.png'];
+let sceneCurrentLayer = 0;
 
 function revealSceneLayer(n) {
   if (n < 1 || n > 4) return;
@@ -966,23 +967,31 @@ function revealSceneLayer(n) {
   const hint = document.getElementById('scene-hint');
   if (!front || !back) return;
   if (hint) hint.classList.add('hidden');
-  back.src = SCENE_SRCS[n - 1];
-  back.style.opacity = '1';
-  front.style.opacity = '0';
-  setTimeout(() => {
+
+  if (sceneCurrentLayer === 0) {
     front.src = SCENE_SRCS[n - 1];
     front.style.opacity = '1';
-    back.style.opacity = '0';
-  }, 1300);
+  } else {
+    back.src = SCENE_SRCS[n - 1];
+    back.style.opacity = '1';
+    front.style.opacity = '0';
+    setTimeout(() => {
+      front.src = SCENE_SRCS[n - 1];
+      front.style.opacity = '1';
+      back.style.opacity = '0';
+    }, 1300);
+  }
+  sceneCurrentLayer = n;
 }
 
 function resetScene() {
   const front = document.getElementById('scene-front');
   const back = document.getElementById('scene-back');
   const hint = document.getElementById('scene-hint');
-  if (front) { front.src = SCENE_SRCS[0]; front.style.opacity = '1'; }
-  if (back) { back.src = SCENE_SRCS[0]; back.style.opacity = '0'; }
+  if (front) { front.src = ''; front.style.opacity = '0'; }
+  if (back) { back.src = ''; back.style.opacity = '0'; }
   if (hint) hint.classList.remove('hidden');
+  sceneCurrentLayer = 0;
 }
 
 function resetRecording() {
