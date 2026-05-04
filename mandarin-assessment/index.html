@@ -277,7 +277,7 @@ body {
 
 .record-area {
   display: flex; flex-direction: column; align-items: center;
-  gap: 20px; flex: 1; justify-content: center; padding-bottom: 48px;
+  gap: 16px; padding-bottom: 16px;
 }
 #waveform { opacity: 0.3; transition: opacity 0.3s; }
 #waveform.active { opacity: 1; }
@@ -319,18 +319,20 @@ body {
 
 /* --- scene window (record page) --- */
 .scene-window {
-  width: 100%; max-width: 400px; height: 160px;
+  width: 100%; max-width: 400px; height: 180px;
   border-radius: var(--radius); overflow: hidden;
-  position: relative; margin-bottom: 16px;
+  position: relative; margin-top: 8px; margin-bottom: 16px;
   background: var(--night); box-shadow: var(--shadow-md);
-  border: 1px solid var(--ink-10);
+  flex-shrink: 0;
 }
 .scene-window .scene-layer {
   position: absolute; inset: 0;
   width: 100%; height: 100%; object-fit: cover;
-  opacity: 0; transition: opacity 1s ease;
+  opacity: 0; transition: opacity 1.2s ease;
 }
 .scene-window .scene-layer.revealed { opacity: 1; }
+.scene-window .scene-layer:first-child { opacity: 0.3; }
+.scene-window .scene-layer:first-child.revealed { opacity: 1; }
 .scene-hint {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
