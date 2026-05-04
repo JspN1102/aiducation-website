@@ -888,7 +888,12 @@ function renderPoem() {
 let demoAudio = null;
 function playDemo() {
   const btn = document.querySelector('.btn-listen');
-  if (btn.classList.contains('playing')) return;
+  if (btn.classList.contains('playing')) {
+    if (demoAudio) { demoAudio.pause(); demoAudio = null; }
+    btn.classList.remove('playing');
+    return;
+  }
+  stopRecital();
   demoAudio = new Audio('recital-audio.mp4');
   btn.classList.add('playing');
   demoAudio.onended = () => { btn.classList.remove('playing'); demoAudio = null; };
@@ -901,6 +906,7 @@ function toggleRecitalVideo() {
   const vid = document.getElementById('recital-video');
   const btn = document.getElementById('btn-video');
   if (wrap.style.display === 'none') {
+    stopDemo();
     wrap.style.display = 'block';
     vid.currentTime = 0;
     vid.play();
@@ -911,6 +917,21 @@ function toggleRecitalVideo() {
     wrap.style.display = 'none';
     btn.classList.remove('playing');
   }
+}
+
+function stopDemo() {
+  if (demoAudio) { demoAudio.pause(); demoAudio = null; }
+  const btn = document.querySelector('.btn-listen');
+  if (btn) btn.classList.remove('playing');
+}
+
+function stopRecital() {
+  const vid = document.getElementById('recital-video');
+  const wrap = document.getElementById('recital-video-wrap');
+  const btn = document.getElementById('btn-video');
+  if (vid) vid.pause();
+  if (wrap) wrap.style.display = 'none';
+  if (btn) btn.classList.remove('playing');
 }
 
 let mediaRec = null, audioChunks = [], isRecording = false, analyser = null, animFrame = null, recAudioCtx = null;
