@@ -15,27 +15,38 @@ module.exports = async function handler(req, res) {
   const apiBase = process.env.GPT_API_BASE;
   if (!apiKey || !apiBase) return res.status(500).json({ error: 'GPT API not configured' });
 
-  const wordDetail = (soeResult.words || []).map(w =>
-    `${w.c}(${w.p}) ${w.score}分 ${w.status === 'ok' ? '正確' : w.error || '偏誤'}`
-  ).join('、');
+  const wordDetail = (soeResult.words || []).map(w => {
+    let s = `${w.c}(${w.p}) ${w.score}分`;
+    if (w.status === 'ok') s += ' 正確';
+    else s += ` ${w.error || '偏誤'}`;
+    if (w.phones && w.phones.length > 0) {
+      s += ' [' + w.phones.map(p => `${p.phone}:${p.score}`).join(',') + ']';
+    }
+    return s;
+  }).join('、');
 
   const prompt = `你是普通話語音教師，為香港小四學生寫朗讀診斷報告。
 學生朗讀唐詩《${poem || '楓橋夜泊'}》，AI評測數據如下：
 總分${soeResult.total_score}/100（${soeResult.grade}），聲韻${soeResult.dimensions.phone_score}，聲調${soeResult.dimensions.tone_score}，流暢度${soeResult.dimensions.fluency_score}，完整度${soeResult.dimensions.integrity_score}。
-逐字評分：${wordDetail}
+逐字評分（含音素級數據，方括號內為各音素得分）：${wordDetail}
 
 用繁體中文寫約300字的診斷報告，結構如下：
 1. 整體評價（2句，概括表現和主要問題方向）
-2. 逐字問題分析：列出每個有問題的字，說明是聲母、韻母還是聲調問題，正確讀法是什麼
+2. 逐字問題分析：列出每個有問題的字，根據音素數據精確指出是聲母、韻母還是聲調問題，正確讀法是什麼
 3. 練習建議：針對每個問題字給出具體練習方法（如跟讀詞語、對比練習等）
-4. 鼓勵語（1句，適合小學生）
+4. 最後用一句溫暖的話鼓勵學生繼續努力（不要寫"鼓勵語"這個標題，直接寫鼓勵的話）
 語氣親切專業，適合家長和老師閱讀。純文字，不要用markdown格式，不要用星號*或任何符號標記。`;
 
   const payload = JSON.stringify({
-    model: 'gpt-5.4',
+    model: 'gpt-4o-mini',
     messages: [{ role: 'user', content: prompt }],
-    temperature: 0.7
+    temperature: 0.7,
+    stream: true
   });
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
 
   return new Promise((resolve) => {
     const url = new URL(apiBase);
@@ -52,30 +63,45 @@ module.exports = async function handler(req, res) {
     };
 
     const apiReq = https.request(reqOpts, (apiRes) => {
-      const chunks = [];
-      apiRes.on('data', chunk => chunks.push(chunk));
-      apiRes.on('end', () => {
-        try {
-          const body = Buffer.concat(chunks).toString('utf8');
-          const data = JSON.parse(body);
-          const report = (data.choices?.[0]?.message?.content || '').replace(/\*/g, '');
-          res.status(200).json({ report });
-        } catch (e) {
-          const body = Buffer.concat(chunks).toString('utf8');
-          res.status(502).json({ error: 'Invalid GPT response', detail: body.slice(0, 300) });
+      let buf = '';
+      apiRes.on('data', chunk => {
+        buf += chunk.toString('utf8');
+        const lines = buf.split('\n');
+        buf = lines.pop();
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith('data: ')) continue;
+          const data = trimmed.slice(6);
+          if (data === '[DONE]') {
+            res.write('data: [DONE]\n\n');
+            continue;
+          }
+          try {
+            const parsed = JSON.parse(data);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              const clean = content.replace(/\*/g, '');
+              res.write(`data: ${JSON.stringify({ t: clean })}\n\n`);
+            }
+          } catch (_) {}
         }
+      });
+      apiRes.on('end', () => {
+        res.end();
         resolve();
       });
     });
 
     apiReq.on('error', (e) => {
-      res.status(502).json({ error: e.message });
+      res.write(`data: ${JSON.stringify({ error: e.message })}\n\n`);
+      res.end();
       resolve();
     });
 
     apiReq.setTimeout(30000, () => {
       apiReq.destroy();
-      res.status(504).json({ error: 'GPT timeout' });
+      res.write(`data: ${JSON.stringify({ error: 'timeout' })}\n\n`);
+      res.end();
       resolve();
     });
 

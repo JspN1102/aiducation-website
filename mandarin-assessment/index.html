@@ -316,6 +316,17 @@ body {
   font-family: var(--font-sans); font-size: 12px;
   color: var(--ink-40); letter-spacing: 2px;
 }
+.line-review { text-align: center; width: 100%; }
+.review-score {
+  font-family: var(--font-sans); font-size: 14px;
+  color: var(--ink-80); margin-bottom: 12px;
+}
+.review-score strong {
+  font-family: var(--font-num); font-size: 20px;
+  color: var(--green);
+}
+.review-btns { display: flex; gap: 10px; justify-content: center; }
+.review-btn { padding: 8px 20px; font-size: 13px; }
 
 /* --- scene window (record page) --- */
 .scene-window {
@@ -1000,15 +1011,24 @@ function resetRecording() {
   recordedBlobs = [null, null, null, null];
   mergedResult = null;
   document.getElementById('mic-btn').style.display = '';
+  document.getElementById('mic-hint').textContent = '第 1 句，點擊麥克風錄音';
   const nb = document.querySelector('.btn-next-report');
   if (nb) nb.remove();
+  clearLineReview();
   resetScene();
   renderRecordPage();
 }
 
+let recordStartTime = 0;
+
 function toggleRecord() {
   if (currentLine >= 4) return;
-  isRecording ? stopRecord() : startRecord();
+  if (isRecording) {
+    if (Date.now() - recordStartTime < 1000) return;
+    stopRecord();
+  } else {
+    startRecord();
+  }
 }
 
 async function startRecord() {
@@ -1027,6 +1047,7 @@ async function startRecord() {
     mediaRec.onstop = () => { stream.getTracks().forEach(t => t.stop()); onRecordDone(); };
     mediaRec.start();
     isRecording = true;
+    recordStartTime = Date.now();
     document.getElementById('mic-btn').classList.add('recording');
     document.getElementById('mic-hint').textContent = '錄音中，再次點擊結束';
     document.getElementById('waveform').classList.add('active');
@@ -1118,11 +1139,14 @@ function mapTencentResult(resp) {
     let status = 'ok', error = '';
     if (sc < 60) { status = 'error'; error = '發音偏誤'; }
     else if (sc < 80) { status = 'warn'; error = '發音待改進'; }
-    if (w.PhoneInfos && w.PhoneInfos.length > 0) {
-      const worst = w.PhoneInfos.reduce((a, b) => (a.PronAccuracy < b.PronAccuracy ? a : b));
-      if (worst.PronAccuracy < 60) error = '聲韻偏誤';
+    const phones = (w.PhoneInfos || []).map(p => ({
+      phone: p.Phone || '', score: Math.round(p.PronAccuracy || 0)
+    }));
+    if (phones.length > 0) {
+      const worst = phones.reduce((a, b) => a.score < b.score ? a : b);
+      if (worst.score < 60) error = `聲韻偏誤（${worst.phone}=${worst.score}）`;
     }
-    return { c: trad, p: py, score: Math.max(0, sc), status, error };
+    return { c: trad, p: py, score: Math.max(0, sc), status, error, phones };
   });
   const suggestions = words.filter(w => w.status !== 'ok').map(w =>
     `「${w.c}」${w.error}，得分 ${w.score}，需加強練習`
@@ -1163,14 +1187,51 @@ async function onRecordDone() {
     lineResults[currentLine] = makeMockLine(currentLine);
   }
   document.getElementById('loading').classList.remove('show');
-  currentLine++;
-  revealSceneLayer(currentLine);
-  renderRecordPage();
+  revealSceneLayer(currentLine + 1);
+  showLineReview(currentLine);
+}
 
+function showLineReview(lineIdx) {
+  const score = lineResults[lineIdx] ? lineResults[lineIdx].total_score : '?';
+  document.getElementById('mic-btn').style.display = 'none';
+  document.getElementById('mic-hint').textContent = '';
+  const area = document.querySelector('#pg-record .record-area');
+  let reviewDiv = area.querySelector('.line-review');
+  if (!reviewDiv) { reviewDiv = document.createElement('div'); reviewDiv.className = 'line-review'; area.appendChild(reviewDiv); }
+  reviewDiv.innerHTML = `
+    <p class="review-score">第 ${lineIdx + 1} 句得分：<strong>${score}</strong></p>
+    <div class="review-btns">
+      <button class="btn-outline review-btn" onclick="playbackLine(${lineIdx})">回聽</button>
+      <button class="btn-outline review-btn" onclick="reRecordLine(${lineIdx})" style="border-color:var(--red);color:var(--red)">重錄</button>
+      <button class="btn-primary review-btn" onclick="confirmLine(${lineIdx})">下一句 →</button>
+    </div>`;
+}
+
+function playbackLine(idx) {
+  if (playbackAudio) { playbackAudio.pause(); playbackAudio = null; }
+  if (!recordedBlobs[idx]) return;
+  const url = URL.createObjectURL(recordedBlobs[idx]);
+  playbackAudio = new Audio(url);
+  playbackAudio.onended = () => { URL.revokeObjectURL(url); playbackAudio = null; };
+  playbackAudio.play();
+}
+
+function reRecordLine(idx) {
+  recordedBlobs[idx] = null;
+  lineResults[idx] = null;
+  clearLineReview();
+  document.getElementById('mic-btn').style.display = '';
+  document.getElementById('mic-hint').textContent = `第 ${idx + 1} 句，重新錄音`;
+  renderRecordPage();
+}
+
+function confirmLine(idx) {
+  clearLineReview();
+  currentLine = idx + 1;
+  renderRecordPage();
   if (currentLine >= 4) {
     mergedResult = mergeLineResults(lineResults);
     document.getElementById('mic-hint').textContent = '朗讀完成';
-    document.getElementById('mic-btn').style.display = 'none';
     const area = document.querySelector('#pg-record .record-area');
     if (area && !area.querySelector('.btn-next-report')) {
       const btn = document.createElement('button');
@@ -1180,8 +1241,14 @@ async function onRecordDone() {
       area.appendChild(btn);
     }
   } else {
+    document.getElementById('mic-btn').style.display = '';
     document.getElementById('mic-hint').textContent = `第 ${currentLine + 1} 句，點擊麥克風錄音`;
   }
+}
+
+function clearLineReview() {
+  const r = document.querySelector('.line-review');
+  if (r) r.remove();
 }
 
 function makeMockLine(idx) {
@@ -1304,17 +1371,37 @@ async function generateGptReport() {
       body: JSON.stringify({ soeResult: mergedResult, poem: '楓橋夜泊' })
     });
     if (!resp.ok) throw new Error('API ' + resp.status);
-    const data = await resp.json();
-    const report = data.report || '';
-    if (!report) throw new Error('Empty report');
     timers.forEach(clearTimeout);
-    bar.style.width = '100%';
-    stage.textContent = '報告生成完成！';
-    await new Promise(r => setTimeout(r, 500));
+    bar.style.width = '90%';
+    stage.textContent = 'AI 老師正在撰寫…';
     btn.style.display = 'none';
     area.innerHTML = `
       <p class="section-title" style="margin-top:8px">AI 老師診斷</p>
-      <div class="gpt-report">${report.replace(/\n/g, '<br>')}</div>`;
+      <div class="gpt-report" id="gpt-stream"></div>`;
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let reportText = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      for (const line of chunk.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data: ')) continue;
+        const data = trimmed.slice(6);
+        if (data === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.t) {
+            reportText += parsed.t;
+            document.getElementById('gpt-stream').innerHTML = reportText.replace(/\n/g, '<br>');
+          }
+          if (parsed.error) throw new Error(parsed.error);
+        } catch (_) {}
+      }
+    }
+    bar.style.width = '100%';
+    stage.textContent = '報告生成完成！';
   } catch (e) {
     timers.forEach(clearTimeout);
     console.warn('GPT 報告生成失敗:', e.message);
