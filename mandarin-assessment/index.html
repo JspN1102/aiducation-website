@@ -1142,7 +1142,7 @@ function mapTencentResult(resp) {
       integrity_score: completion || 100
     },
     words: words,
-    suggestions: suggestions.length > 0 ? suggestions : ['發音整體良好，繼續保持']
+    suggestions: suggestions.length > 0 ? suggestions : (total >= 80 ? ['發音整體良好，繼續保持'] : words.length === 0 ? ['未能識別語音，請靠近麥克風重新錄音'] : ['整體得分偏低，建議逐字跟讀練習'])
   };
 }
 
@@ -1264,7 +1264,7 @@ function mergeLineResults(results) {
   return {
     total_score: totalScore, grade, dimensions: dims,
     words: allWords,
-    suggestions: suggestions.length > 0 ? suggestions : ['發音整體良好，繼續保持']
+    suggestions: suggestions.length > 0 ? suggestions : (totalScore >= 80 ? ['發音整體良好，繼續保持'] : allWords.length === 0 ? ['未能識別語音，請靠近麥克風重新錄音'] : ['整體得分偏低，建議逐字跟讀練習'])
   };
 }
 
