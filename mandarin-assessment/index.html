@@ -756,6 +756,13 @@ body {
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         聆聽標準朗讀
       </button>
+      <button class="btn-listen" onclick="toggleRecitalVideo()" id="btn-video" style="margin-top:8px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10 8 16 12 10 16"/></svg>
+        觀看示範朗讀
+      </button>
+      <div class="recital-video-wrap" id="recital-video-wrap" style="display:none;margin-top:12px">
+        <video id="recital-video" src="recital.mp4" playsinline webkit-playsinline preload="metadata" style="width:100%;border-radius:var(--radius-sm)"></video>
+      </div>
     </div>
     <button class="btn-primary" onclick="goPage('pg-record')">開始跟讀測評</button>
   </div>
@@ -867,6 +874,8 @@ const TEACHER_DATA = {
 
 function goPage(id) {
   if (demoAudio) { demoAudio.pause(); demoAudio = null; const b = document.querySelector('.btn-listen'); if (b) b.classList.remove('playing'); }
+  const vid = document.getElementById('recital-video');
+  if (vid) { vid.pause(); document.getElementById('recital-video-wrap').style.display = 'none'; document.getElementById('btn-video').classList.remove('playing'); }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (id === 'pg-teacher') setTimeout(() => { drawDistChart(); drawRadarChart(); }, 300);
@@ -888,11 +897,28 @@ let demoAudio = null;
 function playDemo() {
   const btn = document.querySelector('.btn-listen');
   if (btn.classList.contains('playing')) return;
-  demoAudio = new Audio('demo.mp3');
+  demoAudio = new Audio('recital.mp4');
   btn.classList.add('playing');
   demoAudio.onended = () => { btn.classList.remove('playing'); demoAudio = null; };
   demoAudio.onerror = () => { btn.classList.remove('playing'); demoAudio = null; };
   demoAudio.play();
+}
+
+function toggleRecitalVideo() {
+  const wrap = document.getElementById('recital-video-wrap');
+  const vid = document.getElementById('recital-video');
+  const btn = document.getElementById('btn-video');
+  if (wrap.style.display === 'none') {
+    wrap.style.display = 'block';
+    vid.currentTime = 0;
+    vid.play();
+    btn.classList.add('playing');
+    vid.onended = () => { btn.classList.remove('playing'); };
+  } else {
+    vid.pause();
+    wrap.style.display = 'none';
+    btn.classList.remove('playing');
+  }
 }
 
 let mediaRec = null, audioChunks = [], isRecording = false, analyser = null, animFrame = null, recAudioCtx = null;
