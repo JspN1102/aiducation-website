@@ -317,6 +317,29 @@ body {
   color: var(--ink-40); letter-spacing: 2px;
 }
 
+/* --- scene window (record page) --- */
+.scene-window {
+  width: 100%; max-width: 400px; height: 160px;
+  border-radius: var(--radius); overflow: hidden;
+  position: relative; margin-bottom: 16px;
+  background: var(--night); box-shadow: var(--shadow-md);
+  border: 1px solid var(--ink-10);
+}
+.scene-window .scene-layer {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: cover;
+  opacity: 0; transition: opacity 1s ease;
+}
+.scene-window .scene-layer.revealed { opacity: 1; }
+.scene-hint {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-serif); font-size: 12px;
+  color: rgba(232,220,200,0.4); letter-spacing: 2px;
+  pointer-events: none; transition: opacity 0.8s;
+}
+.scene-hint.hidden { opacity: 0; }
+
 /* ===== REPORT ===== */
 .report-content { width: 100%; }
 .score-ring-wrap {
@@ -740,7 +763,7 @@ body {
 
 <!-- Page 3: Record -->
 <section class="page" id="pg-record">
-  <div class="page-inner">
+  <div class="page-inner page-scroll">
     <header class="top-bar">
       <button class="btn-back" onclick="goPage('pg-demo')">&#8592;</button>
       <h2 class="top-title">跟讀測評</h2>
@@ -757,6 +780,13 @@ body {
         <svg class="mic-icon" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="1" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
       </button>
       <p class="mic-hint" id="mic-hint">第 1 句，點擊麥克風錄音</p>
+    </div>
+    <div class="scene-window" id="scene-window">
+      <img class="scene-layer" id="scene-layer-1" src="img/layer-1-sky.png" alt="">
+      <img class="scene-layer" id="scene-layer-2" src="img/layer-2-river.png" alt="">
+      <img class="scene-layer" id="scene-layer-3" src="img/layer-3-temple.png" alt="">
+      <img class="scene-layer" id="scene-layer-4" src="img/layer-4-boat.png" alt="">
+      <p class="scene-hint">每完成一句，畫卷徐徐展開…</p>
     </div>
   </div>
 </section>
@@ -902,6 +932,24 @@ function renderRecordPage() {
   }).join('');
 }
 
+function revealSceneLayer(n) {
+  const el = document.getElementById('scene-layer-' + n);
+  if (el) el.classList.add('revealed');
+  if (n >= 1) {
+    const hint = document.querySelector('.scene-hint');
+    if (hint) hint.classList.add('hidden');
+  }
+}
+
+function resetScene() {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('scene-layer-' + i);
+    if (el) el.classList.remove('revealed');
+  }
+  const hint = document.querySelector('.scene-hint');
+  if (hint) hint.classList.remove('hidden');
+}
+
 function resetRecording() {
   currentLine = 0;
   lineResults = [null, null, null, null];
@@ -910,6 +958,7 @@ function resetRecording() {
   document.getElementById('mic-btn').style.display = '';
   const nb = document.querySelector('.btn-next-report');
   if (nb) nb.remove();
+  resetScene();
   renderRecordPage();
 }
 
@@ -1071,6 +1120,7 @@ async function onRecordDone() {
   }
   document.getElementById('loading').classList.remove('show');
   currentLine++;
+  revealSceneLayer(currentLine);
   renderRecordPage();
 
   if (currentLine >= 4) {
