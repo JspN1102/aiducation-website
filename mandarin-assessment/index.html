@@ -1126,7 +1126,14 @@ function mapTencentResult(resp) {
     }));
     if (phones.length > 0) {
       const worst = phones.reduce((a, b) => a.score < b.score ? a : b);
-      if (worst.score < 60) error = `聲韻偏誤（${worst.phone}=${worst.score}）`;
+      if (worst.score < 60) {
+        const ph = worst.phone;
+        const isInitial = /^(b|p|m|f|d|t|n|l|g|k|h|j|q|x|zh|ch|sh|r|z|c|s|y|w)$/i.test(ph);
+        const isTone = /^[1-5]$/.test(ph);
+        if (isInitial) error = `聲母偏誤，正確聲母為 ${ph}`;
+        else if (isTone) error = `聲調偏誤，應為第${ph}聲`;
+        else error = `韻母偏誤，正確韻母為 ${ph.replace(/[0-9]/g, '')}`;
+      }
     }
     return { c: trad, p: py, score: Math.max(0, sc), status, error, phones };
   });
