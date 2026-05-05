@@ -38,7 +38,7 @@ module.exports = async function handler(req, res) {
 語氣親切專業，適合家長和老師閱讀。純文字，不要用markdown格式，不要用星號*或任何符號標記。`;
 
   const payload = JSON.stringify({
-    model: 'gpt-5.4',
+    model: 'gpt-5.5',
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.7
   });

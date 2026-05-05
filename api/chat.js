@@ -74,7 +74,7 @@ module.exports = async function handler(req, res) {
   ];
 
   const payload = JSON.stringify({
-    model: 'gpt-5.4',
+    model: 'gpt-5.5',
     messages: gptMessages,
     temperature: 0.8
   });
