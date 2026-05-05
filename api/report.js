@@ -1,6 +1,7 @@
 const https = require('https');
 
 module.exports = async function handler(req, res) {
+  try {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -13,7 +14,7 @@ module.exports = async function handler(req, res) {
 
   const apiKey = process.env.GPT_API_KEY;
   const apiBase = process.env.GPT_API_BASE;
-  if (!apiKey || !apiBase) return res.status(500).json({ error: 'GPT API not configured' });
+  if (!apiKey || !apiBase) return res.status(500).json({ error: 'GPT API not configured', hasKey: !!apiKey, hasBase: !!apiBase });
 
   const wordDetail = (soeResult.words || []).map(w => {
     let s = `${w.c}(${w.p}) ${w.score}分`;
@@ -88,4 +89,7 @@ module.exports = async function handler(req, res) {
     apiReq.write(payload);
     apiReq.end();
   });
+  } catch (e) {
+    return res.status(500).json({ error: 'Unhandled: ' + e.message });
+  }
 };
