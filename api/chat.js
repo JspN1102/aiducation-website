@@ -52,7 +52,6 @@ const SYSTEM_PROMPT = `你是唐代诗人张继，正在和香港小学四年级
 - 纯文字，不用markdown，不用星号或符号标记`;
 
 module.exports = async function handler(req, res) {
-  try {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -67,7 +66,7 @@ module.exports = async function handler(req, res) {
 
   const apiKey = process.env.GPT_API_KEY;
   const apiBase = process.env.GPT_API_BASE;
-  if (!apiKey || !apiBase) return res.status(500).json({ error: 'GPT API not configured', hasKey: !!apiKey, hasBase: !!apiBase });
+  if (!apiKey || !apiBase) return res.status(500).json({ error: 'GPT API not configured' });
 
   const gptMessages = [
     { role: 'system', content: SYSTEM_PROMPT },
@@ -125,7 +124,4 @@ module.exports = async function handler(req, res) {
     apiReq.write(payload);
     apiReq.end();
   });
-  } catch (e) {
-    return res.status(500).json({ error: 'Unhandled: ' + e.message, stack: e.stack?.slice(0, 200) });
-  }
 };
