@@ -38,19 +38,14 @@ module.exports = async function handler(req, res) {
 
   const secretId = process.env.TENCENT_SECRET_ID;
   const secretKey = process.env.TENCENT_SECRET_KEY;
-  const appId = process.env.TENCENT_APP_ID;
   if (!secretId || !secretKey) return res.status(500).json({ error: 'TTS credentials not configured' });
 
   const timestamp = Math.floor(Date.now() / 1000);
   const payload = JSON.stringify({
     Text: text,
     SessionId: crypto.randomUUID(),
-    AppId: Number(appId) || 0,
-    VoiceType: 101004,
-    Codec: 'mp3',
-    SampleRate: 16000,
-    Volume: 5,
-    Speed: -1
+    VoiceType: 101001,
+    Codec: 'mp3'
   });
 
   const authorization = buildAuth(secretId, secretKey, payload, timestamp);
