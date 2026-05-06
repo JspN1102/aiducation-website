@@ -38,7 +38,7 @@ module.exports = async function handler(req, res) {
 語氣親切專業，適合家長和老師閱讀。純文字，不要用markdown格式，不要用星號*或任何符號標記。`;
 
   const payload = JSON.stringify({
-    model: 'deepseek-v4-flash',
+    model: 'deepseek-v4-pro',
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.7
   });
@@ -79,7 +79,7 @@ module.exports = async function handler(req, res) {
       resolve();
     });
 
-    apiReq.setTimeout(30000, () => {
+    apiReq.setTimeout(55000, () => {
       apiReq.destroy();
       res.status(504).json({ error: 'GPT timeout' });
       resolve();
