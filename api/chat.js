@@ -76,7 +76,8 @@ module.exports = async function handler(req, res) {
   const payload = JSON.stringify({
     model: 'deepseek-v4-flash',
     messages: gptMessages,
-    temperature: 0.8
+    temperature: 0.8,
+    thinking: { type: 'disabled' }
   });
 
   return new Promise((resolve) => {
@@ -115,7 +116,7 @@ module.exports = async function handler(req, res) {
       resolve();
     });
 
-    apiReq.setTimeout(30000, () => {
+    apiReq.setTimeout(5000, () => {
       apiReq.destroy();
       res.status(504).json({ error: 'GPT timeout' });
       resolve();
