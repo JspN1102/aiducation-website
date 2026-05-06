@@ -32,7 +32,7 @@ module.exports = async function handler(req, res) {
 
 用繁體中文寫約300字的診斷報告，結構如下：
 1. 整體評價（2句，概括表現和主要問題方向）
-2. 逐字問題分析：列出每個有問題的字，根據音素數據精確指出是聲母、韻母還是聲調問題，正確讀法是什麼
+2. 逐字問題分析：列出每個有問題的字，根據音素數據精確指出是聲母、韻母還是聲調問題，用帶聲調的拼音標注正確讀法（如 shuāng、luò、mǎn），絕對不要用音素編碼或數字聲調（如 man3、cheng2、uo、uang 等）
 3. 練習建議：針對每個問題字給出具體練習方法（如跟讀詞語、對比練習等）
 4. 最後用一句溫暖的話鼓勵學生繼續努力（不要寫"鼓勵語"這個標題，直接寫鼓勵的話）
 語氣親切專業，適合家長和老師閱讀。純文字，不要用markdown格式，不要用星號*或任何符號標記。`;
@@ -80,7 +80,7 @@ module.exports = async function handler(req, res) {
       resolve();
     });
 
-    apiReq.setTimeout(10000, () => {
+    apiReq.setTimeout(12000, () => {
       apiReq.destroy();
       res.status(504).json({ error: 'GPT timeout' });
       resolve();
