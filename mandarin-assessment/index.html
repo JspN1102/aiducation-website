@@ -1535,11 +1535,30 @@ const PRACTICE_MAP = {
   '山':[['三','sān'],['善','shàn'],['閃','shǎn']]
 };
 
+let ttsAudio = null;
 function speakChar(ch) {
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(ch);
-  u.lang = 'zh-CN'; u.rate = 0.6;
-  speechSynthesis.speak(u);
+  if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
+  ttsAudio = new Audio('/api/tts?t=' + Date.now());
+  ttsAudio.onerror = () => {
+    const u = new SpeechSynthesisUtterance(ch);
+    u.lang = 'zh-CN'; u.rate = 0.6;
+    speechSynthesis.speak(u);
+  };
+  fetch('/api/tts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: ch })
+  }).then(r => {
+    if (!r.ok) throw new Error();
+    return r.blob();
+  }).then(blob => {
+    ttsAudio.src = URL.createObjectURL(blob);
+    ttsAudio.play();
+  }).catch(() => {
+    const u = new SpeechSynthesisUtterance(ch);
+    u.lang = 'zh-CN'; u.rate = 0.6;
+    speechSynthesis.speak(u);
+  });
 }
 
 function renderPracticeSection(r) {
