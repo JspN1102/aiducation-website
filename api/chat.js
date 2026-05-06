@@ -74,7 +74,7 @@ module.exports = async function handler(req, res) {
   ];
 
   const payload = JSON.stringify({
-    model: 'gpt-5.5',
+    model: 'deepseek-v4-0324',
     messages: gptMessages,
     temperature: 0.8
   });
