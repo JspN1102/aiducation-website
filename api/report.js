@@ -15,43 +15,41 @@ module.exports = async function handler(req, res) {
   const apiBase = process.env.GPT_API_BASE;
   if (!apiKey || !apiBase) return res.status(500).json({ error: 'GPT API not configured' });
 
-  const goodWords = (soeResult.words || []).filter(w => w.status === 'ok').map(w => `${w.c}(${w.p})${w.score}分`).join('、');
-  const badWords = (soeResult.words || []).filter(w => w.status !== 'ok').map(w => {
+  const badList = (soeResult.words || []).filter(w => w.status !== 'ok');
+  const topBad = badList.slice(0, 8);
+  const topBadStr = topBad.map(w => {
     let s = `${w.c}(${w.p}) ${w.score}分 ${w.error || '偏誤'}`;
     if (w.phones && w.phones.length > 0) {
-      s += ' 音素詳情[' + w.phones.map(p => `${p.phone}:${p.score}`).join(',') + ']';
+      s += ' [' + w.phones.map(p => `${p.phone}:${p.score}`).join(',') + ']';
     }
     return s;
   }).join('\n');
 
-  const prompt = `你是普通話語音教師，為香港小四學生寫朗讀診斷報告。
+  const prompt = `你是普通話語音教師，為香港小四學生寫簡短朗讀診斷報告。
 學生朗讀唐詩《${poem || '楓橋夜泊'}》，AI評測數據如下：
 總分${soeResult.total_score}/100（${soeResult.grade}），聲韻${soeResult.dimensions.phone_score}，聲調${soeResult.dimensions.tone_score}，流暢度${soeResult.dimensions.fluency_score}，完整度${soeResult.dimensions.integrity_score}。
 
-表現良好的字（不需要分析，不要提及任何問題）：${goodWords || '無'}
-
-需要改進的字（請逐一分析）：
-${badWords || '全部正確，無需改進'}
+需要改進的字（最多列出8個最差的）：
+${topBadStr || '全部正確，無需改進'}
 
 重要規則：
-- 80分以上的字是正確的，絕對不要說它有問題
-- 只分析上面「需要改進的字」列表中的字
-- 音素詳情中的數據僅供你判斷問題類型（聲母/韻母/聲調），不要在報告中顯示原始編碼
-- 用帶聲調拼音標注正確讀法（如 shuāng、luò、mǎn），不要用 man3、uo、uang 等編碼
+- 音素詳情僅供你判斷問題類型，不要在報告中顯示原始編碼
+- 用帶聲調拼音標注正確讀法（如 shuāng、luò）
+- 報告必須簡短精煉，總字數控制在300字以內
 
 用繁體中文寫診斷報告，結構如下：
-1. 整體評價（2句，先肯定表現好的方面，再指出需要改進的方向）
-2. 逐字問題分析：只分析「需要改進的字」，指出是聲母、韻母還是聲調問題，給出正確讀法
-3. 練習建議：針對每個問題字給出具體練習方法（跟讀詞語、對比練習、繞口令等）
-4. 用一句溫暖的話鼓勵學生（不要寫標題，直接寫鼓勵的話）
+1. 整體評價（2句話）
+2. 問題分析與練習（合併為一段，每個問題字用一句話說明問題+練習方法，不要分開兩個部分）
+3. 一句鼓勵的話
 
-如果所有字都正確，就寫一段表揚和鼓勵，不需要分析問題。
-語氣親切專業，適合家長和老師閱讀。純文字，不要用markdown格式，不要用星號*或任何符號標記。`;
+如果所有字都正確，就寫一段簡短表揚。
+語氣親切，適合家長閱讀。純文字，不要用markdown格式，不要用星號或符號標記。`;
 
   const payload = JSON.stringify({
     model: 'deepseek-v4-flash',
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.7,
+    max_tokens: 800,
     thinking: { type: 'disabled' }
   });
 
@@ -91,7 +89,7 @@ ${badWords || '全部正確，無需改進'}
       resolve();
     });
 
-    apiReq.setTimeout(12000, () => {
+    apiReq.setTimeout(30000, () => {
       apiReq.destroy();
       res.status(504).json({ error: 'GPT timeout' });
       resolve();

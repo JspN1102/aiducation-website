@@ -1013,13 +1013,16 @@ const TEACHER_DATA = {
 
 function goPage(id) {
   if (demoAudio) { demoAudio.pause(); demoAudio = null; const b = document.querySelector('.btn-listen'); if (b) b.classList.remove('playing'); }
+  if (chatAudio) { chatAudio.pause(); chatAudio = null; }
+  if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
+  chatTTSVersion++;
   const vid = document.getElementById('recital-video');
   if (vid) { vid.pause(); document.getElementById('recital-video-wrap').style.display = 'none'; document.getElementById('btn-video').classList.remove('playing'); }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (id === 'pg-teacher') setTimeout(() => { drawDistChart(); drawRadarChart(); }, 300);
   if (id === 'pg-record') resetRecording();
-  if (id === 'pg-chat') setTimeout(() => chatTTS('你好呀，小朋友！我是張繼，楓橋夜泊的作者。那晚的鐘聲我至今記憶猶新，你想問我什麼呢？'), 500);
+  if (id === 'pg-chat' && !chatWelcomePlayed) { chatWelcomePlayed = true; setTimeout(() => chatTTS('你好呀，小朋友！我是張繼，楓橋夜泊的作者。那晚的鐘聲我至今記憶猶新，你想問我什麼呢？'), 500); }
 }
 
 function renderPoem() {
@@ -1184,6 +1187,9 @@ function toggleRecord() {
 
 async function startRecord() {
   speechSynthesis.cancel();
+  if (chatAudio) { chatAudio.pause(); chatAudio = null; }
+  if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
+  chatTTSVersion++;
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     recAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1786,6 +1792,7 @@ showErrorBookCard();
 
 let chatHistory = [];
 let chatAudio = null;
+let chatWelcomePlayed = false;
 
 let chatTTSVersion = 0;
 function chatTTS(text) {
@@ -1863,6 +1870,8 @@ let voiceTranscript = '';
 function startVoiceMode() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { alert('你的瀏覽器不支持語音輸入，請使用 Chrome 或 Edge'); return; }
+  chatTTSVersion++;
+  if (chatAudio) { chatAudio.pause(); chatAudio = null; }
   document.getElementById('chat-input-normal').style.display = 'none';
   document.getElementById('chat-input-voice').style.display = 'flex';
   voiceTranscript = '';
