@@ -1543,6 +1543,7 @@ function edgeTTS(text, voice) {
     });
     const wsUrl = 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4&ConnectionId=' + id;
     const ws = new WebSocket(wsUrl);
+    ws.binaryType = 'arraybuffer';
     const chunks = [];
     let done = false;
     const timer = setTimeout(() => { if(!done){done=true;ws.close();reject(new Error('timeout'));} }, 8000);
@@ -1557,22 +1558,17 @@ function edgeTTS(text, voice) {
       if (typeof evt.data === 'string') {
         if (evt.data.includes('turn.end')) { done=true; clearTimeout(timer); resolve(new Blob(chunks,{type:'audio/mpeg'})); ws.close(); }
       } else {
-        evt.data.arrayBuffer().then(ab => {
-          const buf = new Uint8Array(ab);
-          const sep = 'Path:audio\r\n';
-          const enc = new TextEncoder();
-          const sepBytes = enc.encode(sep);
-          let idx = -1;
-          for (let i=0; i<buf.length-sepBytes.length; i++) {
-            let match = true;
-            for (let j=0; j<sepBytes.length; j++) { if(buf[i+j]!==sepBytes[j]){match=false;break;} }
-            if (match) { idx=i; break; }
-          }
-          if (idx>=0) chunks.push(buf.slice(idx+sepBytes.length));
-        });
+        const buf = new Uint8Array(evt.data);
+        const sep = [80,97,116,104,58,97,117,100,105,111,13,10]; // "Path:audio\r\n"
+        for (let i=0; i<=buf.length-sep.length; i++) {
+          let match = true;
+          for (let j=0; j<sep.length; j++) { if(buf[i+j]!==sep[j]){match=false;break;} }
+          if (match) { chunks.push(buf.slice(i+sep.length)); break; }
+        }
       }
     };
     ws.onerror = () => { if(!done){done=true;clearTimeout(timer);reject(new Error('ws error'));} };
+    ws.onclose = () => { if(!done){done=true;clearTimeout(timer);reject(new Error('ws closed'));} };
   });
 }
 function speakChar(ch) {
