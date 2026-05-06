@@ -1536,6 +1536,8 @@ const PRACTICE_MAP = {
 };
 
 let ttsAudio = null;
+const ttsCache = {};
+let ttsBusy = false;
 function edgeTTS(text, voice) {
   return new Promise((resolve, reject) => {
     const id = 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -1546,7 +1548,7 @@ function edgeTTS(text, voice) {
     ws.binaryType = 'arraybuffer';
     const chunks = [];
     let done = false;
-    const timer = setTimeout(() => { if(!done){done=true;ws.close();reject(new Error('timeout'));} }, 8000);
+    const timer = setTimeout(() => { if(!done){done=true;try{ws.close();}catch(e){}reject(new Error('timeout'));} }, 10000);
     ws.onopen = () => {
       const config = JSON.stringify({context:{synthesis:{audio:{metadataoptions:{sentenceBoundaryEnabled:false,wordBoundaryEnabled:false},outputFormat:'audio-24khz-48kbitrate-mono-mp3'}}}});
       ws.send('X-Timestamp:'+new Date().toISOString()+'\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n'+config);
@@ -1556,10 +1558,10 @@ function edgeTTS(text, voice) {
     };
     ws.onmessage = (evt) => {
       if (typeof evt.data === 'string') {
-        if (evt.data.includes('turn.end')) { done=true; clearTimeout(timer); resolve(new Blob(chunks,{type:'audio/mpeg'})); ws.close(); }
+        if (evt.data.includes('turn.end')) { done=true; clearTimeout(timer); resolve(new Blob(chunks,{type:'audio/mpeg'})); try{ws.close();}catch(e){} }
       } else {
         const buf = new Uint8Array(evt.data);
-        const sep = [80,97,116,104,58,97,117,100,105,111,13,10]; // "Path:audio\r\n"
+        const sep = [80,97,116,104,58,97,117,100,105,111,13,10];
         for (let i=0; i<=buf.length-sep.length; i++) {
           let match = true;
           for (let j=0; j<sep.length; j++) { if(buf[i+j]!==sep[j]){match=false;break;} }
@@ -1571,16 +1573,35 @@ function edgeTTS(text, voice) {
     ws.onclose = () => { if(!done){done=true;clearTimeout(timer);reject(new Error('ws closed'));} };
   });
 }
-function speakChar(ch) {
+async function speakChar(ch) {
   if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
-  edgeTTS(ch, 'zh-CN-XiaoxiaoNeural').then(blob => {
-    ttsAudio = new Audio(URL.createObjectURL(blob));
+  if (ttsCache[ch]) {
+    ttsAudio = new Audio(URL.createObjectURL(ttsCache[ch]));
     ttsAudio.play();
-  }).catch(() => {
+    return;
+  }
+  if (ttsBusy) {
     const u = new SpeechSynthesisUtterance(ch);
     u.lang = 'zh-CN'; u.rate = 0.6;
     speechSynthesis.speak(u);
-  });
+    return;
+  }
+  ttsBusy = true;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 500));
+      const blob = await edgeTTS(ch, 'zh-CN-XiaoxiaoNeural');
+      ttsCache[ch] = blob;
+      ttsAudio = new Audio(URL.createObjectURL(blob));
+      ttsAudio.play();
+      ttsBusy = false;
+      return;
+    } catch(e) {}
+  }
+  ttsBusy = false;
+  const u = new SpeechSynthesisUtterance(ch);
+  u.lang = 'zh-CN'; u.rate = 0.6;
+  speechSynthesis.speak(u);
 }
 
 function renderPracticeSection(r) {
