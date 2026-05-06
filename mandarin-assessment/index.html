@@ -261,8 +261,8 @@ body {
 /* ===== RECORD PAGE ===== */
 .record-target {
   width: 100%; background: #fff;
-  border-radius: var(--radius); padding: 24px 20px;
-  box-shadow: var(--shadow-md); margin-bottom: 28px; text-align: center;
+  border-radius: var(--radius); padding: 20px 20px 16px;
+  box-shadow: var(--shadow-md); margin-bottom: 16px; text-align: center;
 }
 .record-label {
   font-family: var(--font-serif); font-size: 13px;
@@ -277,10 +277,8 @@ body {
 
 .record-area {
   display: flex; flex-direction: column; align-items: center;
-  gap: 16px; padding-bottom: 16px;
+  gap: 16px; padding-bottom: 8px;
 }
-#waveform { opacity: 0.3; transition: opacity 0.3s; }
-#waveform.active { opacity: 1; }
 
 .mic-btn {
   width: 64px; height: 64px; border-radius: 50%;
@@ -909,7 +907,6 @@ body {
       <div class="record-lines-wrap" id="record-lines"></div>
     </div>
     <div class="record-area">
-      <canvas id="waveform" width="280" height="60"></canvas>
       <button class="mic-btn" id="mic-btn" onclick="toggleRecord()">
         <svg class="mic-icon" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="1" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
       </button>
@@ -1085,7 +1082,7 @@ function stopRecital() {
   if (btn) btn.classList.remove('playing');
 }
 
-let mediaRec = null, audioChunks = [], isRecording = false, analyser = null, animFrame = null, recAudioCtx = null;
+let mediaRec = null, audioChunks = [], isRecording = false, recAudioCtx = null;
 let recordedBlobs = [null, null, null, null];
 let playbackAudio = null;
 
@@ -1191,8 +1188,6 @@ async function startRecord() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     recAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const src = recAudioCtx.createMediaStreamSource(stream);
-    analyser = recAudioCtx.createAnalyser(); analyser.fftSize = 256;
-    src.connect(analyser);
     const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
       ? 'audio/webm;codecs=opus' : 'audio/mp4';
     mediaRec = new MediaRecorder(stream, { mimeType: mime });
@@ -1204,37 +1199,16 @@ async function startRecord() {
     recordStartTime = Date.now();
     document.getElementById('mic-btn').classList.add('recording');
     document.getElementById('mic-hint').textContent = '錄音中，再次點擊結束';
-    document.getElementById('waveform').classList.add('active');
-    drawWaveform();
   } catch (e) {
     alert('無法存取麥克風，請檢查瀏覽器權限設定');
   }
 }
 
 function stopRecord() {
+  isRecording = false;
   if (mediaRec && mediaRec.state === 'recording') mediaRec.stop();
-  isRecording = false; cancelAnimationFrame(animFrame);
   document.getElementById('mic-btn').classList.remove('recording');
   document.getElementById('mic-hint').textContent = '處理中…';
-  document.getElementById('waveform').classList.remove('active');
-}
-
-function drawWaveform() {
-  const canvas = document.getElementById('waveform');
-  const c = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
-  const buf = new Uint8Array(analyser.frequencyBinCount);
-  (function draw() {
-    animFrame = requestAnimationFrame(draw);
-    analyser.getByteTimeDomainData(buf);
-    c.clearRect(0, 0, W, H);
-    c.beginPath(); c.strokeStyle = '#2f5d4f'; c.lineWidth = 2;
-    const step = W / buf.length;
-    for (let i = 0; i < buf.length; i++) {
-      const y = (buf[i] / 255) * H;
-      i === 0 ? c.moveTo(0, y) : c.lineTo(i * step, y);
-    }
-    c.stroke();
-  })();
 }
 
 async function blobToWavBase64(blob) {
