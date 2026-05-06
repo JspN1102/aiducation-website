@@ -1,7 +1,6 @@
 {
   "private": true,
   "dependencies": {
-    "edge-tts": "^1.0.1",
     "ws": "^8.20.0"
   }
 }
