@@ -33,7 +33,7 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { text, voice } = req.body || {};
+  const { text, voice, speed } = req.body || {};
   if (!text) return res.status(400).json({ error: 'Missing text' });
 
   const secretId = process.env.TENCENT_SECRET_ID;
@@ -45,6 +45,7 @@ module.exports = async function handler(req, res) {
     Text: text,
     SessionId: crypto.randomUUID(),
     VoiceType: voice || 101015,
+    Speed: speed !== undefined ? speed : 0,
     Codec: 'mp3'
   });
 

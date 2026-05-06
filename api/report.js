@@ -16,7 +16,7 @@ module.exports = async function handler(req, res) {
   if (!apiKey || !apiBase) return res.status(500).json({ error: 'GPT API not configured' });
 
   const badList = (soeResult.words || []).filter(w => w.status !== 'ok');
-  const topBad = badList.slice(0, 12);
+  const topBad = badList.slice(0, 7);
   const topBadStr = topBad.map(w => {
     let s = `${w.c}(${w.p}) ${w.score}分 ${w.error || '偏誤'}`;
     if (w.phones && w.phones.length > 0) {
@@ -88,7 +88,7 @@ ${topBadStr || '全部正確，無需改進'}
       resolve();
     });
 
-    apiReq.setTimeout(20000, () => {
+    apiReq.setTimeout(30000, () => {
       apiReq.destroy();
       res.status(504).json({ error: 'GPT timeout' });
       resolve();
