@@ -762,8 +762,38 @@ body {
 }
 .chat-suggest-btn:hover { background: var(--green-bg); }
 .chat-input-wrap {
-  display: flex; gap: 8px; padding: 12px 16px;
+  padding: 12px 16px;
   border-top: 1px solid var(--ink-10);
+}
+.chat-input-normal {
+  display: flex; gap: 8px; align-items: center;
+}
+.chat-input-voice {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--red-bg); border-radius: 24px;
+  padding: 8px 16px; animation: voice-fade-in 0.2s;
+}
+@keyframes voice-fade-in { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+.chat-voice-cancel {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: none; background: var(--ink-10); font-size: 14px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.chat-voice-indicator {
+  flex: 1; display: flex; align-items: center; gap: 4px;
+}
+.voice-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--red); animation: voice-bounce 1.2s infinite;
+}
+.voice-dot:nth-child(2) { animation-delay: 0.2s; }
+.voice-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes voice-bounce { 0%,100%{transform:scale(1)} 50%{transform:scale(1.8)} }
+.voice-text { font-size: 13px; color: var(--ink-60); margin-left: 8px; }
+.chat-voice-send {
+  background: var(--green); color: white; border: none;
+  border-radius: 16px; padding: 6px 14px; font-size: 13px;
+  cursor: pointer; font-weight: 500;
 }
 .chat-input {
   flex: 1; border: 1px solid var(--ink-20);
@@ -929,10 +959,17 @@ body {
       <button class="chat-suggest-btn" onclick="askSuggestion(this)">寒山寺的鐘聲是怎樣的？</button>
       <button class="chat-suggest-btn" onclick="askSuggestion(this)">唐朝的人怎麼旅行？</button>
     </div>
-    <div class="chat-input-wrap">
-      <button class="chat-mic-btn" id="chat-mic-btn" ontouchstart="startVoiceInput(event)" ontouchend="stopVoiceInput()" onmousedown="startVoiceInput(event)" onmouseup="stopVoiceInput()">🎤</button>
-      <input type="text" class="chat-input" id="chat-input" placeholder="問問張繼吧…" onkeydown="if(event.key==='Enter')sendChat()">
-      <button class="chat-send-btn" onclick="sendChat()">發送</button>
+    <div class="chat-input-wrap" id="chat-input-wrap">
+      <div class="chat-input-normal" id="chat-input-normal">
+        <input type="text" class="chat-input" id="chat-input" placeholder="問問張繼吧…" onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="chat-send-btn" onclick="sendChat()">發送</button>
+        <button class="chat-mic-btn" id="chat-mic-btn" onclick="startVoiceMode()">🎤</button>
+      </div>
+      <div class="chat-input-voice" id="chat-input-voice" style="display:none">
+        <button class="chat-voice-cancel" onclick="cancelVoice()">✕</button>
+        <div class="chat-voice-indicator"><span class="voice-dot"></span><span class="voice-dot"></span><span class="voice-dot"></span><span class="voice-text" id="voice-text">聆聽中…</span></div>
+        <button class="chat-voice-send" onclick="sendVoice()">發送</button>
+      </div>
     </div>
   </div>
 </section>
@@ -1776,14 +1813,19 @@ showErrorBookCard();
 let chatHistory = [];
 let chatAudio = null;
 
+let chatTTSVersion = 0;
 function chatTTS(text) {
+  chatTTSVersion++;
+  const myVersion = chatTTSVersion;
   if (chatAudio) { chatAudio.pause(); chatAudio = null; }
   fetch('/api/tts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: text, voice: 101015 })
+    body: JSON.stringify({ text: text, voice: 101004 })
   }).then(r => { if (!r.ok) throw new Error(); return r.blob(); })
   .then(blob => {
+    if (myVersion !== chatTTSVersion) return;
+    if (chatAudio) { chatAudio.pause(); chatAudio = null; }
     chatAudio = new Audio(URL.createObjectURL(blob));
     chatAudio.play();
   }).catch(() => {});
@@ -1843,50 +1885,45 @@ function appendChatMsg(role, text, typing) {
 
 let voiceRecognition = null;
 let isChatRecording = false;
-function startVoiceInput(e) {
-  e.preventDefault();
+let voiceTranscript = '';
+function startVoiceMode() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { alert('你的瀏覽器不支持語音輸入，請使用 Chrome 或 Edge'); return; }
-  const btn = document.getElementById('chat-mic-btn');
-  if (isChatRecording) return;
+  document.getElementById('chat-input-normal').style.display = 'none';
+  document.getElementById('chat-input-voice').style.display = 'flex';
+  voiceTranscript = '';
+  document.getElementById('voice-text').textContent = '聆聽中…';
   isChatRecording = true;
-  btn.classList.add('recording');
-  document.getElementById('chat-input').placeholder = '正在聆聽…';
   voiceRecognition = new SR();
   voiceRecognition.lang = 'zh-CN';
   voiceRecognition.interimResults = true;
   voiceRecognition.continuous = true;
-  const input = document.getElementById('chat-input');
   voiceRecognition.onresult = (e) => {
-    let transcript = '';
-    for (let i = 0; i < e.results.length; i++) {
-      transcript += e.results[i][0].transcript;
-    }
-    input.value = transcript;
+    let t = '';
+    for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+    voiceTranscript = t;
+    document.getElementById('voice-text').textContent = t || '聆聽中…';
   };
-  voiceRecognition.onerror = () => {
-    isChatRecording = false;
-    btn.classList.remove('recording');
-    input.placeholder = '問問張繼吧…';
-  };
+  voiceRecognition.onerror = () => {};
   voiceRecognition.onend = () => {
-    isChatRecording = false;
-    btn.classList.remove('recording');
-    input.placeholder = '問問張繼吧…';
+    if (isChatRecording) voiceRecognition.start();
   };
   voiceRecognition.start();
 }
-function stopVoiceInput() {
-  if (!isChatRecording) return;
-  const btn = document.getElementById('chat-mic-btn');
-  btn.classList.remove('recording');
-  document.getElementById('chat-input').placeholder = '問問張繼吧…';
+function cancelVoice() {
   isChatRecording = false;
-  if (voiceRecognition) voiceRecognition.stop();
-  setTimeout(() => {
-    const input = document.getElementById('chat-input');
-    if (input.value.trim()) sendChat();
-  }, 300);
+  if (voiceRecognition) { voiceRecognition.onend = null; voiceRecognition.stop(); }
+  document.getElementById('chat-input-normal').style.display = 'flex';
+  document.getElementById('chat-input-voice').style.display = 'none';
+}
+function sendVoice() {
+  isChatRecording = false;
+  if (voiceRecognition) { voiceRecognition.onend = null; voiceRecognition.stop(); }
+  document.getElementById('chat-input-normal').style.display = 'flex';
+  document.getElementById('chat-input-voice').style.display = 'none';
+  if (voiceTranscript.trim()) {
+    sendChatMessage(voiceTranscript.trim());
+  }
 }
 </script>
 </body>

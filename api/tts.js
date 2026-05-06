@@ -44,7 +44,7 @@ module.exports = async function handler(req, res) {
   const payload = JSON.stringify({
     Text: text,
     SessionId: crypto.randomUUID(),
-    VoiceType: voice || 101004,
+    VoiceType: voice || 101015,
     Codec: 'mp3'
   });
 
