@@ -1781,7 +1781,7 @@ function chatTTS(text) {
   fetch('/api/tts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: text })
+    body: JSON.stringify({ text: text, voice: 101003 })
   }).then(r => { if (!r.ok) throw new Error(); return r.blob(); })
   .then(blob => {
     chatAudio = new Audio(URL.createObjectURL(blob));
@@ -1842,11 +1842,11 @@ function appendChatMsg(role, text, typing) {
 }
 
 let voiceRecognition = null;
-let isRecording = false;
+let isChatRecording = false;
 function toggleVoiceInput() {
   const btn = document.getElementById('chat-mic-btn');
-  if (isRecording) {
-    isRecording = false;
+  if (isChatRecording) {
+    isChatRecording = false;
     btn.classList.remove('recording');
     if (voiceRecognition) voiceRecognition.stop();
     return;
@@ -1857,7 +1857,7 @@ function toggleVoiceInput() {
   voiceRecognition.lang = 'zh-CN';
   voiceRecognition.interimResults = true;
   voiceRecognition.continuous = false;
-  isRecording = true;
+  isChatRecording = true;
   btn.classList.add('recording');
   const input = document.getElementById('chat-input');
   voiceRecognition.onresult = (e) => {
@@ -1868,12 +1868,12 @@ function toggleVoiceInput() {
     input.value = transcript;
   };
   voiceRecognition.onend = () => {
-    isRecording = false;
+    isChatRecording = false;
     btn.classList.remove('recording');
     if (input.value.trim()) sendChat();
   };
   voiceRecognition.onerror = () => {
-    isRecording = false;
+    isChatRecording = false;
     btn.classList.remove('recording');
   };
   voiceRecognition.start();
