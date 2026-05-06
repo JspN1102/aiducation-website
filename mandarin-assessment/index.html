@@ -930,7 +930,7 @@ body {
       <button class="chat-suggest-btn" onclick="askSuggestion(this)">唐朝的人怎麼旅行？</button>
     </div>
     <div class="chat-input-wrap">
-      <button class="chat-mic-btn" id="chat-mic-btn" onclick="toggleVoiceInput()">🎤</button>
+      <button class="chat-mic-btn" id="chat-mic-btn" ontouchstart="startVoiceInput(event)" ontouchend="stopVoiceInput()" onmousedown="startVoiceInput(event)" onmouseup="stopVoiceInput()">🎤</button>
       <input type="text" class="chat-input" id="chat-input" placeholder="問問張繼吧…" onkeydown="if(event.key==='Enter')sendChat()">
       <button class="chat-send-btn" onclick="sendChat()">發送</button>
     </div>
@@ -1781,7 +1781,7 @@ function chatTTS(text) {
   fetch('/api/tts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: text, voice: 101003 })
+    body: JSON.stringify({ text: text, voice: 101015 })
   }).then(r => { if (!r.ok) throw new Error(); return r.blob(); })
   .then(blob => {
     chatAudio = new Audio(URL.createObjectURL(blob));
@@ -1843,22 +1843,19 @@ function appendChatMsg(role, text, typing) {
 
 let voiceRecognition = null;
 let isChatRecording = false;
-function toggleVoiceInput() {
-  const btn = document.getElementById('chat-mic-btn');
-  if (isChatRecording) {
-    isChatRecording = false;
-    btn.classList.remove('recording');
-    if (voiceRecognition) voiceRecognition.stop();
-    return;
-  }
+function startVoiceInput(e) {
+  e.preventDefault();
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { alert('你的瀏覽器不支持語音輸入，請使用 Chrome 或 Edge'); return; }
+  const btn = document.getElementById('chat-mic-btn');
+  if (isChatRecording) return;
+  isChatRecording = true;
+  btn.classList.add('recording');
+  document.getElementById('chat-input').placeholder = '正在聆聽…';
   voiceRecognition = new SR();
   voiceRecognition.lang = 'zh-CN';
   voiceRecognition.interimResults = true;
-  voiceRecognition.continuous = false;
-  isChatRecording = true;
-  btn.classList.add('recording');
+  voiceRecognition.continuous = true;
   const input = document.getElementById('chat-input');
   voiceRecognition.onresult = (e) => {
     let transcript = '';
@@ -1867,16 +1864,29 @@ function toggleVoiceInput() {
     }
     input.value = transcript;
   };
-  voiceRecognition.onend = () => {
-    isChatRecording = false;
-    btn.classList.remove('recording');
-    if (input.value.trim()) sendChat();
-  };
   voiceRecognition.onerror = () => {
     isChatRecording = false;
     btn.classList.remove('recording');
+    input.placeholder = '問問張繼吧…';
+  };
+  voiceRecognition.onend = () => {
+    isChatRecording = false;
+    btn.classList.remove('recording');
+    input.placeholder = '問問張繼吧…';
   };
   voiceRecognition.start();
+}
+function stopVoiceInput() {
+  if (!isChatRecording) return;
+  const btn = document.getElementById('chat-mic-btn');
+  btn.classList.remove('recording');
+  document.getElementById('chat-input').placeholder = '問問張繼吧…';
+  isChatRecording = false;
+  if (voiceRecognition) voiceRecognition.stop();
+  setTimeout(() => {
+    const input = document.getElementById('chat-input');
+    if (input.value.trim()) sendChat();
+  }, 300);
 }
 </script>
 </body>
