@@ -88,7 +88,7 @@ ${topBadStr || '全部正確，無需改進'}
       resolve();
     });
 
-    apiReq.setTimeout(30000, () => {
+    apiReq.setTimeout(20000, () => {
       apiReq.destroy();
       res.status(504).json({ error: 'GPT timeout' });
       resolve();
