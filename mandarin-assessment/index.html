@@ -1537,71 +1537,29 @@ const PRACTICE_MAP = {
 
 let ttsAudio = null;
 const ttsCache = {};
-let ttsBusy = false;
-function edgeTTS(text, voice) {
-  return new Promise((resolve, reject) => {
-    const id = 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, c => {
-      const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16);
-    });
-    const wsUrl = 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4&ConnectionId=' + id;
-    const ws = new WebSocket(wsUrl);
-    ws.binaryType = 'arraybuffer';
-    const chunks = [];
-    let done = false;
-    const timer = setTimeout(() => { if(!done){done=true;try{ws.close();}catch(e){}reject(new Error('timeout'));} }, 10000);
-    ws.onopen = () => {
-      const config = JSON.stringify({context:{synthesis:{audio:{metadataoptions:{sentenceBoundaryEnabled:false,wordBoundaryEnabled:false},outputFormat:'audio-24khz-48kbitrate-mono-mp3'}}}});
-      ws.send('X-Timestamp:'+new Date().toISOString()+'\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n'+config);
-      const ssml = 'X-RequestId:'+id+'\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:'+new Date().toISOString()+'\r\nPath:ssml\r\n\r\n'
-        +"<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='zh-CN'><voice name='"+voice+"'><prosody rate='+0%' volume='+0%'>"+text+"</prosody></voice></speak>";
-      ws.send(ssml);
-    };
-    ws.onmessage = (evt) => {
-      if (typeof evt.data === 'string') {
-        if (evt.data.includes('turn.end')) { done=true; clearTimeout(timer); resolve(new Blob(chunks,{type:'audio/mpeg'})); try{ws.close();}catch(e){} }
-      } else {
-        const buf = new Uint8Array(evt.data);
-        const sep = [80,97,116,104,58,97,117,100,105,111,13,10];
-        for (let i=0; i<=buf.length-sep.length; i++) {
-          let match = true;
-          for (let j=0; j<sep.length; j++) { if(buf[i+j]!==sep[j]){match=false;break;} }
-          if (match) { chunks.push(buf.slice(i+sep.length)); break; }
-        }
-      }
-    };
-    ws.onerror = () => { if(!done){done=true;clearTimeout(timer);reject(new Error('ws error'));} };
-    ws.onclose = () => { if(!done){done=true;clearTimeout(timer);reject(new Error('ws closed'));} };
-  });
-}
-async function speakChar(ch) {
+function speakChar(ch) {
   if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
   if (ttsCache[ch]) {
     ttsAudio = new Audio(URL.createObjectURL(ttsCache[ch]));
     ttsAudio.play();
     return;
   }
-  if (ttsBusy) {
+  fetch('/api/tts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: ch })
+  }).then(r => {
+    if (!r.ok) throw new Error();
+    return r.blob();
+  }).then(blob => {
+    ttsCache[ch] = blob;
+    ttsAudio = new Audio(URL.createObjectURL(blob));
+    ttsAudio.play();
+  }).catch(() => {
     const u = new SpeechSynthesisUtterance(ch);
     u.lang = 'zh-CN'; u.rate = 0.6;
     speechSynthesis.speak(u);
-    return;
-  }
-  ttsBusy = true;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      if (attempt > 0) await new Promise(r => setTimeout(r, 500));
-      const blob = await edgeTTS(ch, 'zh-CN-XiaoxiaoNeural');
-      ttsCache[ch] = blob;
-      ttsAudio = new Audio(URL.createObjectURL(blob));
-      ttsAudio.play();
-      ttsBusy = false;
-      return;
-    } catch(e) {}
-  }
-  ttsBusy = false;
-  const u = new SpeechSynthesisUtterance(ch);
-  u.lang = 'zh-CN'; u.rate = 0.6;
-  speechSynthesis.speak(u);
+  });
 }
 
 function renderPracticeSection(r) {
