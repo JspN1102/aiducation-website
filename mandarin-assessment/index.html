@@ -957,6 +957,10 @@ body {
       <button class="btn-outline" onclick="goPage('pg-record')">重新錄音</button>
       <button class="btn-outline" onclick="goPage('pg-teacher')">教師後台</button>
     </div>
+    <div style="padding:0 16px 16px;width:100%">
+      <button class="btn-primary" style="width:100%" onclick="goPage('pg-chat')">與詩人張繼聊天</button>
+      <button class="btn-primary" style="margin-top:8px;width:100%;background:var(--gold)" onclick="goPage('pg-game')">默寫練習</button>
+    </div>
   </div>
 </section>
 
@@ -1513,9 +1517,7 @@ function renderReport(r) {
     <ul class="suggestions">${r.suggestions.map(s => `<li>${s}</li>`).join('')}</ul>
     <button class="btn-gpt" id="btn-gpt" onclick="generateGptReport()">生成 AI 診斷報告</button>
     <div id="gpt-area"></div>
-    <div id="practice-area"></div>
-    <button class="btn-primary" style="margin-top:16px;width:100%" onclick="goPage('pg-chat')">與詩人張繼聊天</button>
-    <button class="btn-primary" style="margin-top:8px;width:100%;background:var(--gold)" onclick="goPage('pg-game')">默寫練習</button>`;
+    <div id="practice-area"></div>`;
   drawRing(r.total_score, gc, true);
   renderPracticeSection(r);
   saveErrorBook(r);
@@ -1837,10 +1839,10 @@ let gameCurrentLine = 0;
 let gameSlotIndex = 0;
 let gameSceneLayer = 0;
 const DISTRACTORS = [
-  ['雪','鳴','風','樓','夢'],
-  ['橋','雲','夢','寒','花'],
-  ['古','門','橋','雨','樓'],
-  ['明','風','雪','門','橋'],
+  ['雪','鳴','風','樓','夢','橋','雲','花','古','門','雨','明','寒','河','松','柳','鶴'],
+  ['橋','雲','夢','花','古','門','雨','樓','雪','鳴','松','柳','鶴','河','明','風','星'],
+  ['雪','鳴','風','樓','夢','花','雲','雨','河','松','柳','鶴','明','星','霜','江','夜'],
+  ['雪','鳴','樓','夢','花','古','雨','河','松','柳','鶴','霜','江','城','寒','火','愁'],
 ];
 
 function shuffleArray(arr) {
