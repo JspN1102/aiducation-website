@@ -1859,6 +1859,8 @@ function startGame() {
   gameSlotIndex = 0;
   gameSceneLayer = 0;
   resetGameScene();
+  revealGameScene(1);
+  gameSceneLayer = 1;
   renderGameLine();
 }
 
@@ -1904,11 +1906,15 @@ function pickGameChar(btn, ch) {
     gameSlotIndex++;
     if (gameSlotIndex >= 7) {
       try { navigator.vibrate(100); } catch(e) {}
-      gameSceneLayer++;
-      revealGameScene(gameSceneLayer);
       gameCurrentLine++;
       gameSlotIndex = 0;
-      setTimeout(() => renderGameLine(), 600);
+      if (gameCurrentLine < 4) {
+        gameSceneLayer++;
+        revealGameScene(gameSceneLayer);
+        setTimeout(() => renderGameLine(), 600);
+      } else {
+        setTimeout(() => renderGameLine(), 600);
+      }
     } else {
       const next = document.getElementById('slot-' + gameSlotIndex);
       if (next) next.classList.add('current');
