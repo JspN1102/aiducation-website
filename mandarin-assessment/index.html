@@ -931,8 +931,8 @@ body {
 }
 .shop-result p { color: var(--ink-60); font-size: 14px; margin: 8px 0 0; }
 
-.map-container { position: relative; width: 100%; padding: 0 8px; }
-.map-chart { width: 100%; height: 420px; }
+.map-container { position: relative; width: 100%; padding: 0; }
+.map-chart { width: 100%; height: 520px; }
 .map-unlock-modal {
   position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000;
   display: flex; align-items: center; justify-content: center;
@@ -2252,19 +2252,18 @@ function initMap() {
           {
             map: 'china',
             roam: false,
-            zoom: 1.2,
-            center: [104, 35],
+            zoom: 1.15,
+            center: [104.5, 36],
             silent: true,
             itemStyle: { areaColor: '#0a1128', borderColor: 'transparent' },
-            top: 20, bottom: 20, left: 'center',
+            top: 0, bottom: 0, left: 0, right: 0,
             z: 1
           },
           {
             map: 'china',
             roam: false,
-            zoom: 1.2,
-            center: [104, 35],
-            silent: true,
+            zoom: 1.15,
+            center: [104.5, 36],
             itemStyle: {
               areaColor: {
                 type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
@@ -2279,8 +2278,13 @@ function initMap() {
               shadowBlur: 20,
               shadowOffsetY: 8
             },
-            emphasis: { disabled: true },
-            top: 20, bottom: 20, left: 'center',
+            emphasis: {
+              itemStyle: {
+                areaColor: '#1a3a5c',
+                borderColor: '#3a7bd5'
+              }
+            },
+            top: 0, bottom: 0, left: 0, right: 0,
             z: 2
           }
         ],
@@ -2292,9 +2296,9 @@ function initMap() {
             data: MAP_LOCATIONS.filter(l => l.unlocked).map(l => ({
               name: l.name, value: l.coord, id: l.id
             })),
-            symbolSize: 16,
+            symbolSize: 20,
             itemStyle: { color: '#ffd700', shadowColor: '#ffd700', shadowBlur: 12 },
-            rippleEffect: { brushType: 'stroke', scale: 4, period: 3, color: '#ffd700' },
+            rippleEffect: { brushType: 'stroke', scale: 3, period: 4, color: '#ffd700' },
             label: {
               show: true, formatter: '{b}', position: 'right',
               color: '#ffd700', fontSize: 13, fontFamily: 'Noto Serif TC',
@@ -2309,7 +2313,7 @@ function initMap() {
             data: MAP_LOCATIONS.filter(l => !l.unlocked).map(l => ({
               name: l.name, value: l.coord, id: l.id
             })),
-            symbolSize: 8,
+            symbolSize: 10,
             itemStyle: { color: '#555', opacity: 0.5 },
             label: {
               show: true, formatter: '{b}', position: 'right',
@@ -2321,8 +2325,9 @@ function initMap() {
       };
       mapChart.setOption(option);
       mapChart.on('click', function(params) {
-        if (params.seriesType === 'effectScatter') {
-          showMapDetail(params.data.id);
+        if (params.data && params.data.id) {
+          const loc = MAP_LOCATIONS.find(l => l.id === params.data.id);
+          if (loc && loc.unlocked) showMapDetail(params.data.id);
         }
       });
     });
