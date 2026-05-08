@@ -852,6 +852,84 @@ body {
 .game-complete { text-align: center; padding: 24px 16px; }
 .game-complete h3 { font-size: 22px; color: var(--green); margin: 0 0 8px; }
 .game-complete p { color: var(--ink-60); font-size: 14px; margin: 0; }
+
+.shop-shelf {
+  background: linear-gradient(180deg, #8B5E3C 0%, #6B4226 100%);
+  border-radius: 12px; padding: 20px 12px 16px; margin: 12px 16px;
+  display: flex; gap: 10px; justify-content: center; align-items: flex-end;
+  box-shadow: inset 0 -4px 8px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.2);
+  position: relative;
+}
+.shop-shelf::before {
+  content: ''; position: absolute; bottom: 12px; left: 12px; right: 12px; height: 4px;
+  background: #5a3520; border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+.shop-item {
+  width: 68px; min-height: 88px; background: #fdf6e3; border: 2px solid #c9a96e;
+  border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  font-family: 'ZCOOL XiaoWei', serif; font-size: 22px; color: #3d2b1f;
+  cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15); position: relative; z-index: 1;
+  padding: 8px 4px; text-align: center; line-height: 1.3;
+}
+.shop-item:active { transform: scale(0.93); }
+.shop-item.correct {
+  border-color: var(--green); background: rgba(42,90,74,0.1);
+  animation: shop-fly 0.6s ease-out forwards;
+}
+@keyframes shop-fly {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2) translateY(-20px); opacity: 0.8; }
+  100% { transform: scale(0.3) translateY(80px); opacity: 0; }
+}
+.shop-item.wrong { animation: shop-shake 0.5s; border-color: var(--red); }
+@keyframes shop-shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+.shop-animal-area {
+  display: flex; flex-direction: column; align-items: center; padding: 16px; gap: 8px;
+}
+.shop-animal-row { display: flex; align-items: flex-end; gap: 12px; }
+.shop-animal {
+  width: 90px; height: 90px; object-fit: contain; transition: transform 0.3s;
+}
+.shop-animal.happy { animation: shop-bounce 0.6s; }
+@keyframes shop-bounce { 0%,100%{transform:translateY(0)} 30%{transform:translateY(-18px)} 50%{transform:translateY(-12px)} 70%{transform:translateY(-6px)} }
+.shop-animal.sad { animation: shop-headshake 0.5s; }
+@keyframes shop-headshake { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-8deg)} 75%{transform:rotate(8deg)} }
+.shop-bubble {
+  background: white; border-radius: 16px; padding: 10px 16px; font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: relative; max-width: 200px;
+  line-height: 1.5; color: var(--ink-80);
+}
+.shop-bubble::after {
+  content: ''; position: absolute; bottom: -8px; left: 24px;
+  border: 8px solid transparent; border-top-color: white; border-bottom: 0;
+}
+.shop-progress { text-align: center; font-size: 13px; color: var(--ink-40); margin: 4px 0; }
+.shop-cart-area {
+  display: flex; gap: 8px; justify-content: center; padding: 8px 16px;
+  flex-wrap: wrap; min-height: 40px;
+}
+.shop-cart-item {
+  width: 32px; height: 32px; background: var(--green); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: white; font-weight: 600;
+  animation: cart-pop 0.3s ease-out;
+}
+@keyframes cart-pop { 0%{transform:scale(0)} 60%{transform:scale(1.2)} 100%{transform:scale(1)} }
+.shop-replay-btn {
+  background: none; border: 1.5px solid var(--green); border-radius: 50%;
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px; margin-top: 4px;
+}
+.shop-result { text-align: center; padding: 24px 16px; }
+.shop-result h3 { font-size: 20px; color: var(--green); margin: 0 0 12px; }
+.shop-result-cart { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 16px 0; }
+.shop-result-item {
+  width: 52px; height: 64px; background: #fdf6e3; border: 2px solid var(--green);
+  border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  font-family: 'ZCOOL XiaoWei', serif; font-size: 18px; color: #3d2b1f;
+}
+.shop-result p { color: var(--ink-60); font-size: 14px; margin: 8px 0 0; }
 </style>
 </head>
 <body>
@@ -960,6 +1038,7 @@ body {
     <div style="padding:0 16px 16px;width:100%">
       <button class="btn-primary" style="width:100%" onclick="goPage('pg-chat')">與詩人張繼聊天</button>
       <button class="btn-primary" style="margin-top:8px;width:100%;background:var(--gold)" onclick="goPage('pg-game')">默寫練習</button>
+      <button class="btn-primary" style="margin-top:8px;width:100%;background:var(--fire)" onclick="goPage('pg-shop')">讀音超市</button>
     </div>
   </div>
 </section>
@@ -1016,6 +1095,18 @@ body {
   </div>
 </section>
 
+<!-- Page: Shop Game -->
+<section class="page" id="pg-shop">
+  <div class="page-inner page-scroll">
+    <header class="top-bar">
+      <button class="btn-back" onclick="goPage('pg-report')">&#8592;</button>
+      <h2 class="top-title">讀音超市</h2>
+      <span class="top-spacer"></span>
+    </header>
+    <div id="shop-content"></div>
+  </div>
+</section>
+
 <!-- Page 5: Teacher -->
 <section class="page" id="pg-teacher">
   <div class="page-inner page-scroll">
@@ -1069,6 +1160,7 @@ function goPage(id) {
   if (id === 'pg-record') resetRecording();
   if (id === 'pg-chat' && !chatWelcomePlayed) { chatWelcomePlayed = true; setTimeout(() => chatTTS('你好呀，小朋友！我是張繼，楓橋夜泊的作者。那晚的鐘聲我至今記憶猶新，你想問我什麼呢？'), 500); }
   if (id === 'pg-game') startGame();
+  if (id === 'pg-shop') startShop();
 }
 
 function renderPoem() {
@@ -1955,6 +2047,117 @@ function resetGameScene() {
   if (front) { front.src = ''; front.style.opacity = '0'; }
   if (back) { back.src = ''; back.style.opacity = '0'; }
   if (hint) hint.classList.remove('hidden');
+}
+
+const SHOP_ANIMALS = {
+  fox: { img: 'img/fox.png', name: '阿橙', phrase: '這個怎麼念啊？', happy: '太棒了！放進購物車！', sad: '好像不對哦…' },
+  penguin: { img: 'img/penguin.png', name: '墨墨', phrase: '要準確才行！', happy: '完全正確！', sad: '再想想？' },
+  bear: { img: 'img/bear.png', name: '棕棕', phrase: '我有點不確定…', happy: '原來是這個！謝謝你！', sad: '嗯…不是這個吧？' },
+  rabbit: { img: 'img/rabbit.png', name: '粉粉', phrase: '幫幫我好嗎？', happy: '你真厲害！', sad: '再試一次你可以的！' },
+};
+const SHOP_QUESTIONS = [
+  { audio: '我要泊', answer: '泊', options: ['泊','白','百','伯'], animal: 'fox' },
+  { audio: '我要霜', answer: '霜', options: ['霜','爽','桑','雙'], animal: 'penguin' },
+  { audio: '我要烏', answer: '烏', options: ['烏','污','屋','吳'], animal: 'bear' },
+  { audio: '我要姑蘇', answer: '姑蘇', options: ['姑蘇','故蘇','古蘇','鼓蘇'], animal: 'rabbit' },
+  { audio: '我要眠', answer: '眠', options: ['眠','棉','面','綿'], animal: 'fox' },
+];
+let shopCurrent = 0;
+let shopScore = 0;
+let shopCart = [];
+let shopLocked = false;
+
+function startShop() {
+  shopCurrent = 0; shopScore = 0; shopCart = []; shopLocked = false;
+  renderShopQuestion();
+}
+
+function renderShopQuestion() {
+  const el = document.getElementById('shop-content');
+  if (shopCurrent >= SHOP_QUESTIONS.length) {
+    el.innerHTML = `
+      <div class="shop-result">
+        <h3>採購完成！</h3>
+        <p>得分：${shopScore} / ${SHOP_QUESTIONS.length}</p>
+        <div class="shop-result-cart">${shopCart.map(c => `<div class="shop-result-item">${c}</div>`).join('')}</div>
+        <p>${shopScore >= 4 ? '太厲害了，小動物們都很感謝你！' : shopScore >= 3 ? '做得不錯，繼續加油！' : '多練習幾次就會更好了！'}</p>
+        <button class="btn-primary" style="margin-top:16px" onclick="startShop()">再玩一次</button>
+      </div>`;
+    return;
+  }
+  const q = SHOP_QUESTIONS[shopCurrent];
+  const a = SHOP_ANIMALS[q.animal];
+  const shuffled = shuffleArray(q.options.map((o, i) => ({ text: o, idx: i })));
+  el.innerHTML = `
+    <div class="shop-progress">第 ${shopCurrent + 1} / ${SHOP_QUESTIONS.length} 題</div>
+    <div class="shop-shelf" id="shop-shelf">
+      ${shuffled.map(o => `<div class="shop-item" id="shop-opt-${o.idx}" onclick="pickShopItem(${o.idx})">${o.text}</div>`).join('')}
+    </div>
+    <div class="shop-animal-area">
+      <div class="shop-bubble" id="shop-bubble">${a.phrase}</div>
+      <div class="shop-animal-row">
+        <img class="shop-animal" id="shop-animal" src="${a.img}" alt="${a.name}">
+        <button class="shop-replay-btn" onclick="shopPlayAudio()">🔊</button>
+      </div>
+    </div>
+    <div class="shop-cart-area" id="shop-cart-area">
+      ${shopCart.map(c => `<div class="shop-cart-item">${c}</div>`).join('')}
+    </div>`;
+  shopLocked = false;
+  setTimeout(() => shopPlayAudio(), 400);
+}
+
+function shopPlayAudio() {
+  const q = SHOP_QUESTIONS[shopCurrent];
+  if (!q) return;
+  if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
+  const cached = ttsCache[q.audio];
+  if (cached) {
+    ttsAudio = new Audio(URL.createObjectURL(cached));
+    ttsAudio.play();
+    return;
+  }
+  fetch('/api/tts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: q.audio, voice: 101004 })
+  }).then(r => { if (!r.ok) throw new Error(); return r.blob(); })
+  .then(blob => {
+    ttsCache[q.audio] = blob;
+    ttsAudio = new Audio(URL.createObjectURL(blob));
+    ttsAudio.play();
+  }).catch(() => {});
+}
+
+function pickShopItem(idx) {
+  if (shopLocked) return;
+  const q = SHOP_QUESTIONS[shopCurrent];
+  const item = document.getElementById('shop-opt-' + idx);
+  const animal = document.getElementById('shop-animal');
+  const bubble = document.getElementById('shop-bubble');
+  const a = SHOP_ANIMALS[q.animal];
+  if (q.options[idx] === q.answer) {
+    shopLocked = true;
+    item.classList.add('correct');
+    animal.classList.add('happy');
+    bubble.textContent = a.happy;
+    try { navigator.vibrate(100); } catch(e) {}
+    shopScore++;
+    shopCart.push(q.answer);
+    const cartArea = document.getElementById('shop-cart-area');
+    cartArea.innerHTML += `<div class="shop-cart-item">${q.answer}</div>`;
+    setTimeout(() => { shopCurrent++; renderShopQuestion(); }, 1200);
+  } else {
+    item.classList.add('wrong');
+    animal.classList.add('sad');
+    bubble.textContent = a.sad;
+    try { navigator.vibrate(50); } catch(e) {}
+    setTimeout(() => {
+      item.classList.remove('wrong');
+      animal.classList.remove('sad');
+      bubble.textContent = a.phrase;
+    }, 800);
+  }
 }
 
 let chatHistory = [];
