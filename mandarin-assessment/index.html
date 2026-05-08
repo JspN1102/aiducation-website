@@ -931,27 +931,8 @@ body {
 }
 .shop-result p { color: var(--ink-60); font-size: 14px; margin: 8px 0 0; }
 
-.map-container { position: relative; width: 100%; padding: 16px; }
-.map-container svg { width: 100%; height: auto; filter: drop-shadow(0 0 20px rgba(100,200,255,0.1)); }
-.map-container svg .province { fill: #2a2a4a; stroke: #3a3a5a; stroke-width: 0.3; transition: fill 0.5s; }
-.map-container svg .province.lit { fill: #3d5a80; stroke: #5a8ab0; }
-.map-pin {
-  position: absolute; transform: translate(-50%, -100%);
-  display: flex; flex-direction: column; align-items: center; cursor: pointer;
-}
-.map-pin-dot {
-  width: 14px; height: 14px; border-radius: 50%;
-  background: radial-gradient(circle, #ffd700 30%, #ff8c00 100%);
-  box-shadow: 0 0 12px #ffd700, 0 0 24px rgba(255,215,0,0.4);
-  animation: map-glow 2s infinite alternate;
-}
-.map-pin-dot.locked { background: #555; box-shadow: none; animation: none; opacity: 0.4; }
-@keyframes map-glow { 0%{box-shadow:0 0 8px #ffd700,0 0 16px rgba(255,215,0,0.3)} 100%{box-shadow:0 0 16px #ffd700,0 0 32px rgba(255,215,0,0.5)} }
-.map-pin-label {
-  font-size: 11px; color: #ffd700; margin-top: 4px; white-space: nowrap;
-  text-shadow: 0 0 4px rgba(0,0,0,0.8); font-weight: 500;
-}
-.map-pin-label.locked { color: #666; }
+.map-container { position: relative; width: 100%; padding: 0 8px; }
+.map-chart { width: 100%; height: 420px; }
 .map-unlock-modal {
   position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000;
   display: flex; align-items: center; justify-content: center;
@@ -1170,7 +1151,13 @@ body {
       <h2 class="top-title" style="color:white">詩詞地圖</h2>
       <span class="top-spacer"></span>
     </header>
-    <div class="map-container" id="map-container"></div>
+    <div class="map-container" id="map-container">
+      <div style="text-align:center">
+        <div class="map-title-badge"><span id="map-badge-text">已解鎖 1 / 8 個地點</span></div>
+      </div>
+      <div class="map-chart" id="map-chart"></div>
+      <div class="map-progress">探索大唐詩路，解鎖更多地點</div>
+    </div>
   </div>
 </section>
 
@@ -2237,46 +2224,108 @@ function pickShopItem(idx) {
 }
 
 const MAP_LOCATIONS = [
-  { id: 'gusu', name: '姑蘇城', x: 76, y: 62, unlocked: true, poem: '楓橋夜泊', poet: '張繼', quote: '姑蘇城外寒山寺\n夜半鐘聲到客船', desc: '姑蘇即今蘇州，江南最繁華的城市之一。張繼科舉落第後路過此地，夜裡聽到寒山寺的鐘聲，寫下這首千古名作。' },
-  { id: 'baidi', name: '白帝城', x: 48, y: 58, unlocked: false },
-  { id: 'luoyang', name: '洛陽', x: 60, y: 48, unlocked: false },
-  { id: 'changaan', name: '長安', x: 52, y: 47, unlocked: false },
-  { id: 'liangzhou', name: '涼州', x: 42, y: 38, unlocked: false },
-  { id: 'lushan', name: '廬山', x: 68, y: 60, unlocked: false },
-  { id: 'huanghelou', name: '黃鶴樓', x: 63, y: 58, unlocked: false },
-  { id: 'yangzhou', name: '揚州', x: 74, y: 56, unlocked: false },
+  { id: 'gusu', name: '姑蘇城', coord: [120.62, 31.30], unlocked: true, poem: '楓橋夜泊', poet: '張繼', quote: '姑蘇城外寒山寺\n夜半鐘聲到客船', desc: '姑蘇即今蘇州，江南最繁華的城市之一。張繼科舉落第後路過此地，夜裡聽到寒山寺的鐘聲，寫下這首千古名作。' },
+  { id: 'baidi', name: '白帝城', coord: [109.55, 31.04], unlocked: false, poem: '早發白帝城', poet: '李白' },
+  { id: 'luoyang', name: '洛陽', coord: [112.45, 34.62], unlocked: false, poem: '春夜洛城聞笛', poet: '李白' },
+  { id: 'changaan', name: '長安', coord: [108.94, 34.26], unlocked: false, poem: '長安秋望', poet: '杜牧' },
+  { id: 'liangzhou', name: '涼州', coord: [102.64, 37.93], unlocked: false, poem: '涼州詞', poet: '王之渙' },
+  { id: 'lushan', name: '廬山', coord: [115.97, 29.56], unlocked: false, poem: '望廬山瀑布', poet: '李白' },
+  { id: 'huanghelou', name: '黃鶴樓', coord: [114.30, 30.55], unlocked: false, poem: '黃鶴樓送孟浩然', poet: '李白' },
+  { id: 'yangzhou', name: '揚州', coord: [119.42, 32.39], unlocked: false, poem: '送孟浩然之廣陵', poet: '李白' },
 ];
 
 let mapShown = false;
+let mapChart = null;
 
 function initMap() {
-  const container = document.getElementById('map-container');
-  container.innerHTML = `
-    <div style="text-align:center">
-      <div class="map-title-badge"><span>已解鎖 1 / ${MAP_LOCATIONS.length} 個地點</span></div>
-    </div>
-    <div style="position:relative;width:100%;padding-top:85%">
-      <svg viewBox="0 0 600 500" style="position:absolute;top:0;left:0;width:100%;height:100%" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <radialGradient id="glow-grad" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="rgba(255,215,0,0.3)"/>
-            <stop offset="100%" stop-color="rgba(255,215,0,0)"/>
-          </radialGradient>
-        </defs>
-        <path class="province lit" d="M180,80 L220,60 L280,55 L320,65 L380,60 L420,70 L460,85 L500,100 L520,130 L530,160 L520,190 L530,220 L520,250 L540,280 L530,310 L510,330 L490,350 L470,370 L450,380 L430,390 L410,400 L380,410 L350,400 L320,410 L290,420 L260,410 L240,400 L220,380 L200,360 L180,340 L160,310 L150,280 L140,250 L130,220 L120,190 L110,160 L120,130 L140,110 L160,90 Z"/>
-        <path class="province lit" d="M430,395 L440,410 L435,420 L425,415 L420,405 Z" opacity="0.8"/>
-        <path class="province lit" d="M432,418 L436,425 L433,428 L429,424 Z" opacity="0.7"/>
-        <path class="province lit" d="M480,360 L495,355 L505,365 L500,380 L490,385 L480,375 Z" opacity="0.8"/>
-        <circle cx="${MAP_LOCATIONS[0].x * 6}" cy="${MAP_LOCATIONS[0].y * 5}" r="40" fill="url(#glow-grad)"/>
-      </svg>
-      ${MAP_LOCATIONS.map(loc => `
-        <div class="map-pin" style="left:${loc.x}%;top:${loc.y}%" onclick="${loc.unlocked ? `showMapDetail('${loc.id}')` : ''}">
-          <div class="map-pin-dot ${loc.unlocked ? '' : 'locked'}"></div>
-          <div class="map-pin-label ${loc.unlocked ? '' : 'locked'}">${loc.name}</div>
-        </div>
-      `).join('')}
-    </div>
-    <div class="map-progress">探索大唐詩路，解鎖更多地點</div>`;
+  document.getElementById('map-badge-text').textContent = `已解鎖 1 / ${MAP_LOCATIONS.length} 個地點`;
+  if (mapChart) { mapChart.resize(); return; }
+  const chartDom = document.getElementById('map-chart');
+  fetch('china.json')
+    .then(r => r.json())
+    .then(geoJson => {
+      echarts.registerMap('china', geoJson);
+      mapChart = echarts.init(chartDom);
+      const option = {
+        backgroundColor: 'transparent',
+        geo: [
+          {
+            map: 'china',
+            roam: false,
+            zoom: 1.2,
+            center: [104, 35],
+            silent: true,
+            itemStyle: { areaColor: '#0a1128', borderColor: 'transparent' },
+            top: 20, bottom: 20, left: 'center',
+            z: 1
+          },
+          {
+            map: 'china',
+            roam: false,
+            zoom: 1.2,
+            center: [104, 35],
+            silent: true,
+            itemStyle: {
+              areaColor: {
+                type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                colorStops: [
+                  { offset: 0, color: '#1a3a5c' },
+                  { offset: 1, color: '#0d2240' }
+                ]
+              },
+              borderColor: '#3a7bd5',
+              borderWidth: 1,
+              shadowColor: 'rgba(30,144,255,0.6)',
+              shadowBlur: 20,
+              shadowOffsetY: 8
+            },
+            emphasis: { disabled: true },
+            top: 20, bottom: 20, left: 'center',
+            z: 2
+          }
+        ],
+        series: [
+          {
+            type: 'effectScatter',
+            coordinateSystem: 'geo',
+            geoIndex: 1,
+            data: MAP_LOCATIONS.filter(l => l.unlocked).map(l => ({
+              name: l.name, value: l.coord, id: l.id
+            })),
+            symbolSize: 16,
+            itemStyle: { color: '#ffd700', shadowColor: '#ffd700', shadowBlur: 12 },
+            rippleEffect: { brushType: 'stroke', scale: 4, period: 3, color: '#ffd700' },
+            label: {
+              show: true, formatter: '{b}', position: 'right',
+              color: '#ffd700', fontSize: 13, fontFamily: 'Noto Serif TC',
+              textShadowColor: '#000', textShadowBlur: 4
+            },
+            z: 10
+          },
+          {
+            type: 'scatter',
+            coordinateSystem: 'geo',
+            geoIndex: 1,
+            data: MAP_LOCATIONS.filter(l => !l.unlocked).map(l => ({
+              name: l.name, value: l.coord, id: l.id
+            })),
+            symbolSize: 8,
+            itemStyle: { color: '#555', opacity: 0.5 },
+            label: {
+              show: true, formatter: '{b}', position: 'right',
+              color: '#666', fontSize: 11
+            },
+            z: 9
+          }
+        ]
+      };
+      mapChart.setOption(option);
+      mapChart.on('click', function(params) {
+        if (params.seriesType === 'effectScatter') {
+          showMapDetail(params.data.id);
+        }
+      });
+    });
 
   if (!mapShown) {
     mapShown = true;
