@@ -163,6 +163,13 @@ padding:16px 10px;text-align:center;box-shadow:var(--sh);transition:.15s;
 .tipcard h4{font-size:13px;font-weight:600;margin-bottom:5px}
 .tipcard p{font-size:11px;color:var(--ink-60);line-height:1.75}
 
+/* ---- TICKETS ---- */
+.ticket-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.ticket-card{background:var(--card);border:1px solid var(--ink-20);border-radius:var(--r-sm);padding:16px;text-align:center;box-shadow:var(--sh);transition:.15s}
+.ticket-card:hover{transform:translateY(-2px);box-shadow:var(--sh-md)}
+.ticket-card img{width:100%;max-width:240px;border-radius:8px;margin-bottom:10px}
+.ticket-card p{font-size:13px;font-weight:600;color:var(--ink-80)}
+
 /* ---- FOOTER ---- */
 footer{text-align:center;padding:56px 20px;border-top:1px solid var(--ink-20);font-size:11px;color:var(--ink-40)}
 
@@ -201,6 +208,7 @@ section{padding:56px 0}
 <a href="#sec-hotel">住宿</a>
 <a href="#sec-trans">交通</a>
 <a href="#sec-tips">贴士</a>
+<a href="#sec-tickets">门票</a>
 </div></nav>
 
 <!-- MAP -->
@@ -418,6 +426,38 @@ section{padding:56px 0}
 <div class="tipcard"><div class="ico">🗺</div><h4>路线逻辑</h4><p>Day2南线王家大院 → Day3北线三连到大同 → Day4大同全天 → Day5太原晋祠+博物院 → Day6自由返程</p></div>
 <div class="tipcard"><div class="ico">🍜</div><h4>美食清单</h4><p>刀削面 · 过油肉 · 栲栳栳 · 莜面鱼鱼 · 羊杂割 · 太原头脑 · 大同凉粉 · 黄米凉糕 · 平遥牛肉</p></div>
 </div>
+</div></section>
+
+<!-- TICKETS -->
+<section id="sec-tickets"><div class="wrap">
+<p class="stag">🎫 门票</p>
+<h2 class="sh2">门票二维码</h2>
+<p class="sp">到景区入口直接出示二维码扫码入园。</p>
+
+<h3 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--green)">🛕 华严寺</h3>
+<div class="ticket-row">
+<div class="ticket-card">
+<img src="tickets/华严寺-宁杨添.png" alt="华严寺-宁杨添">
+<p>宁杨添</p>
+</div>
+<div class="ticket-card">
+<img src="tickets/华严寺-范钇君.png" alt="华严寺-范钇君">
+<p>范钇君</p>
+</div>
+</div>
+
+<h3 style="font-size:15px;font-weight:600;margin:28px 0 14px;color:var(--purple)">⛲ 晋祠</h3>
+<div class="ticket-row">
+<div class="ticket-card">
+<img src="tickets/晋祠-宁杨添.jpg" alt="晋祠-宁杨添">
+<p>宁杨添</p>
+</div>
+<div class="ticket-card">
+<img src="tickets/晋祠-范钇君.jpg" alt="晋祠-范钇君">
+<p>范钇君</p>
+</div>
+</div>
+
 </div></section>
 
 <footer>
