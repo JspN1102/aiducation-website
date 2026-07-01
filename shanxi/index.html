@@ -165,10 +165,13 @@ padding:16px 10px;text-align:center;box-shadow:var(--sh);transition:.15s;
 
 /* ---- TICKETS ---- */
 .ticket-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
-.ticket-card{background:var(--card);border:1px solid var(--ink-20);border-radius:var(--r-sm);padding:16px;text-align:center;box-shadow:var(--sh);transition:.15s}
-.ticket-card:hover{transform:translateY(-2px);box-shadow:var(--sh-md)}
-.ticket-card img{width:100%;max-width:240px;border-radius:8px;margin-bottom:10px}
+.ticket-card{background:var(--card);border:1px solid var(--ink-20);border-radius:var(--r-sm);padding:16px;text-align:center;box-shadow:var(--sh)}
+.ticket-card img{width:100%;max-width:240px;border-radius:8px;margin-bottom:10px;cursor:pointer;transition:none}
 .ticket-card p{font-size:13px;font-weight:600;color:var(--ink-80)}
+/* lightbox */
+.lightbox{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;cursor:pointer;backdrop-filter:blur(4px)}
+.lightbox.show{display:flex}
+.lightbox img{max-width:92vw;max-height:88vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
 
 /* ---- FOOTER ---- */
 footer{text-align:center;padding:56px 20px;border-top:1px solid var(--ink-20);font-size:11px;color:var(--ink-40)}
@@ -460,6 +463,11 @@ section{padding:56px 0}
 
 </div></section>
 
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('show')">
+<img id="lb-img" src="" alt="">
+</div>
+
 <footer>
 <p style="font-size:18px;margin-bottom:6px">🏔️</p>
 <p>山西漫游 · 6天5晚 · 松弛旅行手册</p>
@@ -523,6 +531,14 @@ document.querySelectorAll('.tbody').forEach(x=>x.classList.remove('on'));
 document.querySelectorAll('.thead').forEach(x=>x.classList.remove('on'));
 if(!o){b.classList.add('on');h.classList.add('on')}
 }));
+
+// ---- TICKET LIGHTBOX ----
+document.querySelectorAll('.ticket-card img').forEach(img=>{
+img.addEventListener('click',()=>{
+document.getElementById('lb-img').src=img.src;
+document.getElementById('lightbox').classList.add('show');
+});
+});
 </script>
 </body>
 </html>
