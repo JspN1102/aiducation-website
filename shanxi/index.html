@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>山西 6 天 5 晚 · 松弛旅行手册</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #faf8f5;
+  --bg-warm: #f3ede4;
+  --card: #ffffff;
+  --ink: #1a1a1a;
+  --ink-70: #4a4a4a;
+  --ink-50: #737373;
+  --ink-30: #a3a3a3;
+  --ink-10: #e5e5e5;
+  --accent: #c0392b;
+  --accent-soft: rgba(192,57,43,0.08);
+  --gold: #b8860b;
+  --gold-soft: rgba(184,134,11,0.1);
+  --blue: #2563eb;
+  --blue-soft: rgba(37,99,235,0.08);
+  --green: #16a34a;
+  --green-soft: rgba(22,163,74,0.08);
+  --purple: #7c3aed;
+  --purple-soft: rgba(124,58,237,0.08);
+  --orange: #ea580c;
+  --orange-soft: rgba(234,88,12,0.08);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.1);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --font-serif: 'Noto Serif SC', serif;
+  --font-sans: 'Noto Sans SC', -apple-system, sans-serif;
+  --font-num: 'Inter', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* === HERO === */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 24px;
+  background: linear-gradient(160deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(ellipse at 30% 50%, rgba(192,57,43,0.08) 0%, transparent 50%),
+              radial-gradient(ellipse at 70% 30%, rgba(184,134,11,0.06) 0%, transparent 50%);
+  animation: drift 20s ease-in-out infinite;
+}
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(-2%, 1%) rotate(1deg); }
+}
+.hero-content { position: relative; z-index: 1; }
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 40px;
+  color: rgba(255,255,255,0.7);
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 32px;
+  backdrop-filter: blur(8px);
+}
+.hero-badge span { font-size: 16px; }
+.hero h1 {
+  font-family: var(--font-serif);
+  font-size: clamp(42px, 8vw, 72px);
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -1px;
+  margin-bottom: 16px;
+  text-shadow: 0 2px 40px rgba(0,0,0,0.3);
+}
+.hero h1 .accent { color: #f0c040; }
+.hero-sub {
+  font-size: clamp(16px, 2.5vw, 20px);
+  color: rgba(255,255,255,0.6);
+  font-weight: 300;
+  margin-bottom: 48px;
+}
+.hero-stats {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.hero-stat {
+  text-align: center;
+}
+.hero-stat-num {
+  font-family: var(--font-num);
+  font-size: 36px;
+  font-weight: 700;
+  color: #f0c040;
+}
+.hero-stat-label {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  margin-top: 4px;
+}
+.scroll-hint {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.4);
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: bounce 2s infinite;
+}
+@keyframes bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(6px); }
+}
+.scroll-hint::after {
+  content: '';
+  width: 1px;
+  height: 24px;
+  background: linear-gradient(rgba(255,255,255,0.4), transparent);
+}
+
+/* === CONTAINER === */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* === SECTION === */
+section {
+  padding: 80px 0;
+}
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.section-title {
+  font-family: var(--font-serif);
+  font-size: clamp(28px, 5vw, 36px);
+  font-weight: 700;
+  margin-bottom: 40px;
+  color: var(--ink);
+}
+
+/* === OVERVIEW CARDS === */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 40px;
+}
+.overview-card {
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(0,0,0,0.04);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.overview-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.overview-card-icon {
+  font-size: 28px;
+  margin-bottom: 12px;
+}
+.overview-card-title {
+  font-size: 13px;
+  color: var(--ink-50);
+  margin-bottom: 4px;
+}
+.overview-card-value {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* === HOTEL === */
+.hotel-banner {
+  background: linear-gradient(135deg, #1a1a2e, #2d1b4e);
+  border-radius: var(--radius);
+  padding: 32px;
+  color: #fff;
+  margin-bottom: 24px;
+}
+.hotel-banner h3 {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+.hotel-banner p {
+  color: rgba(255,255,255,0.7);
+  font-size: 14px;
+}
+.hotel-nights {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-top: 20px;
+}
+.hotel-night {
+  background: rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 12px 8px;
+  text-align: center;
+  font-size: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.hotel-night.alt {
+  background: rgba(234,88,12,0.2);
+  border-color: rgba(234,88,12,0.3);
+}
+.hotel-night-date {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+.hotel-night-loc {
+  color: rgba(255,255,255,0.6);
+  font-size: 11px;
+}
+
+/* === TIMELINE === */
+.timeline { position: relative; }
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 20px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(var(--ink-10), var(--ink-10));
+  border-radius: 2px;
+}
+
+.day-card {
+  position: relative;
+  margin-bottom: 32px;
+  padding-left: 56px;
+}
+.day-dot {
+  position: absolute;
+  left: 12px;
+  top: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 3px solid var(--accent);
+  z-index: 1;
+}
+.day-card[data-color="gold"] .day-dot { border-color: var(--gold); }
+.day-card[data-color="blue"] .day-dot { border-color: var(--blue); }
+.day-card[data-color="green"] .day-dot { border-color: var(--green); }
+.day-card[data-color="purple"] .day-dot { border-color: var(--purple); }
+.day-card[data-color="orange"] .day-dot { border-color: var(--orange); }
+
+.day-content {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 28px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(0,0,0,0.04);
+  transition: box-shadow 0.3s;
+}
+.day-content:hover {
+  box-shadow: var(--shadow-md);
+}
+.day-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.day-num {
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  letter-spacing: 0.5px;
+}
+.day-card[data-color="gold"] .day-num { background: var(--gold-soft); color: var(--gold); }
+.day-card[data-color="blue"] .day-num { background: var(--blue-soft); color: var(--blue); }
+.day-card[data-color="green"] .day-num { background: var(--green-soft); color: var(--green); }
+.day-card[data-color="purple"] .day-num { background: var(--purple-soft); color: var(--purple); }
+.day-card[data-color="orange"] .day-num { background: var(--orange-soft); color: var(--orange); }
+
+.day-date {
+  font-size: 13px;
+  color: var(--ink-50);
+  font-family: var(--font-num);
+}
+.day-title {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+}
+.day-body { margin-top: 16px; }
+.day-body .spot {
+  display: flex;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--ink-10);
+}
+.day-body .spot:last-child { border-bottom: none; }
+.spot-time {
+  flex-shrink: 0;
+  width: 48px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-50);
+  padding-top: 2px;
+}
+.spot-info { flex: 1; }
+.spot-name {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+.spot-desc {
+  font-size: 13px;
+  color: var(--ink-70);
+  line-height: 1.6;
+}
+.spot-tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--gold-soft);
+  color: var(--gold);
+  font-weight: 600;
+  margin-top: 6px;
+}
+.spot-tag.must { background: var(--accent-soft); color: var(--accent); }
+
+/* === TRANSPORT === */
+.transport-section { background: var(--bg-warm); }
+.transport-day {
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(0,0,0,0.04);
+}
+.transport-day-header {
+  padding: 16px 20px;
+  font-weight: 600;
+  font-size: 14px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--ink-10);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+}
+.transport-day-header::after {
+  content: '▾';
+  font-size: 12px;
+  color: var(--ink-30);
+  transition: transform 0.2s;
+}
+.transport-day-header.open::after {
+  transform: rotate(180deg);
+}
+.transport-day-body {
+  padding: 0 20px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s;
+}
+.transport-day-body.open {
+  padding: 16px 20px;
+  max-height: 600px;
+}
+.transport-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  font-size: 13px;
+  color: var(--ink-70);
+  border-bottom: 1px dashed var(--ink-10);
+}
+.transport-step:last-child { border-bottom: none; }
+.transport-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  background: var(--blue-soft);
+}
+.transport-icon.train { background: var(--green-soft); }
+.transport-icon.walk { background: var(--purple-soft); }
+.transport-icon.bus { background: var(--orange-soft); }
+
+/* === TIPS === */
+.tips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+.tip-card {
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(0,0,0,0.04);
+}
+.tip-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.tip-card-icon { font-size: 20px; }
+.tip-card-title { font-weight: 600; font-size: 15px; }
+.tip-card-body { font-size: 13px; color: var(--ink-70); line-height: 1.7; }
+
+/* === NAV DOTS === */
+.nav-dots {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 100;
+}
+.nav-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ink-30);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  padding: 0;
+}
+.nav-dot.active {
+  background: var(--accent);
+  transform: scale(1.3);
+}
+.nav-dot:hover { background: var(--ink-70); }
+
+/* === FOOTER === */
+footer {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--ink-50);
+  font-size: 13px;
+  border-top: 1px solid var(--ink-10);
+}
+footer .emoji { font-size: 24px; margin-bottom: 8px; }
+
+/* === RESPONSIVE === */
+@media (max-width: 640px) {
+  .hero { min-height: 85vh; padding: 40px 20px; }
+  .hero-stats { gap: 24px; }
+  .hotel-nights { grid-template-columns: repeat(3, 1fr); }
+  .day-card { padding-left: 48px; }
+  .day-content { padding: 20px; }
+  .nav-dots { display: none; }
+  .overview-grid { grid-template-columns: 1fr 1fr; }
+  section { padding: 60px 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero" id="sec-hero">
+  <div class="hero-content">
+    <div class="hero-badge"><span>🏔</span> 松弛出行 · 不特种兵</div>
+    <h1>山西 <span class="accent">6</span> 天 <span class="accent">5</span> 晚</h1>
+    <p class="hero-sub">太原 · 晋中 · 雁门关 · 大同 · 小西天 · 晋祠</p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-num">7</div>
+        <div class="hero-stat-label">必去景点</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">6</div>
+        <div class="hero-stat-label">天行程</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">4+1</div>
+        <div class="hero-stat-label">晚住宿</div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint">向下滑动</div>
+</section>
+
+<!-- NAV -->
+<nav class="nav-dots" aria-label="页面导航">
+  <button class="nav-dot active" data-target="sec-hero" aria-label="首页"></button>
+  <button class="nav-dot" data-target="sec-overview" aria-label="概览"></button>
+  <button class="nav-dot" data-target="sec-hotel" aria-label="住宿"></button>
+  <button class="nav-dot" data-target="sec-itinerary" aria-label="行程"></button>
+  <button class="nav-dot" data-target="sec-transport" aria-label="交通"></button>
+  <button class="nav-dot" data-target="sec-tips" aria-label="贴士"></button>
+</nav>
+
+<!-- OVERVIEW -->
+<section id="sec-overview">
+<div class="container">
+  <div class="section-label">📋 总览</div>
+  <h2 class="section-title">行程概览</h2>
+  <div class="overview-grid">
+    <div class="overview-card">
+      <div class="overview-card-icon">📅</div>
+      <div class="overview-card-title">日期</div>
+      <div class="overview-card-value">7月9日 – 14日</div>
+    </div>
+    <div class="overview-card">
+      <div class="overview-card-icon">🏨</div>
+      <div class="overview-card-title">主要住宿</div>
+      <div class="overview-card-value">太原凯悦嘉轩 ×4</div>
+    </div>
+    <div class="overview-card">
+      <div class="overview-card-icon">💰</div>
+      <div class="overview-card-title">自费住宿</div>
+      <div class="overview-card-value">大同 1 晚（古城附近）</div>
+    </div>
+    <div class="overview-card">
+      <div class="overview-card-icon">🚄</div>
+      <div class="overview-card-title">交通方式</div>
+      <div class="overview-card-value">高铁 + 打车 + 直通车</div>
+    </div>
+    <div class="overview-card">
+      <div class="overview-card-icon">🎯</div>
+      <div class="overview-card-title">出行风格</div>
+      <div class="overview-card-value">松弛不赶，玩一段住一段</div>
+    </div>
+    <div class="overview-card">
+      <div class="overview-card-icon">⏰</div>
+      <div class="overview-card-title">唯一早起日</div>
+      <div class="overview-card-value">Day 5 小西天（7:00）</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- HOTEL -->
+<section id="sec-hotel" style="background: var(--bg-warm);">
+<div class="container">
+  <div class="section-label">🏨 住宿</div>
+  <h2 class="section-title">酒店安排</h2>
+  <div class="hotel-banner">
+    <h3>太原凯悦嘉轩 × 4晚</h3>
+    <p>权益全部用满，仅自费补 1 晚大同住宿</p>
+    <div class="hotel-nights">
+      <div class="hotel-night">
+        <div class="hotel-night-date">7/9</div>
+        <div class="hotel-night-loc">凯悦嘉轩</div>
+      </div>
+      <div class="hotel-night">
+        <div class="hotel-night-date">7/10</div>
+        <div class="hotel-night-loc">凯悦嘉轩</div>
+      </div>
+      <div class="hotel-night alt">
+        <div class="hotel-night-date">7/11</div>
+        <div class="hotel-night-loc">大同·古城</div>
+      </div>
+      <div class="hotel-night">
+        <div class="hotel-night-date">7/12</div>
+        <div class="hotel-night-loc">凯悦嘉轩</div>
+      </div>
+      <div class="hotel-night">
+        <div class="hotel-night-date">7/13</div>
+        <div class="hotel-night-loc">凯悦嘉轩</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ITINERARY -->
+<section id="sec-itinerary">
+<div class="container">
+  <div class="section-label">🗺 行程</div>
+  <h2 class="section-title">每日行程安排</h2>
+
+  <div class="timeline">
+
+    <!-- DAY 1 -->
+    <div class="day-card" data-color="red">
+      <div class="day-dot"></div>
+      <div class="day-content">
+        <div class="day-header">
+          <span class="day-num">DAY 1</span>
+          <span class="day-date">7月9日 周三</span>
+          <span class="day-title">抵达太原</span>
+        </div>
+        <div class="day-body">
+          <div class="spot">
+            <div class="spot-time">晚间</div>
+            <div class="spot-info">
+              <div class="spot-name">✈️ 晚班机落地太原武宿机场</div>
+              <div class="spot-desc">打车约 15km 到太原凯悦嘉轩，到了就休息。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DAY 2 -->
+    <div class="day-card" data-color="gold">
+      <div class="day-dot"></div>
+      <div class="day-content">
+        <div class="day-header">
+          <span class="day-num">DAY 2</span>
+          <span class="day-date">7月10日 周四</span>
+          <span class="day-title">晋中方向</span>
+        </div>
+        <div class="day-body">
+          <div class="spot">
+            <div class="spot-time">上午</div>
+            <div class="spot-info">
+              <div class="spot-name">🏛 王家大院</div>
+              <div class="spot-desc">自然醒出发。太原南站高铁→灵石东站（约1小时），出站打车3km到景区。"民间故宫"，晋商文化精华所在。</div>
+              <span class="spot-tag must">7大必去</span>
+            </div>
+          </div>
+          <div class="spot">
+            <div class="spot-time">下午</div>
+            <div class="spot-info">
+              <div class="spot-name">🏛 山西博物院</div>
+              <div class="spot-desc">高铁返回太原南站，打车约6km到博物院。需提前 3 天在公众号预约！</div>
+              <span class="spot-tag must">7大必去</span>
+            </div>
+          </div>
+          <div class="spot">
+            <div class="spot-time">晚上</div>
+            <div class="spot-info">
+              <div class="spot-name">🍜 地道山西菜馆</div>
+              <div class="spot-desc">博物院出来找一家本地馆子，刀削面、过油肉、栲栳栳安排上。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DAY 3 -->
+    <div class="day-card" data-color="blue">
+      <div class="day-dot"></div>
+      <div class="day-content">
+        <div class="day-header">
+          <span class="day-num">DAY 3</span>
+          <span class="day-date">7月11日 周五</span>
+          <span class="day-title">雁门关 + 应县木塔 → 大同</span>
+        </div>
+        <div class="day-body">
+          <div class="spot">
+            <div class="spot-time">上午</div>
+            <div class="spot-info">
+              <div class="spot-name">🏯 雁门关</div>
+              <div class="spot-desc">稍微早出发。高铁到山阴站（约1-1.5h），出站打车约20km到景区。天下九塞，雁门为首。游览约2小时。</div>
+              <span class="spot-tag must">7大必去</span>
+            </div>
+          </div>
+          <div class="spot">
+            <div class="spot-time">下午</div>
+            <div class="spot-info">
+              <div class="spot-name">🗼 应县木塔</div>
+              <div class="spot-desc">山阴站高铁→应县站（约15min），打车5km到木塔。中国现存最高最古老的木构塔式建筑，游览40分钟-1小时。</div>
+              <span class="spot-tag must">7大必去</span>
+            </div>
+          </div>
+          <div class="spot">
+            <div class="spot-time">傍晚</div>
+            <div class="spot-info">
+              <div class="spot-name">🌃 大同古城</div>
+              <div class="spot-desc">应县站高铁→大同南站（约30min），打车8km入住酒店。晚上逛古城，看华严寺夜景。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DAY 4 -->
+    <div class="day-card" data-color="green">
+      <div class="day-dot"></div>
+      <div class="day-content">
+        <div class="day-header">
+          <span class="day-num">DAY 4</span>
+          <span class="day-date">7月12日 周六</span>
+          <span class="day-title">大同 → 太原</span>
+        </div>
+        <div class="day-body">
+          <div class="spot">
+            <div class="spot-time">上午</div>
+            <div class="spot-info">
+              <div class="spot-name">🛕 华严寺</div>
+              <div class="spot-desc">古城附近步行可达，早晨光线最好。辽金皇家寺院，薄伽教藏殿内辽代彩塑堪称国宝。</div>
+              <span class="spot-tag must">7大必去</span>
+            </div>
+          </div>
+          <div class="spot">
+            <div class="spot-time">可选</div>
+            <div class="spot-info">
+              <div class="spot-name">🗿 云冈石窟</div>
+              <div class="spot-desc">如果时间充裕且感兴趣，从古城打车约18km。北魏皇家石窟，博物馆级景点，完全值得一看。</div>
+              <span class="spot-tag">加分项</span>
+            </div>
+          </div>
+          <div class="spot">
+            <div class="spot-time">下午</div>
+            <div class="spot-info">
+              <div class="spot-name">🚄 高铁回太原</div>
+              <div class="spot-desc">大同南站→太原南站（约2小时），回凯悦嘉轩，晚上自由活动。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DAY 5 -->
+    <div class="day-card" data-color="purple">
+      <div class="day-dot"></div>
+      <div class="day-content">
+        <div class="day-header">
+          <span class="day-num">DAY 5</span>
+          <span class="day-date">7月13日 周日</span>
+          <span class="day-title">小西天</span>
+        </div>
+        <div class="day-body">
+          <div class="spot">
+            <div class="spot-time">早7:00</div>
+            <div class="spot-info">
+              <div class="spot-name">⛩️ 小西天（千佛庵）</div>
+              <div class="spot-desc">全程唯一早起日！通过"晋畅行"小程序订太原客运西站↔隰县小西天直通车（票价60-75元）。酒店打车6-7km到客运西站，车程3.5小时到达。满堂悬塑彩绘，国内孤品，游览1-1.5小时后原路返回。</div>
+              <span class="spot-tag must">7大必去</span>
+            </div>
+          </div>
+          <div class="spot">
+            <div class="spot-time">晚上</div>
+            <div class="spot-info">
+              <div class="spot-name">🍲 太原晚餐</div>
+              <div class="spot-desc">下午回到太原，轻松吃顿饭，不用搬行李，舒服。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DAY 6 -->
+    <div class="day-card" data-color="orange">
+      <div class="day-dot"></div>
+      <div class="day-content">
+        <div class="day-header">
+          <span class="day-num">DAY 6</span>
+          <span class="day-date">7月14日 周一</span>
+          <span class="day-title">晋祠 → 返程</span>
+        </div>
+        <div class="day-body">
+          <div class="spot">
+            <div class="spot-time">上午</div>
+            <div class="spot-info">
+              <div class="spot-name">⛲ 晋祠</div>
+              <div class="spot-desc">打车约20km。中国现存最早的皇家祭祀园林，宋代建筑+千年古木，慢慢逛半天很舒服。</div>
+              <span class="spot-tag must">7大必去</span>
+            </div>
+          </div>
+          <div class="spot">
+            <div class="spot-time">下午</div>
+            <div class="spot-info">
+              <div class="spot-name">🛍 市区 + 返程</div>
+              <div class="spot-desc">查漏补缺买特产，晋祠离机场较近（约15km），打车去机场，结束旅程！</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</section>
+
+<!-- TRANSPORT -->
+<section id="sec-transport" class="transport-section">
+<div class="container">
+  <div class="section-label">🚌 交通</div>
+  <h2 class="section-title">全程交通明细</h2>
+
+  <div class="transport-day">
+    <div class="transport-day-header" onclick="toggleTransport(this)">Day 1（7/9）抵达</div>
+    <div class="transport-day-body">
+      <div class="transport-step">
+        <div class="transport-icon">🚕</div>
+        <div>机场 → 太原凯悦嘉轩：打车约 15km，晚上抵达直接打车最安全省心</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="transport-day">
+    <div class="transport-day-header" onclick="toggleTransport(this)">Day 2（7/10）王家大院 + 博物院</div>
+    <div class="transport-day-body">
+      <div class="transport-step">
+        <div class="transport-icon">🚕</div>
+        <div>酒店 → 太原南站：打车约 8km</div>
+      </div>
+      <div class="transport-step">
+        <div class="transport-icon train">🚄</div>
+        <div>太原南站 → 灵石东站：高铁约 1 小时，二等座</div>
+      </div>
+      <div class="transport-step">
+        <div class="transport-icon">🚕</div>
+        <div>灵石东站 → 王家大院：打车约 3km</div>
+      </div>
+      <div class="transport-step">
+        <div class="transport-icon train">🚄</div>
+        <div>灵石东站 → 太原南站：高铁返回</div>
+      </div>
+      <div class="transport-step">
+        <div class="transport-icon">🚕</div>
+        <div>太原南站 → 山西博物院：打车约 6km</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="transport-day">
+    <div class="transport-day-header" onclick="toggleTransport(this)">Day 3（7/11）雁门关 + 应县木塔 → 大同</div>
+    <div class="transport-day-body">
+      <div class="transport-step">
+        <div class="transport-icon train">🚄</div>
+        <div>太原站 → 山阴站：高铁约 1-1.5 小时</div>
+      </div>
+      <div class="transport-step">
+        <div class="transport-icon">🚕</div>
+        <div>山阴站 → 雁门关：打车约 20km（这段较远）</div>
+      </div>
+      <div class="transport-step">
+        <div class="transport-icon train">🚄</div>
+        <div>山阴站 → 应县站：高铁约 15 分钟</div>
+      </div>
+      <div class="transport-step">
+        <div class="transport-icon">🚕</div>
+        <div>应县站 → 木塔：打车约 5km</div>
+      </div>
+      <div class="transport-step">
+        <div class="transport-icon train">🚄</div>
+        <div>应县站 → 大同南站：高铁约 30 分钟</div>
+      </div>
+      <div class="transport-step">
+        <div class="transport-icon">🚕</div>
+        <div>大同南站 → 酒店：打车约 8km</div>
+      </div>
+      <div class="transport-step">
+        <div class="transport-icon bus">💡</div>
+        <div><strong>省心方案：</strong>太原包车一日游（雁门关+应县木塔），约 800-1000 元，直接送到大同，免去所有换乘</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="transport-day">
+    <div class="transport-day-header" onclick="toggleTransport(this)">Day 4（7/12）大同 → 太原</div>
+    <div class="transport-day-body">
+      <div class="transport-step">
+        <div class="transport-icon walk">🚶</div>
+        <div>酒店 → 华严寺：住古城附近步行即可</div>
+      </div>
+      <div class="transport-step">
+        <div class="transport-icon">🚕</div>
+        <div>古城 → 云冈石窟（可选）：打车约 18km</div>
+      </div>
+      <div class="transport-step">
+        <div class="transport-icon train">🚄</div>
+        <div>大同南站 → 太原南站：高铁约 2 小时</div>
+      </div>
+      <div class="transport-step">
+        <div class="transport-icon">🚕</div>
+        <div>太原南站 → 凯悦嘉轩：打车约 8km</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="transport-day">
+    <div class="transport-day-header" onclick="toggleTransport(this)">Day 5（7/13）小西天直通车</div>
+    <div class="transport-day-body">
+      <div class="transport-step">
+        <div class="transport-icon">🚕</div>
+        <div>酒店 → 太原客运西站：打车约 6-7km</div>
+      </div>
+      <div class="transport-step">
+        <div class="transport-icon bus">🚌</div>
+        <div>直通车往返：晋畅行小程序订票，票价 60-75 元，车程 3.5 小时</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="transport-day">
+    <div class="transport-day-header" onclick="toggleTransport(this)">Day 6（7/14）晋祠 → 机场</div>
+    <div class="transport-day-body">
+      <div class="transport-step">
+        <div class="transport-icon">🚕</div>
+        <div>酒店 → 晋祠：打车约 20km</div>
+      </div>
+      <div class="transport-step">
+        <div class="transport-icon">🚕</div>
+        <div>晋祠 → 武宿机场：打车约 15km，晋祠在南边离机场近</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</section>
+
+<!-- TIPS -->
+<section id="sec-tips">
+<div class="container">
+  <div class="section-label">💡 贴士</div>
+  <h2 class="section-title">出行备忘</h2>
+
+  <div class="tips-grid">
+    <div class="tip-card">
+      <div class="tip-card-head">
+        <div class="tip-card-icon">📱</div>
+        <div class="tip-card-title">提前预约</div>
+      </div>
+      <div class="tip-card-body">
+        山西博物院需提前 3 天在公众号预约<br>
+        小西天直通车在"晋畅行"小程序提前订位（旺季可能满员）
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-card-head">
+        <div class="tip-card-icon">🎫</div>
+        <div class="tip-card-title">高铁票</div>
+      </div>
+      <div class="tip-card-body">
+        所有高铁票提前在 12306 买好：<br>
+        太原↔灵石、太原→山阴、山阴→应县、应县→大同、大同→太原
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-card-head">
+        <div class="tip-card-icon">🚗</div>
+        <div class="tip-card-title">Day 3 包车建议</div>
+      </div>
+      <div class="tip-card-body">
+        雁门关交通较折腾（景区不在高铁站门口）。太原包车一日游（雁门关+应县木塔）约 800-1000 元，直接送到大同，最省心。
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-card-head">
+        <div class="tip-card-icon">🗺</div>
+        <div class="tip-card-title">路线逻辑</div>
+      </div>
+      <div class="tip-card-body">
+        雁门关、应县木塔、华严寺在同一条北向线路上，不走回头路。王家大院和博物院都在太原以南方向。小西天单独一天往返，不换酒店。晋祠最后一天，离机场近。
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-card-head">
+        <div class="tip-card-icon">🌡</div>
+        <div class="tip-card-title">7 月天气</div>
+      </div>
+      <div class="tip-card-body">
+        太原 7 月平均 22-32°C，大同稍凉。带防晒、遮阳帽，雁门关海拔高风大可备薄外套。注意补水。
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-card-head">
+        <div class="tip-card-icon">🍜</div>
+        <div class="tip-card-title">美食关键词</div>
+      </div>
+      <div class="tip-card-body">
+        刀削面、过油肉、栲栳栳、莜面鱼鱼、羊杂割、太原头脑、大同刀削面、凉粉、黄米凉糕
+      </div>
+    </div>
+  </div>
+
+</div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="emoji">🏔</div>
+  <p>山西 6 天 5 晚 · 松弛旅行手册</p>
+  <p style="margin-top:4px; color: var(--ink-30);">2026 年 7 月 9 – 14 日</p>
+</footer>
+
+<script>
+// Transport accordion
+function toggleTransport(el) {
+  const body = el.nextElementSibling;
+  const isOpen = body.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.transport-day-body').forEach(b => b.classList.remove('open'));
+  document.querySelectorAll('.transport-day-header').forEach(h => h.classList.remove('open'));
+  if (!isOpen) {
+    body.classList.add('open');
+    el.classList.add('open');
+  }
+}
+
+// Nav dots scroll tracking
+const sections = document.querySelectorAll('section[id]');
+const dots = document.querySelectorAll('.nav-dot');
+
+dots.forEach(dot => {
+  dot.addEventListener('click', () => {
+    const target = document.getElementById(dot.dataset.target);
+    if (target) target.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      dots.forEach(d => d.classList.remove('active'));
+      const active = document.querySelector(`.nav-dot[data-target="${entry.target.id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { threshold: 0.3 });
+
+sections.forEach(sec => observer.observe(sec));
+
+// Open first transport by default
+document.querySelector('.transport-day-header')?.click();
+</script>
+
+</body>
+</html>
