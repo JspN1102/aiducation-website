@@ -192,8 +192,8 @@ body{font-family:var(--font-sans);background:var(--paper);color:var(--ink);overf
 .write-pinyin{font-family:var(--font-sans);font-size:18px;font-weight:500;color:var(--red);letter-spacing:2px}
 .write-hint-char{font-family:var(--font-serif);font-size:32px;color:transparent;transition:color .3s;min-height:42px;user-select:none}
 .write-hint-char.revealed{color:var(--ink-20)}
-.write-canvas-wrap{position:relative;width:100%;max-width:280px;margin:0 auto 16px;aspect-ratio:1}
-.write-canvas-wrap canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:var(--radius-sm);background:#fafaf7;touch-action:none;cursor:crosshair}
+.write-canvas-wrap{position:relative;width:100%;max-width:300px;margin:0 auto 16px;aspect-ratio:1}
+.write-canvas-wrap canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:var(--radius-sm);background:#fafaf7;touch-action:none;cursor:crosshair;-webkit-touch-callout:none;-webkit-user-select:none}
 .write-grid-lines{position:absolute;inset:0;pointer-events:none;border:2px solid var(--ink-10);border-radius:var(--radius-sm)}
 .write-grid-lines::before{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:var(--ink-10);opacity:.5}
 .write-grid-lines::after{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--ink-10);opacity:.5}
@@ -796,50 +796,103 @@ function initWriteCanvas(){
   writeCtx = canvas.getContext('2d');
   writeCtx.lineCap = 'round';
   writeCtx.lineJoin = 'round';
-  writeCtx.lineWidth = 8;
-  writeCtx.strokeStyle = '#1a1612';
   canvas.addEventListener('pointerdown', wDown);
   canvas.addEventListener('pointermove', wMove);
   canvas.addEventListener('pointerup', wUp);
   canvas.addEventListener('pointerleave', wUp);
 }
 
+// Smoothing state
+let wPoints = []; // collected points for current stroke
+let wLastWidth = 6;
+
+function getCanvasXY(e){
+  const r = e.target.getBoundingClientRect();
+  return {
+    x: (e.clientX - r.left) / r.width * 560,
+    y: (e.clientY - r.top) / r.height * 560,
+    t: Date.now(),
+    pressure: e.pressure || 0.5
+  };
+}
+
 function wDown(e){
   if(writeSubmitting) return;
   isDrawing = true; hasStrokes = true;
-  const r = e.target.getBoundingClientRect();
-  const scaleX = 560 / r.width, scaleY = 560 / r.height;
-  const x = (e.clientX - r.left) * scaleX;
-  const y = (e.clientY - r.top) * scaleY;
-  currentStroke = {x:[x], y:[y], t:[Date.now()]};
-  writeCtx.beginPath();
-  writeCtx.moveTo(x, y);
+  const p = getCanvasXY(e);
+  wPoints = [p];
+  wLastWidth = 6;
+  currentStroke = {x:[p.x], y:[p.y], t:[p.t]};
   e.preventDefault();
 }
 
 function wMove(e){
   if(!isDrawing || writeSubmitting) return;
-  const r = e.target.getBoundingClientRect();
-  const scaleX = 560 / r.width, scaleY = 560 / r.height;
-  const x = (e.clientX - r.left) * scaleX;
-  const y = (e.clientY - r.top) * scaleY;
-  currentStroke.x.push(x);
-  currentStroke.y.push(y);
-  currentStroke.t.push(Date.now());
-  writeCtx.lineTo(x, y);
-  writeCtx.stroke();
+  const p = getCanvasXY(e);
+  wPoints.push(p);
+  currentStroke.x.push(p.x);
+  currentStroke.y.push(p.y);
+  currentStroke.t.push(p.t);
+
+  if(wPoints.length < 3) return;
+
+  const len = wPoints.length;
+  const p0 = wPoints[len-3];
+  const p1 = wPoints[len-2];
+  const p2 = wPoints[len-1];
+
+  // Midpoints for quadratic bezier through actual points
+  const mx1 = (p0.x + p1.x) / 2;
+  const my1 = (p0.y + p1.y) / 2;
+  const mx2 = (p1.x + p2.x) / 2;
+  const my2 = (p1.y + p2.y) / 2;
+
+  // Speed-based width: faster = thinner, slower = thicker (like a real pen)
+  const dx = p2.x - p1.x, dy = p2.y - p1.y;
+  const dt = Math.max(p2.t - p1.t, 1);
+  const speed = Math.sqrt(dx*dx + dy*dy) / dt;
+  const pressure = p2.pressure || 0.5;
+  // Target width: 3-10px based on speed and pressure
+  let targetWidth = Math.max(3, Math.min(10, 8 - speed * 3)) * (0.6 + pressure * 0.8);
+  // Smooth width transition (avoid sudden jumps)
+  wLastWidth += (targetWidth - wLastWidth) * 0.3;
+
   writeCtx.beginPath();
-  writeCtx.moveTo(x, y);
+  writeCtx.moveTo(mx1, my1);
+  writeCtx.quadraticCurveTo(p1.x, p1.y, mx2, my2);
+  writeCtx.strokeStyle = '#1a1612';
+  writeCtx.lineWidth = wLastWidth;
+  writeCtx.stroke();
+
   e.preventDefault();
 }
 
 function wUp(e){
   if(!isDrawing) return;
   isDrawing = false;
+  // Draw final segment to last point
+  if(wPoints.length >= 2){
+    const p1 = wPoints[wPoints.length-2];
+    const p2 = wPoints[wPoints.length-1];
+    writeCtx.beginPath();
+    writeCtx.moveTo(p1.x, p1.y);
+    writeCtx.lineTo(p2.x, p2.y);
+    writeCtx.lineWidth = Math.max(2, wLastWidth * 0.6);
+    writeCtx.strokeStyle = '#1a1612';
+    writeCtx.stroke();
+  } else if(wPoints.length === 1){
+    // Single tap — draw a dot
+    const p = wPoints[0];
+    writeCtx.beginPath();
+    writeCtx.arc(p.x, p.y, 4, 0, Math.PI*2);
+    writeCtx.fillStyle = '#1a1612';
+    writeCtx.fill();
+  }
   if(currentStroke && currentStroke.x.length > 1){
     strokes.push(currentStroke);
   }
   currentStroke = null;
+  wPoints = [];
 }
 
 function clearCanvas(){
