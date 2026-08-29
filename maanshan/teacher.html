@@ -185,7 +185,30 @@ function selectClass(c){
 }
 
 function renderContent(){
-  const d = mockClassData(curGrade, curClass);
+  renderDashboard(mockClassData(curGrade, curClass));
+  // Try real API, fall back to mock on failure or empty
+  fetch(`/api/maanshan-data?grade=${curGrade}&cls=${curClass}&poemId=${curGrade}`)
+    .then(r=>r.ok?r.json():null).then(data=>{
+      if(data && data.hasData && data.stats.tested > 0){
+        // Map API response to dashboard format
+        const s = data.stats;
+        const students = data.students.map((st,i)=>{
+          const score = st.score ?? 0;
+          const grade_ = score>=90?'優':score>=75?'良':score>=60?'中':'差';
+          return {name:st.name, score, grade:grade_, phonics:st.phonics, id:st.id};
+        }).sort((a,b)=>b.score-a.score);
+        renderDashboard({
+          grade:curGrade, cls:curClass, className:`${curGrade}${curClass}班`,
+          total:s.total, tested:s.tested, avg:s.avg,
+          passRate:s.passRate, excellentRate:s.excellentRate,
+          distribution:s.distribution, phonAvg:data.phonAvg,
+          errorChars:data.errorChars, students
+        });
+      }
+    }).catch(()=>{});
+}
+
+function renderDashboard(d){
   const el = document.getElementById('content');
   el.innerHTML = `
     <div class="stats-row">

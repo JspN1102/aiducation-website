@@ -12,6 +12,12 @@
     },
     "api/maanshan-chat.js": {
       "maxDuration": 30
+    },
+    "api/maanshan-save.js": {
+      "maxDuration": 10
+    },
+    "api/maanshan-data.js": {
+      "maxDuration": 15
     }
   },
   "headers": [

@@ -645,6 +645,29 @@ function reRecordLine(idx){
 
 function confirmLine(idx){
   clearLineReview();currentLine=idx+1;renderRecordPage();
+  // Save reading progress to persistence layer
+  if(lineResults[idx]){
+    const completedLines = lineResults.filter(Boolean);
+    const avgScore = Math.round(completedLines.reduce((a,r)=>a+r.total_score,0)/completedLines.length);
+    const phonics = {};
+    completedLines.flatMap(r=>r.words).forEach(w=>{
+      w.phones.forEach(ph=>{
+        const k = ph.phone;
+        if(!phonics[k]) phonics[k] = [];
+        phonics[k].push(ph.score);
+      });
+    });
+    const phonAvg = {};
+    Object.entries(phonics).forEach(([k,vals])=>{ phonAvg[k]=Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) });
+    msQueue('reading',{
+      lineIdx: idx,
+      lineScore: lineResults[idx].total_score,
+      totalScore: avgScore,
+      linesCompleted: completedLines.length,
+      phonics: phonAvg,
+      words: completedLines.flatMap(r=>r.words.map(w=>({c:w.c,score:w.score,status:w.status,error:w.error})))
+    });
+  }
   if(currentLine>=4){
     mergedResult=mergeResults(lineResults);
     document.getElementById('mic-hint').textContent='朗讀完成';
@@ -735,6 +758,8 @@ async function generateReport(){
     await new Promise(r=>setTimeout(r,500));
     btn.style.display='none';
     area.innerHTML=`<p class="section-title" style="margin-top:8px">AI 老師診斷</p><div class="gpt-report">${data.report.replace(/\n/g,'<br>')}</div>`;
+    // Save AI report to persistence
+    msQueue('report',{content:data.report,totalScore:mergedResult.total_score,grade:mergedResult.grade});
   }catch(e){timers.forEach(clearTimeout);btn.disabled=false;btn.textContent='重試生成報告';area.innerHTML='<p style="text-align:center;color:var(--red);font-size:13px;padding:8px 0">報告生成失敗，請重試</p>'}
 }
 
@@ -973,6 +998,15 @@ async function submitWrite(){
   // If hinted, skip this character
   if(writeHinted){
     writeResults.push({c: target, p: WRITE_CHARS[writeIdx].p, wrote: false, hinted: true, attempts: 0});
+    msQueue('writing',{
+      results: writeResults.filter(r=>r.c),
+      charIdx: writeIdx,
+      char: target,
+      correct: false,
+      hinted: true,
+      totalCorrect: writeResults.filter(r=>r.wrote&&!r.hinted).length,
+      totalChars: WRITE_CHARS.length
+    });
     writeIdx++;
     if(writeIdx >= WRITE_CHARS.length) showWriteResult();
     else renderWritePage();
@@ -1017,7 +1051,18 @@ async function submitWrite(){
     if(matched){
       fb.innerHTML = `<span style="font-size:18px">✓</span> 正確！<span class="recognized-char">${target}</span>`;
       fb.className = 'write-feedback success';
-      writeResults.push({c: target, p: WRITE_CHARS[writeIdx].p, wrote: true, hinted: false, attempts: (writeResults._currentAttempts||0)});
+      const attempts = (writeResults._currentAttempts||0);
+      writeResults.push({c: target, p: WRITE_CHARS[writeIdx].p, wrote: true, hinted: false, attempts});
+      // Save writing progress
+      msQueue('writing',{
+        results: writeResults.filter(r=>r.c),
+        charIdx: writeIdx,
+        char: target,
+        correct: true,
+        attempts,
+        totalCorrect: writeResults.filter(r=>r.wrote&&!r.hinted).length,
+        totalChars: WRITE_CHARS.length
+      });
       delete writeResults._currentAttempts;
       writeSubmitting = false;
       btn.disabled = false;
@@ -1088,6 +1133,74 @@ function resetWrite(){
   document.getElementById('write-result').innerHTML = '';
   renderWritePage();
 }
+
+// ===== Data Persistence Layer =====
+// localStorage-first → async POST to /api/maanshan-save → Vercel KV
+const MS_PENDING_KEY = 'ms_pending_sync';
+const MS_STUDENT_KEY = 'ms_student_info';
+
+// Student info — set after login/identification
+let msStudent = JSON.parse(localStorage.getItem(MS_STUDENT_KEY)||'null');
+// {id:'S20260001', name:'陳思琪', grade:2, cls:'A'}
+
+function msSetStudent(info){
+  msStudent = info;
+  localStorage.setItem(MS_STUDENT_KEY, JSON.stringify(info));
+}
+
+function msQueue(section, payload){
+  if(!msStudent) return; // not logged in, skip
+  const item = {
+    syncId: crypto.randomUUID(),
+    studentId: msStudent.id,
+    name: msStudent.name,
+    grade: msStudent.grade,
+    cls: msStudent.cls,
+    poemId: msStudent.grade, // 年级对应诗ID
+    section,
+    payload,
+    queuedAt: Date.now()
+  };
+  const pending = JSON.parse(localStorage.getItem(MS_PENDING_KEY)||'[]');
+  pending.push(item);
+  localStorage.setItem(MS_PENDING_KEY, JSON.stringify(pending));
+  msFlush(); // try to sync immediately
+}
+
+async function msFlush(){
+  const pending = JSON.parse(localStorage.getItem(MS_PENDING_KEY)||'[]');
+  if(!pending.length) return;
+  const stillPending = [...pending];
+  for(const item of pending){
+    try{
+      const resp = await fetch('/api/maanshan-save',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(item)
+      });
+      if(resp.ok){
+        const idx = stillPending.findIndex(p=>p.syncId===item.syncId);
+        if(idx>=0) stillPending.splice(idx,1);
+        localStorage.setItem(MS_PENDING_KEY, JSON.stringify(stillPending));
+      }
+    }catch(e){ break; } // network error, stop and retry later
+  }
+}
+
+// Auto-retry on visibility change (tab comes back) and before unload
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible') msFlush();
+});
+window.addEventListener('beforeunload',()=>{
+  // Use sendBeacon for remaining items (fire-and-forget)
+  const pending = JSON.parse(localStorage.getItem(MS_PENDING_KEY)||'[]');
+  pending.forEach(item=>{
+    navigator.sendBeacon('/api/maanshan-save',
+      new Blob([JSON.stringify(item)],{type:'application/json'}));
+  });
+});
+// Flush any items left from previous session
+setTimeout(msFlush, 2000);
 
 renderPoem();
 initWriteCanvas();
