@@ -314,7 +314,7 @@ body{font-family:var(--font-sans);background:var(--paper);color:var(--ink);overf
 <section class="page" id="pg-write">
   <div class="page-inner page-scroll">
     <header class="top-bar">
-      <button class="btn-back" onclick="goPage('pg-report')">&#8592;</button>
+      <button class="btn-back" onclick="goPage(prevPage)">&#8592;</button>
       <h2 class="top-title">默寫練習</h2>
       <div class="top-spacer"></div>
     </header>
@@ -343,7 +343,7 @@ body{font-family:var(--font-sans);background:var(--paper);color:var(--ink);overf
 <section class="page" id="pg-chat">
   <div class="page-inner page-scroll" style="display:flex;flex-direction:column">
     <header class="top-bar">
-      <button class="btn-back" onclick="goPage('pg-report')">&#8592;</button>
+      <button class="btn-back" onclick="goPage(prevPage)">&#8592;</button>
       <h2 class="top-title">與詩人聊天</h2>
       <span class="top-spacer"></span>
     </header>
@@ -414,17 +414,20 @@ let demoAudio=null, ttsAudio=null, chatAudio=null;
 let chatHistory=[], chatTTSVersion=0, chatWelcomePlayed=false;
 let recordStartTime=0;
 
+let prevPage = 'pg-cover'; // track navigation history
 function goPage(id){
   if(demoAudio){demoAudio.pause();demoAudio.src='';demoAudio=null;document.getElementById('btn-demo').classList.remove('playing','loading')}
   if(chatAudio){chatAudio.pause();chatAudio.src='';chatAudio=null}
   if(ttsAudio){ttsAudio.pause();ttsAudio.src='';ttsAudio=null}
   if(playbackAudio){playbackAudio.pause();playbackAudio=null}
   chatTTSVersion++;
+  const curActive = document.querySelector('.page.active');
+  if(curActive) prevPage = curActive.id;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if(id==='pg-record')resetRecording();
   if(id==='pg-write')renderWritePage();
-  if(id==='pg-chat'&&!chatWelcomePlayed){chatWelcomePlayed=true;setTimeout(()=>chatTTS('哈哈，小朋友你好呀！我是李白，大家都叫我詩仙。你知道嗎，我有個特別好的朋友叫汪倫，想聽我們的故事嗎？'),500)}
+  if(id==='pg-chat'&&!chatWelcomePlayed){chatWelcomePlayed=true;setTimeout(()=>chatTTS('哈哈，小朋友你好呀！我是李白，大家都叫我詩仙。你知道嗎，我有個特別好的朋友叫汪倫，想聯我們的故事嗎？'),500)}
 }
 
 function renderPoem(){
@@ -1035,7 +1038,10 @@ async function submitWrite(){
     const recognized = topResult.charAt(0);
 
     // Check for correct Traditional match FIRST (before simplified check)
-    const matched = candidates.some(cand => cand.charAt(0) === target);
+    // But if the TOP candidate is the simplified form, user likely wrote simplified
+    const simpForm = SIMPLIFIED_VARIANTS[target];
+    const topIsSimplified = simpForm && recognized === simpForm;
+    const matched = !topIsSimplified && candidates.some(cand => cand.charAt(0) === target);
 
     if(matched){
       fb.innerHTML = `<span style="font-size:18px">✓</span> 正確！<span class="recognized-char">${target}</span>`;
