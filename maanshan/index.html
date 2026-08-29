@@ -190,7 +190,7 @@ body{font-family:var(--font-sans);background:var(--paper);color:var(--ink);overf
 .write-card{width:100%;background:#fff;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-md);margin-bottom:20px}
 .write-prompt{display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:14px}
 .write-pinyin{font-family:var(--font-sans);font-size:18px;font-weight:500;color:var(--red);letter-spacing:2px}
-.write-hint-char{font-family:var(--font-serif);font-size:32px;color:var(--ink-10);transition:color .3s;min-height:42px}
+.write-hint-char{font-family:var(--font-serif);font-size:32px;color:transparent;transition:color .3s;min-height:42px;user-select:none}
 .write-hint-char.revealed{color:var(--ink-20)}
 .write-canvas-wrap{position:relative;width:100%;max-width:280px;margin:0 auto 16px;aspect-ratio:1}
 .write-canvas-wrap canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:var(--radius-sm);background:#fafaf7;touch-action:none;cursor:crosshair}
@@ -330,6 +330,7 @@ body{font-family:var(--font-sans);background:var(--paper);color:var(--ink);overf
       </div>
       <div class="write-actions">
         <button class="btn-outline write-act-btn" onclick="clearCanvas()">清除</button>
+        <button class="btn-outline write-act-btn" onclick="speakChar(WRITE_CHARS[writeIdx]?.c)">再聽 🔊</button>
         <button class="btn-outline write-act-btn" onclick="showHintChar()" id="btn-hint">提示</button>
         <button class="btn-primary write-act-btn" onclick="submitWrite()" id="btn-submit-write">確認 ✓</button>
       </div>
@@ -854,6 +855,7 @@ function showHintChar(){
   const el = document.getElementById('write-hint-char');
   el.classList.add('revealed');
   writeHinted = true;
+  document.getElementById('btn-hint').disabled = true;
   document.getElementById('write-feedback').innerHTML = '已顯示提示，點擊「跳過」繼續';
   document.getElementById('write-feedback').className = 'write-feedback checking';
   document.getElementById('btn-submit-write').textContent = '跳過 →';
@@ -870,6 +872,7 @@ function renderWritePage(){
   writeSubmitting = false;
   document.getElementById('btn-submit-write').textContent = '確認 ✓';
   document.getElementById('btn-submit-write').disabled = false;
+  document.getElementById('btn-hint').disabled = false;
   document.getElementById('write-feedback').innerHTML = '';
   document.getElementById('write-feedback').className = 'write-feedback';
   clearCanvas();
@@ -879,6 +882,8 @@ function renderWritePage(){
     const label = i < writeIdx ? '✓' : (i+1);
     return `<span class="write-dot ${cls}">${label}</span>`;
   }).join('');
+  // Read the character aloud
+  speakChar(ch.c);
 }
 
 async function recognizeStrokes(){
