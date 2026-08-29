@@ -6,6 +6,12 @@
     },
     "api/chat.js": {
       "maxDuration": 30
+    },
+    "api/maanshan-report.js": {
+      "maxDuration": 60
+    },
+    "api/maanshan-chat.js": {
+      "maxDuration": 30
     }
   },
   "headers": [
@@ -41,6 +47,12 @@
     },
     {
       "source": "/mandarin-assessment/china.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=86400" }
+      ]
+    },
+    {
+      "source": "/maanshan/:path*",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=86400" }
       ]
