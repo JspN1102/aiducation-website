@@ -113,28 +113,122 @@ const GRADE_PHONICS = {
 
 let curGrade = 2, curClass = 'A';
 
-// Generate mock data for any class
+// ── Per-grade realistic error characters (from each poem) ──
+const GRADE_ERRORS = {
+  1:[ // 詠鵝：低年級聲調是大問題
+    {c:'鵝',type:'聲調偏誤',base:58},{c:'曲',type:'聲母偏誤（q）',base:51},
+    {c:'項',type:'韻母偏誤（iang）',base:44},{c:'浮',type:'聲調偏誤',base:37},{c:'綠',type:'聲母偏誤（l）',base:29}],
+  2:[ // 贈汪倫
+    {c:'將',type:'聲調偏誤（一聲/四聲混淆）',base:55},{c:'聞',type:'韻母偏誤（en/eng）',base:46},
+    {c:'踏',type:'聲調偏誤',base:40},{c:'潭',type:'韻母偏誤（an/ang）',base:33},{c:'倫',type:'聲母偏誤（l/n）',base:26}],
+  3:[ // 題西林壁
+    {c:'嶺',type:'韻母偏誤（ing）',base:48},{c:'側',type:'聲調偏誤',base:42},
+    {c:'峯',type:'聲母偏誤（f/h）',base:36},{c:'遠',type:'韻母偏誤（uan/üan）',base:31},{c:'廬',type:'聲母偏誤（l）',base:23}],
+  4:[ // 泊船瓜洲
+    {c:'間',type:'聲調偏誤（一聲/四聲）',base:52},{c:'數',type:'聲調偏誤（三聲/四聲）',base:44},
+    {c:'照',type:'聲母偏誤（zh/z）',base:38},{c:'瓜',type:'韻母偏誤（ua）',base:30},{c:'泊',type:'聲調偏誤',base:24}],
+  5:[ // 歸園田居
+    {c:'荷',type:'聲調偏誤（二聲/四聲）',base:45},{c:'鋤',type:'聲母偏誤（ch/c）',base:39},
+    {c:'稀',type:'韻母偏誤',base:32},{c:'晨',type:'韻母偏誤（en/eng）',base:27},{c:'穢',type:'聲調偏誤',base:21}],
+  6:[ // 初春小雨
+    {c:'潤',type:'韻母偏誤（un/ün）',base:42},{c:'酥',type:'聲母偏誤（s/sh）',base:37},
+    {c:'遙',type:'韻母偏誤（iao）',base:30},{c:'絕',type:'聲調偏誤',base:25},{c:'勝',type:'聲母偏誤（sh/s）',base:19}]
+};
+// ── Per-grade phonics difficulty profiles (some knowledge points harder) ──
+const PHON_DIFFICULTY = {
+  1:{四聲:0.82,'a/o/e':0.91,'i/u/ü':0.78,'b/p/m/f':0.88,'d/t/n/l':0.72},
+  2:{'ia/ie':0.85,'iao/iu':0.73,'ian/in':0.68,'iang/ing/iong':0.61,'ua/uo':0.88,'uai/ui':0.76},
+  3:{四聲複習:0.90,'a/o/e':0.93,'i/u/ü':0.84,'b/p/m/f/d/t/n/l':0.79,'g/k/h':0.87},
+  4:{'z/c/s':0.74,'zh/ch/sh/r':0.62,'zi/ci/si':0.69,'u/ua/uo':0.85,'uai/ui':0.80},
+  5:{'一四聲/二三聲':0.66,'b/p':0.82,'d/t':0.84,'n/l':0.58,'k/f/k/h':0.78},
+  6:{'j/z/zh':0.64,'q/c/ch':0.60,'x/s/sh':0.57,'an/ang':0.71}
+};
+// ── Class personality: some classes strong, some weak ──
+const CLASS_PROFILE = {
+  // [classAvgOffset, spread, testedRatio, description]
+  // offset: how much above/below grade baseline
+  '1A':[6,12,0.92],'1B':[-2,18,0.85],'1C':[3,14,0.88],'1D':[-8,22,0.72],'1E':[1,16,0.80],
+  '2A':[8,10,0.95],'2B':[2,15,0.88],'2C':[-3,20,0.82],'2D':[-6,24,0.68],'2E':[0,17,0.78],
+  '3A':[5,11,0.93],'3B':[10,9,0.96],'3C':[-1,16,0.86],'3D':[-5,19,0.75],'3E':[2,14,0.84],'3F':[-9,25,0.65],
+  '4A':[7,10,0.94],'4B':[3,13,0.90],'4C':[0,16,0.85],'4D':[-4,18,0.78],'4E':[-7,22,0.70],'4F':[-12,26,0.60],
+  '5A':[9,9,0.96],'5B':[4,12,0.91],'5C':[0,15,0.84],'5D':[-5,20,0.76],'5E':[-10,24,0.66],
+  '6A':[6,11,0.93],'6B':[1,14,0.87],'6C':[-2,17,0.82],'6D':[-7,21,0.73],'6E':[-11,25,0.63]
+};
+// ── Class sizes (realistic HK primary) ──
+const CLASS_SIZE = {
+  '1A':26,'1B':25,'1C':26,'1D':24,'1E':25,
+  '2A':27,'2B':26,'2C':25,'2D':24,'2E':26,
+  '3A':28,'3B':27,'3C':28,'3D':26,'3E':27,'3F':25,
+  '4A':29,'4B':28,'4C':29,'4D':27,'4E':28,'4F':26,
+  '5A':27,'5B':26,'5C':27,'5D':25,'5E':26,
+  '6A':26,'6B':25,'6C':26,'6D':24,'6E':25
+};
+
 function mockClassData(grade, cls){
-  const surnames = ['陳','林','王','張','李','黃','劉','吳','蔡','楊','鄭','謝','郭','許','蘇','葉','曾','徐','馬','羅','賴','何','洪','邱','廖'];
-  const names2 = ['思琪','浩然','子萱','銘軒','欣怡','俊傑','雨桐','嘉欣','家豪','雅婷','宇軒','心怡','柏翰','品妤','承恩','詩涵','睿宸','芷晴','宥辰','語彤','梓涵','彥廷','紫萱','晨曦','若熙'];
-  const n = grade <= 3 ? (24 + Math.floor(Math.random()*3)) : (25 + Math.floor(Math.random()*7));
-  const students = [];
-  const seed = grade * 100 + cls.charCodeAt(0);
-  function rng(i){return((seed*131+i*997)%1000)/1000}
-  for(let i=0;i<n;i++){
-    const base = 55 + rng(i)*40 + (grade<=3?5:0);
-    const score = Math.round(Math.min(100, Math.max(30, base + (rng(i+100)-0.5)*20)));
-    const grade_ = score>=90?'優':score>=75?'良':score>=60?'中':'差';
-    const si = (seed+i)%surnames.length, ni = (seed+i*3)%names2.length;
-    const phonScores = {};
-    GRADE_PHONICS[grade].forEach((p,j)=>{
-      phonScores[p] = Math.round(Math.min(100, Math.max(20, score + (rng(i*10+j)-0.5)*30)));
-    });
-    students.push({name:surnames[si]+names2[ni], score, grade:grade_, phonics:phonScores, id:`${grade}${cls}-${i+1}`});
+  const surnames = ['陳','林','王','張','李','黃','劉','吳','蔡','楊','鄭','謝','郭','許','蘇','葉','曾','徐','馬','羅','賴','何','洪','邱','廖','盧','余','潘','梁','趙'];
+  const names2 = ['思琪','浩然','子萱','銘軒','欣怡','俊傑','雨桐','嘉欣','家豪','雅婷','宇軒','心怡','柏翰','品妤','承恩','詩涵','睿宸','芷晴','宥辰','語彤','梓涵','彥廷','紫萱','晨曦','若熙','子晴','俊熙','穎琳','卓霖','曉彤'];
+  const key = `${grade}${cls}`;
+  const prof = CLASS_PROFILE[key] || [0,16,0.80];
+  const n = CLASS_SIZE[key] || 26;
+  const [avgOff, spread, testedPct] = prof;
+  // Grade baseline: lower grades slightly higher (easier poems), upper grades harder
+  const gradeBase = {1:76,2:72,3:69,4:65,5:62,6:60}[grade];
+  const classCenter = gradeBase + avgOff;
+
+  // Deterministic seeded RNG (Mulberry32)
+  let _s = (grade*1000 + cls.charCodeAt(0)*7 + 42) >>> 0;
+  function rng(){_s=(_s+0x6D2B79F5)|0;let t=Math.imul(_s^(_s>>>15),1|_s);t=t+Math.imul(t^(t>>>7),61|t)^t;return((t^(t>>>14))>>>0)/4294967296}
+  // Box-Muller for realistic normal distribution
+  function normalRng(mean, sd){
+    let u,v;do{u=rng();v=rng()}while(u===0);
+    return mean + sd * Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
   }
-  students.sort((a,b)=>b.score-a.score);
-  const scores = students.map(s=>s.score);
-  const avg = (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1);
+
+  const students = [];
+  const tested = Math.round(n * testedPct);
+  for(let i=0;i<n;i++){
+    const si = Math.floor(rng()*surnames.length);
+    const ni = Math.floor(rng()*names2.length);
+    // Some students are outliers: ~8% very strong (tutored), ~10% struggling
+    let score;
+    const r = rng();
+    if(r < 0.08) score = normalRng(93, 4);        // 尖子生
+    else if(r < 0.18) score = normalRng(42, 10);   // 困難生
+    else score = normalRng(classCenter, spread/2);  // 主体
+    score = Math.round(Math.min(100, Math.max(15, score)));
+    // Untested students get null score
+    const isTested = i < tested;
+    const grade_ = score>=90?'優':score>=75?'良':score>=60?'中':'差';
+
+    // Phonics: each knowledge point has its own difficulty
+    const phonScores = {};
+    GRADE_PHONICS[grade].forEach(p=>{
+      const diff = (PHON_DIFFICULTY[grade]||{})[p] || 0.75;
+      // Student's phonics score = base score * knowledge difficulty + noise
+      let ps = score * diff + normalRng(0, 8);
+      ps = Math.round(Math.min(100, Math.max(10, ps)));
+      phonScores[p] = ps;
+    });
+
+    students.push({
+      name: surnames[si]+names2[ni],
+      score: isTested ? score : null,
+      grade: isTested ? grade_ : '—',
+      phonics: isTested ? phonScores : {},
+      id: `${key}-${String(i+1).padStart(2,'0')}`
+    });
+  }
+  // Sort: tested first (by score desc), then untested
+  students.sort((a,b)=>{
+    if(a.score===null && b.score===null) return 0;
+    if(a.score===null) return 1;
+    if(b.score===null) return -1;
+    return b.score-a.score;
+  });
+
+  const testedStudents = students.filter(s=>s.score!==null);
+  const scores = testedStudents.map(s=>s.score);
+  const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '0.0';
   const pass = scores.filter(s=>s>=60).length;
   const excellent = scores.filter(s=>s>=90).length;
   const dist = [
@@ -144,19 +238,25 @@ function mockClassData(grade, cls){
     {range:'80-89', count:scores.filter(s=>s>=80&&s<90).length},
     {range:'90-100',count:scores.filter(s=>s>=90).length}
   ];
-  // Aggregate phonics
+  // Phonics aggregate (tested only)
   const phonAvg = {};
   GRADE_PHONICS[grade].forEach(p=>{
-    const vals = students.map(s=>s.phonics[p]);
-    phonAvg[p] = Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+    const vals = testedStudents.map(s=>s.phonics[p]).filter(v=>v!=null);
+    phonAvg[p] = vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : 0;
   });
-  // Error chars (mock top 5)
-  const errChars = [
-    {c:'將',type:'聲調偏誤',rate:62},{c:'聲',type:'韻母偏誤',rate:48},
-    {c:'踏',type:'聲母偏誤',rate:41},{c:'倫',type:'聲調偏誤',rate:35},{c:'潭',type:'韻母偏誤',rate:28}
-  ];
-  const tested = Math.round(n * (0.6 + rng(999)*0.35));
-  return {grade, cls, className:`${grade}${cls}班`, total:n, tested, avg:+avg, passRate:Math.round(pass/n*100), excellentRate:Math.round(excellent/n*100), distribution:dist, phonAvg, errorChars:errChars, students};
+  // Error chars: per-grade, with class-level variance
+  const errChars = (GRADE_ERRORS[grade]||GRADE_ERRORS[2]).map(e=>{
+    const classNoise = Math.round((rng()-0.5)*16);
+    return {...e, rate: Math.min(80, Math.max(8, e.base + classNoise))};
+  }).sort((a,b)=>b.rate-a.rate);
+
+  return {
+    grade, cls, className:`${grade}${cls}班`,
+    total:n, tested: scores.length, avg:+avg,
+    passRate: scores.length ? Math.round(pass/scores.length*100) : 0,
+    excellentRate: scores.length ? Math.round(excellent/scores.length*100) : 0,
+    distribution:dist, phonAvg, errorChars:errChars, students
+  };
 }
 
 // Render sidebar filters
@@ -245,13 +345,18 @@ function renderDashboard(d){
       <table class="stu-table">
         <thead><tr><th>排名</th><th>姓名</th><th>分數</th><th>等級</th>${GRADE_PHONICS[curGrade].map(p=>`<th>${p}</th>`).join('')}</tr></thead>
         <tbody>${d.students.map((s,i)=>{
+          if(s.score===null) return `<tr style="opacity:.45">
+            <td>—</td><td class="stu-name">${s.name}</td><td class="stu-score" style="color:var(--ink-40)">未測</td>
+            <td><span class="grade-tag g-pass">—</span></td>
+            ${GRADE_PHONICS[curGrade].map(()=>`<td style="font-size:12px;color:var(--ink-20)">—</td>`).join('')}</tr>`;
           const gc = s.grade==='優'?'g-ex':s.grade==='良'?'g-good':s.grade==='中'?'g-pass':'g-fail';
+          const rank = d.students.filter(x=>x.score!==null).indexOf(s)+1;
           return `<tr>
-            <td>${i+1}</td>
+            <td>${rank}</td>
             <td class="stu-name">${s.name}</td>
             <td class="stu-score" style="color:${s.grade==='優'?'var(--green)':s.grade==='差'?'var(--red)':'var(--ink)'}">${s.score}</td>
             <td><span class="grade-tag ${gc}">${s.grade}</span></td>
-            ${GRADE_PHONICS[curGrade].map(p=>`<td style="font-family:var(--font-num);font-size:12px;color:${s.phonics[p]>=80?'var(--green)':s.phonics[p]>=60?'var(--gold)':'var(--red)'}">${s.phonics[p]}</td>`).join('')}
+            ${GRADE_PHONICS[curGrade].map(p=>`<td style="font-family:var(--font-num);font-size:12px;color:${(s.phonics[p]||0)>=80?'var(--green)':(s.phonics[p]||0)>=60?'var(--gold)':'var(--red)'}">${s.phonics[p]||'—'}</td>`).join('')}
           </tr>`;
         }).join('')}</tbody>
       </table>
