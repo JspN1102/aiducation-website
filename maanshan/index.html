@@ -263,7 +263,7 @@ body{font-family:var(--font-sans);background:var(--paper);color:var(--ink);overf
       </button>
     </div>
     <button class="btn-primary" onclick="goPage('pg-record')">開始跟讀測評</button>
-    <button class="btn-outline" style="margin-top:12px" onclick="goPage('pg-write')">默寫練習 ✍️</button>
+    <button class="btn-outline" style="margin-top:12px" onclick="goPage('pg-write')">默寫練習</button>
   </div>
 </section>
 
@@ -330,9 +330,9 @@ body{font-family:var(--font-sans);background:var(--paper);color:var(--ink);overf
       </div>
       <div class="write-actions">
         <button class="btn-outline write-act-btn" onclick="clearCanvas()">清除</button>
-        <button class="btn-outline write-act-btn" onclick="speakChar(WRITE_CHARS[writeIdx]?.c)">再聽 🔊</button>
+        <button class="btn-outline write-act-btn" onclick="speakChar(WRITE_CHARS[writeIdx]?.c)">朗讀</button>
         <button class="btn-outline write-act-btn" onclick="showHintChar()" id="btn-hint">提示</button>
-        <button class="btn-primary write-act-btn" onclick="submitWrite()" id="btn-submit-write">確認 ✓</button>
+        <button class="btn-primary write-act-btn" onclick="submitWrite()" id="btn-submit-write">確認</button>
       </div>
       <div class="write-feedback" id="write-feedback"></div>
     </div>
@@ -783,7 +783,14 @@ function appendMsg(role,text,typing){
 }
 
 // ===== Handwriting Practice (with recognition) =====
-const WRITE_CHARS = POEM.flatMap(line => line.chars.map(ch => ({c:ch.c, p:ch.p})));
+// Only these 9 characters for dictation practice (Traditional required)
+const WRITE_CHARS = [
+  {c:'將',p:'jiāng'},{c:'聞',p:'wén'},{c:'踏',p:'tà'},{c:'聲',p:'shēng'},
+  {c:'桃',p:'táo'},{c:'潭',p:'tán'},{c:'倫',p:'lún'},{c:'送',p:'sòng'},{c:'情',p:'qíng'}
+];
+// Simplified → Traditional mapping: if student writes simplified, reject it
+const SIMP_TO_TRAD = {'将':'將','闻':'聞','声':'聲','伦':'倫','踏':'踏','桃':'桃','潭':'潭','送':'送','情':'情'};
+const SIMPLIFIED_VARIANTS = {'將':'将','聞':'闻','聲':'声','倫':'伦'}; // chars that have distinct simplified forms
 let writeIdx = 0, writeResults = [], writeHinted = false;
 let writeCtx = null, isDrawing = false, hasStrokes = false;
 let strokes = []; // Array of strokes; each stroke = {x:[], y:[], t:[]}
@@ -923,7 +930,7 @@ function renderWritePage(){
   hintEl.classList.remove('revealed');
   writeHinted = false;
   writeSubmitting = false;
-  document.getElementById('btn-submit-write').textContent = '確認 ✓';
+  document.getElementById('btn-submit-write').textContent = '確認';
   document.getElementById('btn-submit-write').disabled = false;
   document.getElementById('btn-hint').disabled = false;
   document.getElementById('write-feedback').innerHTML = '';
@@ -990,12 +997,24 @@ async function submitWrite(){
 
   try{
     const candidates = await recognizeStrokes();
-    // Check if target character is in top candidates (allow first char match)
-    const matched = candidates.some(cand => cand.charAt(0) === target || cand === target);
     const topResult = candidates[0] || '?';
+    const recognized = topResult.charAt(0);
+
+    // Check if student wrote the simplified version of a traditional char
+    const simpForm = SIMPLIFIED_VARIANTS[target];
+    if(simpForm && candidates.some(cand => cand.charAt(0) === simpForm)){
+      fb.innerHTML = `<span style="font-size:18px">✗</span> 你寫的是簡體「<span class="recognized-char">${simpForm}</span>」，請寫繁體「<span class="recognized-char">${target}</span>」`;
+      fb.className = 'write-feedback error';
+      writeSubmitting = false;
+      btn.disabled = false;
+      btn.textContent = '確認';
+      return;
+    }
+
+    // Check if target character is in top candidates (exact Traditional match only)
+    const matched = candidates.some(cand => cand.charAt(0) === target);
 
     if(matched){
-      // Success!
       fb.innerHTML = `<span style="font-size:18px">✓</span> 正確！<span class="recognized-char">${target}</span>`;
       fb.className = 'write-feedback success';
       writeResults.push({c: target, p: WRITE_CHARS[writeIdx].p, wrote: true, hinted: false, attempts: (writeResults._currentAttempts||0)});
@@ -1005,15 +1024,12 @@ async function submitWrite(){
       btn.textContent = '下一個 →';
       btn.onclick = ()=>{ writeIdx++; if(writeIdx>=WRITE_CHARS.length)showWriteResult(); else renderWritePage(); btn.onclick=submitWrite; };
     } else {
-      // Wrong character
       writeResults._currentAttempts = (writeResults._currentAttempts||0) + 1;
-      const recognized = topResult.charAt(0);
       fb.innerHTML = `<span style="font-size:18px">✗</span> 識別為「<span class="recognized-char">${recognized}</span>」，不是「<span class="recognized-char">${target}</span>」，請重寫`;
       fb.className = 'write-feedback error';
       writeSubmitting = false;
       btn.disabled = false;
-      btn.textContent = '確認 ✓';
-      // Don't clear canvas — let student see what they wrote and try again
+      btn.textContent = '確認';
     }
   } catch(e){
     console.warn('Handwriting recognition error:', e);
@@ -1021,7 +1037,7 @@ async function submitWrite(){
     fb.className = 'write-feedback error';
     writeSubmitting = false;
     btn.disabled = false;
-    btn.textContent = '確認 ✓';
+    btn.textContent = '確認';
   }
 }
 
