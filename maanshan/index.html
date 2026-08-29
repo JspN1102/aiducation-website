@@ -206,6 +206,11 @@ body{font-family:var(--font-sans);background:var(--paper);color:var(--ink);overf
 .write-score-item.skipped{background:var(--red-bg)}
 .write-score-item .ws-char{font-family:var(--font-serif);font-size:18px;font-weight:600}
 .write-score-item .ws-icon{font-size:12px;margin-top:2px}
+.write-feedback{min-height:40px;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;font-family:var(--font-sans);font-size:13px;border-radius:var(--radius-sm);padding:8px 12px;transition:all .3s}
+.write-feedback.success{background:var(--green-bg);color:var(--green)}
+.write-feedback.error{background:var(--red-bg);color:var(--red)}
+.write-feedback.checking{color:var(--ink-40)}
+.write-feedback .recognized-char{font-family:var(--font-serif);font-size:20px;font-weight:600}
 </style>
 </head>
 <body>
@@ -326,8 +331,9 @@ body{font-family:var(--font-sans);background:var(--paper);color:var(--ink);overf
       <div class="write-actions">
         <button class="btn-outline write-act-btn" onclick="clearCanvas()">清除</button>
         <button class="btn-outline write-act-btn" onclick="showHintChar()" id="btn-hint">提示</button>
-        <button class="btn-primary write-act-btn" onclick="submitWrite()">下一個 →</button>
+        <button class="btn-primary write-act-btn" onclick="submitWrite()" id="btn-submit-write">確認 ✓</button>
       </div>
+      <div class="write-feedback" id="write-feedback"></div>
     </div>
     <div class="write-result" id="write-result"></div>
   </div>
@@ -775,10 +781,13 @@ function appendMsg(role,text,typing){
   return div;
 }
 
-// ===== Handwriting Practice =====
+// ===== Handwriting Practice (with recognition) =====
 const WRITE_CHARS = POEM.flatMap(line => line.chars.map(ch => ({c:ch.c, p:ch.p})));
 let writeIdx = 0, writeResults = [], writeHinted = false;
-let writeCtx = null, isDrawing = false, lastX = 0, lastY = 0, hasStrokes = false;
+let writeCtx = null, isDrawing = false, hasStrokes = false;
+let strokes = []; // Array of strokes; each stroke = {x:[], y:[], t:[]}
+let currentStroke = null;
+let writeSubmitting = false;
 
 function initWriteCanvas(){
   const canvas = document.getElementById('write-canvas');
@@ -788,7 +797,6 @@ function initWriteCanvas(){
   writeCtx.lineJoin = 'round';
   writeCtx.lineWidth = 8;
   writeCtx.strokeStyle = '#1a1612';
-  // Pointer events for touch + mouse
   canvas.addEventListener('pointerdown', wDown);
   canvas.addEventListener('pointermove', wMove);
   canvas.addEventListener('pointerup', wUp);
@@ -796,42 +804,59 @@ function initWriteCanvas(){
 }
 
 function wDown(e){
+  if(writeSubmitting) return;
   isDrawing = true; hasStrokes = true;
-  const r = e.target.getBoundingClientRect();
-  const scaleX = 560 / r.width, scaleY = 560 / r.height;
-  lastX = (e.clientX - r.left) * scaleX;
-  lastY = (e.clientY - r.top) * scaleY;
-  writeCtx.beginPath();
-  writeCtx.moveTo(lastX, lastY);
-  e.preventDefault();
-}
-
-function wMove(e){
-  if(!isDrawing) return;
   const r = e.target.getBoundingClientRect();
   const scaleX = 560 / r.width, scaleY = 560 / r.height;
   const x = (e.clientX - r.left) * scaleX;
   const y = (e.clientY - r.top) * scaleY;
+  currentStroke = {x:[x], y:[y], t:[Date.now()]};
+  writeCtx.beginPath();
+  writeCtx.moveTo(x, y);
+  e.preventDefault();
+}
+
+function wMove(e){
+  if(!isDrawing || writeSubmitting) return;
+  const r = e.target.getBoundingClientRect();
+  const scaleX = 560 / r.width, scaleY = 560 / r.height;
+  const x = (e.clientX - r.left) * scaleX;
+  const y = (e.clientY - r.top) * scaleY;
+  currentStroke.x.push(x);
+  currentStroke.y.push(y);
+  currentStroke.t.push(Date.now());
   writeCtx.lineTo(x, y);
   writeCtx.stroke();
   writeCtx.beginPath();
   writeCtx.moveTo(x, y);
-  lastX = x; lastY = y;
   e.preventDefault();
 }
 
-function wUp(e){ isDrawing = false; }
+function wUp(e){
+  if(!isDrawing) return;
+  isDrawing = false;
+  if(currentStroke && currentStroke.x.length > 1){
+    strokes.push(currentStroke);
+  }
+  currentStroke = null;
+}
 
 function clearCanvas(){
   if(!writeCtx) return;
   writeCtx.clearRect(0, 0, 560, 560);
   hasStrokes = false;
+  strokes = [];
+  document.getElementById('write-feedback').innerHTML = '';
+  document.getElementById('write-feedback').className = 'write-feedback';
 }
 
 function showHintChar(){
   const el = document.getElementById('write-hint-char');
   el.classList.add('revealed');
   writeHinted = true;
+  document.getElementById('write-feedback').innerHTML = '已顯示提示，點擊「跳過」繼續';
+  document.getElementById('write-feedback').className = 'write-feedback checking';
+  document.getElementById('btn-submit-write').textContent = '跳過 →';
 }
 
 function renderWritePage(){
@@ -842,8 +867,12 @@ function renderWritePage(){
   hintEl.textContent = ch.c;
   hintEl.classList.remove('revealed');
   writeHinted = false;
+  writeSubmitting = false;
+  document.getElementById('btn-submit-write').textContent = '確認 ✓';
+  document.getElementById('btn-submit-write').disabled = false;
+  document.getElementById('write-feedback').innerHTML = '';
+  document.getElementById('write-feedback').className = 'write-feedback';
   clearCanvas();
-  // Progress dots
   const prog = document.getElementById('write-progress');
   prog.innerHTML = WRITE_CHARS.map((c, i) => {
     const cls = i < writeIdx ? 'done' : i === writeIdx ? 'current' : '';
@@ -852,18 +881,90 @@ function renderWritePage(){
   }).join('');
 }
 
-function submitWrite(){
+async function recognizeStrokes(){
+  // Collect stroke data: each stroke = [xArray, yArray, tArray]
+  const baseT = strokes[0]?.t[0] || 0;
+  const inkData = strokes.map(s => [
+    s.x.map(v => Math.round(v)),
+    s.y.map(v => Math.round(v)),
+    s.t.map(v => v - baseT)
+  ]);
+  // Use our Vercel proxy (handles CORS + GFW)
+  const resp = await fetch('/api/handwriting', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ ink: inkData })
+  });
+  if(!resp.ok) throw new Error('Recognition API ' + resp.status);
+  const data = await resp.json();
+  if(data.error) throw new Error(data.error);
+  return data.candidates || [];
+}
+
+async function submitWrite(){
   if(writeIdx >= WRITE_CHARS.length) return;
-  if(!hasStrokes && !writeHinted){
-    // Nothing written — prompt user
-    document.getElementById('write-hint-char').style.animation = 'pulse-glow .5s ease';
-    setTimeout(()=>document.getElementById('write-hint-char').style.animation='', 500);
+  const target = WRITE_CHARS[writeIdx].c;
+
+  // If hinted, skip this character
+  if(writeHinted){
+    writeResults.push({c: target, p: WRITE_CHARS[writeIdx].p, wrote: false, hinted: true, attempts: 0});
+    writeIdx++;
+    if(writeIdx >= WRITE_CHARS.length) showWriteResult();
+    else renderWritePage();
     return;
   }
-  writeResults.push({c: WRITE_CHARS[writeIdx].c, p: WRITE_CHARS[writeIdx].p, wrote: hasStrokes, hinted: writeHinted});
-  writeIdx++;
-  if(writeIdx >= WRITE_CHARS.length){showWriteResult()}
-  else{renderWritePage()}
+
+  if(!hasStrokes || strokes.length === 0){
+    const fb = document.getElementById('write-feedback');
+    fb.innerHTML = '請先在格子裏寫字';
+    fb.className = 'write-feedback error';
+    return;
+  }
+
+  // Disable button during recognition
+  writeSubmitting = true;
+  const btn = document.getElementById('btn-submit-write');
+  btn.disabled = true;
+  btn.textContent = '識別中…';
+  const fb = document.getElementById('write-feedback');
+  fb.innerHTML = '<span class="loading-dots" style="gap:4px"><span></span><span></span><span></span></span> 正在識別…';
+  fb.className = 'write-feedback checking';
+
+  try{
+    const candidates = await recognizeStrokes();
+    // Check if target character is in top candidates (allow first char match)
+    const matched = candidates.some(cand => cand.charAt(0) === target || cand === target);
+    const topResult = candidates[0] || '?';
+
+    if(matched){
+      // Success!
+      fb.innerHTML = `<span style="font-size:18px">✓</span> 正確！<span class="recognized-char">${target}</span>`;
+      fb.className = 'write-feedback success';
+      writeResults.push({c: target, p: WRITE_CHARS[writeIdx].p, wrote: true, hinted: false, attempts: (writeResults._currentAttempts||0)});
+      delete writeResults._currentAttempts;
+      writeSubmitting = false;
+      btn.disabled = false;
+      btn.textContent = '下一個 →';
+      btn.onclick = ()=>{ writeIdx++; if(writeIdx>=WRITE_CHARS.length)showWriteResult(); else renderWritePage(); btn.onclick=submitWrite; };
+    } else {
+      // Wrong character
+      writeResults._currentAttempts = (writeResults._currentAttempts||0) + 1;
+      const recognized = topResult.charAt(0);
+      fb.innerHTML = `<span style="font-size:18px">✗</span> 識別為「<span class="recognized-char">${recognized}</span>」，不是「<span class="recognized-char">${target}</span>」，請重寫`;
+      fb.className = 'write-feedback error';
+      writeSubmitting = false;
+      btn.disabled = false;
+      btn.textContent = '確認 ✓';
+      // Don't clear canvas — let student see what they wrote and try again
+    }
+  } catch(e){
+    console.warn('Handwriting recognition error:', e);
+    fb.innerHTML = '識別服務暫時不可用，請重試';
+    fb.className = 'write-feedback error';
+    writeSubmitting = false;
+    btn.disabled = false;
+    btn.textContent = '確認 ✓';
+  }
 }
 
 function showWriteResult(){
