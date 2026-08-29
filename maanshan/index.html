@@ -1034,18 +1034,7 @@ async function submitWrite(){
     const topResult = candidates[0] || '?';
     const recognized = topResult.charAt(0);
 
-    // Check if student wrote the simplified version of a traditional char
-    const simpForm = SIMPLIFIED_VARIANTS[target];
-    if(simpForm && candidates.some(cand => cand.charAt(0) === simpForm)){
-      fb.innerHTML = `<span style="font-size:18px">✗</span> 你寫的是簡體「<span class="recognized-char">${simpForm}</span>」，請寫繁體「<span class="recognized-char">${target}</span>」`;
-      fb.className = 'write-feedback error';
-      writeSubmitting = false;
-      btn.disabled = false;
-      btn.textContent = '確認';
-      return;
-    }
-
-    // Check if target character is in top candidates (exact Traditional match only)
+    // Check for correct Traditional match FIRST (before simplified check)
     const matched = candidates.some(cand => cand.charAt(0) === target);
 
     if(matched){
@@ -1069,8 +1058,15 @@ async function submitWrite(){
       btn.textContent = '下一個 →';
       btn.onclick = ()=>{ writeIdx++; if(writeIdx>=WRITE_CHARS.length)showWriteResult(); else renderWritePage(); btn.onclick=submitWrite; };
     } else {
+      // Only AFTER confirming it's NOT the correct traditional char,
+      // check if they wrote the simplified version
+      const simpForm = SIMPLIFIED_VARIANTS[target];
+      if(simpForm && candidates.some(cand => cand.charAt(0) === simpForm)){
+        fb.innerHTML = `<span style="font-size:18px">✗</span> 你寫的是簡體「<span class="recognized-char">${simpForm}</span>」，請寫繁體「<span class="recognized-char">${target}</span>」`;
+      } else {
+        fb.innerHTML = `<span style="font-size:18px">✗</span> 識別為「<span class="recognized-char">${recognized}</span>」，不是「<span class="recognized-char">${target}</span>」，請重寫`;
+      }
       writeResults._currentAttempts = (writeResults._currentAttempts||0) + 1;
-      fb.innerHTML = `<span style="font-size:18px">✗</span> 識別為「<span class="recognized-char">${recognized}</span>」，不是「<span class="recognized-char">${target}</span>」，請重寫`;
       fb.className = 'write-feedback error';
       writeSubmitting = false;
       btn.disabled = false;
