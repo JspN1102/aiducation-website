@@ -1,12 +1,6 @@
 {
   "trailingSlash": true,
   "functions": {
-    "api/report.js": {
-      "maxDuration": 60
-    },
-    "api/chat.js": {
-      "maxDuration": 30
-    },
     "api/maanshan-report.js": {
       "maxDuration": 60
     },
@@ -21,42 +15,6 @@
     }
   },
   "headers": [
-    {
-      "source": "/mandarin-assessment/img/:path*",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=2592000, immutable" }
-      ]
-    },
-    {
-      "source": "/mandarin-assessment/echarts.min.js",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=2592000, immutable" }
-      ]
-    },
-    {
-      "source": "/mandarin-assessment/:file*.mp4",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=2592000, immutable" }
-      ]
-    },
-    {
-      "source": "/mandarin-assessment/:file*.png",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=2592000, immutable" }
-      ]
-    },
-    {
-      "source": "/mandarin-assessment/:file*.jpg",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=2592000, immutable" }
-      ]
-    },
-    {
-      "source": "/mandarin-assessment/china.json",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=86400" }
-      ]
-    },
     {
       "source": "/maanshan/:path*",
       "headers": [

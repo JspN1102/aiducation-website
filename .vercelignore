@@ -1,0 +1,7 @@
+# Keep local credentials and untracked development work out of deployments.
+.env*
+culture-village/
+node_modules/
+.git/
+.DS_Store
+*.log
