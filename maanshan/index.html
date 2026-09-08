@@ -7,16 +7,17 @@
 <title>古詩朗讀 · 馬鞍山靈糧小學</title>
 <link rel="preload" href="vendor/fonts/noto-serif-tc.woff2?v=20260908e" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css?v=20260908e">
-<link rel="stylesheet" href="visuals.css?v=20260908f">
+<link rel="stylesheet" href="visuals.css?v=20260908g">
 <script src="vendor/lucide.min.js" defer></script>
 <script src="vendor/hanzi-writer.min.js" defer></script>
-<script type="module" src="app.js?v=20260908f"></script>
+<script type="module" src="app.js?v=20260908g"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">跳至內容</a>
 <header class="site-header"><a class="brand" href="#" aria-label="AIDUCATION 古詩研習首頁"><span class="brand-mark"><i data-lucide="book-open"></i></span><strong>AIDUCATION</strong></a><div class="header-right"><button class="profile-button" id="profile-open" aria-label="學習檔案" title="學習檔案"><i data-lucide="user-round"></i><span id="profile-name">學習檔案</span></button></div></header>
 <div id="app"><main id="main" class="loading-page" aria-busy="true"><span class="spinner"></span><p>正在載入古詩</p></main></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+<dialog id="record-lines-dialog" class="record-lines-dialog" aria-labelledby="record-lines-title"><div class="dialog-heading"><h2 id="record-lines-title">選擇詩句</h2><button class="icon-button" data-close="record-lines-dialog" aria-label="關閉"><i data-lucide="x"></i></button></div><div id="record-lines"></div></dialog>
 <dialog id="poem-dialog" class="poem-dialog" aria-labelledby="full-poem-title"><div class="dialog-heading"><h2 id="full-poem-title"></h2><button class="icon-button" data-close="poem-dialog" aria-label="關閉整首詩"><i data-lucide="x"></i></button></div><div id="full-poem-lines"></div></dialog>
 <dialog id="video-dialog" class="video-dialog" aria-labelledby="video-title"><div class="dialog-heading"><h2 id="video-title">示範朗讀</h2><button class="icon-button" data-close="video-dialog" aria-label="關閉影片" title="關閉影片"><i data-lucide="x"></i></button></div><video id="recital-video" controls playsinline preload="none"></video><p id="video-error" class="error-text" hidden>影片暫時無法播放，請稍後重試。</p></dialog>
 <dialog id="profile-dialog" class="profile-dialog" aria-labelledby="profile-title"><div class="dialog-heading"><div><p class="eyebrow">本機學習檔案</p><h2 id="profile-title">我的學習檔案</h2></div><button class="icon-button" data-close="profile-dialog" aria-label="關閉" title="關閉"><i data-lucide="x"></i></button></div><form id="profile-form"><label>學習姓名<input name="name" maxlength="30" required autocomplete="given-name"></label><div class="form-row"><label>年級<select name="grade"><option value="1">一年級</option><option value="2">二年級</option><option value="3">三年級</option><option value="4">四年級</option><option value="5">五年級</option><option value="6">六年級</option></select></label><label>班別<select name="cls"><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option></select></label></div><div class="dialog-actions"><button type="submit" class="button primary"><i data-lucide="check"></i>儲存檔案</button></div></form></dialog>
