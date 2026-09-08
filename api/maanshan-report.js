@@ -1,4 +1,5 @@
 const { getPoem, poemContext, requestPoemText } = require('./_lib/poems.js');
+const pronunciationData = require('../maanshan/pronunciation.json');
 
 function isScore(value) {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100;
@@ -37,7 +38,8 @@ module.exports = async function handler(req, res) {
   const words = soeResult.words === undefined ? [] : soeResult.words;
   if (!Array.isArray(words) || words.length > 128 || words.some(word =>
     !word || typeof word !== 'object' || typeof word.c !== 'string' || !word.c ||
-    word.c.length > 16 || !isScore(word.score) ||
+    word.c.length > 16 || (word.score != null && !isScore(word.score)) ||
+    (word.lineIndex != null && (!Number.isInteger(word.lineIndex) || word.lineIndex < 0 || word.lineIndex >= poem.lines.length)) ||
     (word.status !== undefined && (typeof word.status !== 'string' || word.status.length > 32)))) {
     return res.status(400).json({ error: 'Invalid word scores' });
   }
@@ -54,24 +56,40 @@ module.exports = async function handler(req, res) {
   if (words.some(word => Array.from(word.c).some(char => !readings.has(char)))) {
     return res.status(400).json({ error: 'Word scores do not match selected poem' });
   }
-  const practiceWords = words.filter(word => word.status !== 'ok' || word.score < 80).slice(0, 7).map(word => ({
-    character: word.c,
-    referencePinyin: Array.from(word.c).map(char => [...readings.get(char)].join('/')).join(' '),
-    score: word.score
+  let practice;
+  try {
+    const { getPronunciationPractice } = await import('../maanshan/pronunciation.mjs');
+    practice = getPronunciationPractice({ words }, poem, pronunciationData);
+  } catch (_) {
+    return res.status(500).json({ error: 'Pronunciation practice unavailable' });
+  }
+  const practiceWords = practice.items.slice(0, 20).map(item => ({
+    character: item.char,
+    referencePinyin: item.pinyin,
+    score: item.score,
+    lineText: item.lineText,
+    diagnosis: item.issue,
+    explanation: item.explanation,
+    articulationTip: item.tip,
+    articulationDetail: item.articulationDetail,
+    evidence: item.evidence,
+    phones: item.phones,
+    contrasts: item.contrasts.map(({text,pinyin,label}) => ({text,pinyin,label}))
   }));
 
   const system = `你是香港小學普通話教師，為${poem.grade}年級學生（約${poem.grade + 5}-${poem.grade + 6}歲）寫《${poem.title}》的朗讀練習報告。
 ${poemContext(poem)}
 
 只依據提供的評測數據，缺失欄位視為未提供，0分須保留。total_score是總分，phone_score是發音準確度，fluency_score是流暢度，integrity_score是完整度，單位均為0-100分。
-本評測沒有提供獨立聲調分數。不得推算、編造或引用獨立聲調分數，不得僅憑字級低分就斷言聲母、韻母或聲調錯誤。
-字級分數只作為練習線索。引用原詩中的字及已提供的帶聲調參考拼音，安排跟讀、慢讀、分句朗讀等可實行的練習，不能編造學生實際讀出的音。
+本評測沒有提供獨立的整體聲調分數。不得推算或編造聲調總分。有對應音素證據時，具體指出該聲母、韻母或聲調對應音素的評分偏低；只有字級分數時，說明字音需要改善並提供練習方向，不能把推測當成確定診斷。
+逐字分析要包含原字、正確帶調拼音、現有分數、具體的口形或舌位提示，以及兩個已提供的對比詞和拼音。不能只泛泛地說「多練習」，也不能虛構學生實際讀成的字或音。
+對比詞都是正確的示範讀音，並非學生的錯讀紀錄。鼓勵學生先聽原句示範與對比詞，再回聽自己的原句錄音。遇到多音字，用已提供的原詩語境解釋正確讀法；注意「一」及第三聲的正常連讀變調。
 使用繁體中文，直接以「你」稱呼學生；${poem.grade <= 2 ? '用短句和簡單有趣的例子，適合低年級閱讀。' : poem.grade <= 4 ? '用清楚親切的語言，解釋練習目的。' : '尊重高年級學生，可以結合停頓、節奏和詩意。'}
-結構為整體表現、逐字練習、下一步鼓勵。表揚須符合分數；沒有字級資料時說明無法逐字判斷，不能宣稱全部正確。
+結構為整體表現、逐字診斷與對比練習、下一步鼓勵。只評論提供了資料的部分，表揚須符合分數；unknownWords 是未取得有效逐字分數或無法對應的項目，不能把它們當成零分、錯讀或全部正確。問題字較多時，優先說明分數最低的字，但不要宣稱其餘字沒有問題。
 只圍繞${poem.author}和本詩，不要把其他作者的生平或詩句套入。純文字，不使用Markdown。`;
 
   return requestPoemText(res, [
     { role: 'system', content: system },
-    { role: 'user', content: JSON.stringify({ measured, wordCount: words.length, practiceWords }) }
-  ], { field: 'report', temperature: 0.7, timeoutMs: 30000, maxTokens: 1600 });
+    { role: 'user', content: JSON.stringify({ measured, wordCount: words.length, measuredWordCount: practice.assessedCount, unknownWords: practice.unknownWords, practiceWords }) }
+  ], { field: 'report', temperature: 0.7, timeoutMs: 30000, maxTokens: 2200 });
 };

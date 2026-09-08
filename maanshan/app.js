@@ -1,4 +1,6 @@
 import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, handwritingMatch, createSyncQueue} from './core.mjs';
+import {mountStage, getScenePreview} from './scene-stage.mjs';
+import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -21,6 +23,8 @@ let scene=1, currentLine=0, recorder=null, stream=null, recordContext=null, reco
 let writeIndex=0, strokes=[], activeStroke=null, hinted=false, writeBusy=false, strokeWriter=null;
 let quizIndex=0, quizChoice=null, quizAnswers=[];
 let chatBusy=false;
+let sceneStage=null, activeSpeechButton=null, finishTransient=null;
+const speechCache=new Map(), speechPending=new Map();
 const recordings=new Map(), requests=new Set();
 const sync=createSyncQueue({
   read:()=>{const list=readStorage(PENDING,[]);return Array.isArray(list)?list:[];},
@@ -47,8 +51,51 @@ function queueSection(section,payload,p=poem) {
   sync.add({syncId:crypto.randomUUID(),studentId:profile.id,name:profile.name,grade:Number(profile.grade),cls:profile.cls,poemId:p.id,section,payload,queuedAt:Date.now()});
   sync.flush();
 }
+function queueReading(p=poem,extra={}) {
+  const s=state(p),result=poemAssessment(p),groups={};
+  s.quiz.forEach((answer,i)=>{const question=p.phonics[i];if(question){(groups[question.label]??=[]).push(answer===question.answer?100:0);}});
+  const phonics=Object.fromEntries(Object.entries(groups).map(([label,scores])=>[label,Math.round(scores.reduce((a,b)=>a+b,0)/scores.length)]));
+  queueSection('reading',{...extra,...(result?{totalScore:result.total_score}:{}),linesCompleted:s.reading.filter(Boolean).length,words:result?.words||[],phonics,updatedAt:new Date().toISOString()},p);
+}
 function toast(text) { clearTimeout(toastTimer);$('#toast').textContent=text;$('#toast').classList.add('visible');toastTimer=setTimeout(()=>$('#toast').classList.remove('visible'),3800); }
-function stopTransient() { speechVersion++; if(transientAudio)transientAudio.pause();transientAudio=null;if(transientUrl)URL.revokeObjectURL(transientUrl);transientUrl=null; }
+function stopTransient() {
+  speechVersion++;
+  if(transientAudio){transientAudio.pause();transientAudio.onended=null;transientAudio.onerror=null;}
+  finishTransient?.(false);finishTransient=null;transientAudio=null;
+  if(transientUrl)URL.revokeObjectURL(transientUrl);transientUrl=null;
+  if(activeSpeechButton){delete activeSpeechButton.dataset.audioState;activeSpeechButton.removeAttribute('aria-busy');activeSpeechButton.setAttribute('aria-pressed','false');}
+  activeSpeechButton=null;
+}
+function speechState(button,status) {
+  if(!button)return;
+  button.dataset.audioState=status;button.setAttribute('aria-busy',String(status==='loading'));button.setAttribute('aria-pressed','true');
+}
+async function speechBlob(text) {
+  if(speechCache.has(text))return speechCache.get(text);
+  if(speechPending.has(text))return speechPending.get(text);
+  const pending=(async()=>{
+    const response=await fetch('/api/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,voice:101015,speed:-.25}),signal:AbortSignal.timeout(12000)});
+    if(!response.ok||!response.headers.get('content-type')?.startsWith('audio/'))throw new Error('TTS');
+    const blob=await response.blob();if(!blob.size)throw new Error('empty audio');
+    if(speechCache.size>=80)speechCache.delete(speechCache.keys().next().value);
+    speechCache.set(text,blob);return blob;
+  })().finally(()=>speechPending.delete(text));
+  speechPending.set(text,pending);return pending;
+}
+function playBlob(blob) {
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(blob),player=new Audio(url);
+    transientUrl=url;transientAudio=player;
+    const finish=ok=>{
+      player.onended=null;player.onerror=null;URL.revokeObjectURL(url);
+      if(transientAudio===player){transientAudio=null;transientUrl=null;finishTransient=null;}
+      resolve(ok);
+    };
+    finishTransient=finish;player.onended=()=>finish(true);
+    player.onerror=()=>{finish(false);};
+    player.play().catch(error=>{finish(false);reject(error);});
+  });
+}
 function stopMedia() { audio.pause();video.pause();stopTransient();updateAudio(); }
 function cancelRecording() {
   recordingVersion++;
@@ -72,24 +119,35 @@ function verseHTML(line,extra='') {
 }
 function completed(p) {const s=state(p);return [!!s.listened,s.reading.filter(Boolean).length===p.lines.length,s.writing.length===p.dictation.length,s.quiz.length===p.phonics.length];}
 function renderLibrary() {
-  poem=null;document.title='古詩研習 · 馬鞍山靈糧小學';
-  app.innerHTML=`<main class="library" id="main"><div class="library-heading"><div><p class="eyebrow">普通話 · 詩意日常</p><h1>我的古詩書架</h1><p class="library-sub">讀一首詩，走進一幅畫。</p></div><div class="library-count"><div><strong>06</strong><span>首經典古詩</span></div><div><strong>${String(poems.filter(p=>completed(p).every(Boolean)).length).padStart(2,'0')}</strong><span>首完成研習</span></div></div></div><div class="library-toolbar"><div class="filter-tabs" aria-label="年級篩選">${['全部古詩','一、二年級','三、四年級','五、六年級'].map((t,i)=>`<button data-action="filter" data-value="${i}" aria-pressed="${libraryFilter===i}">${t}</button>`).join('')}</div><label class="search">${icon('search')}<input id="poem-search" type="search" placeholder="尋找古詩或詩人" aria-label="尋找古詩或詩人" value="${esc(searchText)}"></label></div><div class="poem-grid" id="poem-grid"></div><footer class="library-footer"><span>馬鞍山靈糧小學 · AIDUCATION</span><a href="credits.html">素材來源 ${icon('arrow-up-right')}</a></footer></main>`;
+  poem=null;document.title='古詩小天地 · 馬鞍山靈糧小學';
+  const stamps=poems.reduce((sum,p)=>sum+completed(p).filter(Boolean).length,0);
+  app.innerHTML='<main class="library" id="main">'+
+    '<div class="library-heading"><div><p class="eyebrow">馬鞍山靈糧小學 · 普通話</p><h1>古詩小天地</h1><p class="library-sub">今天，想走進哪一首詩？</p></div>'+
+    '<div class="library-count"><div class="stamp-total">'+icon('stamp')+'<strong>'+stamps+'</strong><span>枚學習印章</span></div><div><strong>06</strong><span>段詩畫旅程</span></div></div></div>'+
+    '<div class="library-toolbar"><div class="filter-tabs" aria-label="年級篩選">'+['全部古詩','一、二年級','三、四年級','五、六年級'].map((t,i)=>'<button data-action="filter" data-value="'+i+'" aria-pressed="'+(libraryFilter===i)+'">'+t+'</button>').join('')+'</div>'+
+    '<label class="search">'+icon('search')+'<input id="poem-search" type="search" placeholder="尋找古詩或詩人" aria-label="尋找古詩或詩人" value="'+esc(searchText)+'"></label></div>'+
+    '<div class="poem-grid" id="poem-grid"></div><footer class="library-footer"><span>馬鞍山靈糧小學 · AIDUCATION</span><a href="credits.html">素材來源 '+icon('arrow-up-right')+'</a></footer></main>';
   renderCards();icons();
   $('#poem-search').addEventListener('input',event=>{searchText=event.target.value;renderCards();});
 }
 function renderCards() {
   const query=searchText.trim().toLowerCase();
-  const selected=poems.filter(p=>(!libraryFilter||Math.ceil(p.grade/2)===libraryFilter)&&`${p.title} ${p.subtitle||''} ${p.author} ${p.authorBio}`.toLowerCase().includes(query));
+  const selected=poems.filter(p=>(!libraryFilter||Math.ceil(p.grade/2)===libraryFilter)&&[p.title,p.subtitle||'',p.author,p.authorBio].join(' ').toLowerCase().includes(query));
+  const symbols=['volume-2','mic','pen-line','flag'],labels=['聽詩','朗讀','默寫','闖關'];
   $('#poem-grid').innerHTML=selected.map(p=>{
-    const done=completed(p), progress=done.filter(Boolean).length;
-    return `<article class="poem-card"><a href="${link('read',p)}" aria-label="練習${esc(titleOf(p))}"><div class="poem-art"><img src="${asset('scene-1.webp',p)}" width="1600" height="900" alt="${esc(p.lines[0].text)}" ${p.id>3?'loading="lazy"':'fetchpriority="high"'}><span class="poem-number">${['','一','二','三','四','五','六'][p.grade]}年級</span></div><div class="poem-card-body"><div class="poem-card-title"><h2 class="${titleOf(p).length>5?'long':''}">${esc(titleOf(p))}</h2>${icon('arrow-up-right')}</div><div class="poem-meta"><img src="${asset('avatar.webp',p)}" width="27" height="27" alt="${esc(p.author)}" loading="lazy"><span>${esc(p.dynasty)} · ${esc(p.author)}</span><span class="poem-theme">${esc(p.theme)}</span></div><div class="poem-card-bottom"><span>${progress===4?'已完成研習':progress?`已完成 ${progress} / 4 項`:'開始這一首'}</span><span class="mini-progress" aria-label="已完成${progress}項">${done.map(d=>`<span class="${d?'done':''}"></span>`).join('')}</span></div></div></a></article>`;
+    const done=completed(p),progress=done.filter(Boolean).length;
+    return '<article class="poem-card poem-color-'+p.id+'"><a href="'+link('read',p)+'" aria-label="練習'+esc(titleOf(p))+'">'+
+      '<div class="poem-art" style="background-image:url('+getScenePreview(p.slug,1)+')"><img src="'+asset('scene-1.webp',p)+'" width="1600" height="900" alt="'+esc(p.lines[0].text)+'" '+(p.id>3?'loading="lazy"':'fetchpriority="high"')+'><span class="poem-number">'+['','一','二','三','四','五','六'][p.grade]+'年級</span><span class="poem-theme">'+esc(p.theme)+'</span></div>'+
+      '<div class="poem-card-body"><div class="poem-card-title"><h2 class="'+(titleOf(p).length>5?'long':'')+'">'+esc(titleOf(p))+'</h2>'+icon('arrow-up-right')+'</div>'+
+      '<div class="poem-meta"><img src="'+asset('avatar.webp',p)+'" width="36" height="36" alt="'+esc(p.author)+'" loading="lazy"><span>'+esc(p.dynasty)+' · '+esc(p.author)+'</span></div>'+
+      '<div class="poem-card-bottom"><span>'+(progress===4?'印章集齊了！':progress?'已收集 '+progress+' / 4 枚':'我的學習印章')+'</span><span class="mini-progress" aria-label="已完成'+progress+'項">'+done.map((d,i)=>'<span class="'+(d?'done':'')+'" title="'+labels[i]+(d?'已完成':'未完成')+'">'+icon(symbols[i])+'</span>').join('')+'</span></div></div></a></article>';
   }).join('')||'<p class="empty-search">沒有找到這首詩，試試詩人名字。</p>';icons();
 }
-const NAV=[['read','book-open','賞讀古詩'],['record','mic','朗讀測評'],['write','pen-line','默寫練習'],['quiz','ear','語音練習'],['chat','messages-square','與詩人對話'],['report','chart-no-axes-combined','學習報告']];
+const NAV=[['read','book-open','賞讀古詩','賞詩'],['record','mic','朗讀測評','朗讀'],['write','pen-line','默寫練習','默寫'],['quiz','flag','語音小闖關','闖關'],['chat','messages-square','與詩人對話','詩人'],['report','award','學習報告','報告']];
 function renderWorkspace() {
   const name=NAV.find(n=>n[0]===view)?.[2]||'';
   document.title=`${titleOf(poem)} · ${name} · AIDUCATION`;
-  app.innerHTML=`<div class="workspace"><aside class="sidebar"><a class="back-library" href="#">${icon('arrow-left')}我的古詩書架</a><div class="sidebar-poet"><img src="${asset('avatar.webp')}" width="68" height="68" alt="${esc(poem.author)}"><h2>${esc(titleOf(poem))}</h2><p>${esc(poem.dynasty)} · ${esc(poem.author)}</p></div><nav class="study-nav" aria-label="學習活動">${NAV.map(n=>`<a href="${link(n[0])}" class="${view===n[0]?'active':''}" ${view===n[0]?'aria-current="page"':''}>${icon(n[1])}<span>${n[2]}</span></a>`).join('')}</nav><div class="sidebar-bottom">${poem.grade}年級 · 古詩研習<br>每一遍，都有新發現。</div></aside><main class="study-main" id="main"><div class="breadcrumbs"><a href="#">古詩書架</a>${icon('chevron-right')}<a href="${link()}">${esc(titleOf(poem))}</a>${icon('chevron-right')}<span>${name}</span></div><div class="study-heading ${titleOf(poem).length>6?'long-title':''}"><div><h1>${view==='read'?esc(titleOf(poem)):view==='chat'?`與${esc(poem.author)}對話`:name}</h1><p>${esc(poem.dynasty)} · ${esc(poem.author)}${view==='read'?` · ${esc(poem.theme)}`:` · ${esc(titleOf(poem))}`}</p></div><div class="heading-actions">${view==='read'||view==='record'?`<button class="icon-button" data-action="pinyin" title="${showPinyin?'隱藏':'顯示'}拼音" aria-label="${showPinyin?'隱藏':'顯示'}拼音" aria-pressed="${showPinyin}">${icon('languages')}</button>`:''}${view==='read'?`<a class="button small" href="#">${icon('library')}換一首</a>`:''}</div></div><section id="view" class="view-section ${showPinyin?'':'hide-pinyin'}"></section></main></div>`;
+  app.innerHTML=`<div class="workspace view-${view}"><aside class="sidebar"><a class="back-library" href="#">${icon('arrow-left')}古詩小天地</a><div class="sidebar-poet"><img src="${asset('avatar.webp')}" width="68" height="68" alt="${esc(poem.author)}"><h2>${esc(titleOf(poem))}</h2><p>${esc(poem.dynasty)} · ${esc(poem.author)}</p></div><nav class="study-nav" aria-label="學習活動">${NAV.map(n=>`<a href="${link(n[0])}" aria-label="${n[2]}" class="${view===n[0]?'active':''}" ${view===n[0]?'aria-current="page"':''}>${icon(n[1])}<span class="nav-full">${n[2]}</span><span class="nav-short" aria-hidden="true">${n[3]}</span></a>`).join('')}</nav><div class="sidebar-bottom">${poem.grade}年級 · 古詩研習<br>每一遍，都有新發現。</div></aside><main class="study-main" id="main"><div class="breadcrumbs"><a href="#">古詩天地</a>${icon('chevron-right')}<a href="${link()}">${esc(titleOf(poem))}</a>${icon('chevron-right')}<span>${name}</span></div><div class="study-heading ${titleOf(poem).length>6?'long-title':''}"><div><h1>${view==='read'?esc(titleOf(poem)):view==='chat'?`與${esc(poem.author)}對話`:name}</h1><p>${esc(poem.dynasty)} · ${esc(poem.author)}${view==='read'?` · ${esc(poem.theme)}`:` · ${esc(titleOf(poem))}`}</p></div><div class="heading-actions">${view==='read'||view==='record'?`<button class="icon-button" data-action="pinyin" title="${showPinyin?'隱藏':'顯示'}拼音" aria-label="${showPinyin?'隱藏':'顯示'}拼音" aria-pressed="${showPinyin}">${icon('languages')}</button>`:''}${view==='read'?`<a class="button small" href="#">${icon('library')}換一首</a>`:''}</div></div><section id="view" class="view-section ${showPinyin?'':'hide-pinyin'}"></section></main></div>`;
   renderView();icons();
 }
 function renderView() {
@@ -102,11 +160,21 @@ function renderView() {
   icons();
 }
 function renderRead() {
-  $('#view').innerHTML=`<div class="poem-stage"><div><div class="art-stage" id="reading-art"><img src="${asset(`scene-${scene}.webp`)}" alt="${esc(poem.lines.find(l=>l.scene===scene).text)}" width="1600" height="900"></div><div class="art-caption"><span id="scene-caption">${esc(poem.lines.filter(l=>l.scene===scene).map(l=>l.text).join('，'))}</span><div class="scene-dots" aria-label="畫卷">${[1,2,3,4].map(n=>`<button data-action="scene" data-value="${n}" aria-label="第${n}幅畫卷" title="第${n}幅畫卷" aria-pressed="${scene===n}"></button>`).join('')}</div></div><p class="poem-description">${esc(poem.description)}</p></div><div class="poem-text"><div class="poem-text-title"><div><h2>示範朗讀</h2><p>${esc(poem.author)} · ${poem.lines.length}句</p></div><button class="icon-button" data-action="video" title="看影片" aria-label="看影片">${icon('clapperboard')}</button></div><div class="poem-lines ${poem.lines.length>4?'long':''}">${poem.lines.map(l=>verseHTML(l)).join('')}</div><div class="media-tools"><div class="media-buttons"><button class="button primary" data-action="narration" id="listen-button">${icon('volume-2')}<span>聽朗讀</span></button><button class="button" data-action="video">${icon('play')}看影片</button></div><div class="audio-timeline"><span id="audio-time">0:00</span><input id="audio-seek" type="range" min="0" max="100" value="0" step=".1" aria-label="朗讀進度"><span id="audio-duration">0:00</span><select id="audio-speed" aria-label="朗讀速度"><option value=".75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option></select></div></div></div></div><div class="study-next"><p><strong>把詩讀給山水聽。</strong><br>${state(poem).reading.filter(Boolean).length?`已完成 ${state(poem).reading.filter(Boolean).length} / ${poem.lines.length} 句朗讀`:'今天，從第一句開始。'}</p><a class="button primary" href="${link('record')}">${icon('mic')}開始朗讀測評 ${icon('arrow-right')}</a></div>`;
+  $('#view').innerHTML='<div class="poem-stage"><div class="poem-landscape"><div class="art-stage" id="reading-art"></div>'+
+    '<div class="art-caption"><span id="scene-caption">'+esc(sceneText(scene))+'</span><span class="scene-count" id="scene-count">'+scene+' / 4</span></div>'+
+    '<div class="scene-thumbnails" aria-label="畫卷">'+[1,2,3,4].map(n=>'<button data-action="scene" data-value="'+n+'" aria-label="第'+n+'幅畫卷" title="第'+n+'幅畫卷" aria-pressed="'+(scene===n)+'"><img src="'+getScenePreview(poem.slug,n)+'" width="128" height="72" alt=""><span>'+n+'</span></button>').join('')+'</div>'+
+    '<p class="poem-description">'+esc(poem.description)+'</p></div>'+
+    '<div class="poem-text"><div class="poem-text-title"><div><h2>跟詩人讀一讀</h2><p>'+esc(poem.author)+' · '+poem.lines.length+'句</p></div><img class="reading-avatar" src="'+asset('avatar.webp')+'" width="48" height="48" alt="'+esc(poem.author)+'"></div>'+
+    '<div class="poem-lines '+(poem.lines.length>4?'long':'')+'">'+poem.lines.map(l=>verseHTML(l)).join('')+'</div>'+
+    '<div class="media-tools"><div class="media-buttons"><button class="button primary audio-command" data-action="narration" id="listen-button">'+icon('volume-2')+'<span>聽朗讀</span></button><button class="button video-command" data-action="video">'+icon('clapperboard')+'看影片</button></div>'+
+    '<div class="audio-timeline"><span id="audio-time">0:00</span><input id="audio-seek" type="range" min="0" max="100" value="0" step=".1" aria-label="朗讀進度"><span id="audio-duration">0:00</span><select id="audio-speed" aria-label="朗讀速度"><option value=".75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option></select></div></div></div></div>'+
+    '<div class="study-next"><p><strong>'+icon('stamp')+'我的朗讀印章</strong><br>'+(state(poem).reading.filter(Boolean).length?'已完成 '+state(poem).reading.filter(Boolean).length+' / '+poem.lines.length+' 句':'把這首詩，讀進畫卷裡。')+'</p><a class="button primary" href="'+link('record')+'">'+icon('mic')+'我也來讀 '+icon('arrow-right')+'</a></div>';
+  sceneStage=mountStage($('#reading-art'),{poemSlug:poem.slug,scene,alt:sceneText(scene)});
   audio.src=asset('narration.m4a');audio.playbackRate=1;
   $('#audio-seek').addEventListener('input',event=>{if(Number.isFinite(audio.duration))audio.currentTime=audio.duration*Number(event.target.value)/100;});
   $('#audio-speed').addEventListener('change',event=>{audio.playbackRate=Number(event.target.value);});
 }
+function sceneText(n,p=poem){return p.lines.filter(l=>l.scene===Math.max(1,n)).map(l=>l.text).join('，');}
 function updateAudio() {
   const button=$('#listen-button');if(!button)return;
   button.innerHTML=icon(audio.paused?'volume-2':'pause')+`<span>${audio.paused?'聽朗讀':'暫停朗讀'}</span>`;
@@ -126,27 +194,49 @@ async function openVideo() {
   $('#video-dialog').showModal();
   try{await video.play();}catch{ /* Native controls remain available after autoplay restrictions. */ }
 }
-async function speak(text,context='') {
-  stopMedia();const version=speechVersion;const route=routeVersion;
+async function speak(text,context='',button=null) {
+  if(button&&activeSpeechButton===button){stopMedia();return;}
+  stopMedia();const version=speechVersion,route=routeVersion;
+  const texts=Array.isArray(text)?text:[context||text];
+  activeSpeechButton=button;
   try {
-    const response=await fetch('/api/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:context||text,voice:101015,speed:-.15}),signal:AbortSignal.timeout(12000)});
-    if(!response.ok)throw new Error('TTS');const blob=await response.blob();
-    if(version!==speechVersion||route!==routeVersion)return;
-    transientUrl=URL.createObjectURL(blob);transientAudio=new Audio(transientUrl);await transientAudio.play();
-  } catch {if(version===speechVersion&&route===routeVersion)toast('語音暫時無法播放，請稍後重試。');}
+    for(const phrase of texts){
+      speechState(button,'loading');const blob=await speechBlob(phrase);
+      if(version!==speechVersion||route!==routeVersion)return;
+      speechState(button,'playing');const finished=await playBlob(blob);
+      if(version!==speechVersion||route!==routeVersion)return;
+      if(!finished)throw new Error('playback');
+    }
+  } catch {if(version===speechVersion&&route===routeVersion)toast('語音暫時無法播放，請再按一次重試。');}
+  finally {if(version===speechVersion&&route===routeVersion)stopTransient();}
 }
 function reveal(n) {
-  scene=n;const element=$('#reading-art');
-  if(element){element.innerHTML=`<img src="${asset(`scene-${n}.webp`)}" width="1600" height="900" alt="${esc(poem.lines.find(l=>l.scene===n).text)}">`;$('#scene-caption').textContent=poem.lines.filter(l=>l.scene===n).map(l=>l.text).join('，');document.querySelectorAll('[data-action="scene"]').forEach(b=>b.setAttribute('aria-pressed',Number(b.dataset.value)===n));}
+  scene=n;sceneStage?.show(n,sceneText(n));
+  if($('#scene-caption'))$('#scene-caption').textContent=sceneText(n);
+  if($('#scene-count'))$('#scene-count').textContent=n+' / 4';
+  document.querySelectorAll('[data-action="scene"]').forEach(b=>b.setAttribute('aria-pressed',Number(b.dataset.value)===n));
 }
 function renderRecord() {
-  const s=state(poem),line=poem.lines[currentLine],result=s.reading[currentLine],latest=s.reading.reduce((a,r,i)=>r?i:a,-1);
-  const displayed=result?currentLine:latest;
-  const sceneNumber=displayed>=0?poem.lines[displayed].scene:1;
-  $('#view').innerHTML=`<div class="record-layout"><div><div class="record-art ${latest<0?'locked':''}"><img src="${asset(`scene-${sceneNumber}.webp`)}" width="1600" height="900" alt="${latest>=0?esc(poem.lines[latest].text):'古詩畫卷'}">${latest<0?`<div class="art-lock">${icon('scroll-text')}第一幅畫卷，等你讀出來</div>`:''}</div><div class="verse-list">${poem.lines.map((l,i)=>`<button class="verse-list-item ${i===currentLine?'current':''}" data-action="record-line" data-value="${i}" ${recordBusy?'disabled':''}><span>${String(i+1).padStart(2,'0')}</span><span class="line-text">${esc(l.text)}</span>${s.reading[i]?`<span class="line-score">${s.reading[i].total_score}分</span>${icon('check')}`:icon('circle')}</button>`).join('')}</div></div><div><div class="record-tool"><div class="record-counter"><span>第 ${currentLine+1} / ${poem.lines.length} 句</span><button class="icon-button small" data-action="line-tts" title="聽這一句" aria-label="聽這一句" ${recordBusy?'disabled':''}>${icon('volume-2')}</button></div>${verseHTML(line,'active')}<div id="record-controls">${result?`<div class="record-result">${result.total_score}<small>分</small></div><p class="record-status">${esc(result.grade)}</p><div class="record-actions"><button class="icon-button" data-action="replay" data-value="${currentLine}" title="回聽錄音" aria-label="回聽錄音" ${recordings.has(`${poem.id}-${currentLine}`)?'':'disabled'}>${icon('headphones')}</button><button class="button" data-action="record-start">${icon('rotate-ccw')}再讀一次</button><button class="button primary" data-action="record-next">${currentLine===poem.lines.length-1?'查看報告':'下一句'}${icon('arrow-right')}</button></div>`:`<div class="record-wave" id="record-wave">${'<span></span>'.repeat(19)}</div><div class="record-actions"><button class="mic-button" data-action="record-start" aria-label="開始錄音" title="開始錄音">${icon('mic')}</button></div><p class="record-status" id="record-status">準備好，就開始朗讀吧。</p>`}</div></div><div class="record-bottom"><a class="text-button" href="${link('report')}">學習報告 ${icon('arrow-right')}</a></div><p class="saved-note">已完成的分數會保存在此裝置。</p></div></div>`;icons();
+  const s=state(poem),line=poem.lines[currentLine],result=s.reading[currentLine];
+  const latest=s.reading.reduce((a,r,i)=>r?i:a,-1),displayed=result?currentLine:latest;
+  const sceneNumber=displayed>=0?poem.lines[displayed].scene:0;
+  if(!$('#record-art')){
+    $('#view').innerHTML='<div class="record-layout"><div class="record-landscape"><div class="record-art" id="record-art"></div><div class="record-caption" id="record-caption" role="status"></div><div class="verse-list" id="record-lines"></div></div><div class="record-practice"><div class="record-tool" id="record-tool"></div><div class="record-bottom"><a class="text-button" href="'+link('report')+'">我的朗讀報告 '+icon('arrow-right')+'</a></div></div></div>';
+    sceneStage=mountStage($('#record-art'),{poemSlug:poem.slug,scene:sceneNumber,alt:sceneNumber?sceneText(sceneNumber):'等待展開的古詩畫卷'});
+  }else sceneStage?.show(sceneNumber,sceneNumber?sceneText(sceneNumber):'等待展開的古詩畫卷');
+  $('#record-caption').innerHTML=icon(sceneNumber?'sparkles':'scroll-text')+'<span>'+(sceneNumber?esc(sceneText(sceneNumber)):'第一幅詩畫，等你讀出來')+'</span><span class="scene-count">'+new Set(s.reading.flatMap((r,i)=>r?[poem.lines[i].scene]:[])).size+' / 4</span>';
+  $('#record-lines').innerHTML=poem.lines.map((l,i)=>'<button class="verse-list-item '+(i===currentLine?'current':'')+' '+(s.reading[i]?'done':'')+'" data-action="record-line" data-value="'+i+'" aria-label="第'+(i+1)+'句，'+esc(l.text)+(s.reading[i]?'，已完成':'')+'" '+(i===currentLine?'aria-current="step"':'')+' '+(recordBusy?'disabled':'')+'><span>'+(i+1)+'</span><span class="line-text">'+esc(l.text)+'</span>'+(s.reading[i]?'<span class="line-score">'+s.reading[i].total_score+'分</span>'+icon('check'):icon('circle'))+'</button>').join('');
+  const weak=result?.words.filter(w=>Number.isFinite(w.score)&&w.score<80)||[];
+  const feedback=weak.length?'<div class="record-review"><span>再練這幾個字</span>'+weak.map(w=>'<button data-action="word-tts" data-value="'+esc(w.c)+'" data-text="'+esc(line.text)+'" aria-label="聽'+esc(w.c)+'所在詩句"><ruby>'+esc(w.c)+'<rt>'+esc(w.p)+'</rt></ruby>'+icon('volume-2')+'</button>').join('')+'</div>':'';
+  $('#record-tool').innerHTML='<div class="record-counter"><span>第 '+(currentLine+1)+' / '+poem.lines.length+' 句</span><button class="icon-button" data-action="line-tts" title="聽這一句" aria-label="聽這一句" '+(recordBusy?'disabled':'')+'>'+icon('volume-2')+'</button></div>'+verseHTML(line,'active')+
+    '<div id="record-controls">'+(result?'<div class="record-result">'+result.total_score+'<small>分</small></div><p class="record-status">'+esc(result.grade)+'</p>'+feedback+
+    '<div class="record-actions"><button class="icon-button" data-action="replay" data-value="'+currentLine+'" title="我的錄音" aria-label="我的錄音" '+(recordings.has(poem.id+'-'+currentLine)?'':'disabled')+'>'+icon('headphones')+'</button><button class="button" data-action="record-start">'+icon('rotate-ccw')+'再讀一次</button><button class="button primary" data-action="record-next">'+(currentLine===poem.lines.length-1?'看看成果':'下一句')+icon('arrow-right')+'</button></div>':
+      '<div class="record-actions"><button class="mic-button" data-action="record-start" aria-label="開始錄音" title="開始錄音">'+icon('mic')+'</button></div><p class="record-status" id="record-status">輪到你的小小聲音了</p>')+'</div>';
+  icons();
 }
 async function startRecording() {
   if(recordBusy)return;stopMedia();cancelRecording();recordBusy=true;
+  document.querySelectorAll('[data-action="record-line"],[data-action="line-tts"]').forEach(button=>button.disabled=true);
   const version=routeVersion,generation=recordingVersion,p=poem,index=currentLine;
   const isCurrent=()=>version===routeVersion&&generation===recordingVersion;
   const controls=$('#record-controls');controls.innerHTML='<p class="record-status"><span class="spinner"></span> 正在開啟麥克風</p>';
@@ -180,28 +270,66 @@ async function assessRecording(blob,p,index,version,generation,context) {
   const isCurrent=()=>version===routeVersion&&generation===recordingVersion;
   try {
     if(blob.size<100)throw new Error('這次錄音太短，再讀一次吧。');
-    recordings.set(`${p.id}-${index}`,blob);const encoded=await wavBase64(blob,context);
+    const encoded=await wavBase64(blob,context);
     if(!isCurrent())return;
     const raw=await api('/api/soe',{audio:encoded,refText:p.lines[index].simplified},26000);
     if(!isCurrent())return;
-    const result=mapAssessment(raw,p.lines[index]);const s=state(p);s.reading[index]=result;s.report='';s.updatedAt=Date.now();
-    const merged=mergeAssessments(s.reading);
-    queueSection('reading',{lineIdx:index,lineScore:result.total_score,totalScore:merged.total_score,linesCompleted:s.reading.filter(Boolean).length,words:merged.words,phonics:{},updatedAt:new Date().toISOString()},p);
+    const result=mapAssessment(raw,p.lines[index]);result.words=result.words.map(w=>({...w,lineIndex:index}));const s=state(p);recordings.set(`${p.id}-${index}`,blob);s.reading[index]=result;s.report='';s.updatedAt=Date.now();
+    queueReading(p,{lineIdx:index,lineScore:result.total_score});
     toast('這一句完成了，畫卷已展開。');
   } catch(error) {if(isCurrent())toast(error.name==='AbortError'?'這次等得有點久，請再試一次。':error.message);}
   finally {if(isCurrent()){cancelRecording();renderRecord();}}
 }
-function replay(index){const blob=recordings.get(`${poem.id}-${index}`);if(!blob){toast('這段錄音只保留在本次開啟的頁面。');return;}stopMedia();transientUrl=URL.createObjectURL(blob);transientAudio=new Audio(transientUrl);transientAudio.play().catch(()=>toast('錄音暫時無法播放。'));}
+async function replay(index,button=null) {
+  if(button&&activeSpeechButton===button){stopMedia();return;}
+  const blobs=(index===null?poem.lines.map((_,i)=>recordings.get(poem.id+'-'+i)):[recordings.get(poem.id+'-'+index)]).filter(Boolean);
+  if(!blobs.length){toast('這段錄音只保留在本次開啟的頁面。');return;}
+  stopMedia();const version=speechVersion,route=routeVersion;activeSpeechButton=button;speechState(button,'playing');
+  try{for(const blob of blobs){if(!await playBlob(blob)||version!==speechVersion||route!==routeVersion)return;}}
+  catch{if(version===speechVersion&&route===routeVersion)toast('錄音暫時無法播放。');}
+  finally{if(version===speechVersion&&route===routeVersion)stopTransient();}
+}
+function poemAssessment(p=poem) {
+  return mergeAssessments(state(p).reading.map((result,lineIndex)=>result?{...result,words:result.words.map(w=>({...w,lineIndex}))}:null));
+}
+function soundButton(sample,target=false) {
+  const char=sample.focusChar||sample.label;
+  const index=Array.from(sample.text).indexOf(char);
+  const pinyin=sample.focusPinyin||(index>=0?sample.pinyin.split(/\s+/)[index]:sample.pinyin)||'';
+  return '<button class="sound-word '+(target?'is-target':'')+'" data-action="practice-sound" data-text="'+esc(sample.text)+'" aria-label="聽'+esc(sample.text)+'" aria-pressed="false">'+
+    '<ruby>'+esc(char)+'<rt>'+esc(pinyin)+'</rt></ruby><small class="sound-context">'+esc(target?'原句示範':sample.text)+'</small><span class="sound-kind">'+esc(target?'詩中讀音':sample.label)+'</span>'+icon('volume-2')+'</button>';
+}
+function pronunciationHTML(result) {
+  const practice=getPronunciationPractice(result,poem);
+  if(!practice.items.length)return '<section class="practice-section"><div class="section-heading"><h2>'+icon('badge-check')+'易錯字練習</h2></div><p class="practice-intro">'+((practice.unknownWords.length||!practice.assessedCount)?'有些字未取得分數，可以回到原句再讀一次。':'已評測的字都達到80分了，繼續保持！')+'</p></section>';
+  return '<section class="practice-section" id="practice-section"><div class="section-heading"><h2>'+icon('ear')+'易錯字練習</h2><span class="section-count">'+practice.items.length+' 個字，再進一步</span></div>'+
+    '<p class="practice-intro">先聽示範，再比較相似字，讓耳朵找到小小分別。</p><div class="practice-grid">'+practice.items.map((item,i)=>{
+      const lineIndex=item.lineIndex,canReplay=Number.isInteger(lineIndex)&&recordings.has(poem.id+'-'+lineIndex);
+      return '<article class="practice-card"><div class="practice-card-heading"><div class="practice-word-heading"><ruby class="practice-char">'+esc(item.char)+'<rt>'+esc(item.pinyin)+'</rt></ruby><span class="practice-score">'+item.score+'分</span></div><h3 class="practice-issue">'+esc(item.issue)+'</h3></div>'+
+        '<p class="practice-tip">'+esc(item.tip)+'</p><div class="contrast-pair">'+soundButton({...item.model,focusChar:item.char,focusPinyin:item.pinyin},true)+item.contrasts.slice(0,3).map(s=>soundButton(s)).join('')+'</div>'+
+        '<div class="practice-actions"><button class="button small" data-action="practice-sequence" data-value="'+i+'" aria-pressed="false">'+icon('audio-lines')+'連續聽對比</button>'+
+        '<button class="button small" data-action="replay" data-value="'+lineIndex+'" '+(canReplay?'':'disabled')+'>'+icon('headphones')+'我的原句錄音</button>'+
+        '<button class="text-button" data-action="record-target" data-value="'+lineIndex+'" '+(Number.isInteger(lineIndex)?'':'disabled')+'>'+icon('mic')+'再讀這一句</button></div></article>';
+    }).join('')+'</div><p class="assessment-note">'+esc(practice.sourceNote)+'</p></section>';
+}
 function renderReport() {
-  const s=state(poem),result=mergeAssessments(s.reading);
-  if(!result){$('#view').innerHTML=`<div class="report-empty">${icon('notebook-pen')}<h2>你的第一份朗讀報告</h2><a class="button primary" href="${link('record')}">${icon('mic')}開始朗讀</a></div>`;return;}
+  const s=state(poem),result=poemAssessment();
+  if(!result){$('#view').innerHTML='<div class="report-empty">'+icon('notebook-pen')+'<h2>你的第一份朗讀報告</h2><p>每一聲朗讀，都會留下進步的足跡。</p><a class="button primary" href="'+link('record')+'">'+icon('mic')+'開始朗讀</a></div>';return;}
   const keys=[['phone_score','發音準確度'],['fluency_score','流暢度'],['integrity_score','完整度']];
-  $('#view').innerHTML=`<div class="report-summary"><div class="score-ring" style="--score:${result.total_score}"><div><strong>${result.total_score}</strong><span>${esc(result.grade)}</span></div></div><div><p class="eyebrow">${s.reading.filter(Boolean).length} / ${poem.lines.length} 句已完成</p><div class="dimension-grid">${keys.map(([k,label])=>`<div class="dimension"><strong>${result.dimensions[k]??'—'}</strong><span>${label}</span><div class="dimension-bar"><i style="width:${result.dimensions[k]??0}%"></i></div></div>`).join('')}</div><p class="saved-note">${s.reading.filter(Boolean).length<poem.lines.length?'這是已完成詩句的成績。':'每一遍朗讀，都是新的進步。'}</p></div></div><div class="report-grid"><div><h2 class="panel-title">逐字小回顧</h2><div class="word-grid">${result.words.map(w=>`<button class="word-result ${w.status}" data-action="word-tts" data-value="${esc(w.c)}" title="聽「${esc(w.c)}」的讀音"><ruby>${esc(w.c)}<rt>${esc(w.p)}</rt></ruby><strong>${w.score??'—'}</strong></button>`).join('')||'<p class="muted">這次評測未提供逐字分數。</p>'}</div><div class="report-replay">${poem.lines.map((_,i)=>`<button class="button small" data-action="replay" data-value="${i}" ${recordings.has(`${poem.id}-${i}`)?'':'disabled'}>${icon('headphones')}第${i+1}句</button>`).join('')}</div></div><div><div class="ai-report-header"><h2>給你的小建議</h2><button class="button small" data-action="report-generate" id="report-button">${icon('sparkles')}${s.report?'重新生成':'生成建議'}</button></div><div id="report-prose" class="report-prose">${esc(s.report||'完成朗讀後，看看哪些字還可以讀得更好。')}</div></div></div><div class="study-next"><p>成績已保存在此裝置。</p><a class="button primary" href="${link('write')}">${icon('pen-line')}默寫練習 ${icon('arrow-right')}</a></div>`;icons();
+  $('#view').innerHTML='<div class="report-summary"><div class="score-ring" style="--score:'+result.total_score+'"><div><strong>'+result.total_score+'</strong><span>'+esc(result.grade)+'</span></div></div><div><p class="eyebrow">'+s.reading.filter(Boolean).length+' / '+poem.lines.length+' 句已完成</p><div class="dimension-grid">'+keys.map(([k,label])=>'<div class="dimension"><strong>'+(result.dimensions[k]??'—')+'</strong><span>'+label+'</span><div class="dimension-bar"><i style="width:'+(result.dimensions[k]??0)+'%"></i></div></div>').join('')+'</div><p class="saved-note">'+(s.reading.filter(Boolean).length<poem.lines.length?'這是已完成詩句的成績。':'這首詩的朗讀印章，收進口袋了！')+'</p></div></div>'+
+    pronunciationHTML(result)+
+    '<section class="ai-advice"><div class="ai-report-header"><div><p class="eyebrow">AI 老師</p><h2>給你的小建議</h2></div><button class="button" data-action="report-generate" id="report-button">'+icon('sparkles')+(s.report?'重新生成':'生成建議')+'</button></div><div id="report-prose" class="report-prose">'+esc(s.report||'一起找出讀得好的地方，再練好幾個小細節。')+'</div></section>'+
+    '<section class="word-analysis"><div class="section-heading"><h2>'+icon('search-check')+'逐字分析</h2><button class="button small" data-action="replay-all" '+(poem.lines.some((_,i)=>recordings.has(poem.id+'-'+i))?'':'disabled')+'>'+icon('headphones')+'全部回聽</button></div>'+
+    s.reading.map((lineResult,i)=>{
+      if(!lineResult)return '';
+      return '<div class="report-line"><div class="report-line-heading"><h3>第'+(i+1)+'句</h3><span>'+esc(poem.lines[i].text)+'</span><button class="icon-button" data-action="replay" data-value="'+i+'" aria-label="回聽第'+(i+1)+'句錄音" title="回聽第'+(i+1)+'句錄音" '+(recordings.has(poem.id+'-'+i)?'':'disabled')+'>'+icon('headphones')+'</button></div><div class="word-grid">'+lineResult.words.map(w=>'<button class="word-result '+w.status+'" data-action="word-tts" data-value="'+esc(w.c)+'" data-text="'+esc(poem.lines[i].text)+'" title="聽'+esc(w.c)+'所在詩句"><ruby>'+esc(w.c)+'<rt>'+esc(w.p)+'</rt></ruby><strong>'+(w.score??'未測')+'</strong></button>').join('')+'</div></div>';
+    }).join('')+'</section><div class="study-next"><p>成績已保存在此裝置。</p><a class="button primary" href="'+link('write')+'">'+icon('pen-line')+'去寫幾個字 '+icon('arrow-right')+'</a></div>';
+  icons();
 }
 async function generateReport() {
-  const button=$('#report-button');if(button.disabled)return;button.disabled=true;const version=routeVersion,p=poem;const result=mergeAssessments(state(p).reading);
+  const button=$('#report-button');if(button.disabled)return;button.disabled=true;const version=routeVersion,p=poem;const result=poemAssessment(p);
   $('#report-prose').innerHTML='<span class="spinner"></span> 正在整理你的朗讀建議';
-  try{const data=await api('/api/maanshan-report',{poemId:p.id,soeResult:{...result,words:result.words.filter(w=>Number.isFinite(w.score))}});if(version!==routeVersion)return;if(!data.report)throw new Error('建議尚未生成，請稍後再試。');state(p).report=data.report;queueSection('report',{content:data.report,totalScore:result.total_score,grade:result.grade},p);$('#report-prose').textContent=data.report;}
+  try{const data=await api('/api/maanshan-report',{poemId:p.id,soeResult:result});if(version!==routeVersion)return;if(!data.report)throw new Error('建議尚未生成，請稍後再試。');state(p).report=data.report;queueSection('report',{content:data.report,totalScore:result.total_score,grade:result.grade},p);$('#report-prose').textContent=data.report;}
   catch(error){if(version===routeVersion)$('#report-prose').textContent=error.name==='AbortError'?'生成時間較長，請稍後再試。':error.message;}
   finally{if(version===routeVersion)button.disabled=false;}
 }
@@ -276,6 +404,7 @@ async function sendChat(text) {
   finally{if(version===routeVersion){chatBusy=false;$('#chat-send').disabled=false;}}
 }
 function route() {
+  sceneStage?.destroy();sceneStage=null;
   routeVersion++;stopMedia();cancelRecording();requests.forEach(c=>c.abort());requests.clear();chatBusy=false;writeBusy=false;
   clearTimeout(toastTimer);$('#toast').classList.remove('visible');
   if($('#video-dialog').open)$('#video-dialog').close();
@@ -296,13 +425,17 @@ document.addEventListener('click',event=>{
   if(action==='scene')reveal(Number(value));
   if(action==='narration')playNarration();
   if(action==='video')openVideo();
-  if(action==='line-tts'&&!recordBusy)speak(poem.lines[currentLine].text);
-  if(action==='word-tts')speak(value);
+  if(action==='line-tts'&&!recordBusy)speak(poem.lines[currentLine].text,'',button);
+  if(action==='word-tts'&&!recordBusy)speak(value,button.dataset.text||'',button);
+  if(action==='practice-sound')speak(button.dataset.text,'',button);
+  if(action==='practice-sequence'){const item=getPronunciationPractice(poemAssessment(),poem).items[Number(value)];if(item)speak([item.model.text,...item.contrasts.slice(0,3).map(c=>c.text)],'',button);}
+  if(action==='record-target'&&Number.isInteger(Number(value))){currentLine=Number(value);location.hash=link('record');}
   if(action==='record-start')startRecording();
   if(action==='record-stop')stopRecording();
   if(action==='record-line'&&!recordBusy){currentLine=Number(value);stopMedia();renderRecord();}
   if(action==='record-next'){if(currentLine<poem.lines.length-1){currentLine++;renderRecord();}else location.hash=link('report');}
-  if(action==='replay')replay(Number(value));
+  if(action==='replay')replay(Number(value),button);
+  if(action==='replay-all')replay(null,button);
   if(action==='report-generate')generateReport();
   if(action==='write-speak')writingSpeech();
   if(action==='write-clear'&&!writeBusy){strokes=[];activeStroke=null;drawCanvas();}
@@ -313,10 +446,10 @@ document.addEventListener('click',event=>{
   if(action==='write-skip'&&!writeBusy)completeWriting(false);
   if(action==='write-reset'){state(poem).writing=[];persist();writeIndex=0;hinted=false;renderWriting();}
   if(action==='quiz-answer'&&quizChoice===null){quizChoice=Number(value);renderQuiz();}
-  if(action==='quiz-next'&&quizChoice!==null){quizAnswers[quizIndex]=quizChoice;state(poem).quiz=[...quizAnswers];persist();quizIndex++;quizChoice=null;renderQuiz();}
-  if(action==='quiz-reset'){state(poem).quiz=[];persist();quizAnswers=[];quizIndex=0;quizChoice=null;renderQuiz();}
+  if(action==='quiz-next'&&quizChoice!==null){quizAnswers[quizIndex]=quizChoice;state(poem).quiz=[...quizAnswers];persist();quizIndex++;quizChoice=null;if(quizIndex===poem.phonics.length)queueReading();renderQuiz();}
+  if(action==='quiz-reset'){state(poem).quiz=[];persist();queueReading();quizAnswers=[];quizIndex=0;quizChoice=null;renderQuiz();}
   if(action==='chat-suggestion')sendChat(poem.suggestions[Number(value)]);
-  if(action==='chat-speak'){const message=state(poem).chat[Number(value)];if(message)speak(message.content);}
+  if(action==='chat-speak'){const message=state(poem).chat[Number(value)];if(message)speak(message.content,'',button);}
 });
 document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>{if(button.dataset.close==='video-dialog')video.pause();document.getElementById(button.dataset.close).close();}));
 $('#video-dialog').addEventListener('close',()=>video.pause());
@@ -333,7 +466,24 @@ $('#profile-form').addEventListener('submit',event=>{event.preventDefault();cons
 if(profile?.name)$('#profile-name').textContent=profile.name;
 $('.skip-link').addEventListener('click',event=>{event.preventDefault();const main=$('#main');if(main){main.tabIndex=-1;main.focus();}});
 window.addEventListener('hashchange',route);window.addEventListener('online',()=>sync.flush());
+function updateViewport(){
+  const height=window.visualViewport?.height||innerHeight;
+  document.documentElement.style.setProperty('--visual-height',height+'px');
+  document.body.classList.toggle('keyboard-open',innerHeight-height>150&&document.activeElement?.matches('input,textarea'));
+}
+window.visualViewport?.addEventListener('resize',updateViewport);
+document.addEventListener('focusin',updateViewport);document.addEventListener('focusout',()=>requestAnimationFrame(updateViewport));updateViewport();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){stopMedia();cancelRecording();if(poem&&view==='record')renderRecord();}else sync.flush();});
 window.addEventListener('pagehide',()=>{stopMedia();cancelRecording();persist();});
-async function init(){try{const response=await fetch('poems.json?v=20260908');if(!response.ok)throw new Error('catalog');const data=await response.json();poems=data.poems;if(!Array.isArray(poems)||!poems.length)throw new Error('catalog');route();sync.flush();icons();}catch{app.innerHTML='<main id="main" class="loading-page"><p>古詩暫時未能載入。</p><button class="button" onclick="location.reload()">重新載入</button></main>';}}
+async function init(){
+  try{
+    const responses=await Promise.all([fetch('poems.json?v=20260908b'),fetch('pronunciation.json?v=20260908b')]);
+    if(responses.some(response=>!response.ok))throw new Error('catalog');
+    const [data,pronunciation]=await Promise.all(responses.map(response=>response.json()));
+    poems=data.poems;if(!Array.isArray(poems)||!poems.length)throw new Error('catalog');
+    configurePronunciation(pronunciation);route();sync.flush();icons();
+  }catch{
+    app.innerHTML='<main id="main" class="loading-page"><p>古詩暫時未能載入。</p><button class="button" onclick="location.reload()">重新載入</button></main>';
+  }
+}
 init();
