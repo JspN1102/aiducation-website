@@ -4,405 +4,284 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>教師後台 · 馬鞍山靈糧小學</title>
-<link rel="preconnect" href="https://fonts.loli.net">
-<link href="https://fonts.loli.net/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--paper:#f5f0e8;--ink:#1a1612;--ink-80:#3d3630;--ink-60:#6b6259;--ink-40:#9e9488;--ink-20:#c9c1b5;--ink-10:#e2ddd5;--green:#2a5a4a;--green-light:#3d7a66;--green-bg:rgba(42,90,74,0.08);--red:#c0392b;--red-bg:rgba(192,57,43,0.06);--gold:#b8923f;--gold-bg:rgba(184,146,63,0.08);--radius:12px;--radius-sm:8px;--shadow-sm:0 1px 4px rgba(26,22,18,0.06);--shadow-md:0 4px 20px rgba(26,22,18,0.08);--font-serif:'Noto Serif TC',serif;--font-sans:'Noto Sans TC',sans-serif;--font-num:'Inter',sans-serif}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:var(--font-sans);background:var(--paper);color:var(--ink);min-height:100vh}
-.top-nav{background:#fff;border-bottom:1px solid var(--ink-10);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
-.top-nav-left{display:flex;align-items:center;gap:12px}
-.top-nav-logo{font-family:var(--font-num);font-weight:600;font-size:10px;letter-spacing:2px;color:var(--green);border:1px solid rgba(42,90,74,0.3);padding:2px 8px;border-radius:4px}
-.top-nav-title{font-family:var(--font-serif);font-weight:600;font-size:16px;color:var(--ink-80);letter-spacing:2px}
-.top-nav-user{font-size:13px;color:var(--ink-40)}
-.main{display:flex;max-width:1200px;margin:0 auto;padding:20px;gap:20px;min-height:calc(100vh - 52px)}
-.sidebar{width:200px;flex-shrink:0}
-.sidebar-section{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-sm);margin-bottom:16px}
-.sidebar-label{font-size:11px;font-weight:500;color:var(--ink-40);letter-spacing:1px;margin-bottom:10px;text-transform:uppercase}
-.filter-btn{display:block;width:100%;text-align:left;padding:8px 12px;border:none;background:none;border-radius:var(--radius-sm);font-family:var(--font-sans);font-size:13px;color:var(--ink-60);cursor:pointer;transition:all .15s;margin-bottom:2px}
-.filter-btn:hover{background:var(--ink-10);color:var(--ink)}
-.filter-btn.active{background:var(--green);color:#fff;font-weight:500}
-.content{flex:1;min-width:0}
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.stat-card{background:#fff;border-radius:var(--radius);padding:18px 16px;box-shadow:var(--shadow-sm);text-align:center}
-.stat-card.highlight{border-left:3px solid var(--green)}
-.stat-value{font-family:var(--font-num);font-weight:700;font-size:28px;color:var(--ink);line-height:1.2}
-.stat-label{font-size:11px;color:var(--ink-40);margin-top:4px;letter-spacing:1px}
-.card{background:#fff;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-sm);margin-bottom:20px}
-.card-title{font-family:var(--font-serif);font-weight:600;font-size:14px;color:var(--ink-80);letter-spacing:2px;margin-bottom:14px}
-.chart-wrap{width:100%;height:180px;position:relative}
-.chart-wrap canvas{width:100%;height:100%}
-/* Phonetic knowledge bars */
-.phon-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.phon-label{font-size:12px;color:var(--ink-60);width:100px;text-align:right;flex-shrink:0;font-family:var(--font-num)}
-.phon-bar-bg{flex:1;height:20px;background:var(--ink-10);border-radius:10px;overflow:hidden;position:relative}
-.phon-bar{height:100%;border-radius:10px;transition:width .6s ease}
-.phon-pct{font-family:var(--font-num);font-size:11px;font-weight:600;color:var(--ink-60);width:40px;text-align:right;flex-shrink:0}
-/* Error chars */
-.error-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--ink-10)}
-.error-row:last-child{border-bottom:none}
-.error-char{font-family:var(--font-serif);font-size:22px;font-weight:700;color:var(--ink);width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--red-bg);border-radius:var(--radius-sm)}
-.error-type{font-size:12px;color:var(--red);font-weight:500}
-.error-rate{font-size:12px;color:var(--ink-40)}
-.error-info{flex:1}
-.error-bar-bg{width:100px;height:6px;background:var(--ink-10);border-radius:3px;overflow:hidden;flex-shrink:0}
-.error-bar{height:100%;background:var(--red);border-radius:3px}
-/* Student table */
-.stu-table{width:100%;border-collapse:collapse}
-.stu-table th{text-align:left;font-size:11px;font-weight:500;color:var(--ink-40);letter-spacing:1px;padding:8px 10px;border-bottom:2px solid var(--ink-10);cursor:pointer;user-select:none}
-.stu-table th:hover{color:var(--ink)}
-.stu-table td{padding:10px;border-bottom:1px solid var(--ink-10);font-size:13px;color:var(--ink-80)}
-.stu-table tr:hover td{background:var(--green-bg)}
-.stu-name{font-weight:500}
-.stu-score{font-family:var(--font-num);font-weight:700;font-size:16px}
-.grade-tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
-.grade-tag.g-ex{background:var(--green-bg);color:var(--green)}
-.grade-tag.g-good{background:var(--gold-bg);color:var(--gold)}
-.grade-tag.g-pass{background:var(--ink-10);color:var(--ink-60)}
-.grade-tag.g-fail{background:var(--red-bg);color:var(--red)}
-.empty-state{text-align:center;padding:40px 20px;color:var(--ink-40);font-size:14px}
-/* Responsive */
-@media(max-width:768px){.main{flex-direction:column;padding:12px}.sidebar{width:100%;display:flex;gap:12px;flex-wrap:wrap}.sidebar-section{flex:1;min-width:140px;margin-bottom:8px}.stats-row{grid-template-columns:repeat(2,1fr)}}
+@font-face{font-family:'Noto Sans TC';src:url('./vendor/fonts/noto-sans-tc.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:'Noto Serif TC';src:url('./vendor/fonts/noto-serif-tc.woff2') format('woff2');font-weight:200 900;font-style:normal;font-display:swap}
+:root{--paper:#f6f8f8;--ink:#202b2b;--muted:#687676;--line:#dfe7e5;--green:#176759;--green-bg:#e8f2ee;--blue:#416a98;--blue-bg:#edf2f8;--red:#b54d57;--red-bg:#faedf0;--sans:'Noto Sans TC','Microsoft JhengHei',sans-serif;--serif:'Noto Serif TC','PMingLiU',serif}
+*{margin:0;padding:0;box-sizing:border-box;letter-spacing:0}
+body{font:14px/1.6 var(--sans);background:var(--paper);color:var(--ink);min-height:100vh}
+button,input{font:inherit}button,a{touch-action:manipulation}button{cursor:pointer}button:disabled{cursor:default;opacity:.5}a{color:var(--green)}svg{width:18px;height:18px;flex-shrink:0}[hidden]{display:none!important}:focus-visible{outline:3px solid #83b6a9;outline-offset:3px}
+.top-nav{background:#fff;border-bottom:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.top-nav-left{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.top-nav-logo{font:700 11px var(--sans);color:var(--green)}.top-nav-title{font:600 17px var(--serif)}.top-nav-user{font-size:12px;color:var(--muted)}.student-link{display:inline-flex;align-items:center;gap:7px;font-size:12px;text-decoration:none;white-space:nowrap}
+.main{display:flex;max-width:1280px;margin:0 auto;padding:24px;gap:28px;min-height:calc(100vh - 62px)}.sidebar{width:184px;flex-shrink:0}.sidebar-section{padding:0 0 18px;margin-bottom:18px;border-bottom:1px solid var(--line)}.sidebar-label{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px}.filter-btn{display:block;width:100%;min-height:38px;text-align:left;padding:8px 10px;border:0;background:none;border-radius:6px;font-size:13px;color:var(--muted);margin-bottom:3px;overflow-wrap:anywhere}.filter-btn:hover{background:var(--green-bg);color:var(--green)}.filter-btn.active{background:var(--green);color:#fff;font-weight:600}
+.content{flex:1;min-width:0}.content-toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap}.view-title{font:600 19px/1.5 var(--serif);overflow-wrap:anywhere}.view-subtitle{font-size:12px;color:var(--muted);margin-top:3px}.toolbar-actions{display:flex;align-items:center;gap:14px}.demo-control{display:flex;align-items:center;gap:7px;font-size:12px;white-space:nowrap;cursor:pointer}.demo-control input{width:17px;height:17px;accent-color:var(--green)}.icon-button{width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;background:#fff;border:1px solid var(--line);border-radius:6px;color:var(--green)}.icon-button:hover{background:var(--green-bg)}.demo-badge{display:block;margin-bottom:16px;padding:10px 14px;border-left:3px solid var(--blue);background:var(--blue-bg);color:var(--blue);font-size:13px;font-weight:600}
+.stats-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}.stat-card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px 12px;min-height:96px}.stat-card.highlight{border-top:3px solid var(--green);padding-top:14px}.stat-value{font:700 26px/1.3 var(--sans);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.stat-label{font-size:11px;color:var(--muted);margin-top:5px}
+.section{background:#fff;padding:18px 20px;margin-bottom:18px;border-top:1px solid var(--line)}.section-title{font:600 14px/1.5 var(--sans);margin-bottom:14px}.section-note{font-size:11px;color:var(--muted);margin-top:-7px;margin-bottom:14px}.chart-wrap{width:100%;height:180px;position:relative}.chart-wrap canvas{display:block;width:100%;height:100%}.phon-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}.phon-label{font-size:12px;color:var(--muted);width:130px;flex-shrink:0;overflow-wrap:anywhere}.phon-bar-bg{flex:1;height:10px;background:var(--line);border-radius:3px;overflow:hidden}.phon-bar{height:100%;border-radius:3px}.phon-pct{font-size:12px;font-variant-numeric:tabular-nums;width:48px;text-align:right;flex-shrink:0}
+.error-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.error-row:last-child{border:0}.error-char{font:600 23px var(--serif);width:38px;height:38px;display:grid;place-items:center;background:var(--red-bg);border-radius:6px;flex-shrink:0;overflow-wrap:anywhere}.error-info{flex:1;min-width:0}.error-type{font-size:12px;color:var(--red);overflow-wrap:anywhere}.error-rate{font-size:12px;color:var(--muted)}.error-bar-bg{width:100px;height:6px;background:var(--line);border-radius:3px;overflow:hidden;flex-shrink:0}.error-bar{height:100%;background:var(--red)}
+.table-wrap{max-width:100%;overflow:auto}.stu-table{width:100%;border-collapse:collapse;min-width:680px}.stu-table th{text-align:left;font-size:11px;font-weight:500;color:var(--muted);padding:9px 10px;border-bottom:2px solid var(--line);min-width:62px;max-width:140px;overflow-wrap:anywhere}.stu-table td{padding:10px;border-bottom:1px solid var(--line);font-size:12px;max-width:170px;overflow-wrap:anywhere}.stu-table tr:hover td{background:var(--green-bg)}.stu-name{font-weight:500}.stu-score{font-variant-numeric:tabular-nums;font-weight:600;font-size:15px}.grade-tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px}.g-ex{background:var(--green-bg);color:var(--green)}.g-good{background:var(--blue-bg);color:var(--blue)}.g-pass{background:#eef1f1;color:var(--muted)}.g-fail{background:var(--red-bg);color:var(--red)}.unmeasured{color:var(--muted)}.empty-state{padding:36px 18px;text-align:center;color:var(--muted);font-size:13px}.status-panel{min-height:210px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#fff;border-top:1px solid var(--line);padding:28px;text-align:center}.status-panel p{color:var(--muted);font-size:13px}.retry-button{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:8px 14px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--green)}
+@media(max-width:900px){.main{gap:20px;padding:20px}.sidebar{width:150px}.stat-value{font-size:23px}.stat-card{padding:14px 10px}}
+@media(max-width:700px){.top-nav{padding:14px 16px;align-items:flex-start}.top-nav-left{gap:7px 12px}.top-nav-user{width:100%;font-size:11px}.main{display:block;padding:16px}.sidebar{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:8px}.sidebar-section{padding-bottom:12px;margin-bottom:0}.sidebar-section:last-child{grid-column:1/-1}.filter-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.filter-btn{min-height:40px;padding:8px;font-size:12px;margin:0}.content-toolbar{margin-top:18px}.view-title{font-size:18px}.stats-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.section{padding:16px 12px}.phon-label{width:112px}.error-bar-bg{width:64px}.demo-badge{font-size:12px}.student-link{font-size:11px}.top-nav-logo{font-size:10px}}
 </style>
+<script src="./vendor/lucide.min.js" defer></script>
 </head>
 <body>
-<nav class="top-nav">
-  <div class="top-nav-left">
-    <span class="top-nav-logo">AIDUCATION</span>
-    <span class="top-nav-title">教師後台</span>
-  </div>
-  <span class="top-nav-user" id="nav-user">馬鞍山靈糧小學</span>
+<nav class="top-nav" aria-label="教師導覽">
+  <div class="top-nav-left"><span class="top-nav-logo">AIDUCATION</span><span class="top-nav-title">教師後台</span><span class="top-nav-user">馬鞍山靈糧小學</span></div>
+  <a class="student-link" href="./"><i data-lucide="arrow-left" aria-hidden="true"></i>學生古詩練習</a>
 </nav>
-<div class="main">
-  <aside class="sidebar">
-    <div class="sidebar-section">
-      <p class="sidebar-label">年級</p>
-      <div id="grade-filters"></div>
-    </div>
-    <div class="sidebar-section">
-      <p class="sidebar-label">班別</p>
-      <div id="class-filters"></div>
-    </div>
-    <div class="sidebar-section">
-      <p class="sidebar-label">古詩</p>
-      <div id="poem-filter">
-        <button class="filter-btn active" disabled>贈汪倫</button>
+<main class="main">
+  <aside class="sidebar" aria-label="成績篩選">
+    <section class="sidebar-section"><h2 class="sidebar-label">年級</h2><div class="filter-list" id="grade-filters"></div></section>
+    <section class="sidebar-section"><h2 class="sidebar-label">班別</h2><div class="filter-list" id="class-filters"></div></section>
+    <section class="sidebar-section"><h2 class="sidebar-label">古詩</h2><div class="filter-list" id="poem-filter"><p class="view-subtitle">正在載入古詩</p></div></section>
+  </aside>
+  <section class="content">
+    <div class="content-toolbar">
+      <div><h1 class="view-title" id="view-title">班級練習紀錄</h1><p class="view-subtitle" id="view-subtitle">實際已同步紀錄</p></div>
+      <div class="toolbar-actions">
+        <label class="demo-control"><input type="checkbox" id="demo-toggle">示範數據</label>
+        <button class="icon-button" id="refresh-button" type="button" title="重新載入" aria-label="重新載入" disabled><i data-lucide="refresh-cw" aria-hidden="true"></i></button>
       </div>
     </div>
-  </aside>
-  <section class="content" id="content"></section>
-</div>
+    <p class="demo-badge" id="demo-badge" role="status" hidden>示範數據，非學生實際成績</p>
+    <div id="content" aria-live="polite"></div>
+  </section>
+</main>
 <script>
-// School structure from roster
-const CLASSES = {
-  1:['A','B','C','D','E'], 2:['A','B','C','D','E'], 3:['A','B','C','D','E','F'],
-  4:['A','B','C','D','E','F'], 5:['A','B','C','D','E'], 6:['A','B','C','D','E']
-};
-const GRADE_POEMS = {
-  1:'詠鵝',2:'贈汪倫',3:'題西林壁',4:'泊船瓜洲',5:'歸園田居(其三)',6:'初春小雨'
-};
-// Grade 2 phonetic knowledge (第一學段)
-const GRADE_PHONICS = {
-  1:['四聲','a/o/e','i/u/ü','b/p/m/f','d/t/n/l'],
-  2:['ia/ie','iao/iu','ian/in','iang/ing/iong','ua/uo','uai/ui'],
-  3:['四聲複習','a/o/e','i/u/ü','b/p/m/f/d/t/n/l','g/k/h'],
-  4:['z/c/s','zh/ch/sh/r','zi/ci/si','u/ua/uo','uai/ui'],
-  5:['一四聲/二三聲','b/p','d/t','n/l','k/f/k/h'],
-  6:['j/z/zh','q/c/ch','x/s/sh','an/ang']
-};
+const CLASSES = {1:['A','B','C','D','E'],2:['A','B','C','D','E'],3:['A','B','C','D','E','F'],4:['A','B','C','D','E','F'],5:['A','B','C','D','E'],6:['A','B','C','D','E']};
+let poems = [];
+let curGrade = 2;
+let curClass = 'A';
+let selectedPoemId = 2;
+let demoMode = false;
+let requestGeneration = 0;
+let activeRequest = null;
+let activeDistribution = null;
 
-let curGrade = 2, curClass = 'A';
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+}
+function scoreValue(value){
+  if(typeof value !== 'number' && typeof value !== 'string') return null;
+  if(typeof value === 'string' && !value.trim()) return null;
+  const score = Number(value);
+  return Number.isFinite(score) && score >= 0 && score <= 100 ? score : null;
+}
+function scoreText(value){ return value === null ? '未測' : String(Math.round(value * 10) / 10); }
+function scoreColor(value){ return value === null ? 'var(--muted)' : value >= 80 ? 'var(--green)' : value >= 60 ? 'var(--blue)' : 'var(--red)'; }
+function selectedPoem(){ return poems.find(poem => poem.id === selectedPoemId); }
+function poemPhonics(){ return [...new Set((selectedPoem()?.phonics || []).map(item => item.label))]; }
+function icons(){ window.lucide?.createIcons(); }
+function parsePhonics(value){
+  const result = Object.create(null);
+  if(typeof value === 'string'){ try{ value = JSON.parse(value); }catch{ return result; } }
+  if(!value || typeof value !== 'object' || Array.isArray(value)) return result;
+  for(const [key,score] of Object.entries(value)) result[key] = scoreValue(score);
+  return result;
+}
 
-// ── Per-grade realistic error characters (from each poem) ──
-const GRADE_ERRORS = {
-  1:[ // 詠鵝：低年級聲調是大問題
-    {c:'鵝',type:'聲調偏誤',base:58},{c:'曲',type:'聲母偏誤（q）',base:51},
-    {c:'項',type:'韻母偏誤（iang）',base:44},{c:'浮',type:'聲調偏誤',base:37},{c:'綠',type:'聲母偏誤（l）',base:29}],
-  2:[ // 贈汪倫
-    {c:'將',type:'聲調偏誤（一聲/四聲混淆）',base:55},{c:'聞',type:'韻母偏誤（en/eng）',base:46},
-    {c:'踏',type:'聲調偏誤',base:40},{c:'潭',type:'韻母偏誤（an/ang）',base:33},{c:'倫',type:'聲母偏誤（l/n）',base:26}],
-  3:[ // 題西林壁
-    {c:'嶺',type:'韻母偏誤（ing）',base:48},{c:'側',type:'聲調偏誤',base:42},
-    {c:'峯',type:'聲母偏誤（f/h）',base:36},{c:'遠',type:'韻母偏誤（uan/üan）',base:31},{c:'廬',type:'聲母偏誤（l）',base:23}],
-  4:[ // 泊船瓜洲
-    {c:'間',type:'聲調偏誤（一聲/四聲）',base:52},{c:'數',type:'聲調偏誤（三聲/四聲）',base:44},
-    {c:'照',type:'聲母偏誤（zh/z）',base:38},{c:'瓜',type:'韻母偏誤（ua）',base:30},{c:'泊',type:'聲調偏誤',base:24}],
-  5:[ // 歸園田居
-    {c:'荷',type:'聲調偏誤（二聲/四聲）',base:45},{c:'鋤',type:'聲母偏誤（ch/c）',base:39},
-    {c:'稀',type:'韻母偏誤',base:32},{c:'晨',type:'韻母偏誤（en/eng）',base:27},{c:'穢',type:'聲調偏誤',base:21}],
-  6:[ // 初春小雨
-    {c:'潤',type:'韻母偏誤（un/ün）',base:42},{c:'酥',type:'聲母偏誤（s/sh）',base:37},
-    {c:'遙',type:'韻母偏誤（iao）',base:30},{c:'絕',type:'聲調偏誤',base:25},{c:'勝',type:'聲母偏誤（sh/s）',base:19}]
-};
-// ── Per-grade phonics difficulty profiles (some knowledge points harder) ──
-const PHON_DIFFICULTY = {
-  1:{四聲:0.82,'a/o/e':0.91,'i/u/ü':0.78,'b/p/m/f':0.88,'d/t/n/l':0.72},
-  2:{'ia/ie':0.85,'iao/iu':0.73,'ian/in':0.68,'iang/ing/iong':0.61,'ua/uo':0.88,'uai/ui':0.76},
-  3:{四聲複習:0.90,'a/o/e':0.93,'i/u/ü':0.84,'b/p/m/f/d/t/n/l':0.79,'g/k/h':0.87},
-  4:{'z/c/s':0.74,'zh/ch/sh/r':0.62,'zi/ci/si':0.69,'u/ua/uo':0.85,'uai/ui':0.80},
-  5:{'一四聲/二三聲':0.66,'b/p':0.82,'d/t':0.84,'n/l':0.58,'k/f/k/h':0.78},
-  6:{'j/z/zh':0.64,'q/c/ch':0.60,'x/s/sh':0.57,'an/ang':0.71}
-};
-// ── Class personality: some classes strong, some weak ──
-const CLASS_PROFILE = {
-  // [classAvgOffset, spread, testedRatio, description]
-  // offset: how much above/below grade baseline
-  '1A':[6,12,0.92],'1B':[-2,18,0.85],'1C':[3,14,0.88],'1D':[-8,22,0.72],'1E':[1,16,0.80],
-  '2A':[8,10,0.95],'2B':[2,15,0.88],'2C':[-3,20,0.82],'2D':[-6,24,0.68],'2E':[0,17,0.78],
-  '3A':[5,11,0.93],'3B':[10,9,0.96],'3C':[-1,16,0.86],'3D':[-5,19,0.75],'3E':[2,14,0.84],'3F':[-9,25,0.65],
-  '4A':[7,10,0.94],'4B':[3,13,0.90],'4C':[0,16,0.85],'4D':[-4,18,0.78],'4E':[-7,22,0.70],'4F':[-12,26,0.60],
-  '5A':[9,9,0.96],'5B':[4,12,0.91],'5C':[0,15,0.84],'5D':[-5,20,0.76],'5E':[-10,24,0.66],
-  '6A':[6,11,0.93],'6B':[1,14,0.87],'6C':[-2,17,0.82],'6D':[-7,21,0.73],'6E':[-11,25,0.63]
-};
-// ── Class sizes (realistic HK primary) ──
-const CLASS_SIZE = {
-  '1A':26,'1B':25,'1C':26,'1D':24,'1E':25,
-  '2A':27,'2B':26,'2C':25,'2D':24,'2E':26,
-  '3A':28,'3B':27,'3C':28,'3D':26,'3E':27,'3F':25,
-  '4A':29,'4B':28,'4C':29,'4D':27,'4E':28,'4F':26,
-  '5A':27,'5B':26,'5C':27,'5D':25,'5E':26,
-  '6A':26,'6B':25,'6C':26,'6D':24,'6E':25
-};
-
-function mockClassData(grade, cls){
-  const surnames = ['陳','林','王','張','李','黃','劉','吳','蔡','楊','鄭','謝','郭','許','蘇','葉','曾','徐','馬','羅','賴','何','洪','邱','廖','盧','余','潘','梁','趙'];
-  const names2 = ['思琪','浩然','子萱','銘軒','欣怡','俊傑','雨桐','嘉欣','家豪','雅婷','宇軒','心怡','柏翰','品妤','承恩','詩涵','睿宸','芷晴','宥辰','語彤','梓涵','彥廷','紫萱','晨曦','若熙','子晴','俊熙','穎琳','卓霖','曉彤'];
-  const key = `${grade}${cls}`;
-  const prof = CLASS_PROFILE[key] || [0,16,0.80];
-  const n = CLASS_SIZE[key] || 26;
-  const [avgOff, spread, testedPct] = prof;
-  // Grade baseline: lower grades slightly higher (easier poems), upper grades harder
-  const gradeBase = {1:76,2:72,3:69,4:65,5:62,6:60}[grade];
-  const classCenter = gradeBase + avgOff;
-
-  // Deterministic seeded RNG (Mulberry32)
-  let _s = (grade*1000 + cls.charCodeAt(0)*7 + 42) >>> 0;
-  function rng(){_s=(_s+0x6D2B79F5)|0;let t=Math.imul(_s^(_s>>>15),1|_s);t=t+Math.imul(t^(t>>>7),61|t)^t;return((t^(t>>>14))>>>0)/4294967296}
-  // Box-Muller for realistic normal distribution
-  function normalRng(mean, sd){
-    let u,v;do{u=rng();v=rng()}while(u===0);
-    return mean + sd * Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
-  }
-
-  const students = [];
-  const tested = Math.round(n * testedPct);
-  for(let i=0;i<n;i++){
-    const si = Math.floor(rng()*surnames.length);
-    const ni = Math.floor(rng()*names2.length);
-    // Some students are outliers: ~8% very strong (tutored), ~10% struggling
-    let score;
-    const r = rng();
-    if(r < 0.08) score = normalRng(93, 4);        // 尖子生
-    else if(r < 0.18) score = normalRng(42, 10);   // 困難生
-    else score = normalRng(classCenter, spread/2);  // 主体
-    score = Math.round(Math.min(100, Math.max(15, score)));
-    // Untested students get null score
-    const isTested = i < tested;
-    const grade_ = score>=90?'優':score>=75?'良':score>=60?'中':'差';
-
-    // Phonics: each knowledge point has its own difficulty
-    const phonScores = {};
-    GRADE_PHONICS[grade].forEach(p=>{
-      const diff = (PHON_DIFFICULTY[grade]||{})[p] || 0.75;
-      // Student's phonics score = base score * knowledge difficulty + noise
-      let ps = score * diff + normalRng(0, 8);
-      ps = Math.round(Math.min(100, Math.max(10, ps)));
-      phonScores[p] = ps;
-    });
-
-    students.push({
-      name: surnames[si]+names2[ni],
-      score: isTested ? score : null,
-      grade: isTested ? grade_ : '—',
-      phonics: isTested ? phonScores : {},
-      id: `${key}-${String(i+1).padStart(2,'0')}`
-    });
-  }
-  // Sort: tested first (by score desc), then untested
-  students.sort((a,b)=>{
-    if(a.score===null && b.score===null) return 0;
-    if(a.score===null) return 1;
-    if(b.score===null) return -1;
-    return b.score-a.score;
-  });
-
-  const testedStudents = students.filter(s=>s.score!==null);
-  const scores = testedStudents.map(s=>s.score);
-  const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '0.0';
-  const pass = scores.filter(s=>s>=60).length;
-  const excellent = scores.filter(s=>s>=90).length;
-  const dist = [
-    {range:'0-59', count:scores.filter(s=>s<60).length},
-    {range:'60-69', count:scores.filter(s=>s>=60&&s<70).length},
-    {range:'70-79', count:scores.filter(s=>s>=70&&s<80).length},
-    {range:'80-89', count:scores.filter(s=>s>=80&&s<90).length},
-    {range:'90-100',count:scores.filter(s=>s>=90).length}
+function renderFilters(){
+  document.getElementById('grade-filters').innerHTML = Object.keys(CLASSES).map(value => {
+    const grade = Number(value);
+    return '<button type="button" class="filter-btn ' + (grade === curGrade ? 'active' : '') + '" aria-pressed="' + (grade === curGrade) + '" data-grade="' + grade + '">' + grade + '年級</button>';
+  }).join('');
+  document.getElementById('class-filters').innerHTML = CLASSES[curGrade].map(cls => '<button type="button" class="filter-btn ' + (cls === curClass ? 'active' : '') + '" aria-pressed="' + (cls === curClass) + '" data-class="' + cls + '">' + curGrade + cls + '</button>').join('');
+  if(poems.length) document.getElementById('poem-filter').innerHTML = poems.map(poem => '<button type="button" class="filter-btn ' + (poem.id === selectedPoemId ? 'active' : '') + '" aria-pressed="' + (poem.id === selectedPoemId) + '" data-poem="' + poem.id + '">' + escapeHtml(poem.title) + '</button>').join('');
+  document.getElementById('view-title').textContent = curGrade + curClass + '班' + (selectedPoem() ? ' · ' + selectedPoem().title : '');
+}
+function renderState(message, retry = false){
+  activeDistribution = null;
+  document.getElementById('content').innerHTML = '<div class="status-panel" role="status"><p>' + escapeHtml(message) + '</p>' + (retry ? '<button class="retry-button" id="retry-button" type="button"><i data-lucide="refresh-cw" aria-hidden="true"></i>重新載入</button>' : '') + '</div>';
+  document.getElementById('retry-button')?.addEventListener('click', () => poems.length ? renderContent() : loadPoems());
+  icons();
+}
+function normaliseStudents(data){
+  if(!Array.isArray(data)) throw new Error('Invalid students response');
+  return data.map(student => ({
+    id: String(student.id ?? ''),
+    name: String(student.name ?? '未命名學生'),
+    score: scoreValue(student.score),
+    writeScore: scoreValue(student.writeScore),
+    phonics: parsePhonics(student.phonics)
+  })).sort((a,b) => a.score === null ? (b.score === null ? 0 : 1) : b.score === null ? -1 : b.score - a.score);
+}
+function createDashboard(data){
+  const students = normaliseStudents(data.students);
+  const scores = students.filter(student => student.score !== null).map(student => student.score);
+  const distribution = [
+    {range:'0–59',count:scores.filter(score => score < 60).length},
+    {range:'60–69',count:scores.filter(score => score >= 60 && score < 70).length},
+    {range:'70–79',count:scores.filter(score => score >= 70 && score < 80).length},
+    {range:'80–89',count:scores.filter(score => score >= 80 && score < 90).length},
+    {range:'90–100',count:scores.filter(score => score >= 90).length}
   ];
-  // Phonics aggregate (tested only)
-  const phonAvg = {};
-  GRADE_PHONICS[grade].forEach(p=>{
-    const vals = testedStudents.map(s=>s.phonics[p]).filter(v=>v!=null);
-    phonAvg[p] = vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : 0;
-  });
-  // Error chars: per-grade, with class-level variance
-  const errChars = (GRADE_ERRORS[grade]||GRADE_ERRORS[2]).map(e=>{
-    const classNoise = Math.round((rng()-0.5)*16);
-    return {...e, rate: Math.min(80, Math.max(8, e.base + classNoise))};
-  }).sort((a,b)=>b.rate-a.rate);
-
+  const errorChars = (Array.isArray(data.errorChars) ? data.errorChars : []).map(error => ({
+    c: String(error.c ?? ''), type: String(error.type || '書寫錯誤'),
+    count: typeof error.count === 'number' && Number.isFinite(error.count) && error.count >= 0 ? Math.round(error.count) : null
+  })).filter(error => error.c).slice(0,5);
   return {
-    grade, cls, className:`${grade}${cls}班`,
-    total:n, tested: scores.length, avg:+avg,
-    passRate: scores.length ? Math.round(pass/scores.length*100) : 0,
-    excellentRate: scores.length ? Math.round(excellent/scores.length*100) : 0,
-    distribution:dist, phonAvg, errorChars:errChars, students
+    students, total: students.length, tested: scores.length,
+    avg: scores.length ? scores.reduce((sum, score) => sum + score, 0) / scores.length : null,
+    passRate: scores.length ? Math.round(scores.filter(score => score >= 60).length / scores.length * 100) : null,
+    excellentRate: scores.length ? Math.round(scores.filter(score => score >= 90).length / scores.length * 100) : null,
+    distribution, phonAvg: parsePhonics(data.phonAvg), errorChars
   };
 }
 
-// Render sidebar filters
-function renderFilters(){
-  const gf = document.getElementById('grade-filters');
-  gf.innerHTML = [1,2,3,4,5,6].map(g=>
-    `<button class="filter-btn ${g===curGrade?'active':''}" onclick="selectGrade(${g})">${g}年級</button>`
-  ).join('');
-  const cf = document.getElementById('class-filters');
-  cf.innerHTML = CLASSES[curGrade].map(c=>
-    `<button class="filter-btn ${c===curClass?'active':''}" onclick="selectClass('${c}')">${curGrade}${c}</button>`
-  ).join('');
-  document.querySelector('#poem-filter .filter-btn').textContent = GRADE_POEMS[curGrade];
+function mockClassData(){
+  let seed = curGrade * 1000 + curClass.charCodeAt(0) * 13 + selectedPoemId * 71;
+  const random = () => { seed = (Math.imul(seed,1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+  const labels = poemPhonics();
+  const students = Array.from({length:24}, (_,index) => {
+    const measured = index < 20;
+    return {
+      id: 'demo-' + index, name: '示範學生 ' + String(index + 1).padStart(2,'0'),
+      score: measured ? Math.round(42 + random() * 57) : null,
+      writeScore: index < 22 ? Math.round(45 + random() * 55) : null,
+      phonics: measured ? Object.fromEntries(labels.map(label => [label, Math.round(40 + random() * 60)])) : {}
+    };
+  });
+  const phonAvg = Object.fromEntries(labels.map(label => {
+    const values = students.filter(student => student.score !== null).map(student => student.phonics[label]);
+    return [label, Math.round(values.reduce((sum,value) => sum + value,0) / values.length)];
+  }));
+  const errorChars = (selectedPoem()?.dictation || []).slice(0,5).map((item,index) => ({c:item.char,type:'書寫錯誤（示範）',count:9-index}));
+  return { students, phonAvg, errorChars };
 }
 
-function selectGrade(g){
-  curGrade = g;
-  curClass = CLASSES[g][0];
-  renderFilters();
-  renderContent();
-}
-function selectClass(c){
-  curClass = c;
-  renderFilters();
-  renderContent();
-}
-
-function renderContent(){
-  renderDashboard(mockClassData(curGrade, curClass));
-  // Try real API, fall back to mock on failure or empty
-  fetch(`/api/maanshan-data?grade=${curGrade}&cls=${curClass}&poemId=${curGrade}`)
-    .then(r=>r.ok?r.json():null).then(data=>{
-      if(data && data.hasData && data.stats.tested > 0){
-        // Map API response to dashboard format
-        const s = data.stats;
-        const students = data.students.map((st,i)=>{
-          const score = st.score ?? 0;
-          const grade_ = score>=90?'優':score>=75?'良':score>=60?'中':'差';
-          return {name:st.name, score, grade:grade_, phonics:st.phonics, id:st.id};
-        }).sort((a,b)=>b.score-a.score);
-        renderDashboard({
-          grade:curGrade, cls:curClass, className:`${curGrade}${curClass}班`,
-          total:s.total, tested:s.tested, avg:s.avg,
-          passRate:s.passRate, excellentRate:s.excellentRate,
-          distribution:s.distribution, phonAvg:data.phonAvg,
-          errorChars:data.errorChars, students
-        });
-      }
-    }).catch(()=>{});
+async function renderContent(){
+  const generation = ++requestGeneration;
+  activeRequest?.abort();
+  activeRequest = null;
+  document.getElementById('demo-badge').hidden = !demoMode;
+  document.getElementById('view-subtitle').textContent = demoMode ? '示範班級紀錄' : '實際已同步紀錄';
+  if(!selectedPoem()) return;
+  if(demoMode){ renderDashboard(createDashboard(mockClassData())); return; }
+  const controller = new AbortController();
+  activeRequest = controller;
+  const selection = {grade:curGrade,cls:curClass,poemId:selectedPoemId};
+  renderState('正在載入練習紀錄');
+  try{
+    const response = await fetch('/api/maanshan-data?' + new URLSearchParams(selection), {signal:controller.signal,cache:'no-store'});
+    if(!response.ok) throw new Error('Data request failed');
+    const data = await response.json();
+    if(generation !== requestGeneration) return;
+    if(data.error) throw new Error('Data source unavailable');
+    if(!data.hasData){ renderState('這個班別和古詩暫未有已同步的練習紀錄。'); return; }
+    const dashboard = createDashboard(data);
+    if(!dashboard.total){ renderState('這個班別和古詩暫未有已同步的練習紀錄。'); return; }
+    renderDashboard(dashboard);
+  }catch(error){
+    if(generation !== requestGeneration || error.name === 'AbortError') return;
+    renderState('暫時未能取得練習紀錄，請稍後重試。',true);
+  }finally{
+    if(generation === requestGeneration) activeRequest = null;
+  }
 }
 
-function renderDashboard(d){
-  const el = document.getElementById('content');
-  el.innerHTML = `
-    <div class="stats-row">
-      <div class="stat-card highlight"><p class="stat-value">${d.avg}</p><p class="stat-label">班均分</p></div>
-      <div class="stat-card"><p class="stat-value">${d.passRate}%</p><p class="stat-label">合格率 (≥60)</p></div>
-      <div class="stat-card"><p class="stat-value">${d.excellentRate}%</p><p class="stat-label">優秀率 (≥90)</p></div>
-      <div class="stat-card"><p class="stat-value">${d.tested}/${d.total}</p><p class="stat-label">已測人數</p></div>
-    </div>
-    <div class="card">
-      <p class="card-title">成績分佈</p>
-      <div class="chart-wrap"><canvas id="dist-chart"></canvas></div>
-    </div>
-    <div class="card">
-      <p class="card-title">語音知識掌握率（${curGrade}年級第一學段）</p>
-      ${Object.entries(d.phonAvg).map(([k,v])=>{
-        const c = v>=80?'var(--green)':v>=60?'var(--gold)':'var(--red)';
-        return `<div class="phon-row">
-          <span class="phon-label">${k}</span>
-          <div class="phon-bar-bg"><div class="phon-bar" style="width:${v}%;background:${c}"></div></div>
-          <span class="phon-pct">${v}%</span>
-        </div>`;
-      }).join('')}
-    </div>
-    <div class="card">
-      <p class="card-title">高頻錯字 Top 5</p>
-      ${d.errorChars.map(ec=>`<div class="error-row">
-        <div class="error-char">${ec.c}</div>
-        <div class="error-info"><span class="error-type">${ec.type}</span> <span class="error-rate">${ec.rate}% 學生出錯</span></div>
-        <div class="error-bar-bg"><div class="error-bar" style="width:${ec.rate}%"></div></div>
-      </div>`).join('')}
-    </div>
-    <div class="card">
-      <p class="card-title">學生成績（${d.className}）</p>
-      <table class="stu-table">
-        <thead><tr><th>排名</th><th>姓名</th><th>分數</th><th>等級</th>${GRADE_PHONICS[curGrade].map(p=>`<th>${p}</th>`).join('')}</tr></thead>
-        <tbody>${d.students.map((s,i)=>{
-          if(s.score===null) return `<tr style="opacity:.45">
-            <td>—</td><td class="stu-name">${s.name}</td><td class="stu-score" style="color:var(--ink-40)">未測</td>
-            <td><span class="grade-tag g-pass">—</span></td>
-            ${GRADE_PHONICS[curGrade].map(()=>`<td style="font-size:12px;color:var(--ink-20)">—</td>`).join('')}</tr>`;
-          const gc = s.grade==='優'?'g-ex':s.grade==='良'?'g-good':s.grade==='中'?'g-pass':'g-fail';
-          const rank = d.students.filter(x=>x.score!==null).indexOf(s)+1;
-          return `<tr>
-            <td>${rank}</td>
-            <td class="stu-name">${s.name}</td>
-            <td class="stu-score" style="color:${s.grade==='優'?'var(--green)':s.grade==='差'?'var(--red)':'var(--ink)'}">${s.score}</td>
-            <td><span class="grade-tag ${gc}">${s.grade}</span></td>
-            ${GRADE_PHONICS[curGrade].map(p=>`<td style="font-family:var(--font-num);font-size:12px;color:${(s.phonics[p]||0)>=80?'var(--green)':(s.phonics[p]||0)>=60?'var(--gold)':'var(--red)'}">${s.phonics[p]||'—'}</td>`).join('')}
-          </tr>`;
-        }).join('')}</tbody>
-      </table>
-    </div>`;
-  setTimeout(()=>drawDistChart(d.distribution), 50);
+function renderDashboard(data){
+  const labels = [...new Set([...poemPhonics(),...Object.keys(data.phonAvg),...data.students.flatMap(student => Object.keys(student.phonics))])];
+  const phonRows = labels.map(label => {
+    const value = data.phonAvg[label] ?? null;
+    return '<div class="phon-row"><span class="phon-label">' + escapeHtml(label) + '</span><div class="phon-bar-bg"><div class="phon-bar" style="width:' + (value ?? 0) + '%;background:' + scoreColor(value) + '"></div></div><span class="phon-pct">' + scoreText(value) + (value === null ? '' : ' 分') + '</span></div>';
+  }).join('');
+  const highestErrors = Math.max(...data.errorChars.map(error => error.count || 0),1);
+  const errorRows = data.errorChars.map(error => '<div class="error-row"><div class="error-char">' + escapeHtml(error.c) + '</div><div class="error-info"><p class="error-type">' + escapeHtml(error.type) + '</p><p class="error-rate">' + (error.count === null ? '未提供次數' : error.count + ' 次錯誤紀錄') + '</p></div><div class="error-bar-bg"><div class="error-bar" style="width:' + (error.count === null ? 0 : error.count / highestErrors * 100) + '%"></div></div></div>').join('');
+  let rank = 0;
+  const rows = data.students.map(student => {
+    const measured = student.score !== null;
+    const grade = !measured ? '未測' : student.score >= 90 ? '優' : student.score >= 75 ? '良' : student.score >= 60 ? '中' : '待加強';
+    const gradeClass = !measured ? 'g-pass' : student.score >= 90 ? 'g-ex' : student.score >= 75 ? 'g-good' : student.score >= 60 ? 'g-pass' : 'g-fail';
+    return '<tr><td>' + (measured ? ++rank : '未測') + '</td><td class="stu-name">' + escapeHtml(student.name) + '</td><td class="stu-score" style="color:' + scoreColor(student.score) + '">' + scoreText(student.score) + '</td><td class="stu-score" style="color:' + scoreColor(student.writeScore) + '">' + scoreText(student.writeScore) + '</td><td><span class="grade-tag ' + gradeClass + '">' + grade + '</span></td>' + labels.map(label => {
+      const value = student.phonics[label] ?? null;
+      return '<td style="color:' + scoreColor(value) + '">' + scoreText(value) + '</td>';
+    }).join('') + '</tr>';
+  }).join('');
+  document.getElementById('content').innerHTML =
+    '<div class="stats-row">' +
+    '<div class="stat-card highlight"><p class="stat-value">' + scoreText(data.avg) + '</p><p class="stat-label">朗讀平均分</p></div>' +
+    '<div class="stat-card"><p class="stat-value">' + (data.passRate === null ? '未測' : data.passRate + '%') + '</p><p class="stat-label">朗讀合格率（≥60）</p></div>' +
+    '<div class="stat-card"><p class="stat-value">' + (data.excellentRate === null ? '未測' : data.excellentRate + '%') + '</p><p class="stat-label">朗讀優秀率（≥90）</p></div>' +
+    '<div class="stat-card"><p class="stat-value">' + data.tested + ' / ' + data.total + '</p><p class="stat-label">已測 / 有紀錄學生</p></div></div>' +
+    '<section class="section"><h2 class="section-title">朗讀成績分佈</h2>' + (data.tested ? '<div class="chart-wrap"><canvas id="dist-chart" role="img" aria-label="' + escapeHtml(data.distribution.map(bin => bin.range + '分：' + bin.count + '人').join('；')) + '"></canvas></div>' : '<p class="empty-state">尚未有朗讀成績</p>') + '</section>' +
+    '<section class="section"><h2 class="section-title">語音知識平均得分</h2>' + (phonRows || '<p class="empty-state">尚未有語音知識成績</p>') + '</section>' +
+    '<section class="section"><h2 class="section-title">默寫錯字紀錄（前5項）</h2><p class="section-note">按已提交的默寫錯誤紀錄次數統計</p>' + (errorRows || '<p class="empty-state">目前沒有默寫錯字紀錄</p>') + '</section>' +
+    '<section class="section"><h2 class="section-title">學生成績</h2><div class="table-wrap" role="region" aria-label="學生成績表" tabindex="0"><table class="stu-table"><thead><tr><th scope="col">朗讀排名</th><th scope="col">姓名</th><th scope="col">朗讀分數</th><th scope="col">默寫分數</th><th scope="col">朗讀等級</th>' + labels.map(label => '<th scope="col">' + escapeHtml(label) + '</th>').join('') + '</tr></thead><tbody>' + rows + '</tbody></table></div></section>';
+  activeDistribution = data.tested ? data.distribution : null;
+  drawDistChart();
 }
-
-function drawDistChart(dist){
+function drawDistChart(){
   const canvas = document.getElementById('dist-chart');
-  if(!canvas) return;
-  const dpr = window.devicePixelRatio||1;
+  if(!canvas || !activeDistribution) return;
+  const ratio = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width*dpr;
-  canvas.height = rect.height*dpr;
-  const c = canvas.getContext('2d');
-  c.scale(dpr, dpr);
-  const W = rect.width, H = rect.height;
-  const pad = {top:20, bottom:30, left:10, right:10};
-  const maxVal = Math.max(...dist.map(d=>d.count), 1);
-  const barW = (W-pad.left-pad.right)/dist.length * 0.6;
-  const gap = (W-pad.left-pad.right)/dist.length;
-  const colors = ['#c9c1b5','#b8923f','#2a5a4a','#2a5a4a','#2a5a4a'];
-
-  dist.forEach((d, i)=>{
-    const x = pad.left + i*gap + (gap-barW)/2;
-    const barH = (d.count/maxVal) * (H-pad.top-pad.bottom);
-    const y = H - pad.bottom - barH;
-    // Bar
-    c.fillStyle = colors[i];
-    c.beginPath();
-    c.roundRect(x, y, barW, barH, [4,4,0,0]);
-    c.fill();
-    // Value on top
-    c.fillStyle = '#1a1612';
-    c.font = '600 13px Inter, sans-serif';
-    c.textAlign = 'center';
-    c.fillText(d.count, x+barW/2, y-6);
-    // Label below
-    c.fillStyle = '#9e9488';
-    c.font = '11px "Noto Sans TC", sans-serif';
-    c.fillText(d.range, x+barW/2, H-pad.bottom+16);
+  if(!rect.width || !rect.height) return;
+  canvas.width = Math.round(rect.width * ratio);
+  canvas.height = Math.round(rect.height * ratio);
+  const context = canvas.getContext('2d');
+  context.scale(ratio,ratio);
+  const maximum = Math.max(...activeDistribution.map(item => item.count),1);
+  const gap = rect.width / activeDistribution.length;
+  const width = gap * .58;
+  const colors = ['#b54d57','#7b9aa7','#416a98','#4a8b77','#176759'];
+  activeDistribution.forEach((item,index) => {
+    const height = item.count / maximum * (rect.height - 54);
+    const left = index * gap + (gap - width) / 2;
+    const top = rect.height - 30 - height;
+    context.fillStyle = colors[index];
+    context.fillRect(left,top,width,height);
+    context.fillStyle = '#202b2b';
+    context.font = '600 12px "Noto Sans TC", sans-serif';
+    context.textAlign = 'center';
+    context.fillText(String(item.count),left + width / 2,top - 8);
+    context.fillStyle = '#687676';
+    context.font = '11px "Noto Sans TC", sans-serif';
+    context.fillText(item.range,left + width / 2,rect.height - 10);
   });
 }
 
+async function loadPoems(){
+  renderState('正在載入古詩資料');
+  try{
+    const response = await fetch('./poems.json');
+    if(!response.ok) throw new Error('Poem data unavailable');
+    const data = await response.json();
+    if(!Array.isArray(data.poems) || !data.poems.length) throw new Error('Invalid poem data');
+    poems = data.poems.filter(poem => Number.isInteger(poem.id) && typeof poem.title === 'string');
+    if(!poems.length) throw new Error('No selectable poems');
+    if(!selectedPoem()) selectedPoemId = poems[0].id;
+    document.getElementById('refresh-button').disabled = false;
+    renderFilters();
+    renderContent();
+  }catch{
+    renderState('暫時未能載入古詩資料，請重新載入。',true);
+  }
+}
+document.getElementById('grade-filters').addEventListener('click',event => {
+  const button = event.target.closest('[data-grade]');
+  if(!button) return;
+  curGrade = Number(button.dataset.grade);
+  curClass = CLASSES[curGrade][0];
+  renderFilters(); renderContent();
+});
+document.getElementById('class-filters').addEventListener('click',event => {
+  const button = event.target.closest('[data-class]');
+  if(!button) return;
+  curClass = button.dataset.class;
+  renderFilters(); renderContent();
+});
+document.getElementById('poem-filter').addEventListener('click',event => {
+  const button = event.target.closest('[data-poem]');
+  if(!button) return;
+  selectedPoemId = Number(button.dataset.poem);
+  renderFilters(); renderContent();
+});
+document.getElementById('demo-toggle').addEventListener('change',event => { demoMode = event.target.checked; renderContent(); });
+document.getElementById('refresh-button').addEventListener('click',renderContent);
+window.addEventListener('resize',drawDistChart);
+window.addEventListener('DOMContentLoaded',icons);
 renderFilters();
-renderContent();
+loadPoems();
 </script>
 </body>
 </html>

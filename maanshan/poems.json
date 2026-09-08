@@ -1,0 +1,231 @@
+{
+  "poems": [
+    {
+      "id": 1,
+      "slug": "yong-e",
+      "title": "詠鵝",
+      "author": "駱賓王",
+      "dynasty": "唐",
+      "grade": 1,
+      "description": "從叫聲、羽毛和游水的動作，描寫白鵝在綠水中悠遊的模樣。",
+      "authorBio": "駱賓王是唐代詩人，與王勃、楊炯、盧照鄰並稱初唐四傑。這首詩用鮮明的色彩和簡潔的語言描寫白鵝。",
+      "theme": "詠物",
+      "lines": [
+        {"text": "鵝鵝鵝", "simplified": "鹅鹅鹅", "pinyin": ["é", "é", "é"], "punctuation": "，", "scene": 1},
+        {"text": "曲項向天歌", "simplified": "曲项向天歌", "pinyin": ["qū", "xiàng", "xiàng", "tiān", "gē"], "punctuation": "。", "scene": 2},
+        {"text": "白毛浮綠水", "simplified": "白毛浮绿水", "pinyin": ["bái", "máo", "fú", "lǜ", "shuǐ"], "punctuation": "，", "scene": 3},
+        {"text": "紅掌撥清波", "simplified": "红掌拨清波", "pinyin": ["hóng", "zhǎng", "bō", "qīng", "bō"], "punctuation": "。", "scene": 4}
+      ],
+      "dictation": [
+        {"char": "鵝", "pinyin": "é", "word": "白鵝"},
+        {"char": "曲", "pinyin": "qū", "word": "彎曲"},
+        {"char": "項", "pinyin": "xiàng", "word": "頸項"},
+        {"char": "歌", "pinyin": "gē", "word": "唱歌"},
+        {"char": "白", "pinyin": "bái", "word": "白色"},
+        {"char": "毛", "pinyin": "máo", "word": "羽毛"},
+        {"char": "紅", "pinyin": "hóng", "word": "紅色"},
+        {"char": "波", "pinyin": "bō", "word": "水波"}
+      ],
+      "suggestions": ["詩中的白鵝有甚麼動作？", "您為甚麼一開始連說三個「鵝」字？", "詩裡寫了哪些顏色？"],
+      "phonics": [
+        {"id": "yong-e-tone", "label": "四聲", "prompt": "「鵝」é 是第幾聲？", "options": ["第一聲", "第二聲", "第三聲"], "answer": 1, "explanation": "é 是第二聲，聲音由低向高上揚。"},
+        {"id": "yong-e-e", "label": "a/o/e", "prompt": "「鵝」é 用了哪一個單韻母？", "options": ["a", "o", "e"], "answer": 2, "explanation": "「鵝」的拼音是 é，單韻母是 e。"},
+        {"id": "yong-e-u", "label": "i/u/ü", "prompt": "「綠」lǜ 的韻母是哪一個？", "options": ["i", "u", "ü"], "answer": 2, "explanation": "lǜ 的韻母是 ü；跟在 l 後面時，上面的兩點要保留。"},
+        {"id": "yong-e-b", "label": "b/p/m/f", "prompt": "「白」bái 的聲母是哪一個？", "options": ["b", "p", "m"], "answer": 0, "explanation": "bái 的聲母是 b，韻母是 ai。"},
+        {"id": "yong-e-t", "label": "d/t/n/l", "prompt": "「天」tiān 的聲母是哪一個？", "options": ["d", "t", "n"], "answer": 1, "explanation": "tiān 的聲母是 t，發音時有較明顯的氣流。"},
+        {"id": "yong-e-qu", "label": "i/u/ü", "prompt": "「曲項」的「曲」應讀哪一個音？", "options": ["qǔ", "qū", "kū"], "answer": 1, "explanation": "「曲項」是彎着脖子，「曲」讀 qū。ü 跟 q 相拼時，兩點省略。"}
+      ]
+    },
+    {
+      "id": 2,
+      "slug": "zeng-wang-lun",
+      "title": "贈汪倫",
+      "author": "李白",
+      "dynasty": "唐",
+      "grade": 2,
+      "description": "李白乘船離去時，聽見汪倫踏歌送別，借桃花潭的深水表達朋友的深情。",
+      "authorBio": "李白是唐代詩人，字太白，號青蓮居士。他的詩想像豐富，感情奔放，常寫山水、友情和理想。",
+      "theme": "友情",
+      "lines": [
+        {"text": "李白乘舟將欲行", "simplified": "李白乘舟将欲行", "pinyin": ["lǐ", "bái", "chéng", "zhōu", "jiāng", "yù", "xíng"], "punctuation": "，", "scene": 1},
+        {"text": "忽聞岸上踏歌聲", "simplified": "忽闻岸上踏歌声", "pinyin": ["hū", "wén", "àn", "shàng", "tà", "gē", "shēng"], "punctuation": "。", "scene": 2},
+        {"text": "桃花潭水深千尺", "simplified": "桃花潭水深千尺", "pinyin": ["táo", "huā", "tán", "shuǐ", "shēn", "qiān", "chǐ"], "punctuation": "，", "scene": 3},
+        {"text": "不及汪倫送我情", "simplified": "不及汪伦送我情", "pinyin": ["bù", "jí", "wāng", "lún", "sòng", "wǒ", "qíng"], "punctuation": "。", "scene": 4}
+      ],
+      "dictation": [
+        {"char": "舟", "pinyin": "zhōu", "word": "乘舟"},
+        {"char": "聞", "pinyin": "wén", "word": "聽聞"},
+        {"char": "岸", "pinyin": "àn", "word": "岸上"},
+        {"char": "踏", "pinyin": "tà", "word": "踏歌"},
+        {"char": "潭", "pinyin": "tán", "word": "水潭"},
+        {"char": "深", "pinyin": "shēn", "word": "深水"},
+        {"char": "尺", "pinyin": "chǐ", "word": "千尺"},
+        {"char": "送", "pinyin": "sòng", "word": "送別"},
+        {"char": "情", "pinyin": "qíng", "word": "友情"}
+      ],
+      "suggestions": ["「踏歌」是怎樣送別朋友的？", "您為甚麼用桃花潭比喻友情？", "「深千尺」是真的量過潭水嗎？"],
+      "phonics": [
+        {"id": "zeng-wang-lun-ia", "label": "ia/ie", "prompt": "「家」jiā 的韻母是哪一個？", "options": ["ia", "ie", "ai"], "answer": 0, "explanation": "jiā 的韻母是 ia；「街」jiē 的韻母才是 ie。"},
+        {"id": "zeng-wang-lun-iu", "label": "iao/iu", "prompt": "「流」liú 的韻母，在拼音中縮寫成甚麼？", "options": ["iao", "ui", "iu"], "answer": 2, "explanation": "iou 跟聲母相拼時縮寫成 iu，所以「流」寫作 liú。"},
+        {"id": "zeng-wang-lun-ian", "label": "ian/in", "prompt": "「千」qiān 的韻母是哪一個？", "options": ["in", "ian", "ing"], "answer": 1, "explanation": "qiān 的韻母是 ian；「親」qīn 的韻母是 in。"},
+        {"id": "zeng-wang-lun-iang", "label": "iang/ing/iong", "prompt": "「將欲行」的「將」jiāng，韻母是哪一個？", "options": ["ing", "iong", "iang"], "answer": 2, "explanation": "jiāng 的韻母是 iang。「將欲行」的「將」讀第一聲，表示將要。"},
+        {"id": "zeng-wang-lun-ua", "label": "ua/uo", "prompt": "「花」huā 的韻母是哪一個？", "options": ["ua", "uo", "ao"], "answer": 0, "explanation": "huā 的韻母是 ua；「火」huǒ 的韻母是 uo。"},
+        {"id": "zeng-wang-lun-ui", "label": "uai/ui", "prompt": "「水」shuǐ 的韻母，在拼音中寫成甚麼？", "options": ["uai", "ui", "iu"], "answer": 1, "explanation": "uei 跟聲母相拼時縮寫成 ui，所以「水」寫作 shuǐ。"}
+      ]
+    },
+    {
+      "id": 3,
+      "slug": "ti-xi-lin-bi",
+      "title": "題西林壁",
+      "author": "蘇軾",
+      "dynasty": "宋",
+      "grade": 3,
+      "description": "遊覽廬山時，詩人從不同位置看見不同山形，思考身在其中為何難以看清全貌。",
+      "authorBio": "蘇軾是北宋文學家、書畫家，字子瞻，號東坡居士。他的詩詞題材廣闊，常從日常經驗中寫出對人生的思考。",
+      "theme": "觀察與思考",
+      "lines": [
+        {"text": "橫看成嶺側成峯", "simplified": "横看成岭侧成峰", "pinyin": ["héng", "kàn", "chéng", "lǐng", "cè", "chéng", "fēng"], "punctuation": "，", "scene": 1},
+        {"text": "遠近高低各不同", "simplified": "远近高低各不同", "pinyin": ["yuǎn", "jìn", "gāo", "dī", "gè", "bù", "tóng"], "punctuation": "。", "scene": 2},
+        {"text": "不識廬山真面目", "simplified": "不识庐山真面目", "pinyin": ["bù", "shí", "lú", "shān", "zhēn", "miàn", "mù"], "punctuation": "，", "scene": 3},
+        {"text": "只緣身在此山中", "simplified": "只缘身在此山中", "pinyin": ["zhǐ", "yuán", "shēn", "zài", "cǐ", "shān", "zhōng"], "punctuation": "。", "scene": 4}
+      ],
+      "dictation": [
+        {"char": "橫", "pinyin": "héng", "word": "橫看"},
+        {"char": "嶺", "pinyin": "lǐng", "word": "山嶺"},
+        {"char": "側", "pinyin": "cè", "word": "側面"},
+        {"char": "峯", "pinyin": "fēng", "word": "山峯"},
+        {"char": "遠", "pinyin": "yuǎn", "word": "遠近"},
+        {"char": "低", "pinyin": "dī", "word": "高低"},
+        {"char": "識", "pinyin": "shí", "word": "識字"},
+        {"char": "廬", "pinyin": "lú", "word": "廬山"},
+        {"char": "緣", "pinyin": "yuán", "word": "緣由"}
+      ],
+      "suggestions": ["同一座廬山為甚麼會有不同樣子？", "「只緣身在此山中」是甚麼意思？", "這首詩能提醒我們怎樣看待事情？"],
+      "phonics": [
+        {"id": "ti-xi-lin-bi-tone", "label": "四聲複習", "prompt": "「橫看」的「橫」héng 是第幾聲？", "options": ["第一聲", "第二聲", "第四聲"], "answer": 1, "explanation": "「橫看」的「橫」讀 héng，是第二聲。"},
+        {"id": "ti-xi-lin-bi-e", "label": "a/o/e", "prompt": "「各」gè 的單韻母是哪一個？", "options": ["e", "o", "a"], "answer": 0, "explanation": "gè 由聲母 g 和單韻母 e 組成。"},
+        {"id": "ti-xi-lin-bi-u", "label": "i/u/ü", "prompt": "「廬」lú 的韻母是哪一個？", "options": ["ü", "i", "u"], "answer": 2, "explanation": "「廬」讀 lú，韻母是 u；不要讀成 lǘ。"},
+        {"id": "ti-xi-lin-bi-b", "label": "b/p/m/f/d/t/n/l", "prompt": "「不」bù 的聲母是哪一個？", "options": ["p", "b", "m"], "answer": 1, "explanation": "bù 的聲母是 b，發音時雙唇閉合後打開，氣流較弱。"},
+        {"id": "ti-xi-lin-bi-g", "label": "g/k/h", "prompt": "「高」gāo 的聲母是哪一個？", "options": ["g", "k", "h"], "answer": 0, "explanation": "gāo 的聲母是 g；g 和 k 的主要分別是送氣強弱。"},
+        {"id": "ti-xi-lin-bi-feng", "label": "四聲複習", "prompt": "「山峯」的「峯」應讀哪一個音？", "options": ["féng", "fěng", "fēng"], "answer": 2, "explanation": "「峯」讀 fēng，是第一聲；「峯」和「峰」在這裡意思相同。"}
+      ]
+    },
+    {
+      "id": 4,
+      "slug": "bo-chuan-gua-zhou",
+      "title": "泊船瓜洲",
+      "author": "王安石",
+      "dynasty": "宋",
+      "grade": 4,
+      "description": "船停瓜洲，詩人望向江南和鍾山，在春風與明月中流露歸鄉之情。",
+      "authorBio": "王安石是北宋政治家、文學家，字介甫，號半山。他的詩語言凝練，常把眼前景物與深切感情結合。",
+      "theme": "思鄉",
+      "lines": [
+        {"text": "京口瓜洲一水間", "simplified": "京口瓜洲一水间", "pinyin": ["jīng", "kǒu", "guā", "zhōu", "yī", "shuǐ", "jiān"], "punctuation": "，", "scene": 1},
+        {"text": "鍾山祇隔數重山", "simplified": "钟山只隔数重山", "pinyin": ["zhōng", "shān", "zhǐ", "gé", "shù", "chóng", "shān"], "punctuation": "。", "scene": 2},
+        {"text": "春風又綠江南岸", "simplified": "春风又绿江南岸", "pinyin": ["chūn", "fēng", "yòu", "lǜ", "jiāng", "nán", "àn"], "punctuation": "，", "scene": 3},
+        {"text": "明月何時照我還", "simplified": "明月何时照我还", "pinyin": ["míng", "yuè", "hé", "shí", "zhào", "wǒ", "huán"], "punctuation": "。", "scene": 4}
+      ],
+      "dictation": [
+        {"char": "瓜", "pinyin": "guā", "word": "瓜洲"},
+        {"char": "洲", "pinyin": "zhōu", "word": "瓜洲"},
+        {"char": "隔", "pinyin": "gé", "word": "相隔"},
+        {"char": "數", "pinyin": "shù", "word": "數重山"},
+        {"char": "重", "pinyin": "chóng", "word": "重山"},
+        {"char": "綠", "pinyin": "lǜ", "word": "綠色"},
+        {"char": "岸", "pinyin": "àn", "word": "江岸"},
+        {"char": "照", "pinyin": "zhào", "word": "照耀"},
+        {"char": "還", "pinyin": "huán", "word": "還鄉"}
+      ],
+      "suggestions": ["京口、瓜洲和鍾山在詩中有甚麼關係？", "「春風又綠江南岸」的「綠」妙在哪裡？", "「明月何時照我還」表達了甚麼心情？"],
+      "phonics": [
+        {"id": "bo-chuan-gua-zhou-s", "label": "z/c/s", "prompt": "「三」sān 的聲母是哪一個？", "options": ["sh", "z", "s"], "answer": 2, "explanation": "sān 的聲母是平舌音 s；「山」shān 的聲母是翹舌音 sh。"},
+        {"id": "bo-chuan-gua-zhou-zh", "label": "zh/ch/sh/r", "prompt": "「照」zhào 的聲母是哪一個？", "options": ["zh", "z", "ch"], "answer": 0, "explanation": "zhào 的聲母是翹舌音 zh，不能讀成平舌音 z。"},
+        {"id": "bo-chuan-gua-zhou-si", "label": "zi/ci/si", "prompt": "「四」的正確拼音是哪一個？", "options": ["shì", "sì", "xì"], "answer": 1, "explanation": "「四」讀 sì，是整體認讀音節 si 的第四聲，聲母是平舌音 s。"},
+        {"id": "bo-chuan-gua-zhou-ua", "label": "u/ua/uo", "prompt": "「瓜」guā 的韻母是哪一個？", "options": ["u", "uo", "ua"], "answer": 2, "explanation": "guā 的韻母是 ua，由 u 向 a 滑動。"},
+        {"id": "bo-chuan-gua-zhou-ui", "label": "uai/ui", "prompt": "「水」shuǐ 和「帥」shuài，哪個韻母寫作 ui？", "options": ["水 shuǐ", "帥 shuài", "兩個都是"], "answer": 0, "explanation": "shuǐ 的韻母寫作 ui；shuài 的韻母是 uai。"},
+        {"id": "bo-chuan-gua-zhou-ch", "label": "zh/ch/sh/r", "prompt": "「春」chūn 的聲母是哪一個？", "options": ["c", "ch", "q"], "answer": 1, "explanation": "chūn 的聲母是翹舌音 ch，發音時舌尖翹起，送氣較強。"}
+      ]
+    },
+    {
+      "id": 5,
+      "slug": "gui-yuan-tian-ju",
+      "title": "歸園田居",
+      "subtitle": "歸園田居（其三）",
+      "author": "陶淵明",
+      "dynasty": "東晉",
+      "grade": 5,
+      "description": "從南山種豆寫到帶月而歸，呈現農事的辛勞，以及詩人堅守田園生活的心願。",
+      "authorBio": "陶淵明又名陶潛，是東晉詩人。他離開仕途後生活於田園，作品常描寫耕作、自然與樸素自在的生活。",
+      "theme": "田園生活",
+      "lines": [
+        {"text": "種豆南山下", "simplified": "种豆南山下", "pinyin": ["zhòng", "dòu", "nán", "shān", "xià"], "punctuation": "，", "scene": 1},
+        {"text": "草盛豆苗稀", "simplified": "草盛豆苗稀", "pinyin": ["cǎo", "shèng", "dòu", "miáo", "xī"], "punctuation": "。", "scene": 1},
+        {"text": "晨興理荒穢", "simplified": "晨兴理荒秽", "pinyin": ["chén", "xīng", "lǐ", "huāng", "huì"], "punctuation": "，", "scene": 2},
+        {"text": "帶月荷鋤歸", "simplified": "带月荷锄归", "pinyin": ["dài", "yuè", "hè", "chú", "guī"], "punctuation": "。", "scene": 2},
+        {"text": "道狹草木長", "simplified": "道狭草木长", "pinyin": ["dào", "xiá", "cǎo", "mù", "zhǎng"], "punctuation": "，", "scene": 3},
+        {"text": "夕露霑我衣", "simplified": "夕露沾我衣", "pinyin": ["xī", "lù", "zhān", "wǒ", "yī"], "punctuation": "。", "scene": 3},
+        {"text": "衣霑不足惜", "simplified": "衣沾不足惜", "pinyin": ["yī", "zhān", "bù", "zú", "xī"], "punctuation": "，", "scene": 4},
+        {"text": "但使願無違", "simplified": "但使愿无违", "pinyin": ["dàn", "shǐ", "yuàn", "wú", "wéi"], "punctuation": "。", "scene": 4}
+      ],
+      "dictation": [
+        {"char": "豆", "pinyin": "dòu", "word": "豆苗"},
+        {"char": "稀", "pinyin": "xī", "word": "稀疏"},
+        {"char": "晨", "pinyin": "chén", "word": "清晨"},
+        {"char": "穢", "pinyin": "huì", "word": "荒穢"},
+        {"char": "荷", "pinyin": "hè", "word": "荷鋤"},
+        {"char": "鋤", "pinyin": "chú", "word": "鋤頭"},
+        {"char": "霑", "pinyin": "zhān", "word": "霑濕"},
+        {"char": "惜", "pinyin": "xī", "word": "愛惜"},
+        {"char": "願", "pinyin": "yuàn", "word": "心願"}
+      ],
+      "suggestions": ["「晨興理荒穢」寫的是甚麼農事？", "「荷鋤」的「荷」為甚麼讀 hè？", "衣服被露水打濕，您為甚麼不覺得可惜？"],
+      "phonics": [
+        {"id": "gui-yuan-tian-ju-zhong", "label": "一四聲/二三聲", "prompt": "「種豆」的「種」應讀哪一個音？", "options": ["zhǒng", "zhòng", "zhōng"], "answer": 1, "explanation": "「種豆」表示種植豆子，「種」是動詞，讀第四聲 zhòng。"},
+        {"id": "gui-yuan-tian-ju-he", "label": "一四聲/二三聲", "prompt": "「帶月荷鋤歸」的「荷」應讀哪一個音？", "options": ["hè", "hé", "hē"], "answer": 0, "explanation": "「荷鋤」是扛着鋤頭，「荷」讀 hè；「荷花」的「荷」才讀 hé。"},
+        {"id": "gui-yuan-tian-ju-bp", "label": "b/p", "prompt": "「白」bái 和「排」pái，哪一個聲母送氣較強？", "options": ["白 bái 的 b", "兩個一樣", "排 pái 的 p"], "answer": 2, "explanation": "p 是送氣音，氣流較強；b 是不送氣音。"},
+        {"id": "gui-yuan-tian-ju-dt", "label": "d/t", "prompt": "「帶」dài 的聲母是哪一個？", "options": ["t", "d", "n"], "answer": 1, "explanation": "dài 的聲母是 d；d 不送氣，t 送氣。"},
+        {"id": "gui-yuan-tian-ju-nl", "label": "n/l", "prompt": "「南」nán 的聲母是哪一個？", "options": ["n", "l", "r"], "answer": 0, "explanation": "nán 的聲母是鼻音 n，氣流經鼻腔發出；l 是邊音。"},
+        {"id": "gui-yuan-tian-ju-h", "label": "g/k/h", "prompt": "「荒」huāng 的聲母是哪一個？", "options": ["g", "k", "h"], "answer": 2, "explanation": "huāng 的聲母是 h，韻母是 uang；不要漏讀介音 u。"}
+      ]
+    },
+    {
+      "id": 6,
+      "slug": "zao-chun",
+      "title": "初春小雨",
+      "subtitle": "早春呈水部張十八員外（其一）",
+      "author": "韓愈",
+      "dynasty": "唐",
+      "grade": 6,
+      "description": "細雨滋潤京城街道，遠望若有若無的草色，詩人讚美早春勝過煙柳滿城的暮春。",
+      "authorBio": "韓愈是唐代文學家、思想家，字退之。他倡導古文，詩歌風格多樣；這首詩捕捉了早春細雨與初生草色的細微變化。",
+      "theme": "早春景色",
+      "lines": [
+        {"text": "天街小雨潤如酥", "simplified": "天街小雨润如酥", "pinyin": ["tiān", "jiē", "xiǎo", "yǔ", "rùn", "rú", "sū"], "punctuation": "，", "scene": 1},
+        {"text": "草色遙看近卻無", "simplified": "草色遥看近却无", "pinyin": ["cǎo", "sè", "yáo", "kàn", "jìn", "què", "wú"], "punctuation": "。", "scene": 2},
+        {"text": "最是一年春好處", "simplified": "最是一年春好处", "pinyin": ["zuì", "shì", "yī", "nián", "chūn", "hǎo", "chù"], "punctuation": "，", "scene": 3},
+        {"text": "絕勝煙柳滿皇都", "simplified": "绝胜烟柳满皇都", "pinyin": ["jué", "shèng", "yān", "liǔ", "mǎn", "huáng", "dū"], "punctuation": "。", "scene": 4}
+      ],
+      "dictation": [
+        {"char": "街", "pinyin": "jiē", "word": "天街"},
+        {"char": "潤", "pinyin": "rùn", "word": "滋潤"},
+        {"char": "酥", "pinyin": "sū", "word": "潤如酥"},
+        {"char": "遙", "pinyin": "yáo", "word": "遙望"},
+        {"char": "卻", "pinyin": "què", "word": "卻無"},
+        {"char": "處", "pinyin": "chù", "word": "處所"},
+        {"char": "絕", "pinyin": "jué", "word": "絕勝"},
+        {"char": "柳", "pinyin": "liǔ", "word": "柳樹"},
+        {"char": "滿", "pinyin": "mǎn", "word": "滿城"}
+      ],
+      "suggestions": ["「潤如酥」寫出春雨怎樣的感覺？", "草色為甚麼遠看有、近看卻沒有？", "您為甚麼覺得早春比煙柳滿城更美？"],
+      "phonics": [
+        {"id": "zao-chun-j", "label": "j/z/zh", "prompt": "「街」jiē 的聲母是哪一個？", "options": ["zh", "j", "z"], "answer": 1, "explanation": "jiē 的聲母是舌面音 j；z 是平舌音，zh 是翹舌音。"},
+        {"id": "zao-chun-ch", "label": "q/c/ch", "prompt": "「春好處」的「處」chù，聲母是哪一個？", "options": ["ch", "c", "q"], "answer": 0, "explanation": "chù 的聲母是翹舌音 ch，不能讀成平舌音 c。"},
+        {"id": "zao-chun-s", "label": "x/s/sh", "prompt": "「酥」sū 的聲母是哪一個？", "options": ["sh", "x", "s"], "answer": 2, "explanation": "sū 的聲母是平舌音 s；「書」shū 的聲母才是 sh。"},
+        {"id": "zao-chun-an", "label": "an/ang", "prompt": "「滿」mǎn 的韻母是哪一個？", "options": ["ang", "an", "en"], "answer": 1, "explanation": "mǎn 的韻母是前鼻韻母 an，收尾時舌尖抵住上齒齦。"},
+        {"id": "zao-chun-jue", "label": "j/z/zh", "prompt": "「絕」的正確拼音是哪一個？", "options": ["jué", "zhué", "zué"], "answer": 0, "explanation": "「絕」讀 jué，聲母是 j；韻母 üe 跟 j 相拼時省略 ü 上的兩點。"},
+        {"id": "zao-chun-sheng", "label": "x/s/sh", "prompt": "「勝」shèng 的聲母是哪一個？", "options": ["s", "x", "sh"], "answer": 2, "explanation": "shèng 的聲母是翹舌音 sh，韻母是後鼻韻母 eng。"}
+      ]
+    }
+  ]
+}

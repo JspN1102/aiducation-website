@@ -1,4 +1,7 @@
-import { query, execute, isDbReady } from './_lib/db.js';
+import { execute, isDbReady } from './_lib/db.js';
+import poemHelpers from './_lib/poems.js';
+
+const { getPoem } = poemHelpers;
 
 /**
  * POST /api/maanshan-save
@@ -22,22 +25,30 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  // 数据库未配置时静默成功（数据仍在 localStorage）
-  if (!isDbReady()) {
-    return res.status(200).json({ ok: true, stored: 'local-only' });
-  }
-
   try {
-    const { syncId, studentId, name, grade, cls, poemId, section, payload } = req.body;
-
-    if (!studentId || !grade || !cls || !poemId || !section || !payload) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      return res.status(400).json({ ok: false, error: 'Invalid request body' });
     }
-    if (!['reading', 'writing', 'report'].includes(section)) {
-      return res.status(400).json({ error: 'Invalid section' });
+    const { syncId, studentId, name = '', grade, cls, poemId, section, payload } = req.body;
+    if (typeof studentId !== 'string' || !studentId.trim() || studentId.length > 32 ||
+        typeof name !== 'string' || name.length > 64 ||
+        !Number.isInteger(grade) || grade < 1 || grade > 6 ||
+        typeof cls !== 'string' || !/^[A-Za-z]$/.test(cls) || !getPoem(poemId, null) ||
+        !['reading', 'writing', 'report'].includes(section) ||
+        !payload || typeof payload !== 'object' || Array.isArray(payload) ||
+        (syncId != null && (typeof syncId !== 'string' || !syncId || syncId.length > 64))) {
+      return res.status(400).json({ ok: false, error: 'Invalid student, poem or payload fields' });
+    }
+    const payloadJson = JSON.stringify(payload);
+    if (Buffer.byteLength(payloadJson) > 256 * 1024 || Buffer.byteLength(JSON.stringify(req.body)) > 320 * 1024) {
+      return res.status(413).json({ ok: false, error: 'Payload too large' });
+    }
+    if (!isDbReady()) {
+      res.setHeader('Retry-After', '30');
+      return res.status(503).json({ ok: false, stored: 'local-only', error: 'Database unavailable' });
     }
 
-    // syncId 去重：INSERT IGNORE 利用 UNIQUE KEY
+    // Preserve the sync identifier so a retry updates the same record.
     const result = await execute(
       `INSERT INTO student_data (student_id, name, grade, cls, poem_id, section, payload, sync_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -45,19 +56,17 @@ export default async function handler(req, res) {
          payload = VALUES(payload),
          name = VALUES(name),
          updated_at = CURRENT_TIMESTAMP`,
-      [studentId, name || '', grade, cls, poemId, section, JSON.stringify(payload), syncId || null]
+      [studentId, name, grade, cls.toUpperCase(), poemId, section, payloadJson, syncId || null]
     );
 
     if (result === false) {
-      // DB write failed, but client still has data in localStorage
-      return res.status(200).json({ ok: true, stored: 'local-only', dbError: true });
+      res.setHeader('Retry-After', '30');
+      return res.status(503).json({ ok: false, stored: 'local-only', dbError: true });
     }
 
     return res.status(200).json({ ok: true, stored: 'db' });
   } catch (err) {
-    console.error('maanshan-save error:', err);
-    // 即使服务端出错也返回 200，让客户端标记为已同步
-    // 数据仍在 localStorage，不会丢
-    return res.status(200).json({ ok: true, stored: 'local-only', error: err.message });
+    res.setHeader('Retry-After', '30');
+    return res.status(503).json({ ok: false, stored: 'local-only', error: 'Unable to save data' });
   }
 }
