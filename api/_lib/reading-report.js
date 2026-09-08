@@ -1,4 +1,4 @@
-const REPORT_VERSION = 'grade-v2';
+const REPORT_VERSION = 'grade-v3';
 
 // The learner's grade controls the teaching task, not the poem's catalogue grade.
 const GRADE_GUIDANCE = {
@@ -85,6 +85,7 @@ function normalizeReport(text, grade) {
 }
 
 function fitReportSection(source, grade, maxSentences, maxChars) {
+  if (typeof source === 'string') source = [source];
   if (!Array.isArray(source) || !source.length || source.length > 30 || source.some(sentence => typeof sentence !== 'string')) return '';
   const sentences = source.flatMap(sentence => normalizeReport(sentence, grade).replace(/\s+/g, ' ').trim().split(/(?<=[。！？!?])/)).map(sentence => sentence.trim()).filter(Boolean);
   const retained = [];
@@ -101,6 +102,7 @@ function fitReportSection(source, grade, maxSentences, maxChars) {
 function buildReportFallback({ grade, poem, coverage, practiceWords, measuredWordCount }) {
   const first = practiceWords[0];
   const line = first?.lineText || poem.lines[0].text;
+  const expressiveLine = poem.lines.find(item => item.text.length >= 5)?.text || line;
   const observation = [coverage.completedLines === null ? '這是這次朗讀的練習建議。' : coverage.completedLines === 0 ? '先錄下一句，再看字音建議。' : `這次完成了${coverage.completedLines}句練習。`];
   let practice;
   if (first && grade <= 2) {
@@ -108,23 +110,25 @@ function buildReportFallback({ grade, poem, coverage, practiceWords, measuredWor
   } else if (first) {
     practice = practiceWords.map(word => {
       const evidence = word.evidence;
-      const basis = evidence.level === 'phone' ? `${evidence.label}得${evidence.score}分` : `本字得${word.score}分，未能確定哪個音的部分`;
-      return `「${word.character}」（${word.referencePinyin}）${basis}；可先試試：${word.articulationTip || word.toneTip}`;
+      const basis = evidence.level === 'phone' ? `${evidence.label}得${evidence.score}分` : `得${word.score}分，還不能確定哪部分需要調整`;
+      return `「${word.character}」（${word.referencePinyin}）${basis}；先試試：${word.articulationTip || word.toneTip}`;
     });
   } else {
     practice = [measuredWordCount === 0 ? '這次還沒有逐字結果，先跟示範慢讀一句。' : '這次先聽一句示範，再自己讀一遍。'];
   }
   const expression = grade <= 3 ? [`讀「${line}」時，按意思分小段，句末停一停。`]
     : grade === 4 ? [`試讀「${line}」，先想清楚意思，在句末停頓換氣。`]
-    : [`讀「${line}」時，想像詩中的畫面，再選一個字稍稍讀重。`, '停頓跟着意思走，語氣配合畫面。'];
+    : grade === 5 ? [`讀「${expressiveLine}」時，想像詩中的畫面，選一個字稍稍讀重。`, '想一想，這個重音會讓哪個畫面更清楚。']
+    : [`試把「${expressiveLine}」讀出兩種語氣，比較哪種更貼近詩意。`, '選定一個重音和停頓位置，用詩中的字說明理由。'];
   const selfCheck = grade === 2 ? [`把練過的字放回「${line}」，再讀一次。`]
     : grade === 3 ? [`錄下「${line}」，回聽時找一個還能讀清楚的字。`]
     : grade === 4 ? [`先跟示範練字，再讀「${line}」。`, '回聽時先檢查字音，再聽句末有沒有停穩。']
-    : [`錄下「${line}」，先聽練過的字是否清楚。`, '再聽重音和停頓，看看能否聽出你想表現的畫面。'];
+    : grade === 5 ? [`錄下「${expressiveLine}」，先聽練過的字是否清楚。`, '再聽重音有沒有帶出你想表現的畫面。']
+    : [`先跟示範練字，再錄下「${expressiveLine}」。`, '回聽時檢查字音是否清楚、停頓是否合乎句意；選一處調整後重錄比較。'];
   return { observation, practice: practice.filter(Boolean), expression, selfCheck };
 }
 
-function renderReportSections(rawText, grade, fallback = {}) {
+function renderReportSections(rawText, grade, fallback = {}, useVerifiedEvidence = false) {
   const raw = typeof rawText === 'string' ? rawText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '') : '';
   let data;
   try { data = JSON.parse(raw); } catch (_) { data = null; }
@@ -132,7 +136,10 @@ function renderReportSections(rawText, grade, fallback = {}) {
   const paragraphs = [];
   const fallbackSections = [];
   for (const [key, [maxSentences, maxChars]] of Object.entries(getGradeGuidance(grade).sections)) {
-    let paragraph = fitReportSection(data[key], grade, maxSentences, maxChars);
+    // Scores and articulation are assembled from verified reference data. Model
+    // paraphrasing must not change a mouth movement or invent a diagnosed error.
+    const verified = useVerifiedEvidence && (key === 'observation' || key === 'practice');
+    let paragraph = fitReportSection(verified ? fallback[key] : data[key], grade, maxSentences, maxChars);
     if (!paragraph) {
       paragraph = fitReportSection(fallback[key], grade, maxSentences, maxChars);
       fallbackSections.push(key);
@@ -152,9 +159,9 @@ function createReportResponse(res, studentGrade, fallback) {
     status(value) { status = value; return this; },
     json(body) {
       if (status !== 200 || typeof body?.report !== 'string') return res.status(status).json(body);
-      const { report, fallbackSections } = renderReportSections(body.report, studentGrade, fallback);
+      const { report, fallbackSections } = renderReportSections(body.report, studentGrade, fallback, true);
       if (!report) return res.status(502).json({ error: 'Invalid or empty report' });
-      return res.status(200).json({ ...body, report, studentGrade, reportVersion: REPORT_VERSION, reportSource: fallbackSections.length ? 'reference-assisted' : 'ai' });
+      return res.status(200).json({ ...body, report, studentGrade, reportVersion: REPORT_VERSION, reportSource: studentGrade === 1 ? 'reference' : fallbackSections.length ? 'reference-assisted' : 'ai-assisted' });
     }
   };
 }
