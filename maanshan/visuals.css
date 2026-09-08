@@ -203,4 +203,70 @@ body{background:radial-gradient(ellipse at 6% 0%,#fff9e7 0,transparent 48%),radi
 .sound-word ruby{color:#426640}.sound-word:nth-child(2) ruby{color:#406771}.sound-word:nth-child(3) ruby{color:#7b642e}.sound-context{color:#66745c}
 .dimension span,.report-summary .eyebrow,.score-ring span,.chat-suggestions button,.writing-counter{color:#637052}
 .writing-context p,.quiz-art p,.poet-profile p{color:#64745b}
+/* The reading advice follows the student's grade; one quiet control is enough. */
+.report-grade-label{display:flex;align-items:center;gap:8px;margin-top:5px;font-size:12px;color:#637052}
+.report-grade-label select{min-height:44px;padding:7px 28px 7px 11px;border:1px solid #d4dfc8;border-radius:9px;background:#fbfcf3;color:#3e654e;font:inherit;font-size:14px}
+.ai-report-header{flex-wrap:nowrap;align-items:center;gap:10px;margin-bottom:14px}
+.ai-report-header>.button{flex-shrink:0}
+.ai-advice[data-student-grade="1"] .report-prose,.ai-advice[data-student-grade="2"] .report-prose{font-size:18px;line-height:2}
+.ai-advice[data-student-grade="3"] .report-prose,.ai-advice[data-student-grade="4"] .report-prose{font-size:16px;line-height:1.95}
+.ai-advice[data-student-grade="5"] .report-prose,.ai-advice[data-student-grade="6"] .report-prose{font-size:15px;line-height:1.95}
+.report-prose{overflow-wrap:anywhere}
+/* A larger square keeps touch coordinates natural without stretching characters. */
+.view-write .writing-layout{gap:32px;padding:0 4px;align-items:center}
+.view-write .writing-tool{width:100%;min-width:0;max-width:min(520px,calc(100dvh - 250px))}
+.view-write .writing-toolbar{min-height:44px;margin:0 0 8px}
+.view-write .writing-toolbar>div{display:flex;align-items:center;gap:18px;min-width:0}
+.view-write .writing-counter{margin:0;font-size:12px;white-space:nowrap}
+.view-write .writing-board{outline:0;border:1px solid #c5d4b6;border-radius:13px;box-shadow:0 3px 0 #e2e9d4;background:#fffef9}
+.view-write .writing-board:before,.view-write .writing-board:after{border-color:#dce4d1}
+.view-write .writing-hint{font-size:clamp(145px,31dvh,260px)}
+.view-write .writing-controls{margin-top:8px;gap:8px;flex-wrap:nowrap}
+.view-write .writing-tools{gap:4px}
+.view-write .writing-tools .icon-button{width:44px;height:44px}
+.view-write .writing-controls>.button{width:auto;min-height:44px;font-size:13px;padding:9px 16px;white-space:nowrap}
+.writing-status{display:flex;align-items:center;gap:10px;min-height:44px;margin-top:2px}
+.view-write .writing-feedback{flex:1;min-width:0;min-height:0;margin:0;font-size:12px;line-height:1.65}
+.writing-status>.text-button{flex-shrink:0;min-height:44px;font-size:12px;white-space:nowrap}
+.writing-status>.text-button svg{width:15px;height:15px}
+@media(max-width:960px){
+ .view-write .writing-layout{display:flex;justify-content:center;height:100%;min-height:0;padding:0}
+ .view-write .writing-tool{max-width:min(540px,calc(100dvh - 220px));margin:0 auto}
+}
+@media(max-width:700px){
+ .workspace.view-write{padding-inline:8px;padding-bottom:max(8px,env(safe-area-inset-bottom))}
+ .view-write .lesson-bar{margin-inline:8px}
+ .view-write .view-section{padding:0 1px}
+ .view-write .writing-layout{align-items:center}
+ .view-write .writing-tool{max-width:100%;min-width:0}
+ .view-write .writing-toolbar{margin-bottom:6px;padding-inline:5px}
+ .view-write .writing-pinyin{font-size:28px}
+ .view-write .writing-counter{font-size:12px}
+ .view-write .writing-controls{gap:4px;margin-top:6px}
+ .view-write .writing-tools{gap:3px}
+ .view-write .writing-tools .icon-button{width:42px}
+ .view-write .writing-controls>.button{padding-inline:12px}
+ .view-write .writing-status{gap:6px;padding-inline:3px}
+ .ai-report-header h2{font-size:18px}
+ .ai-report-header>.button{font-size:12px;padding-inline:10px}
+}
+@media(max-height:600px) and (orientation:landscape) and (max-width:1100px){
+ .workspace.view-write{padding:0 12px 8px}
+ .view-write .lesson-bar{min-height:56px;margin-bottom:4px;padding:4px 0}
+ .view-write .lesson-title h1{font-size:21px}
+ .view-write .lesson-portrait{width:38px;height:38px}
+ .view-write .writing-context{display:none}
+ .view-write .view-section{padding:0}
+ .view-write .writing-layout{display:flex;height:100%;min-height:0;padding:0;align-items:center}
+ .view-write .writing-tool{display:grid;grid-template-columns:minmax(0,calc(100dvh - 88px)) minmax(176px,220px);grid-template-rows:auto 1fr auto;gap:8px 20px;max-width:none;width:max-content;margin:0 auto}
+ .view-write .writing-board{grid-column:1;grid-row:1/4;align-self:center}
+ .view-write .writing-toolbar{grid-column:2;margin:0;gap:5px}
+ .view-write .writing-toolbar>div{gap:9px}
+ .view-write .writing-controls{grid-column:2;align-self:center;flex-direction:column;align-items:stretch;gap:10px;margin:0}
+ .view-write .writing-tools{justify-content:space-between;gap:2px}
+ .view-write .writing-controls>.button{width:100%}
+ .view-write .writing-status{grid-column:2;gap:4px;min-height:44px;margin:0;flex-wrap:wrap}
+ .view-write .writing-feedback{flex-basis:100%;font-size:11px}
+ .view-write .writing-status>.text-button{min-height:32px;font-size:11px}
+}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}

@@ -2,16 +2,17 @@ const WRITING_SIZE = 560;
 const INK = '#233d32';
 
 /**
- * Smooth local ink with the same 560 x 560 coordinates used by recognition.
- * getStrokes()/finish() return independent arrays of { x, y, t } points;
- * onChange receives that snapshot at stroke boundaries, clear and undo.
+ * Incremental local ink; recognition keeps the original 560 x 560 samples.
+ * getStrokes()/finish() return independent arrays of { x, y, t } points.
  */
 export function createHandwritingPad(canvas, { isLocked = () => false, onChange = () => {} } = {}) {
   const view = canvas.ownerDocument.defaultView;
-  const context = canvas.getContext('2d');
-  const completedCanvas = canvas.ownerDocument.createElement('canvas');
-  const completedContext = completedCanvas.getContext('2d');
-  if (!context || !completedContext) throw new Error('Canvas drawing is unavailable.');
+  // Browsers that support it can present ink without waiting for the page's
+  // normal compositor cycle. Others use the same standard 2D canvas path.
+  const context = canvas.getContext('2d', { desynchronized: true });
+  const inkCanvas = canvas.ownerDocument.createElement('canvas');
+  const inkContext = inkCanvas.getContext('2d');
+  if (!context || !inkContext) throw new Error('Canvas drawing is unavailable.');
 
   const completed = [];
   const listeners = [];
@@ -22,7 +23,6 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
 
   let active = null;
   let rectangle = null;
-  let frame = 0;
   let destroyed = false;
   const timeOrigin = Date.now() - view.performance.now();
 
@@ -35,59 +35,130 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
     onChange(getStrokes());
   }
 
-  function drawStroke(target, stroke) {
-    const points = stroke.points;
-    if (!points.length) return;
-    const first = points[0];
-    // Keep the visible nib fine on phones and larger screens alike.
-    const nib = stroke.pointerType === 'pen' ? 3.2 : stroke.pointerType === 'touch' ? 4.1 : 3.6;
-    const lineWidth = nib * WRITING_SIZE / Math.max(1, rectangle.width);
+  function widthFor(stroke) {
+    const nib = stroke.pointerType === 'pen' ? 2.8 : stroke.pointerType === 'touch' ? 3.6 : 3.2;
+    return nib * WRITING_SIZE / Math.max(1, rectangle.width);
+  }
+
+  function prepare(target, stroke) {
     target.save();
     target.setTransform(canvas.width / WRITING_SIZE, 0, 0, canvas.height / WRITING_SIZE, 0, 0);
     target.strokeStyle = INK;
     target.fillStyle = INK;
-    target.lineWidth = lineWidth;
+    target.lineWidth = widthFor(stroke);
     target.lineCap = 'round';
     target.lineJoin = 'round';
     target.beginPath();
-    if (points.length === 1) {
-      target.arc(first.x, first.y, lineWidth / 2, 0, Math.PI * 2);
-      target.fill();
-    } else {
-      target.moveTo(first.x, first.y);
-      for (let index = 1; index < points.length - 1; index += 1) {
-        const current = points[index];
-        const next = points[index + 1];
-        target.quadraticCurveTo(current.x, current.y, (current.x + next.x) / 2, (current.y + next.y) / 2);
-      }
-      // The live tip always reaches the latest real sample without a filter delay.
-      const last = points[points.length - 1];
-      target.lineTo(last.x, last.y);
-      target.stroke();
-    }
+  }
+
+  function dot(target, stroke) {
+    const point = stroke.points[0];
+    prepare(target, stroke);
+    target.arc(point.x, point.y, widthFor(stroke) / 2, 0, Math.PI * 2);
+    target.fill();
     target.restore();
   }
 
-  function rebuildCompleted() {
-    completedContext.clearRect(0, 0, completedCanvas.width, completedCanvas.height);
-    completed.forEach(stroke => drawStroke(completedContext, stroke));
+  function midpoint(a, b) {
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   }
 
-  function paint() {
-    frame = 0;
-    if (destroyed) return;
+  function curve(target, points, index) {
+    const previous = points[index - 1], current = points[index], next = points[index + 1];
+    const end = midpoint(current, next);
+    const incomingX = current.x - previous.x, incomingY = current.y - previous.y;
+    const outgoingX = next.x - current.x, outgoingY = next.y - current.y;
+    const lengths = Math.hypot(incomingX, incomingY) * Math.hypot(outgoingX, outgoingY);
+    // Keep deliberate folds/hooks when the direction changes sharply, while
+    // smoothing ordinary finger movement between the real samples.
+    if (lengths && (incomingX * outgoingX + incomingY * outgoingY) / lengths < 0.25) {
+      target.lineTo(current.x, current.y);
+      target.lineTo(end.x, end.y);
+    } else {
+      target.quadraticCurveTo(current.x, current.y, end.x, end.y);
+    }
+    return end;
+  }
+
+  function wholeStroke(target, stroke) {
+    if (!stroke.points.length) return;
+    dot(target, stroke);
+    if (stroke.points.length === 1) return;
+    prepare(target, stroke);
+    target.moveTo(stroke.points[0].x, stroke.points[0].y);
+    for (let index = 1; index < stroke.points.length - 1; index += 1) curve(target, stroke.points, index);
+    const last = stroke.points[stroke.points.length - 1];
+    target.lineTo(last.x, last.y);
+    target.stroke();
+    target.restore();
+  }
+
+  function restoreTip() {
+    if (!active?.tipBounds) return;
+    const { x, y, width, height } = active.tipBounds;
+    // Only the provisional half-segment under the fingertip can change.
+    // Completed ink, including the current stroke, stays in the backing bitmap.
+    context.clearRect(x, y, width, height);
+    context.drawImage(inkCanvas, x, y, width, height, x, y, width, height);
+    active.tipBounds = null;
+  }
+
+  function tipBounds(from, to, stroke) {
+    const scaleX = canvas.width / WRITING_SIZE, scaleY = canvas.height / WRITING_SIZE;
+    const padding = widthFor(stroke) / 2 + 2 * WRITING_SIZE / rectangle.width;
+    const x = Math.max(0, Math.floor((Math.min(from.x, to.x) - padding) * scaleX));
+    const y = Math.max(0, Math.floor((Math.min(from.y, to.y) - padding) * scaleY));
+    const right = Math.min(canvas.width, Math.ceil((Math.max(from.x, to.x) + padding) * scaleX));
+    const bottom = Math.min(canvas.height, Math.ceil((Math.max(from.y, to.y) + padding) * scaleY));
+    return { x, y, width: Math.max(1, right - x), height: Math.max(1, bottom - y) };
+  }
+
+  function renderActive(final = false) {
+    if (!active?.points.length || destroyed) return;
+    const stroke = active, points = stroke.points;
+    restoreTip();
+    if (!stroke.anchor) {
+      dot(inkContext, stroke);
+      dot(context, stroke);
+      stroke.anchor = points[0];
+      stroke.drawnThrough = 0;
+    }
+    const lastCurve = points.length - 2;
+    if (lastCurve > stroke.drawnThrough) {
+      let end = stroke.anchor;
+      for (const target of [inkContext, context]) {
+        prepare(target, stroke);
+        target.moveTo(stroke.anchor.x, stroke.anchor.y);
+        for (let index = stroke.drawnThrough + 1; index <= lastCurve; index += 1) end = curve(target, points, index);
+        target.stroke();
+        target.restore();
+      }
+      stroke.anchor = end;
+      stroke.drawnThrough = lastCurve;
+    }
+    if (points.length > 1) {
+      const tip = points[points.length - 1];
+      for (const target of final ? [inkContext, context] : [context]) {
+        prepare(target, stroke);
+        target.moveTo(stroke.anchor.x, stroke.anchor.y);
+        target.lineTo(tip.x, tip.y);
+        target.stroke();
+        target.restore();
+      }
+      if (!final) stroke.tipBounds = tipBounds(stroke.anchor, tip, stroke);
+    }
+  }
+
+  function rebuild() {
+    inkContext.clearRect(0, 0, inkCanvas.width, inkCanvas.height);
+    completed.forEach(stroke => wholeStroke(inkContext, stroke));
     context.clearRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(completedCanvas, 0, 0);
-    if (active) drawStroke(context, active);
-  }
-
-  function paintSoon() {
-    if (!frame && !destroyed) frame = view.requestAnimationFrame(paint);
-  }
-
-  function paintNow() {
-    if (frame) view.cancelAnimationFrame(frame);
-    paint();
+    context.drawImage(inkCanvas, 0, 0);
+    if (active) {
+      active.anchor = null;
+      active.tipBounds = null;
+      renderActive();
+    }
   }
 
   function resize() {
@@ -97,33 +168,52 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
     const ratio = Math.min(3, Math.max(1, view.devicePixelRatio || 1));
     const width = Math.max(1, Math.round(rectangle.width * ratio));
     const height = Math.max(1, Math.round(rectangle.height * ratio));
-    if (canvas.width !== width || canvas.height !== height || completedCanvas.width !== width || completedCanvas.height !== height) {
-      canvas.width = completedCanvas.width = width;
-      canvas.height = completedCanvas.height = height;
-      rebuildCompleted();
-      // Resizing clears a canvas immediately; restore ink in the same turn.
-      paintNow();
+    if (canvas.width !== width || canvas.height !== height || inkCanvas.width !== width || inkCanvas.height !== height) {
+      canvas.width = inkCanvas.width = width;
+      canvas.height = inkCanvas.height = height;
+      // Layout changes, clear and undo are the only full redraws.
+      rebuild();
     }
   }
 
-  function appendPoint(event) {
+  function appendPoint(event, rawDuplicateCutoff) {
     if (!active || !rectangle || rectangle.width <= 0 || rectangle.height <= 0) return;
     if (!Number.isFinite(event.clientX) || !Number.isFinite(event.clientY)) return;
+    const eventTime = Number.isFinite(event.timeStamp) ? event.timeStamp : view.performance.now();
+    // A browser may reduce timestamp precision. Equal times can still carry
+    // different genuine coordinates, so deduplicate those samples by position.
+    if (rawDuplicateCutoff !== undefined) {
+      if (eventTime < rawDuplicateCutoff) return;
+      if (eventTime === rawDuplicateCutoff) {
+        const key = `${event.clientX}:${event.clientY}`;
+        if (active.rawPointKeys?.has(key)) return;
+        active.rawPointKeys?.add(key);
+      }
+    }
     const x = Math.max(0, Math.min(WRITING_SIZE, (event.clientX - rectangle.left) * WRITING_SIZE / rectangle.width));
     const y = Math.max(0, Math.min(WRITING_SIZE, (event.clientY - rectangle.top) * WRITING_SIZE / rectangle.height));
     const previous = active.points[active.points.length - 1];
     if (previous && previous.x === x && previous.y === y) return;
-    const eventTime = Number.isFinite(event.timeStamp) ? event.timeStamp : view.performance.now();
     const t = Math.max(previous?.t || 0, Math.round(eventTime > 1e12 ? eventTime : timeOrigin + eventTime));
     active.points.push({ x, y, t });
   }
 
   function appendEvent(event) {
-    // Safari and older browsers fall back to the dispatched sample.
+    const isRaw = event.type === 'pointerrawupdate';
+    const cutoff = isRaw || event.type === 'pointermove' ? active.lastRawTime : undefined;
     let samples = [];
     try { samples = event.getCoalescedEvents?.() || []; } catch { /* Optional browser API. */ }
-    samples.forEach(appendPoint);
-    appendPoint(event);
+    samples.forEach(sample => appendPoint(sample, cutoff));
+    appendPoint(event, cutoff);
+    if (isRaw && Number.isFinite(event.timeStamp)) {
+      if (active.lastRawTime !== event.timeStamp) active.rawPointKeys = new Set();
+      active.lastRawTime = event.timeStamp;
+      for (const sample of [...samples, event]) {
+        if (sample.timeStamp === event.timeStamp && Number.isFinite(sample.clientX) && Number.isFinite(sample.clientY)) {
+          active.rawPointKeys.add(`${sample.clientX}:${sample.clientY}`);
+        }
+      }
+    }
   }
 
   function releasePointer(pointerId) {
@@ -134,14 +224,11 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
 
   function commitActive(notify = true) {
     if (!active) return;
+    renderActive(true);
     const stroke = active;
     active = null;
-    if (stroke.points.length) {
-      completed.push(stroke);
-      drawStroke(completedContext, stroke);
-    }
+    if (stroke.points.length) completed.push(stroke);
     releasePointer(stroke.pointerId);
-    paintNow();
     if (notify) notifyChange();
   }
 
@@ -150,22 +237,25 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
     resize();
     if (!rectangle || rectangle.width <= 0 || rectangle.height <= 0) return;
     event.preventDefault();
-    active = { points: [], pointerId: event.pointerId, pointerType: event.pointerType };
-    try { canvas.setPointerCapture(event.pointerId); } catch { /* Window listeners also retain an uncaptured stroke. */ }
+    active = { points: [], pointerId: event.pointerId, pointerType: event.pointerType, anchor: null, tipBounds: null };
+    try { canvas.setPointerCapture(event.pointerId); } catch { /* Window listeners retain uncaptured strokes. */ }
     appendPoint(event);
-    paintNow();
+    renderActive();
     notifyChange();
   }
 
   function pointerMove(event) {
     if (!active || event.pointerId !== active.pointerId) return;
-    event.preventDefault();
+    if (event.cancelable && event.type !== 'pointerrawupdate') event.preventDefault();
     if (isLocked()) {
       commitActive();
       return;
     }
+    const before = active.points.length;
     appendEvent(event);
-    paintSoon();
+    // Draw in this input task: never wait for a requested animation frame and
+    // never replay the start of a long stroke to put its new tip on screen.
+    if (active.points.length !== before) renderActive();
   }
 
   function pointerUp(event) {
@@ -177,7 +267,7 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
 
   function pointerCancelled(event) {
     if (!active || event.pointerId !== active.pointerId) return;
-    // Cancellation coordinates can be zero; keep the last genuine ink sample.
+    // Cancellation coordinates can be zero; keep the last genuine sample.
     commitActive();
   }
 
@@ -187,18 +277,17 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
   }
 
   addListener(canvas, 'pointerdown', pointerDown, { passive: false });
+  if ('onpointerrawupdate' in view) addListener(view, 'pointerrawupdate', pointerMove, { passive: true });
   addListener(view, 'pointermove', pointerMove, { passive: false });
   addListener(view, 'pointerup', pointerUp, { passive: false });
   addListener(view, 'pointercancel', pointerCancelled);
   addListener(canvas, 'lostpointercapture', pointerCancelled);
   addListener(view, 'blur', () => commitActive());
   addListener(view, 'resize', resize);
-  // Cache layout per gesture, refreshing only when layout actually changes.
   addListener(view, 'scroll', () => { if (active) resize(); }, true);
   const observer = view.ResizeObserver ? new view.ResizeObserver(resize) : null;
   observer?.observe(canvas);
   resize();
-  paintNow();
 
   return {
     getStrokes,
@@ -212,8 +301,7 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
       active = null;
       completed.length = 0;
       if (pointerId !== undefined) releasePointer(pointerId);
-      rebuildCompleted();
-      paintNow();
+      rebuild();
       notifyChange();
       return true;
     },
@@ -228,8 +316,7 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
       } else {
         return false;
       }
-      rebuildCompleted();
-      paintNow();
+      rebuild();
       notifyChange();
       return true;
     },
@@ -237,8 +324,6 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
       if (destroyed) return;
       commitActive(false);
       destroyed = true;
-      if (frame) view.cancelAnimationFrame(frame);
-      frame = 0;
       observer?.disconnect();
       listeners.forEach(remove => remove());
       canvas.style.touchAction = previousTouchAction;
