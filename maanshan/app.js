@@ -329,7 +329,7 @@ function renderReport() {
 async function generateReport() {
   const button=$('#report-button');if(button.disabled)return;button.disabled=true;const version=routeVersion,p=poem;const result=poemAssessment(p);
   $('#report-prose').innerHTML='<span class="spinner"></span> 正在整理你的朗讀建議';
-  try{const data=await api('/api/maanshan-report',{poemId:p.id,soeResult:result});if(version!==routeVersion)return;if(!data.report)throw new Error('建議尚未生成，請稍後再試。');state(p).report=data.report;queueSection('report',{content:data.report,totalScore:result.total_score,grade:result.grade},p);$('#report-prose').textContent=data.report;}
+  try{const data=await api('/api/maanshan-report',{poemId:p.id,soeResult:{...result,linesCompleted:state(p).reading.filter(Boolean).length}});if(version!==routeVersion)return;if(!data.report)throw new Error('建議尚未生成，請稍後再試。');state(p).report=data.report;queueSection('report',{content:data.report,totalScore:result.total_score,grade:result.grade},p);$('#report-prose').textContent=data.report;}
   catch(error){if(version===routeVersion)$('#report-prose').textContent=error.name==='AbortError'?'生成時間較長，請稍後再試。':error.message;}
   finally{if(version===routeVersion)button.disabled=false;}
 }
