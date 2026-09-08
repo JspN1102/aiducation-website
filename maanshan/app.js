@@ -3,6 +3,7 @@ import {mountStage, getScenePreview} from './scene-stage.mjs';
 import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs';
 import {getWordAudioURL} from './word-audio.mjs';
 import {getSpeechAudioURL} from './speech-audio.mjs';
+import {createHandwritingPad} from './handwriting-pad.mjs?v=20260908h';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -23,7 +24,7 @@ let poems=[], poem=null, view='record', routeVersion=0, showPinyin=true;
 let transientAudio=null, transientUrl=null, speechVersion=0, toastTimer=null;
 let scene=1, currentLine=0, recorder=null, stream=null, recordContext=null, recordTimer=null, recordStarted=0, recordBusy=false, recordingVersion=0;
 let recordStep='read', recordWordIndex=0;
-let writeIndex=0, strokes=[], activeStroke=null, hinted=false, writeBusy=false, strokeWriter=null;
+let writeIndex=0, handwritingPad=null, hinted=false, writeBusy=false, strokeWriter=null;
 let quizIndex=0, quizChoice=null, quizAnswers=[];
 let chatBusy=false;
 let sceneStage=null, activeSpeechButton=null, finishTransient=null;
@@ -247,6 +248,7 @@ function renderRecord() {
   const s=state(poem),line=poem.lines[currentLine],result=s.reading[currentLine];
   const weak=recordWeakWords();
   if(!result)recordStep='read';
+  if(recordStep==='result'&&weak.length)recordStep='words';
   if(recordStep==='words'&&!weak.length)recordStep='result';
   const latest=s.reading.reduce((a,r,i)=>r?i:a,-1),displayed=result?currentLine:latest;
   const sceneNumber=displayed>=0?poem.lines[displayed].scene:0;
@@ -260,10 +262,10 @@ function renderRecord() {
   if(recordStep==='read'){
     content=verseHTML(line,'active')+'<div class="record-model"><button class="button" data-action="line-tts">'+icon('volume-2')+'聽示範</button></div><div id="record-controls"><div class="record-actions"><button class="mic-button" data-action="record-start" aria-label="開始朗讀">'+icon('mic')+'<span>開始朗讀</span></button></div><p class="record-status" id="record-status"></p></div>';
   }else if(recordStep==='result'){
-    content='<div class="record-feedback"><img class="feedback-motif" src="'+poemMotif()+'" width="64" height="64" alt=""><div class="record-result" aria-label="這次朗讀'+result.total_score+'分">'+result.total_score+'<small>分</small></div><h2 tabindex="-1" class="record-feedback-title">'+esc(result.grade)+'</h2><div class="record-actions">'+(weak.length?'<button class="button" data-action="record-words">'+icon('volume-2')+'練字音</button>':'<button class="button" data-action="record-retry">'+icon('rotate-ccw')+'再讀一次</button>')+next+'</div></div>';
+    content='<div class="record-feedback"><img class="feedback-motif" src="'+poemMotif()+'" width="64" height="64" alt=""><div class="record-result" aria-label="這次朗讀'+result.total_score+'分">'+result.total_score+'<small>分</small></div><h2 tabindex="-1" class="record-feedback-title">'+esc(result.grade)+'</h2><div class="record-actions"><button class="button" data-action="record-retry">'+icon('rotate-ccw')+'再讀一次</button>'+next+'</div></div>';
   }else{
     recordWordIndex=clamp(recordWordIndex,0,weak.length-1);const word=weak[recordWordIndex];
-    content='<div class="record-word-heading"><button class="text-button" data-action="record-feedback">'+icon('chevron-left')+'返回</button><span>第 '+(recordWordIndex+1)+' / '+weak.length+' 個字</span></div><div class="record-review"><button class="focus-word" data-action="word-tts" data-value="'+esc(word.c)+'" data-pinyin="'+esc(word.p)+'" aria-label="聽'+esc(word.c)+'的讀音"><ruby>'+esc(word.c)+'<rt>'+esc(word.p)+'</rt></ruby>'+icon('volume-2')+'</button></div><p class="record-word-hint">點字聽讀音，跟着讀一讀。</p><div class="record-word-pager"><button class="icon-button" data-action="record-word-step" data-value="-1" aria-label="上一個字" '+(recordWordIndex===0?'disabled':'')+'>'+icon('chevron-left')+'</button><button class="icon-button" data-action="record-word-step" data-value="1" aria-label="下一個字" '+(recordWordIndex===weak.length-1?'disabled':'')+'>'+icon('chevron-right')+'</button></div><div class="record-actions"><button class="button" data-action="record-retry">'+icon('mic')+'讀原句</button>'+next+'</div>';
+    content='<div class="record-word-heading"><span>這句 '+result.total_score+' 分</span><span>第 '+(recordWordIndex+1)+' / '+weak.length+' 個字</span></div><div class="record-review"><button class="focus-word" data-action="word-tts" data-value="'+esc(word.c)+'" data-pinyin="'+esc(word.p)+'" aria-label="聽'+esc(word.c)+'的讀音"><ruby>'+esc(word.c)+'<rt>'+esc(word.p)+'</rt></ruby>'+icon('volume-2')+'</button></div><p class="record-word-hint">再練這個字，點字聽讀音。</p><div class="record-word-pager"><button class="icon-button" data-action="record-word-step" data-value="-1" aria-label="上一個字" '+(recordWordIndex===0?'disabled':'')+'>'+icon('chevron-left')+'</button><button class="icon-button" data-action="record-word-step" data-value="1" aria-label="下一個字" '+(recordWordIndex===weak.length-1?'disabled':'')+'>'+icon('chevron-right')+'</button></div><div class="record-actions">'+next+'</div>';
   }
   $('#record-tool').dataset.step=recordStep;
   $('#record-tool').innerHTML='<div class="record-counter"><span>第 '+(currentLine+1)+' / '+poem.lines.length+' 句</span>'+(recordStep==='read'?'<img class="practice-motif" src="'+poemMotif()+'" width="40" height="40" alt="">':'')+'</div>'+content;
@@ -358,8 +360,7 @@ function renderFocusedPractice() {
   const item=getPronunciationPractice(poemAssessment(),poem).items[practiceIndex];if(!item||!$('#focused-practice'))return;
   const index=item.lineIndex,canReplay=Number.isInteger(index)&&recordings.has(poem.id+'-'+index);
   const count=getPronunciationPractice(poemAssessment(),poem).items.length;
-  const retry='<button class="button primary" data-action="record-target" data-value="'+index+'" '+(Number.isInteger(index)?'':'disabled')+'>'+icon('mic')+'讀原句</button>';
-  const content=practiceMode==='compare'?'<button class="text-button practice-back" data-action="practice-back">'+icon('chevron-left')+'返回字音</button><h3 class="comparison-title">相似字，聽聽看</h3><div class="contrast-pair">'+item.contrasts.slice(0,3).map(s=>soundButton(s)).join('')+'</div><div class="practice-actions"><button class="button" data-action="practice-sequence" data-value="'+practiceIndex+'" aria-pressed="false">'+icon('audio-lines')+'連續聽字音</button>'+retry+'</div>':'<div class="practice-selector"><button class="practice-pick focus-word selected" data-action="practice-word" data-value="'+practiceIndex+'" aria-pressed="true" aria-label="聽'+esc(item.char)+'的讀音"><ruby>'+esc(item.char)+'<rt>'+esc(item.pinyin)+'</rt></ruby>'+icon('volume-2')+'</button></div><p class="practice-tip">'+esc(item.tip)+'</p><div class="practice-actions">'+(item.contrasts.length?'<button class="button" data-action="practice-compare">'+icon('ear')+'聽相似字</button>':'')+retry+'</div>';
+  const content=practiceMode==='compare'?'<button class="text-button practice-back" data-action="practice-back">'+icon('chevron-left')+'返回字音</button><h3 class="comparison-title">相似字，聽聽看</h3><div class="contrast-pair">'+item.contrasts.slice(0,3).map(s=>soundButton(s)).join('')+'</div><div class="practice-actions"><button class="button" data-action="practice-sequence" data-value="'+practiceIndex+'" aria-pressed="false">'+icon('audio-lines')+'連續聽字音</button></div>':'<div class="practice-selector"><button class="practice-pick focus-word selected" data-action="practice-word" data-value="'+practiceIndex+'" aria-pressed="true" aria-label="聽'+esc(item.char)+'的讀音"><ruby>'+esc(item.char)+'<rt>'+esc(item.pinyin)+'</rt></ruby>'+icon('volume-2')+'</button></div><p class="practice-tip">'+esc(item.tip)+'</p><div class="practice-actions">'+(item.contrasts.length?'<button class="button" data-action="practice-compare">'+icon('ear')+'聽相似字</button>':'')+'</div>';
   $('#focused-practice').innerHTML='<div class="practice-card" data-mode="'+practiceMode+'"><div class="practice-card-heading"><h3>字音小練習</h3><div class="practice-pager"><button class="icon-button" data-action="practice-step" data-value="-1" aria-label="上一個字" '+(practiceIndex===0?'disabled':'')+'>'+icon('chevron-left')+'</button><span>'+(practiceIndex+1)+' / '+count+'</span><button class="icon-button" data-action="practice-step" data-value="1" aria-label="下一個字" '+(practiceIndex===count-1?'disabled':'')+'>'+icon('chevron-right')+'</button></div></div>'+content+'</div>';
   if(!$('#practice-options'))$('.menu-panel').insertAdjacentHTML('afterbegin','<div id="practice-options" class="menu-group"></div>');
   $('#practice-options').innerHTML='<button data-action="sentence-tts" data-text="'+esc(item.lineText)+'">'+icon('volume-2')+'聽原句</button><button data-action="replay" data-value="'+index+'" '+(canReplay?'':'disabled')+'>'+icon('headphones')+'我的錄音</button>';
@@ -399,26 +400,13 @@ async function generateReport() {
   finally{if(version===routeVersion)button.disabled=false;}
 }
 function renderWriting() {
+  handwritingPad?.destroy();handwritingPad=null;
   const results=state(poem).writing;
   if(writeIndex>=poem.dictation.length){const correct=results.filter(r=>r.correct&&!r.hinted).length;$('#view').innerHTML=`<div class="completion">${icon('award')}<h2>今天的默寫完成了</h2><p>${correct} / ${poem.dictation.length} 個字獨立完成</p><div class="completion-actions"><button class="button" data-action="write-reset">${icon('rotate-ccw')}再練一次</button><a class="button primary" href="${link('quiz')}">${icon('ear')}語音練習</a></div><div class="practice-results">${results.map(r=>`<span class="result-chip ${r.correct&&!r.hinted?'':'wrong'}">${esc(r.char)}</span>`).join('')}</div></div>`;icons();return;}
   const item=poem.dictation[writeIndex];
   $('#view').innerHTML=`<div class="writing-layout"><div class="writing-context"><div class="art-stage"><img src="${asset(`scene-${Math.min(4,1+Math.floor(writeIndex/3))}.webp`)}" width="1600" height="900" alt="${esc(poem.title)}畫卷"></div><h2>聽見詩，也寫下詩。</h2><p>${esc(poem.description)}</p><div class="practice-results">${results.map(r=>`<span class="result-chip ${r.correct&&!r.hinted?'':'wrong'}">${esc(r.char)}</span>`).join('')}</div></div><div class="writing-tool"><div class="writing-toolbar"><div><span class="writing-pinyin">${esc(item.pinyin)}</span><p class="writing-counter">第 ${writeIndex+1} / ${poem.dictation.length} 字</p></div><button class="icon-button" data-action="write-speak" title="聽默寫字詞" aria-label="聽默寫字詞">${icon('volume-2')}</button></div><div class="writing-board"><div id="writing-hint" class="writing-hint"></div><div id="stroke-hint" class="stroke-hint" hidden></div><canvas id="writing-canvas" width="560" height="560" aria-label="手寫答題區"></canvas></div><div class="writing-controls"><div class="writing-tools"><button class="icon-button" data-action="write-undo" aria-label="撤銷上一筆" title="撤銷上一筆">${icon('undo-2')}</button><button class="icon-button" data-action="write-clear" aria-label="清空" title="清空">${icon('eraser')}</button><button class="icon-button" data-action="write-hint" aria-label="看看這個字" title="看看這個字">${icon('eye')}</button><button class="icon-button" data-action="stroke-hint" aria-label="看筆順" title="${item.char==='峯'?'暫無此字筆順':'看筆順'}" ${item.char==='峯'?'disabled':''}>${icon('pencil-ruler')}</button></div><button class="button primary" data-action="write-check" id="write-check">${icon('check')}寫好了</button></div><p id="writing-feedback" class="writing-feedback" role="status">${hinted?'這個字已看過提示。':''}</p><button class="text-button" data-action="write-skip">稍後再練這個字 ${icon('arrow-right')}</button></div></div>`;
-  strokes=[];activeStroke=null;writeBusy=false;strokeWriter=null;bindCanvas();icons();
-}
-function bindCanvas() {
-  const canvas=$('#writing-canvas');if(!canvas)return;
-  const point=event=>{const box=canvas.getBoundingClientRect();return {x:clamp((event.clientX-box.left)*560/box.width,0,560),y:clamp((event.clientY-box.top)*560/box.height,0,560),t:Date.now()};};
-  canvas.addEventListener('pointerdown',event=>{if(writeBusy||event.button>0||activeStroke)return;event.preventDefault();canvas.setPointerCapture(event.pointerId);activeStroke=[point(event)];drawCanvas();});
-  canvas.addEventListener('pointermove',event=>{if(!activeStroke)return;event.preventDefault();activeStroke.push(point(event));drawCanvas();});
-  const finish=event=>{if(!activeStroke)return;event.preventDefault();strokes.push(activeStroke);activeStroke=null;drawCanvas();};
-  canvas.addEventListener('pointerup',finish);canvas.addEventListener('pointercancel',finish);
-}
-function drawCanvas() {
-  const canvas=$('#writing-canvas');if(!canvas)return;const c=canvas.getContext('2d');c.clearRect(0,0,560,560);c.strokeStyle='#233d32';c.fillStyle='#233d32';c.lineWidth=10;c.lineCap='round';c.lineJoin='round';
-  [...strokes,...(activeStroke?[activeStroke]:[])].forEach(points=>{
-    if(points.length===1){c.beginPath();c.arc(points[0].x,points[0].y,5,0,Math.PI*2);c.fill();return;}
-    c.beginPath();c.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length-1;i++){const p=points[i],n=points[i+1];c.quadraticCurveTo(p.x,p.y,(p.x+n.x)/2,(p.y+n.y)/2);}c.lineTo(points.at(-1).x,points.at(-1).y);c.stroke();
-  });
+  writeBusy=false;strokeWriter=null;
+  handwritingPad=createHandwritingPad($('#writing-canvas'),{isLocked:()=>writeBusy});icons();
 }
 function writingSpeech(button){const item=poem.dictation[writeIndex];speak(item.char,`${item.word}，${item.word}的${item.char}。`,button);}
 async function showStrokeHint() {
@@ -432,7 +420,8 @@ async function showStrokeHint() {
   }catch{if(holder.isConnected){holder.hidden=true;$('#writing-hint').textContent=target;$('#writing-feedback').textContent='這個字的筆順暫時無法播放。';}}
 }
 async function checkWriting() {
-  if(writeBusy)return;if(!strokes.length){$('#writing-feedback').textContent='先在田字格寫下你的答案。';return;}
+  if(writeBusy)return;const strokes=handwritingPad?.finish()||[];
+  if(!strokes.length){$('#writing-feedback').textContent='先在田字格寫下你的答案。';return;}
   writeBusy=true;const button=$('#write-check');button.disabled=true;const version=routeVersion,index=writeIndex,item=poem.dictation[index];$('#writing-feedback').textContent='正在辨認你的字…';
   const start=strokes[0][0].t;const ink=strokes.map(s=>[s.map(p=>Math.round(p.x)),s.map(p=>Math.round(p.y)),s.map(p=>p.t-start)]);
   try {
@@ -469,6 +458,7 @@ async function sendChat(text) {
   finally{if(version===routeVersion){chatBusy=false;$('#chat-send').disabled=false;}}
 }
 function route() {
+  handwritingPad?.destroy();handwritingPad=null;
   sceneStage?.destroy();sceneStage=null;
   routeVersion++;stopMedia();cancelRecording();requests.forEach(c=>c.abort());requests.clear();chatBusy=false;writeBusy=false;
   clearTimeout(toastTimer);$('#toast').classList.remove('visible');
@@ -514,7 +504,6 @@ document.addEventListener('click',event=>{
   if(action==='record-stop')stopRecording();
   if(action==='record-choose'&&!recordBusy)chooseRecordLine();
   if(action==='record-line'&&!recordBusy){currentLine=Number(value);recordWordIndex=0;$('#record-lines-dialog').close();setRecordStep('read');}
-  if(action==='record-words'&&!recordBusy){recordWordIndex=0;setRecordStep('words');}
   if(action==='record-feedback'&&!recordBusy)setRecordStep('result');
   if(action==='record-retry'&&!recordBusy)setRecordStep('read');
   if(action==='record-word-step'&&!recordBusy){recordWordIndex=clamp(recordWordIndex+Number(value),0,recordWeakWords().length-1);setRecordStep('words');}
@@ -523,8 +512,8 @@ document.addEventListener('click',event=>{
   if(action==='replay-all')replay(null,button);
   if(action==='report-generate')generateReport();
   if(action==='write-speak')writingSpeech(button);
-  if(action==='write-clear'&&!writeBusy){strokes=[];activeStroke=null;drawCanvas();}
-  if(action==='write-undo'&&!writeBusy){strokes.pop();drawCanvas();}
+  if(action==='write-clear'&&!writeBusy)handwritingPad?.clear();
+  if(action==='write-undo'&&!writeBusy)handwritingPad?.undo();
   if(action==='write-hint'&&!writeBusy){hinted=true;$('#writing-hint').textContent=poem.dictation[writeIndex].char;$('#writing-feedback').textContent='看過提示後完成，會記作練習。';}
   if(action==='stroke-hint'&&!writeBusy)showStrokeHint();
   if(action==='write-check')checkWriting();
@@ -563,8 +552,8 @@ function updateViewport(){
 }
 window.visualViewport?.addEventListener('resize',updateViewport);
 document.addEventListener('focusin',updateViewport);document.addEventListener('focusout',()=>requestAnimationFrame(updateViewport));updateViewport();
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){stopMedia();cancelRecording();if(poem&&view==='record')renderRecord();}else sync.flush();});
-window.addEventListener('pagehide',()=>{stopMedia();cancelRecording();persist();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){handwritingPad?.finish();stopMedia();cancelRecording();if(poem&&view==='record')renderRecord();}else sync.flush();});
+window.addEventListener('pagehide',()=>{handwritingPad?.finish();stopMedia();cancelRecording();persist();});
 async function init(){
   try{
     const responses=await Promise.all([fetch('poems.json?v=20260908b'),fetch('pronunciation.json?v=20260908b')]);
