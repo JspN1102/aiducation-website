@@ -30,3 +30,31 @@ Twemoji graphics by Twitter and contributors, maintained in [jdecked/twemoji](ht
 - Use these as small optional reading/progress illustrations. Existing Lucide icons remain the functional control family.
 
 Total image transfer size for all four files: **3,113 bytes**, before HTTP compression.
+
+## Fluent Reading Decorations
+
+Added on 2026-09-08 from [Microsoft Fluent Emoji](https://github.com/microsoft/fluentui-emoji). These are the official 3D PNG assets, licensed under the **MIT License**, Copyright (c) Microsoft Corporation. Source commit: `1ffb34c752ecf5d402f04cfb4b392c77f57c54bc`.
+
+The complete official MIT copyright and permission notice is preserved unchanged in `../licenses/fluent-emoji-mit.txt`. These images are copied unchanged from the pinned official source. Their SHA-256 hashes match the downloaded originals; no resizing, recolouring, cropping, or added shadows were applied to the files.
+
+| File | Pinned Official Source | Dimensions | Bytes |
+| --- | --- | --- | --- |
+| `fluent-open-book.png` | [Open book](https://github.com/microsoft/fluentui-emoji/blob/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Open%20book/3D/open_book_3d.png) | 256 x 256 | 23,903 |
+| `fluent-pencil.png` | [Pencil](https://github.com/microsoft/fluentui-emoji/blob/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Pencil/3D/pencil_3d.png) | 256 x 256 | 21,796 |
+| `fluent-cherry-blossom.png` | [Cherry blossom](https://github.com/microsoft/fluentui-emoji/blob/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Cherry%20blossom/3D/cherry_blossom_3d.png) | 256 x 256 | 35,200 |
+| `fluent-kite.png` | [Kite](https://github.com/microsoft/fluentui-emoji/blob/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Kite/3D/kite_3d.png) | 256 x 256 | 29,944 |
+| `fluent-cloud.png` | [Cloud](https://github.com/microsoft/fluentui-emoji/blob/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Cloud/3D/cloud_3d.png) | 256 x 256 | 18,854 |
+
+Combined Fluent PNG size: **129,697 bytes** (126.7 KiB). The five files are well below the 250 KiB allocation. The whole reading-art image collection now totals 132,810 bytes.
+
+All five PNGs were decoded and visually inspected. Each uses RGBA, has fully transparent corners and exterior areas, and has partially transparent antialiased edges. They have no opaque rectangular background.
+
+Suggested visible placements:
+
+- Put the open book beside the actual home-page title at 64 px desktop / 52 px mobile. Its supplied transparent top margin means the visible book is smaller than the image box; align the visual book with the title, not the empty top edge.
+- Use the pencil at 44 px desktop / 36 px mobile as a small companion near a writing activity or the footer.
+- Use the cherry blossom at 36-40 px in a footer group or one title-adjacent accent.
+- Use the kite at 56-64 px desktop / 44-48 px mobile near the opposite end of that group.
+- Keep the 40-48 px cloud as an optional companion where the background gives its pale edge enough contrast.
+
+Use a few visible placements in the normal page, not only in an empty state. Decorative images should have `alt=""` and should not intercept pointer events. Keep them out of the supplied poem artwork and functional button hit areas. Retain Lucide for controls and keep the existing poem paintings as the main images.
