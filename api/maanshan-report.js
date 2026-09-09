@@ -57,7 +57,7 @@ module.exports = async function handler(req, res) {
   const readings = new Map();
   for (const line of poem.lines) {
     for (const text of [line.text, line.simplified]) {
-      Array.from(text).forEach((char, index) => {
+      Array.from(text).filter(char => /\p{Script=Han}/u.test(char)).forEach((char, index) => {
         if (!readings.has(char)) readings.set(char, new Set());
         readings.get(char).add(line.pinyin[index]);
       });

@@ -2,13 +2,14 @@ export const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => 
 export const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 const numeric = value => typeof value === 'number' && Number.isFinite(value) ? value : null;
 export const scoreLabel = score => score >= 90 ? '非常出色' : score >= 75 ? '表現良好' : score >= 60 ? '繼續進步' : '再練習一次';
+export const verseCharacters = text => Array.from(text || '').filter(char => /\p{Script=Han}/u.test(char));
 
 export function mapAssessment(raw, line) {
   const accuracy = numeric(raw.PronAccuracy);
   const total = numeric(raw.SuggestedScore) ?? accuracy;
   if (total === null) throw new Error('評測沒有返回分數，請重新錄音。');
-  const characters = Array.from(line.text);
-  const simple = Array.from(line.simplified);
+  const characters = verseCharacters(line.text);
+  const simple = verseCharacters(line.simplified);
   const words = (Array.isArray(raw.Words) ? raw.Words : []).filter(w => /[\u3400-\u9fff]/.test(w.Word || '')).map((w, index) => {
     const source = w.Word || '';
     const position = simple[index] === source || characters[index] === source ? index : Math.max(simple.indexOf(source), characters.indexOf(source));
@@ -24,6 +25,25 @@ export function mergeAssessments(results) {
   const mean = values => values.length ? Math.round(values.reduce((a,b) => a+b,0)/values.length) : null;
   const total = mean(valid.map(r => r.total_score));
   return {total_score:total,grade:scoreLabel(total),dimensions:Object.fromEntries(['phone_score','fluency_score','integrity_score'].map(key => [key,mean(valid.map(r => r.dimensions[key]).filter(Number.isFinite))])),words:valid.flatMap(r => r.words)};
+}
+
+export function migrateReadingState(state, poem) {
+  if (poem.readingVersion !== 'four-couplets-v1' || state.readingVersion === poem.readingVersion) return false;
+  if (Array.isArray(state.reading) && state.reading.length === 8) {
+    const previous = state.reading;
+    state.readingArchive = { version: 'eight-short-lines', reading: previous, report: state.report || '', reportVersion: state.reportVersion, reportStudentGrade: state.reportStudentGrade };
+    state.reading = poem.lines.map((_, index) => {
+      const pair = previous.slice(index * 2, index * 2 + 2);
+      if (!pair.every(result => result && Number.isFinite(result.total_score))) return null;
+      const merged = mergeAssessments(pair);
+      return { ...merged, words: merged.words.map(word => ({ ...word, lineIndex: index })) };
+    });
+    state.report = '';
+    delete state.reportVersion;
+    delete state.reportStudentGrade;
+  }
+  state.readingVersion = poem.readingVersion;
+  return true;
 }
 
 export function handwritingMatch(candidates, target, simplified) {

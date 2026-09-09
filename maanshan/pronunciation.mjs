@@ -1,3 +1,4 @@
+import {verseCharacters} from './core.mjs?v=20260909a';
 let practiceData = {groups:{},initials:{},finals:{},tones:{},characters:{}};
 const scoreValue = value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100 ? value : null;
 const toneMarks = ['āēīōūǖ','áéíóúǘ','ǎěǐǒǔǚ','àèìòùǜ'];
@@ -53,8 +54,8 @@ function phoneEvidence(word, syllable) {
 
 function referenceEntries(poem) {
   return poem.lines.flatMap((line,lineIndex)=>{
-    const simplified=Array.from(line.simplified || line.text);
-    return Array.from(line.text).map((char,charIndex)=>({char,simplified:simplified[charIndex],pinyin:line.pinyin[charIndex],lineIndex,charIndex,line}));
+    const simplified=verseCharacters(line.simplified || line.text);
+    return verseCharacters(line.text).map((char,charIndex)=>({char,simplified:simplified[charIndex],pinyin:line.pinyin[charIndex],lineIndex,charIndex,line}));
   });
 }
 

@@ -3,7 +3,7 @@ const decodedSources = new Map();
 const MAX_CACHED_SOURCES = 8;
 
 export function getScenePreview(poemSlug, scene = 1) {
-  return PREVIEWS[poemSlug]?.[scene === 0 ? 1 : scene] || '';
+  return scene === 0 ? '' : PREVIEWS[poemSlug]?.[scene] || '';
 }
 
 function checkScene(scene) {
@@ -54,14 +54,14 @@ function imageStyles(image) {
 
 /**
  * Owns the container's children. Keep the container mounted during control updates.
- * Scene 0 is the readable first painting under a 15% white introductory wash.
+ * Scene 0 is blank paper; paintings appear only when a nonzero scene is requested.
  * show() resolves with ready/unchanged/superseded/error/destroyed; image errors keep the visible painting.
  */
 export function mountStage(container, options) {
   if (!(container instanceof Element)) throw new TypeError('A scene container element is required.');
   const { poemSlug, alt = '\u53e4\u8a69\u756b\u5377', onStateChange } = options || {};
   const initialScene = checkScene(options?.scene ?? 1);
-  if (!getScenePreview(poemSlug, initialScene)) throw new RangeError('Unknown poem slug.');
+  if (!Object.hasOwn(PREVIEWS, poemSlug) || !getScenePreview(poemSlug, 1)) throw new RangeError('Unknown poem slug.');
   mountedStages.get(container)?.destroy();
   const duration = Math.max(900, Math.min(1400, Number(options?.duration) || 1200));
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -69,7 +69,7 @@ export function mountStage(container, options) {
   host.className = 'scene-stage';
   Object.assign(host.style, {
     position: 'relative', display: 'block', width: '100%', aspectRatio: '16 / 9',
-    overflow: 'hidden', isolation: 'isolate', animation: 'none', transform: 'none'
+    overflow: 'hidden', isolation: 'isolate', animation: 'none', transform: 'none', background: '#faf7ef'
   });
   const viewport = document.createElement('div');
   viewport.className = 'scene-stage-painting';
@@ -109,21 +109,20 @@ export function mountStage(container, options) {
     layer.dataset.scene = String(scene);
     layer.dataset.quality = quality;
     Object.assign(layer.style, { position: 'absolute', inset: '0', opacity: '1', pointerEvents: 'none' });
-    imageStyles(image);
-    layer.append(image);
-    if (scene === 0) {
-      const wash = document.createElement('div');
-      wash.className = 'scene-stage-intro-wash';
-      Object.assign(wash.style, { position: 'absolute', inset: '0', background: '#fff', opacity: '.15', pointerEvents: 'none' });
-      layer.append(wash);
-    }
+    if (image) {
+      imageStyles(image);
+      layer.append(image);
+    } else layer.style.background = '#faf7ef';
     return layer;
   }
 
-  const preview = new Image(192, 108);
-  preview.decoding = 'sync';
-  preview.src = getScenePreview(poemSlug, initialScene);
-  currentLayer = layerFor(preview, initialScene, 'preview');
+  if (initialScene === 0) currentLayer = layerFor(null, 0, 'blank');
+  else {
+    const preview = new Image(192, 108);
+    preview.decoding = 'sync';
+    preview.src = getScenePreview(poemSlug, initialScene);
+    currentLayer = layerFor(preview, initialScene, 'preview');
+  }
   viewport.append(currentLayer);
   layers.push(currentLayer);
   container.replaceChildren(host);
@@ -201,6 +200,20 @@ export function mountStage(container, options) {
     }
     const requestGeneration = ++generation;
     lastRequest = { scene, alt: description, animate: settings.animate !== false };
+    if (scene === 0) {
+      // Reset immediately, including when a decode or fade from the old attempt is pending.
+      pending = null;
+      for (const animation of animations) animation.cancel();
+      animations.clear();
+      const unchanged = currentScene === 0 && currentLayer.dataset.quality === 'blank';
+      if (!unchanged) currentLayer = layerFor(null, 0, 'blank');
+      viewport.replaceChildren(currentLayer);
+      layers.splice(0, layers.length, currentLayer);
+      currentScene = 0;
+      viewport.setAttribute('aria-label', description);
+      publish('ready');
+      return Promise.resolve({ status: unchanged ? 'unchanged' : 'ready', scene });
+    }
     if (currentScene === scene && currentLayer.dataset.quality === 'full' && currentLayer.style.opacity === '1' && !settings.force) {
       pending = null;
       viewport.setAttribute('aria-label', description);
@@ -208,7 +221,7 @@ export function mountStage(container, options) {
       return Promise.resolve({ status: 'unchanged', scene });
     }
     publish('loading');
-    const url = new URL('./media/' + poemSlug + '/scene-' + (scene || 1) + '.webp', import.meta.url).href;
+    const url = new URL('./media/' + poemSlug + '/scene-' + scene + '.webp', import.meta.url).href;
     const request = (async () => {
       try {
         const source = await decodeSource(url, Boolean(settings.force));

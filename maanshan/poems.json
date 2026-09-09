@@ -155,18 +155,15 @@
       "author": "陶淵明",
       "dynasty": "東晉",
       "grade": 5,
+      "readingVersion": "four-couplets-v1",
       "description": "從南山種豆寫到帶月而歸，呈現農事的辛勞，以及詩人堅守田園生活的心願。",
       "authorBio": "陶淵明又名陶潛，是東晉詩人。他離開仕途後生活於田園，作品常描寫耕作、自然與樸素自在的生活。",
       "theme": "田園生活",
       "lines": [
-        {"text": "種豆南山下", "simplified": "种豆南山下", "pinyin": ["zhòng", "dòu", "nán", "shān", "xià"], "punctuation": "，", "scene": 1},
-        {"text": "草盛豆苗稀", "simplified": "草盛豆苗稀", "pinyin": ["cǎo", "shèng", "dòu", "miáo", "xī"], "punctuation": "。", "scene": 1},
-        {"text": "晨興理荒穢", "simplified": "晨兴理荒秽", "pinyin": ["chén", "xīng", "lǐ", "huāng", "huì"], "punctuation": "，", "scene": 2},
-        {"text": "帶月荷鋤歸", "simplified": "带月荷锄归", "pinyin": ["dài", "yuè", "hè", "chú", "guī"], "punctuation": "。", "scene": 2},
-        {"text": "道狹草木長", "simplified": "道狭草木长", "pinyin": ["dào", "xiá", "cǎo", "mù", "zhǎng"], "punctuation": "，", "scene": 3},
-        {"text": "夕露霑我衣", "simplified": "夕露沾我衣", "pinyin": ["xī", "lù", "zhān", "wǒ", "yī"], "punctuation": "。", "scene": 3},
-        {"text": "衣霑不足惜", "simplified": "衣沾不足惜", "pinyin": ["yī", "zhān", "bù", "zú", "xī"], "punctuation": "，", "scene": 4},
-        {"text": "但使願無違", "simplified": "但使愿无违", "pinyin": ["dàn", "shǐ", "yuàn", "wú", "wéi"], "punctuation": "。", "scene": 4}
+        {"text": "種豆南山下，草盛豆苗稀", "simplified": "种豆南山下，草盛豆苗稀", "pinyin": ["zhòng", "dòu", "nán", "shān", "xià", "cǎo", "shèng", "dòu", "miáo", "xī"], "punctuation": "。", "scene": 1},
+        {"text": "晨興理荒穢，帶月荷鋤歸", "simplified": "晨兴理荒秽，带月荷锄归", "pinyin": ["chén", "xīng", "lǐ", "huāng", "huì", "dài", "yuè", "hè", "chú", "guī"], "punctuation": "。", "scene": 2},
+        {"text": "道狹草木長，夕露霑我衣", "simplified": "道狭草木长，夕露沾我衣", "pinyin": ["dào", "xiá", "cǎo", "mù", "zhǎng", "xī", "lù", "zhān", "wǒ", "yī"], "punctuation": "。", "scene": 3},
+        {"text": "衣霑不足惜，但使願無違", "simplified": "衣沾不足惜，但使愿无违", "pinyin": ["yī", "zhān", "bù", "zú", "xī", "dàn", "shǐ", "yuàn", "wú", "wéi"], "punctuation": "。", "scene": 4}
       ],
       "dictation": [
         {"char": "豆", "pinyin": "dòu", "word": "豆苗"},

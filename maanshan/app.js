@@ -1,6 +1,6 @@
-import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, handwritingMatch, createSyncQueue} from './core.mjs';
-import {mountStage, getScenePreview} from './scene-stage.mjs';
-import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs';
+import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, handwritingMatch, createSyncQueue} from './core.mjs?v=20260909a';
+import {mountStage, getScenePreview} from './scene-stage.mjs?v=20260909a';
+import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
 import {getWordAudioURL} from './word-audio.mjs';
 import {getSpeechAudioURL} from './speech-audio.mjs';
 import {createHandwritingPad} from './handwriting-pad.mjs?v=20260908i';
@@ -51,6 +51,7 @@ const state=p=>{
   if (!Array.isArray(s.writing)) s.writing=[];
   if (!Array.isArray(s.chat)) s.chat=[];
   if (!Array.isArray(s.quiz)) s.quiz=[];
+  if (migrateReadingState(s,p)) writeStorage(STORE,saved);
   return s;
 };
 const persist=()=>writeStorage(STORE,saved);
@@ -166,7 +167,10 @@ async function api(path,body,timeout=35000) {
   } finally {clearTimeout(timer);requests.delete(controller);}
 }
 function verseHTML(line,extra='') {
-  return `<div class="verse ${extra}" aria-label="${esc(line.text+line.punctuation)}">${Array.from(line.text).map((c,i)=>`<ruby>${esc(c)}<rt>${esc(line.pinyin[i])}</rt></ruby>`).join('')}<span class="punct">${line.punctuation}</span></div>`;
+  let index=0;
+  const clauses=(line.text+(line.punctuation||'')).match(/[^，。！？；]+[，。！？；]?/g)||[];
+  const contents=clauses.map(clause=>Array.from(clause).map(c=>/\p{Script=Han}/u.test(c)?`<ruby>${esc(c)}<rt>${esc(line.pinyin[index++])}</rt></ruby>`:`<span class="punct">${esc(c)}</span>`).join(''));
+  return `<div class="verse ${extra}${contents.length>1?' verse-compound':''}" aria-label="${esc(line.text+(line.punctuation||''))}">${contents.length>1?contents.map(part=>'<span class="verse-clause">'+part+'</span>').join(''):contents.join('')}</div>`;
 }
 function renderLibrary() {
   poem=null;document.title='古詩朗讀 · 馬鞍山靈糧小學';
@@ -269,7 +273,7 @@ function renderRecord() {
   if(!result)recordStep='read';
   if(recordStep==='result'&&weak.length)recordStep='words';
   if(recordStep==='words'&&!weak.length)recordStep='result';
-  const latest=s.reading.reduce((a,r,i)=>r?i:a,-1),displayed=result?currentLine:latest;
+  const latest=s.reading.slice(0,currentLine).reduce((a,r,i)=>r?i:a,-1),displayed=result?currentLine:latest;
   const sceneNumber=displayed>=0?poem.lines[displayed].scene:0;
   if(!$('#record-art')){
     $('#view').innerHTML='<div class="record-layout"><div class="record-landscape"><div class="record-art" id="record-art"></div><div class="record-progress" aria-hidden="true"></div></div><div class="record-practice"><div class="record-tool" id="record-tool"></div></div></div>';
@@ -528,7 +532,7 @@ document.addEventListener('click',event=>{
   if(action==='full-poem'){$('#full-poem-title').textContent=titleOf(poem);$('#full-poem-lines').innerHTML=poem.lines.map(line=>verseHTML(line)).join('');$('#full-poem-lines').classList.toggle('hide-pinyin',!showPinyin);$('#poem-dialog').showModal();}
   if(action==='narration')playNarration();
   if(action==='video')openVideo();
-  if(action==='line-tts'&&!recordBusy)speak(poem.lines[currentLine].text,'',button);
+  if(action==='line-tts'&&!recordBusy)speak(poem.lines[currentLine].text.split('，'),'',button);
   if(action==='word-tts'&&!recordBusy)speakWord(value,button.dataset.pinyin||'',button);
   if(action==='practice-word'){const item=getPronunciationPractice(poemAssessment(),poem).items[practiceIndex];if(item)speakWord(item.char,item.pinyin,button);}
   if(action==='practice-step'){const items=getPronunciationPractice(poemAssessment(),poem).items;stopMedia();practiceIndex=clamp(practiceIndex+Number(value),0,items.length-1);practiceMode='sound';renderFocusedPractice();const selected=$('.practice-pick');selected.focus({preventScroll:true});speakWord(items[practiceIndex].char,items[practiceIndex].pinyin,selected);}
@@ -595,7 +599,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('pagehide',()=>{handwritingPad?.finish();stopMedia();cancelRecording();persist();});
 async function init(){
   try{
-    const responses=await Promise.all([fetch('poems.json?v=20260908b'),fetch('pronunciation.json?v=20260908b')]);
+    const responses=await Promise.all([fetch('poems.json?v=20260909a'),fetch('pronunciation.json?v=20260908b')]);
     if(responses.some(response=>!response.ok))throw new Error('catalog');
     const [data,pronunciation]=await Promise.all(responses.map(response=>response.json()));
     poems=data.poems;if(!Array.isArray(poems)||!poems.length)throw new Error('catalog');

@@ -269,4 +269,8 @@ body{background:radial-gradient(ellipse at 6% 0%,#fff9e7 0,transparent 48%),radi
  .view-write .writing-feedback{flex-basis:100%;font-size:11px}
  .view-write .writing-status>.text-button{min-height:32px;font-size:11px}
 }
+.verse.verse-compound{display:flex;flex-direction:column;align-items:center;gap:9px}
+.verse-compound .verse-clause{display:flex;align-items:flex-end;justify-content:center;white-space:nowrap}
+.record-tool>.verse.verse-compound{margin-top:10px;margin-bottom:12px}
+@media(max-height:650px){.verse.verse-compound{gap:5px}.record-tool>.verse.verse-compound{margin-top:0;margin-bottom:8px}.record-tool>.verse.verse-compound ruby{font-size:25px;min-width:30px;line-height:1.5}.record-tool>.verse.verse-compound rt{font-size:11px}.record-tool:has(.verse-compound) .record-model{margin-bottom:8px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
