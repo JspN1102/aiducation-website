@@ -1,4 +1,4 @@
-import {verseCharacters} from './core.mjs?v=20260909a';
+const verseCharacters = text => Array.from(text || '').filter(char => /\p{Script=Han}/u.test(char));
 let practiceData = {groups:{},initials:{},finals:{},tones:{},characters:{}};
 const scoreValue = value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100 ? value : null;
 const toneMarks = ['āēīōūǖ','áéíóúǘ','ǎěǐǒǔǚ','àèìòùǜ'];
