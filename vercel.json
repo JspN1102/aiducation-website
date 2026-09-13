@@ -108,6 +108,16 @@
       "source": "/awards/",
       "destination": "/awards/gesa-2026/",
       "permanent": false
+    },
+    {
+      "source": "/maanshan/media/paper-crane-transparent.webp",
+      "destination": "/maanshan/media/paper-crane-flight-v3.webp",
+      "permanent": false
+    },
+    {
+      "source": "/maanshan/media/paper-crane-v2.webp",
+      "destination": "/maanshan/media/paper-crane-flight-v3.webp",
+      "permanent": false
     }
   ]
 }
