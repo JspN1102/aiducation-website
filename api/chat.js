@@ -74,7 +74,7 @@ module.exports = async function handler(req, res) {
   ];
 
   const payload = JSON.stringify({
-    model: 'deepseek-v4-flash',
+    model: 'deepseek-flash',
     messages: gptMessages,
     temperature: 0.8,
     thinking: { type: 'disabled' }

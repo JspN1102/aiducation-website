@@ -33,7 +33,7 @@ function requestPoemText(res, messages, { field, temperature, timeoutMs, maxToke
   const basePath = url.pathname.replace(/\/+$/, '');
   const path = basePath.endsWith('/v1') ? basePath + '/chat/completions' : basePath + '/v1/chat/completions';
   const payload = JSON.stringify({
-    model: 'deepseek-v4-flash',
+    model: 'deepseek-flash',
     messages,
     temperature,
     max_tokens: maxTokens,

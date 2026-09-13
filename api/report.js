@@ -46,7 +46,7 @@ ${topBadStr || '全部正確，無需改進'}
 純文字，不要用markdown格式，不要用星號或符號標記。`;
 
   const payload = JSON.stringify({
-    model: 'deepseek-v4-flash',
+    model: 'deepseek-flash',
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.7,
     thinking: { type: 'disabled' }

@@ -177,7 +177,7 @@ function verseHTML(line,extra='') {
 function renderLibrary() {
   poem=null;document.title='古詩朗讀 · 馬鞍山靈糧小學';
   app.innerHTML='<main class="library" id="main">'+
-    '<div class="library-heading"><div><p class="eyebrow">馬鞍山靈糧小學 · 普通話</p><h1>把古詩，讀成<span class="title-ink">一幅畫</span><span class="poetry-seal" aria-hidden="true">詩</span></h1><p class="library-sub">選一首詩，開啟今天的小旅程。</p></div><div class="library-flourish" aria-hidden="true"><img class="paper-bird" src="media/paper-crane.svg" width="180" height="100" alt=""></div></div>'+
+    '<div class="library-heading"><div><p class="eyebrow">馬鞍山靈糧小學 · 普通話</p><h1>把古詩，讀成<span class="title-ink">一幅畫</span><span class="poetry-seal" aria-hidden="true">詩</span></h1><p class="library-sub">選一首詩，開啟今天的小旅程。</p></div><div class="library-flourish" aria-hidden="true"><img class="paper-bird" src="media/paper-crane-v2.webp" width="180" height="100" alt=""></div></div>'+
     '<div class="poem-grid library-books" id="poem-grid" aria-label="選擇古詩"></div><footer class="library-footer"><span>六首古詩 · 六段小旅程</span><a href="credits.html">素材來源 '+icon('arrow-up-right')+'</a></footer></main>';
   renderCards();icons();
 }
@@ -394,7 +394,7 @@ function renderFocusedPractice() {
 }
 function renderReport() {
   const s=state(poem),result=poemAssessment();
-  if(!result){$('#view').innerHTML='<div class="report-empty"><img src="media/paper-crane.svg" width="180" height="100" alt=""><h2>第一句，從現在開始</h2><a class="button primary" href="'+link('record')+'">'+icon('mic')+'開始朗讀</a></div>';return;}
+  if(!result){$('#view').innerHTML='<div class="report-empty"><img src="media/paper-crane-v2.webp" width="180" height="100" alt=""><h2>第一句，從現在開始</h2><a class="button primary" href="'+link('record')+'">'+icon('mic')+'開始朗讀</a></div>';return;}
   const keys=[['phone_score','發音準確度'],['fluency_score','流暢度'],['integrity_score','完整度']],grade=studentGrade(),report=currentReport();
   $('#view').innerHTML='<div class="report-summary"><div class="score-ring" style="--score:'+result.total_score+'"><div><strong>'+result.total_score+'</strong><span>朗讀得分</span></div></div><div><p class="eyebrow">'+s.reading.filter(Boolean).length+' / '+poem.lines.length+' 句已完成</p><div class="dimension-grid">'+keys.map(([k,label])=>'<div class="dimension"><strong>'+(result.dimensions[k]??'—')+'</strong><span>'+label+'</span></div>').join('')+'</div></div></div>'+
     '<div class="report-tabs" role="tablist" aria-label="朗讀成果">'+[['practice','練字音'],['advice','老師建議'],['scores','逐句成績']].map(([id,label])=>'<button id="tab-'+id+'" role="tab" aria-controls="panel-'+id+'" data-action="report-tab" data-value="'+id+'">'+label+'</button>').join('')+'</div><div class="report-panels"><div id="panel-practice" role="tabpanel" aria-labelledby="tab-practice">'+pronunciationHTML(result)+'</div>'+
