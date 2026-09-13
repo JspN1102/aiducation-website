@@ -4,6 +4,7 @@ import {configurePronunciation, getPronunciationPractice} from './pronunciation.
 import {getWordAudioURL} from './word-audio.mjs';
 import {getSpeechAudioURL} from './speech-audio.mjs';
 import {createHandwritingPad} from './handwriting-pad.mjs?v=20260908i';
+import {mountExploration} from './exploration.mjs?v=20260913a';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -28,9 +29,9 @@ let scene=1, currentLine=0, recorder=null, stream=null, recordContext=null, reco
 let recordStep='read', recordWordIndex=0;
 let writeIndex=0, handwritingPad=null, hinted=false, writeBusy=false, strokeWriter=null;
 let strokeHintVersion=0, strokeHintTimer=null, reportGeneration=0;
-let quizIndex=0, quizChoice=null, quizAnswers=[];
+let quizIndex=0, quizChoice=null, quizAnswers=[], quizMode='sound', quizGameChoice=null;
 let chatBusy=false;
-let sceneStage=null, activeSpeechButton=null, finishTransient=null;
+let sceneStage=null, exploration=null, activeSpeechButton=null, finishTransient=null;
 let practiceIndex=0, reportTab='practice', reportLine=0, practiceMode='sound';
 const speechCache=new Map(), speechPending=new Map();
 const recordings=new Map(), requests=new Set();
@@ -51,6 +52,7 @@ const state=p=>{
   if (!Array.isArray(s.writing)) s.writing=[];
   if (!Array.isArray(s.chat)) s.chat=[];
   if (!Array.isArray(s.quiz)) s.quiz=[];
+  if (!s.quizGames || typeof s.quizGames !== 'object' || Array.isArray(s.quizGames)) s.quizGames={};
   if (migrateReadingState(s,p)) writeStorage(STORE,saved);
   return s;
 };
@@ -182,11 +184,11 @@ function renderLibrary() {
 function renderCards() {
   $('#poem-grid').innerHTML=poems.map(p=>'<article class="poem-card poem-color-'+p.id+'"><a class="poem-entry" href="'+link('record',p)+'" aria-label="朗讀'+esc(titleOf(p))+'"><div class="poem-art" style="background-image:url('+getScenePreview(p.slug,p.lines.at(-1).scene)+')"><img src="'+asset('cover-final.webp',p)+'" width="800" height="450" alt="'+esc(p.lines.at(-1).text)+'" '+(p.id>3?'loading="lazy"':'fetchpriority="high"')+'><span class="poem-grade">'+['','一','二','三','四','五','六'][p.grade]+'年級</span></div><div class="poem-card-body"><img class="poem-emblem" src="'+poemMotif(p)+'" width="56" height="56" alt="" aria-hidden="true"><div class="poem-card-title"><h2>'+esc(p.title)+(p.id===5?'<small>其三</small>':'')+'</h2></div><p class="poem-author">'+esc(p.dynasty)+' · '+esc(p.author)+'</p><span class="poem-open">'+icon('mic')+'<span>'+(state(p).reading.some(Boolean)?'繼續朗讀':'開始朗讀')+'</span>'+icon('arrow-right')+'</span></div></a></article>').join('');icons();
 }
-const NAV=[['read','book-open','賞讀古詩','賞詩'],['record','mic','朗讀測評','朗讀'],['write','pen-line','默寫練習','默寫'],['quiz','flag','語音小闖關','闖關'],['chat','messages-square','與詩人對話','詩人'],['report','award','學習報告','報告']];
+const NAV=[['read','book-open','賞讀古詩','賞詩'],['record','mic','朗讀測評','朗讀'],['write','pen-line','默寫練習','默寫'],['quiz','flag','語音小闖關','闖關'],['explore','sparkles','詩境探索','探索'],['chat','messages-square','與詩人對話','詩人'],['report','award','學習報告','報告']];
 function renderWorkspace() {
   const name=NAV.find(n=>n[0]===view)?.[2]||'';
   document.title=`${titleOf(poem)} · ${name} · AIDUCATION`;
-  const activities=[['record','mic','朗讀練習'],['read','book-open','整首欣賞'],['write','pen-line','寫字'],['quiz','flag','闖關'],['chat','messages-square','問詩人'],['report','award','朗讀成績']];
+  const activities=[['record','mic','朗讀練習'],['read','book-open','整首欣賞'],['write','pen-line','寫字'],['quiz','flag','闖關'],['explore','sparkles','詩境探索'],['chat','messages-square','問詩人'],['report','award','朗讀成績']];
   app.innerHTML='<div class="workspace lesson-shell poem-color-'+poem.id+' view-'+view+'"><div class="lesson-bar"><a class="back-library" href="#">'+icon('arrow-left')+'<span>選詩</span></a><div class="lesson-title"><img class="lesson-portrait" src="'+asset('avatar.webp')+'" width="48" height="48" alt="'+esc(poem.author)+'"><div class="lesson-heading"><h1>'+esc(titleOf(poem))+'</h1><p>'+esc(poem.dynasty)+' · '+esc(poem.author)+'</p></div></div><details class="lesson-menu"><summary title="更多活動" aria-label="更多活動">'+icon('ellipsis')+'<span>更多</span></summary><nav class="menu-panel" aria-label="更多活動">'+activities.map(([id,symbol,label])=>'<a href="'+link(id)+'" '+(view===id?'aria-current="page"':'')+'>'+icon(symbol)+'<span>'+label+'</span></a>').join('')+'<button data-action="profile">'+icon('user-round')+'學習檔案</button></nav></details></div><main class="study-main" id="main"><section id="view" class="view-section '+(showPinyin?'':'hide-pinyin')+'"></section></main></div>';
   renderView();icons();
 }
@@ -196,6 +198,7 @@ function renderView() {
   if(view==='report')renderReport();
   if(view==='write')renderWriting();
   if(view==='quiz')renderQuiz();
+  if(view==='explore')renderExploration();
   if(view==='chat')renderChat();
   icons();
 }
@@ -400,7 +403,7 @@ function renderReport() {
     s.reading.map((lineResult,i)=>{
       if(!lineResult)return '';
       return '<div class="report-line" data-line="'+i+'"><div class="report-line-heading"><h3>第'+(i+1)+'句</h3><span>'+esc(poem.lines[i].text)+'</span><button class="icon-button" data-action="replay" data-value="'+i+'" aria-label="回聽第'+(i+1)+'句錄音" title="回聽第'+(i+1)+'句錄音" '+(recordings.has(poem.id+'-'+i)?'':'disabled')+'>'+icon('headphones')+'</button></div><div class="word-grid">'+lineResult.words.map(w=>'<button class="word-result '+w.status+'" data-action="word-tts" data-value="'+esc(w.c)+'" data-pinyin="'+esc(w.p)+'" title="聽'+esc(w.c)+'的讀音"><ruby>'+esc(w.c)+'<rt>'+esc(w.p)+'</rt></ruby><strong>'+(w.score??'未測')+'</strong>'+icon('volume-2')+'</button>').join('')+'</div><a class="button small" href="'+link('record')+'" data-action="record-target" data-value="'+i+'">'+icon('mic')+'再讀這一句</a></div>';
-    }).join('')+'</section></div><nav class="report-next-activities" aria-label="繼續學習">'+[['write','pen-line','默寫練習'],['quiz','flag','語音闖關'],['chat','messages-square','詩人聊天']].map(([id,symbol,label])=>'<a href="'+link(id)+'">'+icon(symbol)+'<span>'+label+'</span></a>').join('')+'</nav>';
+    }).join('')+'</section></div><nav class="report-next-activities" aria-label="繼續學習">'+[['write','pen-line','默寫練習'],['quiz','flag','語音闖關'],['explore','sparkles','詩境探索'],['chat','messages-square','詩人聊天']].map(([id,symbol,label])=>'<a href="'+link(id)+'">'+icon(symbol)+'<span>'+label+'</span></a>').join('')+'</nav>';
   if(!s.reading[reportLine])reportLine=s.reading.findIndex(Boolean);
   updateReportTab();updateScoreLine();renderFocusedPractice();icons();
 }
@@ -479,10 +482,88 @@ function completeWriting(correct) {
   queueSection('writing',{results:s.writing,totalCorrect:s.writing.filter(r=>r.correct&&!r.hinted).length,totalChars:poem.dictation.length,updatedAt:new Date().toISOString()});
   writeIndex++;hinted=false;stopTransient();renderWriting();
 }
-function renderQuiz() {
-  if(quizIndex>=poem.phonics.length){const count=quizAnswers.filter((a,i)=>a===poem.phonics[i].answer).length;$('#view').innerHTML=`<div class="completion">${icon('badge-check')}<h2>語音小挑戰完成</h2><p>${count} / ${poem.phonics.length} 題答對了，每一題都學會一點。</p><div class="completion-actions"><button class="button" data-action="quiz-reset">${icon('rotate-ccw')}再挑戰一次</button><a class="button primary" href="${link('chat')}">${icon('messages-square')}找${esc(poem.author)}聊聊</a></div></div>`;icons();return;}
-  const q=poem.phonics[quizIndex];
-  $('#view').innerHTML=`<div class="quiz-layout"><div class="quiz-art"><div class="art-stage"><img src="${asset(`scene-${Math.min(4,1+Math.floor(quizIndex/2))}.webp`)}" width="1600" height="900" alt="${esc(poem.title)}畫卷"></div><h2 class="panel-title">讓每個字，都更清楚。</h2><p class="muted">${esc(poem.description)}</p></div><div><div class="quiz-top"><span>${esc(q.label)}</span><span>${quizIndex+1} / ${poem.phonics.length}</span></div><div class="quiz-progress"><i style="width:${quizIndex/poem.phonics.length*100}%"></i></div><h2 class="quiz-prompt">${esc(q.prompt)}</h2><div class="quiz-options">${q.options.map((option,i)=>`<button class="quiz-option ${quizChoice!==null?(i===q.answer?'correct':i===quizChoice?'incorrect':''):''}" data-action="quiz-answer" data-value="${i}" ${quizChoice!==null?'disabled':''}><span>${String.fromCharCode(65+i)}</span>${esc(option)}</button>`).join('')}</div><div class="quiz-explanation" role="status">${quizChoice!==null?`${quizChoice===q.answer?'答對了。':'一起看看正確讀法。'}${esc(q.explanation)}`:''}</div><div class="quiz-next"><button class="button primary" data-action="quiz-next" ${quizChoice===null?'disabled':''}>${quizIndex===poem.phonics.length-1?'完成挑戰':'下一題'}${icon('arrow-right')}</button></div></div></div>`;icons();
+const QUIZ_MODES=[
+  ['sound','ear','聽音辨音','聽一聽，分清聲母、韻母和聲調'],
+  ['order','list-ordered','詩句接龍','找出下一句，讓詩句接起來'],
+  ['match','image','畫面找詩','看線索，找出對應的詩句'],
+  ['typo','search-check','錯字偵探','火眼金睛，找出正確的字'],
+  ['rhythm','music-2','朗讀節奏','選一個最適合朗讀的停頓']
+];
+const QUIZ_GAME_CLUES={
+  'yong-e':['白毛浮在水面上','白毛浮綠水'],
+  'zeng-wang-lun':['桃花潭的水很深','桃花潭水深千尺'],
+  'ti-xi-lin-bi':['從遠近高低看山，各有不同','遠近高低各不同'],
+  'bo-chuan-gua-zhou':['春風吹綠江南岸','春風又綠江南岸'],
+  'gui-yuan-tian-ju':['詩人正在山下種豆','種豆南山下，草盛豆苗稀'],
+  'zao-chun':['初春的小雨滋潤大地','天街小雨潤如酥']
+};
+const QUIZ_TYPO={
+  'yong-e':['鵝','鵝','娥','「鵝鵝鵝」的第一個字怎樣寫才對？'],
+  'zeng-wang-lun':['汪','汪','旺','「贈汪倫」的「汪」是哪一個？'],
+  'ti-xi-lin-bi':['嶺','嶺','領','「題西林壁」的山嶺是哪一個「嶺」？'],
+  'bo-chuan-gua-zhou':['洲','洲','州','「瓜洲」的「洲」是哪一個？'],
+  'gui-yuan-tian-ju':['鋤','鋤','助','「荷鋤歸」的農具是哪一個字？'],
+  'zao-chun':['潤','潤','閏','「小雨潤如酥」的「潤」是哪一個？']
+};
+function quizModeNav(){return '<nav class="quiz-mode-nav" aria-label="選擇遊戲">'+QUIZ_MODES.map(([id,symbol,label,tip])=>`<button class="quiz-mode-tab ${quizMode===id?'selected':''}" data-action="quiz-mode" data-value="${id}" aria-pressed="${quizMode===id}">${icon(symbol)}<span>${label}</span><small>${tip}</small></button>`).join('')+'</nav>';}
+function gameTask(p,mode){
+  const lines=p.lines.map(line=>line.text);
+  if(mode==='order'){
+    const source=Math.max(0,Math.min(lines.length-2,1));
+    const answer=lines[source+1];
+    const options=[answer,lines[(source+2)%lines.length],lines[0],lines[Math.max(0,source-1)]].filter((v,i,a)=>v&&a.indexOf(v)===i).slice(0,3);
+    return {label:'詩句接龍',prompt:`「${lines[source]}」之後接哪一句？`,options,answer:Math.max(0,options.indexOf(answer)),explanation:'按詩中的順序讀一讀，下一句就是這一句。'};
+  }
+  if(mode==='match'){
+    const clue=QUIZ_GAME_CLUES[p.slug]||['這個畫面寫的是哪一句？',lines[0]];
+    const correct=clue[1], alternatives=lines.filter(line=>line!==correct).slice(0,2);
+    const options=[correct,...alternatives];
+    return {label:'畫面找詩',prompt:`${clue[0]}，最適合配哪一句？`,options,answer:0,explanation:'把畫面中的關鍵詞和詩句連起來，就能找到答案。'};
+  }
+  if(mode==='typo'){
+    const typo=QUIZ_TYPO[p.slug]||[lines[0].charAt(0),lines[0].charAt(0),'?',`哪一個字才是詩中的寫法？`];
+    return {label:'錯字偵探',prompt:typo[3],options:[typo[1],typo[2]],answer:0,explanation:`詩中使用「${typo[0]}」，讀音相近的字也要看清字形。`};
+  }
+  if(mode==='rhythm'){
+    const line=lines[Math.min(1,lines.length-1)].replace(/[，。！？；、]/g,'');
+    const cut=Math.max(2,Math.min(5,Math.floor(line.length/2)));
+    const correct=line.slice(0,cut)+'  /  '+line.slice(cut);
+    const options=[correct,line.slice(0,Math.max(2,cut-2))+'  /  '+line.slice(Math.max(2,cut-2)),line.slice(0,Math.min(line.length-2,cut+2))+'  /  '+line.slice(Math.min(line.length-2,cut+2))];
+    return {label:'朗讀節奏',prompt:`哪一個停頓最適合「${line}」？`,options,answer:0,explanation:'短短停一下，再把後半句讀完整，聽起來會更自然。'};
+  }
+  const q=p.phonics[0]||{label:'聽音辨音',prompt:'聽一聽，選出正確答案。',options:['第一個','第二個'],answer:0,explanation:''};
+  return {...q,label:'聽音辨音',sound:true};
+}
+function quizSoundTarget(q){
+  const char=(q?.prompt?.match(/[「『]([^」』]+)[」』]/)||[])[1]||'';
+  const marks='a-zA-ZüÜāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ';
+  const pinyin=(q?.prompt?.match(new RegExp('[」』]\\s*(['+marks+']+)'))||q?.explanation?.match(new RegExp('讀\\s*(['+marks+']+)'))||[])[1]||'';
+  return {char:[...char][0]||'',pinyin};
+}
+function renderQuiz(){
+  const p=poem,s=state(p);
+  if(quizMode!=='sound'){
+    const task=gameTask(p,quizMode),done=s.quizGames?.[quizMode];
+    $('#view').innerHTML=`<div class="quiz-shell">${quizModeNav()}<div class="quiz-game-layout"><div class="quiz-game-art"><div class="art-stage"><img src="${asset(`scene-${Math.min(4,1+Math.floor(p.id/2))}.webp`)}" width="1600" height="900" alt="${esc(p.title)}畫卷"></div><div class="game-badge">${icon(QUIZ_MODES.find(x=>x[0]===quizMode)?.[1]||'sparkles')}<span>小遊戲</span></div><h2 class="panel-title">${esc(QUIZ_MODES.find(x=>x[0]===quizMode)?.[2]||'詩歌小遊戲')}</h2><p class="muted">${esc(QUIZ_MODES.find(x=>x[0]===quizMode)?.[3]||'動動手，也動動腦。')}</p></div><div class="quiz-game-card"><div class="quiz-top"><span>${esc(task.label)}</span><span>${done?'已完成':'1 / 1'}</span></div><div class="quiz-progress"><i style="width:${done?'100':'35'}%"></i></div><h2 class="quiz-prompt">${esc(task.prompt)}</h2>${task.sound?`<button class="quiz-listen-button" data-action="quiz-game-speak" aria-label="播放題目讀音">${icon('volume-2')}先聽一聽</button>`:''}<div class="quiz-options">${task.options.map((option,i)=>`<button class="quiz-option ${quizGameChoice!==null?(i===task.answer?'correct':i===quizGameChoice?'incorrect':''):''}" data-action="quiz-game-answer" data-value="${i}" ${quizGameChoice!==null||done?'disabled':''}><span>${String.fromCharCode(65+i)}</span>${esc(option)}</button>`).join('')}</div><div class="quiz-explanation" role="status">${quizGameChoice!==null?`${quizGameChoice===task.answer?'答對了！':'再看清楚一點。'} ${esc(task.explanation)}`:done?'你已完成這個小遊戲，可以換一種玩法。':''}</div><div class="quiz-next"><button class="button primary" data-action="quiz-game-next" ${quizGameChoice===null&&!done?'disabled':''}>${done?'再玩一次':'完成這關'}${icon('arrow-right')}</button></div></div></div></div>`;
+    icons();return;
+  }
+  if(quizIndex>=p.phonics.length){const count=quizAnswers.filter((a,i)=>a===p.phonics[i].answer).length;$('#view').innerHTML=`<div class="quiz-shell">${quizModeNav()}<div class="completion">${icon('badge-check')}<h2>聽音小挑戰完成</h2><p>${count} / ${p.phonics.length} 題答對了。還可以試試其他四種玩法！</p><div class="completion-actions"><button class="button" data-action="quiz-reset">${icon('rotate-ccw')}再挑戰一次</button><button class="button primary" data-action="quiz-mode" data-value="order">${icon('list-ordered')}玩詩句接龍</button></div></div></div>`;icons();return;}
+  const q=p.phonics[quizIndex];
+  $('#view').innerHTML=`<div class="quiz-shell">${quizModeNav()}<div class="quiz-layout"><div class="quiz-art"><div class="art-stage"><img src="${asset(`scene-${Math.min(4,1+Math.floor(quizIndex/2))}.webp`)}" width="1600" height="900" alt="${esc(p.title)}畫卷"></div><h2 class="panel-title">讓每個字，都更清楚。</h2><p class="muted">${esc(p.description)}</p></div><div><div class="quiz-top"><span>${esc(q.label)}</span><span>${quizIndex+1} / ${p.phonics.length}</span></div><div class="quiz-progress"><i style="width:${quizIndex/p.phonics.length*100}%"></i></div><h2 class="quiz-prompt">${esc(q.prompt)}</h2><button class="quiz-listen-button" data-action="quiz-question-speak" aria-label="播放題目讀音">${icon('volume-2')}先聽一聽</button><div class="quiz-options">${q.options.map((option,i)=>`<button class="quiz-option ${quizChoice!==null?(i===q.answer?'correct':i===quizChoice?'incorrect':''):''}" data-action="quiz-answer" data-value="${i}" ${quizChoice!==null?'disabled':''}><span>${String.fromCharCode(65+i)}</span>${esc(option)}</button>`).join('')}</div><div class="quiz-explanation" role="status">${quizChoice!==null?`${quizChoice===q.answer?'答對了。':'一起看看正確讀法。'}${esc(q.explanation)}`:''}</div><div class="quiz-next"><button class="button primary" data-action="quiz-next" ${quizChoice===null?'disabled':''}>${quizIndex===p.phonics.length-1?'完成挑戰':'下一題'}${icon('arrow-right')}</button></div></div></div></div>`;icons();
+}
+function renderExploration(){
+  const holder=$('#view');
+  if(!holder||!poem)return;
+  holder.innerHTML='';
+  exploration=mountExploration(holder,{
+    poem,
+    speakWord:(char,pinyin,button)=>speakWord(char,pinyin,button),
+    onComplete:result=>{
+      const s=state(poem);
+      s.exploration={...(s.exploration||{}),completed:true,completedAt:result.completedAt,version:result.version};
+      persist();
+    }
+  });
 }
 function renderChat() {
   const messages=state(poem).chat;
@@ -502,6 +583,7 @@ function route() {
   stopStrokeHint();reportGeneration++;
   handwritingPad?.destroy();handwritingPad=null;
   sceneStage?.destroy();sceneStage=null;
+  exploration?.destroy();exploration=null;
   routeVersion++;stopMedia();cancelRecording();requests.forEach(c=>c.abort());requests.clear();chatBusy=false;writeBusy=false;
   clearTimeout(toastTimer);$('#toast').classList.remove('visible');
   if($('#video-dialog').open)$('#video-dialog').close();
@@ -515,7 +597,7 @@ function route() {
   if(changed){scene=1;practiceIndex=0;reportTab='practice';reportLine=0;currentLine=Math.max(0,state(poem).reading.findIndex(r=>!r));}
   recordStep='read';recordWordIndex=0;practiceMode='sound';
   if(view==='write'){writeIndex=state(poem).writing.length;hinted=false;}
-  if(view==='quiz'){quizAnswers=[...state(poem).quiz];quizIndex=quizAnswers.length;quizChoice=null;}
+  if(view==='quiz'){quizMode='sound';quizAnswers=[...state(poem).quiz];quizIndex=quizAnswers.length;quizChoice=null;quizGameChoice=null;}
   renderWorkspace();window.scrollTo({top:0});
 }
 document.addEventListener('click',event=>{
@@ -561,9 +643,14 @@ document.addEventListener('click',event=>{
   if(action==='write-check')checkWriting();
   if(action==='write-skip'&&!writeBusy)completeWriting(false);
   if(action==='write-reset'){state(poem).writing=[];persist();writeIndex=0;hinted=false;renderWriting();}
+  if(action==='quiz-mode'){quizMode=value;quizChoice=null;quizGameChoice=null;if(value==='sound'){quizAnswers=[...state(poem).quiz];quizIndex=quizAnswers.length;}else quizIndex=0;renderQuiz();}
   if(action==='quiz-answer'&&quizChoice===null){quizChoice=Number(value);renderQuiz();}
   if(action==='quiz-next'&&quizChoice!==null){quizAnswers[quizIndex]=quizChoice;state(poem).quiz=[...quizAnswers];persist();quizIndex++;quizChoice=null;if(quizIndex===poem.phonics.length)queueReading();renderQuiz();}
-  if(action==='quiz-reset'){state(poem).quiz=[];persist();queueReading();quizAnswers=[];quizIndex=0;quizChoice=null;renderQuiz();}
+  if(action==='quiz-question-speak'){const target=quizSoundTarget(poem.phonics[quizIndex]||poem.phonics[0]);if(target.char)speakWord(target.char,target.pinyin,button);}
+  if(action==='quiz-game-speak'){const q=poem.phonics[0],target=quizSoundTarget(q);if(target.char)speakWord(target.char,target.pinyin,button);}
+  if(action==='quiz-game-answer'&&quizGameChoice===null){quizGameChoice=Number(value);renderQuiz();}
+  if(action==='quiz-game-next'){const s=state(poem);if(quizGameChoice!==null){s.quizGames[quizMode]={answer:quizGameChoice,correct:quizGameChoice===gameTask(poem,quizMode).answer,completedAt:Date.now()};persist();queueReading(poem,{quizGame:quizMode});quizGameChoice=null;renderQuiz();}else if(s.quizGames?.[quizMode]){delete s.quizGames[quizMode];persist();renderQuiz();}}
+  if(action==='quiz-reset'){state(poem).quiz=[];state(poem).quizGames={};persist();queueReading();quizAnswers=[];quizIndex=0;quizChoice=null;quizGameChoice=null;renderQuiz();}
   if(action==='chat-suggestion')sendChat(poem.suggestions[Number(value)]);
   if(action==='chat-speak'){const message=state(poem).chat[Number(value)];if(message)speak(message.content,'',button);}
 });
