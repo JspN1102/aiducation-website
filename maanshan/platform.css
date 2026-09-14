@@ -1,0 +1,49 @@
+.workspace:has(>.lesson-tabs){grid-template-rows:auto auto minmax(0,1fr)}
+.lesson-tabs{display:flex;align-items:center;justify-content:center;gap:8px;min-height:45px;margin:-6px 0 11px;flex-shrink:0}
+.lesson-tabs a{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:8px 20px;border-radius:12px;color:#7d8978;font-size:13px;text-decoration:none;border:1px solid transparent}
+.lesson-tabs a>span{width:21px;height:21px;border:1px solid #d7decd;border-radius:50%;font-size:10px;display:grid;place-items:center}
+.lesson-tabs a[aria-current]{color:#355f49;background:#eef2e5;border-color:#dfe6d4}
+.lesson-tabs a[aria-current]>span{background:#759276;color:#fffdf5;border-color:#759276}
+.lesson-tabs a:focus-visible{outline:3px solid #739573;outline-offset:2px}
+.view-lesson #view{overflow:hidden;padding:0}.view-lesson .study-main{max-width:1080px}.view-lesson .lesson-bar{min-height:69px;margin-bottom:5px}
+.view-lesson .lesson-title h1{font-size:25px}.view-lesson .lesson-portrait{width:38px;height:38px}
+.record-unfold-note{font-size:11px;color:#81937e;line-height:1.5;text-align:center;margin:8px 0 0}
+.reading-mode{display:flex;gap:5px}.reading-mode button{background:transparent;border:0;border-radius:8px;min-height:40px;padding:8px 14px;font-size:13px;color:#8a947e;cursor:pointer;letter-spacing:0}
+.reading-mode button[aria-pressed="true"]{background:#e9efdd;color:#487151}
+.reading-story{padding:19px 2px 12px}.reading-story[hidden],.poem-lines[hidden]{display:none!important}
+.story-eyebrow{font-size:10px;letter-spacing:1.5px;color:#91a087;margin:0 0 8px}
+.reading-story h3{font:500 26px/1.55 var(--serif);margin:0 0 13px;color:#3f694e}
+.story-meaning{font-size:16px;line-height:2;color:#627661;margin:0 0 16px;max-width:34em}
+.story-question{font-size:13px;line-height:1.9;color:#8b7858;padding-left:12px;border-left:2px solid #d8c595;margin:0 0 11px}
+.story-question>span{font-size:10px;display:block;color:#a89573;letter-spacing:1px}
+.reading-story>.text-button{font-size:12px;color:#71906c;min-height:44px}
+.view-read .reading-experience{box-shadow:none}.view-read .poem-landscape{box-shadow:none}
+.view-read .reader-controls{flex-wrap:wrap}.view-read .reader-controls .button{min-height:44px}
+.view-read .reader-toolbar h2{font-size:14px}.view-read .reading-toolbar-links>a{display:none}
+.keyboard-open .lesson-tabs{display:none}
+.challenge-results-heading .challenge-result-detail{font-size:11px!important;color:#9aa28e!important;margin-top:4px!important}
+.challenge-results-actions [data-ch="recommended"]{background:#527f60}.challenge-results-actions [data-ch="postcard"]{border:1px solid #cfdac2;padding:9px 15px;border-radius:12px;text-decoration:none;color:#537349!important}
+.challenge-market,.challenge-pod img{transition:opacity .25s}.challenge-pod img:not([data-loaded]){opacity:0}.challenge-pod img[data-loaded]{opacity:1}
+.living-field-picture{position:absolute;inset:0}.living-field-canvas{position:absolute;inset:0;border-radius:inherit;overflow:hidden}.living-field-canvas[hidden]{display:none}.living-field-canvas canvas{display:block;width:100%;height:100%;touch-action:none}
+.challenge-field .living-grass,.challenge-field .living-bean{position:absolute;display:block;object-fit:contain;width:42px;height:61px;transform:translate(-50%,-75%);transform-origin:bottom;pointer-events:none}
+.challenge-field .living-bean{width:46px;height:62px;z-index:3}
+.living-field-tools{display:flex;justify-content:center;align-items:center;gap:7px;margin-top:6px;flex-wrap:wrap}
+.living-field-tools button{font-size:11px!important;min-height:38px;padding:7px 11px;background:#edf2e3;color:#5d7857;border:1px solid #d8e1cb;border-radius:10px;cursor:pointer}
+.living-field-tools .living-field-status{font-size:11px;color:#7b8c70;line-height:1.5}.living-field-status:empty{display:none}
+.living-field-wrap{min-width:0;width:100%}
+.challenge-result-extras .challenge-text-button{font-size:12px!important;min-height:44px;padding:4px;color:#75846b}
+.challenge-result-extras a{min-height:44px}
+@media(max-width:700px){
+ .lesson-tabs{gap:4px;margin:-6px 0 7px;min-height:44px}.lesson-tabs a{flex:1;gap:5px;padding:6px 4px;font-size:11px;min-height:44px}.lesson-tabs a>span{width:18px;height:18px;font-size:9px}
+ .workspace:has(>.lesson-tabs)>.lesson-bar{min-height:61px;padding-block:8px;margin-bottom:6px}.view-lesson .lesson-title h1{font-size:21px}.view-lesson .lesson-bar{min-height:62px}
+ .record-unfold-note{font-size:10px;margin:4px 0}.reading-mode button{min-height:36px;font-size:12px;padding:6px 12px}.reading-story{padding:10px 2px 5px}.story-eyebrow{font-size:9px;margin-bottom:4px}.reading-story h3{font-size:21px;margin:0 0 6px}.story-meaning{font-size:14px;line-height:1.85;margin-bottom:10px}.story-question{font-size:12px;margin-bottom:2px;line-height:1.7}.story-question>span{font-size:9px}.reading-story>.text-button{font-size:11px;min-height:36px}
+ .view-read .reader-toolbar{display:none}.view-read .reading-experience{justify-content:center;gap:7px}.view-read .reading-scene{gap:7px;flex:1;min-height:0;justify-content:center}.view-read .poem-landscape{padding:4px 6px 0}.view-read .reading-scene .art-stage{max-height:clamp(95px,calc(100dvh - 565px),185px)}.view-read .scene-dots button{height:25px}.view-read .page-turner .icon-button{height:36px;width:36px}.view-read .page-turner{min-height:38px}.view-read .reader-controls{margin:0;justify-content:center;gap:6px}.view-read .reader-controls .button{font-size:11px;padding:7px 9px;min-height:40px}.view-read .reader-controls .media-buttons{gap:6px}.view-read .audio-timeline{height:26px}.view-read .audio-options{margin:0}
+ .challenge-field .living-grass{width:32px;height:48px}.challenge-field .living-bean{width:35px;height:48px}.living-field-tools{margin-top:4px;gap:5px}.living-field-tools button{min-height:34px;padding:6px 10px;font-size:10px!important}.living-field-tools .living-field-status{font-size:10px}
+ .challenge-results-actions{gap:8px}.challenge-results-actions .challenge-text-button{min-height:38px}.challenge-results-heading .challenge-result-detail{font-size:10px!important}
+}
+@media(max-width:700px) and (max-height:680px){
+ .view-read .reading-experience{height:100%;min-height:0;flex:1;gap:3px;padding:0}.view-read .reading-scene{display:grid;grid-template-columns:85px minmax(0,1fr);align-items:center;gap:10px;flex:1}.view-read .poem-landscape{border:0;padding:0;margin:0;align-self:start;margin-top:10px;background:transparent}.view-read .poem-landscape:before{display:none}.view-read .reading-scene .art-stage{max-height:110px;height:100px;aspect-ratio:auto}.view-read .scene-stage{height:100%!important;aspect-ratio:auto!important}.view-read .scene-dots button{width:18px;min-width:18px;height:25px}.view-read .scene-dots{gap:0}.view-read .poem-text{padding:0;min-height:0}.view-read .reading-folio{padding:0;gap:4px}.reading-mode{gap:0}.reading-mode button{font-size:10px;min-height:34px;padding:5px 8px}.view-read .reading-story{padding:7px 0 1px}.view-read .story-eyebrow{display:none}.view-read .reading-story h3{font-size:18px;margin-bottom:6px}.view-read .story-meaning{font-size:13px;line-height:1.85;margin-bottom:8px}.view-read .story-question{font-size:11px;padding-left:8px}.view-read .reading-story>.text-button{min-height:34px;font-size:10px}.view-read .page-turner{gap:5px}.view-read .page-turner .text-button{font-size:10px}.view-read .page-turner .icon-button{height:34px;width:34px}.view-read .poem-lines .verse{min-height:50px}.view-read .poem-lines .verse ruby{min-width:25px;font-size:22px}.view-read .poem-lines .verse rt{font-size:10px}.view-read .poem-lines .punct{font-size:22px;width:10px}.view-read .poem-lines .verse-compound{flex-direction:column}
+ .view-record .record-layout{padding:0;min-height:0;height:100%}.view-record .record-unfold-note{font-size:9px;margin-top:2px}.view-record .record-counter{min-height:30px}.view-record .record-art{max-height:76px}.view-record #record-controls{min-height:95px}
+ .challenge-field-layout>.living-field-wrap{grid-column:1;grid-row:1}.challenge-field-layout .challenge-field{height:113px}.living-field-tools button{min-height:32px;padding:5px 7px}.living-field-tools .living-field-status{position:static;font-size:9px}.challenge-field .living-grass{width:18px;height:28px}.challenge-field .living-bean{width:21px;height:30px}
+ .challenge-results-heading .challenge-eyebrow{display:none}.challenge-results-heading{margin-bottom:10px}.challenge-results-heading h2{font-size:20px}.challenge-result-row{min-height:44px;padding:3px 8px}.challenge-result-list{gap:4px;margin-bottom:10px}.challenge-results-actions{flex-wrap:nowrap;gap:6px}.challenge-results-actions .challenge-primary{padding:9px 12px;gap:0}.challenge-results-actions [data-ch="postcard"]{padding:9px 10px;min-height:44px}.challenge-result-extras{gap:8px;margin-top:5px}.challenge-result-extras .challenge-text-button{font-size:10px!important}.challenge-result-extras a{font-size:10px}
+}

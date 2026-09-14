@@ -1,0 +1,143 @@
+{
+  "version": "20260914-v1",
+  "imageModel": "gpt-image-2",
+  "tripoModel": "v3.1-20260211",
+  "promptFiles": [
+    "bean-prompt.txt",
+    "grass-prompt.txt"
+  ],
+  "models": [
+    {
+      "name": "bean",
+      "file": "bean-v1.glb",
+      "bytes": 693568,
+      "sha256": "4e819ae9a9782074c7abb3d9998f8fbd9412877e02b8dc08c2a052e6e1aadadd",
+      "triangles": 8000,
+      "heightMetres": 0.24,
+      "boundsMetres": {
+        "min": [
+          -0.10390139558628152,
+          0.0,
+          -0.03881992404909482
+        ],
+        "max": [
+          0.10390139558628152,
+          0.24,
+          0.03881992404909482
+        ]
+      },
+      "baseY": 0,
+      "front": [
+        0,
+        0,
+        1
+      ],
+      "textureSize": 1024,
+      "textures": 3,
+      "doubleSided": true,
+      "geometryDecoderRequired": false
+    },
+    {
+      "name": "grass",
+      "file": "grass-v1.glb",
+      "bytes": 461636,
+      "sha256": "27224c03954d1ed4ef54f694ea4389b9da14c0adaf186cb240940c54629deaad",
+      "triangles": 3000,
+      "heightMetres": 0.2,
+      "boundsMetres": {
+        "min": [
+          -0.1003806537267163,
+          0.0,
+          -0.0200537071361329
+        ],
+        "max": [
+          0.1003806537267163,
+          0.2,
+          0.0200537071361329
+        ]
+      },
+      "baseY": 0,
+      "front": [
+        0,
+        0,
+        1
+      ],
+      "textureSize": 1024,
+      "textures": 3,
+      "doubleSided": true,
+      "geometryDecoderRequired": false
+    }
+  ],
+  "sprites": [
+    {
+      "plant": "bean",
+      "sourceImage": "bean-source.png",
+      "sprite": "bean-v1.webp",
+      "dimensions": [
+        800,
+        895
+      ],
+      "bytes": 105858,
+      "sha256": "6d933cab7174df0c11b3abf568a50c0625dd7bf4ad93bd171f94263fa84d3659",
+      "transparentFraction": 0.7120977653631285,
+      "alphaMin": 0,
+      "alphaMax": 255,
+      "rootAnchor": [
+        0.5,
+        0.98
+      ]
+    },
+    {
+      "plant": "grass",
+      "sourceImage": "grass-source.png",
+      "sprite": "grass-v1.webp",
+      "dimensions": [
+        800,
+        847
+      ],
+      "bytes": 104830,
+      "sha256": "b29cf5681d39ae1ceaea71c3f45a1b965759778cba6af3c348386f77a3d4f289",
+      "transparentFraction": 0.895974025974026,
+      "alphaMin": 0,
+      "alphaMax": 255,
+      "rootAnchor": [
+        0.5,
+        0.98
+      ]
+    }
+  ],
+  "purpose": "Separate broad-leaf bean and narrow-blade wild grass instances for hands-on manipulation of plant density.",
+  "sourceAndRights": "New AI-generated assets created from text-only prompts and image-to-model references; provider account terms apply. No external artwork or Creative Commons licence asserted.",
+  "visualValidation": {
+    "errors": [],
+    "anglesDegrees": [
+      0,
+      45,
+      90,
+      180
+    ],
+    "method": "Actual Chrome WebGL renders",
+    "models": [
+      {
+        "plant": "bean",
+        "dimensions": [
+          0.21067439960753478,
+          0.24,
+          0.09240549630709236
+        ],
+        "triangles": 8000,
+        "textures": 3
+      },
+      {
+        "plant": "grass",
+        "dimensions": [
+          0.20076130745343265,
+          0.2,
+          0.04010741427226586
+        ],
+        "triangles": 3000,
+        "textures": 3
+      }
+    ]
+  }
+}

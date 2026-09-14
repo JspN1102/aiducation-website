@@ -1,4 +1,4 @@
-import { SPEECH_AUDIO_FILES } from './media/speech/index.mjs?v=20260914e';
+import { SPEECH_AUDIO_FILES } from './media/speech/index.mjs?v=20260914f';
 
 export function getSpeechAudioURL(text) {
   if (typeof text !== 'string') return null;

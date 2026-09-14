@@ -2,6 +2,8 @@ import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260914e';
 import {newAttempt, readAttempt, recordAnswer, challengeSummary} from './challenge-state.mjs?v=20260914e';
 import {mountChallengeWriting} from './challenge-writing.mjs?v=20260914e';
 import {mountChallengeModel} from './challenge-model.mjs?v=20260914e';
+import {mountLivingField} from './living-field.mjs?v=20260914f';
+import {mountPoetryCard} from './poetry-card.mjs?v=20260914f';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KIND = {sound:'聽音小鋪', dictation:'聽寫一個字', match:'動手解詩', sequence:'故事排一排', 'scene-builder':'種一片詩田'};
@@ -13,17 +15,18 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
   const set = CHALLENGE_SETS[poem.slug];
   if (!set) throw new Error('missing-challenge');
   let attempt = readAttempt(saved, set), started = false, dead = false, screen = 0, reviewing = false, practicing = false;
-  let heard = false, playing = false, selected = null, placements = {}, density = {}, writing = null, model = null;
+  let heard = false, playing = false, selected = null, placements = {}, density = {}, writing = null, model = null, livingField = null, poetryCard = null;
   let pageEvents = null, renderGeneration = 0, audioGeneration = 0, practiceResult = null;
   const q = selector => container.querySelector(selector);
   const save = () => onChange?.(structuredClone(attempt));
   const ordered = item => (attempt.orders[item.id] || []).map(id => (item.options || item.cards).find(card => card.id === id));
   const currentAnswer = () => practicing ? practiceResult : attempt?.answers[screen];
-  function release() {renderGeneration++; audioGeneration++; pageEvents?.abort(); writing?.destroy(); writing = null; model?.destroy(); model = null; stopAudio?.(); playing = false;}
+  function release() {renderGeneration++; audioGeneration++; pageEvents?.abort(); writing?.destroy(); writing = null; model?.destroy(); model = null; livingField?.destroy();livingField=null;poetryCard?.destroy();poetryCard=null;stopAudio?.(); playing = false;}
   function startPage(html) {
     release(); pageEvents = new AbortController(); container.innerHTML = html;
     container.addEventListener('click', click, {signal: pageEvents.signal});
     container.addEventListener('error', event => {if (event.target.matches?.('img')) event.target.classList.add('challenge-image-error');}, {capture:true, signal:pageEvents.signal});
+    container.querySelectorAll('.challenge-pod img').forEach(img=>{if(img.complete&&img.naturalWidth)img.dataset.loaded='true';else img.addEventListener('load',()=>img.dataset.loaded='true',{once:true,signal:pageEvents.signal});});
     container.scrollTop = 0;
   }
   function intro() {
@@ -48,8 +51,8 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const grass = density.grass === 'dense' ? 72 : density.grass === 'sparse' ? 8 : 0;
     const beans = density.beans === 'dense' ? 18 : density.beans === 'sparse' ? 3 : 0;
     const plants = [];
-    for (let i=0;i<grass;i++) {const x=7+(i*37%86),y=12+(i*29%65);plants.push(`<i class="challenge-grass" style="left:${x}%;top:${y}%;transform:scale(${.7+y/150}) rotate(${i%3*10-10}deg)" aria-hidden="true"></i>`);}
-    for (let i=0;i<beans;i++) {const x=18+(i*31%65),y=22+(i*23%48);plants.push(`<i class="challenge-bean" style="left:${x}%;top:${y}%" aria-hidden="true"><b></b><b></b></i>`);}
+    for (let i=0;i<grass;i++) {const x=7+(i*37%86),y=24+(i*29%57);plants.push(`<img class="living-grass" src="media/living-scenes/grass-v1.webp" alt="" style="left:${x}%;top:${y}%;transform:translate(-50%,-80%) scale(${.68+y/190}) rotate(${i%3*10-10}deg)" aria-hidden="true">`);}
+    for (let i=0;i<beans;i++) {const x=18+(i*31%65),y=35+(i*23%43);plants.push(`<img class="living-bean" src="media/living-scenes/bean-v1.webp" alt="" style="left:${x}%;top:${y}%" aria-hidden="true">`);}
     return `<div class="challenge-field-ground">${plants.join('')}</div><div class="challenge-field-caption">${density.grass && density.beans ? '這是你種的田地' : '調一調，田地就會長出植物'}</div>`;
   }
   function gooseHTML(item) {
@@ -57,7 +60,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     return `<div class="challenge-goose"><svg viewBox="0 0 120 106" role="img" aria-label="由你配色的白鵝畫面"><g stroke="#6d7f6c" stroke-width="1.35" stroke-linejoin="round" stroke-linecap="round"><ellipse cx="57" cy="79" rx="48" ry="18" fill="${color('three')}"/><path d="m40 78-11 5 4 5 18-5m10-4-7 10 8 2 10-10" fill="${color('one')}"/><path d="M17 55c9 7 19 9 29 6 9-3 13-10 14-18 1-5-1-10 1-16 2-8 10-11 16-7 5 3 5 8 2 12l8 3-9 5c-4 2-5 5-5 10-2 14-13 23-28 23-13 0-23-6-28-18Z" fill="${color('two')}"/><path d="m79 32 8 3-9 5-1-5Z" fill="#c5ad86"/><path d="M30 60c8 3 18 2 25-4-3 9-15 14-25 4ZM62 48c2-5 2-9 2-12" fill="none"/><circle cx="74" cy="27" r="1.3" fill="#455445" stroke="none"/><path d="M16 83h9m61-7h14M79 88h13" stroke-opacity=".4"/></g></svg></div>`;
   }
   function handsBody(item) {
-    if (item.type === 'scene-builder') return `<div class="challenge-hands-layout challenge-field-layout"><div class="challenge-field" role="img" aria-label="隨選擇變化的田地">${fieldHTML()}</div><div class="challenge-hands-work"><h2 class="challenge-prompt" tabindex="-1">${esc(item.prompt)}</h2><p class="challenge-instruction">想想詩裏的田地，讓植物長出來。</p>${item.layers.map(layer=>`<fieldset class="challenge-density"><legend>${esc(layer.label)}</legend>${layer.choices.map(choice=>`<button data-ch="density" data-layer="${layer.id}" data-density="${choice.id}" aria-pressed="false">${esc(choice.label)}</button>`).join('')}</fieldset>`).join('')}<p class="challenge-manipulation-status" role="status">兩種植物都調好，就可以交出你的畫面。</p></div></div>`;
+    if (item.type === 'scene-builder') return `<div class="challenge-hands-layout challenge-field-layout"><div class="living-field-wrap"><div class="challenge-field"><div class="living-field-picture" role="img" aria-label="隨選擇變化的田地">${fieldHTML()}</div><div class="living-field-canvas" hidden></div></div><div class="living-field-tools"><button data-ch="field-3d">立體種植</button><button data-ch="field-picture" hidden>回到插畫</button><span class="living-field-status" role="status"></span></div></div><div class="challenge-hands-work"><h2 class="challenge-prompt" tabindex="-1">${esc(item.prompt)}</h2><p class="challenge-instruction">想想詩裏的田地，讓植物長出來。</p>${item.layers.map(layer=>`<fieldset class="challenge-density"><legend>${esc(layer.label)}</legend>${layer.choices.map(choice=>`<button data-ch="density" data-layer="${layer.id}" data-density="${choice.id}" aria-pressed="false">${esc(choice.label)}</button>`).join('')}</fieldset>`).join('')}<p class="challenge-manipulation-status" role="status">兩種植物都調好，就可以交出你的畫面。</p></div></div>`;
     return `<div class="challenge-hands-layout"><div class="challenge-observation"><div class="challenge-observation-art" data-observation></div></div><div class="challenge-hands-work"><h2 class="challenge-prompt" tabindex="-1">${esc(item.prompt)}</h2><p class="challenge-instruction">點一張卡，再點它的位置；也可以拖過去。</p><div class="challenge-cards" aria-label="待放的卡片">${ordered(item).map(card=>`<button class="challenge-card" data-ch="card" data-card="${card.id}" aria-pressed="false">${cardHTML(card)}</button>`).join('')}</div><div class="challenge-slots ${item.type==='sequence'?'is-sequence':''}">${item.slots.map((slot,i)=>`<button class="challenge-slot" data-ch="slot" data-slot="${slot.id}"><span class="challenge-slot-label">${item.type==='sequence'?`<b>${i+1}</b>`:''}${esc(slot.label)}</span><span class="challenge-slot-content">放在這裏</span></button>`).join('')}</div><p class="challenge-manipulation-status" role="status">卡片放好後還可以移動。</p></div></div>`;
   }
   function showQuestion() {
@@ -169,7 +172,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     else if(Object.keys(placements).length)q('.challenge-manipulation-status').textContent='可以換位置，準備好再提交。';
   }
   function updateField() {
-    const answer=currentAnswer();q('.challenge-field').innerHTML=fieldHTML();
+    const answer=currentAnswer();q('.living-field-picture').innerHTML=fieldHTML();livingField?.setDensity(density);
     container.querySelectorAll('[data-density]').forEach(button=>{button.disabled=!!answer;button.setAttribute('aria-pressed',String(density[button.dataset.layer]===button.dataset.density));});
     q('[data-ch="submit"]').disabled=!!answer||!set.items[screen].layers.every(layer=>density[layer.id]);
   }
@@ -202,7 +205,9 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const result=challengeSummary(attempt,set);
     if(!result.completed){screen=attempt.answers.length;reviewing=false;practicing=false;showQuestion();return;}
     const entries=set.items.map((item,i)=>`<button class="challenge-result-row" data-ch="review" data-index="${i}"><span class="challenge-result-number">${i+1}</span><span>${KIND[item.type]}<small>${item.type==='dictation'?esc(item.target.char):item.type==='sound'?esc(item.focus):'把詩意放進畫面'}</small></span><em>${attempt.answers[i].correct?'自己完成':attempt.answers[i].status==='skipped'?'一起學過':'再練一練'}</em><span aria-hidden="true">›</span></button>`).join('');
-    startPage(`<section class="challenge-shell challenge-results"><header class="challenge-results-heading"><img src="media/poetry-motifs/${['goose','boat','mountain','moon','sprout','swallow'][poem.grade-1]}.svg" alt="" width="72" height="72"><div><p class="challenge-eyebrow">五個小挑戰，都走過了</p><h2>又讀懂了一點詩。</h2><p>這次有 <strong>${result.correct}</strong> 個自己完成。點開一題，看看小發現。</p></div></header><div class="challenge-result-list">${entries}</div><div class="challenge-results-actions"><a class="challenge-primary" href="#${poem.slug}/record">帶着發現再讀一次</a><button class="challenge-text-button" data-ch="restart">重新挑戰五題</button></div><nav class="challenge-result-extras" aria-label="繼續學習"><a href="#${poem.slug}/write">看筆順・練字</a><a href="#${poem.slug}/explore">走進詩境</a><a href="#${poem.slug}/chat">找詩人聊聊</a></nav></section>`);
+    const nextPractice=attempt.answers.findIndex(a=>!a.correct);
+    const finding=['白鵝的顏色，藏在詩句裏。','送別的聲音，留下朋友的心意。','換一個角度，就有不同的山。','眼前的風景，也藏着思念。','野草和豆苗，長得很不一樣。','走近一點，春色又有新模樣。'][poem.grade-1];
+    startPage(`<section class="challenge-shell challenge-results"><header class="challenge-results-heading"><img src="media/poetry-motifs/${['goose','boat','mountain','moon','sprout','swallow'][poem.grade-1]}.svg" alt="" width="72" height="72"><div><p class="challenge-eyebrow">五個小挑戰，都走過了</p><h2>把小發現收好了。</h2><p>${finding}</p><p class="challenge-result-detail">這次 ${result.correct} 題自己完成，其餘一起學過。</p></div></header><div class="challenge-result-list">${entries}</div><div class="challenge-results-actions">${nextPractice>=0?`<button class="challenge-primary" data-ch="recommended" data-index="${nextPractice}">${set.items[nextPractice].type==='dictation'?'再試寫一個字':set.items[nextPractice].type==='sound'?'再聽一題':'再動手試一次'}</button>`:`<a class="challenge-primary" href="#${poem.slug}/read">再看看詩意</a>`}<button class="challenge-text-button" data-ch="postcard">做張詩意明信片</button></div><nav class="challenge-result-extras" aria-label="繼續學習"><a href="#${poem.slug}/write">看筆順練字</a><a href="#${poem.slug}/explore">詩境探索</a><a href="#${poem.slug}/chat">找詩人</a><button class="challenge-text-button" data-ch="restart">重新挑戰</button></nav><div class="poetry-card-host"></div></section>`);
   }
   function restart() {attempt=newAttempt(set);screen=0;started=true;reviewing=false;practicing=false;save();showQuestion();}
   function click(event) {
@@ -215,6 +220,21 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     if(action==='card'&&!currentAnswer()){selected=button.dataset.card;updatePlacements();}
     if(action==='slot')place(button.dataset.slot);
     if(action==='density'&&!currentAnswer()){density[button.dataset.layer]=button.dataset.density;updateField();}
+    if(action==='field-3d'){
+      const generation=renderGeneration;livingField?.destroy();q('.living-field-canvas').hidden=false;q('.living-field-picture').hidden=false;
+      button.hidden=true;q('[data-ch="field-picture"]').hidden=false;
+      livingField=mountLivingField(q('.living-field-canvas'),{density,onStatus:(message,{state}={})=>{
+        if(dead||generation!==renderGeneration)return;
+        q('.living-field-status').textContent=message;
+        if(state==='ready')q('.living-field-picture').hidden=true;
+        if(['error','timeout','context-lost'].includes(state)){
+          q('.living-field-canvas').hidden=true;q('.living-field-picture').hidden=false;
+          q('[data-ch="field-3d"]').hidden=false;q('[data-ch="field-picture"]').hidden=true;
+          q('.living-field-status').textContent='先用插畫繼續種，也可以重試立體畫面。';
+        }
+      }});
+    }
+    if(action==='field-picture'){livingField?.destroy();livingField=null;q('.living-field-canvas').hidden=true;q('.living-field-picture').hidden=false;button.hidden=true;q('[data-ch="field-3d"]').hidden=false;q('.living-field-status').textContent='';}
     if(action==='submit'&&!currentAnswer()){
       let correct=false,response;
       if(item.type==='sound'){if(!heard||!selected)return;response=selected;correct=selected===item.answerId;}
@@ -229,6 +249,8 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     }
     if(action==='review'){screen=Number(button.dataset.index);reviewing=true;practicing=false;showQuestion();q('.challenge-footer-actions').insertAdjacentHTML('afterbegin','<button class="challenge-text-button" data-ch="practice">自己再試一次</button>');}
     if(action==='practice'){practicing=true;practiceResult=null;showQuestion();}
+    if(action==='recommended'){screen=Number(button.dataset.index);reviewing=false;practicing=true;practiceResult=null;showQuestion();}
+    if(action==='postcard'){poetryCard?.destroy();poetryCard=mountPoetryCard(q('.poetry-card-host'),{poem,onClose:()=>{poetryCard=null;q('[data-ch="postcard"]')?.focus({preventScroll:true});}});}
     if(action==='show-solution'){
       if(item.type==='scene-builder'){density={...item.answer};updateField();}
       else if(item.type!=='sound'){placements=Object.fromEntries(item.slots.map(slot=>[slot.id,slot.accepts]));updatePlacements();}

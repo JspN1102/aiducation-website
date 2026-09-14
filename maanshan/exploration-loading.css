@@ -1,0 +1,4 @@
+/* A quiet placeholder for the illustration's initial network load. */
+.explore-image-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:48px 18px;text-align:center;pointer-events:none;background:linear-gradient(145deg,#f7f4e8,#e4ecd9);color:#647b61}
+.explore-image-loading img{width:80px;height:80px;object-fit:contain;opacity:.8}
+.explore-image-loading p{margin:0;font-size:12px;line-height:1.5;letter-spacing:.7px}

@@ -1,0 +1,30 @@
+.poetry-card-dialog{box-sizing:border-box;width:min(94vw,780px);max-width:none;max-height:calc(100dvh - 24px);padding:0;border:1px solid #d8dfca;border-radius:24px;background:#fcfaf2;color:#244d3e;box-shadow:0 24px 90px #173b302b;overflow:hidden}
+.poetry-card-dialog::backdrop{background:#17382e73;backdrop-filter:blur(4px)}
+.poetry-card-dialog *{box-sizing:border-box}
+.poetry-card-sheet{padding:22px 26px;max-height:calc(100dvh - 26px);display:flex;flex-direction:column;gap:12px;overflow:auto}
+.poetry-card-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex:none}
+.poetry-card-header p{font:12px/1.5 var(--sans,'Microsoft JhengHei',sans-serif);color:#7a896d;margin:0 0 4px}
+.poetry-card-header h2{font:500 24px/1.4 var(--serif,'PMingLiU',serif);margin:0}
+.poetry-card-dialog button,.poetry-card-dialog .poetry-card-open{font:14px/1.5 var(--sans,'Microsoft JhengHei',sans-serif);color:#315942;min-height:44px;border:1px solid #d9e2cf;border-radius:12px;padding:8px 12px;background:#fffef9;cursor:pointer;touch-action:manipulation}
+.poetry-card-dialog button:disabled{opacity:.45;cursor:default}
+.poetry-card-dialog button:focus-visible,.poetry-card-dialog a:focus-visible{outline:3px solid #4f8972;outline-offset:2px}
+.poetry-card-dialog .poetry-card-close{font-size:25px;width:44px;flex:none;padding:0;border-radius:50%}
+.poetry-card-preview{position:relative;display:grid;place-items:center;flex:none;min-height:120px;width:100%}
+.poetry-card-preview canvas{display:block;width:auto;height:min(35dvh,340px);max-width:100%;object-fit:contain;aspect-ratio:5/4;border:1px solid #dfd8c4;box-shadow:0 8px 26px #6e704514;border-radius:3px;background:#fcf8ec}
+.poetry-card-preview[aria-busy=true] canvas{visibility:hidden}
+.poetry-card-loading{position:absolute;font:14px/1.5 var(--sans,'Microsoft JhengHei',sans-serif);margin:0;color:#6f8064}
+.poetry-card-choices{padding:0;border:0;margin:0;min-width:0;flex:none}
+.poetry-card-choices legend{font:13px/1.5 var(--sans,'Microsoft JhengHei',sans-serif);padding:0 0 7px;color:#55704e}
+.poetry-card-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.poetry-card-choice-grid button{text-align:left;font-family:var(--serif,'PMingLiU',serif);line-height:1.55;font-size:15px;overflow-wrap:anywhere}
+.poetry-card-choice-grid .poetry-card-clause{display:block}
+.poetry-card-choice-grid button[aria-pressed=true]{border-color:#789679;background:#edf3e4;box-shadow:inset 3px 0 #789679}
+.poetry-card-status{margin:0;min-height:20px;font:12px/1.5 var(--sans,'Microsoft JhengHei',sans-serif);color:#73836a;flex:none}
+.poetry-card-actions{display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;flex:none}
+.poetry-card-dialog .poetry-card-save{background:#316b54;color:#fff;border-color:#316b54;padding-inline:25px;font-weight:600}
+.poetry-card-dialog .poetry-card-open{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;background:transparent}
+.poetry-card-dialog [hidden]{display:none!important}
+@media(max-width:500px){.poetry-card-dialog{width:calc(100vw - 20px);border-radius:19px}.poetry-card-sheet{padding:14px;gap:10px}.poetry-card-header{gap:8px}.poetry-card-header h2{font-size:21px}.poetry-card-header p{font-size:11px}.poetry-card-preview canvas{height:min(30dvh,235px)}.poetry-card-choice-grid button{font-size:13px;padding:7px 9px}.poetry-card-status{font-size:11px}.poetry-card-dialog .poetry-card-open{font-size:12px;padding-inline:10px}}
+@media(max-height:650px){.poetry-card-sheet{gap:7px;padding-block:11px}.poetry-card-preview canvas{height:155px}.poetry-card-header p{display:none}.poetry-card-choices legend{padding-bottom:5px}.poetry-card-choice-grid{gap:5px}.poetry-card-choice-grid button{padding-block:5px}.poetry-card-status{min-height:16px}}
+@media(max-height:500px) and (min-width:650px){.poetry-card-sheet{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 20px}.poetry-card-header{grid-column:1/-1}.poetry-card-preview{grid-column:1;grid-row:2/5}.poetry-card-preview canvas{height:240px}.poetry-card-choices,.poetry-card-status,.poetry-card-actions{grid-column:2}.poetry-card-choice-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.poetry-card-dialog,.poetry-card-dialog *{scroll-behavior:auto;transition:none!important}}

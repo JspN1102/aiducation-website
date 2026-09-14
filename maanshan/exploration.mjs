@@ -92,13 +92,14 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
   const imageURL = assetURL('scene.webp').href;
   let dead = false, observation = 0, correct = false, completed = false, notified = false;
   let mode = 'picture', loadGeneration = 0, pending = null, viewer = null;
-  let imageFailed = false;
+  let imageFailed = false, imagePending = true;
   container.innerHTML = `<section class="explore" aria-labelledby="explore-title">
     <header class="explore-heading"><div><p class="explore-eyebrow">一首詩，兩個小發現</p><h2 id="explore-title">走進詩裏</h2></div>
       <img class="explore-motif" src="media/poetry-motifs/${content.motif}.svg" alt="" width="56" height="56"></header>
     <div class="explore-layout"><div class="explore-visual">
       <div class="explore-stage" data-explore-stage>
         <img class="explore-scene" src="${escapeHTML(imageURL)}" alt="${escapeHTML(content.alt)}" decoding="async" fetchpriority="high">
+        <div class="explore-image-loading" role="status"><img src="media/poetry-motifs/${content.motif}.svg" alt="" width="80" height="80"><p>正在準備畫面…</p></div>
         <div class="explore-image-fallback" hidden><img src="media/poetry-motifs/${content.motif}.svg" alt="" width="90" height="90"><p>畫面暫時未能打開</p><button type="button" data-explore="retry-image">再試一次</button></div>
         <div class="explore-canvas" data-explore-canvas hidden></div>
         <button class="explore-expand" type="button" data-explore="expand" aria-expanded="false" aria-label="放大觀察">${icon('expand')}<span>放大觀察</span></button>
@@ -119,7 +120,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
   </section>`;
   const q = selector => container.querySelector(selector);
   const section = q('.explore'), stage = q('[data-explore-stage]'), canvasHolder = q('[data-explore-canvas]');
-  const picture = q('.explore-scene'), pictureFallback = q('.explore-image-fallback');
+  const picture = q('.explore-scene'), pictureFallback = q('.explore-image-fallback'), pictureLoading = q('.explore-image-loading');
   const card = q('[data-explore-card]'), loading = q('.explore-loading'), notice = q('.explore-notice');
   const tools = q('.explore-model-tools'), modelButton = q('[data-explore="model"]');
   const activityEvents = new AbortController();
@@ -131,20 +132,26 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     notice.textContent = message;
     notice.hidden = !message;
   }
+  function syncPicture() {
+    picture.hidden = imagePending || imageFailed;
+    pictureLoading.hidden = !imagePending || mode !== 'picture';
+    pictureFallback.hidden = !imageFailed || mode !== 'picture';
+    stage.classList.toggle('explore-image-missing', imageFailed);
+  }
   function imageError() {
+    imagePending = false;
     imageFailed = true;
-    picture.hidden = true;
-    pictureFallback.hidden = false;
-    stage.classList.add('explore-image-missing');
+    syncPicture();
+  }
+  function imageLoaded() {
+    imagePending = false;
+    imageFailed = false;
+    syncPicture();
   }
   picture.addEventListener('error', imageError, {signal: activityEvents.signal});
-  picture.addEventListener('load', () => {
-    imageFailed = false;
-    picture.hidden = false;
-    pictureFallback.hidden = true;
-    stage.classList.remove('explore-image-missing');
-  }, {signal: activityEvents.signal});
-  if (picture.complete && !picture.naturalWidth) imageError();
+  picture.addEventListener('load', imageLoaded, {signal: activityEvents.signal});
+  if (picture.complete) picture.naturalWidth ? imageLoaded() : imageError();
+  else syncPicture();
 
   function renderCard(focus = false) {
     if (dead) return;
@@ -214,6 +221,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     canvasHolder.hidden = true;
     tools.hidden = true;
     section.classList.remove('is-model');
+    syncPicture();
     q('[data-explore="picture"]').setAttribute('aria-pressed', 'true');
     modelButton.setAttribute('aria-pressed', 'false');
     clearPreset();
@@ -252,6 +260,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
       });
       parsed = null; // Viewer now owns all model resources.
       mode = 'model';
+      syncPicture();
       section.classList.add('is-model');
       canvasHolder.hidden = false;
       pictureFallback.hidden = true;
@@ -284,12 +293,15 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     if (!button || !container.contains(button) || button.disabled || dead) return;
     const action = button.dataset.explore;
     if (action === 'expand') setExpanded(!section.classList.contains('is-expanded'));
-    else if (action === 'picture') {showPicture(); announce(); if (imageFailed) pictureFallback.hidden = false;}
+    else if (action === 'picture') {showPicture(); announce();}
     else if (action === 'model') showModel();
     else if (action === 'retry-image') {
-      pictureFallback.hidden = true;
-      picture.hidden = false;
-      picture.src = `${imageURL}?retry=${Date.now()}`;
+      imagePending = true;
+      imageFailed = false;
+      syncPicture();
+      const retryURL = new URL(imageURL);
+      retryURL.searchParams.set('retry', Date.now());
+      picture.src = retryURL.href;
     } else if (action === 'zoom-in') {clearPreset(); viewer?.zoom(.8);}
     else if (action === 'zoom-out') {clearPreset(); viewer?.zoom(1.25);}
     else if (action === 'reset') {clearPreset(); viewer?.reset();}
