@@ -271,5 +271,6 @@ export const WORD_AUDIO_FILES = Object.freeze({
   "好|hào": "597d-hao4.mp3",
   "處|chǔ": "8655-chu3.mp3",
   "处|chǔ": "8655-chu3.mp3",
-  "都|dōu": "90fd-dou1.mp3"
+  "都|dōu": "90fd-dou1.mp3",
+  "流|liú": "6d41-liu2.mp3"
 });

@@ -28,12 +28,12 @@
       ],
       "suggestions": ["詩中的白鵝有甚麼動作？", "您為甚麼一開始連說三個「鵝」字？", "詩裡寫了哪些顏色？"],
       "phonics": [
-        {"id": "yong-e-tone", "label": "四聲", "prompt": "「鵝」é 是第幾聲？", "options": ["第一聲", "第二聲", "第三聲"], "answer": 1, "explanation": "é 是第二聲，聲音由低向高上揚。"},
-        {"id": "yong-e-e", "label": "a/o/e", "prompt": "「鵝」é 用了哪一個單韻母？", "options": ["a", "o", "e"], "answer": 2, "explanation": "「鵝」的拼音是 é，單韻母是 e。"},
-        {"id": "yong-e-u", "label": "i/u/ü", "prompt": "「綠」lǜ 的韻母是哪一個？", "options": ["i", "u", "ü"], "answer": 2, "explanation": "lǜ 的韻母是 ü；跟在 l 後面時，上面的兩點要保留。"},
-        {"id": "yong-e-b", "label": "b/p/m/f", "prompt": "「白」bái 的聲母是哪一個？", "options": ["b", "p", "m"], "answer": 0, "explanation": "bái 的聲母是 b，韻母是 ai。"},
-        {"id": "yong-e-t", "label": "d/t/n/l", "prompt": "「天」tiān 的聲母是哪一個？", "options": ["d", "t", "n"], "answer": 1, "explanation": "tiān 的聲母是 t，發音時有較明顯的氣流。"},
-        {"id": "yong-e-qu", "label": "i/u/ü", "prompt": "「曲項」的「曲」應讀哪一個音？", "options": ["qǔ", "qū", "kū"], "answer": 1, "explanation": "「曲項」是彎着脖子，「曲」讀 qū。ü 跟 q 相拼時，兩點省略。"}
+        {"id":"yong-e-tone","label":"四聲","prompt":"「鵝」 是第幾聲？","options":["第一聲","第二聲","第三聲"],"answer":1,"explanation":"é 是第二聲，聲音由低向高上揚。","audio":{"char":"鵝","pinyin":"é"}},
+        {"id":"yong-e-e","label":"a/o/e","prompt":"「鵝」 用了哪一個單韻母？","options":["a","o","e"],"answer":2,"explanation":"「鵝」的拼音是 é，單韻母是 e。","audio":{"char":"鵝","pinyin":"é"}},
+        {"id":"yong-e-u","label":"i/u/ü","prompt":"「綠」 的韻母是哪一個？","options":["i","u","ü"],"answer":2,"explanation":"lǜ 的韻母是 ü；跟在 l 後面時，上面的兩點要保留。","audio":{"char":"綠","pinyin":"lǜ"}},
+        {"id":"yong-e-b","label":"b/p/m/f","prompt":"「白」 的聲母是哪一個？","options":["b","p","m"],"answer":0,"explanation":"bái 的聲母是 b，韻母是 ai。","audio":{"char":"白","pinyin":"bái"}},
+        {"id":"yong-e-t","label":"d/t/n/l","prompt":"「天」 的聲母是哪一個？","options":["d","t","n"],"answer":1,"explanation":"tiān 的聲母是 t，發音時有較明顯的氣流。","audio":{"char":"天","pinyin":"tiān"}},
+        {"id":"yong-e-qu","label":"i/u/ü","prompt":"「曲項」的「曲」應讀哪一個音？","options":["qǔ","qū","kū"],"answer":1,"explanation":"「曲項」是彎着脖子，「曲」讀 qū。ü 跟 q 相拼時，兩點省略。","audio":{"char":"曲","pinyin":"qū"}}
       ]
     },
     {
@@ -65,12 +65,12 @@
       ],
       "suggestions": ["「踏歌」是怎樣送別朋友的？", "您為甚麼用桃花潭比喻友情？", "「深千尺」是真的量過潭水嗎？"],
       "phonics": [
-        {"id": "zeng-wang-lun-ia", "label": "ia/ie", "prompt": "「家」jiā 的韻母是哪一個？", "options": ["ia", "ie", "ai"], "answer": 0, "explanation": "jiā 的韻母是 ia；「街」jiē 的韻母才是 ie。"},
-        {"id": "zeng-wang-lun-iu", "label": "iao/iu", "prompt": "「流」liú 的韻母，在拼音中縮寫成甚麼？", "options": ["iao", "ui", "iu"], "answer": 2, "explanation": "iou 跟聲母相拼時縮寫成 iu，所以「流」寫作 liú。"},
-        {"id": "zeng-wang-lun-ian", "label": "ian/in", "prompt": "「千」qiān 的韻母是哪一個？", "options": ["in", "ian", "ing"], "answer": 1, "explanation": "qiān 的韻母是 ian；「親」qīn 的韻母是 in。"},
-        {"id": "zeng-wang-lun-iang", "label": "iang/ing/iong", "prompt": "「將欲行」的「將」jiāng，韻母是哪一個？", "options": ["ing", "iong", "iang"], "answer": 2, "explanation": "jiāng 的韻母是 iang。「將欲行」的「將」讀第一聲，表示將要。"},
-        {"id": "zeng-wang-lun-ua", "label": "ua/uo", "prompt": "「花」huā 的韻母是哪一個？", "options": ["ua", "uo", "ao"], "answer": 0, "explanation": "huā 的韻母是 ua；「火」huǒ 的韻母是 uo。"},
-        {"id": "zeng-wang-lun-ui", "label": "uai/ui", "prompt": "「水」shuǐ 的韻母，在拼音中寫成甚麼？", "options": ["uai", "ui", "iu"], "answer": 1, "explanation": "uei 跟聲母相拼時縮寫成 ui，所以「水」寫作 shuǐ。"}
+        {"id":"zeng-wang-lun-ia","label":"ia/ie","prompt":"「家」 的韻母是哪一個？","options":["ia","ie","ai"],"answer":0,"explanation":"jiā 的韻母是 ia；「街」jiē 的韻母才是 ie。","audio":{"char":"家","pinyin":"jiā"}},
+        {"id":"zeng-wang-lun-iu","label":"iao/iu","prompt":"「流」 的韻母，在拼音中縮寫成甚麼？","options":["iao","ui","iu"],"answer":2,"explanation":"iou 跟聲母相拼時縮寫成 iu，所以「流」寫作 liú。","audio":{"char":"流","pinyin":"liú"}},
+        {"id":"zeng-wang-lun-ian","label":"ian/in","prompt":"「千」 的韻母是哪一個？","options":["in","ian","ing"],"answer":1,"explanation":"qiān 的韻母是 ian；「親」qīn 的韻母是 in。","audio":{"char":"千","pinyin":"qiān"}},
+        {"id":"zeng-wang-lun-iang","label":"iang/ing/iong","prompt":"「將欲行」的「將」，韻母是哪一個？","options":["ing","iong","iang"],"answer":2,"explanation":"jiāng 的韻母是 iang。「將欲行」的「將」讀第一聲，表示將要。","audio":{"char":"將","pinyin":"jiāng"}},
+        {"id":"zeng-wang-lun-ua","label":"ua/uo","prompt":"「花」 的韻母是哪一個？","options":["ua","uo","ao"],"answer":0,"explanation":"huā 的韻母是 ua；「火」huǒ 的韻母是 uo。","audio":{"char":"花","pinyin":"huā"}},
+        {"id":"zeng-wang-lun-ui","label":"uai/ui","prompt":"「水」 的韻母，在拼音中寫成甚麼？","options":["uai","ui","iu"],"answer":1,"explanation":"uei 跟聲母相拼時縮寫成 ui，所以「水」寫作 shuǐ。","audio":{"char":"水","pinyin":"shuǐ"}}
       ]
     },
     {
@@ -102,12 +102,12 @@
       ],
       "suggestions": ["同一座廬山為甚麼會有不同樣子？", "「只緣身在此山中」是甚麼意思？", "這首詩能提醒我們怎樣看待事情？"],
       "phonics": [
-        {"id": "ti-xi-lin-bi-tone", "label": "四聲複習", "prompt": "「橫看」的「橫」héng 是第幾聲？", "options": ["第一聲", "第二聲", "第四聲"], "answer": 1, "explanation": "「橫看」的「橫」讀 héng，是第二聲。"},
-        {"id": "ti-xi-lin-bi-e", "label": "a/o/e", "prompt": "「各」gè 的單韻母是哪一個？", "options": ["e", "o", "a"], "answer": 0, "explanation": "gè 由聲母 g 和單韻母 e 組成。"},
-        {"id": "ti-xi-lin-bi-u", "label": "i/u/ü", "prompt": "「廬」lú 的韻母是哪一個？", "options": ["ü", "i", "u"], "answer": 2, "explanation": "「廬」讀 lú，韻母是 u；不要讀成 lǘ。"},
-        {"id": "ti-xi-lin-bi-b", "label": "b/p/m/f/d/t/n/l", "prompt": "「不」bù 的聲母是哪一個？", "options": ["p", "b", "m"], "answer": 1, "explanation": "bù 的聲母是 b，發音時雙唇閉合後打開，氣流較弱。"},
-        {"id": "ti-xi-lin-bi-g", "label": "g/k/h", "prompt": "「高」gāo 的聲母是哪一個？", "options": ["g", "k", "h"], "answer": 0, "explanation": "gāo 的聲母是 g；g 和 k 的主要分別是送氣強弱。"},
-        {"id": "ti-xi-lin-bi-feng", "label": "四聲複習", "prompt": "「山峯」的「峯」應讀哪一個音？", "options": ["féng", "fěng", "fēng"], "answer": 2, "explanation": "「峯」讀 fēng，是第一聲；「峯」和「峰」在這裡意思相同。"}
+        {"id":"ti-xi-lin-bi-tone","label":"四聲複習","prompt":"「橫看」的「橫」 是第幾聲？","options":["第一聲","第二聲","第四聲"],"answer":1,"explanation":"「橫看」的「橫」讀 héng，是第二聲。","audio":{"char":"橫","pinyin":"héng"}},
+        {"id":"ti-xi-lin-bi-e","label":"a/o/e","prompt":"「各」 的單韻母是哪一個？","options":["e","o","a"],"answer":0,"explanation":"gè 由聲母 g 和單韻母 e 組成。","audio":{"char":"各","pinyin":"gè"}},
+        {"id":"ti-xi-lin-bi-u","label":"i/u/ü","prompt":"「廬」 的韻母是哪一個？","options":["ü","i","u"],"answer":2,"explanation":"「廬」讀 lú，韻母是 u；不要讀成 lǘ。","audio":{"char":"廬","pinyin":"lú"}},
+        {"id":"ti-xi-lin-bi-b","label":"b/p/m/f/d/t/n/l","prompt":"「不」 的聲母是哪一個？","options":["p","b","m"],"answer":1,"explanation":"bù 的聲母是 b，發音時雙唇閉合後打開，氣流較弱。","audio":{"char":"不","pinyin":"bù"}},
+        {"id":"ti-xi-lin-bi-g","label":"g/k/h","prompt":"「高」 的聲母是哪一個？","options":["g","k","h"],"answer":0,"explanation":"gāo 的聲母是 g；g 和 k 的主要分別是送氣強弱。","audio":{"char":"高","pinyin":"gāo"}},
+        {"id":"ti-xi-lin-bi-feng","label":"四聲複習","prompt":"「山峯」的「峯」應讀哪一個音？","options":["féng","fěng","fēng"],"answer":2,"explanation":"「峯」讀 fēng，是第一聲；「峯」和「峰」在這裡意思相同。","audio":{"char":"峯","pinyin":"fēng"}}
       ]
     },
     {
@@ -139,12 +139,12 @@
       ],
       "suggestions": ["京口、瓜洲和鍾山在詩中有甚麼關係？", "「春風又綠江南岸」的「綠」妙在哪裡？", "「明月何時照我還」表達了甚麼心情？"],
       "phonics": [
-        {"id": "bo-chuan-gua-zhou-s", "label": "z/c/s", "prompt": "「三」sān 的聲母是哪一個？", "options": ["sh", "z", "s"], "answer": 2, "explanation": "sān 的聲母是平舌音 s；「山」shān 的聲母是翹舌音 sh。"},
-        {"id": "bo-chuan-gua-zhou-zh", "label": "zh/ch/sh/r", "prompt": "「照」zhào 的聲母是哪一個？", "options": ["zh", "z", "ch"], "answer": 0, "explanation": "zhào 的聲母是翹舌音 zh，不能讀成平舌音 z。"},
-        {"id": "bo-chuan-gua-zhou-si", "label": "zi/ci/si", "prompt": "「四」的正確拼音是哪一個？", "options": ["shì", "sì", "xì"], "answer": 1, "explanation": "「四」讀 sì，是整體認讀音節 si 的第四聲，聲母是平舌音 s。"},
-        {"id": "bo-chuan-gua-zhou-ua", "label": "u/ua/uo", "prompt": "「瓜」guā 的韻母是哪一個？", "options": ["u", "uo", "ua"], "answer": 2, "explanation": "guā 的韻母是 ua，由 u 向 a 滑動。"},
-        {"id": "bo-chuan-gua-zhou-ui", "label": "uai/ui", "prompt": "「水」shuǐ 和「帥」shuài，哪個韻母寫作 ui？", "options": ["水 shuǐ", "帥 shuài", "兩個都是"], "answer": 0, "explanation": "shuǐ 的韻母寫作 ui；shuài 的韻母是 uai。"},
-        {"id": "bo-chuan-gua-zhou-ch", "label": "zh/ch/sh/r", "prompt": "「春」chūn 的聲母是哪一個？", "options": ["c", "ch", "q"], "answer": 1, "explanation": "chūn 的聲母是翹舌音 ch，發音時舌尖翹起，送氣較強。"}
+        {"id":"bo-chuan-gua-zhou-s","label":"z/c/s","prompt":"「三」 的聲母是哪一個？","options":["sh","z","s"],"answer":2,"explanation":"sān 的聲母是平舌音 s；「山」shān 的聲母是翹舌音 sh。","audio":{"char":"三","pinyin":"sān"}},
+        {"id":"bo-chuan-gua-zhou-zh","label":"zh/ch/sh/r","prompt":"「照」 的聲母是哪一個？","options":["zh","z","ch"],"answer":0,"explanation":"zhào 的聲母是翹舌音 zh，不能讀成平舌音 z。","audio":{"char":"照","pinyin":"zhào"}},
+        {"id":"bo-chuan-gua-zhou-si","label":"zi/ci/si","prompt":"「四」的正確拼音是哪一個？","options":["shì","sì","xì"],"answer":1,"explanation":"「四」讀 sì，是整體認讀音節 si 的第四聲，聲母是平舌音 s。","audio":{"char":"四","pinyin":"sì"}},
+        {"id":"bo-chuan-gua-zhou-ua","label":"u/ua/uo","prompt":"「瓜」 的韻母是哪一個？","options":["u","uo","ua"],"answer":2,"explanation":"guā 的韻母是 ua，由 u 向 a 滑動。","audio":{"char":"瓜","pinyin":"guā"}},
+        {"id":"bo-chuan-gua-zhou-ui","label":"uai/ui","prompt":"「水」 和「帥」，哪個韻母寫作 ui？","options":["水","帥","兩個都是"],"answer":0,"explanation":"shuǐ 的韻母寫作 ui；shuài 的韻母是 uai。","audio":{"char":"水","pinyin":"shuǐ","text":"水，帥。","parts":[{"char":"水","pinyin":"shuǐ"},{"char":"帥","pinyin":"shuài"}]}},
+        {"id":"bo-chuan-gua-zhou-ch","label":"zh/ch/sh/r","prompt":"「春」 的聲母是哪一個？","options":["c","ch","q"],"answer":1,"explanation":"chūn 的聲母是翹舌音 ch，發音時舌尖翹起，送氣較強。","audio":{"char":"春","pinyin":"chūn"}}
       ]
     },
     {
@@ -178,12 +178,12 @@
       ],
       "suggestions": ["「晨興理荒穢」寫的是甚麼農事？", "「荷鋤」的「荷」為甚麼讀 hè？", "衣服被露水打濕，您為甚麼不覺得可惜？"],
       "phonics": [
-        {"id": "gui-yuan-tian-ju-zhong", "label": "一四聲/二三聲", "prompt": "「種豆」的「種」應讀哪一個音？", "options": ["zhǒng", "zhòng", "zhōng"], "answer": 1, "explanation": "「種豆」表示種植豆子，「種」是動詞，讀第四聲 zhòng。"},
-        {"id": "gui-yuan-tian-ju-he", "label": "一四聲/二三聲", "prompt": "「帶月荷鋤歸」的「荷」應讀哪一個音？", "options": ["hè", "hé", "hē"], "answer": 0, "explanation": "「荷鋤」是扛着鋤頭，「荷」讀 hè；「荷花」的「荷」才讀 hé。"},
-        {"id": "gui-yuan-tian-ju-bp", "label": "b/p", "prompt": "「白」bái 和「排」pái，哪一個聲母送氣較強？", "options": ["白 bái 的 b", "兩個一樣", "排 pái 的 p"], "answer": 2, "explanation": "p 是送氣音，氣流較強；b 是不送氣音。"},
-        {"id": "gui-yuan-tian-ju-dt", "label": "d/t", "prompt": "「帶」dài 的聲母是哪一個？", "options": ["t", "d", "n"], "answer": 1, "explanation": "dài 的聲母是 d；d 不送氣，t 送氣。"},
-        {"id": "gui-yuan-tian-ju-nl", "label": "n/l", "prompt": "「南」nán 的聲母是哪一個？", "options": ["n", "l", "r"], "answer": 0, "explanation": "nán 的聲母是鼻音 n，氣流經鼻腔發出；l 是邊音。"},
-        {"id": "gui-yuan-tian-ju-h", "label": "g/k/h", "prompt": "「荒」huāng 的聲母是哪一個？", "options": ["g", "k", "h"], "answer": 2, "explanation": "huāng 的聲母是 h，韻母是 uang；不要漏讀介音 u。"}
+        {"id":"gui-yuan-tian-ju-zhong","label":"一四聲/二三聲","prompt":"「種豆」的「種」應讀哪一個音？","options":["zhǒng","zhòng","zhōng"],"answer":1,"explanation":"「種豆」表示種植豆子，「種」是動詞，讀第四聲 zhòng。","audio":{"char":"種","pinyin":"zhòng"}},
+        {"id":"gui-yuan-tian-ju-he","label":"一四聲/二三聲","prompt":"「帶月荷鋤歸」的「荷」應讀哪一個音？","options":["hè","hé","hē"],"answer":0,"explanation":"「荷鋤」是扛着鋤頭，「荷」讀 hè；「荷花」的「荷」才讀 hé。","audio":{"char":"荷","pinyin":"hè"}},
+        {"id":"gui-yuan-tian-ju-bp","label":"b/p","prompt":"「白」 和「排」，哪一個聲母送氣較強？","options":["白","兩個一樣","排"],"answer":2,"explanation":"p 是送氣音，氣流較強；b 是不送氣音。","audio":{"char":"白","pinyin":"bái","text":"白，排。","parts":[{"char":"白","pinyin":"bái"},{"char":"排","pinyin":"pái"}]}},
+        {"id":"gui-yuan-tian-ju-dt","label":"d/t","prompt":"「帶」 的聲母是哪一個？","options":["t","d","n"],"answer":1,"explanation":"dài 的聲母是 d；d 不送氣，t 送氣。","audio":{"char":"帶","pinyin":"dài"}},
+        {"id":"gui-yuan-tian-ju-nl","label":"n/l","prompt":"「南」 的聲母是哪一個？","options":["n","l","r"],"answer":0,"explanation":"nán 的聲母是鼻音 n，氣流經鼻腔發出；l 是邊音。","audio":{"char":"南","pinyin":"nán"}},
+        {"id":"gui-yuan-tian-ju-h","label":"g/k/h","prompt":"「荒」 的聲母是哪一個？","options":["g","k","h"],"answer":2,"explanation":"huāng 的聲母是 h，韻母是 uang；不要漏讀介音 u。","audio":{"char":"荒","pinyin":"huāng"}}
       ]
     },
     {
@@ -216,12 +216,12 @@
       ],
       "suggestions": ["「潤如酥」寫出春雨怎樣的感覺？", "草色為甚麼遠看有、近看卻沒有？", "您為甚麼覺得早春比煙柳滿城更美？"],
       "phonics": [
-        {"id": "zao-chun-j", "label": "j/z/zh", "prompt": "「街」jiē 的聲母是哪一個？", "options": ["zh", "j", "z"], "answer": 1, "explanation": "jiē 的聲母是舌面音 j；z 是平舌音，zh 是翹舌音。"},
-        {"id": "zao-chun-ch", "label": "q/c/ch", "prompt": "「春好處」的「處」chù，聲母是哪一個？", "options": ["ch", "c", "q"], "answer": 0, "explanation": "chù 的聲母是翹舌音 ch，不能讀成平舌音 c。"},
-        {"id": "zao-chun-s", "label": "x/s/sh", "prompt": "「酥」sū 的聲母是哪一個？", "options": ["sh", "x", "s"], "answer": 2, "explanation": "sū 的聲母是平舌音 s；「書」shū 的聲母才是 sh。"},
-        {"id": "zao-chun-an", "label": "an/ang", "prompt": "「滿」mǎn 的韻母是哪一個？", "options": ["ang", "an", "en"], "answer": 1, "explanation": "mǎn 的韻母是前鼻韻母 an，收尾時舌尖抵住上齒齦。"},
-        {"id": "zao-chun-jue", "label": "j/z/zh", "prompt": "「絕」的正確拼音是哪一個？", "options": ["jué", "zhué", "zué"], "answer": 0, "explanation": "「絕」讀 jué，聲母是 j；韻母 üe 跟 j 相拼時省略 ü 上的兩點。"},
-        {"id": "zao-chun-sheng", "label": "x/s/sh", "prompt": "「勝」shèng 的聲母是哪一個？", "options": ["s", "x", "sh"], "answer": 2, "explanation": "shèng 的聲母是翹舌音 sh，韻母是後鼻韻母 eng。"}
+        {"id":"zao-chun-j","label":"j/z/zh","prompt":"「街」 的聲母是哪一個？","options":["zh","j","z"],"answer":1,"explanation":"jiē 的聲母是舌面音 j；z 是平舌音，zh 是翹舌音。","audio":{"char":"街","pinyin":"jiē"}},
+        {"id":"zao-chun-ch","label":"q/c/ch","prompt":"「春好處」的「處」，聲母是哪一個？","options":["ch","c","q"],"answer":0,"explanation":"chù 的聲母是翹舌音 ch，不能讀成平舌音 c。","audio":{"char":"處","pinyin":"chù"}},
+        {"id":"zao-chun-s","label":"x/s/sh","prompt":"「酥」 的聲母是哪一個？","options":["sh","x","s"],"answer":2,"explanation":"sū 的聲母是平舌音 s；「書」shū 的聲母才是 sh。","audio":{"char":"酥","pinyin":"sū"}},
+        {"id":"zao-chun-an","label":"an/ang","prompt":"「滿」 的韻母是哪一個？","options":["ang","an","en"],"answer":1,"explanation":"mǎn 的韻母是前鼻韻母 an，收尾時舌尖抵住上齒齦。","audio":{"char":"滿","pinyin":"mǎn"}},
+        {"id":"zao-chun-jue","label":"j/z/zh","prompt":"「絕」的正確拼音是哪一個？","options":["jué","zhué","zué"],"answer":0,"explanation":"「絕」讀 jué，聲母是 j；韻母 üe 跟 j 相拼時省略 ü 上的兩點。","audio":{"char":"絕","pinyin":"jué"}},
+        {"id":"zao-chun-sheng","label":"x/s/sh","prompt":"「勝」 的聲母是哪一個？","options":["s","x","sh"],"answer":2,"explanation":"shèng 的聲母是翹舌音 sh，韻母是後鼻韻母 eng。","audio":{"char":"勝","pinyin":"shèng"}}
       ]
     }
   ]

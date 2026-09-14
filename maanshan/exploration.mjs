@@ -17,7 +17,7 @@ const MAX_MODEL_BYTES = 12 * 1024 * 1024;
 
 // Generated assets are self-contained GLBs. Reject external references so a
 // model can never silently start unbounded third-party texture downloads.
-function validateGLB(buffer) {
+export function validateGLB(buffer) {
   if (buffer.byteLength < 20 || buffer.byteLength > MAX_MODEL_BYTES) throw new Error('invalid-model');
   const header = new DataView(buffer);
   if (header.getUint32(0, true) !== 0x46546c67 || header.getUint32(4, true) !== 2 ||
@@ -31,7 +31,7 @@ function validateGLB(buffer) {
   return buffer;
 }
 
-async function readModel(response, signal) {
+export async function readModel(response, signal) {
   if (!response.ok) throw new Error('model-unavailable');
   if (Number(response.headers.get('content-length')) > MAX_MODEL_BYTES) throw new Error('model-too-large');
   if (!response.body?.getReader) return validateGLB(await response.arrayBuffer());
@@ -56,7 +56,7 @@ async function readModel(response, signal) {
   return validateGLB(bytes.buffer);
 }
 
-function disposeObject(root) {
+export function disposeObject(root) {
   const geometries = new Set(), materials = new Set(), textures = new Set(), images = new Set();
   root?.traverse(node => {
     if (node.geometry) geometries.add(node.geometry);
@@ -352,7 +352,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
   };
 }
 
-function createViewer({THREE, OrbitControls, gltf, holder, stage, content, onInteract, onContextLost}) {
+export function createViewer({THREE, OrbitControls, gltf, holder, stage, content, onInteract, onContextLost}) {
   let renderer;
   try {renderer = new THREE.WebGLRenderer({alpha: true, antialias: true, powerPreference: 'low-power'});}
   catch {throw new Error('webgl-unavailable');}
@@ -467,7 +467,11 @@ function createViewer({THREE, OrbitControls, gltf, holder, stage, content, onInt
     setView(direction.normalize(), distance);
   };
   const preset = id => {
-    if (id === 'front') setView(new THREE.Vector3(0, .28, 1).normalize(), baseDistance);
+    if (content.presetViews?.[id]) {
+      const view = content.presetViews[id];
+      setView(new THREE.Vector3(...view.direction).normalize(), baseDistance * view.distance);
+    }
+    else if (id === 'front') setView(new THREE.Vector3(0, .28, 1).normalize(), baseDistance);
     else if (id === 'side') setView(new THREE.Vector3(1, .28, 0).normalize(), baseDistance);
     else if (id === 'top') setView(new THREE.Vector3(.35, 1.25, .65).normalize(), baseDistance * .9);
     else if (id === 'detail') setView(new THREE.Vector3(.8, .12, 1).normalize(), baseDistance * .7);

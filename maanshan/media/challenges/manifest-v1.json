@@ -1,0 +1,63 @@
+{
+  "version": "20260914-v1",
+  "imageModel": "gpt-image-2",
+  "imageWorkflow": "Bundled skill image_gen.py CLI, then local foreground extraction",
+  "tripoModel": "v3.1-20260211",
+  "tripoTaskId": "33610d58-fba2-42c5-9a35-cba017334de2",
+  "intendedUse": "Neutral sound capsule to tap, rotate and listen before sorting into sound-market shelves. No answers or phonetic labels in the artwork.",
+  "model": {
+    "file": "sound-pod-v1.glb",
+    "bytes": 1242028,
+    "sha256": "5ba782ed0900b21e8bf104774496c7343de6be90aca39890abf7778716641bc0",
+    "triangles": 35000,
+    "textures": 3,
+    "textureSize": 1024,
+    "format": "glTF 2.0 binary",
+    "externalDependencies": false,
+    "geometryDecoderRequired": false,
+    "frontDirection": [
+      0,
+      0,
+      1
+    ],
+    "upDirection": [
+      0,
+      1,
+      0
+    ],
+    "recommendedCameraDirection": [
+      0,
+      0.12,
+      1
+    ],
+    "recommendedToneMapping": "ACESFilmic",
+    "recommendedExposure": 1
+  },
+  "images": [
+    {
+      "file": "sound-market-v1.webp",
+      "bytes": 195680,
+      "sha256": "e7c167a9b5ef0e277f1b3858ca0873e1a62bee95c6605c68963e6831df825307",
+      "width": 960,
+      "height": 800,
+      "alphaMin": 0,
+      "alphaMax": 255,
+      "transparentFraction": 0.39881380208333334
+    },
+    {
+      "file": "sound-pod-v1.webp",
+      "bytes": 92058,
+      "sha256": "639763bceb5e79f2987d1781f7c7cb704ff81a12a243ca492565c290a68f586e",
+      "width": 433,
+      "height": 800,
+      "alphaMin": 0,
+      "alphaMax": 255,
+      "transparentFraction": 0.4660652424942263
+    }
+  ],
+  "rightsRecord": "AI-generated project assets. No third-party reference artworks supplied. Provider account terms apply; no Creative Commons or public-domain licence asserted.",
+  "sourcePrompts": [
+    "market-prompt.txt",
+    "sound-pod-prompt.txt"
+  ]
+}
