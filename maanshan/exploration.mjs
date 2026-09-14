@@ -1,4 +1,4 @@
-import {EXPLORATION_CONTENT} from './exploration-data.mjs?v=20260914b';
+import {EXPLORATION_CONTENT} from './exploration-data.mjs?v=20260914d';
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ICONS = {
@@ -84,7 +84,12 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
   const content = EXPLORATION_CONTENT[poem?.slug];
   if (!container || !content) throw new Error('Unknown poem exploration');
   const assetBase = new URL(`./media/exploration/${poem.slug}/`, import.meta.url);
-  const imageURL = new URL('scene.webp', assetBase).href;
+  const assetURL = name => {
+    const url = new URL(name, assetBase);
+    if (content.assetVersion) url.searchParams.set('v', content.assetVersion);
+    return url;
+  };
+  const imageURL = assetURL('scene.webp').href;
   let dead = false, observation = 0, correct = false, completed = false, notified = false;
   let mode = 'picture', loadGeneration = 0, pending = null, viewer = null;
   let imageFailed = false;
@@ -231,7 +236,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
       // Both imports and the model fetch start only after the explicit button.
       const {THREE, GLTFLoader, OrbitControls} = await import('./vendor/poetry-three.mjs?v=20260913a');
       if (!current()) return;
-      const response = await fetch(new URL('model.glb', assetBase), {signal: controller.signal, credentials: 'same-origin'});
+      const response = await fetch(assetURL('model.glb'), {signal: controller.signal, credentials: 'same-origin', cache: 'no-cache'});
       const buffer = await readModel(response, controller.signal);
       if (!current()) return;
       parsed = await new Promise((resolve, reject) => {
@@ -448,7 +453,7 @@ function createViewer({THREE, OrbitControls, gltf, holder, stage, content, onInt
     camera.updateProjectionMatrix();
     const halfVerticalFov = THREE.MathUtils.degToRad(camera.fov / 2);
     const limitingAngle = Math.min(halfVerticalFov, Math.atan(Math.tan(halfVerticalFov) * camera.aspect));
-    baseDistance = sphere.radius / Math.sin(limitingAngle) * 1.16;
+    baseDistance = sphere.radius / Math.sin(limitingAngle) * 1.16 * (content.viewDistance || 1);
     controls.minDistance = baseDistance * .52;
     controls.maxDistance = baseDistance * 1.9;
     const direction = camera.position.clone().sub(controls.target).normalize();

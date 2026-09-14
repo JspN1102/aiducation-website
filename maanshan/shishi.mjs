@@ -150,7 +150,7 @@ export function mountShishi(container, {view = 'library', poem, progress = {}, o
     try {
       const {THREE, GLTFLoader, OrbitControls} = await import('./vendor/poetry-three.mjs?v=20260913a');
       if (!current()) return;
-      const response = await fetch(modelURL, {signal: controller.signal, credentials: 'same-origin'});
+      const response = await fetch(modelURL, {signal: controller.signal, credentials: 'same-origin', cache: 'no-cache'});
       const buffer = await readModel(response, controller.signal);
       if (!current()) return;
       parsed = await new Promise((resolve, reject) => new GLTFLoader().parse(buffer, '', gltf => {

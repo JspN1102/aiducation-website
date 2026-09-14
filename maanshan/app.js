@@ -4,8 +4,8 @@ import {configurePronunciation, getPronunciationPractice} from './pronunciation.
 import {getWordAudioURL} from './word-audio.mjs';
 import {getSpeechAudioURL} from './speech-audio.mjs';
 import {createHandwritingPad} from './handwriting-pad.mjs?v=20260908i';
-import {mountExploration} from './exploration.mjs?v=20260914b';
-import {mountShishi} from './shishi.mjs?v=20260914b';
+import {mountExploration} from './exploration.mjs?v=20260914d';
+import {mountShishi} from './shishi.mjs?v=20260914d';
 import {mountPoetryPlay} from './poetry-play.mjs?v=20260914b';
 
 const $ = (selector, root = document) => root.querySelector(selector);
