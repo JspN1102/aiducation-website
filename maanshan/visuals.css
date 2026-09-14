@@ -17,7 +17,7 @@ body{background:radial-gradient(ellipse at 6% 0%,#fff9e7 0,transparent 48%),radi
 .library{max-width:1250px;padding-top:22px}
 .library-heading{margin-bottom:22px}.library-heading h1{display:block;font-size:clamp(27px,2.8vw,40px);line-height:1.45;letter-spacing:1px;color:#28564d}
 .library-heading .eyebrow{font-size:11px;color:#698071;letter-spacing:1.1px;margin-bottom:6px}.library-sub{color:#738577;font-size:13px;margin-top:7px;letter-spacing:.4px}
-.title-ink{position:relative;isolation:isolate;display:inline-block;color:#3d876a}.title-ink:after{content:'';position:absolute;z-index:-1;left:0;right:-3px;bottom:5px;height:10px;background:#e2ebba;transform:rotate(-2deg);border-radius:60% 35% 45% 30%}
+.title-ink{display:inline-block;color:#3d876a}
 .poetry-seal{display:inline-grid;margin-left:18px;vertical-align:middle;color:#bc7358;border-color:#c48567;outline-color:#d7a088;background:#fff8e8;width:26px;height:30px;font-size:18px;transform:rotate(-7deg)}
 .library-flourish{width:185px;height:98px;position:relative;flex-shrink:0;isolation:isolate;margin-right:15px}
 .library-flourish:before{content:'';position:absolute;z-index:-1;inset:6px 16px 5px 30px;background:#f6eccb;border-radius:59% 41% 52% 48% / 43% 57% 43% 57%;transform:rotate(-8deg)}

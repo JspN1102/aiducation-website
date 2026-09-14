@@ -180,7 +180,7 @@ function verseHTML(line,extra='') {
 function renderLibrary() {
   poem=null;document.title='古詩朗讀 · 馬鞍山靈糧小學';
   app.innerHTML='<main class="library" id="main">'+
-    '<div class="library-heading"><div><p class="eyebrow">馬鞍山靈糧小學 · 普通話</p><h1>把古詩，讀成<span class="title-ink">一幅畫</span><span class="poetry-seal" aria-hidden="true">詩</span></h1><p class="library-sub">和詩詩一起，聽字音 · 找詩意。</p></div><div class="library-flourish" aria-hidden="true"><img class="paper-bird" src="media/paper-crane-flight-v3.webp" width="180" height="136" alt=""><img class="library-shishi" src="media/shishi-guide.webp" width="135" height="176" alt=""></div></div>'+
+    '<div class="library-heading"><div><p class="eyebrow">馬鞍山靈糧小學 · 普通話</p><h1>把古詩，讀成<span class="title-ink">一幅畫</span></h1><p class="library-sub">選一首喜歡的詩，聽字音 · 找詩意。</p></div></div>'+
     '<div class="poem-grid library-books" id="poem-grid" aria-label="選擇古詩"></div><footer class="library-footer"><span id="shishi-library" class="shishi-home"></span><a href="credits.html">素材來源 '+icon('arrow-up-right')+'</a></footer></main>';
   renderCards();attachShishi($('#shishi-library'),'library');icons();
 }
@@ -573,9 +573,12 @@ function renderExploration(){
     }
   });
 }
+function chatSuggestions(p=poem) {
+  return [p.suggestions[0], '聊聊別的詩吧', '一起寫一首新詩吧'];
+}
 function renderChat() {
   const messages=state(poem).chat;
-  $('#view').innerHTML=`<div class="chat-layout"><aside class="poet-profile"><img src="${asset('avatar.webp')}" width="480" height="600" alt="${esc(poem.author)}"><h2>${esc(poem.author)}</h2><p>${esc(poem.authorBio)}</p></aside><div class="chat-tool"><div class="chat-messages" id="chat-messages" role="log" aria-live="polite"><div class="chat-message"><img src="${asset('avatar.webp')}" width="32" height="32" alt="${esc(poem.author)}"><div class="chat-bubble">你好，我是${esc(poem.author)}。今天一起讀《${esc(titleOf(poem))}》，你想聊聊詩裡的甚麼呢？</div></div>${messages.map((m,i)=>chatMessage(m,i)).join('')}</div><div class="chat-suggestions">${poem.suggestions.map((q,i)=>`<button data-action="chat-suggestion" data-value="${i}">${esc(q)}</button>`).join('')}</div><form class="chat-form" id="chat-form"><textarea id="chat-input" aria-label="想問詩人的問題" placeholder="我想問……" rows="2" maxlength="1000" required></textarea><button type="submit" class="icon-button" id="chat-send" aria-label="傳送問題" title="傳送問題">${icon('send')}</button></form><div id="chat-error" class="chat-error" role="status"></div></div></div>`;
+  $('#view').innerHTML=`<div class="chat-layout"><aside class="poet-profile"><img src="${asset('avatar.webp')}" width="480" height="600" alt="${esc(poem.author)}"><h2>${esc(poem.author)}</h2><p>${esc(poem.authorBio)}</p></aside><div class="chat-tool"><div class="chat-messages" id="chat-messages" role="log" aria-live="polite"><div class="chat-message"><img src="${asset('avatar.webp')}" width="32" height="32" alt="${esc(poem.author)}"><div class="chat-bubble">你好，我是${esc(poem.author)}。想聊《${esc(titleOf(poem))}》、別的詩，還是今天的趣事？也可以一起寫一首新詩！</div></div>${messages.map((m,i)=>chatMessage(m,i)).join('')}</div><div class="chat-suggestions">${chatSuggestions().map((q,i)=>`<button data-action="chat-suggestion" data-value="${i}">${esc(q)}</button>`).join('')}</div><form class="chat-form" id="chat-form"><textarea id="chat-input" aria-label="想和詩人聊的話" placeholder="我想聊……" rows="2" maxlength="1000" required></textarea><button type="submit" class="icon-button" id="chat-send" aria-label="傳送問題" title="傳送問題">${icon('send')}</button></form><div id="chat-error" class="chat-error" role="status"></div></div></div>`;
   $('#chat-form').addEventListener('submit',event=>{event.preventDefault();sendChat($('#chat-input').value.trim());});
   $('#chat-input').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();$('#chat-form').requestSubmit();}});icons();
   const holder=$('#chat-messages');holder.scrollTop=holder.scrollHeight;
@@ -660,7 +663,7 @@ document.addEventListener('click',event=>{
   if(action==='quiz-game-answer'&&quizGameChoice===null){quizGameChoice=Number(value);renderQuiz();}
   if(action==='quiz-game-next'){const s=state(poem);if(quizGameChoice!==null){s.quizGames[quizMode]={answer:quizGameChoice,correct:quizGameChoice===gameTask(poem,quizMode).answer,completedAt:Date.now()};persist();queueReading(poem,{quizGame:quizMode});quizGameChoice=null;renderQuiz();}else if(s.quizGames?.[quizMode]){delete s.quizGames[quizMode];persist();renderQuiz();}}
   if(action==='quiz-reset'){state(poem).quiz=[];state(poem).quizGames={};persist();queueReading();quizAnswers=[];quizIndex=0;quizChoice=null;quizGameChoice=null;renderQuiz();}
-  if(action==='chat-suggestion')sendChat(poem.suggestions[Number(value)]);
+  if(action==='chat-suggestion')sendChat(chatSuggestions()[Number(value)]);
   if(action==='chat-speak'){const message=state(poem).chat[Number(value)];if(message)speak(message.content,'',button);}
 });
 document.addEventListener('keydown',event=>{
