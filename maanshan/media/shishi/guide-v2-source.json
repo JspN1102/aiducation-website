@@ -1,0 +1,12 @@
+{
+  "asset": "Shishi poetry guide v2",
+  "date": "2026-09-15",
+  "reference": "Existing project Shishi character design, refined with gpt-image-2",
+  "model": "Tripo v3.1-20260211 image-to-model",
+  "postprocess": "glTF Transform geometry and embedded texture optimization, non-metal PBR calibration, +Z front and Y=0 base",
+  "files": {
+    "guide-v2.glb": { "bytes": 2029016, "triangles": 54997, "embeddedTextures": 3, "textureSize": 1024, "externalDecoderRequired": false },
+    "guide-v2.webp": { "bytes": 54756, "width": 600, "height": 600, "alpha": true, "source": "Transparent WebGL rendering of the same final GLB" }
+  },
+  "rights": "AI-generated asset based on the existing project character. Provider account terms apply; no additional open-source licence asserted."
+}
