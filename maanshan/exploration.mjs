@@ -160,7 +160,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     if (completed) {
       card.innerHTML = `<div class="explore-card-top"><span class="explore-step">${icon('check')}兩個發現，都找到了</span></div>
         <div class="explore-finish"><img class="explore-finish-shishi" src="media/shishi-guide.webp" alt="詩詩" width="90" height="100"><h3 tabindex="-1">把發現帶回詩裏</h3><p>${escapeHTML(content.finish)}</p></div>
-        <div class="explore-finish-actions"><a class="explore-next" href="#${escapeHTML(poem.slug)}/read">回到古詩${icon('arrow')}</a><button class="explore-again" type="button" data-explore="again">再找一次</button></div>`;
+        <div class="explore-finish-actions"><a class="explore-next" href="#${escapeHTML(poem.slug)}/record">再讀古詩${icon('arrow')}</a><button class="explore-again" type="button" data-explore="again">再找一次</button></div>`;
     } else {
       const item = content.observations[observation];
       card.innerHTML = `<div class="explore-card-top"><span class="explore-step">小發現 ${observation + 1} / ${content.observations.length}</span><div class="explore-dots" aria-hidden="true">${content.observations.map((_, i) => `<i class="${i <= observation ? 'is-filled' : ''}"></i>`).join('')}</div></div>

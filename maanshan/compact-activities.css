@@ -1,0 +1,116 @@
+/* Large labels with less repeated instruction in each exercise state. */
+@media(max-width:700px) and (max-height:650px){
+ .workspace.view-explore #view .explore-view-controls{left:112px;right:5px;justify-content:flex-end}
+ .workspace.view-explore #view .explore-mode button[aria-pressed=true]{display:none}
+ .workspace.view-explore #view .explore-expand{left:auto;right:9px}
+ .workspace.view-explore #view .explore.is-expanded .explore-layout{display:flex;flex:1;min-height:0}
+ .workspace.view-explore #view .explore.is-expanded .explore-visual{height:100%;min-height:0;flex:1}
+ .workspace.view-explore #view .explore.is-expanded .explore-view-controls{position:static;justify-content:center;flex:none}
+}
+.workspace .challenge-shell :is(.challenge-primary,.challenge-secondary,.challenge-text-button,.challenge-listen,.challenge-density button,.challenge-card,.challenge-slot,.challenge-model-tools button,.living-field-tools button){font-size:18px!important;line-height:1.4;min-height:48px}
+.workspace .challenge-shell :is(.challenge-eyebrow,.challenge-count small,.challenge-instruction,.challenge-audio-status,.challenge-manipulation-status,.challenge-stage-note,.challenge-slot-label,.challenge-slot-content,.challenge-feedback,.challenge-result-row em,.challenge-result-row small,.challenge-result-extras a,.challenge-kind-note,.living-field-status){font-size:16px!important;line-height:1.45}
+.workspace .challenge-shell .challenge-prompt{font-size:24px;line-height:1.4}
+.workspace .challenge-shell .challenge-intro-copy h2{font-size:30px}
+.workspace .challenge-shell .challenge-intro-copy>p{font-size:18px}
+.workspace .challenge-shell .challenge-trip span{font-size:18px;width:38px;height:38px}
+.workspace .challenge-shell .challenge-result-row{font-size:18px!important;min-height:52px}
+.workspace .challenge-shell .challenge-results-heading h2{font-size:28px}
+.workspace .challenge-shell .challenge-results-heading p{font-size:16px!important}
+.workspace .challenge-shell .challenge-shelf:has(.challenge-tone)>span{font-size:18px}
+.workspace .challenge-shell .challenge-density legend{font-size:18px}
+.workspace .challenge-shell .challenge-writing button{font-size:18px;min-height:48px}
+.workspace .challenge-shell .challenge-writing .cw-status{font-size:16px}
+.workspace .challenge-shell .challenge-footer-actions{padding-left:0;gap:8px}
+.workspace .challenge-shell .challenge-feedback [data-ch=show-solution]{font-size:16px!important;min-height:44px;margin-left:0}
+.workspace .challenge-shell .challenge-results-actions{flex-wrap:wrap;gap:8px}
+.workspace .challenge-shell .challenge-result-extras{flex-wrap:wrap;gap:8px 16px}
+.workspace .challenge-shell .challenge-result-extras a{min-height:44px;display:inline-flex;align-items:center}
+@media(max-width:700px){
+ .workspace.view-quiz .lesson-title p{font-size:16px;white-space:nowrap}.workspace.view-quiz .lesson-bar{min-height:78px}
+ .workspace .challenge-shell{padding:10px 12px}
+ .workspace .challenge-shell .challenge-prompt{font-size:22px}
+ .workspace .challenge-shell .challenge-card,.workspace .challenge-shell .challenge-slot{font-size:16px!important}
+ .workspace .challenge-shell .challenge-card>img{height:48px}
+ .workspace .challenge-shell .challenge-model-link{font-size:16px!important;min-height:44px}
+ .workspace .challenge-shell .challenge-writing .cw-board{width:min(100%,230px)}
+ .workspace .challenge-shell .challenge-writing.is-answered .cw-board{width:min(100%,145px)}
+ .workspace .challenge-shell .challenge-result-row{gap:6px;padding:6px 8px}
+ .workspace .challenge-shell .challenge-intro-art>img:first-child{height:150px}
+ .workspace .challenge-shell .challenge-intro-copy h2{font-size:26px;line-height:1.45}
+ .workspace .challenge-shell .challenge-results-heading p:not(.challenge-eyebrow){display:none}
+ .workspace .challenge-shell .challenge-results-heading{margin-bottom:10px}
+ .workspace .challenge-shell .challenge-result-row small{display:none}
+ .workspace .challenge-shell .challenge-result-list{gap:5px;margin-bottom:10px}
+}
+@media(max-width:700px) and (max-height:650px){
+ .workspace .challenge-shell .challenge-intro-art{display:none}
+ .workspace .challenge-shell.challenge-intro{justify-content:center}
+ .workspace .challenge-shell .challenge-intro-copy>p:not(.challenge-eyebrow):not(.challenge-kind-note){display:none}
+ .workspace .challenge-shell .challenge-prompt{font-size:22px;line-height:1.35;margin:0 0 6px}
+ .workspace .challenge-shell .challenge-instruction,.workspace .challenge-shell .challenge-manipulation-status:empty{display:none}
+ .workspace .challenge-shell .challenge-hands-work>.challenge-instruction{display:none}
+ .workspace .challenge-shell .challenge-hands-work>.challenge-manipulation-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ .workspace .challenge-shell .challenge-hands-layout{gap:7px;grid-template-columns:76px minmax(0,1fr);padding:0}
+ .workspace .challenge-shell .challenge-hands-work>.challenge-prompt{font-size:21px;margin:0}
+ .workspace .challenge-shell .challenge-goose,.workspace .challenge-shell .challenge-model-stage{height:78px}
+ .workspace .challenge-shell .challenge-model-tools{flex-wrap:wrap;gap:3px}
+ .workspace .challenge-shell .challenge-model-tools button{font-size:16px!important;min-height:44px;padding:4px 7px}
+ .workspace .challenge-shell .challenge-cards{gap:5px;margin:0}
+ .workspace .challenge-shell .challenge-card{padding:4px;gap:3px;min-height:52px;font-size:16px!important}
+ .workspace .challenge-shell .challenge-card>img{height:43px}
+ .workspace .challenge-shell .challenge-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+ .workspace .challenge-shell .challenge-slots:has(>button:last-child:nth-child(2)){grid-template-columns:repeat(2,minmax(0,1fr))}
+ .workspace .challenge-shell .challenge-slot{flex-direction:column;justify-content:center;padding:5px 3px;gap:3px;min-height:70px}
+ .workspace .challenge-shell .challenge-slot-label{min-width:0;text-align:center;font-size:16px!important;line-height:1.35}
+ .workspace .challenge-shell .challenge-slot-label>b{display:none}
+ .workspace .challenge-shell .challenge-slot-content{font-size:16px!important;min-width:0;line-height:1.35;flex-direction:column}
+ .workspace .challenge-shell .challenge-slot-content>img{width:40px;height:26px}
+ .workspace .challenge-shell .challenge-type-sequence .challenge-slot-content>img{display:none}
+ .workspace .challenge-shell .challenge-sound-layout{gap:7px}
+ .workspace .challenge-shell .challenge-sound-stage{height:112px;width:168px}
+ .workspace .challenge-shell .challenge-pod{height:64px;width:47px;top:25%}
+ .workspace .challenge-shell .challenge-stage-note,.workspace .challenge-shell .challenge-model-link{display:none}
+ .workspace .challenge-shell .challenge-sound-work>.challenge-audio-status{display:none}
+ .workspace .challenge-shell .challenge-shelf{min-height:64px;padding:5px 8px 12px}
+ .workspace .challenge-shell .challenge-shelf:has(.challenge-tone){min-height:56px;padding:5px;gap:3px;display:flex;flex-direction:column}
+ .workspace .challenge-shell .challenge-shelf:has(.challenge-tone)>span{font-size:16px}
+ .workspace .challenge-shell .challenge-tone{width:44px;height:24px}
+ .workspace .challenge-shell .challenge-shelves:has(>button:nth-child(4)){grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+ .workspace .challenge-shell .challenge-writing-layout{gap:3px}
+ .workspace .challenge-shell .challenge-writing .cw-board{width:min(100%,170px);margin:3px auto 5px}
+ .workspace .challenge-shell .challenge-writing.is-answered .cw-board{width:min(100%,105px)}
+ .workspace .challenge-shell .challenge-writing .cw-controls{gap:4px;flex-wrap:nowrap}
+ .workspace .challenge-shell .challenge-writing .cw-tools{gap:4px}
+ .workspace .challenge-shell .challenge-writing button{padding:7px 9px;font-size:16px;min-height:44px}
+ .workspace .challenge-shell .challenge-writing .cw-primary{min-width:90px}
+ .workspace .challenge-shell .challenge-writing .cw-status{font-size:16px;line-height:1.4;margin:4px 0;min-height:0}
+ .workspace .challenge-shell .challenge-writing .cw-answer{margin:3px 0 5px}
+ .workspace .challenge-shell .challenge-writing .cw-review-actions{gap:5px}
+ .workspace .challenge-shell .challenge-footer{padding-top:7px}
+ .workspace .challenge-shell .challenge-footer-actions{gap:6px;justify-content:flex-end}
+ .workspace .challenge-shell .challenge-feedback p{font-size:16px;line-height:1.45;margin:5px 0}
+ .workspace .challenge-shell .challenge-feedback [data-ch=show-solution]{min-height:44px;padding:5px 7px}
+ .workspace .challenge-shell:has(.has-feedback) .challenge-sound-stage{height:66px;width:110px}
+ .workspace .challenge-shell:has(.has-feedback) .challenge-pod{height:54px;width:40px;top:5%}
+ .workspace .challenge-shell:has(.has-feedback) .challenge-sound-work>.challenge-prompt{display:none}
+ .workspace .challenge-shell:has(.has-feedback) .challenge-observation,.workspace .challenge-shell:has(.has-feedback) .challenge-hands-work>.challenge-prompt{display:none}
+ .workspace .challenge-shell:has(.has-feedback) .challenge-hands-layout{display:block}
+ .workspace .challenge-shell .challenge-field{height:98px}
+ .workspace .challenge-shell .challenge-density{margin-top:4px}
+ .workspace .challenge-shell .challenge-density legend{font-size:18px;margin-bottom:4px}
+ .workspace .challenge-shell .challenge-density button{min-height:46px}
+ .workspace .challenge-shell .living-field-tools{margin-top:3px}
+ .workspace .challenge-shell .living-field-tools button{min-height:44px;font-size:16px!important}
+ .workspace .challenge-shell.challenge-results{justify-content:flex-start;padding:8px 10px}
+ .workspace .challenge-shell .challenge-results-heading h2{font-size:24px;margin:0}
+ .workspace .challenge-shell .challenge-results-heading{min-height:46px;gap:8px;margin:0 0 7px}
+ .workspace .challenge-shell .challenge-results-heading>img{width:40px;height:40px}
+ .workspace .challenge-shell .challenge-result-row{min-height:45px;font-size:16px!important;padding:4px 7px}
+ .workspace .challenge-shell .challenge-result-row em{font-size:16px!important;white-space:nowrap}
+ .workspace .challenge-shell .challenge-result-row small{display:none}
+ .workspace .challenge-shell .challenge-result-list{gap:4px;margin-bottom:6px}
+ .workspace .challenge-shell .challenge-results-actions{gap:4px;flex-wrap:nowrap;justify-content:flex-end}
+ .workspace .challenge-shell .challenge-results-actions button,.workspace .challenge-shell .challenge-results-actions a{font-size:16px!important;min-height:46px;padding:6px 8px}
+ .workspace .challenge-shell .challenge-result-extras{margin-top:3px;gap:2px 10px;justify-content:flex-end;padding-left:86px}
+ .workspace .challenge-shell .challenge-result-extras button{font-size:16px!important;min-height:44px;padding:4px 6px}
+}

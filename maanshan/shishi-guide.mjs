@@ -3,9 +3,8 @@ const pictureURL = new URL(`./media/shishi/guide-v2.webp?v=${ASSET_VERSION}`, im
 const modelURL = new URL(`./media/shishi/guide-v2.glb?v=${ASSET_VERSION}`, import.meta.url).href;
 let instanceID = 0;
 const HINTS = {
-  lesson: ['一起出發吧', '先選一個活動。想學字音就跟讀，想懂故事就看詩意。'],
-  record: ['一次讀好一句', '先聽示範，再按麥克風讀這一句。放慢一點，把每個字讀清楚。'],
-  read: ['看看畫裡的故事', '聽一聽這一幕的講解，再看看畫裡發生了甚麼。'],
+  lesson: ['一起出發吧', '先聽一聽、讀一讀，再找一找、練一練。「看一看」的動畫還在準備中。'],
+  record: ['一次讀好一句', '先按「聽示範」，再按「開始朗讀」讀這一句。'],
   write: ['一筆一筆來', '先看筆順，再在格子裡寫。寫錯一筆，可以撤回再試。'],
   quiz: ['先看這一題的提示', '聽清楚、看仔細，再動手試一試。不確定，可以再聽一次。'],
   report: ['挑一個地方練好', '先看看哪個字需要改進，點字聽一聽，再跟著讀一次。'],
@@ -20,6 +19,7 @@ export function mountShishi(container, options = {}) {
   let dead = false, open = false, paused = false, generation = 0;
   let pending = null, viewer = null, loadTimer = null, attempted = false;
   let attentionTimer = null, interacting = false;
+  let drag = null, suppressClick = false, position = null, userPosition = false, placementFrame = null;
   const heldPointers = new Set();
   const events = new AbortController(), id = `shishi-guide-${++instanceID}`;
   const guide = document.createElement('aside');
@@ -29,12 +29,46 @@ export function mountShishi(container, options = {}) {
     <p class="shishi-hint-text" role="status" aria-live="polite"></p><button type="button" class="shishi-understood">明白了</button>
   </section><button type="button" class="shishi-guide-button" aria-label="問詩詩：現在怎麼做" aria-controls="${id}" aria-expanded="false">
     <span class="shishi-guide-art" aria-hidden="true"><img src="${pictureURL}" width="72" height="72" alt="" decoding="async"><span class="shishi-guide-fallback" hidden>詩</span><span class="shishi-guide-canvas"></span></span>
-    <span class="shishi-guide-label">問詩詩</span>
   </button>`;
   container.replaceChildren(guide);
   const q = selector => guide.querySelector(selector), button = q('.shishi-guide-button');
   const bubble = q('.shishi-bubble'), holder = q('.shishi-guide-canvas'), picture = q('img'), fallback = q('.shishi-guide-fallback');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  function placeBubble() {
+    if (!open) return;
+    const r = guide.getBoundingClientRect(), b = bubble.getBoundingClientRect();
+    const x = Math.max(10, Math.min(innerWidth - b.width - 10, r.left));
+    const y = r.top > b.height + 20 ? r.top - b.height - 10 : Math.min(innerHeight - b.height - 10, r.bottom + 10);
+    bubble.style.left = `${x}px`;bubble.style.top = `${Math.max(10,y)}px`;
+  }
+  function setPosition(x, y) {
+    const r = button.getBoundingClientRect();
+    position = {x:Math.max(8,Math.min(innerWidth-r.width-8,x)),y:Math.max(8,Math.min(innerHeight-r.height-8,y))};
+    guide.style.left = `${position.x}px`;guide.style.top = `${position.y}px`;guide.style.bottom = 'auto';placeBubble();
+  }
+  function avoidControls() {
+    placementFrame=null;
+    if(dead||guide.hidden||open||drag||userPosition)return;
+    const {width,height}=button.getBoundingClientRect();if(!width||!height)return;
+    const adviceHeader=document.querySelector('#panel-advice:not([hidden]) .ai-report-header');
+    if(innerWidth<=700&&adviceHeader){const r=adviceHeader.getBoundingClientRect();setPosition(r.left+2,r.top);return;}
+    const explorationStage=document.querySelector('.view-explore .explore-stage');
+    if(innerWidth<=700&&innerHeight<=650&&explorationStage){const r=explorationStage.getBoundingClientRect();setPosition(r.left+4,r.top+8);return;}
+    const obstacles=[...document.querySelectorAll('#main button,#main a,#main input,#main textarea,#main canvas,.lesson-bar a,.lesson-bar summary')]
+      .filter(el=>el.checkVisibility()&&!el.closest('details:not([open]) nav'))
+      .map(el=>el.getBoundingClientRect()).filter(r=>r.width&&r.height&&r.bottom>0&&r.top<innerHeight);
+    const textAreas=[...document.querySelectorAll('#main h1,#main h2,#main h3,#main p,#main legend,#main ruby,.lesson-title')]
+      .filter(el=>el.checkVisibility()).map(el=>el.getBoundingClientRect()).filter(r=>r.width&&r.height);
+    const overlap=(x,y,r)=>Math.max(0,Math.min(x+width+5,r.right)-Math.max(x-5,r.left))*Math.max(0,Math.min(y+height+5,r.bottom)-Math.max(y-5,r.top));
+    const bottom=innerHeight-height-8,right=innerWidth-width-8;
+    const candidates=[];
+    for(let y=bottom;y>=80;y-=24){candidates.push({x:8,y},{x:right,y});}
+    if(position)candidates.unshift(position);
+    let best=null;
+    for(const c of candidates){const area=obstacles.reduce((sum,r)=>sum+overlap(c.x,c.y,r),0);const textArea=textAreas.reduce((sum,r)=>sum+overlap(c.x,c.y,r),0);const score=area*100+textArea*10+(bottom-c.y)+(c.x>8?100:0);if(!best||score<best.score)best={...c,score};}
+    if(best)setPosition(best.x,best.y);
+  }
+  function schedulePlacement(){if(placementFrame===null)placementFrame=requestAnimationFrame(avoidControls);}
   function close(restoreFocus = false) {
     open = false;bubble.hidden = true;button.setAttribute('aria-expanded', 'false');
     viewer?.settle();updateMotion();
@@ -42,7 +76,7 @@ export function mountShishi(container, options = {}) {
   }
   function updateMotion() {
     const hidden = guide.hidden || document.hidden;
-    const running = !hidden && !button.disabled && !interacting;
+    const running = !hidden && !button.disabled && !interacting && !drag;
     guide.dataset.motion = hidden?'hidden':reducedMotion.matches?'reduced':running?'idle':'paused';
     viewer?.updateMotion({running,hidden,quiet:open});
   }
@@ -59,10 +93,12 @@ export function mountShishi(container, options = {}) {
     const editing = !!active?.matches('input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, [contenteditable="true"]');
     const keyboard = !!window.visualViewport && innerHeight - window.visualViewport.height > 140;
     const modal = !!document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]:not([hidden])');
-    guide.hidden = settings.hidden === true || settings.view === 'library' || settings.view === 'home' || editing || keyboard || modal;
+    const expandedModel=!!document.querySelector('.explore.is-expanded');
+    guide.hidden = settings.hidden === true || settings.view === 'library' || settings.view === 'home' || editing || keyboard || modal || expandedModel;
     button.disabled = paused || settings.disabled === true;
     if (guide.hidden || button.disabled) close();
     updateMotion();
+    schedulePlacement();
     if (!guide.hidden && !button.disabled && !viewer && !pending) scheduleModel();
   }
   function stopModel() {
@@ -101,13 +137,35 @@ export function mountShishi(container, options = {}) {
   function checkPicture() {const missing = picture.complete && !picture.naturalWidth;picture.hidden = missing;fallback.hidden = !missing;}
   picture.addEventListener('load', checkPicture, {signal: events.signal});picture.addEventListener('error', checkPicture, {signal: events.signal});checkPicture();
   button.addEventListener('click', () => {
+    if (suppressClick) {suppressClick=false;return;}
     if (dead || button.disabled || guide.hidden) return;if (open) {close();return;}
     try {if (typeof settings.onOpen === 'function' && settings.onOpen() === false) return;} catch {return;}
     clearTimeout(attentionTimer);heldPointers.clear();interacting=false;
-    refreshHint();open = true;bubble.hidden = false;button.setAttribute('aria-expanded', 'true');updateMotion();viewer?.greet();
+    refreshHint();open = true;bubble.hidden = false;placeBubble();button.setAttribute('aria-expanded', 'true');updateMotion();viewer?.greet();
     if (!viewer && !pending) scheduleModel(true);
     if (button.matches(':focus-visible')) q('.shishi-dismiss').focus({preventScroll: true});
   }, {signal: events.signal});
+  button.addEventListener('pointerdown', event => {
+    if (event.button !== 0 || button.disabled || !event.isPrimary) return;
+    const r=button.getBoundingClientRect();suppressClick=false;
+    drag={id:event.pointerId,x:event.clientX,y:event.clientY,left:r.left,top:r.top,moved:false};
+    button.setPointerCapture(event.pointerId);updateMotion();
+  },{signal:events.signal});
+  button.addEventListener('pointermove', event => {
+    if (!drag || event.pointerId!==drag.id) return;
+    const dx=event.clientX-drag.x,dy=event.clientY-drag.y;
+    if (!drag.moved && Math.hypot(dx,dy)<8) return;
+    if (!drag.moved) {drag.moved=true;userPosition=true;close();guide.dataset.dragging='true';}
+    setPosition(drag.left+dx,drag.top+dy);
+  },{signal:events.signal});
+  const endDrag=event=>{
+    if(!drag || event.pointerId!==drag.id)return;
+    suppressClick=drag.moved;drag=null;delete guide.dataset.dragging;updateMotion();
+  };
+  button.addEventListener('pointerup',endDrag,{signal:events.signal});
+  button.addEventListener('pointercancel',endDrag,{signal:events.signal});
+  button.addEventListener('lostpointercapture',endDrag,{signal:events.signal});
+  window.addEventListener('resize',()=>{if(position)setPosition(position.x,position.y);placeBubble();schedulePlacement();},{signal:events.signal});
   q('.shishi-dismiss').addEventListener('click', () => close(true), {signal: events.signal});
   q('.shishi-understood').addEventListener('click', () => close(true), {signal: events.signal});
   document.addEventListener('keydown', event => {if (event.key === 'Escape' && open) {event.preventDefault();close(true);}}, {signal: events.signal});
@@ -136,14 +194,16 @@ export function mountShishi(container, options = {}) {
   window.visualViewport?.addEventListener('resize', updateVisibility, {signal: events.signal});
   const observer = new MutationObserver(records => {if (records.some(record => !guide.contains(record.target))) updateVisibility();});
   observer.observe(document.body, {attributes: true, attributeFilter: ['open', 'hidden', 'aria-modal'], childList: true, subtree: true});
+  const layoutObserver=new ResizeObserver(schedulePlacement);layoutObserver.observe(container.ownerDocument.querySelector('#app')||document.body);
   updateVisibility();
   return {
     pause(value = true) {paused = !!value;updateVisibility();},
     update(next = {}) {
       if ((next.view && next.view !== settings.view) || (next.poem && next.poem !== settings.poem)) {clearTimeout(attentionTimer);heldPointers.clear();interacting=false;close();}
-      settings = {...settings, ...next};if (open) refreshHint();updateVisibility();
+      if(next.view && next.view!==settings.view){position=null;userPosition=false;guide.style.left='';guide.style.top='';guide.style.bottom='';}
+      settings = {...settings, ...next};if (open) {refreshHint();placeBubble();}updateVisibility();
     },
-    destroy() {if (dead) return;dead = true;clearTimeout(attentionTimer);events.abort();observer.disconnect();stopModel();guide.remove();}
+    destroy() {if (dead) return;dead = true;clearTimeout(attentionTimer);cancelAnimationFrame(placementFrame);events.abort();observer.disconnect();layoutObserver.disconnect();stopModel();guide.remove();}
   };
 }
 

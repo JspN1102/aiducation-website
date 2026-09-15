@@ -1,0 +1,247 @@
+﻿/* Final reading scale: useful labels stay legible, with one task per screen. */
+:root{--child-body:18px;--child-secondary:16px;--child-action:18px}
+body{font-size:var(--child-body)}
+.workspace :is(.button,.text-button,.menu-panel a,.menu-panel button),.profile-button{font-size:var(--child-action);min-height:48px;line-height:1.45}
+.workspace .icon-button{width:48px;height:48px;min-width:48px;min-height:48px}
+.workspace .lesson-title h1{font-size:clamp(26px,2.7vw,34px);line-height:1.3;letter-spacing:0}
+.workspace .lesson-title p{font-size:18px;line-height:1.4;letter-spacing:0;margin-top:3px}
+.workspace .back-library,.workspace .lesson-menu>summary{font-size:16px;line-height:1.3;min-height:50px}
+.workspace .lesson-menu>summary{width:52px;height:52px}
+.workspace .lesson-bar{padding-block:12px;margin-bottom:12px;min-height:90px}
+.workspace.lesson-shell{padding-bottom:24px}
+.workspace .view-section{padding:3px;scrollbar-width:thin}
+.workspace :is(.eyebrow,.section-count,.view-heading p,.loading-page p,.error-text,.empty-note,.practice-pager span,.report-grade-label,.report-line-heading h3,.audio-timeline,.reading-folio){font-size:16px;line-height:1.55}
+.workspace :is(.view-heading h2,.section-heading h2,.panel-title,.report-empty h2,.completion h2){font-size:26px;line-height:1.4}
+.workspace :is(input,textarea,select){font-size:18px}
+.toast,.error-text,.chat-error{font-size:16px;line-height:1.6}
+.profile-dialog label,.profile-dialog .eyebrow{font-size:16px;line-height:1.5}
+.profile-dialog :is(input,select){font-size:18px;min-height:48px}
+dialog :is(button,.button){font-size:18px;min-height:48px}
+dialog .icon-button{width:48px;min-width:48px;height:48px}
+dialog h2{font-size:26px;line-height:1.4}
+.workspace :is(rt,.verse rt,.focus-word rt,.sound-word rt,.practice-pick rt){font-size:16px;line-height:1.35}
+.workspace .verse ruby{font-size:32px;min-width:38px;line-height:1.6}
+.workspace .verse .punct{font-size:30px;line-height:1.6}
+
+.library-heading h1{font-size:clamp(28px,3.5vw,40px)}
+.library .poem-card-title h2{font-size:24px;line-height:1.3}
+.library .poem-card-title h2 small,.library .poem-grade,.library-footer{font-size:16px}
+.library .poem-author{font-size:18px;line-height:1.4;margin:4px 0 6px}
+.library .poem-open{font-size:18px;min-height:48px}
+.library .poem-open svg{width:18px;height:18px}
+.library-footer a{min-height:44px}
+
+.workspace.view-record .record-layout{height:100%;min-height:0;gap:28px;align-items:center}
+.workspace.view-record .record-landscape{padding:10px 10px 2px}
+.workspace.view-record .record-art{max-height:calc(100dvh - 310px)}
+.workspace.view-record .record-line-nav{grid-template-columns:48px minmax(0,1fr) 48px;min-height:48px}
+.workspace.view-record .record-unfold-note{font-size:16px;line-height:1.55;text-align:center}
+.workspace.view-record .record-counter,.workspace.view-record .record-word-heading{font-size:16px;min-height:36px;line-height:1.5}
+.workspace.view-record .record-counter>span{font-size:16px}
+.workspace.view-record .record-tool{max-width:460px;padding:4px 0;min-height:0}
+.workspace.view-record .record-tool>.verse{margin:10px 0 16px;min-height:64px}
+.workspace.view-record .record-tool>.verse rt,.workspace.view-record .record-tool>.verse.verse-compound rt{font-size:16px;line-height:1.2}
+.workspace.view-record .record-model{gap:10px;margin:0 0 20px}
+.workspace.view-record .record-model .button{font-size:18px;min-height:50px;padding:10px 16px}
+.workspace.view-record .record-model svg{width:22px;height:22px}
+.workspace.view-record .record-actions{min-height:88px;gap:10px}
+.workspace.view-record .record-actions .button{font-size:18px;min-height:50px;padding:10px 16px}
+.workspace.view-record .mic-button{font-size:20px;min-height:110px;gap:14px}
+.workspace.view-record .mic-button svg{width:70px;height:70px;padding:21px}
+.workspace.view-record #record-controls{min-height:116px}
+.workspace.view-record .record-status,.workspace.view-record .record-word-hint{font-size:16px;line-height:1.6;margin-top:8px}
+.workspace.view-record .record-bottom{position:static;width:100%;grid-column:1/-1;flex-wrap:wrap;justify-content:center;min-height:50px;margin-top:0;gap:4px 16px}
+.workspace.view-record .record-bottom .text-button{font-size:18px;min-height:48px}
+.workspace.view-record .record-bottom svg{width:20px;height:20px}
+.workspace.view-record .record-feedback-title{font-size:24px;line-height:1.4}
+.workspace.view-record .record-result small{font-size:18px}
+.workspace.view-record .record-word-pager{margin:3px 0}
+.workspace.view-record .record-review .focus-word ruby{font-size:58px}
+.workspace.view-record .record-review .focus-word rt{font-size:20px}
+.workspace.view-record .record-review .focus-word{min-height:102px;padding:7px 15px}
+
+.workspace.view-write .writing-layout{height:100%;min-height:0;padding:0;align-items:center}
+.workspace.view-write .writing-tool{width:100%;min-width:0;max-width:min(440px,calc(100dvh - 350px));max-height:100%}
+.workspace.view-write .writing-pinyin{font-size:28px;line-height:1.3}
+.workspace.view-write .writing-counter{font-size:16px;line-height:1.5}
+.workspace.view-write .writing-toolbar{margin-bottom:9px;min-height:58px}
+.workspace.view-write .writing-controls{margin-top:10px;gap:8px;display:grid;grid-template-columns:1fr auto;align-items:center}
+.workspace.view-write .writing-tools{gap:4px;display:flex}
+.workspace.view-write .writing-tools .icon-button{width:46px;min-width:46px;height:48px;min-height:48px}
+.workspace.view-write .writing-controls>.button{width:auto;font-size:18px;padding:9px 14px;min-height:48px}
+.workspace.view-write .writing-feedback{font-size:16px;line-height:1.5;margin:7px 0 0;min-height:0}
+.workspace.view-write .writing-status{font-size:16px;line-height:1.5}
+.workspace.view-write .writing-status .text-button{font-size:16px;min-height:48px}
+.workspace.view-write .writing-context p,.workspace.view-write .shishi-note p{font-size:16px!important;line-height:1.7!important}
+.workspace.view-write .shishi-note strong{font-size:18px}
+
+.workspace.view-report .report-tabs button{font-size:18px;min-height:50px}
+.workspace.view-report .report-prose{font-size:18px;line-height:1.85;padding:13px 16px}
+.workspace.view-report :is(.report-grade-label,.advice-placeholder,.practice-tip,.sound-context,.sound-kind,.practice-pager span,.practice-pick small,.contrast-heading,.dimension span,.score-ring span,.report-next-activities a){font-size:16px;line-height:1.55}
+.workspace.view-report .ai-report-header h2,.workspace.view-report .practice-card-heading h3{font-size:24px}
+.workspace.view-report .ai-report-header{flex-wrap:wrap;gap:10px;margin:0 0 10px}
+.workspace.view-report .ai-report-header>div{min-width:0;flex:1 1 200px}
+.workspace.view-report .report-grade-label{white-space:nowrap;flex-wrap:nowrap;font-size:16px}
+.workspace.view-report .report-grade-label select{font-size:16px;min-width:104px;min-height:44px}
+.workspace.view-report .word-result strong,.workspace.view-report .section-heading span,.workspace.view-report .report-line-heading>span,.workspace.view-report .good-news{font-size:16px}
+.workspace.view-report .practice-intro{font-size:16px;line-height:1.55}
+.workspace.view-report .report-next-activities{display:flex;flex-wrap:wrap;gap:6px 16px}
+.workspace.view-report .report-next-activities a{min-height:48px}
+.workspace.view-report .score-ring{width:76px;height:76px}.workspace.view-report .score-ring strong{font-size:30px}
+.workspace.view-report .dimension strong{font-size:26px}
+.workspace.view-report .practice-actions{flex-wrap:wrap}.workspace.view-report .practice-actions .button{font-size:16px;min-height:48px}
+.workspace.view-report .report-summary{padding-bottom:10px}
+.workspace.view-report .practice-tip{margin-block:7px}.workspace.view-report .sound-word{min-height:112px}
+
+.workspace.view-chat .chat-bubble{font-size:18px;line-height:1.8}
+.workspace.view-chat .chat-suggestions button{font-size:16px;min-height:48px}
+.workspace.view-chat .chat-form textarea{font-size:18px}
+.workspace.view-chat .chat-error,.workspace.view-chat .poet-profile p{font-size:16px}
+.workspace.view-chat .chat-form button{min-width:48px;min-height:48px}
+
+.workspace .explore :is(.explore-eyebrow,.explore-step,.explore-scene-name,.explore-view-label,.explore-gesture,.explore-notice,.explore-feedback,.explore-guide-name,.explore-word small,.explore-loading){font-size:16px;line-height:1.5}
+.workspace .explore :is(.explore-mode button,.explore-presets button,.explore-clue,.explore-expand,.explore-next){font-size:16px!important;min-height:48px;padding:8px 12px}
+.workspace .explore .explore-answers button{font-size:18px;line-height:1.5;min-height:52px}
+.workspace .explore .explore-question legend{font-size:18px;line-height:1.55}
+.workspace .explore .explore-card h3{font-size:24px}
+.workspace .explore .explore-verse>p{font-size:24px}
+.workspace .explore .explore-zoom button{min-width:48px;min-height:48px}
+.workspace .explore .explore-word>span{font-size:28px}
+.workspace .explore .explore-title-row{flex-wrap:wrap}
+.workspace .explore .explore-card{padding:16px;gap:0}
+.workspace .explore .explore-card-top{margin-bottom:10px}
+
+
+@media(max-width:700px){
+ :root{--child-body:18px;--child-secondary:16px;--child-action:18px}
+ .workspace.lesson-shell{padding:0 12px 12px;height:100dvh}
+ .workspace .lesson-bar{gap:8px;margin-bottom:8px;padding:8px 0;min-height:84px}
+ .workspace .lesson-title h1{font-size:26px}.workspace .lesson-title p{font-size:17px}
+ .workspace .back-library{min-width:48px;width:48px;font-size:16px}.workspace .lesson-menu>summary{font-size:16px;width:48px;height:50px}
+ .workspace .view-section{padding:1px}
+ .workspace.view-record .record-layout{display:flex;flex-direction:column;gap:8px;justify-content:center;align-items:stretch}
+ .workspace.view-record .record-art{max-height:clamp(108px,calc(100dvh - 515px),260px);aspect-ratio:16/9}
+ .workspace.view-record .record-landscape{padding:7px 7px 0}
+ .workspace.view-record .record-line-nav{grid-template-columns:44px minmax(0,1fr) 44px;min-height:44px}
+ .workspace.view-record .record-line-nav>.icon-button{min-width:44px;min-height:44px;width:44px;height:44px}
+ .workspace.view-record .record-unfold-note{font-size:16px;line-height:1.4}
+ .workspace.view-record .record-tool>.verse{min-height:65px;margin:4px 0 10px}
+ .workspace.view-record .record-tool>.verse ruby{font-size:30px;min-width:36px}
+ .workspace.view-record .record-tool>.verse.verse-compound ruby{font-size:28px;min-width:35px}
+ .workspace.view-record .record-tool>.verse .punct{font-size:28px;width:13px}
+ .workspace.view-record .record-model{margin:0 0 12px;gap:8px}
+ .workspace.view-record .record-model .button{font-size:18px;min-height:50px;padding:10px 12px}
+ .workspace.view-record .record-counter{min-height:28px;font-size:16px}
+ .workspace.view-record .record-actions{min-height:78px;gap:8px}
+ .workspace.view-record .record-actions .button{font-size:18px;min-height:48px;padding:9px 12px}
+ .workspace.view-record .record-feedback .record-actions{display:grid;grid-template-columns:1fr;justify-items:end;gap:7px;min-height:0}
+ .workspace.view-record .record-feedback .record-actions .button{min-width:156px;white-space:nowrap}
+ .workspace.view-record .mic-button{display:flex;flex-direction:row;min-height:72px;gap:15px;font-size:20px;padding:8px 20px}
+ .workspace.view-record .mic-button svg{width:54px;height:54px;padding:16px}
+ .workspace.view-record #record-controls{min-height:80px}
+ .workspace.view-record .record-bottom{position:static;min-height:48px;gap:0 12px;flex-wrap:wrap;padding:0;margin:0}
+ .workspace.view-record .record-bottom .text-button{font-size:18px;min-height:48px}
+ .workspace.view-record .record-actions,.workspace.view-record .record-bottom{padding-left:96px}
+ .workspace.view-record .record-actions .mic-button{padding-left:0;padding-right:0;gap:11px;white-space:nowrap}
+ .workspace.view-record .record-progress{padding:3px 6px 5px;margin:0}
+ .workspace.view-record .record-word-hint{font-size:16px;margin:4px 0}.workspace.view-record .record-word-pager{margin:0}
+ .workspace.view-write .writing-tool{max-width:min(390px,calc(100dvh - 330px));width:100%}
+ .workspace.view-write .writing-controls{grid-template-columns:1fr;gap:7px;margin-top:9px}
+ .workspace.view-write .writing-tools{justify-content:space-between;gap:4px}
+ .workspace.view-write .writing-controls>.button{width:100%;font-size:18px}
+ .workspace.view-write .writing-controls>.button{width:calc(100% - 60px);justify-self:end}
+ .workspace.view-write .writing-status{display:flex;align-items:center;justify-content:space-between;gap:6px}
+ .workspace.view-write .writing-status .text-button{font-size:16px;white-space:nowrap}
+ .workspace.view-write .writing-feedback{font-size:16px;line-height:1.4}
+ .workspace.view-report .ai-report-header{display:grid;grid-template-columns:1fr auto;align-items:center;gap:7px}
+ .workspace.view-report .ai-report-header>div{display:contents}
+ .workspace.view-report .ai-report-header h2{grid-column:1/-1;font-size:24px}
+ .workspace.view-report .report-grade-label{gap:0;margin:0;font-size:0}
+ .workspace.view-report .report-grade-label select{font-size:16px;min-width:105px}
+ .workspace.view-report .ai-report-header>.button{font-size:16px;min-height:44px;padding:8px 11px}
+ .workspace.view-report #panel-advice .ai-report-header{padding-left:100px;min-height:128px;display:grid;grid-template-columns:1fr;align-content:center;gap:8px}
+ .workspace.view-report #panel-advice .ai-report-header h2{display:none}
+ .workspace.view-report #panel-advice .ai-report-header>.button{justify-self:start}
+ .workspace.view-report .report-next-activities{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;overflow:visible;padding:8px 0 0;margin-top:6px;min-height:68px}
+ .workspace.view-report .report-next-activities a{flex:none;min-height:58px;padding:5px 2px;white-space:nowrap;flex-direction:column;gap:2px;font-size:16px}
+ .library{height:auto;min-height:calc(100dvh - 53px);padding:14px 14px 8px}
+ .library .library-books{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none;grid-auto-rows:198px;flex:1;gap:12px}
+ .library .poem-card-title h2{font-size:23px}.library .poem-card-title h2 small{font-size:16px}
+ .library .poem-author{font-size:16px;letter-spacing:0;white-space:nowrap}.library .poem-open{font-size:16px;min-height:44px;gap:3px}
+ .library .poem-grade{font-size:16px}.library .poem-card-body{padding:7px 5px 0}.library .poem-art{height:68px;min-height:68px;flex:none}
+ .library .poem-card-title{padding-right:0}
+ .library .poem-emblem{top:auto;bottom:7px;right:7px;width:32px;height:32px}
+ .library .poem-open{padding-right:38px;font-size:18px;white-space:nowrap}.library .poem-open>svg{display:none}.library .poem-card-title h2 small{display:none}
+ .workspace .explore .explore-layout{gap:10px}.workspace .explore .explore-heading h2{font-size:28px}
+ .workspace .explore .explore-stage{min-height:110px}.workspace .explore .explore-view-controls{margin-top:7px;gap:6px;flex-wrap:wrap}
+ .workspace .explore .explore-gesture{max-width:none;text-align:left;font-size:16px}
+ .workspace .explore .explore-card{padding:13px;max-height:none;overflow:visible}.workspace .explore .explore-answers{gap:7px}
+ .workspace .explore .explore-card h3{font-size:23px}.workspace .explore .explore-title-row{margin-bottom:7px}
+ .workspace .explore .explore-guide{min-height:0}.workspace .explore .explore-guide>img{display:none}
+}
+@media(max-width:700px) and (max-height:650px){
+ .workspace .lesson-bar{min-height:78px;padding:6px 0;margin-bottom:6px}
+ .workspace.view-record .record-layout{gap:5px;justify-content:flex-start}
+ .workspace.view-record .record-landscape{padding:5px 6px 0}.workspace.view-record .record-art{max-height:58px}
+ .workspace.view-record .record-tool>.verse{margin:2px 0 7px;min-height:57px}.workspace.view-record .record-tool>.verse.verse-compound{min-height:102px;gap:1px}
+ .workspace.view-record .record-model{margin-bottom:5px}
+ .workspace.view-record .record-model .button{min-height:48px;font-size:18px;padding:8px 11px}
+ .workspace.view-record .record-actions{min-height:68px}.workspace.view-record .mic-button{min-height:66px;font-size:20px}
+ .workspace.view-record .mic-button svg{width:48px;height:48px;padding:14px}
+ .workspace.view-record #record-controls{min-height:68px}
+ .workspace.view-record .record-bottom .text-button{min-height:46px;font-size:17px}
+ .workspace.view-record .record-status{font-size:16px;margin-top:4px}
+ .workspace.view-record .record-counter:has([data-action=record-feedback]){position:relative;min-height:28px;padding-right:112px}
+ .workspace.view-record .record-counter [data-action=record-feedback]{position:absolute;right:0;top:-8px;min-height:44px;font-size:16px;gap:4px}
+ .workspace.view-record .record-counter [data-action=record-feedback] svg{display:none}
+ .workspace.view-record .record-feedback .feedback-motif{height:40px;width:40px;margin-bottom:5px}
+ .workspace.view-record .record-feedback-title{margin:5px 0 10px}
+ .workspace.view-record .record-feedback .record-result{font-size:42px}
+ .workspace.view-record .record-review .focus-word{min-height:94px}.workspace.view-record .record-review .focus-word ruby{font-size:50px}
+ .workspace.view-record .record-layout:has(.record-tool[data-step=words]) .record-art{max-height:48px}
+ .workspace.view-record .record-layout:has(.record-tool[data-step=words]) .record-bottom{gap:0;padding-left:96px;flex-direction:column;align-items:center}
+ .workspace.view-record .record-layout:has(.record-tool[data-step=words]) .record-bottom .text-button{min-height:42px;font-size:16px}
+ .workspace.view-record .record-layout:has(.record-tool[data-step=words]) .record-word-pager{position:absolute;right:0;top:33px;display:flex;flex-direction:column;gap:0}
+ .workspace.view-record .record-layout:has(.record-tool[data-step=words]) .record-practice{position:relative}
+ .workspace.view-record .record-layout:has(.record-tool[data-step=words]) .record-tool{padding-right:0}
+ .workspace.view-write .writing-tool{max-width:230px}
+ .workspace.view-write .writing-toolbar{margin-bottom:6px;min-height:52px}
+ .workspace.view-write .writing-pinyin{font-size:26px}.workspace.view-write .writing-counter{font-size:16px}
+ .workspace.view-write .writing-controls{margin-top:8px;gap:5px}
+ .workspace.view-write .writing-tools .icon-button{width:46px;min-width:46px;min-height:46px;height:46px}
+ .workspace.view-write .writing-feedback{margin-top:2px}
+ .workspace.view-report .report-prose{font-size:18px;line-height:1.75}.workspace.view-report .report-summary{gap:16px}
+ .workspace.view-report .report-summary{display:none}
+ .workspace.view-report .report-summary .score-ring{display:none}
+ .workspace.view-report .report-summary .eyebrow{display:none}
+ .workspace.view-report .dimension-grid{gap:4px}.workspace.view-report .dimension{display:flex;flex-direction:column;padding:3px 2px;min-width:0}
+ .workspace.view-report .dimension strong{font-size:23px}.workspace.view-report .dimension span{font-size:16px;line-height:1.1;margin-top:2px}
+ .workspace.view-report .dimension:first-child span{font-size:16px}
+ .workspace.view-report .report-tabs{margin:7px 0}
+ .workspace.view-report .report-line{padding:7px 0 0}
+ .workspace.view-report .report-line-heading{display:grid;grid-template-columns:1fr;gap:3px;margin-bottom:6px}
+ .workspace.view-report .report-line-heading h3{display:none}
+ .workspace.view-report .report-line-heading>.icon-button{display:none}
+ .workspace.view-report .report-line-heading>span{font-size:16px;line-height:1.5}
+ .workspace.view-report .word-analysis .section-heading{display:none}
+ .workspace.view-report .score-line-tabs{gap:7px;padding-top:2px}
+ .workspace.view-report .score-line-tabs .icon-button{min-width:44px;width:44px;min-height:44px;height:44px}
+ .workspace.view-report .word-analysis .section-heading>.button{font-size:16px;min-height:44px;padding:8px 11px}
+ .workspace.view-report .word-analysis .word-grid{gap:7px;padding-bottom:4px}
+ .workspace.view-report .word-analysis .word-result{min-height:83px}
+ .workspace.view-report .report-line>.button{margin-top:7px;min-height:44px;font-size:16px}
+ .workspace.view-report .ai-advice{padding:10px}
+ .workspace.view-report .report-prose{padding:10px 12px;margin-top:10px}
+ .workspace.view-explore .explore-layout{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:138px minmax(0,1fr);gap:8px;min-height:0}
+ .workspace.view-explore .explore-visual{display:flex;flex-direction:column;flex:none;min-height:0;height:138px;position:relative}
+ .workspace.view-explore .explore-stage{min-height:0;flex:1;height:auto}
+ .workspace.view-explore .explore-view-controls{position:absolute;left:0;right:0;bottom:4px;display:flex;justify-content:center;margin:0;z-index:4}
+ .workspace.view-explore .explore-mode{background:#fffef6eb;padding:2px;box-shadow:0 1px 8px #42604816}
+ .workspace.view-explore .explore-mode button{min-height:44px;padding:8px 12px;font-size:16px}
+ .workspace.view-explore .explore-scene-name,.workspace.view-explore .explore-gesture{display:none}
+ .workspace.view-explore .explore-card{min-height:0;align-self:stretch;padding:10px 12px;overflow:auto}
+ .workspace.view-explore .explore-card-top{display:none}
+ .workspace.view-explore .explore-title-row{gap:6px;flex-wrap:nowrap;margin-bottom:5px}
+ .workspace.view-explore .explore-title-row h3{font-size:22px;line-height:1.3}
+ .workspace.view-explore .explore-title-row .explore-clue{min-height:44px;font-size:16px!important;padding:8px 9px}
+}

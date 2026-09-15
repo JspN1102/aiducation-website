@@ -20,3 +20,14 @@
 @media(max-width:700px){.shishi-guide{left:max(8px,env(safe-area-inset-left));bottom:calc(6px + env(safe-area-inset-bottom));width:62px}.shishi-guide-button{width:62px;height:69px}.shishi-guide-art{width:52px;height:52px}.shishi-guide-label{font-size:10px;line-height:16px;min-height:17px;padding:0 6px}.shishi-bubble{left:0;width:min(280px,calc(100vw - 24px));padding:12px 14px 10px}.shishi-bubble h2{font-size:16px}.shishi-hint-text{font-size:14px}}
 @media(max-height:450px){.shishi-guide{bottom:6px}.shishi-guide-button{height:65px}.shishi-guide-art{width:48px;height:48px}.shishi-bubble{bottom:calc(100% + 8px);padding:9px 12px;max-height:calc(100dvh - 95px);overflow:auto}.shishi-hint-text{margin:0 0 6px;line-height:1.6}.shishi-bubble h2{font-size:15px}.shishi-bubble:after{display:none}}
 @media(prefers-reduced-motion:reduce){.shishi-bubble,.shishi-guide:not([data-model=ready]) .shishi-guide-art{animation:none}.shishi-guide-art>img,.shishi-guide-canvas{transition:none}}
+
+/* A free-standing companion. Its body is the handle; there is no label or tile. */
+.shishi-guide{width:132px;left:12px;bottom:8px;font-size:18px}
+.shishi-guide-button{width:132px;height:168px;border-radius:50%;touch-action:none;cursor:grab;user-select:none}
+.shishi-guide-art{width:176px;height:176px}
+.shishi-guide[data-dragging] .shishi-guide-button{cursor:grabbing}
+.shishi-bubble{position:fixed;bottom:auto;width:min(340px,calc(100vw - 20px));max-height:calc(100dvh - 20px);overflow:auto}
+.shishi-bubble:after{display:none}
+.shishi-bubble h2{font-size:22px}.shishi-hint-text{font-size:18px;line-height:1.75}.shishi-understood{font-size:18px;min-height:48px}
+@media(max-width:700px){.shishi-guide{width:90px;left:10px;bottom:6px}.shishi-guide-button{width:90px;height:120px}.shishi-guide-art{width:128px;height:128px}.shishi-bubble h2{font-size:20px}.shishi-hint-text{font-size:18px}}
+@media(max-height:450px){.shishi-guide-button{height:100px}.shishi-guide-art{width:112px;height:112px}}
