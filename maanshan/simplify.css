@@ -1,0 +1,100 @@
+/* Clear reading actions and space for the small guide. */
+.poem-author{font-size:16px;line-height:1.5;color:#597362}
+.lesson-title p{font-size:15px;line-height:1.5;letter-spacing:.3px;color:#5e7563}
+.library-heading{margin-bottom:20px}.library-footer{justify-content:flex-end}
+.workspace.lesson-shell{padding-bottom:104px}.workspace:has(>.lesson-tabs){grid-template-rows:auto minmax(0,1fr)}
+.lesson-tabs{display:none}
+.record-layout{position:relative;padding-bottom:0;box-shadow:none}
+.record-landscape{box-shadow:none;transform:none}
+.record-art,#reading-art{touch-action:pan-y;user-select:none;cursor:grab}
+.record-art:active,#reading-art:active{cursor:grabbing}
+.record-art:focus-visible,#reading-art:focus-visible{outline:3px solid #81a185;outline-offset:3px}
+.record-line-nav{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:4px}
+.record-line-nav>.icon-button{width:44px;height:44px;border:0;background:transparent;box-shadow:none}
+.record-line-nav>.icon-button:disabled{opacity:.22}
+.record-unfold-note{font-size:12px;line-height:1.65;margin:0}
+.record-model{display:flex;align-items:center;justify-content:center;gap:9px}
+.pinyin-command{white-space:nowrap}.pinyin-command svg{width:16px;height:16px}
+.record-bottom{position:fixed;bottom:18px;left:100px;right:24px;display:flex;align-items:center;justify-content:center;gap:14px;min-height:44px;z-index:20}
+.record-bottom .text-button{min-height:44px;font-size:13px}
+.record-bottom .text-button svg{width:17px;height:17px}
+.view-read .story-experience{height:100%;min-height:0;display:flex;flex-direction:column;gap:14px}
+.story-experience .reading-scene{flex:1;min-height:0}
+.story-experience .reading-folio{min-height:36px;font-size:12px}
+.story-experience .reading-story{padding-top:16px}
+.story-experience .story-bottom{display:flex;align-items:center;justify-content:center;gap:30px;flex-shrink:0}
+.story-bottom .page-turner{width:auto;min-width:270px;border:0;gap:15px;margin:0}
+.story-bottom .page-turner>span{font-size:12px;color:#7b8c72}
+.story-bottom .icon-button{min-height:44px;min-width:44px}
+.view-report .report-prose{font-size:17px;line-height:2.05;white-space:pre-line;max-width:40em;margin:18px auto 0}
+.view-report .ai-advice{padding:18px 24px}.view-report .ai-report-header h2{font-size:23px}
+.view-report .advice-placeholder[hidden]{display:none}.view-report .report-grade-label{font-size:13px}
+.view-report .report-next-activities{min-height:44px}
+.empty-motif{width:90px;height:90px;object-fit:contain;margin-bottom:16px}
+@media(max-width:700px){
+ .workspace.lesson-shell{padding-bottom:78px}.lesson-bar{min-height:72px;margin-bottom:8px;padding-block:8px}.lesson-title p{font-size:14px}.view-lesson .lesson-title p{font-size:14px}
+ .poem-author{font-size:13px;line-height:1.6;margin-bottom:4px}.library-heading{margin-bottom:16px}
+ .record-layout{padding-bottom:0;gap:5px}.record-art{max-height:clamp(95px,calc(100dvh - 560px),205px)}
+ .record-line-nav{grid-template-columns:38px minmax(0,1fr) 38px;gap:0}.record-line-nav>.icon-button{width:38px;height:38px}.record-unfold-note{font-size:10px;line-height:1.5}
+ .record-model .button{font-size:12px;padding:8px 12px;min-height:42px}.record-bottom .text-button{font-size:12px}.record-bottom{gap:6px;min-height:44px;bottom:12px;left:78px;right:12px;flex-wrap:wrap}
+ .story-experience .reading-scene{display:flex;flex-direction:column;gap:12px;justify-content:center}.story-experience .poem-landscape{width:100%;max-width:430px;margin:0;padding:0;border:0;background:transparent}
+ .story-experience .poem-landscape:before{display:none}.story-experience .reading-scene .art-stage{height:auto;aspect-ratio:16/9;max-height:210px}.story-experience .scene-stage{height:100%!important;aspect-ratio:16/9!important}
+ .story-experience .poem-text{width:100%;padding:0 5px;min-height:0}.story-experience .reading-story{padding:9px 0 0}.story-experience .reading-story h3{font-size:22px}.story-experience .story-meaning{font-size:15px;line-height:1.9;margin-bottom:12px}.story-experience .story-question{font-size:13px}.story-experience .reading-story>.text-button{min-height:44px;font-size:12px}
+ .story-experience .story-bottom{gap:8px;justify-content:space-between}.story-bottom .page-turner{min-width:0;gap:0;flex:1}.story-bottom .page-turner>span{font-size:10px;max-width:110px;text-align:center}.story-bottom>.button{min-height:44px;padding:8px 12px;font-size:12px}
+ .view-report .ai-advice{padding:14px}.view-report .report-prose{font-size:15px;line-height:1.95;margin-top:14px}.view-report .ai-report-header h2{font-size:20px}.view-report .report-grade-label{font-size:12px}
+}
+@media(max-width:700px) and (max-height:680px){
+ .library-heading{margin-bottom:10px;min-height:35px}.library-heading h1{font-size:21px}.poem-author{font-size:12px;margin:0 0 3px}.poem-card-title{min-height:23px}.library-footer{min-height:36px}
+ .view-record .record-layout{height:100%;padding:0;min-height:0;gap:3px}.view-record .record-art{max-height:70px}.record-line-nav{min-height:32px}.record-line-nav>.icon-button{min-height:32px;height:32px}.view-record .record-unfold-note{font-size:9px}.view-record .record-counter{min-height:25px}.view-record .record-model{margin-bottom:10px}.view-record .record-model .button{min-height:40px;font-size:11px;padding:7px 10px}.view-record #record-controls{min-height:94px}.view-record .mic-button{min-height:88px;font-size:12px;gap:10px}.view-record .mic-button svg{width:55px;height:55px;padding:16px}.view-record .record-status:empty{display:none}.view-record .record-tool>.verse{margin-block:2px 6px;min-height:53px}.view-record .record-tool>.verse.verse-compound ruby{font-size:23px}
+ .story-experience{padding:0!important;gap:4px!important}.story-experience .reading-scene{display:grid;grid-template-columns:86px minmax(0,1fr);gap:10px;align-items:center}.story-experience .reading-scene .art-stage{max-height:none;aspect-ratio:16/9;height:auto}.story-experience .poem-text{padding:0}.story-experience .reading-folio{font-size:10px;min-height:27px}.story-experience .reading-story h3{font-size:19px}.story-experience .story-meaning{font-size:13px;line-height:1.9;margin-bottom:9px}.story-experience .story-question{font-size:11px;line-height:1.7}.story-experience .reading-story>.text-button{font-size:10px}.story-bottom .icon-button{min-width:36px;width:36px}
+ .view-report .report-prose{font-size:14px;line-height:1.8}.view-report .ai-advice{padding:11px}.view-report .report-next-activities{gap:3px}.view-report .report-next-activities a{font-size:10px}
+}
+.view-read .story-experience{flex:1;min-height:0;padding:15px;overflow:hidden}
+.view-read .story-experience .reading-scene{min-height:0;flex:1}
+.view-read .story-experience .poem-landscape{min-height:0}
+.view-read .story-experience .art-stage{max-height:100%;overflow:hidden}
+.view-explore .explore-visual{min-height:0}
+@media(max-width:700px) and (max-height:680px){
+ .view-explore .explore-guide{display:none}
+ .view-explore .explore-layout{gap:6px}.view-explore .explore-next{min-height:44px}
+ .view-write .writing-tool{max-width:min(100%,calc(100dvh - 316px))}
+ .view-write .writing-layout{padding-block:0;min-height:0;height:100%}
+}
+@media(min-width:701px){.view-explore .explore-stage{min-height:0}.view-explore .explore-visual{min-height:0}}
+.view-write .writing-layout{min-height:0;height:100%}
+.view-write .writing-tool{max-height:100%}
+.workspace.view-quiz:has(.challenge-body){padding-bottom:14px}
+@media(max-width:700px){
+ .workspace.view-quiz:has(.challenge-body){padding-bottom:max(9px,env(safe-area-inset-bottom))}
+ .view-quiz .challenge-footer-actions{padding-left:54px}
+ .view-quiz .challenge-feedback [data-ch=show-solution]{margin-left:54px;min-height:32px}
+}
+@media(min-width:701px) and (min-height:451px){.view-write .writing-tool{max-width:min(430px,calc(100dvh - 350px))}}
+@media(max-width:700px) and (max-height:680px){.view-record .record-model{margin-bottom:3px}.view-record .record-progress{margin:0;padding:3px 6px 4px}.view-read .story-bottom{padding-bottom:6px}}
+@media(max-width:700px) and (max-height:680px){
+ .view-quiz .challenge-shell:has(.has-feedback) .challenge-cards,
+ .view-quiz .challenge-shell:has(.has-feedback) .challenge-instruction,
+ .view-quiz .challenge-shell:has(.has-feedback) .challenge-density{display:none}
+ .view-quiz .challenge-shell:has(.has-feedback) .challenge-goose,
+ .view-quiz .challenge-shell:has(.has-feedback) .challenge-model-stage{height:86px}
+ .view-quiz .challenge-shell:has(.has-feedback) .challenge-sound-stage{height:95px}
+ .view-quiz .challenge-shell:has(.has-feedback) .challenge-pod{height:55px;width:40px}
+ .view-quiz .challenge-shell:has(.has-feedback) .challenge-stage-note,
+ .view-quiz .challenge-shell:has(.has-feedback) .challenge-model-link{display:none}
+ .view-quiz .challenge-shell:has(.has-feedback) .challenge-writing-heading .challenge-prompt{display:none}
+ .view-quiz .challenge-shell .challenge-writing.is-answered .cw-answer{margin:2px 0 4px}
+ .view-quiz .challenge-shell .challenge-writing.is-answered .cw-answer strong{font-size:32px}
+ .view-quiz .challenge-results{padding-block:8px;justify-content:flex-start}
+ .view-quiz .challenge-results-heading{margin-bottom:4px}
+ .view-quiz .challenge-result-list{margin-bottom:3px;gap:4px}
+ .view-quiz .challenge-result-row{min-height:44px;padding-block:3px}
+ .view-quiz .challenge-results-heading .challenge-result-detail{display:none}
+ .view-record .record-layout[data-record-busy=true] .record-model{display:none}
+ .view-record .record-wave{margin-top:0;margin-bottom:4px}
+ .view-record .record-tool .record-review{margin:0}
+ .view-record .record-word-pager:has(button:first-child:disabled):has(button:last-child:disabled){display:none}
+ .view-explore .explore-card[data-feedback] .explore-verse{display:none}
+ .view-explore .explore-card[data-feedback] .explore-guide{display:block;min-height:0;padding:0;margin:5px 0}
+ .view-explore .explore-card[data-feedback] .explore-guide>img,.view-explore .explore-card[data-feedback] .explore-guide-name{display:none}
+ .view-explore .explore-card[data-feedback] .explore-feedback{font-size:11px;min-height:0;margin:0;line-height:1.55}
+}

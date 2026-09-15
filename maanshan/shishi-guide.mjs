@@ -1,0 +1,185 @@
+const ASSET_VERSION = '20260915a';
+const pictureURL = new URL(`./media/shishi/guide-v2.webp?v=${ASSET_VERSION}`, import.meta.url).href;
+const modelURL = new URL(`./media/shishi/guide-v2.glb?v=${ASSET_VERSION}`, import.meta.url).href;
+let instanceID = 0;
+const HINTS = {
+  lesson: ['一起出發吧', '先選一個活動。想學字音就跟讀，想懂故事就看詩意。'],
+  record: ['一次讀好一句', '先聽示範，再按麥克風讀這一句。放慢一點，把每個字讀清楚。'],
+  read: ['看看畫裡的故事', '聽一聽這一幕的講解，再看看畫裡發生了甚麼。'],
+  write: ['一筆一筆來', '先看筆順，再在格子裡寫。寫錯一筆，可以撤回再試。'],
+  quiz: ['先看這一題的提示', '聽清楚、看仔細，再動手試一試。不確定，可以再聽一次。'],
+  report: ['挑一個地方練好', '先看看哪個字需要改進，點字聽一聽，再跟著讀一次。'],
+  explore: ['找找詩中的線索', '轉動模型，看看不同角度，再說說你發現了甚麼。'],
+  chat: ['把好奇說出來', '可以選一個小問題，也可以打字，問詩人你想知道的事。']
+};
+
+/** A small contextual guide. It never changes scores, starts audio or navigates. */
+export function mountShishi(container, options = {}) {
+  if (!container) throw new TypeError('A Shishi guide container is required');
+  let settings = {view: 'lesson', ...options};
+  let dead = false, open = false, paused = false, generation = 0;
+  let pending = null, viewer = null, loadTimer = null, attempted = false;
+  const events = new AbortController(), id = `shishi-guide-${++instanceID}`;
+  const guide = document.createElement('aside');
+  guide.className = 'shishi-guide';guide.setAttribute('aria-label', '詩詩學習向導');
+  guide.innerHTML = `<section class="shishi-bubble" id="${id}" aria-labelledby="${id}-title" hidden>
+    <div class="shishi-bubble-heading"><h2 id="${id}-title"></h2><button type="button" class="shishi-dismiss" aria-label="關閉提示"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button></div>
+    <p class="shishi-hint-text" role="status" aria-live="polite"></p><button type="button" class="shishi-understood">明白了</button>
+  </section><button type="button" class="shishi-guide-button" aria-label="問詩詩：現在怎麼做" aria-controls="${id}" aria-expanded="false">
+    <span class="shishi-guide-art" aria-hidden="true"><img src="${pictureURL}" width="72" height="72" alt="" decoding="async"><span class="shishi-guide-fallback" hidden>詩</span><span class="shishi-guide-canvas"></span></span>
+    <span class="shishi-guide-label">問詩詩</span>
+  </button>`;
+  container.replaceChildren(guide);
+  const q = selector => guide.querySelector(selector), button = q('.shishi-guide-button');
+  const bubble = q('.shishi-bubble'), holder = q('.shishi-guide-canvas'), picture = q('img'), fallback = q('.shishi-guide-fallback');
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  function close(restoreFocus = false) {
+    open = false;bubble.hidden = true;button.setAttribute('aria-expanded', 'false');
+    if (restoreFocus && !guide.hidden && !button.disabled && !dead) button.focus({preventScroll: true});
+  }
+  function refreshHint() {
+    let hint;
+    try {hint = typeof settings.getHint === 'function' ? settings.getHint() : null;} catch { /* Page state may change while the guide opens. */ }
+    const standard = HINTS[settings.view] || HINTS.lesson;
+    q('h2').textContent = String(hint?.title || standard[0]);
+    q('.shishi-hint-text').textContent = String(hint?.text || standard[1]);
+  }
+  function updateVisibility() {
+    if (dead) return;
+    const active = document.activeElement;
+    const editing = !!active?.matches('input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, [contenteditable="true"]');
+    const keyboard = !!window.visualViewport && innerHeight - window.visualViewport.height > 140;
+    const modal = !!document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]:not([hidden])');
+    guide.hidden = settings.hidden === true || settings.view === 'library' || settings.view === 'home' || editing || keyboard || modal;
+    button.disabled = paused || settings.disabled === true;
+    if (guide.hidden || button.disabled) {close();viewer?.stop();}
+    if (!guide.hidden && !button.disabled && !viewer && !pending) scheduleModel();
+  }
+  function stopModel() {
+    generation++;clearTimeout(loadTimer);loadTimer = null;pending?.abort();pending = null;
+    viewer?.destroy();viewer = null;holder.replaceChildren();guide.dataset.model = 'picture';
+  }
+  function scheduleModel(force = false) {
+    if (loadTimer || dead || guide.hidden || paused || viewer || pending || (attempted && !force)) return;
+    loadTimer = setTimeout(() => {loadTimer = null;loadModel();}, 60);
+  }
+  async function loadModel() {
+    if (dead || guide.hidden || paused || pending || viewer) return;
+    const turn = ++generation, controller = new AbortController();pending = controller;attempted = true;
+    const current = () => !dead && turn === generation && !controller.signal.aborted;
+    const timeout = setTimeout(() => controller.abort(), 30000);let parsed = null;
+    guide.dataset.model = 'loading';
+    try {
+      const {THREE, GLTFLoader} = await import('./vendor/poetry-three.mjs?v=20260913a');
+      if (!current()) return;
+      const response = await fetch(modelURL, {signal: controller.signal, cache: 'no-cache', credentials: 'same-origin'});
+      const bytes = await readModel(response, controller.signal);if (!current()) return;
+      parsed = await new Promise((resolve, reject) => new GLTFLoader().parse(bytes, '', gltf => {
+        if (!current()) {disposeObject(gltf.scene);reject(new DOMException('Aborted', 'AbortError'));}else resolve(gltf);
+      }, reject));
+      if (!current()) {disposeObject(parsed.scene);parsed = null;return;}
+      viewer = createViewer({THREE, root: parsed.scene, holder, reducedMotion, onLost() {if (!dead) stopModel();}});
+      parsed = null;guide.dataset.model = 'ready';
+    } catch {
+      if (parsed) disposeObject(parsed.scene);
+      if (!dead && turn === generation) guide.dataset.model = 'picture';
+    } finally {clearTimeout(timeout);if (turn === generation) pending = null;}
+  }
+  function checkPicture() {const missing = picture.complete && !picture.naturalWidth;picture.hidden = missing;fallback.hidden = !missing;}
+  picture.addEventListener('load', checkPicture, {signal: events.signal});picture.addEventListener('error', checkPicture, {signal: events.signal});checkPicture();
+  button.addEventListener('click', () => {
+    if (dead || button.disabled || guide.hidden) return;if (open) {close();return;}
+    try {if (typeof settings.onOpen === 'function' && settings.onOpen() === false) return;} catch {return;}
+    refreshHint();open = true;bubble.hidden = false;button.setAttribute('aria-expanded', 'true');viewer?.greet();
+    if (!viewer && !pending) scheduleModel(true);
+    if (button.matches(':focus-visible')) q('.shishi-dismiss').focus({preventScroll: true});
+  }, {signal: events.signal});
+  q('.shishi-dismiss').addEventListener('click', () => close(true), {signal: events.signal});
+  q('.shishi-understood').addEventListener('click', () => close(true), {signal: events.signal});
+  document.addEventListener('keydown', event => {if (event.key === 'Escape' && open) {event.preventDefault();close(true);}}, {signal: events.signal});
+  document.addEventListener('pointerdown', event => {if (open && !guide.contains(event.target)) close();}, {signal: events.signal});
+  document.addEventListener('focusin', updateVisibility, {signal: events.signal});
+  document.addEventListener('focusout', () => queueMicrotask(updateVisibility), {signal: events.signal});
+  document.addEventListener('visibilitychange', () => {if (document.hidden) viewer?.stop();else viewer?.resize();}, {signal: events.signal});
+  window.visualViewport?.addEventListener('resize', updateVisibility, {signal: events.signal});
+  const observer = new MutationObserver(records => {if (records.some(record => !guide.contains(record.target))) updateVisibility();});
+  observer.observe(document.body, {attributes: true, attributeFilter: ['open', 'hidden', 'aria-modal'], childList: true, subtree: true});
+  updateVisibility();
+  return {
+    pause(value = true) {paused = !!value;updateVisibility();},
+    update(next = {}) {
+      if ((next.view && next.view !== settings.view) || (next.poem && next.poem !== settings.poem)) close();
+      settings = {...settings, ...next};if (open) refreshHint();updateVisibility();
+    },
+    destroy() {if (dead) return;dead = true;events.abort();observer.disconnect();stopModel();guide.remove();}
+  };
+}
+
+const MAX_MODEL_BYTES = 12 * 1024 * 1024;
+async function readModel(response, signal) {
+  if (!response.ok) throw new Error('model-unavailable');
+  if (Number(response.headers.get('content-length')) > MAX_MODEL_BYTES) throw new Error('model-too-large');let buffer;
+  if (response.body?.getReader) {
+    const reader = response.body.getReader(), chunks = [];let total = 0;
+    try {
+      for (;;) {
+        if (signal.aborted) throw new DOMException('Aborted', 'AbortError');const {done, value} = await reader.read();if (done) break;
+        total += value.byteLength;if (total > MAX_MODEL_BYTES) throw new Error('model-too-large');chunks.push(value);
+      }
+    } catch (error) {await reader.cancel().catch(() => {});throw error;}finally {reader.releaseLock();}
+    const bytes = new Uint8Array(total);let offset = 0;for (const chunk of chunks) {bytes.set(chunk, offset);offset += chunk.byteLength;}buffer = bytes.buffer;
+  } else buffer = await response.arrayBuffer();
+  if (buffer.byteLength < 20 || buffer.byteLength > MAX_MODEL_BYTES) throw new Error('invalid-model');
+  const header = new DataView(buffer);
+  if (header.getUint32(0, true) !== 0x46546c67 || header.getUint32(4, true) !== 2 || header.getUint32(8, true) !== buffer.byteLength || header.getUint32(16, true) !== 0x4e4f534a) throw new Error('invalid-model');
+  const length = header.getUint32(12, true);if (20 + length > buffer.byteLength) throw new Error('invalid-model');
+  const data = JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, 20, length)));
+  for (const entry of [...(data.buffers || []), ...(data.images || [])]) {if (entry.uri && !entry.uri.startsWith('data:')) throw new Error('external-model-resource');}
+  return buffer;
+}
+function disposeObject(root) {
+  const geometries = new Set(), materials = new Set(), textures = new Set(), images = new Set();
+  root?.traverse(node => {
+    if (node.geometry) geometries.add(node.geometry);
+    for (const material of (Array.isArray(node.material) ? node.material : [node.material])) {
+      if (!material || materials.has(material)) continue;materials.add(material);
+      for (const value of Object.values(material)) {if (!value?.isTexture) continue;textures.add(value);if (value.source?.data?.close) images.add(value.source.data);}
+    }
+  });
+  textures.forEach(texture => texture.dispose());materials.forEach(material => material.dispose());geometries.forEach(geometry => geometry.dispose());images.forEach(bitmap => bitmap.close());
+}
+function createViewer({THREE, root, holder, reducedMotion, onLost}) {
+  let renderer, resizeObserver, dead = false, frame = 0;const listeners = new AbortController();
+  try {
+    renderer = new THREE.WebGLRenderer({alpha: true, antialias: true, powerPreference: 'low-power'});
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));renderer.setClearColor(0x000000, 0);renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;renderer.toneMappingExposure = 1.08;
+    const scene = new THREE.Scene();scene.add(new THREE.HemisphereLight(0xfffcf1, 0x78978b, 2.6));
+    const key = new THREE.DirectionalLight(0xfffbf0, 3.1);key.position.set(-3, 5, 5);scene.add(key);
+    const fill = new THREE.DirectionalLight(0xe0eef8, 1.6);fill.position.set(4, 2, -3);scene.add(fill);
+    root.updateMatrixWorld(true);const box = new THREE.Box3().setFromObject(root), size = box.getSize(new THREE.Vector3());
+    const longest = Math.max(size.x, size.y, size.z);if (!Number.isFinite(longest) || longest <= 0) throw new Error('empty-model');
+    const centre = box.getCenter(new THREE.Vector3()), scale = 2 / longest;
+    const model = new THREE.Group();model.add(root);model.scale.setScalar(scale);model.position.copy(centre).multiplyScalar(-scale);
+    const pivot = new THREE.Group();pivot.add(model);scene.add(pivot);
+    const camera = new THREE.PerspectiveCamera(32, 1, .01, 30);camera.position.set(0, .04, 3.8);camera.lookAt(0, 0, 0);
+    const canvas = renderer.domElement;canvas.setAttribute('aria-hidden', 'true');let renders = 0;
+    const render = () => {if (!dead && !document.hidden) {renderer.render(scene, camera);canvas.dataset.renders = String(++renders);}};
+    const stop = () => {cancelAnimationFrame(frame);frame = 0;if (!dead) {pivot.rotation.set(0, 0, 0);render();}};
+    const resize = () => {
+      if (dead) return;const bounds = holder.getBoundingClientRect();if (!bounds.width || !bounds.height) return;
+      renderer.setSize(bounds.width, bounds.height, false);camera.aspect = bounds.width / bounds.height;camera.updateProjectionMatrix();render();
+    };
+    const greet = () => {
+      stop();if (reducedMotion.matches || document.hidden) return;const start = performance.now();
+      const tick = now => {
+        if (dead) return;const t = Math.min(1, (now - start) / 740);
+        pivot.rotation.y = Math.sin(t * Math.PI * 2) * .24 * (1 - t);pivot.rotation.z = Math.sin(t * Math.PI) * .025;render();
+        if (t < 1) frame = requestAnimationFrame(tick);else {frame = 0;pivot.rotation.set(0, 0, 0);}
+      };frame = requestAnimationFrame(tick);
+    };
+    canvas.addEventListener('webglcontextlost', event => {event.preventDefault();if (!dead) onLost();}, {signal: listeners.signal});
+    holder.append(canvas);resizeObserver = new ResizeObserver(resize);resizeObserver.observe(holder);resize();
+    return {greet, stop, resize, destroy() {if (dead) return;dead = true;cancelAnimationFrame(frame);listeners.abort();resizeObserver.disconnect();disposeObject(root);renderer.dispose();renderer.forceContextLoss();canvas.remove();}};
+  } catch (error) {dead = true;cancelAnimationFrame(frame);listeners.abort();resizeObserver?.disconnect();renderer?.dispose();renderer?.forceContextLoss();renderer?.domElement.remove();throw error;}
+}

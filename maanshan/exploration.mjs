@@ -155,6 +155,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
 
   function renderCard(focus = false) {
     if (dead) return;
+    card.removeAttribute('data-feedback');
     q('[data-explore-view-label]').hidden = true;
     if (completed) {
       card.innerHTML = `<div class="explore-card-top"><span class="explore-step">${icon('check')}兩個發現，都找到了</span></div>
@@ -307,6 +308,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     else if (action === 'reset') {clearPreset(); viewer?.reset();}
     else if (action === 'preset') selectPreset(button.dataset.preset);
     else if (action === 'inspect' && !completed) {
+      card.dataset.feedback='hint';
       const item = content.observations[observation];
       if (item.inspect === 'picture') showPicture();
       else if (mode === 'model') selectPreset(item.inspect);
@@ -318,6 +320,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
         Promise.resolve(speakWord(char, pinyin, button)).catch(() => {if (!dead) announce('這個字暫時未能播放，請再試一次。');});
       }
     } else if (action === 'answer' && !completed && !correct) {
+      card.dataset.feedback='answer';
       const item = content.observations[observation], answer = Number(button.dataset.answer);
       card.querySelectorAll('[data-explore="answer"]').forEach(option => {
         option.classList.remove('is-wrong');
