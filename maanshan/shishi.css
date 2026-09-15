@@ -4,6 +4,9 @@
 .shishi-guide-art{position:relative;display:block;flex:none;width:72px;height:72px;pointer-events:none}
 .shishi-guide-art>img,.shishi-guide-canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .shishi-guide-art>img{opacity:1;transition:opacity .14s ease}.shishi-guide-canvas{opacity:0;transition:opacity .18s ease;pointer-events:none}.shishi-guide-canvas canvas{display:block;width:100%;height:100%}
+.shishi-guide:not([data-model=ready]) .shishi-guide-art{animation:shishi-hover 4.6s ease-in-out infinite;animation-play-state:paused;transform-origin:50% 65%}
+.shishi-guide:not([data-model=ready])[data-motion=idle] .shishi-guide-art{animation-play-state:running}
+@keyframes shishi-hover{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-2px) rotate(1deg)}}
 .shishi-guide[data-model=ready] .shishi-guide-canvas{opacity:1}.shishi-guide[data-model=ready] .shishi-guide-art>img,.shishi-guide[data-model=ready] .shishi-guide-fallback{opacity:0}
 .shishi-guide-fallback{position:absolute;inset:12px;display:grid;place-items:center;border:1px solid #c1d2b8;border-radius:48% 46% 42% 48%;background:#f0f5e8;font:25px/1 var(--serif,serif)}
 .shishi-guide-label{display:block;box-sizing:border-box;min-height:19px;margin-top:-1px;padding:0 7px;border:1px solid #cbd9c4;border-radius:9px;background:#fffef9;color:#536b54;font-size:11px;line-height:18px;white-space:nowrap;box-shadow:0 1px 2px #34452e08}
@@ -16,4 +19,4 @@
 @keyframes shishi-bubble-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:700px){.shishi-guide{left:max(8px,env(safe-area-inset-left));bottom:calc(6px + env(safe-area-inset-bottom));width:62px}.shishi-guide-button{width:62px;height:69px}.shishi-guide-art{width:52px;height:52px}.shishi-guide-label{font-size:10px;line-height:16px;min-height:17px;padding:0 6px}.shishi-bubble{left:0;width:min(280px,calc(100vw - 24px));padding:12px 14px 10px}.shishi-bubble h2{font-size:16px}.shishi-hint-text{font-size:14px}}
 @media(max-height:450px){.shishi-guide{bottom:6px}.shishi-guide-button{height:65px}.shishi-guide-art{width:48px;height:48px}.shishi-bubble{bottom:calc(100% + 8px);padding:9px 12px;max-height:calc(100dvh - 95px);overflow:auto}.shishi-hint-text{margin:0 0 6px;line-height:1.6}.shishi-bubble h2{font-size:15px}.shishi-bubble:after{display:none}}
-@media(prefers-reduced-motion:reduce){.shishi-bubble{animation:none}.shishi-guide-art>img,.shishi-guide-canvas{transition:none}}
+@media(prefers-reduced-motion:reduce){.shishi-bubble,.shishi-guide:not([data-model=ready]) .shishi-guide-art{animation:none}.shishi-guide-art>img,.shishi-guide-canvas{transition:none}}

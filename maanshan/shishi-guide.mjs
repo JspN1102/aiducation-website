@@ -19,6 +19,8 @@ export function mountShishi(container, options = {}) {
   let settings = {view: 'lesson', ...options};
   let dead = false, open = false, paused = false, generation = 0;
   let pending = null, viewer = null, loadTimer = null, attempted = false;
+  let attentionTimer = null, interacting = false;
+  const heldPointers = new Set();
   const events = new AbortController(), id = `shishi-guide-${++instanceID}`;
   const guide = document.createElement('aside');
   guide.className = 'shishi-guide';guide.setAttribute('aria-label', '詩詩學習向導');
@@ -35,7 +37,14 @@ export function mountShishi(container, options = {}) {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   function close(restoreFocus = false) {
     open = false;bubble.hidden = true;button.setAttribute('aria-expanded', 'false');
+    viewer?.settle();updateMotion();
     if (restoreFocus && !guide.hidden && !button.disabled && !dead) button.focus({preventScroll: true});
+  }
+  function updateMotion() {
+    const hidden = guide.hidden || document.hidden;
+    const running = !hidden && !button.disabled && !interacting;
+    guide.dataset.motion = hidden?'hidden':reducedMotion.matches?'reduced':running?'idle':'paused';
+    viewer?.updateMotion({running,hidden,quiet:open});
   }
   function refreshHint() {
     let hint;
@@ -52,7 +61,8 @@ export function mountShishi(container, options = {}) {
     const modal = !!document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]:not([hidden])');
     guide.hidden = settings.hidden === true || settings.view === 'library' || settings.view === 'home' || editing || keyboard || modal;
     button.disabled = paused || settings.disabled === true;
-    if (guide.hidden || button.disabled) {close();viewer?.stop();}
+    if (guide.hidden || button.disabled) close();
+    updateMotion();
     if (!guide.hidden && !button.disabled && !viewer && !pending) scheduleModel();
   }
   function stopModel() {
@@ -70,7 +80,10 @@ export function mountShishi(container, options = {}) {
     const timeout = setTimeout(() => controller.abort(), 30000);let parsed = null;
     guide.dataset.model = 'loading';
     try {
-      const {THREE, GLTFLoader} = await import('./vendor/poetry-three.mjs?v=20260913a');
+      const [{THREE,GLTFLoader},{createShishiMotion}] = await Promise.all([
+        import('./vendor/poetry-three.mjs?v=20260913a'),
+        import('./shishi-motion.mjs?v=20260915b')
+      ]);
       if (!current()) return;
       const response = await fetch(modelURL, {signal: controller.signal, cache: 'no-cache', credentials: 'same-origin'});
       const bytes = await readModel(response, controller.signal);if (!current()) return;
@@ -78,8 +91,8 @@ export function mountShishi(container, options = {}) {
         if (!current()) {disposeObject(gltf.scene);reject(new DOMException('Aborted', 'AbortError'));}else resolve(gltf);
       }, reject));
       if (!current()) {disposeObject(parsed.scene);parsed = null;return;}
-      viewer = createViewer({THREE, root: parsed.scene, holder, reducedMotion, onLost() {if (!dead) stopModel();}});
-      parsed = null;guide.dataset.model = 'ready';
+      viewer = createViewer({THREE,createShishiMotion,root:parsed.scene,holder,reducedMotion,onLost(){if(!dead)stopModel();}});
+      parsed = null;guide.dataset.model = 'ready';updateMotion();
     } catch {
       if (parsed) disposeObject(parsed.scene);
       if (!dead && turn === generation) guide.dataset.model = 'picture';
@@ -90,17 +103,36 @@ export function mountShishi(container, options = {}) {
   button.addEventListener('click', () => {
     if (dead || button.disabled || guide.hidden) return;if (open) {close();return;}
     try {if (typeof settings.onOpen === 'function' && settings.onOpen() === false) return;} catch {return;}
-    refreshHint();open = true;bubble.hidden = false;button.setAttribute('aria-expanded', 'true');viewer?.greet();
+    clearTimeout(attentionTimer);heldPointers.clear();interacting=false;
+    refreshHint();open = true;bubble.hidden = false;button.setAttribute('aria-expanded', 'true');updateMotion();viewer?.greet();
     if (!viewer && !pending) scheduleModel(true);
     if (button.matches(':focus-visible')) q('.shishi-dismiss').focus({preventScroll: true});
   }, {signal: events.signal});
   q('.shishi-dismiss').addEventListener('click', () => close(true), {signal: events.signal});
   q('.shishi-understood').addEventListener('click', () => close(true), {signal: events.signal});
   document.addEventListener('keydown', event => {if (event.key === 'Escape' && open) {event.preventDefault();close(true);}}, {signal: events.signal});
-  document.addEventListener('pointerdown', event => {if (open && !guide.contains(event.target)) close();}, {signal: events.signal});
+  document.addEventListener('pointerdown', event => {
+    if(guide.contains(event.target))return;
+    if(open)close();
+    if(event.target.closest?.('#main')){clearTimeout(attentionTimer);heldPointers.add(event.pointerId);interacting=true;updateMotion();}
+  }, {signal: events.signal});
+  const releaseAttention = event => {
+    heldPointers.delete(event.pointerId);if(heldPointers.size||!interacting)return;
+    clearTimeout(attentionTimer);attentionTimer=setTimeout(()=>{interacting=false;updateMotion();},1400);
+  };
+  document.addEventListener('pointerup',releaseAttention,{signal:events.signal});
+  document.addEventListener('pointercancel',releaseAttention,{signal:events.signal});
+  window.addEventListener('blur',()=>{
+    // A mouse released outside the browser must not leave the guide paused forever.
+    if(heldPointers.size){heldPointers.clear();clearTimeout(attentionTimer);interacting=false;updateMotion();}
+  },{signal:events.signal});
   document.addEventListener('focusin', updateVisibility, {signal: events.signal});
   document.addEventListener('focusout', () => queueMicrotask(updateVisibility), {signal: events.signal});
-  document.addEventListener('visibilitychange', () => {if (document.hidden) viewer?.stop();else viewer?.resize();}, {signal: events.signal});
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden){clearTimeout(attentionTimer);heldPointers.clear();interacting=false;}
+    else viewer?.resize();updateMotion();
+  }, {signal: events.signal});
+  reducedMotion.addEventListener('change',updateMotion,{signal:events.signal});
   window.visualViewport?.addEventListener('resize', updateVisibility, {signal: events.signal});
   const observer = new MutationObserver(records => {if (records.some(record => !guide.contains(record.target))) updateVisibility();});
   observer.observe(document.body, {attributes: true, attributeFilter: ['open', 'hidden', 'aria-modal'], childList: true, subtree: true});
@@ -108,10 +140,10 @@ export function mountShishi(container, options = {}) {
   return {
     pause(value = true) {paused = !!value;updateVisibility();},
     update(next = {}) {
-      if ((next.view && next.view !== settings.view) || (next.poem && next.poem !== settings.poem)) close();
+      if ((next.view && next.view !== settings.view) || (next.poem && next.poem !== settings.poem)) {clearTimeout(attentionTimer);heldPointers.clear();interacting=false;close();}
       settings = {...settings, ...next};if (open) refreshHint();updateVisibility();
     },
-    destroy() {if (dead) return;dead = true;events.abort();observer.disconnect();stopModel();guide.remove();}
+    destroy() {if (dead) return;dead = true;clearTimeout(attentionTimer);events.abort();observer.disconnect();stopModel();guide.remove();}
   };
 }
 
@@ -148,8 +180,8 @@ function disposeObject(root) {
   });
   textures.forEach(texture => texture.dispose());materials.forEach(material => material.dispose());geometries.forEach(geometry => geometry.dispose());images.forEach(bitmap => bitmap.close());
 }
-function createViewer({THREE, root, holder, reducedMotion, onLost}) {
-  let renderer, resizeObserver, dead = false, frame = 0;const listeners = new AbortController();
+function createViewer({THREE,createShishiMotion,root,holder,reducedMotion,onLost}) {
+  let renderer, resizeObserver, motion, dead = false;const listeners = new AbortController();
   try {
     renderer = new THREE.WebGLRenderer({alpha: true, antialias: true, powerPreference: 'low-power'});
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));renderer.setClearColor(0x000000, 0);renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -162,24 +194,16 @@ function createViewer({THREE, root, holder, reducedMotion, onLost}) {
     const centre = box.getCenter(new THREE.Vector3()), scale = 2 / longest;
     const model = new THREE.Group();model.add(root);model.scale.setScalar(scale);model.position.copy(centre).multiplyScalar(-scale);
     const pivot = new THREE.Group();pivot.add(model);scene.add(pivot);
-    const camera = new THREE.PerspectiveCamera(32, 1, .01, 30);camera.position.set(0, .04, 3.8);camera.lookAt(0, 0, 0);
+    const camera = new THREE.PerspectiveCamera(32, 1, .01, 30);camera.position.set(0, .04, 4.0);camera.lookAt(0, 0, 0);
     const canvas = renderer.domElement;canvas.setAttribute('aria-hidden', 'true');let renders = 0;
     const render = () => {if (!dead && !document.hidden) {renderer.render(scene, camera);canvas.dataset.renders = String(++renders);}};
-    const stop = () => {cancelAnimationFrame(frame);frame = 0;if (!dead) {pivot.rotation.set(0, 0, 0);render();}};
     const resize = () => {
       if (dead) return;const bounds = holder.getBoundingClientRect();if (!bounds.width || !bounds.height) return;
       renderer.setSize(bounds.width, bounds.height, false);camera.aspect = bounds.width / bounds.height;camera.updateProjectionMatrix();render();
     };
-    const greet = () => {
-      stop();if (reducedMotion.matches || document.hidden) return;const start = performance.now();
-      const tick = now => {
-        if (dead) return;const t = Math.min(1, (now - start) / 740);
-        pivot.rotation.y = Math.sin(t * Math.PI * 2) * .24 * (1 - t);pivot.rotation.z = Math.sin(t * Math.PI) * .025;render();
-        if (t < 1) frame = requestAnimationFrame(tick);else {frame = 0;pivot.rotation.set(0, 0, 0);}
-      };frame = requestAnimationFrame(tick);
-    };
+    motion=createShishiMotion({THREE,root,pivot,canvas,render,reducedMotion});
     canvas.addEventListener('webglcontextlost', event => {event.preventDefault();if (!dead) onLost();}, {signal: listeners.signal});
     holder.append(canvas);resizeObserver = new ResizeObserver(resize);resizeObserver.observe(holder);resize();
-    return {greet, stop, resize, destroy() {if (dead) return;dead = true;cancelAnimationFrame(frame);listeners.abort();resizeObserver.disconnect();disposeObject(root);renderer.dispose();renderer.forceContextLoss();canvas.remove();}};
-  } catch (error) {dead = true;cancelAnimationFrame(frame);listeners.abort();resizeObserver?.disconnect();renderer?.dispose();renderer?.forceContextLoss();renderer?.domElement.remove();throw error;}
+    return {greet:motion.greet,settle:motion.settle,updateMotion:motion.update,resize,destroy() {if (dead) return;dead = true;motion.destroy();listeners.abort();resizeObserver.disconnect();disposeObject(root);renderer.dispose();renderer.forceContextLoss();canvas.remove();}};
+  } catch (error) {dead = true;motion?.destroy();listeners.abort();resizeObserver?.disconnect();renderer?.dispose();renderer?.forceContextLoss();renderer?.domElement.remove();throw error;}
 }
