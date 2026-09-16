@@ -17,7 +17,7 @@ const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
   report:'<path d="M5 3h14v18H5zM9 16v2M12 12v6M15 8v10"/>',
   arrow:'<path d="M4 12h16m-6-6 6 6-6 6"/>'
 }[name] || ''}</svg>`;
-const allowedViews = new Set(['record','quiz','write','explore','chat','report']);
+const allowedViews = new Set(['record','animation','quiz','write','explore','chat','report']);
 const count = (value, maximum) => Math.max(0, Math.min(maximum, Number.isFinite(Number(value)) ? Math.floor(Number(value)) : 0));
 
 /** A navigation hub: completion comes only from actual reading/writing/quiz work. */
@@ -45,7 +45,7 @@ export function mountLessonMap(holder, {poem, progress = {}, resume = null, onNa
     const canResume = latestResume && allowedViews.has(latestResume.view);
     const steps = [
       {view:'record',title:'聽一聽・讀一讀',status:readingLabel,done:done===total},
-      {view:'animation',title:'看一看',status:'動畫準備中',pending:true},
+      {view:'animation',title:'看一看',status:poem.animation?.src?'跟着詩人看動畫':'動畫準備中',pending:!poem.animation?.src},
       {view:'explore',title:'找一找',status:'動手找小發現'},
       {view:'quiz',title:'練一練',status:challengeLabel,done:completed}
     ];
