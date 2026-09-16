@@ -1,7 +1,7 @@
 import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, handwritingMatch, createSyncQueue} from './core.mjs?v=20260909a';
 import {mountStage, getScenePreview} from './scene-stage.mjs?v=20260909a';
 import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
-import {getWordAudioURL} from './word-audio.mjs?v=20260914e';
+import {getWordAudioURL} from './word-audio.mjs?v=20260916a';
 import {getSpeechAudioURL} from './speech-audio.mjs?v=20260914f';
 import {createHandwritingPad} from './handwriting-pad.mjs?v=20260908i';
 import {mountExploration} from './exploration.mjs?v=20260915c';
@@ -213,6 +213,7 @@ function guideHint(){
   if(view==='lesson')return hint('一起練好普通話','先聽一聽、讀一讀，再找一找、練一練。「看一看」的動畫還在準備中。');
   if(view==='record'){
     if(recordBusy)return hint('我在聽你讀','讀完這一句，按「讀好了」。');
+    if(recordStep==='extension')return hint('試試拓展字','點「快」聽 kuài，留意韻母 uai，再跟着讀一讀。按「返回讀詩」繼續原來那一句。');
     if(recordStep==='words')return hint('先練一個字','點眼前這個大字，聽清讀音，再跟着讀一次。準備好就去下一句。');
     if(recordStep==='result')return hint('這一句讀好了','可以再讀一次；按「下一句」繼續，最後一句就能看建議。');
     return hint('讀好第 '+(currentLine+1)+' 句','先按「聽示範」，再按「開始朗讀」讀這一句。');
@@ -275,7 +276,7 @@ async function speak(text,context='',button=null) {
 function renderRecord() {
   const s=state(poem),line=poem.lines[currentLine],result=s.reading[currentLine];
   const weak=recordWeakWords();
-  if(!result)recordStep='read';
+  if((!result&&recordStep!=='extension')||(recordStep==='extension'&&poem.id!==2))recordStep='read';
   if(recordStep==='result'&&weak.length)recordStep='words';
   if(recordStep==='words'&&!weak.length)recordStep='result';
   const latest=s.reading.slice(0,currentLine).reduce((a,r,i)=>r?i:a,-1),displayed=result?currentLine:latest;
@@ -291,6 +292,8 @@ function renderRecord() {
   let content;
   if(recordStep==='read'){
     content=verseHTML(line,'active')+'<div class="record-model"><button class="button" data-action="line-tts">'+icon('volume-2')+'聽示範</button><button class="button pinyin-command" data-action="pinyin" aria-pressed="'+showPinyin+'">'+icon('languages')+'<span>'+(showPinyin?'隱藏拼音':'顯示拼音')+'</span></button></div><div id="record-controls"><div class="record-actions"><button class="mic-button" data-action="record-start" aria-label="開始朗讀">'+icon('mic')+'<span>開始朗讀</span></button></div><p class="record-status" id="record-status"></p></div>';
+  }else if(recordStep==='extension'){
+    content='<div class="record-extension"><div class="record-review"><button class="focus-word" data-action="word-tts" data-value="快" data-pinyin="kuài" aria-label="聽快，kuài 的讀音" aria-pressed="false"><ruby>快<rt>kuài</rt></ruby>'+icon('volume-2')+'</button></div><p class="extension-final">韻母 <strong>uai</strong></p><p class="record-word-hint">點字聽音，跟着讀一讀。</p><div class="record-actions"><button class="button primary" data-action="record-extension-back">'+icon('arrow-left')+'返回讀詩</button></div></div>';
   }else if(recordStep==='result'){
     content='<div class="record-feedback"><img class="feedback-motif" src="'+poemMotif()+'" width="64" height="64" alt=""><div class="record-result" aria-label="這次朗讀'+result.total_score+'分">'+result.total_score+'<small>分</small></div><h2 tabindex="-1" class="record-feedback-title">'+esc(result.grade)+'</h2><div class="record-actions"><button class="button" data-action="record-retry">'+icon('rotate-ccw')+'再讀一次</button>'+next+'</div></div>';
   }else{
@@ -298,8 +301,9 @@ function renderRecord() {
     content='<div class="record-word-heading"><span>這句 '+result.total_score+' 分</span><span>第 '+(recordWordIndex+1)+' / '+weak.length+' 個字</span></div><div class="record-review"><button class="focus-word" data-action="word-tts" data-value="'+esc(word.c)+'" data-pinyin="'+esc(word.p)+'" aria-label="聽'+esc(word.c)+'的讀音"><ruby>'+esc(word.c)+'<rt>'+esc(word.p)+'</rt></ruby>'+icon('volume-2')+'</button></div><p class="record-word-hint">再練這個字，點字聽讀音。</p><div class="record-word-pager"><button class="icon-button" data-action="record-word-step" data-value="-1" aria-label="上一個字" '+(recordWordIndex===0?'disabled':'')+'>'+icon('chevron-left')+'</button><button class="icon-button" data-action="record-word-step" data-value="1" aria-label="下一個字" '+(recordWordIndex===weak.length-1?'disabled':'')+'>'+icon('chevron-right')+'</button></div><div class="record-actions">'+next+'</div>';
   }
   $('#record-tool').dataset.step=recordStep;
-  $('#record-tool').innerHTML='<div class="record-counter"><span>第 '+(currentLine+1)+' / '+poem.lines.length+' 句</span>'+(result&&recordStep==='read'?'<button class="text-button" data-action="record-feedback" '+(recordBusy?'disabled':'')+'>'+icon('check')+'看看這句成果</button>':recordStep==='read'?'<img class="practice-motif" src="'+poemMotif()+'" width="40" height="40" alt="">':'')+'</div>'+content;
-  $('#record-bottom').innerHTML=recordStep==='read'?'<button class="text-button" data-action="video">'+icon('clapperboard')+'朗讀示範影片</button>':recordings.has(poem.id+'-'+currentLine)?'<button class="text-button" data-action="replay" data-value="'+currentLine+'">'+icon('headphones')+'我的錄音</button>':'';
+  const extensionEntry=poem.id===2&&recordStep!=='extension'?'<button class="text-button extension-entry" data-action="record-extension" '+(recordBusy?'disabled':'')+'>拓展字：快</button>':'';
+  $('#record-tool').innerHTML='<div class="record-counter"><span>'+(recordStep==='extension'?'拓展字 · 不計分':'第 '+(currentLine+1)+' / '+poem.lines.length+' 句')+'</span>'+(result&&recordStep==='read'?'<button class="text-button" data-action="record-feedback" '+(recordBusy?'disabled':'')+'>'+icon('check')+'看看這句成果</button>':recordStep==='read'&&!extensionEntry?'<img class="practice-motif" src="'+poemMotif()+'" width="40" height="40" alt="">':'')+extensionEntry+'</div>'+content;
+  $('#record-bottom').innerHTML=recordStep==='extension'?'':recordStep==='read'?'<button class="text-button" data-action="video">'+icon('clapperboard')+'朗讀示範影片</button>':recordings.has(poem.id+'-'+currentLine)?'<button class="text-button" data-action="replay" data-value="'+currentLine+'">'+icon('headphones')+'我的錄音</button>':'';
   document.querySelectorAll('[data-action="record-step"]').forEach(b=>b.disabled=recordBusy||(Number(b.dataset.value)<0?currentLine===0:currentLine===poem.lines.length-1));
   setRecordingBusy();
   icons();
@@ -307,7 +311,7 @@ function renderRecord() {
 function recordWeakWords(){return state(poem).reading[currentLine]?.words.filter(w=>Number.isFinite(w.score)&&w.score<80)||[];}
 function setRecordingBusy(){
   const layout=$('.record-layout');if(layout)layout.dataset.recordBusy=String(recordBusy);
-  document.querySelectorAll('.record-bottom button,[data-action="line-tts"],[data-action="pinyin"]').forEach(button=>button.disabled=recordBusy);
+  document.querySelectorAll('.record-bottom button,[data-action="line-tts"],[data-action="pinyin"],[data-action="record-extension"]').forEach(button=>button.disabled=recordBusy);
   shishi?.update({disabled:recordBusy});
 }
 function setRecordStep(step,focus=true){
@@ -585,6 +589,8 @@ document.addEventListener('click',event=>{
   if(action==='record-start')startRecording();
   if(action==='record-stop')stopRecording();
   if(action==='record-feedback'&&!recordBusy)setRecordStep('result');
+  if(action==='record-extension'&&view==='record'&&poem.id===2&&!recordBusy)setRecordStep('extension');
+  if(action==='record-extension-back'&&view==='record'&&!recordBusy)setRecordStep('read');
   if(action==='record-retry'&&!recordBusy)setRecordStep('read');
   if(action==='record-word-step'&&!recordBusy){recordWordIndex=clamp(recordWordIndex+Number(value),0,recordWeakWords().length-1);setRecordStep('words');}
   if(action==='record-next'&&!recordBusy){stopMedia();if(currentLine<poem.lines.length-1){currentLine++;recordWordIndex=0;setRecordStep('read');}else location.hash=link('report');}

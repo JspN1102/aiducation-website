@@ -1,4 +1,5 @@
 export const WORD_AUDIO_FILES = Object.freeze({
+  "快|kuài": "5feb-kuai4.mp3",
   "鵝|é": "9d5d-e2.mp3",
   "曲|qū": "66f2-qu1.mp3",
   "項|xiàng": "9805-xiang4.mp3",
