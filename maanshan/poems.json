@@ -76,7 +76,7 @@
     {
       "id": 3,
       "slug": "ti-xi-lin-bi",
-      "animation": {"src":"media/ti-xi-lin-bi/animation-20260917b.mp4","poster":"media/ti-xi-lin-bi/animation-poster-20260917.webp"},
+      "animation": {"src":"media/ti-xi-lin-bi/animation-20260917b.mp4","poster":"media/ti-xi-lin-bi/animation-poster-20260917.webp","caption":"跟着蘇軾遊廬山"},
       "title": "題西林壁",
       "author": "蘇軾",
       "dynasty": "宋",
@@ -115,6 +115,7 @@
       "id": 4,
       "slug": "bo-chuan-gua-zhou",
       "title": "泊船瓜洲",
+      "animation": {"src":"media/bo-chuan-gua-zhou/animation-20260917.mp4","poster":"media/bo-chuan-gua-zhou/animation-poster-20260917.webp","caption":"跟着王安石望月思鄉"},
       "author": "王安石",
       "dynasty": "宋",
       "grade": 4,

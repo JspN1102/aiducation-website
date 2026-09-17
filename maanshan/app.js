@@ -255,7 +255,7 @@ function sceneText(n,p=poem){return p.lines.filter(l=>l.scene===Math.max(1,n)).m
 function renderAnimation() {
   const media=poem.animation;
   if(!media?.src)return;
-  $('#view').innerHTML=`<section class="animation-lesson" aria-labelledby="animation-heading"><header class="animation-heading"><h2 id="animation-heading">看一看</h2><p>跟着${esc(poem.author)}遊廬山</p></header><div class="animation-stage"><video id="animation-video" controls playsinline preload="metadata" poster="${esc(media.poster)}" aria-label="${esc(titleOf(poem))}動畫"></video></div><p class="animation-status" id="animation-status" role="status" aria-live="polite" hidden></p><div class="animation-actions"><button type="button" class="button primary" id="animation-toggle" aria-controls="animation-video">${icon('play')}<span>播放動畫</span></button><a class="button" href="${link('explore')}"><span>下一站：找一找</span>${icon('arrow-right')}</a></div></section>`;
+  $('#view').innerHTML=`<section class="animation-lesson" aria-labelledby="animation-heading"><header class="animation-heading"><h2 id="animation-heading">看一看</h2><p>${esc(media.caption||`跟着${poem.author}看動畫`)}</p></header><div class="animation-stage"><video id="animation-video" controls playsinline preload="metadata" poster="${esc(media.poster)}" aria-label="${esc(titleOf(poem))}動畫"></video></div><p class="animation-status" id="animation-status" role="status" aria-live="polite" hidden></p><div class="animation-actions"><button type="button" class="button primary" id="animation-toggle" aria-controls="animation-video">${icon('play')}<span>播放動畫</span></button><a class="button" href="${link('explore')}"><span>下一站：找一找</span>${icon('arrow-right')}</a></div></section>`;
   const player=$('#animation-video'),button=$('#animation-toggle'),label=$('span',button),status=$('#animation-status');
   const events=new AbortController(),listen=(target,event,callback)=>target.addEventListener(event,callback,{signal:events.signal});
   let started=false,failed=false,dead=false;
@@ -672,7 +672,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('pagehide',()=>{handwritingPad?.finish();stopMedia();cancelRecording();persist();});
 async function init(){
   try{
-    const responses=await Promise.all([fetch('poems.json?v=20260917b'),fetch('pronunciation.json?v=20260908b')]);
+    const responses=await Promise.all([fetch('poems.json?v=20260917c'),fetch('pronunciation.json?v=20260908b')]);
     if(responses.some(response=>!response.ok))throw new Error('catalog');
     const [data,pronunciation]=await Promise.all(responses.map(response=>response.json()));
     poems=data.poems;if(!Array.isArray(poems)||!poems.length)throw new Error('catalog');
