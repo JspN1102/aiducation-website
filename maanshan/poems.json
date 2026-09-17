@@ -193,6 +193,7 @@
       "id": 6,
       "slug": "zao-chun",
       "title": "初春小雨",
+      "animation": {"src":"media/zao-chun/animation-20260917.mp4","poster":"media/zao-chun/animation-poster-20260917.webp","caption":"跟着韓愈尋找早春"},
       "subtitle": "早春呈水部張十八員外（其一）",
       "author": "韓愈",
       "dynasty": "唐",
