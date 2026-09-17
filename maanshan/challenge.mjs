@@ -1,6 +1,6 @@
-import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260914e';
-import {newAttempt, readAttempt, recordAnswer, challengeSummary} from './challenge-state.mjs?v=20260914e';
-import {mountChallengeWriting} from './challenge-writing.mjs?v=20260914e';
+import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260918a';
+import {newAttempt, readAttempt, recordAnswer, challengeSummary} from './challenge-state.mjs?v=20260918a';
+import {mountChallengeWriting} from './challenge-writing.mjs?v=20260918a';
 import {mountChallengeModel} from './challenge-model.mjs?v=20260914e';
 import {mountLivingField} from './living-field.mjs?v=20260914f';
 import {mountPoetryCard} from './poetry-card.mjs?v=20260914f';

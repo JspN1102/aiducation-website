@@ -1,6 +1,12 @@
 {
   "trailingSlash": true,
   "functions": {
+    "api/soe.js": {
+      "maxDuration": 30
+    },
+    "api/tts.js": {
+      "maxDuration": 20
+    },
     "api/maanshan-report.js": {
       "maxDuration": 60
     },

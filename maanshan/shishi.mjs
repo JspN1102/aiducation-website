@@ -1,1 +1,1 @@
-export {mountShishi} from './shishi-guide.mjs?v=20260915c';
+export {mountShishi} from './shishi-guide.mjs?v=20260918a';

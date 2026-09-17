@@ -34,10 +34,10 @@ export function mountChallengeWriting(holder, {
 .challenge-writing{width:100%;max-width:430px;margin-inline:auto;color:#233d32}
 .challenge-writing .cw-board{position:relative;width:min(100%,220px);aspect-ratio:1;margin:4px auto 8px;border:1px solid #bfcfc3;border-radius:20px;overflow:hidden;background-color:#fffef8;background-image:linear-gradient(90deg,transparent calc(50% - .5px),#dce4d9 calc(50% - .5px),#dce4d9 calc(50% + .5px),transparent calc(50% + .5px)),linear-gradient(transparent calc(50% - .5px),#dce4d9 calc(50% - .5px),#dce4d9 calc(50% + .5px),transparent calc(50% + .5px))}
 .challenge-writing.is-answered .cw-board{width:min(100%,176px)}
-.challenge-writing canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
-.challenge-writing .cw-animation{position:absolute;inset:0;background:#fffef8;display:grid;place-items:center;font-family:'Noto Serif TC',serif;font-size:160px;line-height:1}
+.challenge-writing canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.challenge-writing .cw-animation{position:absolute;inset:0;min-width:0;min-height:0;background:#fffef8;display:grid;place-items:center;font-family:'Noto Serif TC',serif;line-height:1}
 .challenge-writing .cw-animation[hidden],.challenge-writing [hidden]{display:none!important}
-.challenge-writing .cw-animation svg{width:100%;height:100%;display:block}
+.challenge-writing .cw-animation svg{position:absolute;inset:0;width:100%;height:100%;display:block}
 .challenge-writing .cw-tools,.challenge-writing .cw-controls,.challenge-writing .cw-review-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
 .challenge-writing .cw-tools{flex-wrap:nowrap}
 .challenge-writing button{font:inherit;min-height:44px;padding:10px 15px;border-radius:14px;border:1px solid #d9e3d9;background:#fffef8;color:#294c3b;cursor:pointer;touch-action:manipulation}
@@ -70,6 +70,25 @@ export function mountChallengeWriting(holder, {
   holder.replaceChildren(root);
   const $ = selector => root.querySelector(selector);
   const canvas = $('canvas'), animation = $('.cw-animation'), status = $('.cw-status');
+
+  function showCharacter() {
+    // One coordinate system at every board size, including the small review
+    // state. A fixed CSS font size used to exceed the phone's review square.
+    const ns='http://www.w3.org/2000/svg';
+    const svg=doc.createElementNS(ns,'svg'),glyph=doc.createElementNS(ns,'text');
+    svg.setAttribute('viewBox','0 0 560 560');
+    svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+    glyph.setAttribute('x','280');glyph.setAttribute('y','280');
+    glyph.setAttribute('text-anchor','middle');glyph.setAttribute('dominant-baseline','central');
+    glyph.setAttribute('font-size','380');glyph.setAttribute('fill','#286650');
+    glyph.textContent=character;svg.append(glyph);animation.replaceChildren(svg);
+  }
+
+  function revealBoard() {
+    // Short landscape screens scroll the activity body. Bring the square back
+    // after a lower review button is tapped, so it is ready to watch or write.
+    if(!destroyed) $('.cw-board').scrollIntoView({block:'nearest',inline:'nearest'});
+  }
 
   function updateControls() {
     if (destroyed) return;
@@ -123,7 +142,7 @@ export function mountChallengeWriting(holder, {
         : result.recognized ? `這次辨認為「${result.recognized}」。看看下面的字，一起學一學。`
           : '看看下面的字，一起學一學。';
     if (result.status === 'skipped') {
-      animation.textContent = character;
+      showCharacter();
       animation.hidden = false;
     }
     updateControls();
@@ -199,10 +218,11 @@ export function mountChallengeWriting(holder, {
     stopAnimation();
     const request = strokeOperation;
     animation.hidden = false;
-    animation.textContent = character;
+    showCharacter();
     $('.cw-tools').hidden = true;
     status.textContent = '正在準備筆順…';
     updateControls();
+    revealBoard();
     animationRequest = new view.AbortController();
     try {
       if (!view.HanziWriter) throw new Error('Stroke animation is unavailable.');
@@ -230,7 +250,7 @@ export function mountChallengeWriting(holder, {
     } catch {
       if (!destroyed && request === strokeOperation) {
         animation.replaceChildren();
-        animation.textContent = character;
+        showCharacter();
         status.textContent = '筆順暫時無法播放，可以先觀察字形，或稍後再試。';
       }
     }
@@ -244,6 +264,7 @@ export function mountChallengeWriting(holder, {
     $('.cw-tools').hidden = false;
     status.textContent = '照着正確的字練一遍，這次練習不會改動答題結果。';
     updateControls();
+    revealBoard();
   }
 
   pad = createHandwritingPad(canvas, {isLocked: locked, onChange: updateControls});

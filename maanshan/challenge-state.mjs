@@ -1,4 +1,4 @@
-import {CHALLENGE_VERSION} from './challenge-data.mjs?v=20260914e';
+import {CHALLENGE_VERSION} from './challenge-data.mjs?v=20260918a';
 
 export function shuffled(values, random = Math.random) {
   const result = [...values];

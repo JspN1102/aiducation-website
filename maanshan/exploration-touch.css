@@ -1,0 +1,93 @@
+/* One observation at a time; phones separate looking from answering. */
+.explore-observe-task,.explore-answer-entry,.explore-back-picture{display:none}
+.shishi-touch-slot{flex:0 0 48px;width:48px;height:56px;position:relative;align-self:center}
+.shishi-touch-slot .shishi-guide{position:relative;left:auto;top:auto;bottom:auto;width:48px;height:56px;z-index:35}
+.shishi-touch-slot .shishi-guide-button{width:48px;height:56px;cursor:pointer;touch-action:manipulation}
+.shishi-touch-slot .shishi-guide-art{width:56px;height:56px;transform-origin:50% 80%}
+.shishi-touch-slot .shishi-bubble{max-height:calc(100dvh - 32px);overscroll-behavior:contain}
+
+@media(max-width:1100px),(pointer:coarse){
+ .workspace.view-explore #view{overflow:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
+ .workspace.view-explore #view .explore{height:auto;min-height:100%;gap:14px;padding-bottom:10px}
+ .workspace.view-explore #view .explore-heading{display:none}
+ .workspace.view-explore #view .explore-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto;gap:20px;min-height:0;flex:1}
+ .workspace.view-explore #view .explore-visual{height:auto;min-height:0;position:relative;flex:none}
+ .workspace.view-explore #view .explore-stage{flex:1;min-height:290px;border-radius:20px;box-shadow:none}
+ .workspace.view-explore #view .explore-view-controls{position:static;display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin:12px 0 0}
+ .workspace.view-explore #view .explore-mode{display:grid;grid-template-columns:1fr 1fr;gap:4px;width:100%;padding:4px;border-radius:16px}
+ .workspace.view-explore #view .explore-mode button{display:flex;justify-content:center;min-height:48px;font-size:18px;padding:8px 12px;border-radius:12px}
+ .workspace.view-explore #view .explore-gesture{display:none}
+ .workspace.view-explore #view .explore-expand{left:auto;right:10px;top:10px;width:auto;min-height:44px;padding:9px 11px;font-size:16px!important}
+ .workspace.view-explore #view .explore-expand span{display:inline}
+ .workspace.view-explore #view .explore-view-label{top:auto;bottom:12px;right:12px;font-size:16px;max-width:calc(100% - 24px)}
+ .workspace.view-explore #view .explore-scene-name{display:none}
+ .workspace.view-explore #view .explore-model-tools{position:static;display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:10px;padding:0;background:none}
+ .workspace.view-explore #view .explore-presets{display:flex;flex:1;gap:8px}
+ .workspace.view-explore #view .explore-presets button{flex:1;min-height:46px;font-size:17px;padding:8px}
+ .workspace.view-explore #view .explore-zoom{margin:0;gap:7px;justify-content:center}
+ .workspace.view-explore #view .explore-zoom button{width:46px;min-height:46px}
+ .workspace.view-explore #view .explore-card{align-self:stretch;min-height:0;max-height:none;overflow:visible;border-radius:20px;padding:18px;box-shadow:none}
+ .workspace.view-explore #view .explore-card-top{display:flex;margin-bottom:12px}
+ .workspace.view-explore #view .explore-step{font-size:16px;letter-spacing:0}
+ .workspace.view-explore #view .explore-title-row{gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+ .workspace.view-explore #view .explore-card h3{font-size:23px;line-height:1.4;margin:0}
+ .workspace.view-explore #view .explore-clue{font-size:16px!important;min-height:44px;padding:8px 12px}
+ .workspace.view-explore #view .explore-verse{gap:10px;min-height:68px;margin:0 0 14px;padding:10px 0}
+ .workspace.view-explore #view .explore-verse>p{font-size:24px;line-height:1.7;letter-spacing:.5px;text-wrap:balance}
+ .workspace.view-explore #view .explore-word{min-width:64px;min-height:62px;padding:5px 8px}
+ .workspace.view-explore #view .explore-word>span{font-size:28px}
+ .workspace.view-explore #view .explore-word small{font-size:15px}
+ .workspace.view-explore #view .explore-question legend{font-size:21px;line-height:1.5;margin-bottom:14px}
+ .workspace.view-explore #view .explore-answers{gap:12px}
+ .workspace.view-explore #view .explore-answers button{font-size:20px;line-height:1.5;min-height:60px;padding:12px;border-radius:14px}
+ .workspace.view-explore #view .explore-answer-dot{width:22px;height:22px}
+ .workspace.view-explore #view .explore-guide{min-height:0;margin:14px 0;padding:10px 12px;background:#f1f5e9;border-radius:12px}
+ .workspace.view-explore #view .explore-guide>img,.workspace.view-explore #view .explore-guide-name{display:none}
+ .workspace.view-explore #view .explore-feedback{font-size:17px;line-height:1.65;min-height:0;margin:0}
+ .workspace.view-explore #view .explore-next{font-size:19px;line-height:1.5;min-height:52px;padding:11px 15px;border-radius:14px;flex:none}
+ .workspace.view-explore #view .explore-next:disabled{display:none}
+ .workspace.view-explore #view .explore-notice,.workspace.view-explore #view .explore-loading{font-size:16px;line-height:1.5}
+ .workspace.view-explore #view .explore-finish{margin:15px 0 24px}
+ .workspace.view-explore #view .explore-finish p{font-size:20px;line-height:1.8;margin-top:15px}
+ .workspace.view-explore #view .explore-finish>.explore-finish-shishi{width:105px;height:118px;margin:0 auto 18px}
+ .workspace.view-explore #view .explore-again{font-size:18px;min-height:48px}
+ .workspace.view-explore #view .explore.is-expanded .explore-layout{display:flex}
+ .workspace.view-explore #view .explore.is-expanded .explore-stage{height:calc(100dvh - 270px);min-height:250px;flex:auto}
+ .workspace.view-explore #view .explore.is-expanded .explore-visual{width:100%}
+ .workspace.view-explore #view .explore.is-expanded .explore-card{display:none}
+}
+
+@media(max-width:820px){
+ .workspace.view-explore #view .explore-layout{display:block;padding:0;flex:none}
+ .workspace.view-explore #view .explore-visual{display:flex;gap:0}
+ .workspace.view-explore #view .explore-observe-task{display:block;margin-bottom:14px}
+ .workspace.view-explore #view .explore-observe-task>span{display:block;font-size:16px;line-height:1.4;color:#708467;margin-bottom:5px}
+ .workspace.view-explore #view .explore-observe-task h3{font-size:24px;line-height:1.4;margin:0 0 7px;color:#365d49;outline:none}
+ .workspace.view-explore #view .explore-observe-task p{font-size:18px;line-height:1.6;margin:0;color:#64765c}
+ .workspace.view-explore #view .explore-stage{height:clamp(190px,34dvh,370px);min-height:190px;flex:none;aspect-ratio:auto}
+ .workspace.view-explore #view .explore:not(.is-expanded) .explore-expand{width:44px;min-height:44px;justify-content:center;padding:10px;border-radius:14px}
+ .workspace.view-explore #view .explore:not(.is-expanded) .explore-expand span{display:none}
+ .workspace.view-explore #view .explore-answer-entry{display:flex;margin-top:16px}
+ .workspace.view-explore #view .explore[data-mobile-step=observe] .explore-card{display:none}
+ .workspace.view-explore #view .explore[data-mobile-step=question] .explore-visual{display:none}
+ .workspace.view-explore #view .explore-card{position:relative;padding:16px;min-height:0}
+ .workspace.view-explore #view .explore-back-picture{display:flex;align-items:center;gap:7px;min-height:44px;margin:0 0 12px;padding:6px 0;background:none;border:0;color:#527758;font-size:17px}
+ .workspace.view-explore #view .explore-title-row{position:absolute;top:16px;right:16px;margin:0}
+ .workspace.view-explore #view .explore-title-row h3{display:none}
+ .workspace.view-explore #view .explore-verse{margin-bottom:18px}
+ .workspace.view-explore #view .explore-guide{display:none}
+ .workspace.view-explore #view .explore-card[data-feedback] .explore-guide{display:flex}
+ .workspace.view-explore #view .explore-next:not(:disabled){margin-top:18px}
+ .workspace.view-explore #view .explore-model-tools{display:grid;grid-template-columns:1fr;gap:8px}
+ .workspace.view-explore #view .explore-presets{width:100%}
+ .workspace.view-explore #view .explore.is-expanded .explore-observe-task,
+ .workspace.view-explore #view .explore.is-expanded .explore-answer-entry{display:none}
+ .workspace.view-explore #view .explore.is-expanded .explore-stage{height:calc(100dvh - 285px);min-height:240px}
+}
+@media(max-width:370px){
+ .workspace.view-explore #view .explore-card{padding:13px}
+ .workspace.view-explore #view .explore-title-row{top:13px;right:13px}
+ .workspace.view-explore #view .explore-clue{font-size:16px!important;padding:7px}
+ .workspace.view-explore #view .explore-verse>p{font-size:22px;letter-spacing:0}
+ .workspace.view-explore #view .explore-observe-task h3{font-size:23px}
+}

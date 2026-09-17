@@ -97,6 +97,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     <header class="explore-heading"><div><p class="explore-eyebrow">一首詩，兩個小發現</p><h2 id="explore-title">走進詩裏</h2></div>
       <img class="explore-motif" src="media/poetry-motifs/${content.motif}.svg" alt="" width="56" height="56"></header>
     <div class="explore-layout"><div class="explore-visual">
+      <div class="explore-observe-task"><span data-explore-observe-count></span><h3 tabindex="-1" data-explore-observe-title></h3><p data-explore-observe-hint></p></div>
       <div class="explore-stage" data-explore-stage>
         <img class="explore-scene" src="${escapeHTML(imageURL)}" alt="${escapeHTML(content.alt)}" decoding="async" fetchpriority="high">
         <div class="explore-image-loading" role="status"><img src="media/poetry-motifs/${content.motif}.svg" alt="" width="80" height="80"><p>正在準備畫面…</p></div>
@@ -116,6 +117,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
         <div class="explore-zoom"><button type="button" data-explore="zoom-in" aria-label="放大" title="放大">${icon('plus')}</button><button type="button" data-explore="zoom-out" aria-label="縮小" title="縮小">${icon('minus')}</button><button type="button" data-explore="reset" aria-label="回到原來角度" title="回到原來角度">${icon('reset')}</button></div>
       </div>
       <p class="explore-notice" role="status" hidden></p>
+      <button type="button" class="explore-next explore-answer-entry" data-explore="open-question">找到啦，來答一答${icon('arrow')}</button>
     </div><div class="explore-card" data-explore-card></div></div>
   </section>`;
   const q = selector => container.querySelector(selector);
@@ -124,6 +126,16 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
   const card = q('[data-explore-card]'), loading = q('.explore-loading'), notice = q('.explore-notice');
   const tools = q('.explore-model-tools'), modelButton = q('[data-explore="model"]');
   const activityEvents = new AbortController();
+  section.dataset.mobileStep = 'observe';
+
+  function showStep(step, focus = false) {
+    section.dataset.mobileStep = step;
+    if (!focus) return;
+    const heading = step === 'observe' ? q('[data-explore-observe-title]') : card.querySelector('legend') || card.querySelector('h3');
+    heading?.focus({preventScroll: true});
+    const viewport = section.closest('#view');
+    if (viewport) viewport.scrollTop = 0;
+  }
   container.addEventListener('error', event => {
     if (event.target.matches?.('.explore-guide img, .explore-finish-shishi')) event.target.hidden = true;
   }, {capture: true, signal: activityEvents.signal});
@@ -158,16 +170,20 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     card.removeAttribute('data-feedback');
     q('[data-explore-view-label]').hidden = true;
     if (completed) {
+      showStep('question');
       card.innerHTML = `<div class="explore-card-top"><span class="explore-step">${icon('check')}兩個發現，都找到了</span></div>
         <div class="explore-finish"><img class="explore-finish-shishi" src="media/shishi-guide.webp" alt="詩詩" width="90" height="100"><h3 tabindex="-1">把發現帶回詩裏</h3><p>${escapeHTML(content.finish)}</p></div>
         <div class="explore-finish-actions"><a class="explore-next" href="#${escapeHTML(poem.slug)}/record">再讀古詩${icon('arrow')}</a><button class="explore-again" type="button" data-explore="again">再找一次</button></div>`;
     } else {
       const item = content.observations[observation];
-      card.innerHTML = `<div class="explore-card-top"><span class="explore-step">小發現 ${observation + 1} / ${content.observations.length}</span><div class="explore-dots" aria-hidden="true">${content.observations.map((_, i) => `<i class="${i <= observation ? 'is-filled' : ''}"></i>`).join('')}</div></div>
+      q('[data-explore-observe-count]').textContent = `小發現 ${observation + 1} / ${content.observations.length}`;
+      q('[data-explore-observe-title]').textContent = item.title;
+      q('[data-explore-observe-hint]').textContent = item.guide;
+      card.innerHTML = `<button type="button" class="explore-back-picture" data-explore="open-picture">${icon('picture')}再看畫面</button><div class="explore-card-top"><span class="explore-step">小發現 ${observation + 1} / ${content.observations.length}</span><div class="explore-dots" aria-hidden="true">${content.observations.map((_, i) => `<i class="${i <= observation ? 'is-filled' : ''}"></i>`).join('')}</div></div>
         <div class="explore-title-row"><h3 tabindex="-1">${escapeHTML(item.title)}</h3><button class="explore-clue" type="button" data-explore="inspect" aria-label="請詩詩提示觀察線索">找線索${icon('turn')}</button></div>
         <div class="explore-verse"><p>${escapeHTML(item.verse)}</p><button class="explore-word" type="button" data-explore="word" aria-label="聽${escapeHTML(item.word[0])}的讀音 ${escapeHTML(item.word[1])}"><span><small>${escapeHTML(item.word[1])}</small>${escapeHTML(item.word[0])}</span>${icon('sound')}</button></div>
-        <fieldset class="explore-question"><legend>${escapeHTML(item.question)}</legend><div class="explore-answers">${item.choices.map((choice, i) => `<button type="button" data-explore="answer" data-answer="${i}" aria-pressed="false"><span class="explore-answer-dot" aria-hidden="true"></span>${escapeHTML(choice)}</button>`).join('')}</div></fieldset>
-        <div class="explore-guide"><img src="media/shishi-guide.webp" alt="" width="52" height="64" decoding="async"><div><span class="explore-guide-name">詩詩陪你看</span><p class="explore-feedback" aria-live="polite">${escapeHTML(item.guide)}</p></div></div>
+        <fieldset class="explore-question"><legend tabindex="-1">${escapeHTML(item.question)}</legend><div class="explore-answers">${item.choices.map((choice, i) => `<button type="button" data-explore="answer" data-answer="${i}" aria-pressed="false"><span class="explore-answer-dot" aria-hidden="true"></span>${escapeHTML(choice)}</button>`).join('')}</div></fieldset>
+        <div class="explore-guide"><img src="media/shishi-guide.webp" alt="" width="52" height="64" decoding="async"><div><span class="explore-guide-name">詩詩陪你看</span><p class="explore-feedback" aria-live="polite">想一想，點你的答案。需要幫忙就按「找線索」。</p></div></div>
         <button class="explore-next" type="button" data-explore="next" disabled>${observation + 1 === content.observations.length ? '收好小發現' : '下一個發現'}${icon('arrow')}</button>`;
     }
     if (focus) card.querySelector('h3')?.focus({preventScroll: true});
@@ -245,7 +261,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
       // Both imports and the model fetch start only after the explicit button.
       const {THREE, GLTFLoader, OrbitControls} = await import('./vendor/poetry-three.mjs?v=20260913a');
       if (!current()) return;
-      const response = await fetch(assetURL('model.glb'), {signal: controller.signal, credentials: 'same-origin', cache: 'no-cache'});
+      const response = await fetch(assetURL('model.glb'), {signal: controller.signal, credentials: 'same-origin'});
       const buffer = await readModel(response, controller.signal);
       if (!current()) return;
       parsed = await new Promise((resolve, reject) => {
@@ -293,7 +309,9 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     const button = event.target.closest('[data-explore]');
     if (!button || !container.contains(button) || button.disabled || dead) return;
     const action = button.dataset.explore;
-    if (action === 'expand') setExpanded(!section.classList.contains('is-expanded'));
+    if (action === 'open-question') showStep('question', true);
+    else if (action === 'open-picture') showStep('observe', true);
+    else if (action === 'expand') setExpanded(!section.classList.contains('is-expanded'));
     else if (action === 'picture') {showPicture(); announce();}
     else if (action === 'model') showModel();
     else if (action === 'retry-image') {
@@ -349,9 +367,11 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
         }
       } else {observation++; correct = false;}
       renderCard(true);
+      if (!completed) showStep('observe', true);
     } else if (action === 'again') {
       observation = 0; correct = false; completed = false;
       renderCard(true);
+      showStep('observe', true);
     }
   }, {signal: activityEvents.signal});
   renderCard();
@@ -369,18 +389,21 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
 
 export function createViewer({THREE, OrbitControls, gltf, holder, stage, content, onInteract, onContextLost}) {
   let renderer;
-  try {renderer = new THREE.WebGLRenderer({alpha: true, antialias: true, powerPreference: 'low-power'});}
+  const lightRendering = matchMedia('(pointer: coarse), (max-width: 1100px)').matches;
+  try {renderer = new THREE.WebGLRenderer({alpha: true, antialias: !lightRendering, powerPreference: 'low-power'});}
   catch {throw new Error('webgl-unavailable');}
   const canvas = renderer.domElement;
   canvas.setAttribute('role', 'img');
   canvas.setAttribute('aria-label', `${content.object}，可用方向鍵轉動，加減鍵縮放，Home 鍵回到原來角度`);
   canvas.tabIndex = 0;
-  renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, 1.5));
+  renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, lightRendering ? 1.25 : 1.5));
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !lightRendering;
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(34, 1, .02, 100);
@@ -399,7 +422,7 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
       // Keep each asset's PBR maps and material response. Anisotropy preserves
       // wood grain, feathers and soil detail when children inspect an angle.
       for (const value of Object.values(material || {})) {
-        if (value?.isTexture) value.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+        if (value?.isTexture) value.anisotropy = Math.min(lightRendering ? 2 : 4, renderer.capabilities.getMaxAnisotropy());
       }
     }
   });
@@ -407,7 +430,7 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
   scene.add(new THREE.HemisphereLight(0xfffaf2, 0x92a59b, 1.7));
   const sunlight = new THREE.DirectionalLight(0xfff3df, 2.8);
   sunlight.position.set(-3, 8, 5);
-  sunlight.castShadow = true;
+  sunlight.castShadow = !lightRendering;
   sunlight.shadow.mapSize.set(1024, 1024);
   sunlight.shadow.camera.left = sunlight.shadow.camera.bottom = -3;
   sunlight.shadow.camera.right = sunlight.shadow.camera.top = 3;
@@ -433,13 +456,14 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
   controls.maxPolarAngle = Math.PI * .52;
   controls.target.copy(sphere.center);
   let disposed = false, frame = 0, baseDistance = 6, transition = null;
+  let visible = true;
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const normalDirection = new THREE.Vector3(...(content.initialView || [3.3, 2.4, 5.8])).normalize();
   const requestRender = () => {
-    if (disposed || frame) return;
+    if (disposed || frame || document.hidden || !visible) return;
     frame = requestAnimationFrame(time => {
       frame = 0;
-      if (disposed) return;
+      if (disposed || document.hidden || !visible) return;
       if (transition) {
         const progress = Math.min(1, (time - transition.started) / 360);
         const eased = 1 - Math.pow(1 - progress, 3);
@@ -518,6 +542,13 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
   controls.addEventListener('change', requestRender);
   const resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(stage);
+  const visibilityObserver = new IntersectionObserver(entries => {
+    visible = entries.some(entry => entry.isIntersecting);
+    if (visible) {resize(); requestRender();}
+  });
+  visibilityObserver.observe(stage);
+  const resume = () => {if (!document.hidden && visible) requestRender();};
+  document.addEventListener('visibilitychange', resume);
   holder.replaceChildren(canvas);
   camera.position.copy(normalDirection).multiplyScalar(baseDistance);
   resize();
@@ -530,6 +561,8 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
       cancelAnimationFrame(frame);
       transition = null;
       resizeObserver.disconnect();
+      visibilityObserver.disconnect();
+      document.removeEventListener('visibilitychange', resume);
       canvas.removeEventListener('keydown', keydown);
       canvas.removeEventListener('webglcontextlost', contextLost);
       controls.removeEventListener('start', interrupt);

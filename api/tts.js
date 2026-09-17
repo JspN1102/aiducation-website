@@ -52,6 +52,20 @@ module.exports = async function handler(req, res) {
   const authorization = buildAuth(secretId, secretKey, payload, timestamp);
 
   return new Promise((resolve) => {
+    let settled = false, deadline;
+    const finish = (status, body, audio = false) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(deadline);
+      if (audio) {
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Content-Length', body.length);
+        res.status(status).end(body);
+      } else {
+        res.status(status).json(body);
+      }
+      resolve();
+    };
     const reqOpts = {
       hostname: 'tts.tencentcloudapi.com',
       path: '/',
@@ -71,34 +85,33 @@ module.exports = async function handler(req, res) {
       const chunks = [];
       apiRes.on('data', chunk => chunks.push(chunk));
       apiRes.on('end', () => {
+        if (settled) return;
         try {
           const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
           const resp = body.Response;
           if (resp && resp.Audio) {
             const audioBuf = Buffer.from(resp.Audio, 'base64');
-            res.setHeader('Content-Type', 'audio/mpeg');
-            res.setHeader('Content-Length', audioBuf.length);
-            res.status(200).end(audioBuf);
+            if (!audioBuf.length) return finish(502, { error: 'Empty TTS response' });
+            finish(200, audioBuf, true);
           } else {
-            res.status(502).json({ error: resp?.Error?.Message || 'TTS failed', detail: JSON.stringify(resp).slice(0, 300) });
+            finish(502, { error: 'TTS temporarily unavailable' });
           }
         } catch (e) {
-          res.status(502).json({ error: 'Invalid TTS response' });
+          finish(502, { error: 'Invalid TTS response' });
         }
-        resolve();
       });
+      apiRes.on('error', () => finish(502, { error: 'TTS connection interrupted' }));
+      apiRes.on('aborted', () => finish(502, { error: 'TTS connection interrupted' }));
     });
 
-    apiReq.on('error', (e) => {
-      res.status(502).json({ error: e.message });
-      resolve();
-    });
+    apiReq.on('error', () => finish(502, { error: 'TTS connection unavailable' }));
 
     apiReq.setTimeout(8000, () => {
+      finish(504, { error: 'TTS timeout' });
       apiReq.destroy();
-      res.status(504).json({ error: 'TTS timeout' });
-      resolve();
     });
+    // Also bound the complete request when bytes arrive too slowly to trigger a socket timeout.
+    deadline = setTimeout(() => { finish(504, { error: 'TTS timeout' });apiReq.destroy(); }, 12000);
 
     apiReq.write(payload);
     apiReq.end();

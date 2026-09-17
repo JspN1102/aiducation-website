@@ -10,8 +10,8 @@ const { pathToFileURL } = require('node:url');
 
 const root = path.resolve(__dirname, '..');
 const work = path.resolve(process.env.MAANSHAN_AUDIO_WORK || path.join(os.tmpdir(), 'maanshan-audio'));
-const endpoint = process.env.MAANSHAN_TTS_ENDPOINT || 'https://aiducation.asia/api/tts';
-const voice = 101015, speed = -0.25;
+const endpoint = process.env.MAANSHAN_TTS_ENDPOINT || 'https://aiducation.asia/api/tts/';
+const voice = 101001, speed = -0.25;
 const directories = { words: path.join(root, 'media/words'), speech: path.join(root, 'media/speech') };
 const exportsByKind = { words: 'WORD_AUDIO_FILES', speech: 'SPEECH_AUDIO_FILES' };
 const reportPath = path.join(work, 'static-speech-generation.json');
@@ -257,7 +257,7 @@ async function main() {
     const file = filePath(kind, entry.file);
     if (!fs.existsSync(file)) continue;
     const info = audioInfo(file, kind), known = knownEntry(kind, key);
-    if (known?.sha256) assert.equal(info.sha256, known.sha256, 'Existing audio differs from its saved hash: ' + key);
+    if (known?.sha256 && known.file === entry.file) assert.equal(info.sha256, known.sha256, 'Existing audio differs from its saved hash: ' + key);
     report[kind][key] = { ...entry, ssml: kind === 'words' ? '<speak>' + phoneme(entry.char, entry.pinyin) + '</speak>' : entry.ssml, ...info, reused: true };
   }
   assert.ok(mode === '--generate' || missing.length === 0, 'Missing ' + missing.length + ' audio files; only --generate can request new audio');

@@ -1,0 +1,265 @@
+/* Touch layouts: keep the task, its controls and its next action together. */
+.workspace .lesson-bar:has(.shishi-touch-slot) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 48px auto;
+}
+.workspace .lesson-bar > .back-library { grid-column: 1; grid-row: 1; }
+.workspace .lesson-bar > .lesson-title { grid-column: 2; grid-row: 1; }
+.workspace .lesson-bar > .shishi-touch-slot { grid-column: 3; grid-row: 1; align-self: center; justify-self: center; }
+.workspace .lesson-bar > .lesson-tools { grid-column: 4; grid-row: 1; }
+.workspace .lesson-heading { min-width: 0; }
+.workspace .lesson-title p { max-width: 100%; overflow-wrap: anywhere; }
+.workspace.view-quiz .lesson-title p { white-space: normal; text-wrap: balance; }
+.report-empty .empty-shishi,
+.completion > img.shishi-complete,
+.explore-finish-shishi,
+.explore-guide > img,
+.explore-guide-name,
+.shishi-note > img,
+.shishi-note strong { display: none !important; }
+.workspace.view-quiz .challenge-writing-layout { flex-shrink: 0; min-height: min-content; }
+@media (min-width: 701px) {
+  .workspace.view-quiz .challenge-body { justify-content: safe center; }
+}
+@media (max-width: 1180px) {
+  .workspace.lesson-shell {
+    padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+  .workspace .lesson-bar { gap: 12px; }
+  .workspace .lesson-title { min-width: 0; }
+  .workspace .lesson-title h1 { text-wrap: balance; }
+  .workspace :is(.button, .text-button) { justify-content: center; text-align: center; }
+  .workspace.view-record .record-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 12px 24px;
+    padding: 18px;
+    align-content: center;
+  }
+  .workspace.view-record .record-landscape { grid-column: 1; grid-row: 1 / 3; width: 100%; margin: 0; }
+  .workspace.view-record .record-practice { grid-column: 2; grid-row: 1; padding: 0; align-self: end; }
+  .workspace.view-record .record-tool { width: 100%; max-width: 500px; padding: 0; }
+  .workspace.view-record .record-art { max-height: min(48dvh, 390px); }
+  .workspace.view-record .record-counter { min-height: 44px; gap: 8px; flex-wrap: wrap; padding: 0; }
+  .workspace.view-record .record-counter:has([data-action="record-feedback"]) { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .workspace.view-record .record-counter:has([data-action="record-feedback"]) > span { justify-self: start; white-space: nowrap; }
+  .workspace.view-record .record-counter [data-action="record-feedback"] { grid-column: 2; justify-self: center; }
+  .workspace.view-record .record-counter:has([data-action="record-feedback"]) > .extension-entry { justify-self: end; white-space: nowrap; }
+  .workspace.view-record .record-counter [data-action="record-feedback"] { position: static; font-size: 16px; min-height: 44px; }
+  .workspace.view-record .record-actions { padding: 0; justify-content: center; flex-wrap: wrap; }
+  .workspace.view-record .record-recovery { text-align: center; }
+  .workspace.view-record .record-recovery .record-status { margin: 8px 0; }
+  .workspace.view-record .record-recovery .record-actions { min-height: 52px; width: 100%; }
+  .workspace.view-record .record-recovery .record-actions .button { flex: 0 1 auto; min-width: 140px; white-space: nowrap; }
+  .workspace.view-record .record-recovery > .text-button { margin-inline: auto; }
+  .workspace.view-record .record-feedback .record-actions { display: flex; justify-content: center; }
+  .workspace.view-record .record-feedback .record-actions .button { min-width: 142px; }
+  .workspace.view-record .record-bottom,
+  .workspace.view-record .record-layout:has(.record-tool[data-step="words"]) .record-bottom {
+    position: static; grid-column: 2; grid-row: 2; align-self: start;
+    display: flex; justify-content: center; align-items: center;
+    width: 100%; min-height: 48px; margin: 0; padding: 0; gap: 8px;
+  }
+  .workspace.view-record .record-bottom:empty { display: none; }
+  .workspace.view-record .record-bottom .text-button { width: max-content; max-width: 100%; }
+  .workspace.view-record .record-review { justify-content: center; }
+  .workspace.view-record .record-word-pager,
+  .workspace.view-record .record-layout:has(.record-tool[data-step="words"]) .record-word-pager {
+    position: static; display: flex; flex-direction: row; justify-content: center; gap: 16px; margin: 6px 0;
+  }
+  .workspace.view-report .report-next-activities { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .workspace.view-report .report-next-activities a { justify-content: center; padding: 8px 4px; min-height: 52px; }
+  .workspace.view-report .ai-report-header { align-items: center; }
+  .workspace.view-report #panel-advice .ai-report-header { padding: 0; min-height: 0; }
+  .workspace.view-report .report-prose { margin-top: 12px; }
+  .workspace.view-write .writing-controls > .button { width: 100%; justify-self: stretch; }
+  .workspace.view-write .writing-status { gap: 8px; flex-wrap: wrap; }
+  .workspace.view-quiz .challenge-footer-actions { padding: 0; justify-content: center; }
+  .workspace.view-quiz .challenge-intro { overflow-y: auto; }
+  .workspace.view-quiz .challenge-results-actions,
+  .workspace.view-quiz .challenge-result-extras { padding: 0; justify-content: center; flex-wrap: wrap; }
+  .workspace.view-animation .animation-actions { padding-left: 0; }
+  .workspace.view-chat .chat-bubble { overflow-wrap: anywhere; }
+  .workspace.view-chat .chat-form { gap: 8px; }
+  .workspace.view-chat .chat-form textarea { min-height: 48px; line-height: 1.5; }
+  .workspace.view-chat .chat-error { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 12px; text-align: center; }
+  .workspace.view-chat .chat-error:empty { display: none; }
+  .workspace.view-chat .chat-retry { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 6px 14px; font-size: 17px; white-space: nowrap; }
+}
+
+/* A portrait tablet has room for a generous picture above the reading task. */
+@media (min-width: 701px) and (max-width: 1024px) and (orientation: portrait) {
+  .workspace.view-record .record-layout {
+    display: flex; flex-direction: column; justify-content: center;
+    gap: 14px; padding: 20px; max-width: 760px; margin-inline: auto;
+  }
+  .workspace.view-record .record-landscape { width: min(100%, 620px); flex: 0 0 auto; }
+  .workspace.view-record .record-art { height: min(29dvh, 310px); max-height: none; aspect-ratio: 16 / 9; }
+  .workspace.view-record .record-practice { flex: 0 0 auto; width: 100%; align-self: center; }
+  .workspace.view-record .record-bottom { flex: 0 0 auto; align-self: center; }
+  .workspace.view-record .record-counter { justify-content: space-between; }
+  .workspace.view-record .mic-button { flex-direction: row; min-height: 78px; gap: 18px; }
+  .workspace.view-record .mic-button svg { width: 62px; height: 62px; padding: 18px; }
+  .workspace.view-record #record-controls { min-height: 88px; }
+  .workspace.view-record .record-model { margin-bottom: 14px; }
+  .workspace.view-lesson .lesson-map { max-width: 680px; }
+  .workspace.view-lesson .lesson-map-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .workspace.view-lesson .lesson-map-step { min-height: 190px; }
+}
+
+@media (max-width: 700px) {
+  .workspace.lesson-shell { padding-inline: 12px; }
+  .workspace .lesson-bar { min-height: 82px; margin-bottom: 8px; padding-block: 8px; gap: 6px; }
+  .workspace .lesson-title h1 { font-size: clamp(23px, 6.6vw, 28px); }
+  .workspace .lesson-title p { font-size: 16px; }
+  .workspace .menu-panel { max-width: calc(100vw - 24px); }
+  .workspace.view-record .record-layout {
+    display: flex; flex-direction: column; align-items: stretch; justify-content: center;
+    gap: 10px; padding: 0; border: 0; background: transparent;
+    min-height: 100%; height: auto; max-width: 500px; margin-inline: auto;
+  }
+  .workspace.view-record .record-landscape { flex: 0 0 auto; padding: 7px 7px 0; }
+  .workspace.view-record .record-art {
+    height: clamp(82px, calc(100dvh - 565px), 215px);
+    max-height: none; width: 100%; aspect-ratio: 16 / 9;
+  }
+  .workspace.view-record .record-practice { display: block; flex: 0 0 auto; align-self: stretch; }
+  .workspace.view-record .record-tool { padding: 0 3px; }
+  .workspace.view-record .record-counter { justify-content: space-between; min-height: 40px; gap: 4px 8px; }
+  .workspace.view-record .record-counter > span { flex-shrink: 0; }
+  .workspace.view-record .record-counter .text-button { min-height: 40px; font-size: 16px; padding: 5px 3px; }
+  .workspace.view-record .record-counter:has([data-action="record-feedback"]) { padding: 0; }
+  .workspace.view-record .record-tool > .verse { margin: 4px 0 12px; min-height: 66px; }
+  .workspace.view-record .record-tool > .verse ruby { font-size: 30px; min-width: 36px; }
+  .workspace.view-record .record-model { gap: 10px; margin-bottom: 12px; }
+  .workspace.view-record .record-model .button { min-height: 50px; padding: 10px 13px; }
+  .workspace.view-record .record-actions { min-height: 76px; gap: 10px; padding: 0; }
+  .workspace.view-record .record-actions .mic-button { padding: 8px 12px; gap: 16px; min-height: 76px; }
+  .workspace.view-record #record-controls { min-height: 80px; }
+  .workspace.view-record .record-bottom { flex: 0 0 auto; align-self: center; min-height: 48px; padding: 0; }
+  .workspace.view-record .record-feedback .record-actions { flex-wrap: wrap; }
+  .workspace.view-record .record-feedback .record-actions .button { flex: 1; max-width: 210px; min-width: 130px; }
+  .workspace.view-record .record-layout:has(.record-tool[data-step="words"]) .record-art { max-height: none; }
+  .workspace.view-record .record-word-heading { gap: 12px; }
+  .workspace.view-record .record-word-hint { text-align: center; margin: 8px 0; }
+  .workspace.view-record .record-word-pager:has(button:first-child:disabled):has(button:last-child:disabled) { display: none; }
+  .workspace.view-record .record-review { margin: 8px 0; }
+  .workspace.view-record .record-feedback-title { margin-block: 8px 16px; }
+  .workspace.view-report #view { overflow: hidden; }
+  .workspace.view-report .report-tabs { margin: 4px 0 12px; padding: 4px; }
+  .workspace.view-report .report-tabs button { padding: 8px 4px; font-size: 18px; }
+  .workspace.view-report .ai-advice { padding: 12px; }
+  .workspace.view-report #panel-advice .ai-report-header {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 8px;
+    min-height: 0; padding: 0; margin-bottom: 10px;
+  }
+  .workspace.view-report #panel-advice .ai-report-header h2 { display: block; grid-column: 1 / -1; margin: 0; text-align: center; font-size: 24px; }
+  .workspace.view-report #panel-advice .ai-report-header > .button { justify-self: end; min-height: 48px; font-size: 17px; }
+  .workspace.view-report .report-grade-label select { min-height: 48px; }
+  .workspace.view-report .report-prose { padding: 12px; font-size: 18px; line-height: 1.8; margin-top: 10px; }
+  .workspace.view-report .report-next-activities { flex-shrink: 0; gap: 4px; margin-top: 8px; min-height: 70px; }
+  .workspace.view-report .report-next-activities a { flex-direction: column; font-size: 16px; gap: 4px; padding: 6px 0; }
+  .workspace.view-report .practice-card-heading { flex-wrap: wrap; justify-content: center; gap: 6px 12px; }
+  .workspace.view-report .practice-card-heading h3 { font-size: 23px; }
+  .workspace.view-report .practice-tip { font-size: 17px; line-height: 1.65; }
+  .workspace.view-report .report-line-heading { flex-wrap: wrap; }
+  .workspace.view-report .word-analysis .word-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; overflow: visible; }
+  .workspace.view-report .word-analysis .word-result { width: 100%; min-width: 0; }
+  .workspace.view-report .report-summary { gap: 14px; }
+  .workspace.view-report .dimension span { font-size: 15px; }
+  .workspace.view-write .writing-tool { width: 100%; max-width: min(390px, calc(100dvh - 335px)); }
+  .workspace.view-write .writing-controls { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .workspace.view-write .writing-controls > .button { width: 100%; min-height: 50px; }
+  .workspace.view-write .writing-tools { justify-content: space-between; }
+  .workspace.view-write .writing-status { justify-content: center; text-align: center; }
+  .workspace.view-write .writing-feedback:empty { display: none; }
+  .workspace.view-quiz .challenge-intro { overflow-y: auto; }
+  .workspace.view-quiz .challenge-intro-copy { text-align: center; }
+  .workspace.view-quiz .challenge-trip { justify-content: center; }
+  .workspace.view-quiz .challenge-intro-copy > .challenge-text-button { margin-inline: auto; }
+  .workspace.view-quiz .challenge-footer-actions { width: 100%; justify-content: center; }
+  .workspace.view-quiz .challenge-footer-actions .challenge-primary { flex: 1; max-width: 260px; }
+  .workspace.view-quiz .challenge-results-actions { display: grid; width: 100%; grid-template-columns: 1fr; }
+  .workspace.view-quiz .challenge-results-actions > * { justify-content: center; text-align: center; }
+  .workspace.view-quiz .challenge-result-extras { margin-top: 8px; gap: 8px 14px; }
+  .workspace.view-lesson #view { overflow-y: auto; }
+  .workspace.view-lesson .lesson-map { min-height: 100%; justify-content: center; padding-block: 6px; }
+  .workspace.view-lesson .lesson-map-extras a { flex-direction: column; gap: 4px; min-height: 66px; }
+  .workspace.view-chat .chat-messages { padding: 8px 2px 14px; }
+  .workspace.view-chat .chat-bubble { padding: 12px 14px; max-width: calc(100% - 43px); }
+  .workspace.view-chat .chat-suggestions { scroll-padding-inline: 4px; padding: 8px 2px; }
+  .workspace.view-chat .chat-form { min-height: 64px; }
+  .workspace.view-animation .animation-lesson { padding-bottom: 0; }
+  .workspace.view-animation .animation-actions { width: 100%; }
+  .workspace.view-animation .animation-actions .button { width: min(100%, 330px); }
+  .video-dialog { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); padding: 14px; }
+  .video-dialog .dialog-heading { gap: 8px; }
+  .video-dialog h2 { font-size: 23px; }
+}
+
+@media (max-width: 700px) and (max-height: 700px) {
+  .workspace.view-record .record-layout { justify-content: flex-start; gap: 6px; }
+  .workspace.view-record .record-art { height: clamp(58px, calc(100dvh - 550px), 145px); }
+  .workspace.view-record .record-tool > .verse { margin: 2px 0 8px; }
+  .workspace.view-record .record-tool > .verse.verse-compound { min-height: 102px; }
+  .workspace.view-record .record-model { margin-bottom: 7px; }
+  .workspace.view-record .record-review { margin: 4px 0; }
+  .workspace.view-record .record-actions { min-height: 68px; }
+  .workspace.view-record .record-actions .mic-button { min-height: 68px; }
+  .workspace.view-record #record-controls { min-height: 72px; }
+  .workspace.view-record .record-word-pager { margin: 0; }
+  .workspace.view-write .writing-tool { max-width: min(100%, 270px, calc(100dvh - 330px)); }
+  .workspace.view-quiz .challenge-results-actions { gap: 7px; }
+  .workspace.view-lesson .lesson-map { justify-content: flex-start; gap: 10px; }
+  .workspace.view-lesson .lesson-map-step { min-height: 140px; }
+}
+
+/* A phone turned sideways keeps the picture and controls alongside each other. */
+@media (max-width: 1180px) and (max-height: 550px) and (orientation: landscape) {
+  .workspace .lesson-bar { min-height: 66px; padding-block: 5px; margin-bottom: 5px; }
+  .workspace .lesson-title h1 { font-size: 24px; }
+  .workspace .lesson-title p { font-size: 16px; }
+  .workspace.view-record .record-layout {
+    display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+    grid-template-rows: minmax(0, 1fr) auto; gap: 2px 20px;
+    height: auto; min-height: 100%; padding: 6px; max-width: none;
+  }
+  .workspace.view-record .record-art { height: clamp(80px, calc(100dvh - 200px), 190px); max-height: none; }
+  .workspace.view-record .record-landscape { grid-column: 1; grid-row: 1 / 3; }
+  .workspace.view-record .record-practice { grid-column: 2; grid-row: 1; align-self: center; }
+  .workspace.view-record .record-bottom { grid-column: 2; grid-row: 2; }
+  .workspace.view-record .record-counter { min-height: 36px; }
+  .workspace.view-record .record-tool > .verse { min-height: 56px; margin: 2px 0 6px; }
+  .workspace.view-record .record-model { margin-bottom: 6px; }
+  .workspace.view-record .record-model .button { min-height: 44px; padding: 7px 11px; }
+  .workspace.view-record .mic-button { flex-direction: row; min-height: 58px; font-size: 19px; gap: 14px; }
+  .workspace.view-record .mic-button svg { width: 44px; height: 44px; padding: 13px; }
+  .workspace.view-record .record-actions,
+  .workspace.view-record #record-controls { min-height: 62px; }
+  .workspace.view-record .record-tool[data-step="words"] { display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 4px 12px; }
+  .workspace.view-record .record-tool[data-step="words"] > .record-counter { grid-column: 1 / -1; }
+  .workspace.view-record .record-tool[data-step="words"] > .record-review { grid-column: 1; grid-row: 2 / 6; align-self: center; margin: 0; }
+  .workspace.view-record .record-tool[data-step="words"] > :is(.record-word-heading, .record-word-hint, .record-word-pager, .record-actions) { grid-column: 2; }
+  .workspace.view-record .record-tool[data-step="words"] > .record-word-heading { flex-wrap: wrap; justify-content: center; }
+  .workspace.view-record .record-tool[data-step="words"] > .record-word-hint { margin: 0; }
+  .workspace.view-record .record-tool[data-step="words"] .focus-word { min-height: 100px; }
+  .workspace.view-record .record-tool[data-step="words"] .focus-word ruby { font-size: 48px; }
+  .workspace.view-record .record-word-pager:has(button:first-child:disabled):has(button:last-child:disabled) { display: none; }
+  .workspace.view-report .report-summary { display: none; }
+  .workspace.view-report .report-tabs { margin: 0 0 8px; }
+  .workspace.view-report .report-next-activities { margin-top: 5px; padding-top: 5px; min-height: 48px; }
+  .workspace.view-report .report-next-activities a { min-height: 44px; }
+  .workspace.view-quiz .challenge-intro { padding: 14px 22px; gap: 20px; }
+  .workspace.view-quiz .challenge-intro-art > img:first-child { max-height: 210px; }
+  .workspace.view-quiz .challenge-intro-copy h2 { font-size: 24px; margin: 4px 0 8px; line-height: 1.4; }
+  .workspace.view-quiz .challenge-intro-copy > .challenge-eyebrow { display: none; }
+  .workspace.view-quiz .challenge-intro-copy > p:not(.challenge-eyebrow) { margin-bottom: 8px; font-size: 17px; line-height: 1.5; }
+  .workspace.view-quiz .challenge-trip { margin: 10px 0; }
+  .workspace.view-lesson .lesson-map { padding: 0; gap: 8px; }
+  .workspace.view-lesson .lesson-map-hero { display: none; }
+  .workspace.view-lesson .lesson-map-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .workspace.view-lesson .lesson-map-step { min-height: 145px; padding: 12px; }
+  .workspace.view-lesson .lesson-map-extras a { flex-direction: row; min-height: 48px; }
+}

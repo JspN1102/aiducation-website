@@ -1,16 +1,16 @@
 import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, handwritingMatch, createSyncQueue} from './core.mjs?v=20260909a';
 import {mountStage, getScenePreview} from './scene-stage.mjs?v=20260909a';
 import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
-import {getWordAudioURL} from './word-audio.mjs?v=20260916a';
-import {getSpeechAudioURL} from './speech-audio.mjs?v=20260914f';
+import {getWordAudioURL} from './word-audio.mjs?v=20260918a';
+import {getSpeechAudioURL} from './speech-audio.mjs?v=20260918a';
 import {createHandwritingPad} from './handwriting-pad.mjs?v=20260908i';
-import {mountExploration} from './exploration.mjs?v=20260915c';
-import {mountShishi} from './shishi.mjs?v=20260915c';
+import {mountShishi} from './shishi.mjs?v=20260918a';
 import {mountPoemSwipe} from './poem-swipe.mjs?v=20260915a';
-import {mountChallenge} from './challenge.mjs?v=20260915c';
 import {mountLessonMap} from './lesson-map.mjs?v=20260917a';
-import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260914e';
-import {challengeSummary} from './challenge-state.mjs?v=20260914e';
+import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260918a';
+import {challengeSummary} from './challenge-state.mjs?v=20260918a';
+import {encodeRecording, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260918a';
+import {requestJSON} from './network.mjs?v=20260918a';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -38,13 +38,15 @@ let chatBusy=false;
 let sceneStage=null, exploration=null, activeSpeechButton=null, finishTransient=null;
 let shishi=null,challenge=null,lessonMap=null,poemSwipe=null;
 let animationPlayer=null,disposeAnimation=null;
+let activityLoad=0;
 let practiceIndex=0, reportTab='advice', reportLine=0, practiceMode='sound';
 const speechCache=new Map(), speechPending=new Map();
 const recordings=new Map(), requests=new Set();
+const pendingRecordings=new Map();
 const sync=createSyncQueue({
   read:()=>{const list=readStorage(PENDING,[]);return Array.isArray(list)?list:[];},
   write:value=>writeStorage(PENDING,value),
-  send:item=>fetch('/api/maanshan-save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item),signal:AbortSignal.timeout(12000)})
+  send:item=>fetch('/api/maanshan-save/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item),signal:AbortSignal.timeout(12000)})
 });
 const titleOf=p=>p.id===5 ? '歸園田居·其三' : p.title;
 const asset=(name,p=poem)=>`media/${p.slug}/${name}`;
@@ -109,7 +111,7 @@ async function speechBlob(text) {
   if(speechCache.has(text))return speechCache.get(text);
   if(speechPending.has(text))return speechPending.get(text);
   const pending=(async()=>{
-    const response=await fetch('/api/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,voice:101015,speed:-.25}),signal:AbortSignal.timeout(12000)});
+    const response=await fetch('/api/tts/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,voice:101001,speed:-.25}),signal:AbortSignal.timeout(16000)});
     if(!response.ok||!response.headers.get('content-type')?.startsWith('audio/'))throw new Error('TTS');
     const blob=await response.blob();if(!blob.size)throw new Error('empty audio');
     if(speechCache.size>=80)speechCache.delete(speechCache.keys().next().value);
@@ -123,14 +125,19 @@ function playBlob(blob) {
 function playSource(url,revoke=false) {
   return new Promise(resolve=>{
     const player=new Audio(url);
+    let settled=false,watchdog;
     transientUrl=revoke?url:null;transientAudio=player;
     const finish=ok=>{
-      player.onended=null;player.onerror=null;if(revoke)URL.revokeObjectURL(url);
+      if(settled)return;settled=true;clearTimeout(watchdog);
+      player.onended=null;player.onerror=null;player.onplaying=null;player.onwaiting=null;
+      player.pause();if(!ok){player.removeAttribute('src');player.load();}if(revoke)URL.revokeObjectURL(url);
       if(transientAudio===player){transientAudio=null;transientUrl=null;finishTransient=null;}
       resolve(ok);
     };
+    const waitForAudio=()=>{clearTimeout(watchdog);watchdog=setTimeout(()=>finish(false),15000);};
     finishTransient=finish;player.onended=()=>finish(true);
     player.onerror=()=>{finish(false);};
+    player.onplaying=()=>clearTimeout(watchdog);player.onwaiting=waitForAudio;waitForAudio();
     player.play().catch(()=>finish(false));
   });
 }
@@ -160,20 +167,16 @@ async function speakWords(items,button){
 function stopMedia() { video.pause();animationPlayer?.pause();stopTransient(); }
 function cancelRecording() {
   recordingVersion++;
-  if (recorder && recorder.state !== 'inactive') {recorder.onstop=null;recorder.stop();}
+  if (recorder) {recorder.onerror=null;recorder.onstop=null;if(recorder.state!=='inactive'){try{recorder.stop();}catch{}}}
   stream?.getTracks().forEach(track=>track.stop());stream=null;recorder=null;
   if(recordContext?.state!=='closed')recordContext?.close().catch(()=>{});recordContext=null;
   clearInterval(recordTimer);recordTimer=null;recordBusy=false;
 }
-async function api(path,body,timeout=35000) {
+async function api(path,body,timeout=35000,retry=false) {
   const controller=new AbortController();requests.add(controller);
-  const timer=setTimeout(()=>controller.abort(),timeout);
   try {
-    const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:controller.signal});
-    const data=await response.json().catch(()=>({}));
-    if(!response.ok || data.error) throw new Error(response.status===429?'現在較多人使用，請稍後重試。':'服務暫時未能完成，請稍後再試。');
-    return data;
-  } finally {clearTimeout(timer);requests.delete(controller);}
+    return await requestJSON(path,body,{timeout,signal:controller.signal,retry});
+  } finally {requests.delete(controller);}
 }
 function verseHTML(line,extra='') {
   let index=0;
@@ -326,7 +329,7 @@ function renderRecord() {
   const next='<button class="button primary" data-action="record-next">'+(currentLine===poem.lines.length-1?'看看成果':'下一句')+icon('arrow-right')+'</button>';
   let content;
   if(recordStep==='read'){
-    content=verseHTML(line,'active')+'<div class="record-model"><button class="button" data-action="line-tts">'+icon('volume-2')+'聽示範</button><button class="button pinyin-command" data-action="pinyin" aria-pressed="'+showPinyin+'">'+icon('languages')+'<span>'+(showPinyin?'隱藏拼音':'顯示拼音')+'</span></button></div><div id="record-controls"><div class="record-actions"><button class="mic-button" data-action="record-start" aria-label="開始朗讀">'+icon('mic')+'<span>開始朗讀</span></button></div><p class="record-status" id="record-status"></p></div>';
+    content=verseHTML(line,'active')+'<div class="record-model"><button class="button" data-action="line-tts">'+icon('volume-2')+'聽示範</button><button class="button pinyin-command" data-action="pinyin" aria-pressed="'+showPinyin+'">'+icon('languages')+'<span>'+(showPinyin?'隱藏拼音':'顯示拼音')+'</span></button></div><div id="record-controls">'+recordControlsHTML()+'</div>';
   }else if(recordStep==='extension'){
     content='<div class="record-extension"><div class="record-review"><button class="focus-word" data-action="word-tts" data-value="快" data-pinyin="kuài" aria-label="聽快，kuài 的讀音" aria-pressed="false"><ruby>快<rt>kuài</rt></ruby>'+icon('volume-2')+'</button></div><p class="extension-final">韻母 <strong>uai</strong></p><p class="record-word-hint">點字聽音，跟着讀一讀。</p><div class="record-actions"><button class="button primary" data-action="record-extension-back">'+icon('arrow-left')+'返回讀詩</button></div></div>';
   }else if(recordStep==='result'){
@@ -357,6 +360,14 @@ function stepRecordLine(step){
   if(recordBusy)return;const next=clamp(currentLine+step,0,poem.lines.length-1);if(next===currentLine)return;
   currentLine=next;recordWordIndex=0;setRecordStep('read',false);shishi?.pause(false);
 }
+function recordControlsHTML(){
+  const pending=pendingRecordings.get(`${poem.id}-${currentLine}`);
+  if(pending&&!recordBusy){
+    return '<div class="record-recovery"><p class="record-status" id="record-status" role="status">'+esc(pending.message||'錄音已保留，可以再送一次。')+'</p><div class="record-actions">'+(pending.canRetry?'<button class="button primary" data-action="record-send">'+icon('send')+'再送一次</button>':'')+'<button class="button" data-action="record-start">'+icon('mic')+'重新朗讀</button></div><button class="text-button" data-action="record-pending-play">'+icon('headphones')+'聽我的錄音</button></div>';
+  }
+  return '<div class="record-actions"><button class="mic-button" data-action="record-start" aria-label="開始朗讀">'+icon('mic')+'<span>開始朗讀</span></button></div><p class="record-status" id="record-status" role="status"></p>';
+}
+function assessmentStatus(message){const controls=$('#record-controls');if(controls)controls.innerHTML='<p class="record-status" role="status"><span class="spinner"></span> '+esc(message)+'</p>';}
 async function startRecording() {
   if(recordBusy)return;stopMedia();cancelRecording();recordBusy=true;
   recordStep='read';renderRecord();
@@ -364,44 +375,60 @@ async function startRecording() {
   const isCurrent=()=>version===routeVersion&&generation===recordingVersion;
   const controls=$('#record-controls');controls.innerHTML='<p class="record-status"><span class="spinner"></span> 正在開啟麥克風</p>';
   try {
-    if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder)throw new Error('此瀏覽器未能使用錄音，請使用新版 Safari、Chrome 或 Edge。');
+    if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder)throw Object.assign(new Error('此瀏覽器未能使用錄音，請使用新版 Safari、Chrome 或 Edge。'),{code:'AUDIO_UNSUPPORTED'});
+    const Audio=window.AudioContext||window.webkitAudioContext;
+    if(!Audio)throw Object.assign(new Error('此瀏覽器未能使用錄音，請使用新版 Safari、Chrome 或 Edge。'),{code:'AUDIO_UNSUPPORTED'});
+    const context=new Audio();recordContext=context;
+    // Start audio activation during the tap itself, before the permission prompt on Safari.
+    context.resume().catch(()=>{});
     const acquired=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},video:false});
     if(!isCurrent()){acquired.getTracks().forEach(t=>t.stop());return;}
-    stream=acquired;const context=new (window.AudioContext||window.webkitAudioContext)();recordContext=context;await context.resume();
+    stream=acquired;
     if(!isCurrent()){acquired.getTracks().forEach(t=>t.stop());if(context.state!=='closed')context.close().catch(()=>{});return;}
     const mime=['audio/webm;codecs=opus','audio/mp4','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t));
     const localRecorder=new MediaRecorder(acquired,mime?{mimeType:mime}:{});recorder=localRecorder;const chunks=[];
     localRecorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+    localRecorder.onerror=event=>{if(!isCurrent())return;cancelRecording();renderRecord();toast(recordingErrorMessage(event.error));};
     localRecorder.onstop=()=>{acquired.getTracks().forEach(t=>t.stop());if(isCurrent()){stream=null;clearInterval(recordTimer);assessRecording(new Blob(chunks,{type:localRecorder.mimeType}),p,index,version,generation,context);}};
-    localRecorder.start();recordStarted=Date.now();
+    localRecorder.start();pendingRecordings.delete(`${p.id}-${index}`);recordStarted=Date.now();
     controls.innerHTML=`<div class="record-wave live">${'<span></span>'.repeat(19)}</div><div class="record-actions"><button class="mic-button recording" data-action="record-stop" aria-label="完成錄音" title="完成錄音">${icon('square')}<span>讀好了</span></button></div><p class="record-status" id="record-status">錄音中 · 0:00</p>`;icons();
     recordTimer=setInterval(()=>{const seconds=Math.floor((Date.now()-recordStarted)/1000);const status=$('#record-status');if(status)status.textContent=`錄音中 · 0:${String(seconds).padStart(2,'0')}`;if(seconds>=30)stopRecording();},250);
-  } catch(error) {if(!isCurrent())return;cancelRecording();renderRecord();toast(error.name==='NotAllowedError'?'麥克風尚未允許，請在瀏覽器中開啟權限。':error.name==='NotFoundError'?'找不到麥克風，請檢查裝置。':error.message);}
+  } catch(error) {if(!isCurrent())return;cancelRecording();renderRecord();toast(recordingErrorMessage(error));}
 }
 function stopRecording(){if(recorder?.state==='recording'){recorder.stop();$('#record-controls').innerHTML='<p class="record-status"><span class="spinner"></span> 正在聆聽你的朗讀</p>';}}
-async function wavBase64(blob,context) {
-  const decoded=await context.decodeAudioData(await blob.arrayBuffer());
-  const offline=new OfflineAudioContext(1,Math.ceil(decoded.duration*16000),16000);
-  const source=offline.createBufferSource();source.buffer=decoded;source.connect(offline.destination);source.start();
-  const pcm=(await offline.startRendering()).getChannelData(0);const buffer=new ArrayBuffer(44+pcm.length*2),data=new DataView(buffer);
-  const str=(offset,text)=>Array.from(text).forEach((c,i)=>data.setUint8(offset+i,c.charCodeAt(0)));
-  str(0,'RIFF');data.setUint32(4,36+pcm.length*2,true);str(8,'WAVE');str(12,'fmt ');data.setUint32(16,16,true);data.setUint16(20,1,true);data.setUint16(22,1,true);data.setUint32(24,16000,true);data.setUint32(28,32000,true);data.setUint16(32,2,true);data.setUint16(34,16,true);str(36,'data');data.setUint32(40,pcm.length*2,true);
-  for(let i=0;i<pcm.length;i++){const s=clamp(pcm[i],-1,1);data.setInt16(44+i*2,s<0?s*32768:s*32767,true);}
-  const bytes=new Uint8Array(buffer);let binary='';for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));return btoa(binary);
-}
-async function assessRecording(blob,p,index,version,generation,context) {
+async function assessRecording(blob,p,index,version,generation,context,existing=null) {
   const isCurrent=()=>version===routeVersion&&generation===recordingVersion;
+  const key=`${p.id}-${index}`,pending=existing||{blob,encoded:null,canRetry:true,message:'錄音已保留，可以再送一次。'};
+  const controller=new AbortController();requests.add(controller);
   try {
-    if(blob.size<100)throw new Error('這次錄音太短，再讀一次吧。');
-    const encoded=await wavBase64(blob,context);
+    if(blob.size>=100)pendingRecordings.set(key,pending);
+    if(!pending.encoded)pending.encoded=await encodeRecording(blob,context);
     if(!isCurrent())return;
-    const raw=await api('/api/soe',{audio:encoded,refText:p.lines[index].simplified},26000);
+    if(context?.state!=='closed')context?.close().catch(()=>{});if(recordContext===context)recordContext=null;
+    const raw=await submitAssessment({audio:pending.encoded,refText:p.lines[index].simplified},{signal:controller.signal,onRetry:()=>{if(isCurrent())assessmentStatus('正在重新連線，錄音已保留');},onWaiting:()=>{if(isCurrent())assessmentStatus('正在等候評測，錄音已保留');}});
     if(!isCurrent())return;
     const result=mapAssessment(raw,p.lines[index]);result.words=result.words.map(w=>({...w,lineIndex:index}));const s=state(p);recordings.set(`${p.id}-${index}`,blob);s.reading[index]=result;s.report='';s.updatedAt=Date.now();
+    pendingRecordings.delete(key);
     recordStep='result';recordWordIndex=0;
     queueReading(p,{lineIdx:index,lineScore:result.total_score});
-  } catch(error) {if(isCurrent())toast(error.name==='AbortError'?'這次等得有點久，請再試一次。':error.message);}
-  finally {if(isCurrent()){cancelRecording();setRecordStep(recordStep);}}
+  } catch(error) {
+    pending.canRetry=Boolean(error.canRetry||pending.encoded);pending.message=recordingErrorMessage(error);
+    if(isCurrent()){recordStep='read';if(!pendingRecordings.has(key))toast(pending.message);}
+  }
+  finally {requests.delete(controller);if(isCurrent()){cancelRecording();setRecordStep(recordStep);}}
+}
+function retryRecording(){
+  const pending=pendingRecordings.get(`${poem.id}-${currentLine}`);if(recordBusy||!pending?.canRetry)return;
+  stopMedia();cancelRecording();recordBusy=true;recordStep='read';renderRecord();assessmentStatus('正在再送錄音');
+  assessRecording(pending.blob,poem,currentLine,routeVersion,recordingVersion,null,pending);
+}
+async function replayPendingRecording(button){
+  const pending=pendingRecordings.get(`${poem.id}-${currentLine}`);if(recordBusy||!pending)return;
+  if(activeSpeechButton===button){stopMedia();return;}
+  stopMedia();const version=speechVersion,route=routeVersion;activeSpeechButton=button;speechState(button,'playing');
+  const finished=await playBlob(pending.blob);
+  if(version!==speechVersion||route!==routeVersion)return;
+  if(!finished)toast('錄音暫時無法播放，可以重新朗讀。');stopTransient();
 }
 async function replay(index,button=null) {
   if(button&&activeSpeechButton===button){stopMedia();return;}
@@ -539,20 +566,38 @@ async function playChallengeAudio(target) {
   if(version!==speechVersion||route!==routeVersion)return false;
   stopTransient();return played;
 }
-function renderQuiz() {
+async function loadActivity(name,load) {
+  const holder=$('#view'),version=routeVersion,generation=++activityLoad;
+  let timer;
+  holder.innerHTML=`<div class="loading-page" role="status"><span class="spinner"></span><p>正在準備${name}…</p></div>`;
+  try {
+    const module=await Promise.race([load(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Load timeout')),15000);})]);
+    return version===routeVersion&&generation===activityLoad&&holder.isConnected?module:null;
+  } catch {
+    if(version===routeVersion&&generation===activityLoad&&holder.isConnected)holder.innerHTML='<div class="loading-page"><p>剛才未能載入，請再試一次。</p><button class="button primary" data-action="activity-retry">再試一次</button></div>';
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260918a'));
+  if(!module)return;
   const p=poem;
-  challenge=mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
+  challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
     onChange:attempt=>{state(p).challenge=attempt;persist();},
     onComplete:()=>queueReading(p),
     playAudio:playChallengeAudio,stopAudio:stopMedia,
     recognize:ink=>api('/api/handwriting',{ink},12000)});
 }
-function renderExploration(){
+async function renderExploration(){
+  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260918a'));
+  if(!module)return;
   const holder=$('#view');
   if(!holder||!poem)return;
   holder.innerHTML='';
-  exploration=mountExploration(holder,{
+  exploration=module.mountExploration(holder,{
     poem,
     speakWord:(char,pinyin,button)=>speakWord(char,pinyin,button),
     onComplete:result=>{
@@ -571,13 +616,32 @@ function renderChat() {
   $('#chat-form').addEventListener('submit',event=>{event.preventDefault();sendChat($('#chat-input').value.trim());});
   $('#chat-input').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();$('#chat-form').requestSubmit();}});icons();
   const holder=$('#chat-messages');holder.scrollTop=holder.scrollHeight;
+  if(messages.at(-1)?.role==='user'&&!chatBusy)showChatRetry('上一句還未收到回覆，可以再送一次。');
 }
 function chatMessage(message,index) {return `<div class="chat-message ${message.role==='user'?'user':''}">${message.role==='assistant'?`<img src="${asset('avatar.webp')}" width="32" height="32" alt="${esc(poem.author)}">`:''}<div class="chat-bubble">${esc(message.content)}${message.role==='assistant'?`<button class="icon-button" data-action="chat-speak" data-value="${index}" aria-label="朗讀回答" title="朗讀回答">${icon('volume-2')}</button>`:''}</div></div>`;}
-async function sendChat(text) {
-  if(!text||chatBusy)return;stopMedia();chatBusy=true;const p=poem,version=routeVersion,s=state(p);s.chat.push({role:'user',content:text.slice(0,1000)});s.chat=s.chat.slice(-30);persist();renderChat();$('#chat-send').disabled=true;$('#chat-error').innerHTML='<span class="spinner"></span> 正在想一想…';
-  try{const data=await api('/api/maanshan-chat',{poemId:p.id,messages:s.chat.slice(-10)},25000);if(version!==routeVersion)return;if(!data.reply)throw new Error('暫時未能回答，請再試一次。');s.chat.push({role:'assistant',content:data.reply});persist();renderChat();}
-  catch(error){if(version===routeVersion){$('#chat-error').textContent=error.name==='AbortError'?'等得有點久，稍後再問一次吧。':error.message;}}
-  finally{if(version===routeVersion){chatBusy=false;$('#chat-send').disabled=false;}}
+function showChatRetry(message) {
+  const holder=$('#chat-error');if(!holder)return;
+  holder.innerHTML=`<span>${esc(message)}</span><button type="button" class="button chat-retry" data-action="chat-retry">再送一次</button>`;
+}
+async function sendChat(text,retry=false) {
+  if(chatBusy)return;
+  const p=poem,version=routeVersion,s=state(p);
+  if(retry){if(s.chat.at(-1)?.role!=='user')return;}
+  else {if(!text?.trim())return;s.chat.push({role:'user',content:text.trim().slice(0,1000)});s.chat=s.chat.slice(-30);persist();}
+  stopMedia();chatBusy=true;renderChat();$('#chat-send').disabled=true;
+  $('#chat-error').innerHTML='<span class="spinner"></span><span>正在想一想…</span>';
+  const waiting=setTimeout(()=>{if(version===routeVersion&&chatBusy)$('#chat-error').innerHTML='<span class="spinner"></span><span>還在等回覆，你的問題已保留。</span>';},8000);
+  try {
+    const data=await api('/api/maanshan-chat/',{poemId:p.id,messages:s.chat.slice(-10)},25000,true);
+    if(version!==routeVersion)return;
+    if(typeof data.reply!=='string'||!data.reply.trim())throw new Error('暫時未能回答，可以再送一次。');
+    s.chat.push({role:'assistant',content:data.reply});persist();renderChat();
+  } catch(error) {
+    if(version===routeVersion)showChatRetry(error.message);
+  } finally {
+    clearTimeout(waiting);
+    if(version===routeVersion){chatBusy=false;$('#chat-send').disabled=false;}
+  }
 }
 function route() {
   shishi?.pause(false);poemSwipe?.destroy();poemSwipe=null;challenge?.destroy();challenge=null;lessonMap?.destroy();lessonMap=null;
@@ -610,6 +674,7 @@ document.addEventListener('click',event=>{
   if(button.closest('.menu-panel')&&menu)menu.open=false;
   if(action==='profile'){if(menu)menu.open=false;openProfile();return;}
   if(!poem)return;
+  if(action==='activity-retry')location.reload();
   if(action==='pinyin'){showPinyin=!showPinyin;$('#view').classList.toggle('hide-pinyin',!showPinyin);button.setAttribute('aria-pressed',showPinyin);button.setAttribute('aria-label',showPinyin?'隱藏拼音':'顯示拼音');button.title=showPinyin?'隱藏拼音':'顯示拼音';if(button.classList.contains('pinyin-command'))$('span',button).textContent=button.title;}
   if(action==='video')openVideo();
   if(action==='line-tts'&&!recordBusy)speak(poem.lines[currentLine].text.split('，'),'',button);
@@ -624,6 +689,8 @@ document.addEventListener('click',event=>{
   if(action==='record-target'&&Number.isInteger(Number(value))){currentLine=Number(value);recordStep='read';location.hash=link('record');}
   if(action==='record-step')stepRecordLine(Number(value));
   if(action==='record-start')startRecording();
+  if(action==='record-send')retryRecording();
+  if(action==='record-pending-play')replayPendingRecording(button);
   if(action==='record-stop')stopRecording();
   if(action==='record-feedback'&&!recordBusy)setRecordStep('result');
   if(action==='record-extension'&&view==='record'&&poem.id===2&&!recordBusy)setRecordStep('extension');
@@ -643,6 +710,7 @@ document.addEventListener('click',event=>{
   if(action==='write-skip'&&!writeBusy)completeWriting(false);
   if(action==='write-reset'){state(poem).writing=[];persist();writeIndex=0;hinted=false;renderWriting();}
   if(action==='chat-suggestion')sendChat(chatSuggestions()[Number(value)]);
+  if(action==='chat-retry')sendChat('',true);
   if(action==='chat-speak'){const message=state(poem).chat[Number(value)];if(message)speak(message.content,'',button);}
 });
 document.addEventListener('keydown',event=>{
@@ -672,7 +740,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('pagehide',()=>{handwritingPad?.finish();stopMedia();cancelRecording();persist();});
 async function init(){
   try{
-    const responses=await Promise.all([fetch('poems.json?v=20260917e'),fetch('pronunciation.json?v=20260908b')]);
+    const responses=await Promise.all([fetch('poems.json?v=20260917e',{signal:AbortSignal.timeout(15000)}),fetch('pronunciation.json?v=20260908b',{signal:AbortSignal.timeout(15000)})]);
     if(responses.some(response=>!response.ok))throw new Error('catalog');
     const [data,pronunciation]=await Promise.all(responses.map(response=>response.json()));
     poems=data.poems;if(!Array.isArray(poems)||!poems.length)throw new Error('catalog');

@@ -18,7 +18,7 @@ node tools/prepare-static-speech.cjs --generate
 
 `MAANSHAN_AUDIO_WORK` 可指定工作报告目录，默认是系统临时目录下的 `maanshan-audio`。目录不存在会在需要写报告时创建；旧 `static-speech-generation.json`、`word-audio-generation.json` 都不是必需文件。缺少报告时以现有索引和音频为基础重新验证、复用。报告记录音频哈希和请求状态，不存密钥。
 
-`MAANSHAN_TTS_ENDPOINT` 可覆盖接口地址，默认 `https://aiducation.asia/api/tts`。只有 `--generate` 允许请求；使用 `{ text: SSML, voice: 101015, speed: -0.25 }`。每个汉字通过 `<phoneme alphabet="py" ph="...">` 显式指定带数字声调的拼音，`ü` 写作 `v`，无标调音节使用轻声 `5`。诗句遵循课程标音，多音字分别生成。音频解码成功后才写入最终 MP3。
+`MAANSHAN_TTS_ENDPOINT` 可覆盖接口地址，默认 `https://aiducation.asia/api/tts/`。只有 `--generate` 允许请求；使用 `{ text: SSML, voice: 101001, speed: -0.25 }`，音色为普通话女声「智瑜」。每个汉字通过 `<phoneme alphabet="py" ph="...">` 显式指定带数字声调的拼音，`ü` 写作 `v`，无标调音节使用轻声 `5`。诗句遵循课程标音，多音字分别生成。音频解码成功后才写入最终 MP3。
 
 新增练习先更新源 JSON 的拼音；新听写词可在词条中添加 `wordPinyin`（空格分隔字符串或数组），或补充脚本内 `dictationPinyin` 表。新繁简字对补充脚本中的 `conversion` 映射。已有文本的读音发生变化时工具会拒绝默默替换，需另行明确迁移文件与索引。
 
