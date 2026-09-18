@@ -17,7 +17,7 @@ const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
   report:'<path d="M5 3h14v18H5zM9 16v2M12 12v6M15 8v10"/>',
   arrow:'<path d="M4 12h16m-6-6 6 6-6 6"/>'
 }[name] || ''}</svg>`;
-const allowedViews = new Set(['record','animation','quiz','write','explore','chat','report']);
+const allowedViews = new Set(['record','animation','quiz','explore']);
 const count = (value, maximum) => Math.max(0, Math.min(maximum, Number.isFinite(Number(value)) ? Math.floor(Number(value)) : 0));
 
 /** A navigation hub: completion comes only from actual reading/writing/quiz work. */
@@ -36,27 +36,27 @@ export function mountLessonMap(holder, {poem, progress = {}, resume = null, onNa
     const fallbackTotal = Array.isArray(poem.lines) ? poem.lines.length : 4;
     const total = count(current.readingTotal, 20) || fallbackTotal;
     const done = count(current.readingCompleted,total);
-    const writingTotal = Array.isArray(poem.dictation) ? poem.dictation.length : 0;
-    const written = count(current.writingCompleted,writingTotal);
-    const answered = count(current.challengeAnswered,5);
+    const challengeTotal=count(current.challengeTotal,5)||5;
+    const answered = count(current.challengeAnswered,challengeTotal);
     const completed = current.challengeCompleted === true;
-    const readingLabel = done ? `已讀 ${done} / ${total} 句` : '聽示範，再開口';
-    const challengeLabel = completed ? '五題都練過了' : answered ? `已練 ${answered} / 5 題` : '聽音、寫字、玩';
+    const readingLabel = done ? `已讀 ${done} / ${total} 句` : '讀一讀，展開畫卷';
+    const challengeLabel = current.challengeMode==='review' ? completed?'本組錯題複習完成':`錯題複習 ${answered} / ${challengeTotal} 題` : completed ? '五題都練過了' : answered ? `已練 ${answered} / ${challengeTotal} 題` : '聽音、寫字、玩';
     const canResume = latestResume && allowedViews.has(latestResume.view);
     const steps = [
-      {view:'record',title:'聽一聽・讀一讀',status:readingLabel,done:done===total},
-      {view:'animation',title:'看一看',status:poem.animation?.src?'跟着詩人看動畫':'動畫準備中',pending:!poem.animation?.src},
-      {view:'explore',title:'找一找',status:'動手找小發現'},
-      {view:'quiz',title:'練一練',status:challengeLabel,done:completed}
-    ];
+      {view:'record',title:'AI讀古詩',status:readingLabel,done:done===total},
+      {view:'animation',title:'動畫看古詩',status:poem.animation?.src?'跟着詩人看故事':'動畫準備中',pending:!poem.animation?.src},
+      {view:'explore',title:'AR體驗',status:'讓詩中風景來到身邊'},
+      {view:'quiz',title:'練習小遊戲',status:challengeLabel,done:completed}
+    ].filter(step=>step.view!=='explore'||poem.grade>=4);
+    root.classList.toggle('lesson-map-lower',poem.grade<=3);
     root.innerHTML = `<header class="lesson-map-hero"><img class="lesson-map-motif" src="media/poetry-motifs/${details.motif}.svg" width="48" height="48" alt=""><h2>一起學古詩</h2></header>
-      <nav class="lesson-map-steps" aria-label="四步學古詩">${steps.map((step,index)=>{
-        const tag=step.pending?'div':'a';
-        const attributes=step.pending?'role="group" aria-label="看一看，動畫準備中"':`href="${route(step.view)}" data-lesson-view="${step.view}"`;
+      <nav class="lesson-map-steps" aria-label="學古詩的活動">${steps.map((step,index)=>{
+        const tag='a';
+        const attributes=`href="${route(step.view)}" data-lesson-view="${step.view}"`;
         const resume=canResume&&latestResume.view===step.view;
         return `<${tag} class="lesson-map-step lesson-map-step-${step.view}${step.done?' is-complete':''}${step.pending?' is-pending':''}${resume?' is-resume':''}" ${attributes}><div class="lesson-map-step-top"><span class="lesson-map-number">${index+1}</span><span class="lesson-map-step-icon">${icon(step.view)}</span>${step.pending?'':`<span class="lesson-map-step-arrow">${icon('arrow')}</span>`}</div><div class="lesson-map-step-copy"><h3>${step.title}</h3><span class="lesson-map-status">${esc(step.status)}</span></div></${tag}>`;
       }).join('')}</nav>
-      <nav class="lesson-map-extras" aria-label="也可以試試">${[['write','寫一寫'],['chat','找詩人'],['report','看成果']].map(([view,label])=>`<a href="${route(view)}" data-lesson-view="${view}"${view==='write'&&written?` aria-label="寫一寫，已練 ${written} / ${writingTotal} 字"`:''}>${icon(view)}<span>${label}</span></a>`).join('')}</nav>`;
+      <nav class="lesson-map-extras" aria-label="我的學習檔案"><button type="button" data-action="profile">${icon('report')}<span>我的學習檔案</span></button></nav>`;
   }
   root.addEventListener('click', event => {
     const link = event.target.closest('[data-lesson-view]');

@@ -1,0 +1,54 @@
+/* Client-reviewed AR entry and one short observation at a time. */
+.workspace.view-explore #view .explore{height:auto;min-height:100%;padding-bottom:16px;gap:14px}
+.workspace.view-explore #view .explore-heading{display:none}
+.workspace.view-explore #view .explore-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);grid-template-rows:auto;align-items:start;gap:24px;flex:none}
+.workspace.view-explore #view .explore-visual{display:flex;height:auto;min-height:0;flex:none}
+.workspace.view-explore #view .explore-stage{height:clamp(290px,50dvh,560px);min-height:290px;flex:none}
+.workspace.view-explore #view .explore-view-controls{position:static;display:block;margin:14px 0 0}
+.workspace.view-explore #view .explore-ar-entry{display:flex;align-items:center;justify-content:center;gap:12px;min-height:62px;width:100%;padding:13px 16px;border:1px solid #376b57;border-radius:16px;background:#477858;color:#fffef6;font-size:23px;font-weight:600;box-shadow:0 3px 0 #305d42;touch-action:manipulation}
+.workspace.view-explore #view .explore-ar-entry svg{width:28px;height:28px}
+.workspace.view-explore #view .explore-ar-entry:disabled{opacity:.65}
+.workspace.view-explore #view .explore-card{display:flex;align-self:stretch;max-height:none;overflow:visible;padding:22px;border-radius:20px;box-shadow:none}
+.workspace.view-explore #view .explore-card-top{display:flex;margin:0 0 12px}
+.workspace.view-explore #view .explore-step{font-size:17px;letter-spacing:0}
+.workspace.view-explore #view .explore-verse{margin:0 0 16px;padding:10px 0;gap:12px}
+.workspace.view-explore #view .explore-verse>p{font-size:25px;line-height:1.65;letter-spacing:.5px}
+.workspace.view-explore #view .explore-question legend{font-size:23px;line-height:1.45;margin-bottom:14px}
+.workspace.view-explore #view .explore-answers{gap:12px}
+.workspace.view-explore #view .explore-answers button{font-size:21px;min-height:58px;padding:12px;line-height:1.5}
+.workspace.view-explore #view .explore-feedback{font-size:18px;line-height:1.6;min-height:0;margin:14px 0 0;color:#5d7156}
+.workspace.view-explore #view .explore-feedback:empty{display:none}
+.workspace.view-explore #view .explore-next{margin-top:18px;min-height:54px;font-size:20px;flex:none}
+.workspace.view-explore #view .explore-next:disabled{display:none}
+.workspace.view-explore #view .explore-notice{margin:12px 0 0;padding:11px 13px;background:#f0f3e8;border-radius:12px;font-size:17px;line-height:1.55;color:#607456}
+.workspace.view-explore #view .explore-model-tools{display:flex;position:static;flex-wrap:wrap;gap:8px;background:none;padding:0;margin-top:12px}
+.workspace.view-explore #view .explore-finish-mark{display:grid;place-items:center;width:70px;height:70px;margin:10px auto 18px;background:#eaf3e0;border-radius:50%;color:#477858}
+.workspace.view-explore #view .explore-finish-mark svg{width:38px;height:38px}
+.workspace.view-explore #view .explore-finish h3{font-size:25px;line-height:1.4;margin:0 0 12px}
+.workspace.view-explore #view .explore-finish p{font-size:19px;line-height:1.7}
+.workspace.view-explore #view .explore-again{font-size:19px;min-height:48px}
+.explore-ar-overlay{position:fixed;inset:0;z-index:1000;pointer-events:none}
+.explore-ar-instructions{position:absolute;inset:max(16px,env(safe-area-inset-top)) 16px auto;display:flex;align-items:center;gap:14px;justify-content:space-between;padding:14px;border-radius:16px;background:#203a33e8;color:white}
+.explore-ar-instructions p{font-size:19px;line-height:1.5;margin:0}
+.explore-ar-instructions button{pointer-events:auto;flex:none;border:0;background:#fffdf4;color:#315b46;min-height:48px;border-radius:12px;padding:10px 15px;font:600 18px/1.4 var(--sans,sans-serif)}
+.workspace.view-explore #view .explore.is-expanded .explore-layout{display:block}
+.workspace.view-explore #view .explore.is-expanded .explore-visual{display:flex;width:100%}
+.workspace.view-explore #view .explore.is-expanded .explore-card{display:none}
+.workspace.view-explore #view .explore.is-expanded .explore-stage{height:calc(100dvh - 270px);min-height:300px}
+@media(max-width:820px){
+ .workspace.view-explore #view .explore-layout{grid-template-columns:minmax(0,1fr);gap:16px}
+ .workspace.view-explore #view .explore-stage{height:clamp(200px,29dvh,330px);min-height:200px}
+ .workspace.view-explore #view .explore-card{padding:17px}
+ .workspace.view-explore #view .explore-verse>p{font-size:23px;letter-spacing:0}
+ .workspace.view-explore #view .explore-question legend{font-size:22px}
+ .workspace.view-explore #view .explore-ar-entry{min-height:58px;font-size:22px}
+ .workspace.view-explore #view .explore-view-controls{margin-top:12px}
+ .workspace.view-explore #view .explore-answers button{font-size:20px;min-height:56px}
+ .workspace.view-explore #view .explore-model-tools{display:flex}
+ .explore-ar-instructions{flex-wrap:wrap;padding:12px}
+ .explore-ar-instructions p{font-size:18px;flex:1;min-width:180px}
+}
+@media(max-width:370px){
+ .workspace.view-explore #view .explore-card{padding:14px}
+ .workspace.view-explore #view .explore-verse>p{font-size:22px}
+}

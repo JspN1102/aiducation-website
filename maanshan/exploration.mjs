@@ -2,6 +2,7 @@ import {EXPLORATION_CONTENT} from './exploration-data.mjs?v=20260914d';
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ICONS = {
+  ar: '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>',
   turn: '<path d="M7 7a7 7 0 1 1-2 8M3 7h4V3"/><path d="m10 9 5 3-5 3Z"/>',
   picture: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="m3 16 5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1"/>',
   sound: '<path d="m11 5-6 4H2v6h3l6 4ZM15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14"/>',
@@ -83,6 +84,10 @@ export function disposeObject(root) {
 export function mountExploration(container, {poem, speakWord, onComplete} = {}) {
   const content = EXPLORATION_CONTENT[poem?.slug];
   if (!container || !content) throw new Error('Unknown poem exploration');
+  if (Number(poem.grade) <= 3) {
+    container.innerHTML = '<p class="explore-unavailable" role="status">這個年級不設 AR 體驗，請返回學習路線。</p>';
+    return {destroy(){container.replaceChildren();}};
+  }
   const assetBase = new URL(`./media/exploration/${poem.slug}/`, import.meta.url);
   const assetURL = name => {
     const url = new URL(name, assetBase);
@@ -93,11 +98,11 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
   let dead = false, observation = 0, correct = false, completed = false, notified = false;
   let mode = 'picture', loadGeneration = 0, pending = null, viewer = null;
   let imageFailed = false, imagePending = true;
+  let arBusy = false, arSession = null;
   container.innerHTML = `<section class="explore" aria-labelledby="explore-title">
-    <header class="explore-heading"><div><p class="explore-eyebrow">一首詩，兩個小發現</p><h2 id="explore-title">走進詩裏</h2></div>
+    <header class="explore-heading"><div><p class="explore-eyebrow">一首詩，兩個小發現</p><h2 id="explore-title">AR 體驗</h2></div>
       <img class="explore-motif" src="media/poetry-motifs/${content.motif}.svg" alt="" width="56" height="56"></header>
     <div class="explore-layout"><div class="explore-visual">
-      <div class="explore-observe-task"><span data-explore-observe-count></span><h3 tabindex="-1" data-explore-observe-title></h3><p data-explore-observe-hint></p></div>
       <div class="explore-stage" data-explore-stage>
         <img class="explore-scene" src="${escapeHTML(imageURL)}" alt="${escapeHTML(content.alt)}" decoding="async" fetchpriority="high">
         <div class="explore-image-loading" role="status"><img src="media/poetry-motifs/${content.motif}.svg" alt="" width="80" height="80"><p>正在準備畫面…</p></div>
@@ -108,34 +113,21 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
         <span class="explore-view-label" data-explore-view-label hidden></span>
         <div class="explore-loading" role="status" hidden><span class="explore-spinner" aria-hidden="true"></span><span>正在準備，請稍等…</span></div>
       </div>
-      <div class="explore-view-controls"><div class="explore-mode" role="group" aria-label="觀察方式">
-        <button type="button" data-explore="picture" aria-pressed="true">${icon('picture')}看畫面</button>
-        <button type="button" data-explore="model" aria-pressed="false">${icon('turn')}轉一轉</button>
-      </div><p class="explore-gesture" data-explore-gesture>看看畫面，再找詩裏的小發現。</p></div>
+      <div class="explore-view-controls"><button class="explore-ar-entry" type="button" data-explore="ar">${icon('ar')}<span>點擊體驗 AR</span></button></div>
       <div class="explore-model-tools" role="group" aria-label="轉動觀察" hidden>
         <div class="explore-presets">${(content.presets || []).map(item => `<button type="button" data-explore="preset" data-preset="${item.id}" aria-pressed="false">${item.label}</button>`).join('')}</div>
         <div class="explore-zoom"><button type="button" data-explore="zoom-in" aria-label="放大" title="放大">${icon('plus')}</button><button type="button" data-explore="zoom-out" aria-label="縮小" title="縮小">${icon('minus')}</button><button type="button" data-explore="reset" aria-label="回到原來角度" title="回到原來角度">${icon('reset')}</button></div>
       </div>
       <p class="explore-notice" role="status" hidden></p>
-      <button type="button" class="explore-next explore-answer-entry" data-explore="open-question">找到啦，來答一答${icon('arrow')}</button>
     </div><div class="explore-card" data-explore-card></div></div>
+    <div class="explore-ar-overlay" hidden><div class="explore-ar-instructions"><p role="status" data-ar-status>正在準備 AR…</p><button type="button" data-explore="ar-exit">結束 AR</button></div></div>
   </section>`;
   const q = selector => container.querySelector(selector);
   const section = q('.explore'), stage = q('[data-explore-stage]'), canvasHolder = q('[data-explore-canvas]');
   const picture = q('.explore-scene'), pictureFallback = q('.explore-image-fallback'), pictureLoading = q('.explore-image-loading');
   const card = q('[data-explore-card]'), loading = q('.explore-loading'), notice = q('.explore-notice');
-  const tools = q('.explore-model-tools'), modelButton = q('[data-explore="model"]');
+  const tools = q('.explore-model-tools'), modelButton = q('[data-explore="ar"]'), arOverlay = q('.explore-ar-overlay');
   const activityEvents = new AbortController();
-  section.dataset.mobileStep = 'observe';
-
-  function showStep(step, focus = false) {
-    section.dataset.mobileStep = step;
-    if (!focus) return;
-    const heading = step === 'observe' ? q('[data-explore-observe-title]') : card.querySelector('legend') || card.querySelector('h3');
-    heading?.focus({preventScroll: true});
-    const viewport = section.closest('#view');
-    if (viewport) viewport.scrollTop = 0;
-  }
   container.addEventListener('error', event => {
     if (event.target.matches?.('.explore-guide img, .explore-finish-shishi')) event.target.hidden = true;
   }, {capture: true, signal: activityEvents.signal});
@@ -170,23 +162,18 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     card.removeAttribute('data-feedback');
     q('[data-explore-view-label]').hidden = true;
     if (completed) {
-      showStep('question');
       card.innerHTML = `<div class="explore-card-top"><span class="explore-step">${icon('check')}兩個發現，都找到了</span></div>
-        <div class="explore-finish"><img class="explore-finish-shishi" src="media/shishi-guide.webp" alt="詩詩" width="90" height="100"><h3 tabindex="-1">把發現帶回詩裏</h3><p>${escapeHTML(content.finish)}</p></div>
-        <div class="explore-finish-actions"><a class="explore-next" href="#${escapeHTML(poem.slug)}/record">再讀古詩${icon('arrow')}</a><button class="explore-again" type="button" data-explore="again">再找一次</button></div>`;
+        <div class="explore-finish"><div class="explore-finish-mark" aria-hidden="true">${icon('check')}</div><h3 tabindex="-1">小發現，收好啦！</h3><p>${escapeHTML(content.finish)}</p></div>
+        <div class="explore-finish-actions"><button class="explore-again" type="button" data-explore="again">再玩一次</button></div>`;
     } else {
       const item = content.observations[observation];
-      q('[data-explore-observe-count]').textContent = `小發現 ${observation + 1} / ${content.observations.length}`;
-      q('[data-explore-observe-title]').textContent = item.title;
-      q('[data-explore-observe-hint]').textContent = item.guide;
-      card.innerHTML = `<button type="button" class="explore-back-picture" data-explore="open-picture">${icon('picture')}再看畫面</button><div class="explore-card-top"><span class="explore-step">小發現 ${observation + 1} / ${content.observations.length}</span><div class="explore-dots" aria-hidden="true">${content.observations.map((_, i) => `<i class="${i <= observation ? 'is-filled' : ''}"></i>`).join('')}</div></div>
-        <div class="explore-title-row"><h3 tabindex="-1">${escapeHTML(item.title)}</h3><button class="explore-clue" type="button" data-explore="inspect" aria-label="請詩詩提示觀察線索">找線索${icon('turn')}</button></div>
+      card.innerHTML = `<div class="explore-card-top"><span class="explore-step">小發現 ${observation + 1} / ${content.observations.length}</span><div class="explore-dots" aria-hidden="true">${content.observations.map((_, i) => `<i class="${i <= observation ? 'is-filled' : ''}"></i>`).join('')}</div></div>
         <div class="explore-verse"><p>${escapeHTML(item.verse)}</p><button class="explore-word" type="button" data-explore="word" aria-label="聽${escapeHTML(item.word[0])}的讀音 ${escapeHTML(item.word[1])}"><span><small>${escapeHTML(item.word[1])}</small>${escapeHTML(item.word[0])}</span>${icon('sound')}</button></div>
         <fieldset class="explore-question"><legend tabindex="-1">${escapeHTML(item.question)}</legend><div class="explore-answers">${item.choices.map((choice, i) => `<button type="button" data-explore="answer" data-answer="${i}" aria-pressed="false"><span class="explore-answer-dot" aria-hidden="true"></span>${escapeHTML(choice)}</button>`).join('')}</div></fieldset>
-        <div class="explore-guide"><img src="media/shishi-guide.webp" alt="" width="52" height="64" decoding="async"><div><span class="explore-guide-name">詩詩陪你看</span><p class="explore-feedback" aria-live="polite">想一想，點你的答案。需要幫忙就按「找線索」。</p></div></div>
+        <p class="explore-feedback" aria-live="polite"></p>
         <button class="explore-next" type="button" data-explore="next" disabled>${observation + 1 === content.observations.length ? '收好小發現' : '下一個發現'}${icon('arrow')}</button>`;
     }
-    if (focus) card.querySelector('h3')?.focus({preventScroll: true});
+    if (focus) card.querySelector('legend, h3')?.focus({preventScroll: true});
   }
 
   function selectPreset(id) {
@@ -239,16 +226,13 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     tools.hidden = true;
     section.classList.remove('is-model');
     syncPicture();
-    q('[data-explore="picture"]').setAttribute('aria-pressed', 'true');
-    modelButton.setAttribute('aria-pressed', 'false');
     clearPreset();
     q('[data-explore-view-label]').hidden = true;
-    q('[data-explore-gesture]').textContent = '看看畫面，再找詩裏的小發現。';
   }
 
   async function showModel() {
-    if (dead || pending || mode === 'model') return;
-    announce();
+    if (dead || pending) return null;
+    if (viewer) return viewer;
     const generation = ++loadGeneration, controller = new AbortController();
     pending = controller;
     const current = () => !dead && generation === loadGeneration && !controller.signal.aborted;
@@ -282,10 +266,8 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
       canvasHolder.hidden = false;
       pictureFallback.hidden = true;
       tools.hidden = false;
-      q('[data-explore="picture"]').setAttribute('aria-pressed', 'false');
-      modelButton.setAttribute('aria-pressed', 'true');
-      q('[data-explore-gesture]').textContent = '拖一拖換角度，雙指縮放。';
       viewer.resize();
+      return viewer;
     } catch (error) {
       if (parsed) disposeObject(parsed.scene);
       if (dead || generation !== loadGeneration) return;
@@ -293,7 +275,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
       canvasHolder.hidden = true;
       announce(error?.message === 'webgl-unavailable'
         ? '這部裝置暫時不能轉動畫面。看圖也能完成小發現。'
-        : '暫時轉不開，按「轉一轉」再試。看圖也能繼續。');
+        : '模型暫時未能打開，再按「點擊體驗 AR」試試。看圖也能繼續。');
     } finally {
       clearTimeout(timeout);
       if (!dead && generation === loadGeneration) {
@@ -305,15 +287,50 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     }
   }
 
+  async function startExperience() {
+    if (dead || arBusy || arSession) return;
+    arBusy = true; modelButton.disabled = true; announce();
+    let session = null, ended = false;
+    try {
+      // Request directly from the tap, before awaiting imports or downloads.
+      const request = navigator.xr?.requestSession && window.isSecureContext
+        ? navigator.xr.requestSession('immersive-ar', {requiredFeatures:['hit-test'],optionalFeatures:['dom-overlay'],domOverlay:{root:arOverlay}})
+          .then(value => ({session:value}), error => ({error})) : Promise.resolve({unsupported:true});
+      const prepared = showModel();
+      const result = await request;
+      if (result.session) {
+        session = result.session; arSession = session;
+        session.addEventListener('end', () => {ended = true; arSession = null; arOverlay.hidden = true;}, {once:true});
+        if (dead) {await session.end().catch(() => {}); return;}
+        arOverlay.hidden = false;
+      }
+      const target = await prepared;
+      if (!target || dead || ended) {await session?.end().catch(() => {}); return;}
+      if (!session) {
+        announce(result.error?.name === 'NotAllowedError' || result.error?.name === 'SecurityError'
+          ? '沒有開啟相機權限，先用 3D 看一看。想再試 AR，請允許相機後再按按鈕。'
+          : '這個瀏覽器未支援相機 AR，現在是 3D 觀察。拖動模型換個角度，雙指可縮放。');
+        return;
+      }
+      const {startSurfaceAR} = await import('./surface-ar.mjs?v=20260918b');
+      if (dead || ended) {await session.end().catch(() => {}); return;}
+      await target.enterAR(session, arOverlay, startSurfaceAR);
+    } catch {
+      await session?.end().catch(() => {});
+      if (!dead) announce('AR 暫時未能開啟，可以再試一次。先用畫面繼續觀察吧。');
+    } finally {
+      arBusy = false;
+      if (!dead) modelButton.disabled = false;
+    }
+  }
+
   container.addEventListener('click', event => {
     const button = event.target.closest('[data-explore]');
     if (!button || !container.contains(button) || button.disabled || dead) return;
     const action = button.dataset.explore;
-    if (action === 'open-question') showStep('question', true);
-    else if (action === 'open-picture') showStep('observe', true);
+    if (action === 'ar') startExperience();
+    else if (action === 'ar-exit') arSession?.end().catch(() => {});
     else if (action === 'expand') setExpanded(!section.classList.contains('is-expanded'));
-    else if (action === 'picture') {showPicture(); announce();}
-    else if (action === 'model') showModel();
     else if (action === 'retry-image') {
       imagePending = true;
       imageFailed = false;
@@ -325,13 +342,6 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     else if (action === 'zoom-out') {clearPreset(); viewer?.zoom(1.25);}
     else if (action === 'reset') {clearPreset(); viewer?.reset();}
     else if (action === 'preset') selectPreset(button.dataset.preset);
-    else if (action === 'inspect' && !completed) {
-      card.dataset.feedback='hint';
-      const item = content.observations[observation];
-      if (item.inspect === 'picture') showPicture();
-      else if (mode === 'model') selectPreset(item.inspect);
-      if (!correct) card.querySelector('.explore-feedback').textContent = item.clue;
-    }
     else if (action === 'word' && !completed) {
       const [char, pinyin] = content.observations[observation].word;
       if (typeof speakWord === 'function') {
@@ -356,7 +366,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
         q('[data-explore="next"]').disabled = false;
       } else {
         button.classList.add('is-wrong');
-        feedback.textContent = '再看看上面的詩句，換一個答案試試。';
+        feedback.textContent = item.clue;
       }
     } else if (action === 'next' && correct) {
       if (observation + 1 === content.observations.length) {
@@ -367,11 +377,9 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
         }
       } else {observation++; correct = false;}
       renderCard(true);
-      if (!completed) showStep('observe', true);
     } else if (action === 'again') {
       observation = 0; correct = false; completed = false;
       renderCard(true);
-      showStep('observe', true);
     }
   }, {signal: activityEvents.signal});
   renderCard();
@@ -379,6 +387,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     destroy() {
       if (dead) return;
       dead = true;
+      arSession?.end().catch(() => {});
       stopPending();
       releaseViewer();
       activityEvents.abort();
@@ -456,14 +465,14 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
   controls.maxPolarAngle = Math.PI * .52;
   controls.target.copy(sphere.center);
   let disposed = false, frame = 0, baseDistance = 6, transition = null;
-  let visible = true;
+  let visible = true, arController = null;
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const normalDirection = new THREE.Vector3(...(content.initialView || [3.3, 2.4, 5.8])).normalize();
   const requestRender = () => {
-    if (disposed || frame || document.hidden || !visible) return;
+    if (disposed || frame || document.hidden || !visible || arController || renderer.xr.isPresenting) return;
     frame = requestAnimationFrame(time => {
       frame = 0;
-      if (disposed || document.hidden || !visible) return;
+      if (disposed || document.hidden || !visible || arController || renderer.xr.isPresenting) return;
       if (transition) {
         const progress = Math.min(1, (time - transition.started) / 360);
         const eased = 1 - Math.pow(1 - progress, 3);
@@ -483,7 +492,7 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
   };
   const reset = () => setView(normalDirection, baseDistance);
   const resize = () => {
-    if (disposed) return;
+    if (disposed || arController || renderer.xr.isPresenting) return;
     const width = stage.clientWidth, height = stage.clientHeight;
     if (!width || !height) return;
     const previousDistance = camera.position.distanceTo(controls.target);
@@ -555,9 +564,18 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
   setView(normalDirection, baseDistance, false);
   return {
     resize, zoom, reset, preset,
+    async enterAR(session, overlay, startSurfaceAR) {
+      if(disposed){await session.end().catch(()=>{});return;}
+      cancelAnimationFrame(frame);frame=0;transition=null;
+      arController=startSurfaceAR({THREE,renderer,scene,camera,model:wrapper,ground,controls,bounds:normalizedBounds,session,overlay,
+        onEnd(){arController=null;if(!disposed)requestAnimationFrame(()=>{resize();requestRender();});}
+      });
+      await arController.ready;
+    },
     destroy() {
       if (disposed) return;
       disposed = true;
+      arController?.destroy();arController=null;
       cancelAnimationFrame(frame);
       transition = null;
       resizeObserver.disconnect();

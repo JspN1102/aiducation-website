@@ -1,0 +1,67 @@
+/* Four clear activities and one consistent, compact poet-chat gateway. */
+.workspace .lesson-map-extras{grid-template-columns:minmax(0,1fr);max-width:240px}
+.workspace .lesson-map-extras button{display:flex;align-items:center;justify-content:center;gap:10px;min-height:52px;border:0;border-radius:12px;background:transparent;color:#476b58;font:500 19px/1.5 var(--sans);cursor:pointer}
+.workspace .lesson-map-extras button:hover{background:#edf3e9}
+.profile-dialog{width:520px;max-height:calc(100dvh - 24px);padding:24px;border-radius:20px;overflow:auto;overscroll-behavior:contain}
+.profile-dialog .dialog-heading{gap:12px;margin-bottom:18px}
+.profile-dialog .dialog-heading h2{font-size:26px;line-height:1.4}
+.profile-dialog label{font-size:18px}
+.profile-dialog :is(input,select){border-radius:10px;min-height:50px;font-size:19px}
+.profile-archive h3{font:600 23px/1.6 var(--sans);margin:0 0 14px}
+.profile-progress{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.profile-progress>div{padding:15px 10px;border-radius:16px;background:#f0f5eb;text-align:center}
+.profile-progress span{font-size:18px}.profile-progress strong{display:block;margin:8px 0;font-size:29px;line-height:1.3}
+.profile-progress small{margin-left:5px;font-size:17px;font-weight:400}.profile-progress p{margin:0;font-size:17px;line-height:1.5}
+.profile-result-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.profile-review-note{margin:14px 0 0;font-size:18px;line-height:1.6;color:#526b54}
+.profile-result-links .button{justify-content:center;padding:10px 6px;font-size:18px;line-height:1.5;text-align:center;white-space:normal}
+.profile-details{margin-top:22px;padding-top:16px;border-top:1px solid #dce5d8}
+.profile-details summary{min-height:48px;font:600 19px/1.6 var(--sans);cursor:pointer}.profile-details form{padding-top:8px}
+@media(max-width:360px){.profile-dialog{padding:17px}.profile-dialog .dialog-heading h2{font-size:23px}.profile-progress{gap:8px}.profile-progress span{font-size:17px}.profile-result-links{gap:8px}.profile-result-links .button{font-size:17px}}
+.workspace .lesson-map-lower .lesson-map-steps{grid-template-columns:repeat(3,minmax(0,1fr))}
+.workspace .lesson-map-step h3{font-size:clamp(20px,2.2vw,26px);line-height:1.5;letter-spacing:0}
+.workspace .lesson-map-status{line-height:1.6}
+.workspace .lesson-menu .menu-panel{min-width:220px;max-width:calc(100vw - 32px);padding:8px}
+.workspace .lesson-menu .menu-panel a{display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 14px;font-size:19px;border-radius:12px}
+.workspace .lesson-menu .menu-panel a[aria-current=page]{color:#276650;background:#eaf3e8;font-weight:700}
+.workspace.view-quiz .lesson-title h1{font-size:clamp(23px,3vw,32px);line-height:1.3;white-space:normal}
+.workspace .report-next-activities{grid-template-columns:repeat(2,minmax(0,1fr));justify-content:center}
+.workspace .report-next-activities a{min-width:0;text-align:center;white-space:normal}
+.workspace .shishi-touch-slot{width:60px;height:66px;flex-basis:60px}
+.workspace .lesson-bar:has(.shishi-touch-slot){grid-template-columns:auto minmax(0,1fr) 60px auto;min-height:84px}
+.shishi-touch-slot .shishi-guide{width:60px;height:66px}
+.shishi-touch-slot .shishi-guide-button{width:60px;height:66px;justify-content:flex-start;gap:4px;border-radius:12px;position:relative}
+.shishi-touch-slot .shishi-poet-label{display:block;flex:none;font:600 15px/20px var(--sans);white-space:nowrap;color:#476b58;background:transparent;pointer-events:none}
+.shishi-touch-slot .shishi-guide-art{width:42px;height:42px;transform-origin:50% 80%;animation:none!important;overflow:hidden}
+.shishi-poet-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:15px}
+.shishi-find-poet,.shishi-poet-actions .shishi-understood{min-height:48px;margin:0;padding:10px 16px;border:1px solid #cbd9c0;border-radius:13px;font:600 18px/1.5 var(--sans);cursor:pointer}
+.shishi-find-poet{flex:1;color:white;background:#356d56;border-color:#356d56}
+.shishi-poet-actions .shishi-understood{background:#fffef8;font-weight:500}
+.animation-pending{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;min-height:100%;padding:24px;text-align:center}
+.animation-pending img{width:88px;height:88px}.animation-pending h2{font-size:28px}.animation-pending p{font-size:21px;line-height:1.6}
+@media(max-width:420px){
+ .workspace .lesson-bar{gap:8px}
+ .workspace .lesson-map-step{min-height:150px}
+ .workspace .lesson-map-step h3{font-size:20px}
+ .workspace .lesson-map-status{font-size:16px}
+ .workspace.view-quiz .lesson-title h1{font-size:23px}
+ .workspace.view-quiz .lesson-title p{font-size:16px}
+}
+@media(max-width:600px) and (orientation:portrait){
+ .workspace .lesson-map-lower .lesson-map-steps{grid-template-columns:minmax(0,1fr);gap:12px}
+ .workspace .lesson-map-lower .lesson-map-step{display:grid;grid-template-columns:62px minmax(0,1fr);min-height:112px;align-items:center;gap:14px;padding:16px 20px}
+ .workspace .lesson-map-lower .lesson-map-step-top{flex-wrap:wrap;gap:5px;margin:0;justify-content:center}
+ .workspace .lesson-map-lower .lesson-map-step-arrow{display:none}
+ .workspace .lesson-map-lower .lesson-map-step h3{font-size:24px}
+ .workspace .lesson-map-lower .lesson-map-status{margin-top:4px;font-size:18px}
+ .workspace .lesson-map-lower .lesson-map-extras{padding-top:6px}
+}
+@media(max-width:600px) and (max-height:650px) and (orientation:portrait){
+ .workspace .lesson-map-lower .lesson-map-step{min-height:94px;padding:11px 14px}
+ .workspace .lesson-map-lower .lesson-map-steps{gap:9px}
+}
+@media(max-height:550px) and (orientation:landscape){
+ .workspace .lesson-bar:has(.shishi-touch-slot){min-height:70px;padding-block:2px}
+ .workspace .lesson-map-step{min-height:135px}
+ .workspace .lesson-map-step h3{font-size:21px}
+}

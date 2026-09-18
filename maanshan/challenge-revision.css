@@ -1,0 +1,74 @@
+/* Listening stays a listening task; a large sound button replaces the 3D detour. */
+.workspace .challenge-shell .challenge-sound-layout {
+  max-width: 760px; margin-inline: auto; padding: 12px 4px;
+  grid-template-columns: minmax(160px, .7fr) minmax(0, 1.3fr); gap: 34px;
+}
+.workspace .challenge-shell .challenge-sound-stage { flex-direction: column; gap: 18px; height: auto; min-height: 160px; }
+.workspace .challenge-shell .challenge-sound-token {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 154px; min-height: 154px; padding: 20px; border: 1px solid #adc7b0;
+  border-radius: 50%; color: #315d47; background: #edf5e6; box-shadow: 0 5px 0 #d5e3cd;
+  font-size: 21px; line-height: 1.4; gap: 9px; touch-action: none;
+}
+.workspace .challenge-shell .challenge-sound-token > svg { width: 42px; height: 42px; }
+.workspace .challenge-shell .challenge-sound-token.is-playing { background: #dbeccb; box-shadow: 0 0 0 7px #ecf3e7; }
+.workspace .challenge-shell .challenge-sound-stage .challenge-stage-note { position: static; margin: 0; font-size: 16px; color: #637b64; }
+.workspace .challenge-shell .challenge-sound-work { min-width: 0; }
+.workspace .challenge-shell .challenge-sound-work .challenge-prompt { text-wrap: balance; }
+.workspace .challenge-shell .challenge-sound-work .challenge-audio-status { min-height: 46px; }
+.workspace .challenge-shell .challenge-secondary {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 48px;
+  padding: 10px 20px; border: 1px solid #b8cbb0; border-radius: 14px;
+  background: #f5f8eb; color: #355e45; font-size: 18px;
+}
+.workspace .challenge-shell .challenge-observation-picture { display: block; width: 100%; max-height: 270px; object-fit: contain; border-radius: 18px; }
+.workspace .challenge-shell .challenge-results-heading { gap: 16px; }
+.workspace .challenge-shell .challenge-results-heading h2 { font-size: 29px; }
+.workspace .challenge-shell .challenge-results-heading .challenge-result-detail { display: block !important; font-size: 18px !important; line-height: 1.5; color: #52684c !important; }
+.workspace .challenge-shell .challenge-result-row { gap: 12px; font-size: 19px !important; min-height: 67px; padding: 9px 13px; cursor: default; }
+.workspace .challenge-shell .challenge-result-number { flex-shrink: 0; width: 30px; height: 30px; font-size: 17px; }
+.workspace .challenge-shell .challenge-result-knowledge { min-width: 0; overflow-wrap: anywhere; line-height: 1.4; }
+.workspace .challenge-shell .challenge-result-row small { display: block !important; color: #52684c; font-size: 17px !important; }
+.workspace .challenge-shell .challenge-result-row em { flex-shrink: 0; font-size: 18px !important; font-weight: 600; }
+.workspace .challenge-shell .challenge-result-row em.needs-practice { color: #986443; }
+.workspace .challenge-shell .challenge-results-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; max-width: 480px; gap: 14px; margin-inline: auto; }
+.workspace .challenge-shell .challenge-results-actions button { min-height: 52px; font-size: 21px; padding: 10px 14px; }
+.workspace .challenge-shell .challenge-results-actions button:disabled { opacity: .55; cursor: default; }
+@media (max-width: 700px) {
+  .workspace .challenge-shell .challenge-sound-layout { grid-template-columns: 1fr; gap: 20px; padding: 8px 2px; }
+  .workspace .challenge-shell .challenge-sound-stage { width: 100%; height: auto; min-height: 0; gap: 10px; }
+  .workspace .challenge-shell .challenge-sound-token { width: 128px; min-height: 128px; font-size: 21px; padding: 16px; }
+  .workspace .challenge-shell .challenge-sound-work { text-align: center; }
+  .workspace .challenge-shell .challenge-sound-work .challenge-prompt { font-size: 24px; line-height: 1.45; }
+  .workspace .challenge-shell .challenge-shelves { gap: 12px; }
+  .workspace .challenge-shell .challenge-shelf { min-height: 86px; }
+  .workspace .challenge-shell .challenge-shelf > span { font-size: 28px; }
+  .workspace .challenge-shell .challenge-shelf:has(.challenge-tone) > span { font-size: 18px; }
+  .workspace .challenge-shell .challenge-sound-work .challenge-audio-status { display: block; min-height: 24px; margin-top: 12px; font-size: 16px; }
+  .workspace .challenge-results { justify-content: flex-start; }
+  .workspace .challenge-shell .challenge-results-heading { gap: 12px; margin-bottom: 15px; }
+  .workspace .challenge-shell .challenge-results-heading h2 { font-size: 27px; }
+  .workspace .challenge-shell .challenge-results-heading .challenge-result-detail { font-size: 17px !important; }
+  .workspace .challenge-shell .challenge-result-row { font-size: 18px !important; padding: 8px 10px; min-height: 64px; gap: 9px; }
+  .workspace .challenge-shell .challenge-result-row small { font-size: 17px; }
+  .workspace .challenge-shell .challenge-result-row em { font-size: 17px !important; }
+  .workspace .challenge-shell .challenge-results-actions { gap: 10px; }
+  .workspace .challenge-shell .challenge-results-actions button { font-size: 20px; padding-inline: 7px; }
+}
+@media (max-width: 700px) and (max-height: 700px) {
+  .workspace .challenge-shell .challenge-sound-layout { gap: 12px; padding: 2px; }
+  .workspace .challenge-shell .challenge-sound-token { width: 108px; min-height: 108px; font-size: 19px; gap: 5px; padding: 12px; }
+  .workspace .challenge-shell .challenge-sound-token > svg { width: 32px; height: 32px; }
+  .workspace .challenge-shell .challenge-sound-stage .challenge-stage-note { display: none; }
+  .workspace .challenge-shell .challenge-sound-work .challenge-prompt { font-size: 22px; margin-bottom: 8px; }
+  .workspace .challenge-shell .challenge-shelf { min-height: 72px; }
+  .workspace .challenge-shell:has(.has-feedback) .challenge-sound-stage { width: 100%; height: auto; }
+  .workspace .challenge-shell:has(.has-feedback) .challenge-sound-token { flex-direction: row; width: auto; min-height: 48px; padding: 8px 18px; border-radius: 28px; }
+  .workspace .challenge-shell:has(.has-feedback) .challenge-sound-work .challenge-audio-status { display: none; }
+}
+@media (max-height: 550px) and (orientation: landscape) {
+  .workspace .challenge-shell .challenge-sound-layout { grid-template-columns: 150px minmax(0, 1fr); gap: 24px; }
+  .workspace .challenge-shell .challenge-sound-token { width: 104px; min-height: 104px; padding: 12px; font-size: 18px; }
+  .workspace .challenge-shell .challenge-sound-token > svg { width: 30px; height: 30px; }
+  .workspace .challenge-shell .challenge-sound-stage .challenge-stage-note { display: none; }
+}

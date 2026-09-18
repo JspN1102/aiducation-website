@@ -1,14 +1,5 @@
 ﻿const pictureURL = new URL('./media/shishi/guide-v2.webp?v=20260915a', import.meta.url).href;
 let instanceID = 0;
-const HINTS = {
-  lesson: ['一起出發吧', '先聽一聽、讀一讀，再看一看、找一找、練一練。'],
-  record: ['一次讀好一句', '先按「聽示範」，再按「開始朗讀」讀這一句。'],
-  write: ['一筆一筆來', '先看筆順，再在格子裡寫。寫錯一筆，可以撤回再試。'],
-  quiz: ['先看這一題的提示', '聽清楚、看仔細，再動手試一試。不確定，可以再聽一次。'],
-  report: ['挑一個地方練好', '先看看哪個字需要改進，點字聽一聽，再跟著讀一次。'],
-  explore: ['找找詩中的線索', '先看畫面，找到線索後，再點你的答案。想換個角度，可以按「轉一轉」。'],
-  chat: ['把好奇說出來', '可以選一個小問題，也可以打字，問詩人你想知道的事。']
-};
 
 /** A small navigation companion. No model downloads, rendering loop or floating placement. */
 export function mountShishi(container, options = {}) {
@@ -23,8 +14,9 @@ export function mountShishi(container, options = {}) {
   guide.dataset.model = 'picture';
   guide.innerHTML = `<section class="shishi-bubble" id="${id}" aria-labelledby="${id}-title" hidden>
     <div class="shishi-bubble-heading"><h2 id="${id}-title"></h2><button type="button" class="shishi-dismiss" aria-label="關閉提示"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button></div>
-    <p class="shishi-hint-text" role="status" aria-live="polite"></p><button type="button" class="shishi-understood">明白了</button>
-  </section><button type="button" class="shishi-guide-button" aria-label="問詩詩：現在怎麼做" aria-controls="${id}" aria-expanded="false">
+    <p class="shishi-hint-text" role="status" aria-live="polite"></p><div class="shishi-poet-actions"><button type="button" class="shishi-find-poet">好呀，找詩人</button><button type="button" class="shishi-understood">先不去</button></div>
+  </section><button type="button" class="shishi-guide-button" aria-label="點詩詩，找詩人" aria-controls="${id}" aria-expanded="false">
+    <span class="shishi-poet-label">找詩人</span>
     <span class="shishi-guide-art" aria-hidden="true"><img src="${pictureURL}" width="56" height="56" alt="" decoding="async"><span class="shishi-guide-fallback" hidden>詩</span></span>
   </button>`;
   container.replaceChildren(guide);
@@ -62,11 +54,12 @@ export function mountShishi(container, options = {}) {
     if (restoreFocus && !guide.hidden && !button.disabled && !dead) button.focus({preventScroll: true});
   }
   function refreshHint() {
-    let hint;
-    try {hint = typeof settings.getHint === 'function' ? settings.getHint() : null;} catch { /* View state can change while opening. */ }
-    const standard = HINTS[settings.view] || HINTS.lesson;
-    q('h2').textContent = String(hint?.title || standard[0]);
-    q('.shishi-hint-text').textContent = String(hint?.text || standard[1]);
+    const author=settings.poem?.author || '詩人';
+    const younger=settings.poem?.grade<=3;
+    q('h2').textContent = settings.view==='chat' ? `正在和${author}聊天` : younger?`找${author}聊天，好嗎？`:'要不要找詩人聊聊天？';
+    q('.shishi-hint-text').textContent = settings.view==='chat' ? '點下面的小問題，或打字聊一聊。' : younger?'我帶你去！點下面的按鈕就可以。':`我帶你去找${author}，聊聊古詩和你的新發現。`;
+    q('.shishi-find-poet').hidden=settings.view==='chat';
+    q('.shishi-understood').textContent=settings.view==='chat'?'繼續聊天':'先不去';
   }
   function updateVisibility() {
     updateFrame = 0;
@@ -103,10 +96,10 @@ export function mountShishi(container, options = {}) {
     button.setAttribute('aria-expanded', 'true');
     if (!reducedMotion.matches) {
       greeting?.cancel();
-      greeting = q('.shishi-guide-art').animate([
+      greeting = picture.animate([
         {transform:'rotate(0) translateY(0)'},
-        {transform:'rotate(-8deg) translateY(-3px)',offset:.3},
-        {transform:'rotate(6deg) translateY(-2px)',offset:.65},
+        {transform:'rotate(-5deg) translateY(-1px)',offset:.3},
+        {transform:'rotate(5deg) translateY(-1px)',offset:.65},
         {transform:'rotate(0) translateY(0)'}
       ], {duration:650,easing:'ease-in-out'});
     }
@@ -114,6 +107,10 @@ export function mountShishi(container, options = {}) {
   }, {signal: events.signal});
   q('.shishi-dismiss').addEventListener('click', () => close(true), {signal: events.signal});
   q('.shishi-understood').addEventListener('click', () => close(true), {signal: events.signal});
+  q('.shishi-find-poet').addEventListener('click', () => {
+    if(dead || button.disabled)return;
+    close();settings.onFindPoet?.();
+  }, {signal: events.signal});
   document.addEventListener('pointerdown', event => {if (open && !guide.contains(event.target)) close();}, {signal: events.signal});
   document.addEventListener('keydown', event => {if (event.key === 'Escape' && open) {event.preventDefault();close(true);}}, {signal: events.signal});
   document.addEventListener('focusin', scheduleUpdate, {signal: events.signal});
