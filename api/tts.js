@@ -171,7 +171,10 @@ async function synthesize({text, voice, speed}) {
       apiRes.on('end', () => {
         try {
           const response = JSON.parse(Buffer.concat(chunks).toString('utf8')).Response;
-          if (!response?.Audio) return finish(Object.assign(new Error('TTS temporarily unavailable'), {statusCode: 502}));
+          if (!response?.Audio) {
+            const upstream = response?.Error || {};
+            return finish(Object.assign(new Error('TTS temporarily unavailable'), {statusCode: 502, upstreamCode: upstream.Code, upstreamMessage: upstream.Message}));
+          }
           const audio = Buffer.from(response.Audio, 'base64');
           if (!audio.length) return finish(Object.assign(new Error('Empty TTS response'), {statusCode: 502}));
           finish(null, paddedWav(audio));
@@ -231,6 +234,7 @@ module.exports = async function handler(req, res) {
     return serveAudio(req, res, result.audio, result.stored ? 'MISS-STORED' : 'MISS');
   } catch (error) {
     const status = Number.isInteger(error.statusCode) ? error.statusCode : 502;
+    console.error(JSON.stringify({event: 'tts-failure', status, code: error.code || error.upstreamCode || null, message: error.message || null, upstreamMessage: error.upstreamMessage || null}));
     return res.status(status).json({error: error.message || 'TTS temporarily unavailable'});
   }
 };
