@@ -49,7 +49,7 @@ async function request(method, {query, body, headers} = {}) {
 }
 
 async function run() {
-  const body = {text: '朗讀', voice: 502001, speed: -0.75, delivery: 'url'};
+  const body = {text: '朗讀', voice: 502001, speed: -0.75, delivery: 'url', allowSSML: true};
   const first = await request('POST', {body});
   assert.equal(first.statusCode, 200);
   assert.equal(first.headers['x-tts-cache'], 'MISS-STORED');
@@ -96,6 +96,9 @@ async function run() {
   storage.clear();
   await request('POST', {body: {...body, text: '還有'}});
   assert.equal(lastSynthesisText, '<speak><break time="160ms"/>還有</speak>');
+  storage.clear();
+  await request('POST', {body: {...body, text: '测试', allowSSML: false}});
+  assert.equal(lastSynthesisText, '测试');
   process.stdout.write('HTTP TTS delivery: PASS\n');
 }
 run().catch(error => { process.exitCode = 1; console.error(error); }).finally(() => { https.request = realRequest; });

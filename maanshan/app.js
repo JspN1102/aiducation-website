@@ -40,7 +40,7 @@ let activityLoad=0;
 let practiceIndex=0, reportTab='advice', reportLine=0, practiceMode='sound';
 const TTS_VOICE=502001;
 const TTS_SPEED=-.75;
-const TTS_PRONUNCIATION='20260919b2';
+const TTS_PRONUNCIATION='20260919b3';
 const speechCache=new Map(), speechPending=new Map();
 const recordings=new Map(), requests=new Set();
 const pendingRecordings=new Map();

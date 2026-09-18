@@ -2,7 +2,7 @@ const crypto = require('node:crypto');
 const { BlobNotFoundError, get, head, put } = require('@vercel/blob');
 
 const MAX_AUDIO_BYTES = 2 * 1024 * 1024;
-const CACHE_VERSION = '20260919b2';
+const CACHE_VERSION = '20260919b3';
 const blobPath = key => `speech/${CACHE_VERSION}/${key}.wav`;
 function cacheKey({ text, voice, speed, pronunciationVersion = '', profile = '' }) {
   return crypto.createHash('sha256').update(JSON.stringify({ version: CACHE_VERSION, text, voice, speed, pronunciationVersion, profile, codec: 'pcm16le-wav-16k' })).digest('hex');

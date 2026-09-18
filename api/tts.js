@@ -55,16 +55,29 @@ function withLeadingPause(text) {
   return `<speak><break time="160ms"/>${xmlEscape(value)}</speak>`;
 }
 
-function synthesisText(text) {
+function plainSynthesisText(text) {
+  return String(text).trim()
+    .replace(/^<speak\b[^>]*>/i, '')
+    .replace(/<\/speak>$/i, '')
+    .replace(/<break\b[^>]*\/?>/gi, '')
+    .replace(/<phoneme\b[^>]*>([^<>]*)<\/phoneme>/gi, '$1')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+    .trim();
+}
+
+function synthesisText(text, allowSSML = false) {
   const value = String(text).trim();
   const wrapped = /^<speak>(?:<break time="160ms"\s*\/>)?([\s\S]*)<\/speak>$/.exec(value);
   const plain = (wrapped ? wrapped[1] : value)
     .replace(/<phoneme alphabet="py" ph="[a-z0-9]+">([^<>]+)<\/phoneme>/g, '$1')
     .replace(/[「」“”。，、,\s]/g, '');
   if (plain === '請寫出還鄉的還' || plain === '请写出还乡的还') {
-    return '<speak>请写出，还乡的<phoneme alphabet="py" ph="huan2">还</phoneme>。</speak>';
+    return allowSSML
+      ? '<speak>请写出，还乡的<phoneme alphabet="py" ph="huan2">还</phoneme>。</speak>'
+      : '请写出，还乡的还。';
   }
-  return withLeadingPause(value);
+  return allowSSML ? withLeadingPause(value) : plainSynthesisText(value);
 }
 
 function number(value, fallback) {
@@ -146,14 +159,14 @@ async function serveCachedAudio(req, res) {
   return serveAudio(req, res, cached.audio, 'HIT', 'private, max-age=3600');
 }
 
-async function synthesize({text, voice, speed}) {
+async function synthesize({text, voice, speed, allowSSML}) {
   const secretId = configuredSecret('TENCENT_SECRET_ID');
   const secretKey = configuredSecret('TENCENT_SECRET_KEY');
   if (!secretId || !secretKey) throw Object.assign(new Error('TTS credentials not configured'), {statusCode: 500});
 
   const timestamp = Math.floor(Date.now() / 1000);
   const payload = JSON.stringify({
-    Text: synthesisText(text),
+    Text: synthesisText(text, allowSSML),
     SessionId: crypto.randomUUID(),
     VoiceType: voice,
     Speed: speed,
@@ -213,8 +226,10 @@ module.exports = async function handler(req, res) {
   if (text.length > 6000) return res.status(413).json({error: 'Text too long'});
   const voice = Math.trunc(number(req.body?.voice, Number(process.env.MAANSHAN_TTS_VOICE || DEFAULT_VOICE)));
   const speed = Math.max(-2, Math.min(6, number(req.body?.speed, Number(process.env.MAANSHAN_TTS_SPEED || DEFAULT_SPEED))));
-  const pronunciationVersion = String(req.body?.pronunciationVersion || process.env.MAANSHAN_PRONUNCIATION_VERSION || '20260919b');
-  const key = cacheKey({text: text.normalize('NFC').trim(), voice, speed, pronunciationVersion, profile: 'pcm-silence-180-80-v1'});
+  const pronunciationVersion = String(req.body?.pronunciationVersion || process.env.MAANSHAN_PRONUNCIATION_VERSION || '20260919b3');
+  const allowSSML = req.body?.allowSSML === true;
+  const profile = `pcm-silence-180-80-v1-${allowSSML ? 'ssml' : 'plain'}`;
+  const key = cacheKey({text: text.normalize('NFC').trim(), voice, speed, pronunciationVersion, profile});
   const wantsURL = req.body?.delivery === 'url' && !!audioSignature(key);
   const cached = wantsURL ? await hasAudio(key) : await readAudio(key);
   if (cached.status === 'hit') {
@@ -225,7 +240,7 @@ module.exports = async function handler(req, res) {
   let pending = inflight.get(key);
   if (!pending) {
     pending = (async () => {
-      const audio = await synthesize({text, voice, speed});
+      const audio = await synthesize({text, voice, speed, allowSSML});
       const stored = await writeAudio(key, audio);
       return {audio, stored};
     })().finally(() => inflight.delete(key));

@@ -179,7 +179,7 @@ async function synthesize(entry, kind) {
     const temporary = output + '.' + crypto.randomUUID() + '.pending';
     try {
       const started = Date.now();
-      const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: ssml, voice, speed, pronunciationVersion }), signal: AbortSignal.timeout(25000) });
+      const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: ssml, voice, speed, pronunciationVersion, allowSSML: true }), signal: AbortSignal.timeout(25000) });
       request.status = response.status;
       assert.ok(response.ok && response.headers.get('content-type')?.startsWith('audio/wav'), 'TTS rejected request: HTTP ' + response.status);
       const wav = Buffer.from(await response.arrayBuffer());
