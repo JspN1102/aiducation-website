@@ -1,4 +1,4 @@
-import {EXPLORATION_CONTENT} from './exploration-data.mjs?v=20260914d';
+import {EXPLORATION_CONTENT} from './exploration-data.mjs?v=20260919b';
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ICONS = {
@@ -100,7 +100,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
   let imageFailed = false, imagePending = true;
   let arBusy = false, arSession = null;
   container.innerHTML = `<section class="explore" aria-labelledby="explore-title">
-    <header class="explore-heading"><div><p class="explore-eyebrow">一首詩，兩個小發現</p><h2 id="explore-title">AR 體驗</h2></div>
+    <header class="explore-heading"><div><p class="explore-eyebrow">一首詩，兩個小發現</p><h2 id="explore-title">找一找</h2></div>
       <img class="explore-motif" src="media/poetry-motifs/${content.motif}.svg" alt="" width="56" height="56"></header>
     <div class="explore-layout"><div class="explore-visual">
       <div class="explore-stage" data-explore-stage>
@@ -115,7 +115,6 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
       </div>
       <div class="explore-view-controls"><button class="explore-ar-entry" type="button" data-explore="ar">${icon('ar')}<span>點擊體驗 AR</span></button></div>
       <div class="explore-model-tools" role="group" aria-label="轉動觀察" hidden>
-        <div class="explore-presets">${(content.presets || []).map(item => `<button type="button" data-explore="preset" data-preset="${item.id}" aria-pressed="false">${item.label}</button>`).join('')}</div>
         <div class="explore-zoom"><button type="button" data-explore="zoom-in" aria-label="放大" title="放大">${icon('plus')}</button><button type="button" data-explore="zoom-out" aria-label="縮小" title="縮小">${icon('minus')}</button><button type="button" data-explore="reset" aria-label="回到原來角度" title="回到原來角度">${icon('reset')}</button></div>
       </div>
       <p class="explore-notice" role="status" hidden></p>
@@ -176,18 +175,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     if (focus) card.querySelector('legend, h3')?.focus({preventScroll: true});
   }
 
-  function selectPreset(id) {
-    viewer?.preset(id);
-    q('.explore-presets').querySelectorAll('button').forEach(button => {
-      button.setAttribute('aria-pressed', String(button.dataset.preset === id));
-    });
-    const label = q('[data-explore-view-label]');
-    label.textContent = content.presets?.find(item => item.id === id)?.label || '近看細節';
-    label.hidden = mode !== 'model';
-  }
-
   function clearPreset() {
-    q('.explore-presets').querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', 'false'));
     q('[data-explore-view-label]').hidden = true;
   }
 
@@ -245,7 +233,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
       // Both imports and the model fetch start only after the explicit button.
       const {THREE, GLTFLoader, OrbitControls} = await import('./vendor/poetry-three.mjs?v=20260913a');
       if (!current()) return;
-      const response = await fetch(assetURL('model.glb'), {signal: controller.signal, credentials: 'same-origin'});
+      const response = await fetch(assetURL(content.modelFile || 'model.glb'), {signal: controller.signal, credentials: 'same-origin'});
       const buffer = await readModel(response, controller.signal);
       if (!current()) return;
       parsed = await new Promise((resolve, reject) => {
@@ -341,7 +329,6 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     } else if (action === 'zoom-in') {clearPreset(); viewer?.zoom(.8);}
     else if (action === 'zoom-out') {clearPreset(); viewer?.zoom(1.25);}
     else if (action === 'reset') {clearPreset(); viewer?.reset();}
-    else if (action === 'preset') selectPreset(button.dataset.preset);
     else if (action === 'word' && !completed) {
       const [char, pinyin] = content.observations[observation].word;
       if (typeof speakWord === 'function') {

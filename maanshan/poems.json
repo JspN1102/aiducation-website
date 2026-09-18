@@ -154,6 +154,7 @@
     {
       "id": 5,
       "slug": "gui-yuan-tian-ju",
+      "animation": {"src":"media/gui-yuan-tian-ju/animation-20260919b.mp4","poster":"media/gui-yuan-tian-ju/animation-poster-20260919b.webp","caption":"跟着陶淵明種豆、理草，伴着月光歸家"},
       "title": "歸園田居",
       "subtitle": "歸園田居（其三）",
       "author": "陶淵明",

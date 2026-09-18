@@ -4,7 +4,6 @@ export const EXPLORATION_CONTENT = Object.freeze({
     object: '白鵝', motif: 'goose', scene: '清波上的白鵝',
     initialView: [1, .28, .16],
     alt: '白鵝在清澈的水上游動，紅掌在水下撥出波紋。',
-    presets: [{id: 'side', label: '看側面'}, {id: 'detail', label: '看仔細'}],
     finish: '看顏色，也看動作，白鵝就從詩裏游出來了。',
     observations: [
       {title: '找一找，誰在撥水？', verse: '紅掌撥清波', word: ['掌', 'zhǎng'],
@@ -20,7 +19,6 @@ export const EXPLORATION_CONTENT = Object.freeze({
   'zeng-wang-lun': {
     object: '小舟', motif: 'boat', scene: '桃花潭上的送別',
     alt: '木舟停在桃花潭的岸邊，潭水與春日山色相映。',
-    presets: [{id: 'side', label: '看船身'}, {id: 'top', label: '看船內'}],
     finish: '小舟將要離岸，一首送別的歌，把朋友的深情留下來。',
     observations: [
       {title: '小舟要出發了', verse: '李白乘舟將欲行', word: ['舟', 'zhōu'],
@@ -38,11 +36,10 @@ export const EXPLORATION_CONTENT = Object.freeze({
     assetVersion: '20260914-restored',
     initialView: [1, .32, 0],
     alt: '雲霧間連綿的山嶺與高聳的山峯，呈現不同方向的山形。',
-    presets: [{id: 'side', label: '橫看'}, {id: 'front', label: '側看'}],
     finish: '同一座山，換個位置就有新發現。看事情也可以多找幾個角度。',
     observations: [
       {title: '換個方向，有何不同？', verse: '橫看成嶺側成峯', word: ['側', 'cè'],
-        guide: '輪流按「橫看」「側看」，比較山的輪廓。', inspect: 'front', clue: '換一邊看，試着用手指描出山的外形。',
+        guide: '用手指轉轉山，從不同方向比較山的輪廓。', inspect: 'front', clue: '換一邊看，試着用手指描出山的外形。',
         question: '詩人換了方向，看見甚麼變化？', choices: ['山的形狀看起來不同', '山真的移到別處了'], answer: 0,
         feedback: '橫看是連綿的山嶺，側看是突起的山峯。觀察方向改變，眼前的山形也不同。'},
       {title: '走出山中，再想一想', verse: '只緣身在此山中', word: ['緣', 'yuán'],
@@ -53,8 +50,9 @@ export const EXPLORATION_CONTENT = Object.freeze({
   },
   'bo-chuan-gua-zhou': {
     object: '江岸', motif: 'moon', scene: '春風又到江南岸',
+    assetVersion: '20260919b', modelFile: 'model-20260919b.glb',
+    initialView: [1, .9, .02], viewDistance: .68,
     alt: '春日江水隔開兩岸，岸邊新綠與遠山映在柔和的天光中。',
-    presets: [{id: 'top', label: '看兩岸'}, {id: 'near', label: '找新綠'}],
     finish: '一江春水，一岸新綠；眼前的風景，牽起了詩人的歸鄉心情。',
     observations: [
       {title: '兩地之間，隔着甚麼？', verse: '京口瓜洲一水間', word: ['洲', 'zhōu'],
@@ -73,11 +71,10 @@ export const EXPLORATION_CONTENT = Object.freeze({
     initialView: [0, 1.05, 1],
     viewDistance: .72,
     alt: '田地裏細長的野草密密生長，只有幾株寬葉豆苗疏疏落落地夾在其中。',
-    presets: [{id: 'near', label: '看豆葉'}, {id: 'top', label: '看疏密'}],
     finish: '豆苗雖稀，耕作雖累，詩人仍願意守着自己的田園心願。',
     observations: [
       {title: '分清豆苗和野草', verse: '草盛豆苗稀', word: ['稀', 'xī'],
-        guide: '找找寬寬的豆葉，再按「看疏密」比較野草和豆苗。', inspect: 'top', clue: '細長的是野草，寬葉的是豆苗。從上面看，哪一種長得更多？',
+        guide: '找找寬寬的豆葉，轉動田地，比較野草和豆苗的疏密。', inspect: 'top', clue: '細長的是野草，寬葉的是豆苗。從上面看，哪一種長得更多？',
         question: '詩中哪一種長得更茂盛？', choices: ['野草', '豆苗'], answer: 0,
         feedback: '「盛」是茂盛，「稀」是稀疏。野草長得盛，豆苗卻疏疏落落。'},
       {title: '月亮出來，才回家', verse: '帶月荷鋤歸', word: ['荷', 'hè'],
@@ -88,13 +85,13 @@ export const EXPLORATION_CONTENT = Object.freeze({
   },
   'zao-chun': {
     object: '春草', motif: 'swallow', scene: '早春的一點新綠',
-    assetVersion: '20260914-restored',
+    assetVersion: '20260919b', modelFile: 'model-20260919b.glb',
+    initialView: [1, 1.05, 1.2], viewDistance: .62,
     alt: '細雨滋潤的土地上，稀疏的嫩草帶着很淡的綠意。',
-    presets: [{id: 'far', label: '遠看'}, {id: 'near', label: '近看'}],
     finish: '剛冒出的春草很細很稀。遠近之間的一點不同，也能成為詩中的美。',
     observations: [
       {title: '遠看有綠，近看呢？', verse: '草色遙看近卻無', word: ['遙', 'yáo'],
-        guide: '輪流按「遠看」「近看」，找找細小的草芽。', inspect: 'near', clue: '近看時留意草芽之間露出的泥土。',
+        guide: '用雙指放大、縮小，找找綠色的草芽與棕色的泥土。', inspect: 'near', clue: '近看時留意草芽之間露出的泥土。',
         question: '遠看有淡綠，近看卻不明顯，為甚麼？', choices: ['草會突然消失', '新草細小，長得稀疏'], answer: 1,
         feedback: '新草剛冒出來，遠看連成淡淡的綠；走近看，細小的草芽還散在泥土間。'},
       {title: '留意早春的小雨', verse: '天街小雨潤如酥', word: ['潤', 'rùn'],

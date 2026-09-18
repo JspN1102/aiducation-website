@@ -1,0 +1,101 @@
+const assert = require('node:assert/strict');
+const {EventEmitter} = require('node:events');
+const https = require('node:https');
+
+const key = 'a'.repeat(64), storage = new Map();
+let synthesisCalls = 0;
+let lastSynthesisText, lastCacheText;
+const cachePath = require.resolve('../api/_lib/tts-cache');
+require.cache[cachePath] = {
+  exports: {
+    CACHE_VERSION: 'test',
+    cacheKey: ({text}) => { lastCacheText = text; return key; },
+    hasAudio: async value => storage.has(value) ? {status: 'hit'} : {status: 'miss'},
+    readAudio: async value => storage.has(value) ? {status: 'hit', audio: storage.get(value)} : {status: 'miss'},
+    writeAudio: async (value, audio) => { storage.set(value, audio); return true; }
+  }
+};
+
+const realRequest = https.request;
+https.request = (_, callback) => {
+  synthesisCalls++;
+  const request = new EventEmitter();
+  request.setTimeout = () => {};
+  request.end = payload => {
+    lastSynthesisText = JSON.parse(payload).Text;
+    const response = new EventEmitter();
+    callback(response);
+    process.nextTick(() => {
+      response.emit('data', Buffer.from(JSON.stringify({Response: {Audio: Buffer.alloc(3200, 1).toString('base64')}})));
+      response.emit('end');
+    });
+  };
+  return request;
+};
+process.env.TENCENT_SECRET_ID = 'test-id';
+process.env.TENCENT_SECRET_KEY = 'test-key';
+
+const handler = require('../api/tts');
+async function request(method, {query, body, headers} = {}) {
+  const response = {
+    headers: {}, statusCode: 200, body: null,
+    setHeader(name, value) { this.headers[name.toLowerCase()] = value; },
+    status(code) { this.statusCode = code; return this; },
+    json(value) { this.setHeader('Content-Type', 'application/json'); this.body = value; return this; },
+    end(value) { this.body = value; return this; }
+  };
+  await handler({method, query, body, headers}, response);
+  return response;
+}
+
+async function run() {
+  const body = {text: '朗讀', voice: 502001, speed: -0.75, delivery: 'url'};
+  const first = await request('POST', {body});
+  assert.equal(first.statusCode, 200);
+  assert.equal(first.headers['x-tts-cache'], 'MISS-STORED');
+  assert.match(first.body.url, /^\/api\/tts\/\?key=[0-9a-f]{64}&sig=[0-9a-f]{64}$/);
+  const url = new URL(first.body.url, 'http://localhost');
+  const query = Object.fromEntries(url.searchParams);
+  const full = await request('GET', {query});
+  assert.equal(full.statusCode, 200);
+  assert.equal(full.headers['content-type'], 'audio/wav');
+  assert.equal(full.headers['content-length'], full.body.length);
+  assert.equal(full.body.toString('ascii', 0, 4), 'RIFF');
+  const partial = await request('GET', {query, headers: {range: 'bytes=0-43'}});
+  assert.equal(partial.statusCode, 206);
+  assert.equal(partial.headers['content-range'], `bytes 0-43/${full.body.length}`);
+  assert.equal(partial.body.length, 44);
+  const head = await request('HEAD', {query});
+  assert.equal(head.statusCode, 200);
+  assert.equal(head.body, undefined);
+  assert.equal(head.headers['content-length'], full.body.length);
+  const invalid = await request('GET', {query: {...query, sig: '0'.repeat(64)}});
+  assert.equal(invalid.statusCode, 404);
+  const unsatisfiable = await request('GET', {query, headers: {range: `bytes=${full.body.length}-`}});
+  assert.equal(unsatisfiable.statusCode, 416);
+  const repeat = await request('POST', {body});
+  assert.equal(repeat.headers['x-tts-cache'], 'HIT');
+  assert.equal(repeat.body.url, first.body.url);
+  assert.equal(synthesisCalls, 1);
+  const legacy = await request('POST', {body: {...body, delivery: undefined}});
+  assert.equal(legacy.headers['content-type'], 'audio/wav');
+  assert.deepEqual(legacy.body, full.body);
+  storage.clear();
+  const traditional = '請寫出「還鄉」的「還」。';
+  await request('POST', {body: {...body, text: traditional}});
+  assert.equal(lastCacheText, traditional);
+  assert.equal(lastSynthesisText, '<speak>请写出，还乡的<phoneme alphabet="py" ph="huan2">还</phoneme>。</speak>');
+  storage.clear();
+  const marked = '<speak><break time="160ms"/>請寫出「<phoneme alphabet="py" ph="huan2">還</phoneme>鄉」的「<phoneme alphabet="py" ph="huan2">還</phoneme>」。</speak>';
+  await request('POST', {body: {...body, text: marked}});
+  assert.equal(lastCacheText, marked);
+  assert.equal(lastSynthesisText, '<speak>请写出，还乡的<phoneme alphabet="py" ph="huan2">还</phoneme>。</speak>');
+  storage.clear();
+  await request('POST', {body: {...body, text: '请写出「还乡」的「还」。'}});
+  assert.equal(lastSynthesisText, '<speak>请写出，还乡的<phoneme alphabet="py" ph="huan2">还</phoneme>。</speak>');
+  storage.clear();
+  await request('POST', {body: {...body, text: '還有'}});
+  assert.equal(lastSynthesisText, '<speak><break time="160ms"/>還有</speak>');
+  process.stdout.write('HTTP TTS delivery: PASS\n');
+}
+run().catch(error => { process.exitCode = 1; console.error(error); }).finally(() => { https.request = realRequest; });

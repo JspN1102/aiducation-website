@@ -11,7 +11,8 @@ const { pathToFileURL } = require('node:url');
 const root = path.resolve(__dirname, '..');
 const work = path.resolve(process.env.MAANSHAN_AUDIO_WORK || path.join(os.tmpdir(), 'maanshan-audio'));
 const endpoint = process.env.MAANSHAN_TTS_ENDPOINT || 'https://aiducation.asia/api/tts/';
-const voice = 101001, speed = -0.25;
+const voice = 502001, speed = -0.75, pronunciationVersion = 'edb-20260919b';
+const assetVersion = '20260919b';
 const directories = { words: path.join(root, 'media/words'), speech: path.join(root, 'media/speech') };
 const exportsByKind = { words: 'WORD_AUDIO_FILES', speech: 'SPEECH_AUDIO_FILES' };
 const reportPath = path.join(work, 'static-speech-generation.json');
@@ -30,7 +31,7 @@ for (const pair of ['馬马','藍蓝','雞鸡','熱热','樂乐','頭头','爭�
 }
 for (const poem of poems) for (const line of poem.lines) {
   assert.equal(Array.from(line.text).length, Array.from(line.simplified).length, 'Traditional/simplified alignment');
-  assert.equal(Array.from(line.text).length, line.pinyin.length, 'Poem pinyin alignment');
+  assert.equal(Array.from(line.text).filter(char => /\p{Script=Han}/u.test(char)).length, line.pinyin.length, 'Poem pinyin alignment');
   Array.from(line.text).forEach((char, index) => conversion.set(char, Array.from(line.simplified)[index]));
 }
 const simplified = text => Array.from(text).map(char => conversion.get(char) || char).join('');
@@ -47,7 +48,7 @@ function addWord(char, pinyin, source) {
   char = normalize(char); pinyin = normalize(pinyin).toLowerCase();
   assert.equal(Array.from(char).length, 1, 'Expected one focus character');
   const key = char + '|' + pinyin, ph = numberedPinyin(pinyin);
-  if (!wordEntries.has(key)) wordEntries.set(key, { char, pinyin, simplified: simplified(char), ph, file: char.codePointAt(0).toString(16) + '-' + ph + '.mp3', sources: [] });
+  if (!wordEntries.has(key)) wordEntries.set(key, { char, pinyin, simplified: simplified(char), ph, file: char.codePointAt(0).toString(16) + '-' + ph + '-f' + voice + '-' + assetVersion + '.mp3', sources: [] });
   wordEntries.get(key).sources.push(source);
 }
 const escapeXML = text => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
@@ -62,11 +63,17 @@ function addSpeech(text, pinyin, source) {
     assert.equal(speechEntries.get(text).ssml, ssml, 'Conflicting reading for ' + text);
     speechEntries.get(text).sources.push(source); return;
   }
-  speechEntries.set(text, { text, pinyin: readings.join(' '), ssml, file: hash(Buffer.from(text + '|' + readings.join(' '))).slice(0, 20) + '.mp3', sources: [source] });
+  speechEntries.set(text, { text, pinyin: readings.join(' '), ssml, file: hash(Buffer.from(text + '|' + readings.join(' '))).slice(0, 20) + '-f' + voice + '-' + assetVersion + '.mp3', sources: [source] });
 }
 for (const poem of poems) for (const [lineIndex, line] of poem.lines.entries()) {
-  Array.from(line.text).forEach((char, index) => addWord(char, line.pinyin[index], 'poem:' + poem.slug + ':' + lineIndex));
-  addSpeech(line.text, line.pinyin, 'poem:' + poem.slug + ':' + lineIndex);
+  let position = 0;
+  for (const clause of line.text.split('，')) {
+    const chars = Array.from(clause).filter(char => /\p{Script=Han}/u.test(char));
+    const readings = line.pinyin.slice(position, position + chars.length);
+    chars.forEach((char, index) => addWord(char, readings[index], 'poem:' + poem.slug + ':' + lineIndex));
+    addSpeech(clause, readings, 'poem:' + poem.slug + ':' + lineIndex);
+    position += chars.length;
+  }
 }
 const samples = [];
 for (const [key, group] of Object.entries(pronunciation.groups)) for (const sample of group.examples || []) samples.push({ ...sample, source: 'group:' + key });
@@ -108,8 +115,8 @@ function filePath(kind, file) {
   assert.match(file, /^[a-zA-Z0-9][a-zA-Z0-9._-]*\.mp3$/, 'Unsafe audio filename');
   return path.join(directories[kind], file);
 }
-function command(executable, args) {
-  const result = spawnSync(executable, args, { windowsHide: true, timeout: 20000, maxBuffer: 8 * 1024 * 1024 });
+function command(executable, args, options = {}) {
+  const result = spawnSync(executable, args, { windowsHide: true, timeout: 20000, maxBuffer: 8 * 1024 * 1024, ...options });
   if (result.error) throw new Error(executable + ': ' + result.error.message);
   if (result.status !== 0) throw new Error(executable + ' failed: ' + result.stderr.toString());
   return result.stdout;
@@ -172,10 +179,13 @@ async function synthesize(entry, kind) {
     const temporary = output + '.' + crypto.randomUUID() + '.pending';
     try {
       const started = Date.now();
-      const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: ssml, voice, speed }), signal: AbortSignal.timeout(25000) });
+      const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: ssml, voice, speed, pronunciationVersion }), signal: AbortSignal.timeout(25000) });
       request.status = response.status;
-      assert.ok(response.ok && response.headers.get('content-type')?.startsWith('audio/'), 'TTS rejected request: HTTP ' + response.status);
-      fs.writeFileSync(temporary, Buffer.from(await response.arrayBuffer()), { flag: 'wx' });
+      assert.ok(response.ok && response.headers.get('content-type')?.startsWith('audio/wav'), 'TTS rejected request: HTTP ' + response.status);
+      const wav = Buffer.from(await response.arrayBuffer());
+      assert.equal(wav.toString('ascii', 0, 4), 'RIFF', 'Expected WAV audio');
+      const mp3 = command('ffmpeg', ['-v', 'error', '-f', 'wav', '-i', 'pipe:0', '-af', 'atempo=0.85,adelay=180,apad=pad_dur=0.08', '-ar', '16000', '-ac', '1', '-c:a', 'libmp3lame', '-b:a', '48k', '-f', 'mp3', 'pipe:1'], { input: wav });
+      fs.writeFileSync(temporary, mp3, { flag: 'wx' });
       const info = audioInfo(temporary, kind);
       // COPYFILE_EXCL prevents replacing media even if another process created it.
       fs.copyFileSync(temporary, output, fs.constants.COPYFILE_EXCL);
@@ -200,9 +210,13 @@ function appendMappings(existing) {
   for (const [key, entry] of speechEntries) addMapping(files.speech, key, entry.file);
   for (const [key, entry] of speechEntries) addMapping(files.speech, simplified(key), entry.file);
   for (const poem of poems) for (const line of poem.lines) {
-    const file = speechEntries.get(line.text).file;
-    addMapping(files.speech, line.text + line.punctuation, file);
-    addMapping(files.speech, simplified(line.text) + line.punctuation, file);
+    const clauses = line.text.split('，');
+    clauses.forEach((clause, index) => {
+      const file = speechEntries.get(clause).file;
+      const punctuation = index < clauses.length - 1 ? '，' : line.punctuation;
+      addMapping(files.speech, clause + punctuation, file);
+      addMapping(files.speech, simplified(clause) + punctuation, file);
+    });
   }
   for (const kind of Object.keys(files)) for (const [key, file] of Object.entries(existing[kind])) assert.equal(files[kind][key], file, 'Existing mapping changed');
   return files;

@@ -17,8 +17,8 @@
 .rain-spot{padding:0;white-space:nowrap}
 .rain-spot.is-watered i{position:absolute;inset:-38px 8px 6px;background:repeating-linear-gradient(108deg,transparent 0 13px,#bce4e9 14px 16px,transparent 17px 28px);clip-path:polygon(0 0,100% 0,88% 100%,0 100%);pointer-events:none;animation:pvg-rain .7s ease-out both}
 @keyframes pvg-rain{0%{opacity:.9;transform:translateY(-14px)}100%{opacity:0;transform:translateY(15px)}}
-.challenge-freeplay .pvg-kicker{display:none}
-@media(max-width:500px) and (max-height:740px){.challenge-freeplay .poem-view-game{gap:8px}.challenge-freeplay .pvg-stage{max-height:145px}.challenge-freeplay .pvg-heading h3{font-size:20px;margin-top:0}.challenge-freeplay .pvg-camera-control input{height:44px}.challenge-freeplay .pvg-status{font-size:16px}.challenge-freeplay .pvg-photo-tray img{width:36px}.challenge-freeplay .pvg-photo-tray figure{padding:4px}.rain-spot{height:44px}.rain-cloud{width:64px;height:50px}}
+.challenge-type-microgame .pvg-kicker{display:none}
+@media(max-width:500px) and (max-height:740px){.challenge-type-microgame .poem-view-game{gap:8px}.challenge-type-microgame .pvg-stage{max-height:145px}.challenge-type-microgame .pvg-heading h3{font-size:20px;margin-top:0}.challenge-type-microgame .pvg-camera-control input{height:44px}.challenge-type-microgame .pvg-status{font-size:16px}.challenge-type-microgame .pvg-photo-tray img{width:36px}.challenge-type-microgame .pvg-photo-tray figure{padding:4px}.rain-spot{height:44px}.rain-cloud{width:64px;height:50px}}
 .poem-view-game[data-assets=loading] .pvg-stage::after,.poem-view-game[data-assets=error] .pvg-stage::after{content:'小畫卷正在展開…';position:absolute;inset:0;z-index:5;display:grid;place-content:center;padding:20px;background:#e9eee1;color:#55705c;font-size:19px;text-align:center}
 .poem-view-game[data-assets=error] .pvg-stage::after{content:'畫卷還沒打開，請在下方重試。'}
 @media(prefers-reduced-motion:reduce){.is-snapping .pvg-shutter,.rain-spot.is-watered i{animation:none}.rain-dry-veil,.mountain-end,.spring-near{transition:none}}
@@ -27,5 +27,5 @@
 .mountain-loading{position:absolute;inset:0;z-index:4;display:grid;place-content:center;margin:0;padding:24px;background:#ecf1e9e8;text-align:center;font-size:19px;color:#4a685c}
 .pvg-photo-image{display:grid;place-items:center;flex:none;width:68px;aspect-ratio:3/2;border-radius:5px;background:#e7ede1;overflow:hidden}.pvg-photo-image svg{width:24px;height:24px;color:#81947e}.pvg-photo-image img{display:block;width:100%;height:100%;object-fit:contain;background:linear-gradient(#e9f0ee,#f9f8ee)}
 @media(max-width:500px){.pvg-photo-image{width:48px}.mountain-game .pvg-camera-control{font-size:16px}.mountain-game .pvg-stage{min-height:175px}}
-@media(max-width:500px) and (max-height:740px){.challenge-freeplay .mountain-game .pvg-stage{min-height:170px}.challenge-freeplay .pvg-photo-image{width:36px}}
+@media(max-width:500px) and (max-height:740px){.challenge-type-microgame .mountain-game .pvg-stage{min-height:170px}.challenge-type-microgame .pvg-photo-image{width:36px}}
 @media(prefers-reduced-motion:reduce){.spring-far,.spring-near{transition:none!important;transform:none!important}}

@@ -91,3 +91,4 @@
  .workspace.view-explore #view .explore-verse>p{font-size:22px;letter-spacing:0}
  .workspace.view-explore #view .explore-observe-task h3{font-size:23px}
 }
+.workspace.view-explore #view .explore-model-tools{justify-content:center}.workspace.view-explore #view .explore-model-tools .explore-zoom{justify-self:center;margin-inline:auto}

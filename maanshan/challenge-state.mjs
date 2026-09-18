@@ -1,14 +1,23 @@
-import {CHALLENGE_VERSION} from './challenge-data.mjs?v=20260919a';
+import {CHALLENGE_VERSION} from './challenge-data.mjs?v=20260919b';
 
 const TOTAL = 5;
 const LEGACY_PLAN = ['sound', 'dictation', 'sound', 'dictation', 'other'];
 const group = item => ['sound', 'dictation'].includes(item.type) ? item.type : 'other';
 const bankOf = set => set.bank || set.items;
-export const challengePlan = (set, variant = 'hands', mode = 'standard') => set.grade >= 4 && mode === 'advanced'
+export const CHALLENGE_SCHEDULE = 'game-first-20260919';
+// Existing saved rounds keep their original order. Only new, untouched rounds
+// use the game-first route; never reinterpret old answers against a new plan.
+const previousPlan = (set, variant = 'hands', mode = 'standard') => set.grade >= 4 && mode === 'advanced'
   ? ['sound', 'dictation', 'sound', 'dictation', 'dictation'] : set.grade <= 3
   ? variant === 'hands' ? ['sound', 'sound', 'sound', 'sound', 'other'] : ['sound', 'sound', 'dictation', 'sound', 'sound']
   : set.grade === 4 ? variant === 'hands' ? ['sound', 'sound', 'dictation', 'sound', 'other'] : ['sound', 'dictation', 'sound', 'dictation', 'sound']
   : variant === 'hands' ? LEGACY_PLAN : ['sound', 'dictation', 'sound', 'dictation', 'dictation'];
+
+export const challengePlan = (set, _variant = 'hands', mode = 'standard') => set.grade <= 3
+  ? ['other', 'sound', 'sound', 'sound', 'sound']
+  : mode === 'advanced' ? ['other', 'dictation', 'sound', 'dictation', 'dictation']
+  : set.grade === 4 ? ['other', 'sound', 'dictation', 'sound', 'sound']
+  : ['other', 'sound', 'dictation', 'sound', 'dictation'];
 
 export function shuffled(values, random = Math.random) {
   const result = [...values];
@@ -75,12 +84,10 @@ function archivedResult(attempt) {
   return result;
 }
 
-export function newAttempt(set, {previous = null, seed = crypto.randomUUID(), mode = 'standard', variant: requestedVariant} = {}) {
+export function newAttempt(set, {previous = null, seed = crypto.randomUUID(), mode = 'standard'} = {}) {
   mode = mode === 'advanced' ? 'advanced' : 'standard';
   const legacyArchive = previous?.legacyArchive || (previous?.selection === 'legacy-v1' ? previous : previous?.sourceAttempt?.selection === 'legacy-v1' ? previous.sourceAttempt : null);
-  const lastRound = previous?.mode === 'review' ? previous.sourceAttempt : previous;
-  const completedRound = lastRound?.answers?.length === lastRound?.itemIds?.length && lastRound?.itemIds?.length > 0;
-  const variant = ['hands', 'writing'].includes(requestedVariant) ? requestedVariant : mode === 'advanced' ? 'writing' : completedRound && lastRound.variant === 'hands' ? 'writing' : 'hands';
+  const variant = mode === 'advanced' ? 'writing' : 'hands';
   const bank = bankOf(set), random = seededRandom(seed), history = {}, picked = {}, plan = challengePlan(set, variant, mode);
   for (const type of ['sound', 'dictation', 'other']) {
     const pool = bank.filter(item => group(item) === type && (type !== 'other' || item.type === 'microgame') && (type !== 'sound' || (item.difficulty || 1) === (mode === 'advanced' ? 2 : 1))), count = plan.filter(part => part === type).length;
@@ -96,11 +103,27 @@ export function newAttempt(set, {previous = null, seed = crypto.randomUUID(), mo
   const offsets = {sound: 0, dictation: 0, other: 0};
   const items = plan.map(type => picked[type][offsets[type]++]);
   return {version: CHALLENGE_VERSION, attemptId: crypto.randomUUID(), seed: String(seed), startedAt: Date.now(),
-    selection: 'grade-bank', schedule: 'games-20260918', mode, variant, cursor: 0, itemIds: items.map(item => item.id), history, answers: [], gameDrafts: {},
+    selection: 'grade-bank', schedule: CHALLENGE_SCHEDULE, mode, variant, cursor: 0, itemIds: items.map(item => item.id), history, answers: [], gameDrafts: {},
     freePlayDrafts: gameDrafts(previous?.freePlayDrafts, set),
     resultArchive: [...(previous?.resultArchive || []), archivedResult(previous?.mode === 'review' ? previous.sourceAttempt : previous)].filter(Boolean).slice(-24),
     ...(legacyArchive ? {legacyArchive: structuredClone(legacyArchive)} : {}),
     orders: Object.fromEntries(items.map(item => [item.id, shuffled((item.options || item.cards || []).map(option => option.id), random)]))};
+}
+
+// Opening practice has no choice screen. Preserve answered or review rounds
+// exactly; a never-answered old round can safely start with its poem's game.
+export function prepareAttempt(set, saved, options = {}) {
+  const previous = readAttempt(saved, set);
+  if (previous && (previous.answers.length || previous.mode === 'review' || previous.schedule === CHALLENGE_SCHEDULE)) return previous;
+  const attempt = newAttempt(set, {...options, previous, mode: previous?.mode || 'standard'});
+  if (previous) {
+    const game = attemptItems(attempt, set)[0];
+    const draft = safeGameState(previous.gameDrafts?.[game.id] || previous.freePlayDrafts?.[game.id]);
+    // A finished casual game is not an assessment answer. Start it afresh;
+    // retain the old casual record without automatically awarding a point.
+    if (draft && draft.gameCompleted !== true) attempt.gameDrafts[game.id] = draft;
+  }
+  return attempt;
 }
 
 // Review is deliberately shorter: never mix correct questions into a wrong-answer
@@ -150,8 +173,10 @@ export function readAttempt(saved, set) {
   if (legacy && itemIds.some((id, index) => id !== set.items[index]?.id)) return null;
   const variant = legacy ? 'hands' : saved.variant;
   if (!['hands', 'writing'].includes(variant)) return null;
-  const plan = legacy ? LEGACY_PLAN : challengePlan(set, variant, saved.schedule === 'games-20260918' ? mode : 'standard');
+  const gameFirst = saved.schedule === CHALLENGE_SCHEDULE;
+  const plan = legacy ? LEGACY_PLAN : gameFirst ? challengePlan(set, variant, mode) : previousPlan(set, variant, saved.schedule === 'games-20260918' ? mode : 'standard');
   if (items.length !== total || (mode !== 'review' && items.some((item, i) => group(item) !== plan[i]))) return null;
+  if (!legacy && gameFirst && mode !== 'review' && items[0].type !== 'microgame') return null;
   if (mode === 'advanced' && items.some(item => item.type === 'sound' && item.difficulty !== 2)) return null;
   const attempt = {...saved, version: CHALLENGE_VERSION, selection: legacy ? 'legacy-v1' : mode === 'review' ? 'wrong-review' : 'grade-bank', mode, variant, itemIds: [...itemIds], seed: saved.seed || `legacy:${saved.attemptId}`, answers: [], orders: {}, history: {}};
   attempt.gameDrafts = gameDrafts(saved.gameDrafts, set);
