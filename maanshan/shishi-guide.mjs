@@ -1,7 +1,7 @@
-const pictureURL = new URL('./media/shishi/guide-still-20260918c.webp', import.meta.url).href;
+const pictureURL = new URL('./media/shishi/guide-still-20260919a.webp', import.meta.url).href;
 const gestures = {
-  wave: {url:new URL('./media/shishi/guide-wave-20260918c.webp', import.meta.url).href, duration:2000},
-  book: {url:new URL('./media/shishi/guide-book-20260918c.webp', import.meta.url).href, duration:4000}
+  wave: {url:new URL('./media/shishi/guide-wave-20260919a.webp', import.meta.url).href, duration:2000},
+  book: {url:new URL('./media/shishi/guide-book-20260919a.webp', import.meta.url).href, duration:4000}
 };
 let instanceID = 0;
 
@@ -24,7 +24,7 @@ export function mountShishi(container, options = {}) {
     <p class="shishi-hint-text" role="status" aria-live="polite"></p><div class="shishi-poet-actions"><button type="button" class="shishi-find-poet">好呀，找詩人</button><button type="button" class="shishi-understood">先不去</button></div>
   </section><button type="button" class="shishi-guide-button" aria-label="點詩詩，找詩人" aria-controls="${id}" aria-expanded="false">
     <span class="shishi-poet-label">找詩人</span>
-    <span class="shishi-guide-art" aria-hidden="true"><img src="${pictureURL}" width="56" height="56" alt="" decoding="async"><span class="shishi-guide-fallback" hidden>詩</span></span>
+    <span class="shishi-guide-art" aria-hidden="true"><img src="${pictureURL}" width="256" height="376" alt="" decoding="async"><span class="shishi-guide-fallback" hidden>詩</span></span>
   </button>`;
   container.replaceChildren(guide);
   const q = selector => guide.querySelector(selector), button = q('.shishi-guide-button');
@@ -55,7 +55,7 @@ export function mountShishi(container, options = {}) {
       if (dead || token !== gestureID || guide.hidden || button.disabled || document.hidden || reducedMotion.matches) return;
       gestureURL = URL.createObjectURL(blob);
       const animated = new Image();
-      animated.alt = ''; animated.width = 192; animated.height = 165;
+      animated.alt = ''; animated.width = 256; animated.height = 376;
       animated.className = 'shishi-gesture'; animated.decoding = 'async';
       animated.src = gestureURL;
       gesturePicture = animated;

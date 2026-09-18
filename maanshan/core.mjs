@@ -28,22 +28,40 @@ export function mergeAssessments(results) {
 }
 
 export function migrateReadingState(state, poem) {
-  if (poem.readingVersion !== 'four-couplets-v1' || state.readingVersion === poem.readingVersion) return false;
-  if (Array.isArray(state.reading) && state.reading.length === 8) {
-    const previous = state.reading;
-    state.readingArchive = { version: 'eight-short-lines', reading: previous, report: state.report || '', reportVersion: state.reportVersion, reportStudentGrade: state.reportStudentGrade };
-    state.reading = poem.lines.map((_, index) => {
-      const pair = previous.slice(index * 2, index * 2 + 2);
-      if (!pair.every(result => result && Number.isFinite(result.total_score))) return null;
-      const merged = mergeAssessments(pair);
-      return { ...merged, words: merged.words.map(word => ({ ...word, lineIndex: index })) };
-    });
+  let changed = false;
+  if (poem.readingVersion === 'four-couplets-v1' && state.readingVersion !== poem.readingVersion) {
+    if (Array.isArray(state.reading) && state.reading.length === 8) {
+      const previous = state.reading;
+      state.readingArchive = { version: 'eight-short-lines', reading: previous, report: state.report || '', reportVersion: state.reportVersion, reportStudentGrade: state.reportStudentGrade };
+      state.reading = poem.lines.map((_, index) => {
+        const pair = previous.slice(index * 2, index * 2 + 2);
+        if (!pair.every(result => result && Number.isFinite(result.total_score))) return null;
+        const merged = mergeAssessments(pair);
+        return { ...merged, words: merged.words.map(word => ({ ...word, lineIndex: index })) };
+      });
+      state.report = '';
+      delete state.reportVersion;
+      delete state.reportStudentGrade;
+    }
+    state.readingVersion = poem.readingVersion;
+    changed = true;
+  }
+  if (poem.id === 5 && poem.pronunciationVersion === 'chang2-20260919' && state.pronunciationVersion !== poem.pronunciationVersion) {
+    for (const result of Array.isArray(state.reading) ? state.reading : []) {
+      for (const word of Array.isArray(result?.words) ? result.words : []) {
+        if (['長', '长'].includes(word.c)) word.p = 'cháng';
+      }
+    }
+    // Keep the historical report and all scores; regenerate advice against
+    // the corrected course pronunciation instead of showing stale guidance.
+    if (state.report) state.pronunciationReportArchive = {report:state.report,reportVersion:state.reportVersion,reportStudentGrade:state.reportStudentGrade};
     state.report = '';
     delete state.reportVersion;
     delete state.reportStudentGrade;
+    state.pronunciationVersion = poem.pronunciationVersion;
+    changed = true;
   }
-  state.readingVersion = poem.readingVersion;
-  return true;
+  return changed;
 }
 
 export function handwritingMatch(candidates, target, simplified) {

@@ -44,7 +44,7 @@ const LEGACY_SETS = {
     curriculum: {unit: 2, lesson: 4, focus: '複習聲母 g、k、h', sampled: ['g', 'k'], notSampled: ['h'], source: '概覽：三年級第一學段第二單元第四課；教材照片 3-4.1（第25頁）、3-4.2。'},
     items: [
       {id: 'g3-s1', type: 'sound', focus: 'g', prompt: '聽清楚開頭的聲音，應送到哪個聲母貨架？', audio: {char: '高', pinyin: 'gāo'}, options: options('h', 'k', 'g'), answerId: 'c', explanation: '「高」讀 gāo，聲母是 g。g 不送氣，k 送氣，讀 k 時氣流較強。'},
-      {id: 'g3-d1', type: 'dictation', prompt: '聽一聽，寫出指定的字。', audio: {text: '請寫出「山嶺」的「嶺」。', char: '嶺', pinyin: 'lǐng'}, target: {char: '嶺', pinyin: 'lǐng', accept: ['嶺', '岭']}, explanation: '山嶺的「嶺」，有山字旁。橫着看，山脈綿延，像一道長長的山嶺。'},
+      {id: 'g3-d1', type: 'dictation', prompt: '聽一聽，寫出指定的字。', audio: {text: '請寫出「山嶺」的「嶺」。', char: '嶺', pinyin: 'lǐng'}, target: {char: '嶺', pinyin: 'lǐng', accept: ['嶺', '岭']}, explanation: '山嶺的「嶺」，有山字旁。從正面看，山脈綿延，像一道長長的山嶺。'},
       {id: 'g3-s2', type: 'sound', focus: 'k', prompt: '再聽一個字，這次開頭的聲母是哪個？', audio: {char: '看', pinyin: 'kàn'}, options: options('k', 'g', 'h'), answerId: 'a', explanation: '這裏的「看」讀 kàn，聲母是 k。把手放在嘴前讀一讀，能感到較明顯的氣流。'},
       {id: 'g3-d2', type: 'dictation', prompt: '聽一聽，寫出指定的字。', audio: {text: '請寫出「側面」的「側」。', char: '側', pinyin: 'cè'}, target: {char: '側', pinyin: 'cè', accept: ['側', '侧']}, explanation: '側面的「側」，左邊是單人旁。「側看」就是換到側面去看。'},
       {id: 'g3-m1', type: 'match', prompt: '同一座山，兩個角度。轉轉模型，把照片放到對應的觀察位置。', modelSlug: 'ti-xi-lin-bi', cards: [{id: 'a', label: '照片甲', image: 'media/challenges/ti-xi-lin-bi-horizontal.webp'}, {id: 'b', label: '照片乙', image: 'media/challenges/ti-xi-lin-bi-side.webp'}], slots: [{id: 'one', label: '側看', accepts: 'b'}, {id: 'two', label: '橫看', accepts: 'a'}], explanation: '橫看是連綿的山嶺，側看是高聳的山峯。變的是觀察角度，不是山真的變了形。'}
@@ -182,9 +182,9 @@ const VARIED_SOUNDS = {
 
 export const POEM_GAME_ITEMS = Object.freeze(Object.fromEntries([
   ['yong-e', 1, '白鵝的調色盤', '替白鵝、紅掌和水面上色。', '白毛、紅掌、綠水。邊聽邊上色，把詩裏的畫面找出來。'],
-  ['zeng-wang-lun', 2, '踏歌送朋友', '跟着聲音，送朋友一程。', '李白乘舟，汪倫踏歌。岸上的歌聲把送別的友情送得很遠。'],
+  ['zeng-wang-lun', 2, '送別小劇場', '划小舟、踏歌聲，把友情送給李白。', '李白乘舟，汪倫在岸上踏歌送別。「不及」是比不上，潭水再深，也比不上朋友的情意。'],
   ['ti-xi-lin-bi', 3, '山中小攝影師', '換個角度，拍下山的樣子。', '橫看成嶺，側看成峯。同一座山，從不同位置看，樣子也不同。'],
-  ['bo-chuan-gua-zhou', 4, '春風染江南', '用指尖的春風，染綠江岸。', '春風又綠江南岸。「綠」寫出春風吹來，草木重新變綠。'],
+  ['bo-chuan-gua-zhou', 4, '春風與月光', '聽詩停泊、喚醒江岸，把月光送到小舟。', '王安石泊船瓜洲，春風使江岸草木變綠；月光下，他盼望回到鍾山的家。'],
   ['gui-yuan-tian-ju', 5, '豆苗小園丁', '照顧小豆苗，整理詩中的田地。', '草盛豆苗稀。野草茂盛，豆苗稀疏；詩人一早起來整理田地。'],
   ['zao-chun', 6, '把春天找出來', '讓春雨落下，再找一找草色。', '草色遙看近卻無。遠看有一片淡綠，近看仍是稀疏小草和泥土。']
 ].map(([slug, grade, title, prompt, explanation]) => [slug, Object.freeze({

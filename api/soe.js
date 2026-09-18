@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const WebSocket = require('ws');
+const { assessmentReference } = require('./_lib/soe-reference');
 
 function sign(signStr, secretKey) {
   return crypto.createHmac('sha1', secretKey).update(signStr).digest('base64');
@@ -52,12 +53,11 @@ module.exports = async function handler(req, res) {
     expired: now + 86400,
     nonce: String(now),
     rec_mode: 1,
-    ref_text: refText,
+    ...assessmentReference(refText),
     score_coeff: 1.5,
     secretid: secretId,
     sentence_info_enabled: 0,
     server_engine_type: '16k_zh',
-    text_mode: 0,
     timestamp: String(now),
     voice_format: 1,
     voice_id: voiceId

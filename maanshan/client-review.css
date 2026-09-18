@@ -27,12 +27,13 @@
 .workspace.view-quiz .lesson-title h1{font-size:clamp(23px,3vw,32px);line-height:1.3;white-space:normal}
 .workspace .report-next-activities{grid-template-columns:repeat(2,minmax(0,1fr));justify-content:center}
 .workspace .report-next-activities a{min-width:0;text-align:center;white-space:normal}
-.workspace .shishi-touch-slot{width:60px;height:66px;flex-basis:60px}
-.workspace .lesson-bar:has(.shishi-touch-slot){grid-template-columns:auto minmax(0,1fr) 60px auto;min-height:84px}
-.shishi-touch-slot .shishi-guide{width:60px;height:66px}
-.shishi-touch-slot .shishi-guide-button{width:60px;height:66px;justify-content:flex-start;gap:4px;border-radius:12px;position:relative}
+.workspace .shishi-touch-slot{--shishi-width:80px;--shishi-height:112px;width:var(--shishi-width);height:calc(var(--shishi-height) + 22px);flex-basis:var(--shishi-width)}
+.workspace .lesson-bar:has(.shishi-touch-slot){grid-template-columns:auto minmax(0,1fr) var(--shishi-width,80px) auto;min-height:144px;padding-block:5px}
+.shishi-touch-slot .shishi-guide{width:100%;height:100%}
+.shishi-touch-slot .shishi-guide-button{width:100%;height:100%;justify-content:flex-start;gap:2px;border-radius:12px;position:relative}
 .shishi-touch-slot .shishi-poet-label{display:block;flex:none;font:600 15px/20px var(--sans);white-space:nowrap;color:#476b58;background:transparent;pointer-events:none}
-.shishi-touch-slot .shishi-guide-art{width:42px;height:42px;transform-origin:50% 80%;animation:none!important;overflow:hidden}
+.shishi-touch-slot .shishi-guide-art{width:var(--shishi-width);height:var(--shishi-height);transform-origin:50% 80%;animation:none!important;overflow:visible}
+.shishi-touch-slot .shishi-guide-art>img{object-fit:contain;object-position:center bottom}
 .shishi-poet-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:15px}
 .shishi-find-poet,.shishi-poet-actions .shishi-understood{min-height:48px;margin:0;padding:10px 16px;border:1px solid #cbd9c0;border-radius:13px;font:600 18px/1.5 var(--sans);cursor:pointer}
 .shishi-find-poet{flex:1;color:white;background:#356d56;border-color:#356d56}
@@ -41,6 +42,8 @@
 .animation-pending img{width:88px;height:88px}.animation-pending h2{font-size:28px}.animation-pending p{font-size:21px;line-height:1.6}
 @media(max-width:420px){
  .workspace .lesson-bar{gap:8px}
+ .workspace .shishi-touch-slot{--shishi-width:72px;--shishi-height:102px}
+ .workspace .lesson-bar:has(.shishi-touch-slot){grid-template-columns:auto minmax(0,1fr) 72px auto;min-height:134px}
  .workspace .lesson-map-step{min-height:150px}
  .workspace .lesson-map-step h3{font-size:20px}
  .workspace .lesson-map-status{font-size:16px}
@@ -61,7 +64,12 @@
  .workspace .lesson-map-lower .lesson-map-steps{gap:9px}
 }
 @media(max-height:550px) and (orientation:landscape){
- .workspace .lesson-bar:has(.shishi-touch-slot){min-height:70px;padding-block:2px}
+ .workspace .shishi-touch-slot{--shishi-width:94px;--shishi-height:76px}
+ .workspace .lesson-bar:has(.shishi-touch-slot){grid-template-columns:auto minmax(0,1fr) 94px auto;min-height:82px;padding-block:2px}
+ .workspace .shishi-touch-slot{height:76px}
+ .shishi-touch-slot .shishi-guide-button{flex-direction:row;justify-content:center;gap:0}
+ .shishi-touch-slot .shishi-guide-art{width:52px;order:0}
+ .shishi-touch-slot .shishi-poet-label{order:1;font-size:13px;line-height:18px}
  .workspace .lesson-map-step{min-height:135px}
  .workspace .lesson-map-step h3{font-size:21px}
 }

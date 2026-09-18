@@ -113,7 +113,7 @@
     "1:曲":{"tip":"「曲項」表示彎着脖子，所以讀 qū；「歌曲」才讀 qǔ。","contrasts":[{"text":"彎曲","pinyin":"wān qū","focusChar":"曲","label":"qū 彎曲"},{"text":"歌曲","pinyin":"gē qǔ","focusChar":"曲","label":"qǔ 歌曲"}]},
     "2:將":{"tip":"「將欲行」表示將要離開，「將」讀 jiāng；「將領」的「將」讀 jiàng。","contrasts":[{"text":"將來","pinyin":"jiāng lái","focusChar":"將","label":"jiāng"},{"text":"將領","pinyin":"jiàng lǐng","focusChar":"將","label":"jiàng"}]},
     "2:行":{"tip":"這裡是將要出發、行走的意思，讀 xíng；「銀行」的「行」才讀 háng。","contrasts":[{"text":"行走","pinyin":"xíng zǒu","focusChar":"行","label":"xíng"},{"text":"銀行","pinyin":"yín háng","focusChar":"行","label":"háng"}]},
-    "3:橫":{"tip":"「橫看」是從正面橫着看，讀 héng；「蠻橫」的「橫」讀 hèng。","contrasts":[{"text":"橫向","pinyin":"héng xiàng","focusChar":"橫","label":"héng"},{"text":"蠻橫","pinyin":"mán hèng","focusChar":"橫","label":"hèng"}]},
+    "3:橫":{"tip":"詩中「橫看」是從正面看，「橫」讀 héng；「蠻橫」的「橫」才讀 hèng。","contrasts":[{"text":"橫向","pinyin":"héng xiàng","focusChar":"橫","label":"héng"},{"text":"蠻橫","pinyin":"mán hèng","focusChar":"橫","label":"hèng"}]},
     "3:看":{"tip":"詩中是觀看，讀 kàn；「看守」表示守護，讀 kān。","contrasts":[{"text":"觀看","pinyin":"guān kàn","focusChar":"看","label":"kàn"},{"text":"看守","pinyin":"kān shǒu","focusChar":"看","label":"kān"}]},
     "4:一":{"tip":"本課單字標調是 yī；在「一水」連讀時通常變成 yì，這是正常變調，不應只按單字聲調判錯。","contrasts":[{"text":"第一","pinyin":"dì yī","focusChar":"一","label":"單字一聲"},{"text":"一年","pinyin":"yì nián","focusChar":"一","label":"連讀變調"}]},
     "4:間":{"tip":"按照本課標音，「一水間」的「間」讀 jiān；練習時連同原句一起讀，與「間隔」的 jiàn 作對比。","contrasts":[{"text":"中間","pinyin":"zhōng jiān","focusChar":"間","label":"jiān"},{"text":"間隔","pinyin":"jiàn gé","focusChar":"間","label":"jiàn"}]},
@@ -124,12 +124,12 @@
     "5:盛":{"tip":"「草盛」是野草茂盛，讀 shèng；「盛飯」的「盛」表示裝入，讀 chéng。","contrasts":[{"text":"茂盛","pinyin":"mào shèng","focusChar":"盛","label":"shèng"},{"text":"盛飯","pinyin":"chéng fàn","focusChar":"盛","label":"chéng"}]},
     "5:興":{"tip":"「晨興」表示早晨起身，讀 xīng；「高興」的「興」讀 xìng。","contrasts":[{"text":"興起","pinyin":"xīng qǐ","focusChar":"興","label":"xīng"},{"text":"高興","pinyin":"gāo xìng","focusChar":"興","label":"xìng"}]},
     "5:荷":{"tip":"「荷鋤」是扛着鋤頭，讀 hè；「荷花」的「荷」才讀 hé。","contrasts":[{"text":"荷鋤","pinyin":"hè chú","focusChar":"荷","label":"hè 扛着"},{"text":"荷花","pinyin":"hé huā","focusChar":"荷","label":"hé 花名"}]},
-    "5:長":{"tip":"「草木長」是草木生長，讀 zhǎng；表示長短時才讀 cháng。","contrasts":[{"text":"生長","pinyin":"shēng zhǎng","focusChar":"長","label":"zhǎng"},{"text":"長短","pinyin":"cháng duǎn","focusChar":"長","label":"cháng"}]},
+    "5:長":{"tip":"本詩「道狹草木長」的「長」讀 cháng，第二聲，聲音由低向高上揚。留意它與「生長」的 zhǎng 不同。","contrasts":[{"text":"長短","pinyin":"cháng duǎn","focusChar":"長","label":"cháng"},{"text":"生長","pinyin":"shēng zhǎng","focusChar":"長","label":"zhǎng"}]},
     "5:露":{"tip":"「夕露」指晚上的露水，讀 lù；口語「露面」的「露」讀 lòu。","contrasts":[{"text":"露水","pinyin":"lù shuǐ","focusChar":"露","label":"lù"},{"text":"露面","pinyin":"lòu miàn","focusChar":"露","label":"lòu"}]},
     "6:看":{"tip":"「遙看」是從遠處觀看，讀 kàn；「看守」才讀 kān。","contrasts":[{"text":"觀看","pinyin":"guān kàn","focusChar":"看","label":"kàn"},{"text":"看守","pinyin":"kān shǒu","focusChar":"看","label":"kān"}]},
     "6:一":{"tip":"本課單字標調是 yī；在「一年」連讀時通常讀 yì nián，這是正常變調。","contrasts":[{"text":"第一","pinyin":"dì yī","focusChar":"一","label":"單字一聲"},{"text":"一年","pinyin":"yì nián","focusChar":"一","label":"連讀變調"}]},
     "6:好":{"tip":"「春好處」的「好」表示美好，讀 hǎo；「愛好」的「好」讀 hào。","contrasts":[{"text":"美好","pinyin":"měi hǎo","focusChar":"好","label":"hǎo"},{"text":"愛好","pinyin":"ài hào","focusChar":"好","label":"hào"}]},
-    "6:處":{"tip":"詩中「處」指地方或時節的好處所在，讀 chù；「處理」的「處」才讀 chǔ。","contrasts":[{"text":"處所","pinyin":"chù suǒ","focusChar":"處","label":"chù"},{"text":"處理","pinyin":"chǔ lǐ","focusChar":"處","label":"chǔ"}]},
+    "6:處":{"tip":"詩中「春好處」是春天最好的時節，「處」讀 chù；「處理」的「處」才讀 chǔ。","contrasts":[{"text":"處所","pinyin":"chù suǒ","focusChar":"處","label":"chù"},{"text":"處理","pinyin":"chǔ lǐ","focusChar":"處","label":"chǔ"}]},
     "6:都":{"tip":"「皇都」是京城，讀 dū；表示全部的「都」才讀 dōu。","contrasts":[{"text":"首都","pinyin":"shǒu dū","focusChar":"都","label":"dū"},{"text":"都好","pinyin":"dōu hǎo","focusChar":"都","label":"dōu"}]}
   }
 }

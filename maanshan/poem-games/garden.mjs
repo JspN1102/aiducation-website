@@ -23,7 +23,7 @@ export function mountGarden(holder, {initialState, readOnly=false, playAudio, on
   const timers=new Set(),root=doc.createElement('section');root.className='poem-garden';root.setAttribute('aria-label','豆苗小幫手');
   root.innerHTML=`<div class="gr-instruction"><p>拔掉細長野草，留下寬葉豆苗。</p><span class="gr-count" aria-live="off"></span></div>
     <div class="garden-picture gr-picture" aria-label="三株豆苗和八叢野草的田地" aria-busy="true">
-      <img class="gr-background" src="${file('poem-games/garden/garden-bed.webp')}" alt="月亮升起，遠山前有一小片田地。" width="1152" height="768" draggable="false">
+      <img class="gr-background" src="${file('poem-games/garden/garden-bed-20260919a.webp')}" alt="月亮升起，遠山前有一小片田地。" width="1152" height="768" draggable="false">
       <div class="garden-moonlight" aria-hidden="true"></div>
       ${plants.map(p=>`<button type="button" class="garden-plant is-${p.kind}" data-plant="${p.id}" style="--x:${p.x}%;--y:${p.y}%;--size:${p.size}%;--turn:${p.turn}deg;--depth:${Math.round(p.y)}" aria-label="${p.kind==='bean'?'寬葉豆苗，請保留':'細長野草，點一下拔起'}" disabled><img src="${file(`living-scenes/${p.kind==='bean'?'bean':'grass'}-v1.webp`)}" alt="" draggable="false"><span class="garden-root" aria-hidden="true"></span></button>`).join('')}
       <div class="garden-end" hidden><span>帶月荷鋤歸</span><small>伴着月光，扛起鋤頭。</small></div>

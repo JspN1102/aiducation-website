@@ -1,4 +1,4 @@
-import {CHALLENGE_VERSION} from './challenge-data.mjs?v=20260918c';
+import {CHALLENGE_VERSION} from './challenge-data.mjs?v=20260919a';
 
 const TOTAL = 5;
 const LEGACY_PLAN = ['sound', 'dictation', 'sound', 'dictation', 'other'];
@@ -78,7 +78,9 @@ function archivedResult(attempt) {
 export function newAttempt(set, {previous = null, seed = crypto.randomUUID(), mode = 'standard', variant: requestedVariant} = {}) {
   mode = mode === 'advanced' ? 'advanced' : 'standard';
   const legacyArchive = previous?.legacyArchive || (previous?.selection === 'legacy-v1' ? previous : previous?.sourceAttempt?.selection === 'legacy-v1' ? previous.sourceAttempt : null);
-  const variant = ['hands', 'writing'].includes(requestedVariant) ? requestedVariant : mode === 'advanced' ? 'writing' : 'hands';
+  const lastRound = previous?.mode === 'review' ? previous.sourceAttempt : previous;
+  const completedRound = lastRound?.answers?.length === lastRound?.itemIds?.length && lastRound?.itemIds?.length > 0;
+  const variant = ['hands', 'writing'].includes(requestedVariant) ? requestedVariant : mode === 'advanced' ? 'writing' : completedRound && lastRound.variant === 'hands' ? 'writing' : 'hands';
   const bank = bankOf(set), random = seededRandom(seed), history = {}, picked = {}, plan = challengePlan(set, variant, mode);
   for (const type of ['sound', 'dictation', 'other']) {
     const pool = bank.filter(item => group(item) === type && (type !== 'other' || item.type === 'microgame') && (type !== 'sound' || (item.difficulty || 1) === (mode === 'advanced' ? 2 : 1))), count = plan.filter(part => part === type).length;

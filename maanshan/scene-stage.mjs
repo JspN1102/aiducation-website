@@ -6,6 +6,13 @@ export function getScenePreview(poemSlug, scene = 1) {
   return scene === 0 ? '' : PREVIEWS[poemSlug]?.[scene] || '';
 }
 
+// Warm only the verse being practised; the paper stays blank until show().
+export function preloadScene(poemSlug, scene) {
+  checkScene(scene);
+  if (!scene || !getScenePreview(poemSlug, scene)) return Promise.resolve();
+  return decodeSource(new URL('./media/' + poemSlug + '/scene-' + scene + '.webp', import.meta.url).href).then(() => true, () => false);
+}
+
 function checkScene(scene) {
   if (!Number.isInteger(scene) || scene < 0 || scene > 4) throw new RangeError('Scene must be an integer from 0 to 4.');
   return scene;
@@ -19,20 +26,25 @@ function decodeSource(url, reload = false) {
   image.fetchPriority = 'high';
   const target = new URL(url);
   if (reload) target.searchParams.set('scene-retry', String(Date.now()));
+  let timer;
   const loaded = new Promise((resolve, reject) => {
     image.onload = resolve;
     image.onerror = () => reject(new Error('Scene image could not be loaded.'));
+    timer = setTimeout(() => reject(new Error('Scene image loading timed out.')), 12000);
   });
   image.src = target.href;
   const decoded = loaded.then(async () => {
-    if (typeof image.decode === 'function') await image.decode();
+    // WebKit can leave decode() on a detached/cached image pending. The load
+    // event and intrinsic dimensions are enough to safely present this image.
     if (!image.naturalWidth || !image.naturalHeight) throw new Error('Scene image has no decoded pixels.');
     image.onload = null;
     image.onerror = null;
+    clearTimeout(timer);
     return image;
   }).catch(error => {
     image.onload = null;
     image.onerror = null;
+    clearTimeout(timer);
     if (decodedSources.get(url) === decoded) decodedSources.delete(url);
     throw error;
   });
@@ -220,6 +232,17 @@ export function mountStage(container, options) {
       publish('ready');
       return Promise.resolve({ status: 'unchanged', scene });
     }
+    // The first completed verse can reveal its embedded preview immediately,
+    // even when the full painting is slow. Never leave completed work blank.
+    if (currentLayer.dataset.quality === 'blank') {
+      const preview = new Image(192, 108);
+      preview.src = getScenePreview(poemSlug, scene);
+      const layer = layerFor(preview, scene, 'preview');
+      viewport.append(layer); layers.push(layer);
+      currentLayer = layer; currentScene = scene;
+      viewport.setAttribute('aria-label', description);
+      void fadeIn(layer, lastRequest.animate);
+    }
     publish('loading');
     const url = new URL('./media/' + poemSlug + '/scene-' + scene + '.webp', import.meta.url).href;
     const request = (async () => {
@@ -228,7 +251,6 @@ export function mountStage(container, options) {
         if (disposed) return { status: 'destroyed', scene };
         if (generation !== requestGeneration) return { status: 'superseded', scene };
         const decodedImage = source.cloneNode(false);
-        if (typeof decodedImage.decode === 'function') await decodedImage.decode();
         if (disposed) return { status: 'destroyed', scene };
         if (generation !== requestGeneration) return { status: 'superseded', scene };
         const layer = layerFor(decodedImage, scene, 'full');

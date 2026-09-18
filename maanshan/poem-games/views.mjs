@@ -30,33 +30,64 @@ export function mountMountain(holder,options={}){
  const initial=options.initialState||{};
  let photos=Array.isArray(initial.photos)?[...new Set(initial.photos.filter(n=>n==='ridge'||n==='peak'))]:[];
  let angle=clamp(initial.angle??0),done=initial.completed===true&&photos.length===2,readonly=!!options.readOnly,notified=done,solved=false;
- const f=foundation(holder,options,`<section class="poem-view-game mountain-game"><header class="pvg-heading"><span class="pvg-kicker">山中小攝影師</span><h3 data-vg-title></h3></header><div class="pvg-stage mountain-stage" data-vg-stage><img src="${art('mountain-ridge.webp')}" class="pvg-layer" alt="從橫向看，青綠的山脈連綿成嶺" draggable="false"><img src="${art('mountain-peak.webp')}" class="pvg-layer mountain-end" alt="從側面看，同一座山呈現高聳的山峰" draggable="false"><div class="pvg-viewfinder" aria-hidden="true"><i></i><i></i><i></i><i></i></div><span class="pvg-location" data-vg-location></span><div class="pvg-shutter" aria-hidden="true"></div></div><div class="pvg-camera-control"><span>橫看</span><input type="range" min="0" max="100" value="${angle}" aria-label="移動觀察角度，左邊橫看，右邊側看" data-vg-angle><span>側看</span></div><div class="pvg-actions"><button type="button" class="pvg-audio" data-vg-listen>${speaker}<span>聽詩句</span></button><button type="button" class="pvg-main" data-vg-capture>${camera}<span>拍下來</span></button></div><div class="pvg-photo-tray" aria-label="收集的山景"><figure data-vg-photo="ridge"><img src="${art('mountain-ridge.webp')}" alt="橫看照片"><figcaption>橫看成嶺</figcaption></figure><figure data-vg-photo="peak"><img src="${art('mountain-peak.webp')}" alt="側看照片"><figcaption>側看成峯</figcaption></figure></div><p class="pvg-status" data-vg-status role="status"></p><button type="button" class="pvg-retry" data-vg-retry hidden>重新載入畫面</button></section>`);
- const snapshot=()=>({angle,photos:[...photos],completed:done});
+ let model=null,modelReady=false,loadGeneration=0,pending=null,dead=false;
+ const photoAngles={ridge:clamp(initial.photoAngles?.ridge??0),peak:clamp(initial.photoAngles?.peak??100)};
+ const f=foundation(holder,options,`<section class="poem-view-game mountain-game" data-model="loading"><header class="pvg-heading"><span class="pvg-kicker">山中小攝影師</span><h3 data-vg-title></h3></header><div class="pvg-stage mountain-stage" data-vg-stage><div class="mountain-model" data-mountain-model></div><div class="pvg-viewfinder" aria-hidden="true"><i></i><i></i><i></i><i></i></div><span class="pvg-location" data-vg-location></span><div class="pvg-shutter" aria-hidden="true"></div><p class="mountain-loading" data-mountain-loading role="status">正在走進山中…</p></div><div class="pvg-camera-control"><span>正面看</span><input type="range" min="0" max="100" value="${angle}" aria-label="移動觀察角度，左邊從正面看，右邊從側面看" data-vg-angle><span>側面看</span></div><div class="pvg-actions"><button type="button" class="pvg-audio" data-vg-listen>${speaker}<span>聽詩句</span></button><button type="button" class="pvg-main" data-vg-capture>${camera}<span>拍下來</span></button></div><div class="pvg-photo-tray" aria-label="收集的山景"><figure data-vg-photo="ridge"><span class="pvg-photo-image" data-photo-image="ridge">${camera}</span><figcaption>橫看成嶺</figcaption></figure><figure data-vg-photo="peak"><span class="pvg-photo-image" data-photo-image="peak">${camera}</span><figcaption>側看成峯</figcaption></figure></div><p class="pvg-status" data-vg-status role="status"></p><button type="button" class="pvg-retry" data-vg-retry hidden>重新載入山景</button></section>`);
+ const snapshot=()=>({angle,photos:[...photos],photoAngles:{...photoAngles},completed:done});
+ function photo(target){if(!modelReady)return;const img=document.createElement('img');img.alt=target==='ridge'?'剛拍下的正面山嶺':'剛拍下的側面山峰';img.src=model.capture(photoAngles[target]);f.q(`[data-photo-image="${target}"]`).replaceChildren(img);}
  const update=()=>{
-  f.q('.mountain-end').style.opacity=angle>=50?'1':'0';
-  f.q('.mountain-stage').style.setProperty('--view-angle',String(angle));
+  model?.setAngle(angle);
   f.q('[data-vg-angle]').value=angle;
-  f.q('[data-vg-location]').textContent=angle<25?'橫看 · 連綿的山嶺':angle>75?'側看 · 高高的山峰':'移動中 · 同一座山';
+  f.q('[data-vg-location]').textContent=angle<25?'正面看 · 連綿的山嶺':angle>75?'側看 · 高高的山峰':'移動中 · 同一座山';
   f.q('[data-vg-title]').textContent=done||solved?'同一座山，兩種模樣':!photos.includes('ridge')?'移一移，拍下長長的山嶺':'換個方向，拍下高高的山峰';
   f.root.querySelectorAll('[data-vg-photo]').forEach(el=>el.classList.toggle('is-collected',photos.includes(el.dataset.vgPhoto)||solved));
-  f.q('[data-vg-capture]').disabled=readonly||done||solved||!f.ready;
-  f.q('[data-vg-angle]').disabled=readonly;
+  f.q('[data-vg-capture]').disabled=readonly||done||solved||!modelReady;
+  f.q('[data-vg-angle]').disabled=readonly||!modelReady;
  };
+ async function load(){
+  pending?.abort();model?.destroy();model=null;modelReady=false;const version=++loadGeneration,request=new AbortController();pending=request;
+  f.root.dataset.model='loading';f.q('[data-mountain-loading]').hidden=false;f.q('[data-mountain-loading]').textContent='正在走進山中…';f.q('[data-vg-stage]').setAttribute('aria-busy','true');f.q('[data-vg-retry]').hidden=true;update();
+  const timeout=setTimeout(()=>request.abort(),30000);let stopWaiting;
+  const aborted=new Promise((_,reject)=>{stopWaiting=()=>reject(new DOMException('Aborted','AbortError'));request.signal.addEventListener('abort',stopWaiting,{once:true});});
+  try{
+   const loading=(async()=>{
+    const {createMountainViewer}=await import('./mountain-viewer.mjs?v=20260919a');
+    if(dead||version!==loadGeneration||request.signal.aborted)throw new DOMException('Aborted','AbortError');
+    const viewer=await createMountainViewer(f.q('[data-mountain-model]'),{signal:request.signal,angle,onContextLost:()=>{if(dead)return;model?.destroy();model=null;modelReady=false;f.root.dataset.model='error';f.q('[data-mountain-loading]').hidden=false;f.q('[data-mountain-loading]').textContent='山景暫時停住了，重新打開就能繼續。';f.q('[data-vg-retry]').hidden=false;update();}});
+    if(dead||version!==loadGeneration||request.signal.aborted){viewer.destroy();throw new DOMException('Aborted','AbortError');}
+    return viewer;
+   })();
+   const viewer=await Promise.race([loading,aborted]);
+   if(dead||version!==loadGeneration||request.signal.aborted){viewer.destroy();return;}
+   model=viewer;modelReady=true;f.root.dataset.model='ready';f.q('[data-mountain-loading]').hidden=true;f.q('[data-vg-stage]').setAttribute('aria-busy','false');photos.forEach(photo);if(solved)['ridge','peak'].forEach(photo);update();
+  }catch{
+   request.abort();
+   if(dead||version!==loadGeneration)return;
+   f.root.dataset.model='error';f.q('[data-mountain-loading]').textContent='山景暫時未能打開，請再試一次。';f.q('[data-vg-stage]').setAttribute('aria-busy','false');f.q('[data-vg-retry]').hidden=false;update();
+  }finally{clearTimeout(timeout);request.signal.removeEventListener('abort',stopWaiting);if(pending===request)pending=null;}
+ }
  const capture=()=>{
-  if(readonly||done||solved||!f.ready)return;
+  if(readonly||done||solved||!modelReady)return;
   const target=!photos.includes('ridge')?'ridge':'peak',valid=target==='ridge'?angle<=18:angle>=82;
   if(!valid){f.say(target==='ridge'?'把小圓點往左移，看看山嶺連起來的樣子。':'把小圓點往右移，從另一邊看一看。');return;}
-  photos.push(target);done=photos.length===2;
+  photoAngles[target]=angle;photo(target);photos.push(target);done=photos.length===2;
   f.root.classList.remove('is-snapping');void f.root.offsetWidth;f.root.classList.add('is-snapping');
   update();options.onState?.(snapshot());
   f.say(done?'山沒有變，站的位置不同，看見的樣子就不同。':'第一張收好了！向右移，找找側面的山峰。');
   if(done&&!notified){notified=true;options.onComplete?.({correct:true,response:snapshot(),knowledge:'橫看成嶺側成峯：觀察位置不同，看到的山形也不同。'});}
  };
  f.q('[data-vg-angle]').addEventListener('input',e=>{angle=clamp(e.target.value);update();options.onState?.(snapshot());},{signal:f.signal});
+ let drag=null;
+ const stage=f.q('[data-vg-stage]');
+ stage.addEventListener('pointerdown',e=>{if(readonly||!modelReady||e.button>0)return;drag={id:e.pointerId,x:e.clientX,angle};stage.setPointerCapture(e.pointerId);},{signal:f.signal});
+ stage.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;angle=clamp(drag.angle+(e.clientX-drag.x)/Math.max(1,stage.clientWidth)*125);update();},{signal:f.signal});
+ const finishDrag=()=>{if(!drag)return;drag=null;options.onState?.(snapshot());};
+ stage.addEventListener('pointerup',finishDrag,{signal:f.signal});stage.addEventListener('pointercancel',finishDrag,{signal:f.signal});
+ f.q('[data-vg-retry]').addEventListener('click',load,{signal:f.signal});
  f.q('[data-vg-capture]').addEventListener('click',capture,{signal:f.signal});
  f.q('[data-vg-listen]').addEventListener('click',e=>f.listen('橫看成嶺側成峯',e.currentTarget),{signal:f.signal});
- f.onReady(update);update();f.say(done?'兩張山景都收好了。':readonly?'這次先看看，下一次可以再拍。':'拖動小圓點換個角度，再按相機。');
- return {destroy:f.destroy,showSolution(){solved=true;angle=0;update();f.say('橫看連成嶺，側看高成峰。山沒有變，變的是看山的位置。');}};
+ f.onReady(update);update();f.say(done?'兩張山景都收好了。':readonly?'這次先看看，下一次可以再拍。':'左右拖動山景或小圓點，換個角度拍一拍。');load();
+ return {destroy(){dead=true;loadGeneration++;pending?.abort();model?.destroy();model=null;f.destroy();},showSolution(){solved=true;angle=0;update();if(modelReady)['ridge','peak'].forEach(photo);f.say('「橫看」就是從正面看：山脈連成嶺。從側面看是高高的峰。山沒有變，變的是看山的位置。');}};
 }
 
 export function mountRain(holder,options={}){
@@ -68,7 +99,10 @@ export function mountRain(holder,options={}){
  const ready=()=>watered.length===3||solved;
  const update=()=>{
   f.root.style.setProperty('--rain-progress',solved?1:watered.length/3);
-  f.q('.spring-near').style.opacity=ready()&&near>=50?'1':'0';
+  const distance=ready()?near/100:0;
+  f.q('.spring-near').style.opacity=String(distance);
+  f.q('.spring-far').style.transform=`translateY(${-distance*1.5}%) scale(${1+distance*.085})`;
+  f.q('.spring-near').style.transform=`translateY(${(1-distance)*1.4}%) scale(${1.065-distance*.065})`;
   f.q('[data-rain-count]').textContent=ready()?'細雨潤過了':`${watered.length} / 3`;
   f.q('[data-rain-zoom]').hidden=!ready();f.q('[data-rain-range]').value=near;f.q('[data-rain-range]').disabled=readonly;
   f.q('[data-rain-cloud]').hidden=ready();f.q('[data-rain-cloud]').disabled=readonly||!f.ready;

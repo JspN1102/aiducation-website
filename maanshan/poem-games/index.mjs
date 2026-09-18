@@ -1,12 +1,13 @@
 // This dispatcher is itself loaded only when a game is opened. Each game loads
-// its own painted scene; no model engine, camera or unrelated game's artwork.
+// its own scene. The mountain photography game alone loads its 3D viewer;
+// no game asks for camera or AR permissions.
 const loaders={
  'yong-e':()=>import('./goose.mjs?v=20260918c').then(m=>m.mountGoose),
- 'zeng-wang-lun':()=>import('./zeng.mjs?v=20260918c').then(m=>m.mountFarewell),
- 'ti-xi-lin-bi':()=>import('./views.mjs?v=20260918c').then(m=>m.mountMountain),
- 'bo-chuan-gua-zhou':()=>import('./river.mjs?v=20260918c').then(m=>m.mountRiver),
- 'gui-yuan-tian-ju':()=>import('./garden.mjs?v=20260918c').then(m=>m.mountGarden),
- 'zao-chun':()=>import('./views.mjs?v=20260918c').then(m=>m.mountRain)
+ 'zeng-wang-lun':()=>import('./zeng.mjs?v=20260919a').then(m=>m.mountFarewell),
+ 'ti-xi-lin-bi':()=>import('./views.mjs?v=20260919a').then(m=>m.mountMountain),
+ 'bo-chuan-gua-zhou':()=>import('./river.mjs?v=20260919a').then(m=>m.mountRiver),
+ 'gui-yuan-tian-ju':()=>import('./garden.mjs?v=20260919a').then(m=>m.mountGarden),
+ 'zao-chun':()=>import('./views.mjs?v=20260919a').then(m=>m.mountRain)
 };
 export function mountPoemGame(holder,{slug,...options}={}){
  if(!loaders[slug])throw new TypeError('Unknown poem game');
