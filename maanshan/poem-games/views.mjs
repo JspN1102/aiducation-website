@@ -93,25 +93,24 @@ export function mountMountain(holder,options={}){
 export function mountRain(holder,options={}){
  const initial=options.initialState||{};
  let watered=Array.isArray(initial.watered)?[...new Set(initial.watered.filter(n=>Number.isInteger(n)&&n>=0&&n<3))]:[],near=clamp(initial.near??0),seenNear=!!initial.seenNear,seenFar=!!initial.seenFar;
- let done=initial.completed===true&&watered.length===3&&seenNear&&seenFar,readonly=!!options.readOnly,notified=done,solved=false,drag=false;
- const f=foundation(holder,options,`<section class="poem-view-game rain-game"><header class="pvg-heading"><span class="pvg-kicker">把春天找出來</span><h3 data-vg-title></h3></header><div class="pvg-stage rain-stage" data-vg-stage><img src="${art('spring-far.webp')}" class="pvg-layer spring-far" alt="遠看，稀疏的小草芽好像連成淡淡的綠色" draggable="false"><img src="${art('spring-near.webp')}" class="pvg-layer spring-near" alt="近看，嫩芽仍在，草芽之間露出許多泥土" draggable="false"><div class="rain-dry-veil" aria-hidden="true"></div><div class="rain-spots">${[0,1,2].map((n)=>`<button type="button" class="rain-spot" data-rain-spot="${n}" aria-label="讓第${n+1}片泥土喝一點雨水" style="--spot-x:${20+n*30}%"><span>潤一潤</span><i aria-hidden="true"></i></button>`).join('')}</div><button type="button" class="rain-cloud" data-rain-cloud aria-label="小雨雲，拖向三片泥土，也可以直接點泥土"><svg viewBox="0 0 130 90" aria-hidden="true"><path d="M25 55C2 54 3 24 25 22C29 1 58-3 69 14C86 5 111 20 110 37C130 49 116 65 101 64H25Z" fill="#f8fbf5" stroke="#98aca8" stroke-width="2"/><path d="m36 71-4 10m31-10-4 10m31-10-4 10" fill="none" stroke="#77a9b4" stroke-width="3" stroke-linecap="round"/></svg></button><span class="pvg-location" data-vg-location>小雨輕輕，草芽嫩嫩</span><span class="rain-progress" data-rain-count></span></div><div class="pvg-camera-control rain-zoom" data-rain-zoom hidden><span>站遠看</span><input type="range" min="0" max="100" value="${near}" aria-label="觀察草色，左邊站遠看，右邊走近看" data-rain-range><span>走近看</span></div><div class="pvg-actions"><button type="button" class="pvg-audio" data-vg-listen>${speaker}<span>聽詩句</span></button><button type="button" class="pvg-main" data-rain-capture hidden>${camera}<span>收好小發現</span></button></div><p class="pvg-status" data-vg-status role="status"></p><button type="button" class="pvg-retry" data-vg-retry hidden>重新載入畫面</button></section>`);
+ let done=initial.completed===true&&watered.length===3,readonly=!!options.readOnly,notified=done,solved=false,drag=false;
+ const f=foundation(holder,options,`<section class="poem-view-game rain-game"><header class="pvg-heading"><span class="pvg-kicker">把春天找出來</span><h3 data-vg-title></h3></header><div class="pvg-stage rain-stage" data-vg-stage><img src="${art('spring-far.webp')}" class="pvg-layer spring-far" alt="雨後，稀疏的小草芽像淡淡的綠色" draggable="false"><img src="${art('spring-near.webp')}" class="pvg-layer spring-near" alt="雨後，嫩芽和泥土清楚可見" draggable="false"><div class="rain-dry-veil" aria-hidden="true"></div><div class="rain-spots">${[0,1,2].map((n)=>`<button type="button" class="rain-spot" data-rain-spot="${n}" aria-label="讓第${n+1}片泥土喝一點雨水" style="--spot-x:${20+n*30}%"><span>潤一潤</span><i aria-hidden="true"></i></button>`).join('')}</div><button type="button" class="rain-cloud" data-rain-cloud aria-label="小雨雲，拖向三片泥土，也可以直接點泥土"><svg viewBox="0 0 130 90" aria-hidden="true"><path d="M25 55C2 54 3 24 25 22C29 1 58-3 69 14C86 5 111 20 110 37C130 49 116 65 101 64H25Z" fill="#f8fbf5" stroke="#98aca8" stroke-width="2"/><path d="m36 71-4 10m31-10-4 10m31-10-4 10" fill="none" stroke="#77a9b4" stroke-width="3" stroke-linecap="round"/></svg></button><span class="pvg-location" data-vg-location>小雨輕輕，草芽嫩嫩</span><span class="rain-progress" data-rain-count></span></div><div class="pvg-actions"><button type="button" class="pvg-audio" data-vg-listen>${speaker}<span>聽詩句</span></button><button type="button" class="pvg-main" data-rain-capture hidden>${camera}<span>收好小發現</span></button></div><p class="pvg-status" data-vg-status role="status"></p><button type="button" class="pvg-retry" data-vg-retry hidden>重新載入畫面</button></section>`);
  const snapshot=()=>({watered:[...watered],near,seenNear,seenFar,completed:done});
  const ready=()=>watered.length===3||solved;
  const update=()=>{
   f.root.style.setProperty('--rain-progress',solved?1:watered.length/3);
-  const distance=ready()?near/100:0;
+  const distance=ready()?1:0;
   f.q('.spring-near').style.opacity=String(distance);
   f.q('.spring-far').style.transform=`translateY(${-distance*1.5}%) scale(${1+distance*.085})`;
   f.q('.spring-near').style.transform=`translateY(${(1-distance)*1.4}%) scale(${1.065-distance*.065})`;
   f.q('[data-rain-count]').textContent=ready()?'細雨潤過了':`${watered.length} / 3`;
-  f.q('[data-rain-zoom]').hidden=!ready();f.q('[data-rain-range]').value=near;f.q('[data-rain-range]').disabled=readonly;
   f.q('[data-rain-cloud]').hidden=ready();f.q('[data-rain-cloud]').disabled=readonly||!f.ready;
-  f.q('[data-rain-capture]').hidden=!ready();f.q('[data-rain-capture]').disabled=readonly||done||solved||!seenNear||!seenFar||!f.ready;
-  f.q('[data-vg-title]').textContent=done||solved?'走近了，小草還在呢':!ready()?'帶着小雨雲，潤一潤泥土':!seenNear?'走近看看，小草在哪裏？':!seenFar?'再退遠一點，看看草色':'你發現遠近的不同了！';
-  f.q('[data-vg-location]').textContent=!ready()?'小雨輕輕，草芽嫩嫩':near>=70?'近看 · 草芽稀疏，泥土清楚':near<=30?'遠看 · 淡淡綠意連成一片':'慢慢走近，再退遠看';
+  f.q('[data-rain-capture]').hidden=!ready();f.q('[data-rain-capture]').disabled=readonly||done||solved||!f.ready;
+  f.q('[data-vg-title]').textContent=done||solved?'雨後的小草還在呢':!ready()?'帶着小雨雲，潤一潤泥土':'雨後草芽，泥土也喝飽了';
+  f.q('[data-vg-location]').textContent=!ready()?'小雨輕輕，草芽嫩嫩':'細雨潤過，嫩芽和泥土都清楚了';
   f.root.querySelectorAll('[data-rain-spot]').forEach(el=>{el.classList.toggle('is-watered',watered.includes(+el.dataset.rainSpot));el.hidden=ready();el.disabled=readonly||!f.ready||watered.includes(+el.dataset.rainSpot);});
  };
- const water=n=>{if(readonly||done||solved||watered.includes(n)||!f.ready)return;watered.push(n);if(ready()){near=0;seenFar=true;}update();options.onState?.(snapshot());f.say(ready()?'小草一直很稀疏。拖動小圓點，走近看看。':'細細的雨落下了，再潤一片泥土。');};
+ const water=n=>{if(readonly||done||solved||watered.includes(n)||!f.ready)return;watered.push(n);if(ready()){near=100;seenNear=true;seenFar=true;}update();options.onState?.(snapshot());f.say(ready()?'雨停了，看看雨後留下的小草和泥土。':'細細的雨落下了，再潤一片泥土。');};
  const cloud=f.q('[data-rain-cloud]'),stage=f.q('[data-vg-stage]');
  let pointer=null;
  cloud.addEventListener('pointerdown',e=>{if(readonly||ready()||e.button>0)return;drag=true;pointer=e.pointerId;cloud.setPointerCapture(e.pointerId);},{signal:f.signal});
@@ -119,9 +118,8 @@ export function mountRain(holder,options={}){
  const stopDrag=()=>{drag=false;pointer=null;cloud.style.left='50%';cloud.style.top='18%';};
  cloud.addEventListener('pointerup',stopDrag,{signal:f.signal});cloud.addEventListener('pointercancel',stopDrag,{signal:f.signal});
  f.root.querySelectorAll('[data-rain-spot]').forEach(el=>el.addEventListener('click',()=>water(+el.dataset.rainSpot),{signal:f.signal}));
- f.q('[data-rain-range]').addEventListener('input',e=>{near=clamp(e.target.value);if(near>=80)seenNear=true;if(near<=20)seenFar=true;update();options.onState?.(snapshot());if(seenNear&&seenFar)f.say('近看草芽還在，只是草色不再連成一片。');},{signal:f.signal});
- f.q('[data-rain-capture]').addEventListener('click',()=>{if(readonly||done||solved||!ready()||!seenNear||!seenFar)return;done=true;update();options.onState?.(snapshot());f.say('草色遙看近卻無：不是小草不見了，是近看綠意不連成一片。');if(!notified){notified=true;options.onComplete?.({correct:true,response:snapshot(),knowledge:'遠看綠意相連，近看草芽稀疏；小草沒有消失。'});}},{signal:f.signal});
+ f.q('[data-rain-capture]').addEventListener('click',()=>{if(readonly||done||solved||!ready())return;done=true;seenNear=true;seenFar=true;update();options.onState?.(snapshot());f.say('雨後的草芽仍然稀疏，泥土間還看得見細細的綠意。');if(!notified){notified=true;options.onComplete?.({correct:true,response:snapshot(),knowledge:'遠看綠意相連，雨後近看草芽仍然稀疏；小草沒有消失。'});}},{signal:f.signal});
  f.q('[data-vg-listen]').addEventListener('click',e=>f.listen(ready()?'草色遙看近卻無':'天街小雨潤如酥',e.currentTarget),{signal:f.signal});
- f.onReady(update);update();f.say(done?'遠看、近看，是同一片稀疏的新草。':readonly?'這次的小發現已保留。':'把雨雲拖向泥土，也可以直接點三片泥土。');
- return {destroy:f.destroy,showSolution(){solved=true;near=100;update();f.say('近看能看見泥土和稀疏草芽；遠看時，細小的綠意才像連成一片。');}};
+ f.onReady(update);update();f.say(done?'雨後的草芽和泥土都看清楚了。':readonly?'這次的小發現已保留。':'把雨雲拖向泥土，也可以直接點三片泥土。');
+ return {destroy:f.destroy,showSolution(){solved=true;near=100;seenNear=true;seenFar=true;update();f.say('雨後能看見泥土和稀疏草芽，細小的綠意仍然在。');}};
 }

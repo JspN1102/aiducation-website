@@ -13,6 +13,13 @@ const LEADING_SAMPLES = Math.round(SAMPLE_RATE * .18);
 const TRAILING_SAMPLES = Math.round(SAMPLE_RATE * .08);
 const AUDIO_KEY = /^[0-9a-f]{64}$/;
 
+// Vercel can return an explicitly quoted empty value when a secret was
+// removed. Treat that as missing instead of signing a request with `""`.
+function configuredSecret(name) {
+  const value = String(process.env[name] || '').trim();
+  return value && value !== '""' ? value : '';
+}
+
 function sha256(data) {
   return crypto.createHash('sha256').update(data).digest('hex');
 }
@@ -86,7 +93,7 @@ function paddedWav(pcm) {
 }
 
 function audioSignature(key) {
-  const secret = process.env.TENCENT_SECRET_KEY || process.env.BLOB_READ_WRITE_TOKEN;
+  const secret = configuredSecret('TENCENT_SECRET_KEY') || configuredSecret('BLOB_READ_WRITE_TOKEN');
   return secret && crypto.createHmac('sha256', secret).update(`tts-audio:${CACHE_VERSION}:${key}`).digest('hex');
 }
 
@@ -140,8 +147,8 @@ async function serveCachedAudio(req, res) {
 }
 
 async function synthesize({text, voice, speed}) {
-  const secretId = process.env.TENCENT_SECRET_ID;
-  const secretKey = process.env.TENCENT_SECRET_KEY;
+  const secretId = configuredSecret('TENCENT_SECRET_ID');
+  const secretKey = configuredSecret('TENCENT_SECRET_KEY');
   if (!secretId || !secretKey) throw Object.assign(new Error('TTS credentials not configured'), {statusCode: 500});
 
   const timestamp = Math.floor(Date.now() / 1000);

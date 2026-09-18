@@ -1,5 +1,5 @@
 const media=path=>new URL(`../media/${path}`,import.meta.url).href;
-const zones=[{id:'willow',label:'柳枝',x:22,y:22},{id:'near',label:'近岸',x:16,y:76},{id:'far',label:'對岸',x:82,y:48}];
+const zones=[{id:'willow'},{id:'near'},{id:'far'}];
 const WIDTH=768,HEIGHT=512,RADIUS=55;
 const knowledge='「綠」寫春風讓江岸草木重新變綠。「明月何時照我還」是盼望歸鄉，詩人仍在瓜洲。';
 const validDab=p=>Array.isArray(p)&&p.length===2&&p.every(n=>Number.isFinite(n)&&n>=0&&n<=1024);
@@ -18,18 +18,17 @@ export function mountRiver(holder,{initialState,readOnly=false,playAudio,onState
   const chapters=[{title:'找到停泊的小舟',verse:'京口瓜洲一水間',task:'聽一句，再點小舟，讓它停穩。'},{title:'讓江岸重新變綠',verse:'春風又綠江南岸',task:'聽一句，掃過三處草木，喚醒春色。'},{title:'把月光送到小舟',verse:'明月何時照我還',task:'聽一句，把月光拖向小舟。'}];
   const surfaces=new Map(),timers=new Set(),root=doc.createElement('section');root.className='poem-river journey-river';root.setAttribute('aria-label','春風與月光');
   root.innerHTML=`<header class="rj-header"><div><span>春風與月光</span><h3></h3></div><b class="rj-progress"></b></header>
-    <div class="river-picture gr-picture" aria-label="把春風吹向柳枝、近岸和對岸" aria-busy="true">
+    <div class="river-picture gr-picture" aria-label="用手指掃過江岸草木，讓春色回來" aria-busy="true">
       <img class="gr-background" src="${media('exploration/bo-chuan-gua-zhou/scene.webp')}" alt="江岸草木、停泊的小舟和天上的月亮。" width="1536" height="1024" draggable="false">
       ${zones.map(z=>`<canvas class="river-waiting" data-river-layer="${z.id}" width="${WIDTH}" height="${HEIGHT}" aria-hidden="true"></canvas>`).join('')}
       <div class="river-moonlight" aria-hidden="true"></div>
       <svg class="rj-light-path" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M75 17 Q77 42 44 77"/></svg>
       <button type="button" class="rj-boat-target" data-rj-boat aria-label="小舟停在瓜洲，點一下停穩，或接住月光"><span>停一停</span></button>
-      ${zones.map(z=>`<button type="button" class="river-wind" data-river-zone="${z.id}" style="--x:${z.x}%;--y:${z.y}%" aria-label="向${z.label}吹春風，點按也可塗綠" disabled><svg viewBox="0 0 26 18" aria-hidden="true"><path d="M2 5h15c6 0 6-6 1-4M4 10h17c5 0 5 6 0 6M1 15h11"/></svg><span>${z.label}</span></button>`).join('')}
       <button type="button" class="river-moon" data-river-moon aria-label="月光，拖到小舟，也可點一下月光再點小舟" hidden><span>送月光</span></button>
       <div class="river-verse" hidden>心裏想着家<br><small>小舟仍在瓜洲</small></div><i class="river-brush" hidden aria-hidden="true"></i><i class="rj-moving-light" hidden aria-hidden="true"></i>
       <div class="gr-loading" role="status"><span>江岸正在展開…</span><button type="button" data-river-retry hidden>再試一次</button></div>
     </div>
-    <p class="rj-verse"></p><p class="rj-task"></p><div class="rj-stops" aria-label="三處春色"><span>柳枝</span><span>近岸</span><span>對岸</span></div>
+    <p class="rj-verse"></p><p class="rj-task"></p>
     <div class="rj-actions"><button type="button" class="gr-audio" data-river-audio>聽這句詩</button><button type="button" class="rj-next" data-rj-next hidden>下一步 <span aria-hidden="true">→</span></button></div>
     <p class="gr-feedback" role="status" aria-live="polite"></p>`;
   holder.append(root);const q=s=>root.querySelector(s),stage=q('.river-picture'),tell=t=>{q('.gr-feedback').textContent=t;};
@@ -40,15 +39,14 @@ export function mountRiver(holder,{initialState,readOnly=false,playAudio,onState
     root.classList.toggle('is-done',moon||solved);root.classList.toggle('is-readonly',readOnly);root.dataset.chapter=String(chapter);root.dataset.berthed=String(berthed);
     q('h3').textContent=moon||solved?'春風回來了，我何時回家？':chapters[chapter].title;q('.rj-progress').textContent=`${chapter+1} / 3`;q('.rj-verse').textContent=chapters[chapter].verse;q('.rj-task').textContent=moon||solved?'詩人望月思鄉，盼着回到鍾山的家。':chapters[chapter].task;
     stage.classList.toggle('is-painting',active()&&chapter===1&&heard[1]&&colored.size<3);
-    for(const z of zones){const b=q(`[data-river-zone="${z.id}"]`);b.hidden=chapter!==1||solved;b.classList.toggle('is-green',colored.has(z.id));b.disabled=!active()||!heard[1]||colored.has(z.id);b.setAttribute('aria-hidden',String(colored.has(z.id)));}
     q('[data-river-moon]').hidden=!ready||chapter!==2||moon||solved||readOnly;q('[data-river-moon]').disabled=!active()||!heard[2];
     q('[data-rj-boat]').hidden=chapter===1||moon||solved||readOnly;q('[data-rj-boat]').disabled=!active()||!heard[chapter]||chapter===0&&berthed;q('[data-rj-boat] span').textContent=chapter===0?(berthed?'停穩了':'停一停'):'送到小舟';
-    q('.river-verse').hidden=!(moon||solved);q('.rj-stops').hidden=chapter!==1||solved;q('.rj-stops').querySelectorAll('span').forEach((el,i)=>el.classList.toggle('is-green',colored.has(zones[i].id)));
+    q('.river-verse').hidden=!(moon||solved);
     q('[data-rj-next]').hidden=!((chapter===0&&berthed||chapter===1&&colored.size===3)&&!readOnly&&!solved);q('[data-rj-next]').disabled=speaking;
     q('[data-river-audio]').disabled=!ready||speaking||solved;q('[data-river-audio]').textContent=speaking?'仔細聽…':heard[chapter]?'再聽一次':'聽這句詩';q('[data-river-audio]').setAttribute('aria-busy',String(speaking));
   }
   function describe(){
-    tell(moon?'月光照着小舟，詩人盼望回家；他現在仍在瓜洲。':chapter===0?(berthed?'「泊」是停船。京口和瓜洲隔着一條長江。':'聽完後點小舟，開始這一夜的旅程。'):chapter===1?(colored.size===3?'「綠」讓我們看見春風吹來，草木重新變綠。':colored.size?`春風喚醒了 ${colored.size} 處，繼續把新綠帶回江岸。`:'用手指掃過草木；也可點春風標記，一點點染綠。'):'月光拖到小舟，或點一下月光、再點小舟。');
+    tell(moon?'月光照着小舟，詩人盼望回家；他現在仍在瓜洲。':chapter===0?(berthed?'「泊」是停船。京口和瓜洲隔着一條長江。':'聽完後點小舟，開始這一夜的旅程。'):chapter===1?(colored.size===3?'「綠」讓我們看見春風吹來，草木重新變綠。':colored.size?`春風喚醒了 ${colored.size} 處，繼續把新綠帶回江岸。`:'用手指掃過江岸草木，一點點染回新綠。'):'月光拖到小舟，或點一下月光、再點小舟。');
   }
   function erase(surface,x,y){
     const ctx=surface.context;
@@ -70,18 +68,6 @@ export function mountRiver(holder,{initialState,readOnly=false,playAudio,onState
     }
     if(persist&&changed){dabs.push([Math.round(x/WIDTH*1024),Math.round(y/HEIGHT*1024)]);render();describe();save();}
     return Boolean(changed);
-  }
-  function breeze(id){
-    if(!active()||chapter!==1||!heard[1]||colored.has(id))return;
-    const surface=surfaces.get(id);if(!surface)return;
-    const before=surface.samples.filter(s=>s.erased).length,target=before+surface.samples.length*.29;
-    let steps=0;
-    while(!colored.has(id)&&surface.samples.filter(s=>s.erased).length<target&&steps++<64){
-      const next=surface.samples.find(s=>!s.erased);if(!next)break;
-      applyDab(next.x,next.y,false);
-      dabs.push([Math.round(next.x/WIDTH*1024),Math.round(next.y/HEIGHT*1024)]);
-    }
-    render();describe();save();
   }
   function finish(){
     if(!active()||chapter!==2||!heard[2]||!berthed||colored.size!==3)return;
@@ -136,7 +122,6 @@ export function mountRiver(holder,{initialState,readOnly=false,playAudio,onState
   moonButton.addEventListener('pointerup',event=>{if(moonDrag!==event.pointerId)return;const p=point(event);moonDrag=null;light.hidden=true;if(p.x/WIDTH>.23&&p.x/WIDTH<.67&&p.y/HEIGHT>.59&&p.y/HEIGHT<.91)finish();else tell('讓月光落在小舟上；也可以再點一下小舟。');},{signal:abort.signal});
   moonButton.addEventListener('pointercancel',()=>{moonDrag=null;light.hidden=true;},{signal:abort.signal});
   root.addEventListener('click',event=>{
-    const zone=event.target.closest?.('[data-river-zone]')?.dataset.riverZone;if(zone)breeze(zone);
     if(event.target.closest?.('[data-river-moon]')&&active()){lightSelected=true;root.classList.add('is-light-selected');tell('月光準備好了，再點一下小舟。');}
     if(event.target.closest?.('[data-rj-boat]')&&active()&&heard[chapter]){if(chapter===0){berthed=true;render();save();describe();}else if(lightSelected)finish();else tell('先點一下月光，再把它送到小舟。');}
     if(event.target.closest?.('[data-rj-next]')&&active()&&(chapter===0&&berthed||chapter===1&&colored.size===3)){chapter++;render();save();describe();q('[data-river-audio]').focus({preventScroll:true});}
