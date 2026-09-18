@@ -1,5 +1,7 @@
 const WRITING_SIZE = 560;
 const INK = '#233d32';
+const PAPER = '#ffffff';
+const GUIDE = '#dce4d9';
 
 /**
  * Incremental local ink; recognition keeps the original 560 x 560 samples.
@@ -9,9 +11,12 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
   const view = canvas.ownerDocument.defaultView;
   // Browsers that support it can present ink without waiting for the page's
   // normal compositor cycle. Others use the same standard 2D canvas path.
-  const context = canvas.getContext('2d', { desynchronized: true });
+  // Paint the paper into the bitmap itself. A transparent low-latency canvas
+  // can be composited against black on mobile GPUs, including after resizing
+  // into the answer review. CSS on its parent cannot reliably fix that surface.
+  const context = canvas.getContext('2d', { alpha: false, desynchronized: true });
   const inkCanvas = canvas.ownerDocument.createElement('canvas');
-  const inkContext = inkCanvas.getContext('2d');
+  const inkContext = inkCanvas.getContext('2d', { alpha: false });
   if (!context || !inkContext) throw new Error('Canvas drawing is unavailable.');
 
   const completed = [];
@@ -24,6 +29,7 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
   let active = null;
   let rectangle = null;
   let destroyed = false;
+  let initialized = false;
   const timeOrigin = Date.now() - view.performance.now();
 
   function getStrokes() {
@@ -98,7 +104,6 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
     const { x, y, width, height } = active.tipBounds;
     // Only the provisional half-segment under the fingertip can change.
     // Completed ink, including the current stroke, stays in the backing bitmap.
-    context.clearRect(x, y, width, height);
     context.drawImage(inkCanvas, x, y, width, height, x, y, width, height);
     active.tipBounds = null;
   }
@@ -149,10 +154,26 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
     }
   }
 
+  function paintPaper() {
+    inkContext.save();
+    inkContext.setTransform(1, 0, 0, 1, 0, 0);
+    inkContext.fillStyle = PAPER;
+    inkContext.fillRect(0, 0, inkCanvas.width, inkCanvas.height);
+    // Keep the guide in the same opaque surface, including canvas snapshots.
+    inkContext.strokeStyle = GUIDE;
+    inkContext.lineWidth = inkCanvas.width / Math.max(1, rectangle.width);
+    inkContext.beginPath();
+    inkContext.moveTo(inkCanvas.width / 2, 0);
+    inkContext.lineTo(inkCanvas.width / 2, inkCanvas.height);
+    inkContext.moveTo(0, inkCanvas.height / 2);
+    inkContext.lineTo(inkCanvas.width, inkCanvas.height / 2);
+    inkContext.stroke();
+    inkContext.restore();
+  }
+
   function rebuild() {
-    inkContext.clearRect(0, 0, inkCanvas.width, inkCanvas.height);
+    paintPaper();
     completed.forEach(stroke => wholeStroke(inkContext, stroke));
-    context.clearRect(0, 0, canvas.width, canvas.height);
     context.drawImage(inkCanvas, 0, 0);
     if (active) {
       active.anchor = null;
@@ -168,9 +189,10 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
     const ratio = Math.min(3, Math.max(1, view.devicePixelRatio || 1));
     const width = Math.max(1, Math.round(rectangle.width * ratio));
     const height = Math.max(1, Math.round(rectangle.height * ratio));
-    if (canvas.width !== width || canvas.height !== height || inkCanvas.width !== width || inkCanvas.height !== height) {
+    if (!initialized || canvas.width !== width || canvas.height !== height || inkCanvas.width !== width || inkCanvas.height !== height) {
       canvas.width = inkCanvas.width = width;
       canvas.height = inkCanvas.height = height;
+      initialized = true;
       // Layout changes, clear and undo are the only full redraws.
       rebuild();
     }

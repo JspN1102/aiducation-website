@@ -1,11 +1,12 @@
-import {CHALLENGE_VERSION} from './challenge-data.mjs?v=20260918b';
+import {CHALLENGE_VERSION} from './challenge-data.mjs?v=20260918c';
 
 const TOTAL = 5;
 const LEGACY_PLAN = ['sound', 'dictation', 'sound', 'dictation', 'other'];
 const group = item => ['sound', 'dictation'].includes(item.type) ? item.type : 'other';
 const bankOf = set => set.bank || set.items;
-export const challengePlan = (set, variant = 'hands') => set.grade <= 3
-  ? ['sound', 'sound', 'dictation', 'sound', 'sound']
+export const challengePlan = (set, variant = 'hands', mode = 'standard') => set.grade >= 4 && mode === 'advanced'
+  ? ['sound', 'dictation', 'sound', 'dictation', 'dictation'] : set.grade <= 3
+  ? variant === 'hands' ? ['sound', 'sound', 'sound', 'sound', 'other'] : ['sound', 'sound', 'dictation', 'sound', 'sound']
   : set.grade === 4 ? variant === 'hands' ? ['sound', 'sound', 'dictation', 'sound', 'other'] : ['sound', 'dictation', 'sound', 'dictation', 'sound']
   : variant === 'hands' ? LEGACY_PLAN : ['sound', 'dictation', 'sound', 'dictation', 'dictation'];
 
@@ -39,13 +40,48 @@ function validHistory(value, bank, type) {
   return [...new Set(Array.isArray(value) ? value.filter(id => bank.some(item => item.id === id && group(item) === type)) : [])];
 }
 
-export function newAttempt(set, {previous = null, seed = crypto.randomUUID(), mode = 'standard'} = {}) {
+// Game drafts must stay small, serializable and inert. A damaged game draft is
+// discarded independently of the child's existing assessment answers.
+export function safeGameState(value) {
+  let nodes = 0;
+  function copy(part, depth = 0) {
+    if (++nodes > 5000 || depth > 10) throw new Error('game-state-size');
+    if (part === null || typeof part === 'boolean') return part;
+    if (typeof part === 'number' && Number.isFinite(part)) return part;
+    if (typeof part === 'string' && part.length <= 4096) return part;
+    if (Array.isArray(part) && part.length <= 2048) return part.map(child => copy(child, depth + 1));
+    if (part && typeof part === 'object' && Object.getPrototypeOf(part) === Object.prototype) {
+      const entries = Object.entries(part);
+      if (entries.length > 256 || entries.some(([key]) => ['__proto__', 'constructor', 'prototype'].includes(key))) throw new Error('game-state-key');
+      return Object.fromEntries(entries.map(([key, child]) => [key, copy(child, depth + 1)]));
+    }
+    throw new Error('game-state-value');
+  }
+  try {
+    if (!value || Array.isArray(value) || typeof value !== 'object') return null;
+    const result = copy(value);
+    return JSON.stringify(result).length <= 98304 ? result : null;
+  } catch { return null; }
+}
+function gameDrafts(value, set) {
+  return Object.fromEntries(bankOf(set).filter(item => item.type === 'microgame').flatMap(item => {
+    const draft = safeGameState(value?.[item.id]);
+    return draft ? [[item.id, draft]] : [];
+  }));
+}
+function archivedResult(attempt) {
+  if (!attempt || attempt.answers.length !== attempt.itemIds.length) return null;
+  const {resultArchive, freePlayDrafts, gameDrafts, legacyArchive, ...result} = attempt;
+  return result;
+}
+
+export function newAttempt(set, {previous = null, seed = crypto.randomUUID(), mode = 'standard', variant: requestedVariant} = {}) {
   mode = mode === 'advanced' ? 'advanced' : 'standard';
   const legacyArchive = previous?.legacyArchive || (previous?.selection === 'legacy-v1' ? previous : previous?.sourceAttempt?.selection === 'legacy-v1' ? previous.sourceAttempt : null);
-  const variant = set.grade <= 3 || mode === 'advanced' ? 'writing' : previous ? previous.variant === 'writing' ? 'hands' : 'writing' : 'hands';
-  const bank = bankOf(set), random = seededRandom(seed), history = {}, picked = {}, plan = challengePlan(set, variant);
+  const variant = ['hands', 'writing'].includes(requestedVariant) ? requestedVariant : mode === 'advanced' ? 'writing' : 'hands';
+  const bank = bankOf(set), random = seededRandom(seed), history = {}, picked = {}, plan = challengePlan(set, variant, mode);
   for (const type of ['sound', 'dictation', 'other']) {
-    const pool = bank.filter(item => group(item) === type && (type !== 'sound' || (item.difficulty || 1) === (mode === 'advanced' ? 2 : 1))), count = plan.filter(part => part === type).length;
+    const pool = bank.filter(item => group(item) === type && (type !== 'other' || item.type === 'microgame') && (type !== 'sound' || (item.difficulty || 1) === (mode === 'advanced' ? 2 : 1))), count = plan.filter(part => part === type).length;
     if (!count) {history[type] = validHistory(previous?.history?.[type], bank, type);picked[type] = [];continue;}
     if (pool.length < count) throw new Error('Incomplete challenge bank');
     const seen = validHistory(previous?.history?.[type] || attemptItems(previous, set).filter(item => group(item) === type).map(item => item.id), bank, type);
@@ -58,7 +94,9 @@ export function newAttempt(set, {previous = null, seed = crypto.randomUUID(), mo
   const offsets = {sound: 0, dictation: 0, other: 0};
   const items = plan.map(type => picked[type][offsets[type]++]);
   return {version: CHALLENGE_VERSION, attemptId: crypto.randomUUID(), seed: String(seed), startedAt: Date.now(),
-    selection: 'grade-bank', mode, variant, cursor: 0, itemIds: items.map(item => item.id), history, answers: [],
+    selection: 'grade-bank', schedule: 'games-20260918', mode, variant, cursor: 0, itemIds: items.map(item => item.id), history, answers: [], gameDrafts: {},
+    freePlayDrafts: gameDrafts(previous?.freePlayDrafts, set),
+    resultArchive: [...(previous?.resultArchive || []), archivedResult(previous?.mode === 'review' ? previous.sourceAttempt : previous)].filter(Boolean).slice(-24),
     ...(legacyArchive ? {legacyArchive: structuredClone(legacyArchive)} : {}),
     orders: Object.fromEntries(items.map(item => [item.id, shuffled((item.options || item.cards || []).map(option => option.id), random)]))};
 }
@@ -83,6 +121,7 @@ export function newReviewAttempt(set, saved, {seed = crypto.randomUUID()} = {}) 
     reviewPending: wrongIds.filter(id => !ids.includes(id)),
     ...(previous.legacyArchive ? {legacyArchive: structuredClone(previous.legacyArchive)} : {}),
     reviewOf: previous.attemptId, cursor: 0, itemIds: ids, history: structuredClone(previous.history), answers: [],
+    gameDrafts: {}, freePlayDrafts: gameDrafts(previous.freePlayDrafts, set), resultArchive: structuredClone(previous.resultArchive || []),
     orders: Object.fromEntries(items.map(item => [item.id, shuffled((item.options || item.cards || []).map(option => option.id), random)]))};
 }
 
@@ -109,10 +148,19 @@ export function readAttempt(saved, set) {
   if (legacy && itemIds.some((id, index) => id !== set.items[index]?.id)) return null;
   const variant = legacy ? 'hands' : saved.variant;
   if (!['hands', 'writing'].includes(variant)) return null;
-  const plan = legacy ? LEGACY_PLAN : challengePlan(set, variant);
+  const plan = legacy ? LEGACY_PLAN : challengePlan(set, variant, saved.schedule === 'games-20260918' ? mode : 'standard');
   if (items.length !== total || (mode !== 'review' && items.some((item, i) => group(item) !== plan[i]))) return null;
   if (mode === 'advanced' && items.some(item => item.type === 'sound' && item.difficulty !== 2)) return null;
   const attempt = {...saved, version: CHALLENGE_VERSION, selection: legacy ? 'legacy-v1' : mode === 'review' ? 'wrong-review' : 'grade-bank', mode, variant, itemIds: [...itemIds], seed: saved.seed || `legacy:${saved.attemptId}`, answers: [], orders: {}, history: {}};
+  attempt.gameDrafts = gameDrafts(saved.gameDrafts, set);
+  attempt.freePlayDrafts = gameDrafts(saved.freePlayDrafts, set);
+  // The original result is retained when a new round begins. Avoid recursive
+  // archives and never interpret an archived result as today's selected items.
+  attempt.resultArchive = Array.isArray(saved.resultArchive) ? saved.resultArchive.slice(-24).flatMap(record => {
+    if (!record || record.resultArchive || record.sourceAttempt || record.mode === 'review') return [];
+    const checked = readAttempt({...record, resultArchive: undefined}, set);
+    return checked && checked.answers.length === checked.itemIds.length ? [archivedResult(checked)] : [];
+  }) : [];
   if (sourceAttempt) attempt.sourceAttempt = sourceAttempt;
   for (const type of ['sound', 'dictation', 'other']) {
     attempt.history[type] = validHistory(saved.history?.[type] || items.filter(item => group(item) === type).map(item => item.id), bankOf(set), type);
@@ -125,6 +173,7 @@ export function readAttempt(saved, set) {
   for (let i = 0; i < Math.min(saved.answers.length, total); i++) {
     const answer = saved.answers[i];
     if (answer?.itemId !== items[i].id || !['correct', 'incorrect', 'skipped'].includes(answer.status) || !Number.isFinite(answer.submittedAt)) break;
+    if (items[i].type === 'microgame' && answer.status === 'correct' && safeGameState(answer.response)?.gameCompleted !== true) break;
     attempt.answers.push({...answer, correct: answer.status === 'correct'});
   }
   attempt.cursor = Math.max(0, Math.min(Number.isInteger(saved.cursor) ? saved.cursor : attempt.answers.length, attempt.answers.length, total));
@@ -136,6 +185,7 @@ export function recordAnswer(attempt, set, index, result) {
   const items = attemptItems(attempt, set);
   if (!attempt || !items.length || items.length > TOTAL || index !== attempt.answers.length || !items[index] ||
       !['correct', 'incorrect', 'skipped'].includes(result.status)) return false;
+  if (items[index].type === 'microgame' && result.status === 'correct' && safeGameState(result.response)?.gameCompleted !== true) return false;
   attempt.answers.push({...result, itemId: items[index].id, correct: result.status === 'correct', submittedAt: Date.now()});
   if (attempt.answers.length === items.length) attempt.completedAt = Date.now();
   return true;

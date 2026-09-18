@@ -3,11 +3,11 @@ import {mountStage, getScenePreview} from './scene-stage.mjs?v=20260909a';
 import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
 import {getWordAudioURL} from './word-audio.mjs?v=20260918a';
 import {getSpeechAudioURL} from './speech-audio.mjs?v=20260918a';
-import {mountShishi} from './shishi.mjs?v=20260918b';
+import {mountShishi} from './shishi.mjs?v=20260918c';
 import {mountPoemSwipe} from './poem-swipe.mjs?v=20260915a';
 import {mountLessonMap} from './lesson-map.mjs?v=20260918b';
-import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260918b';
-import {challengeSummary} from './challenge-state.mjs?v=20260918b';
+import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260918c';
+import {challengeSummary} from './challenge-state.mjs?v=20260918c';
 import {encodeRecording, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260918a';
 import {requestJSON} from './network.mjs?v=20260918a';
 
@@ -440,10 +440,27 @@ function renderFocusedPractice() {
   icons();
 }
 function quickAdvice(result){
-  const practice=getPronunciationPractice(result,poem),item=practice.items[0];
-  if(item)return '這次先練「'+item.char+'」（'+item.pinyin+'）。'+item.tip+'\n\n按「練字音」聽一次，再慢慢跟讀兩次；最後把這個字放回詩句讀一遍。';
-  if(practice.unknownWords.length||!practice.assessedCount)return '有些字還沒有取得清楚的評測結果。靠近麥克風一點，在安靜的地方再讀一次，字與字之間不用刻意停頓。';
-  return '已評測的字音都達到八十分了。下一次在逗號稍停、句號停穩，讓每句的意思更清楚；聽一次示範，再用自然的速度讀一遍。';
+  const practice=getPronunciationPractice(result,poem),item=practice.items[0],grade=studentGrade();
+  if(item){
+    const word='「'+item.char+'」（'+item.pinyin+'）',second=practice.items[1];
+    return [
+      '先練「'+item.char+'」吧。點「練字音」，聽一聽，再跟着讀兩次。一次練好一個字就很棒！',
+      '這次先練'+word+'。'+item.tip+' 點「練字音」，聽一次，再跟讀兩次。',
+      '先把'+word+'讀清楚。'+item.tip+' 在「練字音」聽示範、跟讀，再放回詩句讀一遍。',
+      '這次先留意'+word+'。'+item.tip+' 先聽示範，再自然地跟讀；如果有「聽相似字」，可以比較它們的不同。最後回到詩句試一次。',
+      '先練'+word+'。'+item.tip+' 聽示範後試着自己讀，留意聲調是否一致。'+(second?'這個字熟悉後，再練「'+second.char+'」。':'這個字熟悉後，再放回原句練習。')+' 每次專注一個小目標。',
+      '優先調整'+word+'。'+item.tip+' 聽示範後自行朗讀，比較聲母、韻母和聲調；再回到原句，保持詞語連貫。'+(second?'接着可練「'+second.char+'」，逐一鞏固。':'字音穩定後，再練詩句的停頓。')
+    ][grade-1];
+  }
+  if(practice.unknownWords.length||!practice.assessedCount)return grade<=2?'有些字還沒聽清楚。找個安靜的地方，對着麥克風再讀一次吧。':grade<=4?'有些字還沒有清楚的評測結果。請靠近麥克風一點，用自然的速度再讀一次。':'部分字音尚無可靠的評測結果，暫不判斷對錯。請在安靜的環境重讀，保持自然語速，字與字之間不用刻意停頓。';
+  return [
+    '已評測的字都讀得不錯！再聽一次示範，跟着讀一句吧。',
+    '已評測的字音都達到八十分了！聽聽示範怎樣停一停，再讀一句。',
+    '已評測的字音都達到八十分了。接着聽示範，練習在逗號稍停、句號停穩。',
+    '已評測的字音都達到八十分了。下一步練句子的停頓：先聽示範，再自然地讀，讓詞語連在一起。',
+    '已評測的字音都達到八十分了。可以把重點放在節奏：聽示範如何分組，讀時保持詞語連貫，在標點處適當停頓。',
+    '已評測的字音都達到八十分了。接着練完整表達：參考示範的節奏，根據句意安排停頓和輕重，用自然的語速再讀一遍。'
+  ][grade-1];
 }
 function renderReport() {
   const s=state(poem),result=poemAssessment();
@@ -510,7 +527,7 @@ async function loadActivity(name,load) {
 }
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260918b'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260918c'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
@@ -682,7 +699,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('pagehide',()=>{stopMedia();cancelRecording();persist();});
 async function init(){
   try{
-    const responses=await Promise.all([fetch('poems.json?v=20260917e',{signal:AbortSignal.timeout(15000)}),fetch('pronunciation.json?v=20260908b',{signal:AbortSignal.timeout(15000)})]);
+    const responses=await Promise.all([fetch('poems.json?v=20260918c',{signal:AbortSignal.timeout(15000)}),fetch('pronunciation.json?v=20260908b',{signal:AbortSignal.timeout(15000)})]);
     if(responses.some(response=>!response.ok))throw new Error('catalog');
     const [data,pronunciation]=await Promise.all(responses.map(response=>response.json()));
     poems=data.poems;if(!Array.isArray(poems)||!poems.length)throw new Error('catalog');

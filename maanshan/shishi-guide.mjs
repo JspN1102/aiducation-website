@@ -1,17 +1,24 @@
-﻿const pictureURL = new URL('./media/shishi/guide-v2.webp?v=20260915a', import.meta.url).href;
+const pictureURL = new URL('./media/shishi/guide-still-20260918c.webp', import.meta.url).href;
+const gestures = {
+  wave: {url:new URL('./media/shishi/guide-wave-20260918c.webp', import.meta.url).href, duration:2000},
+  book: {url:new URL('./media/shishi/guide-book-20260918c.webp', import.meta.url).href, duration:4000}
+};
 let instanceID = 0;
 
 /** A small navigation companion. No model downloads, rendering loop or floating placement. */
 export function mountShishi(container, options = {}) {
   if (!container) throw new TypeError('A Shishi guide container is required');
   let settings = {view: 'lesson', ...options};
-  let dead = false, open = false, paused = false, slot = null, updateFrame = 0, greeting = null;
+  let dead = false, open = false, paused = false, slot = null, updateFrame = 0;
+  let gestureID = 0, gestureTimer = 0, gesturePicture = null, gestureURL = null;
+  const gestureBlobs = new Map();
   const events = new AbortController(), id = `shishi-guide-${++instanceID}`;
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const guide = document.createElement('aside');
   guide.className = 'shishi-guide';
   guide.setAttribute('aria-label', '詩詩學習向導');
   guide.dataset.model = 'picture';
+  guide.dataset.gesture = 'idle';
   guide.innerHTML = `<section class="shishi-bubble" id="${id}" aria-labelledby="${id}-title" hidden>
     <div class="shishi-bubble-heading"><h2 id="${id}-title"></h2><button type="button" class="shishi-dismiss" aria-label="關閉提示"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button></div>
     <p class="shishi-hint-text" role="status" aria-live="polite"></p><div class="shishi-poet-actions"><button type="button" class="shishi-find-poet">好呀，找詩人</button><button type="button" class="shishi-understood">先不去</button></div>
@@ -22,6 +29,48 @@ export function mountShishi(container, options = {}) {
   container.replaceChildren(guide);
   const q = selector => guide.querySelector(selector), button = q('.shishi-guide-button');
   const bubble = q('.shishi-bubble'), picture = q('img'), fallback = q('.shishi-guide-fallback');
+
+  function stopGesture() {
+    gestureID += 1;
+    clearTimeout(gestureTimer); gestureTimer = 0;
+    gesturePicture?.remove(); gesturePicture = null;
+    if (gestureURL) URL.revokeObjectURL(gestureURL);
+    gestureURL = null;
+    picture.style.visibility = '';
+    guide.dataset.gesture = 'idle';
+  }
+  async function playGesture(kind) {
+    stopGesture();
+    if (dead || guide.hidden || button.disabled || document.hidden || reducedMotion.matches) return;
+    const token = gestureID, gesture = gestures[kind];
+    try {
+      // Fetch bytes only on a meaningful action. A fresh object URL restarts
+      // the supplied WebP at frame one even after another play in this tab.
+      if (!gestureBlobs.has(kind)) {
+        gestureBlobs.set(kind, fetch(gesture.url, {signal:events.signal})
+          .then(response => {if (!response.ok) throw new Error('Gesture unavailable'); return response.blob();})
+          .catch(error => {gestureBlobs.delete(kind); throw error;}));
+      }
+      const blob = await gestureBlobs.get(kind);
+      if (dead || token !== gestureID || guide.hidden || button.disabled || document.hidden || reducedMotion.matches) return;
+      gestureURL = URL.createObjectURL(blob);
+      const animated = new Image();
+      animated.alt = ''; animated.width = 192; animated.height = 165;
+      animated.className = 'shishi-gesture'; animated.decoding = 'async';
+      animated.src = gestureURL;
+      gesturePicture = animated;
+      await animated.decode();
+      if (dead || token !== gestureID) return;
+      q('.shishi-guide-art').append(animated);
+      picture.style.visibility = 'hidden';
+      guide.dataset.gesture = kind;
+      // Both source animations finish in their starting pose. Return to a
+      // static asset after one run; there is never an idle animation loop.
+      gestureTimer = setTimeout(() => {if (token === gestureID) stopGesture();}, gesture.duration);
+    } catch {
+      if (token === gestureID) stopGesture();
+    }
+  }
 
   function dock() {
     const bar = document.querySelector('.lesson-bar');
@@ -75,6 +124,7 @@ export function mountShishi(container, options = {}) {
     button.disabled = paused || settings.disabled === true;
     guide.dataset.motion = hidden || document.hidden ? 'hidden' : reducedMotion.matches ? 'reduced' : button.disabled ? 'paused' : 'idle';
     if (hidden || button.disabled) close();
+    if (hidden || button.disabled || document.hidden || reducedMotion.matches) stopGesture();
     else placeBubble();
   }
   function scheduleUpdate() {
@@ -89,20 +139,12 @@ export function mountShishi(container, options = {}) {
   checkPicture();
   button.addEventListener('click', () => {
     if (dead || button.disabled || guide.hidden) return;
+    void playGesture('wave');
     if (open) {close(); return;}
     try {if (typeof settings.onOpen === 'function' && settings.onOpen() === false) return;} catch {return;}
     document.querySelectorAll('.lesson-menu[open]').forEach(menu => {menu.open = false;});
     refreshHint(); open = true; bubble.hidden = false; placeBubble();
     button.setAttribute('aria-expanded', 'true');
-    if (!reducedMotion.matches) {
-      greeting?.cancel();
-      greeting = picture.animate([
-        {transform:'rotate(0) translateY(0)'},
-        {transform:'rotate(-5deg) translateY(-1px)',offset:.3},
-        {transform:'rotate(5deg) translateY(-1px)',offset:.65},
-        {transform:'rotate(0) translateY(0)'}
-      ], {duration:650,easing:'ease-in-out'});
-    }
     if (button.matches(':focus-visible')) q('.shishi-dismiss').focus({preventScroll: true});
   }, {signal: events.signal});
   q('.shishi-dismiss').addEventListener('click', () => close(true), {signal: events.signal});
@@ -125,17 +167,21 @@ export function mountShishi(container, options = {}) {
   });
   observer.observe(document.body, {attributes:true,attributeFilter:['open','hidden','aria-modal'],childList:true,subtree:true});
   updateVisibility();
+  if (settings.view === 'quiz') void playGesture('book');
   return {
     pause(value = true) {paused = !!value; updateVisibility();},
     update(next = {}) {
+      const enteredPractice = next.view === 'quiz' && settings.view !== 'quiz';
       if ((next.view && next.view !== settings.view) || (next.poem && next.poem !== settings.poem)) close();
+      if ((next.view && next.view !== settings.view) || (next.poem && next.poem !== settings.poem)) stopGesture();
       settings = {...settings, ...next};
       if (open) refreshHint();
       updateVisibility();
+      if (enteredPractice) void playGesture('book');
     },
     destroy() {
       if (dead) return;
-      dead = true; cancelAnimationFrame(updateFrame); greeting?.cancel();
+      dead = true; cancelAnimationFrame(updateFrame); stopGesture();
       events.abort(); observer.disconnect(); guide.remove(); slot?.remove();
     }
   };

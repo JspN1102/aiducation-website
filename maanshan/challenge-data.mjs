@@ -1,7 +1,7 @@
 // Questions are assessment content, not a claim that an entire phonics lesson is covered.
 // Render only prompt/options/cards/slot labels before submission. Audio text, targets,
 // explanations and curriculum metadata must never become pre-answer captions or aria labels.
-import {DICTATION_BANK} from './challenge-dictation-bank.mjs?v=20260918b';
+import {DICTATION_BANK} from './challenge-dictation-bank.mjs?v=20260918c';
 export const CHALLENGE_VERSION = 2;
 
 const toneOptions = () => [
@@ -180,6 +180,17 @@ const VARIED_SOUNDS = {
   ]
 };
 
+export const POEM_GAME_ITEMS = Object.freeze(Object.fromEntries([
+  ['yong-e', 1, '白鵝的調色盤', '替白鵝、紅掌和水面上色。', '白毛、紅掌、綠水。邊聽邊上色，把詩裏的畫面找出來。'],
+  ['zeng-wang-lun', 2, '踏歌送朋友', '跟着聲音，送朋友一程。', '李白乘舟，汪倫踏歌。岸上的歌聲把送別的友情送得很遠。'],
+  ['ti-xi-lin-bi', 3, '山中小攝影師', '換個角度，拍下山的樣子。', '橫看成嶺，側看成峯。同一座山，從不同位置看，樣子也不同。'],
+  ['bo-chuan-gua-zhou', 4, '春風染江南', '用指尖的春風，染綠江岸。', '春風又綠江南岸。「綠」寫出春風吹來，草木重新變綠。'],
+  ['gui-yuan-tian-ju', 5, '豆苗小園丁', '照顧小豆苗，整理詩中的田地。', '草盛豆苗稀。野草茂盛，豆苗稀疏；詩人一早起來整理田地。'],
+  ['zao-chun', 6, '把春天找出來', '讓春雨落下，再找一找草色。', '草色遙看近卻無。遠看有一片淡綠，近看仍是稀疏小草和泥土。']
+].map(([slug, grade, title, prompt, explanation]) => [slug, Object.freeze({
+  id: `g${grade}-play-20260918`, type: 'microgame', slug, title, prompt, explanation, difficulty: 1
+})])));
+
 // Keep the original five IDs available for version-one saved attempts. New attempts
 // draw from bank and store their five selected IDs; set.items is never a live attempt.
 export const CHALLENGE_SETS = Object.freeze(Object.fromEntries(Object.entries(LEGACY_SETS).map(([slug, set]) => {
@@ -190,7 +201,7 @@ export const CHALLENGE_SETS = Object.freeze(Object.fromEntries(Object.entries(LE
     target: {char: word.char, pinyin: word.pinyin, accept: word.accept},
     explanation: `「${word.word}」的「${word.char}」。聽清讀音，再看看這個字怎樣寫。`
   }));
-  const bank = [...set.items, ...MORE_SOUNDS[slug], ...VARIED_SOUNDS[slug], ...additions].map(item => ({difficulty: 1, ...item}));
+  const bank = [...set.items, ...MORE_SOUNDS[slug], ...VARIED_SOUNDS[slug], ...additions, POEM_GAME_ITEMS[slug]].map(item => ({difficulty: 1, ...item}));
   const {sampled, notSampled, ...curriculum} = set.curriculum;
   return [slug, Object.freeze({...set, curriculum: {...curriculum, legacySampled: sampled, legacyNotSampled: notSampled,
     bankFocus: [...new Set(bank.filter(item => item.type === 'sound').map(item => item.focus))],

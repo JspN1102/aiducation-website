@@ -4,6 +4,7 @@
       "id": 1,
       "slug": "yong-e",
       "title": "詠鵝",
+      "animation": {"src":"media/yong-e/animation-20260918c.mp4","poster":"media/yong-e/animation-poster-20260918c.webp","caption":"跟着白鵝游一游，找找詩中的顏色"},
       "author": "駱賓王",
       "dynasty": "唐",
       "grade": 1,

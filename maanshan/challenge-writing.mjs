@@ -1,4 +1,4 @@
-import {createHandwritingPad} from './handwriting-pad.mjs?v=20260908i';
+import {createHandwritingPad} from './handwriting-pad.mjs?v=20260918c';
 
 // First submitted recognition is the assessment. Later stroke demonstrations
 // and free practice never change that result. Only the top candidate counts.
@@ -32,10 +32,10 @@ export function mountChallengeWriting(holder, {
   // hidden markup, a background image, or the accessibility tree.
   root.innerHTML = `<style>
 .challenge-writing{width:100%;max-width:430px;margin-inline:auto;color:#233d32}
-.challenge-writing .cw-board{position:relative;width:min(100%,220px);aspect-ratio:1;margin:4px auto 8px;border:1px solid #bfcfc3;border-radius:20px;overflow:hidden;background-color:#fffef8;background-image:linear-gradient(90deg,transparent calc(50% - .5px),#dce4d9 calc(50% - .5px),#dce4d9 calc(50% + .5px),transparent calc(50% + .5px)),linear-gradient(transparent calc(50% - .5px),#dce4d9 calc(50% - .5px),#dce4d9 calc(50% + .5px),transparent calc(50% + .5px))}
+.challenge-writing .cw-board{position:relative;width:min(100%,220px);aspect-ratio:1;margin:4px auto 8px;border:1px solid #bfcfc3;border-radius:20px;overflow:hidden;background-color:#fff;background-image:linear-gradient(90deg,transparent calc(50% - .5px),#dce4d9 calc(50% - .5px),#dce4d9 calc(50% + .5px),transparent calc(50% + .5px)),linear-gradient(transparent calc(50% - .5px),#dce4d9 calc(50% - .5px),#dce4d9 calc(50% + .5px),transparent calc(50% + .5px))}
 .challenge-writing.is-answered .cw-board{width:min(100%,176px)}
-.challenge-writing canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
-.challenge-writing .cw-animation{position:absolute;inset:0;min-width:0;min-height:0;background:#fffef8;display:grid;place-items:center;font-family:'Noto Serif TC',serif;line-height:1}
+.challenge-writing canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;background:#fff}
+.challenge-writing .cw-animation{position:absolute;inset:0;min-width:0;min-height:0;background:#fff;display:grid;place-items:center;font-family:'Noto Serif TC',serif;line-height:1}
 .challenge-writing .cw-animation[hidden],.challenge-writing [hidden]{display:none!important}
 .challenge-writing .cw-animation svg{position:absolute;inset:0;width:100%;height:100%;display:block}
 .challenge-writing .cw-tools,.challenge-writing .cw-controls,.challenge-writing .cw-review-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}

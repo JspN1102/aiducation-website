@@ -1,0 +1,39 @@
+.poem-goose-game{width:100%;max-width:760px;margin-inline:auto;display:grid;gap:14px;color:#254a3f;font-family:inherit;min-width:0}
+.poem-goose-game *{box-sizing:border-box}
+.poem-goose-game .goose-instruction{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.poem-goose-game .goose-instruction p{font-size:clamp(19px,2.4vw,24px);font-weight:600;line-height:1.45;margin:0}
+.poem-goose-game .goose-progress{font-family:inherit;font-weight:600;font-size:18px;line-height:1.2;white-space:nowrap;color:#61776b;font-variant-numeric:tabular-nums}
+.poem-goose-game .goose-picture{position:relative;isolation:isolate;aspect-ratio:3/2;width:min(100%,690px);justify-self:center;overflow:hidden;border-radius:22px;background:#f2eee4;touch-action:pan-y;border:1px solid #849d8c36}
+.poem-goose-game .goose-base,.poem-goose-game .goose-layer{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.poem-goose-game .goose-layer{opacity:0;transition:opacity .75s ease}
+.poem-goose-game .goose-layer.is-filled{opacity:1}
+.poem-goose-game .goose-part{position:absolute;left:var(--x);top:var(--y);width:52px;height:52px;min-width:44px;min-height:44px;transform:translate(-50%,-50%);padding:0;border:0;border-radius:50%;display:grid;place-items:center;background:transparent;color:#fff;z-index:2;cursor:pointer;touch-action:manipulation;box-shadow:none}
+.poem-goose-game .goose-part span{display:grid;place-items:center;width:27px;height:27px;line-height:1;font-family:system-ui,sans-serif;font-size:23px;font-weight:400;border:1.5px solid #fffffff0;border-radius:50%;background:#345c4b9c;box-shadow:0 0 0 6px #ffffff2b;transition:background .2s,transform .2s}
+.poem-goose-game .goose-part.is-filled span{background:#eaf3e9e8;color:#305747;font-size:18px;box-shadow:0 0 0 4px #ffffff20}
+.poem-goose-game .goose-part:disabled{cursor:default}
+.poem-goose-game .goose-part:focus-visible{outline:3px solid #eeae50;outline-offset:1px}
+.poem-goose-game .goose-part:hover:not(:disabled) span{transform:scale(1.12)}
+.poem-goose-game.is-complete .goose-part{visibility:hidden}
+.poem-goose-game .goose-palette{display:flex;justify-content:center;gap:12px;padding:0 2px}
+.poem-goose-game .goose-paint{position:relative;display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;min-height:60px;max-width:190px;flex:1;padding:10px 14px;background:#fffefb;border:1.5px solid #d8dfd4;border-radius:19px;color:#345345;font-family:inherit;font-size:23px;font-weight:600;line-height:1.2;cursor:pointer;touch-action:none;box-shadow:0 3px 0 #e6eade;transition:background .2s,border-color .2s;user-select:none;-webkit-user-select:none}
+.poem-goose-game .goose-paint i{width:31px;height:31px;flex:none;display:block;border-radius:50%;background:#fffefa;border:1.5px solid #d7d3c6;box-shadow:inset 0 -3px 0 #00000008}
+.poem-goose-game .goose-paint-red i{background:#bf5b46;border-color:#a94d3d}
+.poem-goose-game .goose-paint-green i{background:#548b70;border-color:#477b5e}
+.poem-goose-game .goose-paint[aria-pressed=true]{border-color:#4b7c64;background:#f0f7ed;box-shadow:0 0 0 2px #4b7c6420,0 3px 0 #d5e4d3}
+.poem-goose-game .goose-paint b{position:absolute;right:5px;top:3px;font-size:13px;line-height:1;color:#52764f}
+.poem-goose-game .goose-paint>span{white-space:nowrap}
+.poem-goose-game .goose-paint:disabled{cursor:default;opacity:.68}
+.poem-goose-game .goose-paint:focus-visible,.poem-goose-game .goose-loading button:focus-visible{outline:3px solid #de9b34;outline-offset:4px}
+.poem-goose-game .goose-paint.is-dragging{z-index:10;opacity:.92;box-shadow:0 7px 16px #274f3829}
+.poem-goose-game .goose-feedback{font-size:20px;font-weight:500;line-height:1.5;text-align:center;margin:0;min-height:1.5em;color:#4a6a59;text-wrap:pretty}
+.poem-goose-game .goose-loading{position:absolute;inset:0;z-index:4;display:grid;align-content:center;justify-items:center;gap:15px;padding:20px;background:#f5f2eae8;font-size:21px;line-height:1.5;text-align:center}
+.poem-goose-game .goose-loading button{min-height:48px;padding:10px 22px;border:1px solid #97ad9b;border-radius:14px;background:#fffefa;color:#254a3f;font-family:inherit;font-weight:600;font-size:20px;line-height:1.2;cursor:pointer}
+.poem-goose-game .goose-caption{position:absolute;bottom:12px;right:14px;display:flex;flex-direction:column;gap:4px;padding:10px 14px;border-radius:12px;background:#fefbf0e8;color:#315240;font-family:'Noto Serif TC','Source Han Serif TC',serif;font-size:clamp(18px,3vw,26px);font-weight:600;line-height:1.45;letter-spacing:.12em;pointer-events:none}
+.poem-goose-game [hidden]{display:none!important}
+.poem-goose-game .goose-ripple{position:absolute;z-index:1;width:32px;height:20px;border:2px solid #fffef4;box-shadow:0 0 0 7px #ffffff32;border-radius:50%;pointer-events:none;animation:goose-colour-ripple .8s ease-out forwards}
+@keyframes goose-colour-ripple{from{transform:translate(-50%,-50%) scale(.5);opacity:.95}to{transform:translate(-50%,-50%) scale(3);opacity:0}}
+.poem-goose-game.is-reduced-motion .goose-layer{transition:none}
+.poem-goose-game.is-reduced-motion .goose-ripple{display:none}
+@media(max-width:420px){.poem-goose-game{gap:12px}.poem-goose-game .goose-instruction{gap:8px}.poem-goose-game .goose-instruction p{font-size:19px}.poem-goose-game .goose-progress{font-size:16px}.poem-goose-game .goose-palette{gap:8px}.poem-goose-game .goose-paint{font-size:21px;min-height:57px;padding:9px 8px;gap:6px;border-radius:16px}.poem-goose-game .goose-paint i{width:25px;height:25px}.poem-goose-game .goose-feedback{font-size:19px}.poem-goose-game .goose-picture{border-radius:16px}.poem-goose-game .goose-caption{bottom:8px;right:8px;padding:8px 10px}}
+@media(max-width:370px){.poem-goose-game .goose-paint{flex-direction:column;gap:5px;padding:8px 5px;font-size:21px;min-height:72px}}
+@media(prefers-reduced-motion:reduce){.poem-goose-game .goose-layer,.poem-goose-game .goose-part span,.poem-goose-game .goose-paint{transition:none}.poem-goose-game .goose-ripple{display:none}}
