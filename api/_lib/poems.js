@@ -1,5 +1,8 @@
 const https = require('https');
 const { poems } = require('../../maanshan/poems.json');
+const teachingNotes = {
+  6: '「酥」在本詩指用牛羊乳製成的酥油，取其細膩、潤澤來比喻初春細雨。解釋「潤如酥」的重點是雨絲細密柔和、滋潤大地，並非說街道像油一樣滑。「路滑」「踩起來滑」「不泥濘」都不是本詩的字詞意思，也不能用這些想像代替詞義解釋。'
+};
 
 function getPoem(poemId, defaultId = 2) {
   const id = poemId === undefined ? defaultId : poemId;
@@ -14,6 +17,7 @@ function poemContext(poem) {
     `作者資料：${poem.authorBio}`,
     `詩意：${poem.description}`,
     `主題：${poem.theme}`,
+    ...(teachingNotes[poem.id] ? [`字詞教學參考：${teachingNotes[poem.id]}`] : []),
     ...lines
   ].join('\n');
 }
