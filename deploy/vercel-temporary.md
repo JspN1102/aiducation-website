@@ -14,12 +14,15 @@
 
 ```powershell
 python deploy/package-vercel.py --destination C:/Users/Administrator/maanshan-work/临时发布新目录 --project-id prj_BXHyIePcHYn42fprA8v1zB2rvSF1 --team-id team_6bMNzzu5QidBaJlDV3R4icEd
-vercel --cwd C:/Users/Administrator/maanshan-work/临时发布新目录 --prod --yes --scope jspn1102s-projects
+Set-Location C:/Users/Administrator/maanshan-work/临时发布新目录
+vercel --prod --yes --scope jspn1102s-projects --local-config ./vercel.json
 ```
 
 不得从原项目目录直接发布临时站。打包器仅复制普通话平台及需要的 API，生成自己的
 Vercel 配置与项目关联；根路径跳到 `/maanshan/`。不会上传 `.env`、服务端部署工具、
 学校数据库、原官网或其他站点。`.vercel/project.json` 只标识新项目，不包含密钥。
+发布时必须实际进入隔离目录，并显式指定它的 `vercel.json`；当前CLI会先于 `--cwd`
+读取启动目录配置，单独使用 `--cwd` 可能误带入原官网的路由和函数配置。
 
 发布环境变量使用该独立项目的 production 配置：`TENCENT_APP_ID`、
 `TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY`、`GPT_API_BASE`、`GPT_API_KEY`、

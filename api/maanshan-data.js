@@ -2,6 +2,7 @@ import { query, isDbReady } from './_lib/db.js';
 import { timingSafeEqual } from 'node:crypto';
 import poemHelpers from './_lib/poems.js';
 import studentStore from './_lib/student-store.js';
+import challengeLoader from './_lib/challenge-loader.cjs';
 
 function resultTime(...values) {
   for (const value of values) {
@@ -133,7 +134,7 @@ export default async function handler(req, res) {
     const students = Object.values(studentMap);
     // Vercel loads this handler as CommonJS. Native import keeps the shared
     // browser .mjs question bank compatible with that server runtime.
-    const { CHALLENGE_SETS } = await import('../maanshan/challenge-data.mjs');
+    const { CHALLENGE_SETS } = await challengeLoader.load();
     const set = CHALLENGE_SETS[poemHelpers.getPoem(poemId, null)?.slug];
     students.forEach(student => { student.writingResult = writingResult(student, set); });
 
@@ -209,7 +210,8 @@ export default async function handler(req, res) {
       }))
     });
   } catch (err) {
-    console.error('maanshan-data aggregation failed');
+    const code = typeof err?.code === 'string' && /^[A-Z0-9_]+$/.test(err.code) ? err.code : 'READ_ERROR';
+    console.error('maanshan-data aggregation failed: ' + code);
     return res.status(200).json({ grade, cls, poemId, hasData: false, error: 'Unable to read data' });
   }
 }

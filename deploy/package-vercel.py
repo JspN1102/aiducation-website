@@ -73,7 +73,7 @@ def main():
             'api/maanshan-report.js': {'maxDuration': 60},
             'api/handwriting.js': {'maxDuration': 20},
             'api/maanshan-save.js': {'maxDuration': 20},
-            'api/maanshan-data.js': {'maxDuration': 30},
+            'api/maanshan-data.js': {'maxDuration': 30, 'includeFiles': 'maanshan/challenge*.mjs'},
         },
         'redirects': [{'source': '/', 'destination': '/maanshan/', 'statusCode': 307},
                       {'source': '/favicon.ico', 'destination': '/favicon.png', 'statusCode': 307},
