@@ -28,7 +28,7 @@ let saved = readStorage(STORE, {});
 if (!saved || Array.isArray(saved) || typeof saved !== 'object') saved={};
 let profile=readStorage(PROFILE,null);
 let poems=[], poem=null, view='record', routeVersion=0, showPinyin=true;
-let transientAudio=null, transientUrl=null, speechVersion=0, toastTimer=null;
+let transientAudio=null, transientUrl=null, browserSpeech=null, browserSpeechResolve=null, browserSpeechTimer=null, speechVersion=0, toastTimer=null;
 let currentLine=0, recorder=null, stream=null, recordContext=null, recordTimer=null, recordStarted=0, recordBusy=false, recordingVersion=0;
 let recordStep='read', recordWordIndex=0;
 let reportGeneration=0;
@@ -42,6 +42,7 @@ const TTS_VOICE=502001;
 const TTS_SPEED=-.75;
 const TTS_PRONUNCIATION='20260919b3';
 const speechCache=new Map(), speechPending=new Map();
+let ttsUnavailableUntil=0;
 const recordings=new Map(), requests=new Set();
 const pendingRecordings=new Map();
 const sync=createSyncQueue({
@@ -104,6 +105,11 @@ function toast(text) { clearTimeout(toastTimer);$('#toast').textContent=text;$('
 function stopTransient() {
   speechVersion++;
   if(transientAudio){transientAudio.pause();transientAudio.onended=null;transientAudio.onerror=null;}
+  if(browserSpeechTimer){clearTimeout(browserSpeechTimer);browserSpeechTimer=null;}
+  const resolveBrowserSpeech=browserSpeechResolve;
+  browserSpeechResolve=null;browserSpeech=null;
+  try{window.speechSynthesis?.cancel();}catch{}
+  resolveBrowserSpeech?.(false);
   finishTransient?.(false);finishTransient=null;transientAudio=null;
   if(transientUrl)URL.revokeObjectURL(transientUrl);transientUrl=null;
   if(activeSpeechButton){delete activeSpeechButton.dataset.audioState;activeSpeechButton.removeAttribute('aria-busy');activeSpeechButton.setAttribute('aria-pressed',String(activeSpeechButton.dataset.action==='practice-word'&&activeSpeechButton.classList.contains('selected')));}
@@ -139,26 +145,32 @@ function challengeMarkup(target){
   if(target.char&&target.pinyin)readings.set(target.char,target.pinyin);
   return '<speak><break time="160ms"/>'+Array.from(target.text,char=>readings.has(char)?phonemeMarkup(char,readings.get(char)):xmlText(char)).join('')+'</speak>';
 }
-function speechKey(text){return String(text);}
+function speechKey(text,markup){return (markup?'ssml:':'plain:')+String(text);}
 async function speechSource(text,{markup=null}={}) {
-  const requestText=markup||String(text),key=speechKey(requestText);
+  const requestText=markup||String(text),key=speechKey(requestText,markup);
   if(speechCache.has(key))return speechCache.get(key);
   if(speechPending.has(key))return speechPending.get(key);
+  if(Date.now()<ttsUnavailableUntil)throw new Error('TTS temporarily unavailable');
   const pending=(async()=>{
-    const response=await fetch('/api/tts/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:requestText,voice:TTS_VOICE,speed:TTS_SPEED,pronunciationVersion:TTS_PRONUNCIATION,delivery:'url',allowSSML:Boolean(markup)}),signal:AbortSignal.timeout(20000)});
-    if(!response.ok)throw new Error('TTS');
-    let source;
-    const type=response.headers.get('content-type')||'';
-    if(type.startsWith('application/json')){
-      const result=await response.json();
-      if(typeof result.url!=='string'||!result.url.startsWith('/api/tts/?'))throw new Error('TTS URL');
-      source=result.url;
-    }else if(type.startsWith('audio/')){
-      source=await response.blob();
-      if(!source.size)throw new Error('empty audio');
-    }else throw new Error('TTS response');
-    if(speechCache.size>=80)speechCache.delete(speechCache.keys().next().value);
-    speechCache.set(key,source);return source;
+    try{
+      const response=await fetch('/api/tts/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:requestText,voice:TTS_VOICE,speed:TTS_SPEED,pronunciationVersion:TTS_PRONUNCIATION,delivery:'url',allowSSML:Boolean(markup)}),signal:AbortSignal.timeout(20000)});
+      if(!response.ok)throw new Error('TTS');
+      let source;
+      const type=response.headers.get('content-type')||'';
+      if(type.startsWith('application/json')){
+        const result=await response.json();
+        if(typeof result.url!=='string'||!result.url.startsWith('/api/tts/?'))throw new Error('TTS URL');
+        source=result.url;
+      }else if(type.startsWith('audio/')){
+        source=await response.blob();
+        if(!source.size)throw new Error('empty audio');
+      }else throw new Error('TTS response');
+      if(speechCache.size>=80)speechCache.delete(speechCache.keys().next().value);
+      speechCache.set(key,source);return source;
+    }catch(error){
+      if(error?.name!=='AbortError')ttsUnavailableUntil=Date.now()+45000;
+      throw error;
+    }
   })().finally(()=>speechPending.delete(key));
   speechPending.set(key,pending);return pending;
 }
@@ -167,6 +179,36 @@ function playBlob(blob) {
 }
 function playSpeech(source) {
   return typeof source==='string'?playSource(source,false,.85):playBlob(source);
+}
+function browserSpeechText(value){
+  return String(value).trim()
+    .replace(/^<speak\b[^>]*>/i,'').replace(/<\/speak>$/i,'')
+    .replace(/<break\b[^>]*\/?>/gi,'，')
+    .replace(/<phoneme\b[^>]*>([^<>]*)<\/phoneme>/gi,'$1')
+    .replace(/<[^>]+>/g,'')
+    .replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').trim();
+}
+function playBrowserSpeech(text){
+  if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance!=='function')return Promise.resolve(false);
+  if(browserSpeechTimer){clearTimeout(browserSpeechTimer);browserSpeechTimer=null;}
+  if(browserSpeechResolve){const old=browserSpeechResolve;browserSpeechResolve=null;browserSpeech=null;old(false);}
+  try{window.speechSynthesis.cancel();}catch{}
+  const utterance=new SpeechSynthesisUtterance(browserSpeechText(text));
+  const voices=window.speechSynthesis.getVoices?.()||[];
+  const zh=voices.filter(voice=>/^zh(?:-|$)/i.test(voice.lang)||/中文|普通話|普通话|mandarin|chinese/i.test(voice.name));
+  utterance.voice=zh.find(voice=>/女|female|xiaoxiao|tingting|婷婷|晓晓|晓萱/i.test(voice.name))||zh[0]||voices.find(voice=>/^zh/i.test(voice.lang))||null;
+  utterance.lang=utterance.voice?.lang||'zh-CN';utterance.rate=.78;utterance.pitch=1.04;utterance.volume=1;
+  return new Promise(resolve=>{
+    const finish=ok=>{
+      if(browserSpeech!==utterance)return;
+      if(browserSpeechTimer){clearTimeout(browserSpeechTimer);browserSpeechTimer=null;}
+      browserSpeech=null;browserSpeechResolve=null;resolve(ok);
+    };
+    browserSpeech=utterance;browserSpeechResolve=resolve;
+    utterance.onend=()=>finish(true);utterance.onerror=()=>finish(false);
+    browserSpeechTimer=setTimeout(()=>{try{window.speechSynthesis.cancel();}catch{}finish(false);},30000);
+    try{window.speechSynthesis.speak(utterance);}catch{finish(false);}
+  });
 }
 function playSource(url,revoke=false,playbackRate=1) {
   return new Promise(resolve=>{
@@ -190,13 +232,18 @@ function playSource(url,revoke=false,playbackRate=1) {
   });
 }
 async function playDemonstration(url,text,markup,isCurrent){
-  if(url){
-    const finished=await playSource(url);
+  try{
+    if(url){
+      const finished=await playSource(url);
+      if(finished||!isCurrent())return finished;
+    }
+    const source=await speechSource(text,{markup});
+    if(!isCurrent())return false;
+    const finished=await playSpeech(source);
     if(finished||!isCurrent())return finished;
-  }
-  const source=await speechSource(text,{markup});
+  }catch{}
   if(!isCurrent())return false;
-  return playSpeech(source);
+  return playBrowserSpeech(markup||text);
 }
 async function speakWord(char,pinyin,button=null) {
   if(button&&activeSpeechButton===button){stopMedia();return;}
