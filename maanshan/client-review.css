@@ -40,6 +40,10 @@
 .shishi-poet-actions .shishi-understood{background:#fffef8;font-weight:500}
 .animation-pending{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;min-height:100%;padding:24px;text-align:center}
 .animation-pending img{width:88px;height:88px}.animation-pending h2{font-size:28px}.animation-pending p{font-size:21px;line-height:1.6}
+.workspace.view-record .record-bottom:empty{display:none}
+@media(min-width:1025px){
+ .workspace.view-lesson #view{display:flex;align-items:safe center;overflow-y:auto}
+}
 @media(max-width:420px){
  .workspace .lesson-bar{gap:8px}
  .workspace .shishi-touch-slot{--shishi-width:72px;--shishi-height:102px}

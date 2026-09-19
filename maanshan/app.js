@@ -1,8 +1,8 @@
 import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260919a';
 import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260919a';
 import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
-import {getWordAudioURL} from './word-audio.mjs?v=20260919b';
-import {getSpeechAudioURL} from './speech-audio.mjs?v=20260919b';
+import {getWordAudioURL} from './word-audio.mjs?v=20260919c';
+import {getSpeechAudioURL} from './speech-audio.mjs?v=20260919c';
 import {mountShishi} from './shishi.mjs?v=20260919a';
 import {mountPoemSwipe} from './poem-swipe.mjs?v=20260915a';
 import {mountLessonMap} from './lesson-map.mjs?v=20260919b';
@@ -28,7 +28,7 @@ let saved = readStorage(STORE, {});
 if (!saved || Array.isArray(saved) || typeof saved !== 'object') saved={};
 let profile=readStorage(PROFILE,null);
 let poems=[], poem=null, view='record', routeVersion=0, showPinyin=true;
-let transientAudio=null, transientUrl=null, browserSpeech=null, browserSpeechResolve=null, browserSpeechTimer=null, speechVersion=0, toastTimer=null;
+let transientAudio=null, transientUrl=null, speechVersion=0, toastTimer=null;
 let currentLine=0, recorder=null, stream=null, recordContext=null, recordTimer=null, recordStarted=0, recordBusy=false, recordingVersion=0;
 let recordStep='read', recordWordIndex=0;
 let reportGeneration=0;
@@ -38,9 +38,9 @@ let shishi=null,challenge=null,lessonMap=null,poemSwipe=null;
 let animationPlayer=null,disposeAnimation=null;
 let activityLoad=0;
 let practiceIndex=0, reportTab='advice', reportLine=0, practiceMode='sound';
-const TTS_VOICE=502001;
+const TTS_VOICE=403001;
 const TTS_SPEED=-.75;
-const TTS_PRONUNCIATION='20260919b3';
+const TTS_PRONUNCIATION='edb-20260919d-yunxiaohe';
 const speechCache=new Map(), speechPending=new Map(), speechFailureUntil=new Map(), staticAudioFailures=new Map();
 const STATIC_AUDIO_RETRY_MS=60000;
 let ttsUnavailableUntil=0,ttsSuccessVersion=0;
@@ -106,11 +106,6 @@ function toast(text) { clearTimeout(toastTimer);$('#toast').textContent=text;$('
 function stopTransient() {
   speechVersion++;
   if(transientAudio){transientAudio.pause();transientAudio.onended=null;transientAudio.onerror=null;}
-  if(browserSpeechTimer){clearTimeout(browserSpeechTimer);browserSpeechTimer=null;}
-  const resolveBrowserSpeech=browserSpeechResolve;
-  browserSpeechResolve=null;browserSpeech=null;
-  try{window.speechSynthesis?.cancel();}catch{}
-  resolveBrowserSpeech?.(false);
   finishTransient?.(false);finishTransient=null;transientAudio=null;
   if(transientUrl)URL.revokeObjectURL(transientUrl);transientUrl=null;
   if(activeSpeechButton){delete activeSpeechButton.dataset.audioState;activeSpeechButton.removeAttribute('aria-busy');activeSpeechButton.setAttribute('aria-pressed',String(activeSpeechButton.dataset.action==='practice-word'&&activeSpeechButton.classList.contains('selected')));}
@@ -194,67 +189,6 @@ function playBlob(blob) {
 function playSpeech(source) {
   return typeof source==='string'?playSource(source,false,.85):playBlob(source);
 }
-const BROWSER_PHONEME_SUBSTITUTIONS=Object.freeze({
-  '還|huan2':'環','还|huan2':'环','還|hai2':'孩','还|hai2':'孩',
-  '荷|he4':'賀','行|hang2':'航','行|xing2':'形',
-  '種|zhong4':'仲','种|zhong4':'仲','種|zhong3':'腫','种|zhong3':'肿',
-  '數|shu4':'樹','数|shu4':'树','數|shu3':'鼠','数|shu3':'鼠',
-  '重|chong2':'崇','重|zhong4':'仲','長|chang2':'常','长|chang2':'常','長|zhang3':'掌','长|zhang3':'掌',
-  '盛|sheng4':'勝','盛|cheng2':'成','橫|heng2':'衡','横|heng2':'衡',
-  '曲|qu1':'區','曲|qu3':'取','處|chu4':'觸','处|chu4':'触','都|du1':'嘟'
-});
-function browserSpeechText(value){
-  return String(value).trim()
-    .replace(/^<speak\b[^>]*>/i,'').replace(/<\/speak>$/i,'')
-    .replace(/<break\b[^>]*\/?>/gi,'，')
-    .replace(/<phoneme\b([^>]*)>([^<>]*)<\/phoneme>/gi,(_,attributes,content)=>{
-      const phoneme=/\bph="([a-z0-9]+)"/i.exec(attributes)?.[1]?.toLowerCase();
-      return BROWSER_PHONEME_SUBSTITUTIONS[content+'|'+phoneme]||content;
-    })
-    .replace(/<[^>]+>/g,'')
-    .replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').trim();
-}
-function isCantoneseVoice(voice){
-  const label=(voice?.lang||'')+' '+(voice?.name||'');
-  return /^(?:yue)(?:-|\s|$)/i.test(voice?.lang||'')||/^zh-(?:hant-)?(?:hk|mo)(?:-|$)/i.test(voice?.lang||'')||/cantonese|廣東話|广东话|粵語|粤语/i.test(label);
-}
-function mandarinVoice(voices){
-  const candidates=voices.filter(voice=>!isCantoneseVoice(voice)&&(/^(?:zh|cmn)(?:-|$)/i.test(voice?.lang||'')||/普通話|普通话|國語|国语|mandarin|chinese/i.test(voice?.name||'')));
-  return candidates.find(voice=>/女|female|xiaoxiao|tingting|婷婷|曉曉|晓晓|曉萱|晓萱/i.test(voice.name||''))||candidates[0]||null;
-}
-function waitForMandarinVoice(synthesis){
-  const initial=synthesis.getVoices?.()||[],selected=mandarinVoice(initial);
-  if(selected||initial.length)return Promise.resolve(selected);
-  return new Promise(resolve=>{
-    let settled=false;
-    const finish=voice=>{if(settled)return;settled=true;clearTimeout(timer);synthesis.removeEventListener?.('voiceschanged',changed);resolve(voice);};
-    const changed=()=>{const voices=synthesis.getVoices?.()||[];if(voices.length)finish(mandarinVoice(voices));};
-    const timer=setTimeout(()=>finish(mandarinVoice(synthesis.getVoices?.()||[])),800);
-    synthesis.addEventListener?.('voiceschanged',changed);
-  });
-}
-async function playBrowserSpeech(text,isCurrent=()=>true,onReady=()=>{}){
-  if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance!=='function')return Promise.resolve(false);
-  if(browserSpeechTimer){clearTimeout(browserSpeechTimer);browserSpeechTimer=null;}
-  if(browserSpeechResolve){const old=browserSpeechResolve;browserSpeechResolve=null;browserSpeech=null;old(false);}
-  try{window.speechSynthesis.cancel();}catch{}
-  const utterance=new SpeechSynthesisUtterance(browserSpeechText(text));
-  utterance.voice=await waitForMandarinVoice(window.speechSynthesis);
-  if(!isCurrent()||!utterance.voice)return false;
-  utterance.lang=utterance.voice.lang||'zh-CN';utterance.rate=.78;utterance.pitch=1.04;utterance.volume=1;
-  onReady();
-  return new Promise(resolve=>{
-    const finish=ok=>{
-      if(browserSpeech!==utterance)return;
-      if(browserSpeechTimer){clearTimeout(browserSpeechTimer);browserSpeechTimer=null;}
-      browserSpeech=null;browserSpeechResolve=null;resolve(ok);
-    };
-    browserSpeech=utterance;browserSpeechResolve=resolve;
-    utterance.onend=()=>finish(true);utterance.onerror=()=>finish(false);
-    browserSpeechTimer=setTimeout(()=>{try{window.speechSynthesis.cancel();}catch{}finish(false);},30000);
-    try{window.speechSynthesis.speak(utterance);}catch{finish(false);}
-  });
-}
 function playSource(url,revoke=false,playbackRate=1) {
   return new Promise(resolve=>{
     const player=new Audio(url);player.preload='auto';player.defaultPlaybackRate=playbackRate;
@@ -304,8 +238,7 @@ async function playDemonstration(url,text,markup,isCurrent,onPhase=()=>{}){
     if(typeof source==='string')speechCache.delete(key);
   }catch{}
   if(!isCurrent())return false;
-  onPhase('loading');
-  return playBrowserSpeech(markup||text,isCurrent,()=>onPhase('playing'));
+  return false;
 }
 async function speakWord(char,pinyin,button=null) {
   if(button&&activeSpeechButton===button){stopMedia();return;}
@@ -486,7 +419,7 @@ function renderRecord() {
   $('#record-tool').dataset.step=recordStep;
   const extensionEntry=poem.id===2&&recordStep!=='extension'?'<button class="text-button extension-entry" data-action="record-extension" '+(recordBusy?'disabled':'')+'>拓展字：快</button>':'';
   $('#record-tool').innerHTML='<div class="record-counter"><span>'+(recordStep==='extension'?'拓展字 · 不計分':'第 '+(currentLine+1)+' / '+poem.lines.length+' 句')+'</span>'+(result&&recordStep==='read'?'<button class="text-button" data-action="record-feedback" '+(recordBusy?'disabled':'')+'>'+icon('check')+'看看這句成果</button>':recordStep==='read'&&!extensionEntry?'<img class="practice-motif" src="'+poemMotif()+'" width="40" height="40" alt="">':'')+extensionEntry+'</div>'+content;
-  $('#record-bottom').innerHTML=recordStep==='extension'?'':recordStep==='read'?'<button class="text-button" data-action="video">'+icon('clapperboard')+'朗讀示範影片</button>':recordings.has(poem.id+'-'+currentLine)?'<button class="text-button" data-action="replay" data-value="'+currentLine+'">'+icon('headphones')+'我的錄音</button>':'';
+  $('#record-bottom').innerHTML=recordStep==='extension'||recordStep==='read'?'':recordings.has(poem.id+'-'+currentLine)?'<button class="text-button" data-action="replay" data-value="'+currentLine+'">'+icon('headphones')+'我的錄音</button>':'';
   document.querySelectorAll('[data-action="record-step"]').forEach(b=>b.disabled=recordBusy||(Number(b.dataset.value)<0?currentLine===0:currentLine===poem.lines.length-1));
   setRecordingBusy();
   icons();
@@ -694,7 +627,7 @@ async function loadActivity(name,load) {
 }
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260919b'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260919c'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,

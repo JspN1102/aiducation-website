@@ -1,136 +1,364 @@
-const media=path=>new URL(`../media/${path}`,import.meta.url).href;
-const zones=[{id:'willow'},{id:'near'},{id:'far'}];
-const WIDTH=768,HEIGHT=512,RADIUS=55;
-const knowledge='「綠」寫春風讓江岸草木重新變綠。「明月何時照我還」是盼望歸鄉，詩人仍在瓜洲。';
-const validDab=p=>Array.isArray(p)&&p.length===2&&p.every(n=>Number.isFinite(n)&&n>=0&&n<=1024);
+const media = path => new URL(`../media/${path}`, import.meta.url).href;
 
-/** Erases three pigment-only alpha overlays; water, sky and boat never recolor. */
-export function mountRiver(holder,{initialState,readOnly=false,playAudio,onState,onComplete,reducedMotion=false}={}){
-  const doc=holder.ownerDocument,view=doc.defaultView,abort=new view.AbortController();
-  const modern=initialState?.version===2,legacyDone=initialState?.gameCompleted===true||(!modern&&initialState?.moon===true);
-  const colored=new Set(legacyDone?zones.map(z=>z.id):modern&&Array.isArray(initialState?.colored)?initialState.colored.filter(id=>zones.some(z=>z.id===id)):[]);
-  // Each saved dab clears at least one of fewer than 800 sampled pigment
-  // points; keep restored drafts comfortably inside the shared storage limit.
-  const dabs=modern&&Array.isArray(initialState?.dabs)?initialState.dabs.filter(validDab).slice(0,1000).map(p=>[...p]):[];
-  let chapter=legacyDone?2:modern&&Number.isInteger(initialState.chapter)?Math.max(0,Math.min(2,initialState.chapter)):0;
-  let berthed=legacyDone||modern&&initialState.berthed===true,heard=modern&&Array.isArray(initialState.heard)?initialState.heard.slice(0,3).map(v=>v===true):[false,false,false];
-  let moon=legacyDone||modern&&colored.size===3&&initialState?.moon===true,reported=moon,dead=false,ready=false,loadId=0,drag=null,moonDrag=null,lightSelected=false,solved=false,speaking=false,voiceGeneration=0;
-  const chapters=[{title:'找到停泊的小舟',verse:'京口瓜洲一水間',task:'聽一句，再點小舟，讓它停穩。'},{title:'讓江岸重新變綠',verse:'春風又綠江南岸',task:'聽一句，掃過三處草木，喚醒春色。'},{title:'把月光送到小舟',verse:'明月何時照我還',task:'聽一句，把月光拖向小舟。'}];
-  const surfaces=new Map(),timers=new Set(),root=doc.createElement('section');root.className='poem-river journey-river';root.setAttribute('aria-label','春風與月光');
-  root.innerHTML=`<header class="rj-header"><div><span>春風與月光</span><h3></h3></div><b class="rj-progress"></b></header>
-    <div class="river-picture gr-picture" aria-label="用手指掃過江岸草木，讓春色回來" aria-busy="true">
-      <img class="gr-background" src="${media('exploration/bo-chuan-gua-zhou/scene.webp')}" alt="江岸草木、停泊的小舟和天上的月亮。" width="1536" height="1024" draggable="false">
-      ${zones.map(z=>`<canvas class="river-waiting" data-river-layer="${z.id}" width="${WIDTH}" height="${HEIGHT}" aria-hidden="true"></canvas>`).join('')}
-      <div class="river-moonlight" aria-hidden="true"></div>
-      <svg class="rj-light-path" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M75 17 Q77 42 44 77"/></svg>
-      <button type="button" class="rj-boat-target" data-rj-boat aria-label="小舟停在瓜洲，點一下停穩，或接住月光"><span>停一停</span></button>
-      <button type="button" class="river-moon" data-river-moon aria-label="月光，拖到小舟，也可點一下月光再點小舟" hidden><span>送月光</span></button>
-      <div class="river-verse" hidden>心裏想着家<br><small>小舟仍在瓜洲</small></div><i class="river-brush" hidden aria-hidden="true"></i><i class="rj-moving-light" hidden aria-hidden="true"></i>
-      <div class="gr-loading" role="status"><span>江岸正在展開…</span><button type="button" data-river-retry hidden>再試一次</button></div>
+const ART = media('exploration/bo-chuan-gua-zhou/scene.webp');
+const PIECES = Object.freeze([0, 1, 2, 3, 4, 5]);
+const START_ORDER = Object.freeze([4, 1, 5, 0, 3, 2]);
+const POEM = '京口瓜洲一水間，鍾山只隔數重山。春風又綠江南岸，明月何時照我還。';
+const KNOWLEDGE = '春風讓江南岸重新變綠；明月照着瓜洲的小舟，也照出詩人盼望回家的心情。';
+const speech = {
+  text: POEM,
+  parts: [
+    {char: '間', pinyin: 'jiān'},
+    {char: '數', pinyin: 'shù'},
+    {char: '重', pinyin: 'chóng'},
+    {char: '綠', pinyin: 'lǜ'},
+    {char: '還', pinyin: 'huán'}
+  ]
+};
+
+const isPiece = value => Number.isInteger(value) && value >= 0 && value < PIECES.length;
+const isSolved = slots => PIECES.every((piece, slot) => slots[slot] === piece);
+const backgroundPosition = piece => `${(piece % 3) * 50}% ${Math.floor(piece / 3) * 100}%`;
+
+function restoredState(initialState) {
+  const legacyDone = initialState?.gameCompleted === true ||
+    (initialState?.version === 2 && initialState?.moon === true);
+  if (legacyDone) return {slots: [...PIECES], tray: [], completed: true};
+
+  if (initialState?.version !== 3 || !Array.isArray(initialState.slots)) {
+    return {slots: Array(PIECES.length).fill(null), tray: [...START_ORDER], completed: false};
+  }
+
+  const seen = new Set();
+  const slots = PIECES.map((_, index) => {
+    const value = initialState.slots[index];
+    if (!isPiece(value) || seen.has(value)) return null;
+    seen.add(value);
+    return value;
+  });
+  const remaining = PIECES.filter(piece => !seen.has(piece));
+  const requested = Array.isArray(initialState.tray) ? initialState.tray : [];
+  const tray = [...new Set(requested.filter(piece => remaining.includes(piece))),
+    ...remaining.filter(piece => !requested.includes(piece))];
+  return {slots, tray, completed: isSolved(slots)};
+}
+
+export function mountRiver(holder, {
+  initialState,
+  readOnly = false,
+  playAudio,
+  onState,
+  onComplete,
+  reducedMotion = false
+} = {}) {
+  const doc = holder.ownerDocument;
+  const view = doc.defaultView;
+  const abort = new view.AbortController();
+  const restored = restoredState(initialState);
+  let slots = restored.slots;
+  let tray = restored.tray;
+  let completed = restored.completed;
+  let solution = false;
+  let selected = null;
+  let ready = false;
+  let dead = false;
+  let speaking = false;
+  let voiceGeneration = 0;
+  let voiceTimer = null;
+  let loadGeneration = 0;
+  let loadTimer = null;
+  let drag = null;
+  let suppressClickUntil = 0;
+  let reported = initialState?.gameCompleted === true || readOnly;
+
+  const root = doc.createElement('section');
+  root.className = 'river-puzzle-game';
+  root.setAttribute('aria-label', '拼好春江月夜圖');
+  root.innerHTML = `
+    <header class="river-puzzle-heading">
+      <div><span>泊船瓜洲</span><h3>拼好春江月夜圖</h3></div>
+      <b data-river-count aria-live="off"></b>
+    </header>
+    <div class="river-puzzle-work">
+      <div class="river-puzzle-board" data-river-board aria-label="六格春江月夜拼圖" aria-busy="true"></div>
+      <div class="river-puzzle-side">
+        <p class="river-puzzle-instruction">選一片，再點畫中位置；也可以直接拖過去。</p>
+        <div class="river-puzzle-tray" data-river-tray aria-label="待拼畫片"></div>
+      </div>
     </div>
-    <p class="rj-verse"></p><p class="rj-task"></p>
-    <div class="rj-actions"><button type="button" class="gr-audio" data-river-audio>聽這句詩</button><button type="button" class="rj-next" data-rj-next hidden>下一步 <span aria-hidden="true">→</span></button></div>
-    <p class="gr-feedback" role="status" aria-live="polite"></p>`;
-  holder.append(root);const q=s=>root.querySelector(s),stage=q('.river-picture'),tell=t=>{q('.gr-feedback').textContent=t;};
-  const snapshot=()=>({version:2,chapter,berthed,heard:[...heard],colored:[...colored],dabs:dabs.map(p=>[...p]),moon});
-  const save=()=>{if(!dead&&!readOnly&&!solved)onState?.(snapshot());};
-  const active=()=>!dead&&ready&&!readOnly&&!solved&&!moon&&!speaking;
-  function render(){
-    root.classList.toggle('is-done',moon||solved);root.classList.toggle('is-readonly',readOnly);root.dataset.chapter=String(chapter);root.dataset.berthed=String(berthed);
-    q('h3').textContent=moon||solved?'春風回來了，我何時回家？':chapters[chapter].title;q('.rj-progress').textContent=`${chapter+1} / 3`;q('.rj-verse').textContent=chapters[chapter].verse;q('.rj-task').textContent=moon||solved?'詩人望月思鄉，盼着回到鍾山的家。':chapters[chapter].task;
-    stage.classList.toggle('is-painting',active()&&chapter===1&&heard[1]&&colored.size<3);
-    q('[data-river-moon]').hidden=!ready||chapter!==2||moon||solved||readOnly;q('[data-river-moon]').disabled=!active()||!heard[2];
-    q('[data-rj-boat]').hidden=chapter===1||moon||solved||readOnly;q('[data-rj-boat]').disabled=!active()||!heard[chapter]||chapter===0&&berthed;q('[data-rj-boat] span').textContent=chapter===0?(berthed?'停穩了':'停一停'):'送到小舟';
-    q('.river-verse').hidden=!(moon||solved);
-    q('[data-rj-next]').hidden=!((chapter===0&&berthed||chapter===1&&colored.size===3)&&!readOnly&&!solved);q('[data-rj-next]').disabled=speaking;
-    q('[data-river-audio]').disabled=!ready||speaking||solved;q('[data-river-audio]').textContent=speaking?'仔細聽…':heard[chapter]?'再聽一次':'聽這句詩';q('[data-river-audio]').setAttribute('aria-busy',String(speaking));
-  }
-  function describe(){
-    tell(moon?'月光照着小舟，詩人盼望回家；他現在仍在瓜洲。':chapter===0?(berthed?'「泊」是停船。京口和瓜洲隔着一條長江。':'聽完後點小舟，開始這一夜的旅程。'):chapter===1?(colored.size===3?'「綠」讓我們看見春風吹來，草木重新變綠。':colored.size?`春風喚醒了 ${colored.size} 處，繼續把新綠帶回江岸。`:'用手指掃過江岸草木，一點點染回新綠。'):'月光拖到小舟，或點一下月光、再點小舟。');
-  }
-  function erase(surface,x,y){
-    const ctx=surface.context;
-    ctx.save();ctx.globalCompositeOperation='destination-out';
-    const fade=ctx.createRadialGradient(x,y,RADIUS*.7,x,y,RADIUS);fade.addColorStop(0,'rgba(0,0,0,1)');fade.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=fade;ctx.beginPath();ctx.arc(x,y,RADIUS,0,Math.PI*2);ctx.fill();ctx.restore();
-    let changes=0;
-    for(const sample of surface.samples){if(!sample.erased&&(sample.x-x)**2+(sample.y-y)**2<(RADIUS*.8)**2){sample.erased=true;changes++;}}
-    return changes;
-  }
-  function applyDab(x,y,persist=true){
-    if(dead||!ready||(persist&&(!active()||chapter!==1||!heard[1]||colored.size===3)))return false;
-    let changed=0;
-    for(const z of zones){
-      if(colored.has(z.id))continue;
-      const surface=surfaces.get(z.id);changed+=erase(surface,x,y);
-      const cleared=surface.samples.filter(s=>s.erased).length;
-      if(cleared>=surface.samples.length*.73&&surface.samples.length){colored.add(z.id);surface.context.clearRect(0,0,WIDTH,HEIGHT);}
+    <div class="river-puzzle-actions">
+      <button type="button" data-river-audio><span aria-hidden="true">♪</span><span data-river-audio-label>聽一聽古詩</span></button>
+      <button type="button" data-river-retry hidden>重新載入畫卷</button>
+    </div>
+    <p class="river-puzzle-status" data-river-status role="status" aria-live="polite"></p>
+    <img class="river-puzzle-preload" src="${ART}" alt="" aria-hidden="true">
+  `;
+  if (reducedMotion) root.classList.add('is-reduced-motion');
+  holder.append(root);
+
+  const q = selector => root.querySelector(selector);
+  const board = q('[data-river-board]');
+  const trayHolder = q('[data-river-tray]');
+  const tell = text => { if (!dead) q('[data-river-status]').textContent = text; };
+  const countPlaced = () => slots.filter(isPiece).length;
+  const snapshot = () => ({version: 3, slots: [...slots], tray: [...tray], completed});
+  const interactive = () => ready && !dead && !readOnly && !completed && !solution;
+
+  function pieceHTML(piece, location) {
+    const selectedClass = selected === piece ? ' is-selected' : '';
+    const style = `--piece-position:${backgroundPosition(piece)}`;
+    if (location === 'tray') {
+      return `<button type="button" class="river-puzzle-piece${selectedClass}" data-piece="${piece}" style="${style}" aria-label="第 ${piece + 1} 片畫片" aria-pressed="${selected === piece}" ${interactive() ? '' : 'disabled'}><span aria-hidden="true"></span></button>`;
     }
-    if(persist&&changed){dabs.push([Math.round(x/WIDTH*1024),Math.round(y/HEIGHT*1024)]);render();describe();save();}
-    return Boolean(changed);
+    return `<span class="river-puzzle-piece is-placed${selectedClass}" data-piece="${piece}" style="${style}" aria-hidden="true"><span></span></span>`;
   }
-  function finish(){
-    if(!active()||chapter!==2||!heard[2]||!berthed||colored.size!==3)return;
-    moon=true;render();describe();save();
-    if(!reported){reported=true;onComplete?.({correct:true,response:snapshot(),knowledge});}
+
+  function updateAudioState() {
+    const button = q('[data-river-audio]');
+    const label = q('[data-river-audio-label]');
+    if (!button || !label) return;
+    button.disabled = speaking || !ready;
+    button.setAttribute('aria-busy', String(speaking));
+    label.textContent = speaking ? '仔細聽…' : '聽一聽古詩';
   }
-  function point(event){const r=stage.getBoundingClientRect();return{x:Math.max(0,Math.min(WIDTH,(event.clientX-r.left)/r.width*WIDTH)),y:Math.max(0,Math.min(HEIGHT,(event.clientY-r.top)/r.height*HEIGHT))};}
-  function brushCursor(p){const marker=q('.river-brush');marker.hidden=false;marker.style.left=`${p.x/WIDTH*100}%`;marker.style.top=`${p.y/HEIGHT*100}%`;}
-  function down(event){
-    if(!active()||chapter!==1||!heard[1]||colored.size===3||event.button>0||event.target.closest('button'))return;
-    if(event.cancelable)event.preventDefault();const p=point(event);drag={id:event.pointerId,...p};
-    try{stage.setPointerCapture(event.pointerId);}catch{}
-    brushCursor(p);applyDab(p.x,p.y);
+
+  function render() {
+    const done = completed || solution;
+    root.classList.toggle('is-complete', done);
+    root.classList.toggle('is-readonly', readOnly);
+    root.classList.toggle('has-selection', selected !== null);
+    q('.river-puzzle-heading h3').textContent = done ? '春江月夜圖拼好了' : '拼好春江月夜圖';
+    q('[data-river-count]').textContent = done ? '完成' : `${countPlaced()} / ${PIECES.length}`;
+    q('[data-river-count]').setAttribute('aria-label', done ? '拼圖完成' : `已放好 ${countPlaced()} 片，共 ${PIECES.length} 片`);
+    board.innerHTML = PIECES.map(slot => {
+      const piece = slots[slot];
+      const occupied = isPiece(piece);
+      const label = occupied
+        ? `第 ${slot + 1} 格，現在是第 ${piece + 1} 片${selected === piece ? '，已選取' : ''}`
+        : `第 ${slot + 1} 個空位`;
+      return `<button type="button" class="river-puzzle-slot${occupied ? ' has-piece' : ''}" data-river-slot="${slot}" ${occupied ? `data-piece="${piece}"` : ''} aria-label="${label}" ${interactive() ? '' : 'disabled'}>${occupied ? pieceHTML(piece, 'slot') : `<span class="river-slot-number" aria-hidden="true">${slot + 1}</span>`}</button>`;
+    }).join('');
+    trayHolder.innerHTML = tray.length
+      ? tray.map(piece => pieceHTML(piece, 'tray')).join('')
+      : `<span class="river-tray-empty">${done ? '六片都回到畫裏了' : '畫片都放進去了，再看看位置。'}</span>`;
+    updateAudioState();
   }
-  function move(event){
-    if(!drag||event.pointerId!==drag.id)return;if(event.cancelable)event.preventDefault();
-    const p=point(event),distance=Math.hypot(p.x-drag.x,p.y-drag.y),steps=Math.ceil(distance/(RADIUS*.45));
-    for(let i=1;i<=steps;i++)applyDab(drag.x+(p.x-drag.x)*i/steps,drag.y+(p.y-drag.y)*i/steps);
-    drag.x=p.x;drag.y=p.y;brushCursor(p);
+
+  function notifyCompletion() {
+    if (reported || dead || readOnly || solution || !completed) return;
+    reported = true;
+    onComplete?.({correct: true, response: snapshot(), knowledge: KNOWLEDGE});
   }
-  function release(event){if(!drag||event.pointerId!==drag.id)return;drag=null;q('.river-brush').hidden=true;try{stage.releasePointerCapture(event.pointerId);}catch{};}
-  async function loadImage(url){const image=new view.Image();image.src=url;await image.decode();return image;}
-  async function load(){
-    const request=++loadId;ready=false;q('.gr-loading').hidden=false;q('[data-river-retry]').hidden=true;render();
-    let timeout;
-    try{
-      if(request>1){const url=new URL(q('.gr-background').src);url.searchParams.set('retry',String(request));q('.gr-background').src=url.href;}
-      const loaded=await Promise.race([Promise.all([q('.gr-background').decode(),...zones.map(z=>loadImage(media(`poem-games/river/${z.id}-waiting.webp`)+(request>1?`?retry=${request}`:'')))]),new Promise((_,reject)=>{timeout=view.setTimeout(()=>reject(new Error('Image timeout')),12000);timers.add(timeout);})]);
-      if(dead||request!==loadId)return;
-      zones.forEach((z,index)=>{
-        const canvas=q(`[data-river-layer="${z.id}"]`),context=canvas.getContext('2d');context.clearRect(0,0,WIDTH,HEIGHT);context.drawImage(loaded[index+1],0,0,WIDTH,HEIGHT);
-        const pixels=context.getImageData(0,0,WIDTH,HEIGHT).data,samples=[];
-        for(let y=6;y<HEIGHT;y+=12)for(let x=6;x<WIDTH;x+=12)if(pixels[(y*WIDTH+x)*4+3]>90)samples.push({x,y,erased:false});
-        surfaces.set(z.id,{canvas,context,samples});
-        if(colored.has(z.id))context.clearRect(0,0,WIDTH,HEIGHT);
-      });
-      ready=true;for(const p of dabs)applyDab(p[0]/1024*WIDTH,p[1]/1024*HEIGHT,false);
-      q('.gr-loading').hidden=true;stage.setAttribute('aria-busy','false');render();describe();
-    }catch{
-      if(dead||request!==loadId)return;q('.gr-loading span').textContent='圖片暫時未載入。';q('[data-river-retry]').hidden=false;stage.setAttribute('aria-busy','false');
-    }finally{view.clearTimeout(timeout);timers.delete(timeout);}
+
+  function selectPiece(piece) {
+    if (!interactive() || !isPiece(piece)) return;
+    selected = selected === piece ? null : piece;
+    render();
+    tell(selected === null ? '已取消選取。' : `第 ${piece + 1} 片選好了，點一個畫中位置。`);
   }
-  stage.addEventListener('pointerdown',down,{signal:abort.signal,passive:false});stage.addEventListener('pointermove',move,{signal:abort.signal,passive:false});stage.addEventListener('pointerup',release,{signal:abort.signal});stage.addEventListener('pointercancel',release,{signal:abort.signal});
-  async function listen(){
-    if(dead||!ready||speaking||solved)return;const token=++voiceGeneration;speaking=true;render();tell('聽清楚這句，也可以跟着讀一讀。');let ok=false,timeout;
-    try{ok=await Promise.race([Promise.resolve(playAudio?.({text:chapters[chapter].verse})),new Promise(resolve=>{timeout=view.setTimeout(()=>resolve(false),15000);timers.add(timeout);})]);}catch{}finally{view.clearTimeout(timeout);timers.delete(timeout);}
-    if(dead||token!==voiceGeneration)return;speaking=false;if(!readOnly&&!moon){heard[chapter]=true;save();}render();describe();if(ok===false||ok===undefined)tell('聲音暫時未能播放，可以看詩句繼續；稍後再聽一次。');
+
+  function place(piece, targetSlot, {focus = false} = {}) {
+    if (!interactive() || !isPiece(piece) || !isPiece(targetSlot)) return;
+    const sourceSlot = slots.indexOf(piece);
+    if (sourceSlot === targetSlot) {
+      selected = null;
+      render();
+      tell('這一片已經在這裏，可以繼續拼。');
+      return;
+    }
+
+    const displaced = slots[targetSlot];
+    if (sourceSlot >= 0) {
+      slots[sourceSlot] = isPiece(displaced) ? displaced : null;
+    } else {
+      tray = tray.filter(value => value !== piece);
+      if (isPiece(displaced)) tray.push(displaced);
+    }
+    slots[targetSlot] = piece;
+    selected = null;
+    completed = isSolved(slots);
+    render();
+    onState?.(snapshot());
+
+    if (completed) {
+      tell('拼好了！春風染綠兩岸，明月照着小舟。');
+      notifyCompletion();
+    } else {
+      const correct = piece === targetSlot;
+      tell(correct ? '這一片對上了，繼續拼下一片。' : '先放在這裏也可以，畫片可以隨時再移，不會扣分。');
+      if (focus) q(`[data-river-slot="${targetSlot}"]`)?.focus({preventScroll: true});
+    }
   }
-  const moonButton=q('[data-river-moon]'),light=q('.rj-moving-light');
-  moonButton.addEventListener('pointerdown',event=>{if(!active()||chapter!==2||!heard[2])return;moonDrag=event.pointerId;lightSelected=true;moonButton.setPointerCapture(event.pointerId);},{signal:abort.signal});
-  moonButton.addEventListener('pointermove',event=>{if(moonDrag!==event.pointerId)return;const p=point(event);light.hidden=false;light.style.left=`${p.x/WIDTH*100}%`;light.style.top=`${p.y/HEIGHT*100}%`;},{signal:abort.signal});
-  moonButton.addEventListener('pointerup',event=>{if(moonDrag!==event.pointerId)return;const p=point(event);moonDrag=null;light.hidden=true;if(p.x/WIDTH>.23&&p.x/WIDTH<.67&&p.y/HEIGHT>.59&&p.y/HEIGHT<.91)finish();else tell('讓月光落在小舟上；也可以再點一下小舟。');},{signal:abort.signal});
-  moonButton.addEventListener('pointercancel',()=>{moonDrag=null;light.hidden=true;},{signal:abort.signal});
-  root.addEventListener('click',event=>{
-    if(event.target.closest?.('[data-river-moon]')&&active()){lightSelected=true;root.classList.add('is-light-selected');tell('月光準備好了，再點一下小舟。');}
-    if(event.target.closest?.('[data-rj-boat]')&&active()&&heard[chapter]){if(chapter===0){berthed=true;render();save();describe();}else if(lightSelected)finish();else tell('先點一下月光，再把它送到小舟。');}
-    if(event.target.closest?.('[data-rj-next]')&&active()&&(chapter===0&&berthed||chapter===1&&colored.size===3)){chapter++;render();save();describe();q('[data-river-audio]').focus({preventScroll:true});}
-    if(event.target.closest?.('[data-river-retry]'))void load();
-    if(event.target.closest?.('[data-river-audio]'))void listen();
-  },{signal:abort.signal});
-  if(reducedMotion)root.classList.add('is-reduced-motion');render();describe();void load();
-  return{
-    showSolution(){if(dead)return;voiceGeneration++;speaking=false;solved=true;chapter=2;berthed=true;zones.forEach(z=>{colored.add(z.id);surfaces.get(z.id)?.context.clearRect(0,0,WIDTH,HEIGHT);});moon=true;reported=true;render();describe();},
-    destroy(){if(dead)return;dead=true;loadId++;voiceGeneration++;abort.abort();timers.forEach(id=>view.clearTimeout(id));drag=null;moonDrag=null;surfaces.clear();root.remove();}
+
+  function clearDrag() {
+    if (!drag) return;
+    drag.source?.removeEventListener('lostpointercapture', drag.lostCapture);
+    drag.source?.classList.remove('is-drag-source');
+    drag.ghost?.remove();
+    drag = null;
+    root.classList.remove('is-dragging');
+    board.querySelectorAll('[data-river-slot]').forEach(node => node.classList.remove('is-drop-target'));
+  }
+
+  function startPointer(event) {
+    const source = event.target.closest?.('[data-piece]');
+    if (!source || !interactive() || event.button > 0) return;
+    const piece = Number(source.dataset.piece);
+    if (!isPiece(piece)) return;
+    const lostCapture = lostEvent => {
+      if (drag?.id === lostEvent.pointerId) clearDrag();
+    };
+    drag = {id: event.pointerId, piece, source, x: event.clientX, y: event.clientY, moved: false, ghost: null, lostCapture};
+    source.addEventListener('lostpointercapture', lostCapture, {once: true, signal: abort.signal});
+    try { source.setPointerCapture(event.pointerId); } catch {}
+  }
+
+  function movePointer(event) {
+    if (!drag || event.pointerId !== drag.id) return;
+    if (!drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 8) return;
+    if (event.cancelable) event.preventDefault();
+    if (!drag.moved) {
+      drag.moved = true;
+      drag.source.classList.add('is-drag-source');
+      drag.ghost = doc.createElement('span');
+      drag.ghost.className = 'river-puzzle-ghost';
+      drag.ghost.style.setProperty('--piece-position', backgroundPosition(drag.piece));
+      root.append(drag.ghost);
+      root.classList.add('is-dragging');
+    }
+    drag.ghost.style.left = `${event.clientX}px`;
+    drag.ghost.style.top = `${event.clientY}px`;
+    const slot = doc.elementFromPoint(event.clientX, event.clientY)?.closest?.('[data-river-slot]');
+    board.querySelectorAll('[data-river-slot]').forEach(node => node.classList.toggle('is-drop-target', node === slot));
+  }
+
+  function finishPointer(event) {
+    if (!drag || event.pointerId !== drag.id) return;
+    const current = drag;
+    if (current.moved) {
+      if (event.cancelable) event.preventDefault();
+      const slot = doc.elementFromPoint(event.clientX, event.clientY)?.closest?.('[data-river-slot]');
+      suppressClickUntil = view.performance.now() + 650;
+      clearDrag();
+      if (slot) place(current.piece, Number(slot.dataset.riverSlot));
+      else tell('把畫片放到六格畫面裏，再試一次。');
+    } else {
+      clearDrag();
+    }
+  }
+
+  async function listen() {
+    if (dead || speaking || !ready) return;
+    const generation = ++voiceGeneration;
+    speaking = true;
+    updateAudioState();
+    tell('慢慢聽一遍，拼圖時也可以再聽。');
+    let ok = false;
+    try {
+      ok = await Promise.race([
+        Promise.resolve(playAudio?.(speech)),
+        new Promise(resolve => { voiceTimer = view.setTimeout(() => resolve(false), 45000); })
+      ]);
+    } catch {} finally {
+      view.clearTimeout(voiceTimer);
+      voiceTimer = null;
+    }
+    if (dead || generation !== voiceGeneration) return;
+    speaking = false;
+    updateAudioState();
+    if (ok === false || ok === undefined) tell('聲音暫時未能播放，拼圖仍然可以繼續。');
+  }
+
+  async function load() {
+    const generation = ++loadGeneration;
+    ready = false;
+    root.dataset.assets = 'loading';
+    board.setAttribute('aria-busy', 'true');
+    q('[data-river-retry]').hidden = true;
+    render();
+    const image = q('.river-puzzle-preload');
+    if (generation > 1) {
+      const retryURL = new URL(ART);
+      retryURL.searchParams.set('retry', String(generation));
+      image.src = retryURL.href;
+      root.style.setProperty('--river-art', `url("${retryURL.href}")`);
+    }
+    try {
+      await Promise.race([
+        image.decode(),
+        new Promise((_, reject) => { loadTimer = view.setTimeout(() => reject(new Error('image-timeout')), 12000); })
+      ]);
+      if (dead || generation !== loadGeneration) return;
+      ready = true;
+      root.dataset.assets = 'ready';
+      board.setAttribute('aria-busy', 'false');
+      render();
+      if (completed || solution) {
+        tell(solution ? '完整畫面裏有春風吹綠的江岸、停泊的小舟和照鄉心的明月。' : KNOWLEDGE);
+        if (completed) view.queueMicrotask(notifyCompletion);
+      } else if (readOnly) {
+        tell('這次先看看畫面；按小提示就能看到完整拼圖。');
+      } else {
+        tell('放錯可以再移，不會扣分。');
+      }
+    } catch {
+      if (dead || generation !== loadGeneration) return;
+      root.dataset.assets = 'error';
+      board.setAttribute('aria-busy', 'false');
+      q('[data-river-retry]').hidden = false;
+      tell('畫卷暫時未能載入，請再試一次。');
+    } finally {
+      view.clearTimeout(loadTimer);
+      loadTimer = null;
+    }
+  }
+
+  root.style.setProperty('--river-art', `url("${ART}")`);
+  root.addEventListener('pointerdown', startPointer, {signal: abort.signal});
+  root.addEventListener('pointermove', movePointer, {signal: abort.signal, passive: false});
+  root.addEventListener('pointerup', finishPointer, {signal: abort.signal, passive: false});
+  root.addEventListener('pointercancel', event => {
+    if (drag?.id === event.pointerId) clearDrag();
+  }, {signal: abort.signal});
+  root.addEventListener('click', event => {
+    if (view.performance.now() < suppressClickUntil) return;
+    if (event.target.closest('[data-river-retry]')) { void load(); return; }
+    if (event.target.closest('[data-river-audio]')) { void listen(); return; }
+    const piece = event.target.closest('[data-piece]');
+    const slot = event.target.closest('[data-river-slot]');
+    if (slot && selected !== null) place(selected, Number(slot.dataset.riverSlot), {focus: true});
+    else if (piece) selectPiece(Number(piece.dataset.piece));
+    else if (slot) tell('先在下方選一片畫片，再點這個位置。');
+  }, {signal: abort.signal});
+
+  render();
+  void load();
+
+  return {
+    showSolution() {
+      if (dead) return;
+      clearDrag();
+      voiceGeneration++;
+      view.clearTimeout(voiceTimer);
+      voiceTimer = null;
+      speaking = false;
+      solution = true;
+      selected = null;
+      slots = [...PIECES];
+      tray = [];
+      render();
+      tell('完整畫面裏有春風吹綠的江岸、停泊的小舟和照鄉心的明月。');
+    },
+    destroy() {
+      if (dead) return;
+      dead = true;
+      loadGeneration++;
+      voiceGeneration++;
+      view.clearTimeout(voiceTimer);
+      view.clearTimeout(loadTimer);
+      clearDrag();
+      abort.abort();
+      root.remove();
+    }
   };
 }

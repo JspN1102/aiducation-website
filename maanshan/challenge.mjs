@@ -1,6 +1,6 @@
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260919b';
 import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20260919b';
-import {mountChallengeWriting} from './challenge-writing.mjs?v=20260918c';
+import {mountChallengeWriting} from './challenge-writing.mjs?v=20260919c';
 import {mountChallengeModel} from './challenge-model.mjs?v=20260918b';
 import {mountLivingField} from './living-field.mjs?v=20260914f';
 
@@ -63,7 +63,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const locked = !!answer;
     const active = () => !dead && epoch === gameEpoch && generation === renderGeneration;
     try {
-      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20260919b');
+      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20260919c');
       if (!active()) return;
       let completionReceived = false;
       const mounted = mountPoemGame(holder, {slug: poem.slug, initialState: state, readOnly: locked,

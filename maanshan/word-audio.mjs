@@ -1,4 +1,4 @@
-import { WORD_AUDIO_FILES } from './media/words/index.mjs?v=20260919b';
+import { WORD_AUDIO_FILES } from './media/words/index.mjs?v=20260919c';
 
 export function getWordAudioURL(char, pinyin) {
   if (typeof char !== 'string' || typeof pinyin !== 'string') return null;

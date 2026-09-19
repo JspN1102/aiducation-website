@@ -1,4 +1,4 @@
-import {createHandwritingPad} from './handwriting-pad.mjs?v=20260918c';
+import {createHandwritingPad} from './handwriting-pad.mjs?v=20260919c';
 
 // First submitted recognition is the assessment. Later stroke demonstrations
 // and free practice never change that result. Only the top candidate counts.
@@ -35,6 +35,7 @@ export function mountChallengeWriting(holder, {
 .challenge-writing .cw-board{position:relative;width:min(100%,220px);aspect-ratio:1;margin:4px auto 8px;border:1px solid #bfcfc3;border-radius:20px;overflow:hidden;background-color:#fff;background-image:linear-gradient(90deg,transparent calc(50% - .5px),#dce4d9 calc(50% - .5px),#dce4d9 calc(50% + .5px),transparent calc(50% + .5px)),linear-gradient(transparent calc(50% - .5px),#dce4d9 calc(50% - .5px),#dce4d9 calc(50% + .5px),transparent calc(50% + .5px))}
 .challenge-writing.is-answered .cw-board{width:min(100%,176px)}
 .challenge-writing canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;background:#fff}
+.challenge-writing .cw-board,.challenge-writing .cw-board *{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .challenge-writing .cw-animation{position:absolute;inset:0;min-width:0;min-height:0;background:#fff;display:grid;place-items:center;font-family:'Noto Serif TC',serif;line-height:1}
 .challenge-writing .cw-animation[hidden],.challenge-writing [hidden]{display:none!important}
 .challenge-writing .cw-animation svg{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -267,7 +268,7 @@ export function mountChallengeWriting(holder, {
     revealBoard();
   }
 
-  pad = createHandwritingPad(canvas, {isLocked: locked, onChange: updateControls});
+  pad = createHandwritingPad(canvas, {isLocked: locked, onChange: updateControls, interactionSurface: $('.cw-board')});
   root.addEventListener('click', event => {
     const button = event.target.closest?.('[data-cw]');
     if (!button || !root.contains(button) || button.disabled || destroyed) return;

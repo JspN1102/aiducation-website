@@ -1,8 +1,8 @@
 const asset=name=>new URL(`../media/poem-games/farewell/${name}`,import.meta.url).href;
 const chapters=[
- {title:'幫小舟準備出發',verse:'李白乘舟將欲行',action:'聽一句，把小舟划到亮着的水面。'},
- {title:'我也來踏歌',verse:'忽聞岸上踏歌聲',action:'聽腳步、看示範，再按左腳和右腳。'},
- {title:'把友情送給你',verse:'不及汪倫送我情',action:'聽一句，把三張詩簽按次序送上船。'}
+ {title:'幫小舟準備出發',verse:'李白乘舟將欲行',action:'把小舟划到亮着的水面。想聽詩句，也可以按「聽這句」。'},
+ {title:'我也來踏歌',verse:'忽聞岸上踏歌聲',action:'左、右、左、右，踏四步。快慢都由你！'},
+ {title:'把友情送給你',verse:'不及汪倫送我情',action:'依次點「汪倫」「送我」「情」，把友情送上船。'}
 ];
 const rhythm=[0,1,0,1],pieces=['汪倫','送我','情'];
 const voice='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m10 5-5 4H2v6h3l5 4ZM14 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg>';
@@ -29,20 +29,20 @@ export function mountFarewell(holder,{initialState,readOnly=false,playAudio,onSt
  const state=()=>({version:2,stage,placed,beats,arranged,heard:[...heard],completed:done});
  const save=()=>{if(!readOnly&&!solved&&!dead)onState?.(state());};
  const passed=()=>stage===0?placed:stage===1?beats===4:arranged===3;
- const available=()=>ready&&!busy&&!readOnly&&!solved&&!done;
+ const available=()=>!dead&&ready&&!readOnly&&!solved&&!done;
  function update(){
   root.dataset.stage=String(stage);root.dataset.placed=String(placed||solved);root.dataset.complete=String(done||solved);root.dataset.selected=String(selected);
   q('h3').textContent=done||solved?'一起送出一份友情':chapters[stage].title;q('.fs-progress').textContent=`${stage+1} / 3`;
   q('.fs-verse').textContent=chapters[stage].verse;q('.fs-task').textContent=done||solved?'汪倫踏歌送別，李白把友情寫進詩裏。':chapters[stage].action;
   q('.fs-rhythm').hidden=stage!==1||done||solved;q('.fs-compose').hidden=stage!==2||done||solved;
-  q('[data-fs-dock]').hidden=stage!==0||placed||solved;q('[data-fs-boat]').disabled=!available()||stage!==0||placed;q('[data-fs-dock]').disabled=!available()||!heard[0];q('.fs-note').hidden=!(done||solved);
+  q('[data-fs-dock]').hidden=stage!==0||placed||solved;q('[data-fs-boat]').disabled=!available()||stage!==0||placed;q('[data-fs-dock]').disabled=!available();q('.fs-note').hidden=!(done||solved);
   const listen=q('[data-fs-listen]');listen.disabled=!ready||busy||solved;listen.setAttribute('aria-busy',String(busy));listen.querySelector('span').textContent=busy?'仔細聽…':stage===1&&heard[1]?'再聽腳步':'聽這句';
-  q('[data-fs-next]').hidden=!(passed()&&stage<2&&!readOnly&&!solved);q('[data-fs-next]').disabled=busy;
-  root.querySelectorAll('[data-fs-foot]').forEach(el=>{el.disabled=!available()||!heard[1]||beats===4;});root.querySelectorAll('[data-fs-beat]').forEach((el,i)=>el.classList.toggle('is-done',i<beats));
-  root.querySelectorAll('[data-fs-ticket]').forEach(el=>{const i=+el.dataset.fsTicket;el.disabled=!available()||!heard[2]||i<arranged;el.classList.toggle('is-used',i<arranged);});root.querySelectorAll('[data-fs-slot]').forEach((el,i)=>{el.textContent=i<arranged?pieces[i]:String(i+1);el.classList.toggle('is-filled',i<arranged);el.classList.toggle('is-next',i===arranged);});
+  q('[data-fs-next]').hidden=!(passed()&&stage<2&&!readOnly&&!solved);q('[data-fs-next]').disabled=!available();
+  root.querySelectorAll('[data-fs-foot]').forEach(el=>{el.disabled=!available()||beats===4;});root.querySelectorAll('[data-fs-beat]').forEach((el,i)=>el.classList.toggle('is-done',i<beats));
+  root.querySelectorAll('[data-fs-ticket]').forEach(el=>{const i=+el.dataset.fsTicket;el.disabled=!available()||i<arranged;el.classList.toggle('is-used',i<arranged);});root.querySelectorAll('[data-fs-slot]').forEach((el,i)=>{el.textContent=i<arranged?pieces[i]:String(i+1);el.classList.toggle('is-filled',i<arranged);el.classList.toggle('is-next',i===arranged);});
  }
- function complete(){if(done||solved||readOnly||!placed||beats!==4||arranged!==3)return;done=true;update();save();tell('謝謝你的歌聲！朋友的情意，比深深的潭水還深。');if(!reported){reported=true;onComplete?.({correct:true,response:state(),knowledge:'李白乘舟，汪倫在岸上踏歌送別。「不及」是比不上，寫出朋友的深情。'});}}
- function boatArrive(){if(!available()||stage!==0||placed)return;if(!heard[0]){tell('先聽一聽李白準備怎樣離開。');return;}placed=true;selected=false;update();save();tell('乘舟，就是坐船。小舟準備好了，聽聽岸上的聲音。');}
+ function complete(){if(done||solved||readOnly||!placed||beats!==4||arranged!==3)return;generation++;busy=false;done=true;update();save();tell('謝謝你的歌聲！朋友的情意，比深深的潭水還深。');if(!reported){reported=true;onComplete?.({correct:true,response:state(),knowledge:'李白乘舟，汪倫在岸上踏歌送別。「不及」是比不上，寫出朋友的深情。'});}}
+ function boatArrive(){if(!available()||stage!==0||placed)return;placed=true;selected=false;update();save();tell('乘舟，就是坐船。小舟準備好了，一起到岸上踏歌吧。');}
  function sound(side){try{audioContext??=new(view.AudioContext||view.webkitAudioContext)();if(audioContext.state==='suspended')void audioContext.resume().catch(()=>{});const osc=audioContext.createOscillator(),gain=audioContext.createGain(),now=audioContext.currentTime;osc.type='sine';osc.frequency.setValueAtTime(side?260:170,now);osc.frequency.exponentialRampToValueAtTime(side?130:75,now+.11);gain.gain.setValueAtTime(.001,now);gain.gain.exponentialRampToValueAtTime(.2,now+.008);gain.gain.exponentialRampToValueAtTime(.001,now+.18);osc.connect(gain);gain.connect(audioContext.destination);osc.start(now);osc.stop(now+.2);}catch{}}
  function glow(side){const foot=q(`[data-fs-foot="${side}"]`);foot.classList.add('is-sounding');delay(()=>foot.classList.remove('is-sounding'),360);sound(side);}
  function demonstrate(token){return new Promise(resolve=>{let n=0;const next=()=>{if(dead||token!==generation){resolve();return;}if(n===rhythm.length){delay(resolve,450);return;}glow(rhythm[n++]);delay(next,640);};next();});}
@@ -52,15 +52,15 @@ export function mountFarewell(holder,{initialState,readOnly=false,playAudio,onSt
   if(dead||token!==generation)return;if(stage===1&&!done&&!readOnly){await demonstrate(token);if(dead||token!==generation)return;}
   busy=false;if(!readOnly&&!done){heard[stage]=true;save();}update();tell(ok===false||ok===undefined?'朗讀暫時未能播放，可以看詩句繼續，再按一次重聽。':stage===1?'輪到你：照剛才的次序按腳步，快慢都可以。':stage===0?'拖動小舟；也可以點小舟，再點亮着的水面。':'找出「汪倫」「送我」「情」，按聽到的次序送上船。');
  }
- function tapFoot(side){if(!available()||stage!==1||!heard[1]||beats===4)return;glow(side);if(side!==rhythm[beats]){tell(`這一步是${rhythm[beats]?'右':'左'}腳，試一試。之前的腳步都保留着。`);return;}beats++;update();save();tell(beats===4?'踏着節拍唱歌，就是踏歌！現在把友情送上小舟。':`第 ${beats} 步踏好了，接着聽心裏的節拍。`);}
- function ticket(index){if(!available()||stage!==2||!heard[2]||index<arranged)return;if(index!==arranged){tell(`下一張是「${pieces[arranged]}」。再聽一句，慢慢來。`);return;}arranged++;update();save();if(arranged===3)complete();else tell(`「${pieces[index]}」送到了，再接下一張。`);}
- function next(){if(!available()||!passed()||stage===2)return;stage++;selected=false;update();save();tell(chapters[stage].action);q('[data-fs-listen]').focus({preventScroll:true});}
+ function tapFoot(side){if(!available()||stage!==1||beats===4)return;glow(side);if(side!==rhythm[beats]){tell(`這一步是${rhythm[beats]?'右':'左'}腳，試一試。之前的腳步都保留着。`);return;}beats++;update();save();tell(beats===4?'踏着節拍唱歌，就是踏歌！現在把友情送上小舟。':`第 ${beats} 步踏好了，接着聽心裏的節拍。`);}
+ function ticket(index){if(!available()||stage!==2||index<arranged)return;if(index!==arranged){tell(`下一張是「${pieces[arranged]}」。慢慢來就好。`);return;}arranged++;update();save();if(arranged===3)complete();else tell(`「${pieces[index]}」送到了，再接下一張。`);}
+ function next(){if(!available()||!passed()||stage===2)return;generation++;busy=false;stage++;selected=false;update();save();tell(chapters[stage].action);q('[data-fs-listen]').focus({preventScroll:true});}
  const boat=q('[data-fs-boat]'),canvas=q('.fs-stage');
- boat.addEventListener('pointerdown',e=>{if(!available()||stage!==0||placed)return;if(!heard[0]){tell('先按「聽這句」，聽聽小舟要做甚麼。');return;}drag={id:e.pointerId,x:e.clientX,y:e.clientY,moved:false};boat.setPointerCapture(e.pointerId);},{signal:abort.signal});
+ boat.addEventListener('pointerdown',e=>{if(!available()||stage!==0||placed)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,moved:false};boat.setPointerCapture(e.pointerId);},{signal:abort.signal});
  boat.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const r=canvas.getBoundingClientRect(),x=Math.max(33,Math.min(84,(e.clientX-r.left)/r.width*100)),y=Math.max(43,Math.min(88,(e.clientY-r.top)/r.height*100));drag.moved ||= Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>5;boat.style.setProperty('--boat-x',x+'%');boat.style.setProperty('--boat-y',y+'%');},{signal:abort.signal});
  boat.addEventListener('pointerup',e=>{if(!drag||drag.id!==e.pointerId)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*100,y=(e.clientY-r.top)/r.height*100,moved=drag.moved;drag=null;boat.style.removeProperty('--boat-x');boat.style.removeProperty('--boat-y');if(moved&&x>40&&x<88&&y>43&&y<76)boatArrive();else if(moved)tell('小舟要在水面上，划向發亮的位置吧。');},{signal:abort.signal});
  boat.addEventListener('pointercancel',()=>{drag=null;boat.style.removeProperty('--boat-x');boat.style.removeProperty('--boat-y');},{signal:abort.signal});
- root.addEventListener('click',e=>{const t=e.target;if(t.closest('[data-fs-listen]'))void listen();if(t.closest('[data-fs-next]'))next();if(t.closest('[data-fs-dock]'))boatArrive();if(t.closest('[data-fs-boat]')&&available()&&heard[0]){selected=true;update();tell('再點亮着的水面，小舟就會過去。');}const foot=t.closest('[data-fs-foot]');if(foot)tapFoot(+foot.dataset.fsFoot);const tile=t.closest('[data-fs-ticket]');if(tile)ticket(+tile.dataset.fsTicket);if(t.closest('[data-fs-retry]'))void load();},{signal:abort.signal});
+ root.addEventListener('click',e=>{const t=e.target;if(t.closest('[data-fs-listen]'))void listen();if(t.closest('[data-fs-next]'))next();if(t.closest('[data-fs-dock]'))boatArrive();if(t.closest('[data-fs-boat]')&&available()){selected=true;update();tell('再點亮着的水面，小舟就會過去。');}const foot=t.closest('[data-fs-foot]');if(foot)tapFoot(+foot.dataset.fsFoot);const tile=t.closest('[data-fs-ticket]');if(tile)ticket(+tile.dataset.fsTicket);if(t.closest('[data-fs-retry]'))void load();},{signal:abort.signal});
  async function load(){const token=++loadGeneration;ready=false;update();const loading=q('.fs-loading');loading.hidden=false;q('[data-fs-retry]').hidden=true;let timeout;try{if(token>1)root.querySelectorAll('img').forEach(img=>{const u=new URL(img.src);u.searchParams.set('retry',String(token));img.src=u.href;});await Promise.race([Promise.all([...root.querySelectorAll('img')].map(img=>img.decode())),new Promise((_,reject)=>{timeout=delay(()=>reject(new Error('timeout')),12000);})]);if(dead||token!==loadGeneration)return;ready=true;loading.hidden=true;canvas.setAttribute('aria-busy','false');update();}catch{if(dead||token!==loadGeneration)return;loading.querySelector('span').textContent='畫面未能載入，再試一次吧。';q('[data-fs-retry]').hidden=false;}finally{view.clearTimeout(timeout);timers.delete(timeout);}}
  if(reducedMotion)root.classList.add('is-reduced-motion');update();tell(done?'這份友情已經送到了。':'');void load();
  return {showSolution(){if(dead)return;generation++;busy=false;solved=true;stage=2;update();tell('李白乘舟將欲行；汪倫在岸上踏歌送別。李白說：「不及汪倫送我情。」');},destroy(){if(dead)return;dead=true;generation++;loadGeneration++;abort.abort();timers.forEach(id=>view.clearTimeout(id));timers.clear();try{void audioContext?.close().catch(()=>{});}catch{}root.remove();}};

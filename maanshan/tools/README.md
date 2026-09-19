@@ -18,7 +18,7 @@ node tools/prepare-static-speech.cjs --generate
 
 `MAANSHAN_AUDIO_WORK` 可指定工作报告目录，默认是系统临时目录下的 `maanshan-audio`。目录不存在会在需要写报告时创建；旧 `static-speech-generation.json`、`word-audio-generation.json` 都不是必需文件。缺少报告时以现有索引和音频为基础重新验证、复用。报告记录音频哈希和请求状态，不存密钥。
 
-`MAANSHAN_TTS_ENDPOINT` 可覆盖接口地址，默认 `https://aiducation.asia/api/tts/`。只有 `--generate` 允许请求；使用 `{ text: SSML, voice: 502001, speed: -0.75, pronunciationVersion: "edb-20260919b" }`，音色为超自然大模型女声「智小柔」。接口返回带起声静音的 WAV；工具再以 `atempo=0.85` 和前导 180 ms、结尾 80 ms 缓冲编码成 MP3，与现有课堂音频播放速度一致。每个汉字通过 `<phoneme alphabet="py" ph="...">` 指定带数字声调的拼音，`ü` 写作 `v`，无标调音节使用轻声 `5`。带逗号的诗行按实际网页播放的两句分别生成。音频解码成功后才写入最终 MP3。已有音频只核验、不覆盖。
+`MAANSHAN_TTS_ENDPOINT` 可覆盖接口地址，默认 `https://aiducation.asia/api/tts/`。只有 `--generate` 允许请求；使用 `{ text: SSML, voice: 403001, speed: -0.75, pronunciationVersion: "edb-20260919d-yunxiaohe", allowSSML: true }`，音色为超自然大模型女声「云小和」。接口返回带起声静音的 WAV；工具再以 `atempo=0.85` 和前导 180 ms、结尾 80 ms 缓冲编码成 MP3，与现有课堂音频播放速度一致。每个汉字通过 `<phoneme alphabet="py" ph="...">` 指定带数字声调的拼音，`ü` 写作 `v`，无标调音节使用轻声 `5`。带逗号的诗行按实际网页播放的两句分别生成。音频解码成功后才写入最终 MP3。已有音频只核验、不覆盖。
 
 新增练习先更新源 JSON 的拼音；新听写词可在词条中添加 `wordPinyin`（空格分隔字符串或数组），或补充脚本内 `dictationPinyin` 表。新繁简字对补充脚本中的 `conversion` 映射。已有文本的读音发生变化时工具会拒绝默默替换，需另行明确迁移文件与索引。
 

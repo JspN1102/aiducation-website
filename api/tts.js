@@ -6,7 +6,7 @@ const {cacheKey, hasAudio, readAudio, writeAudio, CACHE_VERSION} = require('./_l
 // handles later instances; this map prevents a burst of first taps from
 // creating the same paid synthesis several times.
 const inflight = new Map();
-const DEFAULT_VOICE = 502001; // 超自然大模型：智小柔，聊天女声
+const DEFAULT_VOICE = 403001; // 超自然大模型：云小和，亲和女声
 const DEFAULT_SPEED = -0.75; // about 0.85x; children need time to hear initials
 const SAMPLE_RATE = 16000;
 const LEADING_SAMPLES = Math.round(SAMPLE_RATE * .18);
@@ -48,6 +48,56 @@ function xmlEscape(value) {
   return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 }
 
+const PHONETIC_SYNTHESIS_SUBSTITUTIONS = Object.freeze({
+  '還|huan2': '环', '还|huan2': '环', '還|hai2': '孩', '还|hai2': '孩',
+  '荷|he4': '贺',
+  '行|hang2': '航', '行|xing2': '形',
+  '種|zhong4': '仲', '种|zhong4': '仲', '種|zhong3': '肿', '种|zhong3': '肿',
+  '數|shu4': '树', '数|shu4': '树', '數|shu3': '鼠', '数|shu3': '鼠',
+  '重|chong2': '崇', '重|zhong4': '仲',
+  '長|chang2': '常', '长|chang2': '常', '長|zhang3': '掌', '长|zhang3': '掌',
+  '盛|sheng4': '胜', '盛|cheng2': '成',
+  '橫|heng2': '衡', '横|heng2': '衡',
+  '曲|qu1': '区', '曲|qu3': '取',
+  '處|chu4': '触', '处|chu4': '触',
+  '都|du1': '嘟', '間|jian1': '坚', '间|jian1': '坚',
+  '興|xing1': '星', '兴|xing1': '星',
+  '踏|ta4': '榻', '露|lu4': '路'
+});
+
+function stablePhoneticSynthesis(value) {
+  return String(value).replace(/<phoneme alphabet="py" ph="([a-z0-9]+)">([^<>]+)<\/phoneme>/g, (tag, phoneme, content) => {
+    const replacement = PHONETIC_SYNTHESIS_SUBSTITUTIONS[`${content}|${phoneme}`];
+    return replacement ? `<phoneme alphabet="py" ph="${phoneme}">${replacement}</phoneme>` : tag;
+  });
+}
+
+const KNOWN_POEM_PHRASE_SYNTHESIS = Object.freeze([
+  ['曲項向天歌', '區項向天歌'], ['曲项向天歌', '区项向天歌'],
+  ['李白乘舟將欲行', '李白乘舟將欲形'], ['李白乘舟将欲行', '李白乘舟将欲形'],
+  ['忽聞岸上踏歌聲', '忽聞岸上榻歌聲'], ['忽闻岸上踏歌声', '忽闻岸上榻歌声'],
+  ['橫看成嶺側成峯', '衡看成嶺側成峯'], ['橫看成嶺側成峰', '衡看成嶺側成峰'], ['横看成岭侧成峰', '衡看成岭侧成峰'],
+  ['京口瓜洲一水間', '京口瓜洲一水堅'], ['京口瓜洲一水间', '京口瓜洲一水坚'],
+  ['鍾山祇隔數重山', '鍾山祇隔樹崇山'], ['鍾山只隔數重山', '鍾山只隔樹崇山'],
+  ['鐘山祇隔數重山', '鐘山祇隔樹崇山'], ['鐘山只隔數重山', '鐘山只隔樹崇山'],
+  ['钟山只隔数重山', '钟山只隔树崇山'],
+  ['明月何時照我還', '明月何時照我環'], ['明月何时照我还', '明月何时照我环'],
+  ['種豆南山下', '仲豆南山下'], ['种豆南山下', '仲豆南山下'],
+  ['草盛豆苗稀', '草胜豆苗稀'],
+  ['晨興理荒穢', '晨星理荒穢'], ['晨兴理荒秽', '晨星理荒秽'],
+  ['帶月荷鋤歸', '帶月賀鋤歸'], ['带月荷锄归', '带月贺锄归'],
+  ['道狹草木長', '道狹草木常'], ['道狭草木长', '道狭草木常'],
+  ['夕露霑我衣', '夕路霑我衣'], ['夕露沾我衣', '夕路沾我衣'],
+  ['最是一年春好處', '最是一年春好觸'], ['最是一年春好处', '最是一年春好触'],
+  ['絕勝煙柳滿皇都', '絕勝煙柳滿皇嘟'], ['绝胜烟柳满皇都', '绝胜烟柳满皇嘟']
+]);
+
+function stableKnownPoemPhrases(value) {
+  let result = String(value);
+  for (const [phrase, synthesis] of KNOWN_POEM_PHRASE_SYNTHESIS) result = result.replaceAll(phrase, synthesis);
+  return result;
+}
+
 function withLeadingPause(text) {
   const value = String(text).trim();
   if (/^<speak\b[^>]*>\s*<break\b/i.test(value)) return value;
@@ -56,7 +106,7 @@ function withLeadingPause(text) {
 }
 
 function plainSynthesisText(text) {
-  return String(text).trim()
+  const value = String(text).trim()
     .replace(/^<speak\b[^>]*>/i, '')
     .replace(/<\/speak>$/i, '')
     .replace(/<break\b[^>]*\/?>/gi, '')
@@ -64,6 +114,7 @@ function plainSynthesisText(text) {
     .replace(/<[^>]+>/g, '')
     .replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
     .trim();
+  return stableKnownPoemPhrases(value);
 }
 
 function synthesisText(text, allowSSML = false) {
@@ -74,10 +125,10 @@ function synthesisText(text, allowSSML = false) {
     .replace(/[「」“”。，、,\s]/g, '');
   if (plain === '請寫出還鄉的還' || plain === '请写出还乡的还') {
     return allowSSML
-      ? '<speak>请写出，还乡的<phoneme alphabet="py" ph="huan2">还</phoneme>。</speak>'
-      : '请写出，还乡的还。';
+      ? '<speak>请写出，还乡的<phoneme alphabet="py" ph="huan2">环</phoneme>。</speak>'
+      : '请写出，环乡的环。';
   }
-  return allowSSML ? withLeadingPause(value) : plainSynthesisText(value);
+  return allowSSML ? withLeadingPause(stablePhoneticSynthesis(value)) : plainSynthesisText(value);
 }
 
 function number(value, fallback) {
@@ -226,7 +277,7 @@ module.exports = async function handler(req, res) {
   if (text.length > 6000) return res.status(413).json({error: 'Text too long'});
   const voice = Math.trunc(number(req.body?.voice, Number(process.env.MAANSHAN_TTS_VOICE || DEFAULT_VOICE)));
   const speed = Math.max(-2, Math.min(6, number(req.body?.speed, Number(process.env.MAANSHAN_TTS_SPEED || DEFAULT_SPEED))));
-  const pronunciationVersion = String(req.body?.pronunciationVersion || process.env.MAANSHAN_PRONUNCIATION_VERSION || '20260919b3');
+  const pronunciationVersion = String(req.body?.pronunciationVersion || process.env.MAANSHAN_PRONUNCIATION_VERSION || 'edb-20260919d-yunxiaohe');
   const allowSSML = req.body?.allowSSML === true;
   const profile = `pcm-silence-180-80-v1-${allowSSML ? 'ssml' : 'plain'}`;
   const key = cacheKey({text: text.normalize('NFC').trim(), voice, speed, pronunciationVersion, profile});

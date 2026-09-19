@@ -7,7 +7,7 @@ const GUIDE = '#dce4d9';
  * Incremental local ink; recognition keeps the original 560 x 560 samples.
  * getStrokes()/finish() return independent arrays of { x, y, t } points.
  */
-export function createHandwritingPad(canvas, { isLocked = () => false, onChange = () => {} } = {}) {
+export function createHandwritingPad(canvas, { isLocked = () => false, onChange = () => {}, interactionSurface = canvas } = {}) {
   const view = canvas.ownerDocument.defaultView;
   // Browsers that support it can present ink without waiting for the page's
   // normal compositor cycle. Others use the same standard 2D canvas path.
@@ -21,10 +21,15 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
 
   const completed = [];
   const listeners = [];
-  const previousTouchAction = canvas.style.touchAction;
-  const previousUserSelect = canvas.style.userSelect;
-  canvas.style.touchAction = 'none';
-  canvas.style.userSelect = 'none';
+  // Include the board edge and the stroke-demonstration overlay. A touch can
+  // start there before entering the canvas, particularly on a small phone.
+  const previousStyles = [];
+  for (const element of new Set([canvas, interactionSurface])) {
+    for (const property of ['touch-action', 'user-select', '-webkit-user-select', '-webkit-touch-callout']) {
+      previousStyles.push({ element, property, value: element.style.getPropertyValue(property), priority: element.style.getPropertyPriority(property) });
+      element.style.setProperty(property, 'none');
+    }
+  }
 
   let active = null;
   let rectangle = null;
@@ -293,12 +298,29 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
     commitActive();
   }
 
+  function preventBoardGesture(event) {
+    // Some mobile WebViews still arbitrate page scrolling and long presses
+    // using Touch Events. Keep this non-passive guard on the writing surface,
+    // never on document/window, so the rest of the lesson can scroll normally.
+    if (!destroyed && event.cancelable) event.preventDefault();
+  }
+
+  function finishTouch(event) {
+    if (!active || active.pointerType !== 'touch') return;
+    if (event.type === 'touchcancel' || event.touches.length === 0) commitActive();
+  }
+
   function addListener(target, type, listener, options) {
     target.addEventListener(type, listener, options);
     listeners.push(() => target.removeEventListener(type, listener, options));
   }
 
   addListener(canvas, 'pointerdown', pointerDown, { passive: false });
+  addListener(interactionSurface, 'touchstart', preventBoardGesture, { passive: false });
+  addListener(interactionSurface, 'touchmove', preventBoardGesture, { passive: false });
+  addListener(interactionSurface, 'touchend', finishTouch, { passive: true });
+  addListener(interactionSurface, 'touchcancel', finishTouch, { passive: true });
+  for (const type of ['contextmenu', 'selectstart', 'dragstart']) addListener(interactionSurface, type, preventBoardGesture);
   if ('onpointerrawupdate' in view) addListener(view, 'pointerrawupdate', pointerMove, { passive: true });
   addListener(view, 'pointermove', pointerMove, { passive: false });
   addListener(view, 'pointerup', pointerUp, { passive: false });
@@ -348,8 +370,10 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
       destroyed = true;
       observer?.disconnect();
       listeners.forEach(remove => remove());
-      canvas.style.touchAction = previousTouchAction;
-      canvas.style.userSelect = previousUserSelect;
+      for (const { element, property, value, priority } of previousStyles) {
+        if (value) element.style.setProperty(property, value, priority);
+        else element.style.removeProperty(property);
+      }
     }
   };
 }
