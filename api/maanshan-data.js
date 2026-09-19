@@ -1,5 +1,57 @@
 import { query, isDbReady } from './_lib/db.js';
 import { timingSafeEqual } from 'node:crypto';
+import poemHelpers from './_lib/poems.js';
+import { CHALLENGE_SETS } from '../maanshan/challenge-data.mjs';
+
+function resultTime(...values) {
+  for (const value of values) {
+    if (value === null || value === undefined || value === '') continue;
+    const time = typeof value === 'number' ? value : new Date(value).getTime();
+    if (Number.isFinite(time) && time > 0) return time;
+  }
+  return 0;
+}
+
+function writingResult(student, set) {
+  const legacy = student.writing;
+  const correct = legacy?.totalCorrect;
+  const total = legacy?.totalChars;
+  const previous = Number.isInteger(correct) && Number.isInteger(total) &&
+    total > 0 && correct >= 0 && correct <= total ? {
+      totalCorrect: correct,
+      totalChars: total,
+      results: Array.isArray(legacy.results) ? legacy.results.filter(result =>
+        result && typeof result.char === 'string' && typeof result.correct === 'boolean' &&
+        result.status !== 'skipped' && result.skipped !== true) : [],
+      measuredAt: resultTime(legacy.updatedAt, student.sectionTimes.writing)
+    } : null;
+
+  const challenge = student.reading?.challenge;
+  if (!set || challenge?.completed !== true || challenge.mode === 'review' ||
+      !Array.isArray(challenge.answers)) return previous;
+  // Saved summaries contain question IDs and statuses, not the target character.
+  // Resolve exact retained IDs so old rounds never use today's random questions.
+  const bank = new Map((set.bank || set.items).map(item => [item.id, item]));
+  const seen = new Set();
+  const results = [];
+  for (const answer of challenge.answers) {
+    if (!answer || answer.type !== 'dictation' || seen.has(answer.itemId)) continue;
+    const item = bank.get(answer.itemId);
+    if (item?.type !== 'dictation' || !['correct', 'incorrect'].includes(answer.status)) continue;
+    seen.add(answer.itemId);
+    results.push({ char: item.target.char, correct: answer.status === 'correct', errorType: '聽寫錯誤' });
+  }
+  // "先學一學" is unmeasured, not a handwriting error. Reviews also leave the
+  // original assessment intact. Use one latest measured result, never add both.
+  if (!results.length) return previous;
+  const current = {
+    totalCorrect: results.filter(result => result.correct).length,
+    totalChars: results.length,
+    results,
+    measuredAt: resultTime(challenge.completedAt, student.reading.updatedAt, student.sectionTimes.reading)
+  };
+  return previous && previous.measuredAt > current.measuredAt ? previous : current;
+}
 
 function canReadData(req) {
   const expected = process.env.DATA_READ_TOKEN;
@@ -67,14 +119,17 @@ export default async function handler(req, res) {
     const studentMap = Object.create(null);
     for (const row of rows) {
       const sid = row.student_id;
-      if (!studentMap[sid]) studentMap[sid] = { id: sid, name: row.name };
+      if (!studentMap[sid]) studentMap[sid] = { id: sid, name: row.name, sectionTimes: Object.create(null) };
       // 每个 section 只保留第一条（已按 updated_at DESC 排序）
       if (!studentMap[sid][row.section]) {
         studentMap[sid][row.section] = typeof row.payload === 'string'
           ? JSON.parse(row.payload) : row.payload;
+        studentMap[sid].sectionTimes[row.section] = row.updated_at;
       }
     }
     const students = Object.values(studentMap);
+    const set = CHALLENGE_SETS[poemHelpers.getPoem(poemId, null)?.slug];
+    students.forEach(student => { student.writingResult = writingResult(student, set); });
 
     // 统计
     const scores = students
@@ -119,9 +174,9 @@ export default async function handler(req, res) {
     const errMap = Object.create(null);
     let writeTested = 0;
     students.forEach(s => {
-      if (!s.writing || !s.writing.results) return;
+      if (!s.writingResult) return;
       writeTested++;
-      const results = Array.isArray(s.writing.results) ? s.writing.results : [];
+      const results = s.writingResult.results;
       results.forEach(r => {
         if (!r.correct && r.char) {
           if (!errMap[r.char]) errMap[r.char] = { c: r.char, type: r.errorType || '書寫錯誤', count: 0 };
@@ -142,8 +197,8 @@ export default async function handler(req, res) {
         name: s.name,
         score: s.reading?.totalScore ?? null,
         phonics: s.reading?.phonics ?? {},
-        writeScore: s.writing?.totalCorrect != null
-          ? Math.round(s.writing.totalCorrect / (s.writing.totalChars || 1) * 100) : null,
+        writeScore: s.writingResult
+          ? Math.round(s.writingResult.totalCorrect / s.writingResult.totalChars * 100) : null,
         lastUpdated: s.reading?.updatedAt || s.writing?.updatedAt || null
       }))
     });
