@@ -1,3 +1,4 @@
+import {schoolFetch} from './school-session.mjs?v=20260920-school1';
 // Bound the complete request (including the response body), and cancel it when
 // its screen is left. Retry only an early transport failure, never a slow job.
 export async function requestJSON(path, body, {timeout = 35000, signal, retry = false} = {}) {
@@ -14,7 +15,7 @@ export async function requestJSON(path, body, {timeout = 35000, signal, retry = 
     for (let attempt = 0; ; attempt++) {
       const started = Date.now();
       try {
-        const response = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: payload, signal: controller.signal});
+        const response = await schoolFetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: payload, signal: controller.signal});
         if (!response.ok) {
           throw new Error(response.status === 429 ? '現在較多人使用，稍後再試一次吧。'
             : response.status === 504 ? '這次等得有點久，可以再試一次。'

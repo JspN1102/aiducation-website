@@ -3,6 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import poemHelpers from './_lib/poems.js';
 import studentStore from './_lib/student-store.js';
 import challengeLoader from './_lib/challenge-loader.cjs';
+import schoolAuth from './_lib/school-auth.cjs';
 
 function resultTime(...values) {
   for (const value of values) {
@@ -78,7 +79,9 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Authorization,Content-Type');
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
-  if (!canReadData(req)) return res.status(403).json({ error: 'Forbidden' });
+  if(schoolAuth.enabled()){
+    try{await schoolAuth.requireActor(req,{roles:['teacher']});}catch(error){return schoolAuth.sendError(res,error);}
+  }else if (!canReadData(req)) return res.status(403).json({ error: 'Forbidden' });
 
   const params = req.query || {};
   const gradeValue = params.grade ?? '2';

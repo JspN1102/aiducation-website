@@ -29,6 +29,9 @@ CONFIG_PATHS = (
 )
 OPTIONAL_CONFIG_PATHS = (
     'home/ubuntu/maanshan-shared/bridge-backup.env',
+    'home/ubuntu/maanshan-shared/research.env',
+    'etc/systemd/system/research-sync.service',
+    'etc/systemd/system/research-sync.timer',
     'etc/systemd/system/maanshan-bridge-backup.service',
     'etc/systemd/system/maanshan-bridge-backup.timer',
     'usr/local/lib/maanshan-bridge-backup.sh',

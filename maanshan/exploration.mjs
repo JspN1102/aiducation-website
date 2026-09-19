@@ -1,4 +1,5 @@
 import {EXPLORATION_CONTENT} from './exploration-data.mjs?v=20260920a';
+import {createProcessResearch} from './poem-games/research.mjs?v=20260920a';
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ICONS = {
@@ -81,7 +82,7 @@ export function disposeObject(root) {
  * An optional, local poetry observation activity. onComplete receives only
  * {poemId, observations, version, completedAt}; it is never an assessment score.
  */
-export function mountExploration(container, {poem, speakWord, onComplete} = {}) {
+export function mountExploration(container, {poem, speakWord, onComplete, onResearch} = {}) {
   const content = EXPLORATION_CONTENT[poem?.slug];
   if (!container || !content) throw new Error('Unknown poem exploration');
   if (Number(poem.grade) <= 3) {
@@ -99,6 +100,8 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
   let mode = 'picture', loadGeneration = 0, pending = null, viewer = null;
   let imageFailed = false, imagePending = true;
   let arBusy = false, arSession = null;
+  const research=createProcessResearch(onResearch,{prefix:`p${poem.id}.explore`,activity:'explore',context:{mode:'free'},alive:()=>!dead});
+  const researchStep=()=>`observation.${observation}`;
   container.innerHTML = `<section class="explore" aria-labelledby="explore-title">
     <header class="explore-heading"><div><p class="explore-eyebrow">一首詩，兩個小發現</p><h2 id="explore-title">找一找</h2></div>
       <img class="explore-motif" src="media/poetry-motifs/${content.motif}.svg" alt="" width="56" height="56"></header>
@@ -142,6 +145,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     stage.classList.toggle('explore-image-missing', imageFailed);
   }
   function imageError() {
+    if(!imageFailed)research.error('image');
     imagePending = false;
     imageFailed = true;
     syncPicture();
@@ -166,6 +170,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
         <div class="explore-finish-actions"><button class="explore-again" type="button" data-explore="again">再玩一次</button></div>`;
     } else {
       const item = content.observations[observation];
+      research.present(researchStep(),{position:observation,total:content.observations.length,optionOrder:item.choices.map((_,i)=>`choice.${i}`)});
       card.innerHTML = `<div class="explore-card-top"><span class="explore-step">小發現 ${observation + 1} / ${content.observations.length}</span><div class="explore-dots" aria-hidden="true">${content.observations.map((_, i) => `<i class="${i <= observation ? 'is-filled' : ''}"></i>`).join('')}</div></div>
         <div class="explore-verse"><p>${escapeHTML(item.verse)}</p><button class="explore-word" type="button" data-explore="word" aria-label="聽${escapeHTML(item.word[0])}的讀音 ${escapeHTML(item.word[1])}"><span><small>${escapeHTML(item.word[1])}</small>${escapeHTML(item.word[0])}</span>${icon('sound')}</button></div>
         <fieldset class="explore-question"><legend tabindex="-1">${escapeHTML(item.question)}</legend><div class="explore-answers">${item.choices.map((choice, i) => `<button type="button" data-explore="answer" data-answer="${i}" aria-pressed="false"><span class="explore-answer-dot" aria-hidden="true"></span>${escapeHTML(choice)}</button>`).join('')}</div></fieldset>
@@ -245,7 +250,8 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
       if (!current()) {disposeObject(parsed.scene); parsed = null; return;}
       viewer = createViewer({THREE, OrbitControls, gltf: parsed, holder: canvasHolder, stage, content,
         onInteract: clearPreset,
-        onContextLost: () => {if (!dead) {showPicture(); announce('畫面已切回插畫，繼續找詩裏的線索吧。');}}
+        onInteractionEnd: kind => research.action(researchStep(),kind,kind),
+        onContextLost: () => {if (!dead) {research.error('model','unsupported');showPicture(); announce('畫面已切回插畫，繼續找詩裏的線索吧。');}}
       });
       parsed = null; // Viewer now owns all model resources.
       mode = 'model';
@@ -259,6 +265,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     } catch (error) {
       if (parsed) disposeObject(parsed.scene);
       if (dead || generation !== loadGeneration) return;
+      research.error('model',controller.signal.aborted?'timeout':error?.message==='webgl-unavailable'?'unsupported':'network');
       releaseViewer();
       canvasHolder.hidden = true;
       announce(error?.message === 'webgl-unavailable'
@@ -277,6 +284,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
 
   async function startExperience() {
     if (dead || arBusy || arSession) return;
+    research.action('experience','start');
     arBusy = true; modelButton.disabled = true; announce();
     let session = null, ended = false;
     try {
@@ -295,6 +303,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
       const target = await prepared;
       if (!target || dead || ended) {await session?.end().catch(() => {}); return;}
       if (!session) {
+        research.error('ar',result.error?.name==='NotAllowedError'||result.error?.name==='SecurityError'?'permission_denied':'unsupported');
         announce(result.error?.name === 'NotAllowedError' || result.error?.name === 'SecurityError'
           ? '沒有開啟相機權限，先用 3D 看一看。想再試 AR，請允許相機後再按按鈕。'
           : '這個瀏覽器未支援相機 AR，現在是 3D 觀察。拖動模型換個角度，雙指可縮放。');
@@ -305,6 +314,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
       await target.enterAR(session, arOverlay, startSurfaceAR);
     } catch {
       await session?.end().catch(() => {});
+      research.error('ar','unknown');
       if (!dead) announce('AR 暫時未能開啟，可以再試一次。先用畫面繼續觀察吧。');
     } finally {
       arBusy = false;
@@ -317,26 +327,29 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
     if (!button || !container.contains(button) || button.disabled || dead) return;
     const action = button.dataset.explore;
     if (action === 'ar') startExperience();
-    else if (action === 'ar-exit') arSession?.end().catch(() => {});
-    else if (action === 'expand') setExpanded(!section.classList.contains('is-expanded'));
+    else if (action === 'ar-exit') {research.action('experience','exit');arSession?.end().catch(() => {});}
+    else if (action === 'expand') {research.action(researchStep(),section.classList.contains('is-expanded')?'collapse':'expand');setExpanded(!section.classList.contains('is-expanded'));}
     else if (action === 'retry-image') {
+      research.retry('image');
       imagePending = true;
       imageFailed = false;
       syncPicture();
       const retryURL = new URL(imageURL);
       retryURL.searchParams.set('retry', Date.now());
       picture.src = retryURL.href;
-    } else if (action === 'zoom-in') {clearPreset(); viewer?.zoom(.8);}
-    else if (action === 'zoom-out') {clearPreset(); viewer?.zoom(1.25);}
-    else if (action === 'reset') {clearPreset(); viewer?.reset();}
+    } else if (action === 'zoom-in') {clearPreset();if(viewer){viewer.zoom(.8);research.action(researchStep(),'in','camera_zoom');}}
+    else if (action === 'zoom-out') {clearPreset();if(viewer){viewer.zoom(1.25);research.action(researchStep(),'out','camera_zoom');}}
+    else if (action === 'reset') {clearPreset();if(viewer){viewer.reset();research.action(researchStep(),'reset','camera_reset');}}
     else if (action === 'word' && !completed) {
       const [char, pinyin] = content.observations[observation].word;
       if (typeof speakWord === 'function') {
-        Promise.resolve(speakWord(char, pinyin, button)).catch(() => {if (!dead) announce('這個字暫時未能播放，請再試一次。');});
+        const step=researchStep();research.hint(step,'audio');
+        Promise.resolve().then(()=>speakWord(char, pinyin, button)).then(ok=>{if(ok===false)research.error(step,'audio_unavailable');}).catch(() => {research.error(step,'audio_unavailable');if (!dead) announce('這個字暫時未能播放，請再試一次。');});
       }
     } else if (action === 'answer' && !completed && !correct) {
       card.dataset.feedback='answer';
       const item = content.observations[observation], answer = Number(button.dataset.answer);
+      research.answer(researchStep(),`choice.${answer}`,answer===item.answer);
       card.querySelectorAll('[data-explore="answer"]').forEach(option => {
         option.classList.remove('is-wrong');
         option.setAttribute('aria-pressed', 'false');
@@ -352,12 +365,14 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
         feedback.classList.add('is-correct');
         q('[data-explore="next"]').disabled = false;
       } else {
+        research.hint(researchStep());
         button.classList.add('is-wrong');
         feedback.textContent = item.clue;
       }
     } else if (action === 'next' && correct) {
       if (observation + 1 === content.observations.length) {
         completed = true;
+        research.complete();
         if (!notified) {
           notified = true;
           if (typeof onComplete === 'function') onComplete({poemId: poem.id, observations: content.observations.length, version: 1, completedAt: new Date().toISOString()});
@@ -365,6 +380,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
       } else {observation++; correct = false;}
       renderCard(true);
     } else if (action === 'again') {
+      research.reset();
       observation = 0; correct = false; completed = false;
       renderCard(true);
     }
@@ -383,7 +399,7 @@ export function mountExploration(container, {poem, speakWord, onComplete} = {}) 
   };
 }
 
-export function createViewer({THREE, OrbitControls, gltf, holder, stage, content, onInteract, onContextLost}) {
+export function createViewer({THREE, OrbitControls, gltf, holder, stage, content, onInteract, onInteractionEnd, onContextLost}) {
   let renderer;
   const lightRendering = matchMedia('(pointer: coarse), (max-width: 1100px)').matches;
   try {renderer = new THREE.WebGLRenderer({alpha: true, antialias: !lightRendering, powerPreference: 'low-power'});}
@@ -516,6 +532,7 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
   function keydown(event) {
     if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '+', '=', '-', '_', 'Home'].includes(event.key)) return;
     event.preventDefault();
+    keyboardInteractions.add(event.key==='Home'?'camera_reset':['+','=','-','_'].includes(event.key)?'camera_zoom':'camera_rotate');
     onInteract?.();
     if (event.key === 'Home') reset();
     else if (event.key === '+' || event.key === '=') zoom(.85);
@@ -530,12 +547,25 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
       setView(new THREE.Vector3().setFromSpherical(polar).normalize(), polar.radius, false);
     }
   }
+  const keyboardInteractions=new Set();
+  const finishKeyboard=()=>{if(!disposed)keyboardInteractions.forEach(kind=>onInteractionEnd?.(kind));keyboardInteractions.clear();};
   canvas.addEventListener('keydown', keydown);
-  const interrupt = () => {transition = null; onInteract?.();};
+  canvas.addEventListener('keyup', finishKeyboard);
+  canvas.addEventListener('blur', finishKeyboard);
+  let interactionStart=null;
+  const interrupt = () => {transition = null;interactionStart=camera.position.clone().sub(controls.target); onInteract?.();};
+  const finishInteraction=()=>{
+    if(disposed||!interactionStart)return;
+    const before=interactionStart;interactionStart=null;
+    const after=camera.position.clone().sub(controls.target);
+    if(Math.abs(before.length()-after.length())>.0001)onInteractionEnd?.('camera_zoom');
+    if(before.normalize().distanceToSquared(after.normalize())>.000001)onInteractionEnd?.('camera_rotate');
+  };
   const contextLost = event => {event.preventDefault(); if (!disposed) onContextLost?.();};
   canvas.addEventListener('webglcontextlost', contextLost);
   controls.addEventListener('start', interrupt);
   controls.addEventListener('change', requestRender);
+  controls.addEventListener('end', finishInteraction);
   const resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(stage);
   const visibilityObserver = new IntersectionObserver(entries => {
@@ -569,9 +599,12 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
       visibilityObserver.disconnect();
       document.removeEventListener('visibilitychange', resume);
       canvas.removeEventListener('keydown', keydown);
+      canvas.removeEventListener('keyup', finishKeyboard);
+      canvas.removeEventListener('blur', finishKeyboard);
       canvas.removeEventListener('webglcontextlost', contextLost);
       controls.removeEventListener('start', interrupt);
       controls.removeEventListener('change', requestRender);
+      controls.removeEventListener('end', finishInteraction);
       controls.dispose();
       disposeObject(scene);
       sunlight.shadow.map?.dispose();

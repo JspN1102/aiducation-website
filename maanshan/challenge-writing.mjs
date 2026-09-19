@@ -6,6 +6,7 @@ export function mountChallengeWriting(holder, {
   target,
   recognize,
   onSubmit = () => {},
+  onResearch = () => {},
   isAnswered = () => false,
   initialResult = null
 } = {}) {
@@ -22,8 +23,10 @@ export function mountChallengeWriting(holder, {
   const character = target.char, pinyin = typeof target.pinyin === 'string' ? target.pinyin : '';
   let destroyed = false, busy = false, pad = null, writer = null, animationRequest = null;
   let operation = 0, strokeOperation = 0, practising = false, result = null;
+  let eraseCount = 0, lastStrokeCount = 0, recognitionCount = 0;
   const externalAnswered = () => typeof isAnswered === 'function' ? isAnswered() : Boolean(isAnswered);
   const canSubmit = () => !destroyed && !busy && !result && !externalAnswered();
+  const auditWriting=(type,fields={})=>onResearch(type,{...fields,...(practising?{context:{mode:'free'}}:{})});
   const locked = () => destroyed || busy || (Boolean(result) ? !practising : externalAnswered());
 
   const root = doc.createElement('section');
@@ -182,6 +185,8 @@ export function mountChallengeWriting(holder, {
       stroke.map(point => point.t - start)
     ]);
     busy = true;
+    recognitionCount++;
+    auditWriting(recognitionCount>1?'retry':'attempt_started',{retryCount:recognitionCount-1,metrics:{strokeCount:strokes.length,eraseCount}});
     const request = ++operation;
     status.textContent = '正在辨認你的字…';
     updateControls();
@@ -193,10 +198,12 @@ export function mountChallengeWriting(holder, {
         .filter(value => typeof value === 'string' && value.trim())
         .map(normalize) : [];
       if (!candidates.length) {
+        auditWriting('error',{error:{code:'invalid_response',retryable:true},metrics:{strokeCount:strokes.length}});
         status.textContent = '這次未能辨認，不計對錯。可以寫大一點，再試一次。';
         return;
       }
     } catch {
+      auditWriting('error',{error:{code:'provider_unavailable',retryable:true},metrics:{strokeCount:strokes.length}});
       if (!destroyed && request === operation && !result && !externalAnswered()) {
         status.textContent = '辨認暫時未能連線，這次不計對錯。筆跡已保留，請再試一次。';
       }
@@ -268,15 +275,15 @@ export function mountChallengeWriting(holder, {
     revealBoard();
   }
 
-  pad = createHandwritingPad(canvas, {isLocked: locked, onChange: updateControls, interactionSurface: $('.cw-board')});
+  pad = createHandwritingPad(canvas, {isLocked: locked, onChange: strokes=>{if(strokes.length>lastStrokeCount)auditWriting('item_interacted',{interaction:'stroke_finished',metrics:{strokeCount:strokes.length,eraseCount}});lastStrokeCount=strokes.length;updateControls();}, interactionSurface: $('.cw-board')});
   root.addEventListener('click', event => {
     const button = event.target.closest?.('[data-cw]');
     if (!button || !root.contains(button) || button.disabled || destroyed) return;
-    if (button.dataset.cw === 'undo') pad.undo();
-    if (button.dataset.cw === 'clear') pad.clear();
+    if (button.dataset.cw === 'undo') {eraseCount++;pad.undo();auditWriting('item_interacted',{interaction:'stroke_undone',metrics:{eraseCount,strokeCount:pad.getStrokes().length}});}
+    if (button.dataset.cw === 'clear') {eraseCount++;pad.clear();auditWriting('item_interacted',{interaction:'ink_cleared',metrics:{eraseCount,strokeCount:0}});}
     if (button.dataset.cw === 'submit') void submit();
     if (button.dataset.cw === 'skip' && canSubmit()) { pad.finish(); commit('skipped'); }
-    if (button.dataset.cw === 'strokes') void showStrokes();
+    if (button.dataset.cw === 'strokes') {auditWriting('hint_used',{hint:{kind:'stroke',count:1}});void showStrokes();}
     if (button.dataset.cw === 'practise') practise();
   }, {signal: controller.signal});
   doc.addEventListener('visibilitychange', () => {

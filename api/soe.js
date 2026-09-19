@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const WebSocket = require('ws');
 const { assessmentReference } = require('./_lib/soe-reference');
+const {withSchoolLearning} = require('./_lib/school-learning.cjs');
 
 function sign(signStr, secretKey) {
   return crypto.createHmac('sha1', secretKey).update(signStr).digest('base64');
@@ -26,7 +27,7 @@ function buildWsUrl(params, secretKey) {
   };
 }
 
-module.exports = async function handler(req, res) {
+module.exports = withSchoolLearning('reading', async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -131,23 +132,23 @@ module.exports = async function handler(req, res) {
       }
     });
   });
-};
+});
 
 function mapResult(r) {
   return {
-    PronAccuracy: r.pron_accuracy ?? r.PronAccuracy ?? 0,
-    PronFluency: r.pron_fluency ?? r.PronFluency ?? 0,
-    PronCompletion: r.pron_completion ?? r.PronCompletion ?? 0,
-    SuggestedScore: r.suggested_score ?? r.SuggestedScore ?? 0,
+    PronAccuracy: r.pron_accuracy ?? r.PronAccuracy ?? null,
+    PronFluency: r.pron_fluency ?? r.PronFluency ?? null,
+    PronCompletion: r.pron_completion ?? r.PronCompletion ?? null,
+    SuggestedScore: r.suggested_score ?? r.SuggestedScore ?? null,
     Words: (r.words || r.Words || []).map(w => ({
       Word: w.word || w.Word || '',
-      PronAccuracy: w.pron_accuracy ?? w.PronAccuracy ?? 0,
-      PronFluency: w.pron_fluency ?? w.PronFluency ?? 0,
+      PronAccuracy: w.pron_accuracy ?? w.PronAccuracy ?? null,
+      PronFluency: w.pron_fluency ?? w.PronFluency ?? null,
       MemBeginTime: w.begin_time ?? w.MemBeginTime ?? 0,
       MemEndTime: w.end_time ?? w.MemEndTime ?? 0,
       PhoneInfos: (w.phone_infos || w.PhoneInfos || []).map(p => ({
         Phone: p.phone || p.Phone || '',
-        PronAccuracy: p.pron_accuracy ?? p.PronAccuracy ?? 0
+        PronAccuracy: p.pron_accuracy ?? p.PronAccuracy ?? null
       }))
     }))
   };

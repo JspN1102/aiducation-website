@@ -1,3 +1,4 @@
+import {schoolFetch} from './school-session.mjs?v=20260920-school1';
 function audioError(code, message, canRetry = false) {
   return Object.assign(new Error(message), {code, canRetry});
 }
@@ -52,7 +53,7 @@ export async function encodeRecording(blob, context, scope = globalThis) {
 
 // Assessment has no learning-state write; only one quick transport failure is retried.
 // A slow request, HTTP error, or explicit cancellation always returns control to the learner.
-export async function submitAssessment(payload, {signal, onRetry, onWaiting, fetchImpl = globalThis.fetch, timeout = 24000} = {}) {
+export async function submitAssessment(payload, {signal, onRetry, onWaiting, fetchImpl = schoolFetch, timeout = 30000} = {}) {
   if (globalThis.navigator?.onLine === false) throw audioError('OFFLINE', '網絡未連上，連線後可以再送一次。', true);
   const body = JSON.stringify(payload);
   for (let attempt = 0; attempt < 2; attempt++) {

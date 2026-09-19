@@ -10,7 +10,8 @@ from media_config import build_media_config, verify_local_assets, obsolete_audio
 
 ROOT = Path(__file__).resolve().parent.parent
 API_FILES = {'soe.js', 'tts.js', 'maanshan-chat.js', 'maanshan-report.js',
-             'maanshan-save.js', 'maanshan-data.js', 'handwriting.js'}
+             'maanshan-save.js', 'maanshan-data.js', 'handwriting.js',
+             'school-auth.js', 'research-events.js', 'teacher-analytics.js', 'challenge-result.js'}
 
 
 def main():
@@ -72,9 +73,13 @@ def main():
             'api/tts.js': {'maxDuration': 35},
             'api/maanshan-chat.js': {'maxDuration': 35},
             'api/maanshan-report.js': {'maxDuration': 60},
-            'api/handwriting.js': {'maxDuration': 20},
+            'api/handwriting.js': {'maxDuration': 20, 'includeFiles': 'maanshan/challenge*.mjs'},
             'api/maanshan-save.js': {'maxDuration': 20},
             'api/maanshan-data.js': {'maxDuration': 30, 'includeFiles': 'maanshan/challenge*.mjs'},
+            'api/school-auth.js': {'maxDuration': 30},
+            'api/research-events.js': {'maxDuration': 20},
+            'api/teacher-analytics.js': {'maxDuration': 60},
+            'api/challenge-result.js': {'maxDuration': 20, 'includeFiles': 'maanshan/challenge*.mjs'},
         },
         'redirects': [{'source': '/', 'destination': '/maanshan/', 'statusCode': 307},
                       {'source': '/favicon.ico', 'destination': '/favicon.png', 'statusCode': 307},

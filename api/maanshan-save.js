@@ -1,6 +1,7 @@
 import { execute, isDbReady } from './_lib/db.js';
 import poemHelpers from './_lib/poems.js';
 import studentStore from './_lib/student-store.js';
+import schoolAuth from './_lib/school-auth.cjs';
 
 const { getPoem } = poemHelpers;
 
@@ -25,6 +26,14 @@ export default async function handler(req, res) {
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   res.setHeader('Access-Control-Allow-Origin', '*');
+
+  if(schoolAuth.enabled()){
+    try{
+      const actor=await schoolAuth.requireActor(req,{roles:['student'],csrf:true});
+      if(req.body?.studentId!==actor.id)return res.status(409).json({ok:false,code:'ACTOR_CHANGED',error:'Account changed'});
+      req.body={...req.body,studentId:actor.id,name:actor.displayName,grade:actor.grade,cls:actor.cls};
+    }catch(error){return schoolAuth.sendError(res,error);}
+  }
 
   try {
     if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
@@ -70,12 +79,15 @@ export default async function handler(req, res) {
         ON CONFLICT (sync_id) DO UPDATE SET
           payload = EXCLUDED.payload,
           name = EXCLUDED.name,
-          updated_at = CURRENT_TIMESTAMP`
+          updated_at = CURRENT_TIMESTAMP
+        WHERE student_data.student_id = EXCLUDED.student_id
+          AND student_data.grade = EXCLUDED.grade AND student_data.cls = EXCLUDED.cls
+          AND student_data.poem_id = EXCLUDED.poem_id AND student_data.section = EXCLUDED.section`
       },
       [studentId, name, grade, cls.toUpperCase(), poemId, section, payloadJson, syncId || null]
     );
 
-    if (result === false) {
+    if (result === false || result?.rowCount === 0) {
       res.setHeader('Retry-After', '30');
       return res.status(503).json({ ok: false, stored: 'local-only', dbError: true });
     }

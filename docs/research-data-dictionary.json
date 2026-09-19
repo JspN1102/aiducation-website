@@ -1,0 +1,211 @@
+{
+  "version": "research-v1",
+  "schemaVersion": 1,
+  "scope": "Structured pseudonymous learning events only. Ethics approval scope must separately authorise any future raw-data collection.",
+  "identity": "researchId is an independent stable random pseudonym. School account/name mapping is separately teacher-protected and excluded from research exports.",
+  "fields": [
+    {
+      "name": "schemaVersion",
+      "type": "integer",
+      "meaning": "Strict event envelope schema; currently 1."
+    },
+    {
+      "name": "researchId",
+      "type": "string",
+      "meaning": "Server-cookie-derived pseudonym; client actorId is verified then discarded."
+    },
+    {
+      "name": "grade",
+      "type": "integer 1..6",
+      "meaning": "Authenticated cohort at receipt time."
+    },
+    {
+      "name": "cls",
+      "type": "A..Z",
+      "meaning": "Authenticated class at receipt time."
+    },
+    {
+      "name": "source",
+      "type": "client | server_verified",
+      "meaning": "Client observations are not verified scores. Server verification means a provider response reached our backend, not independent clinical or educational ground truth."
+    },
+    {
+      "name": "serverReceivedAt",
+      "type": "UTC ISO-8601",
+      "meaning": "Server ingress timestamp; used for date filtering and outbox partitioning, preserved after retries/import."
+    },
+    {
+      "name": "qualityFlags",
+      "type": "enum array",
+      "meaning": "Persisted ingress flags; additional sequence/duration flags are derived during aggregation without rewriting raw rows."
+    },
+    {
+      "name": "eventChecksum",
+      "type": "SHA-256",
+      "meaning": "Canonical hash of researchId, source and event payload; receive timestamp is excluded to support retries."
+    },
+    {
+      "name": "event.eventId",
+      "type": "UUID",
+      "meaning": "Stable event identity. PG uniqueness is researchId + eventId + source. Same identity with changed content fails."
+    },
+    {
+      "name": "event.sessionId",
+      "type": "UUID",
+      "meaning": "Random browser learning session; not a device fingerprint."
+    },
+    {
+      "name": "event.seq",
+      "type": "integer 0..10000000",
+      "meaning": "Client session sequence. Server outcomes have their own source and seq=0."
+    },
+    {
+      "name": "event.clientAt",
+      "type": "UTC ISO-8601",
+      "meaning": "Untrusted device timestamp. Over five minutes ahead or thirty days behind receipt is flagged."
+    },
+    {
+      "name": "event.activeMs",
+      "type": "integer 0..21600000",
+      "meaning": "Session-monotonic active time excluding hidden/idle periods. Aggregates sum only adjacent sequence deltas within the same activity; filtered/missing spans are a lower bound."
+    },
+    {
+      "name": "event.poemId",
+      "type": "integer 1..6 | null",
+      "meaning": "Curriculum poem ID; null for navigation not associated with a poem."
+    },
+    {
+      "name": "event.activity",
+      "type": "enum",
+      "meaning": "listen/read/animation/explore/challenge/writing/chat/navigation."
+    },
+    {
+      "name": "event.type",
+      "type": "enum",
+      "meaning": "session_start/activity_start/activity_end/item_presented/attempt_started/answer_submitted/feedback_shown/hint_used/retry/playback_started/playback_ended/recording_started/recording_stopped/item_interacted/error; provider_result is server-only."
+    },
+    {
+      "name": "event.interaction",
+      "type": "optional enum",
+      "meaning": "stroke_finished/stroke_undone/ink_cleared/option_selected/game_action/camera_rotate/camera_zoom/camera_reset/video_seek. No pointer coordinates."
+    },
+    {
+      "name": "event.attemptId",
+      "type": "optional UUID",
+      "meaning": "Joins start, answer, feedback and backend outcome of one attempt."
+    },
+    {
+      "name": "event.attemptNo",
+      "type": "optional integer 1..1000",
+      "meaning": "Client-reported attempt ordinal; not trusted as unique identity."
+    },
+    {
+      "name": "event.itemId",
+      "type": "optional token up to 80",
+      "meaning": "Stable curriculum item ID. Resolve with contentVersion using archived question banks, not the current random question selection."
+    },
+    {
+      "name": "event.appVersion",
+      "type": "token up to 64",
+      "meaning": "Frontend release identifier."
+    },
+    {
+      "name": "event.contentVersion",
+      "type": "token up to 64",
+      "meaning": "Teaching-content version for reproducible item and answer-option interpretation."
+    },
+    {
+      "name": "event.result",
+      "type": "optional typed object",
+      "meaning": "status, optional score 0..100 or null, optional correct boolean or null. Skipped/cancelled/unmeasured/error cannot carry measured scores."
+    },
+    {
+      "name": "event.context",
+      "type": "optional typed object",
+      "meaning": "mode standard/advanced/review/free; itemType sound/dictation/microgame/match/sequence/scene-builder; position 0..200; total 1..200; optionOrder up to 30 stable tokens; sourceAttemptId UUID."
+    },
+    {
+      "name": "event.response",
+      "type": "optional typed object",
+      "meaning": "choiceId token, or up to 30 placements {slotId,choiceId}; no free response text."
+    },
+    {
+      "name": "event.hint",
+      "type": "optional typed object",
+      "meaning": "kind audio/pinyin/stroke/demo/explanation/reveal and count 1..10000."
+    },
+    {
+      "name": "event.retryCount",
+      "type": "optional integer 0..1000",
+      "meaning": "Observed retries; absence is unrecorded rather than zero."
+    },
+    {
+      "name": "event.metrics",
+      "type": "optional finite numeric object",
+      "meaning": "elapsedMs/playbackMs/watchedMs <=21600000; audioDurationMs/latencyMs <=600000; videoPositionMs <=3600000; playbackRate 0.25..4; strokeCount/eraseCount/hintCount <=10000; userCharacters/assistantCharacters <=20000; wordCount/correctCount/itemCount <=1000; lostEventCount <=1000000. Integers except playbackRate. Server-only accuracyScore/fluencyScore/completionScore/suggestedScore are finite provider score dimensions 0..100 and may be fractional; omit unavailable values. They are export provenance, not extra overall assessments."
+    },
+    {
+      "name": "event.error",
+      "type": "optional typed object",
+      "meaning": "code network/timeout/permission_denied/audio_unavailable/provider_unavailable/invalid_response/storage_unavailable/unsupported/aborted/unknown, plus retryable boolean. No provider error text."
+    },
+    {
+      "name": "event.provider/model/operation/providerVersion",
+      "type": "server-only tokens",
+      "meaning": "Verified backend execution provenance. Never accepted from client event endpoint."
+    },
+    {
+      "name": "event.wordScores",
+      "type": "server-only array up to 200",
+      "meaning": "Unique integer index, one character from the poem, score and optional pronunciationScore/toneScore 0..100, optional status; excludes transcript/audio."
+    }
+  ],
+  "missingness": {
+    "nullOrAbsent": "Not measured/collected/available; do not convert to 0.",
+    "zero": "A valid measured value when present; include in denominators.",
+    "clientScore": "Browser-reported, potentially manipulated. Never merge into serverVerified score.",
+    "serverScore": "Provider measurement confirmed server-side, not pedagogical ground truth.",
+    "reviewFree": "Excluded from independent assessment means; count as practiceOutcomeN.",
+    "unstarted": "Research events alone cannot show students with zero activity; join separately authorised school roster.",
+    "invalid": "Clock/sequence problems remain in raw history and count as invalid in summaries; score summaries exclude flagged events.",
+    "gap": "lostEventCount reports local queue loss; sequence gaps are not reconstructed as invented activity."
+  },
+  "aggregation": {
+    "firstLatest": "Within filtered receipt dates, consolidate assessment results per researchId/poemId/activity/itemId/contentVersion/mode/construct/operation/attemptId; use latest eligible measurement inside each attempt, then earliest/latest observed attempt per item and construct. Missing attemptId falls back to eventId. Process feedback never replaces an assessment.",
+    "nAttempts": "Distinct researchId+attemptId in all filtered events, regardless of first/latest choice; includes review/free. Units differ by activity: a reading recording versus a challenge round. Do not interpret a pooled count as comparable test attempts.",
+    "completedN": "Count of activity_end events with completed status, not count of unique students or attempts.",
+    "meanScore": "Within one construct and source, arithmetic mean across selected measured item outcomes, not weighted by duration. Missing scores are excluded and counted separately. Overall meanScore is null and mixedConstructs=true if multiple measured constructs are present; never pool pronunciation scores with binary task accuracy.",
+    "date": "UTC serverReceivedAt, inclusive from/to calendar dates.",
+    "sync": "Published snapshot time describes publication recency; status and watermark indicate backlog. Not a promise every client queued event has arrived.",
+    "assessmentEvents": "Client reading feedback_shown for a poem line, or answer_submitted with a recognised task type; server provider_result operation reading/handwriting, or challenge with sound/match/sequence/scene-builder. Microgame, report/chat, ordinary feedback and generic dictation challenge acknowledgements are process-only, even if a score field is present.",
+    "byConstruct": {
+      "shape": "Every summary, including student first/latest and cohort/trend rows, has a sparse byConstruct object using the documented keys. Each present value has clientReported and serverVerified score summaries; absent constructs mean no eligible outcome, not zero. Only top-level summary includes byMode with nested byConstruct to avoid repeating mode details in every list row. Student detail uses its filtered top-level summary.byMode. mixedConstructs appears only on overall source scores.",
+      "keys": {
+        "reading.pronunciation": "Provider pronunciation score on a 0..100 scale; not a binary correctness rate.",
+        "writing.dictation": "Target-character match, 0/100; handwriting provider outcome for verified source.",
+        "sound.recognition": "Sound-choice correctness, 0/100.",
+        "match.accuracy": "Matching-item correctness, 0/100.",
+        "sequence.accuracy": "Sequence-item correctness, 0/100.",
+        "scene_builder.accuracy": "Scene placement correctness, 0/100."
+      }
+    },
+    "practiceOutcomeN": "Count of eligible assessment outcome events in review/free modes, excluded from independent assessment summaries. Process feedback and game completion do not add assessment outcomes.",
+    "readingWords": "Top-level readingWords only: at most 50 groups from selected server_verified reading outcomes, excluding review/free and invalid records. Group by poemId/itemId/contentVersion/index/char. Each entry has count, meanScore and below60Count; zero is measured, absent word scores do not add samples. readingWordSummary declares cutoff=60, totalGroups, returnedGroups, truncated and character_scores_not_phoneme_diagnosis. Lower scores are practice observations, not a consonant/tone disorder diagnosis. The limit affects teacher display only; raw exports are complete.",
+    "capacity": "Default analytics exceeding 100000 events or the snapshot byte bound does not block publication of the manifest and class/date chunks. The manifest marks overview.status=filter_required, and the API returns NARROW_DATE_OR_CLASS_FILTER with a class/date suggestion. This is not an empty dataset."
+  },
+  "export": {
+    "default": "Pseudonymous JSONL or CSV; teacher authentication required.",
+    "pagination": "Each first page provides snapshotId; subsequent cursor pages must provide it. Changed data returns 409 rather than silently duplicating/skipping rows.",
+    "csv": "Core fields, CSV header on every page; remove duplicate header when concatenating. Full typed detail remains in JSONL.",
+    "manifest": "schema/dictionary versions, filters, timestamps, record counts, nextCursor, snapshotId and content SHA-256.",
+    "excluded": [
+      "raw recordings",
+      "handwriting coordinates",
+      "chat text",
+      "names",
+      "school login",
+      "IP address",
+      "device fingerprint"
+    ]
+  }
+}

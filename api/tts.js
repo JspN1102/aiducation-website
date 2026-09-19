@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const https = require('https');
+const schoolAuth = require('./_lib/school-auth.cjs');
 const {cacheKey, hasAudio, readAudio, writeAudio, CACHE_VERSION} = require('./_lib/tts-cache');
 
 // Keep one request per phrase in each warm function instance. The Blob cache
@@ -271,6 +272,10 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method === 'GET' || req.method === 'HEAD') return serveCachedAudio(req, res);
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if(schoolAuth.enabled()){
+    try{await schoolAuth.requireActor(req,{roles:['student'],csrf:true});}
+    catch(error){return schoolAuth.sendError(res,error);}
+  }
 
   const {text} = req.body || {};
   if (typeof text !== 'string' || !text.trim()) return res.status(400).json({error: 'Missing text'});

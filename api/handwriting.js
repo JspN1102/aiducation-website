@@ -1,5 +1,6 @@
 // The mainland standalone server can use the existing Vercel recognizer relay.
 // This option is server configuration, never a URL supplied by a browser.
+const {withSchoolLearning} = require('./_lib/school-learning.cjs');
 const MAX_BODY_BYTES = 512 * 1024;
 const MAX_RESPONSE_BYTES = 64 * 1024;
 const RELAY_HEADER = 'x-maanshan-handwriting-relay';
@@ -55,7 +56,7 @@ function validCandidates(value) {
     typeof candidate === 'string' && candidate.trim().length > 0 && candidate.length <= 32 && !/[\u0000-\u001f\u007f]/.test(candidate));
 }
 
-module.exports = async (req, res) => {
+module.exports = withSchoolLearning('handwriting', async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const body = req.body;
   if (!body || typeof body !== 'object' || Array.isArray(body)) return res.status(400).json({ error: 'Invalid request body' });
@@ -102,4 +103,4 @@ module.exports = async (req, res) => {
     const timeout = error?.name === 'TimeoutError' || error?.name === 'AbortError';
     return res.status(timeout ? 504 : 502).json({ error: timeout ? 'Recognition timed out' : 'Recognition service unavailable' });
   }
-};
+});

@@ -1,6 +1,6 @@
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260919d';
 import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20260919d';
-import {mountChallengeWriting} from './challenge-writing.mjs?v=20260919c';
+import {mountChallengeWriting} from './challenge-writing.mjs?v=20260920-school1';
 import {mountChallengeModel} from './challenge-model.mjs?v=20260918b';
 import {mountLivingField} from './living-field.mjs?v=20260914f';
 
@@ -27,7 +27,7 @@ const soundIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const tone = shape => shape ? `<svg class="challenge-tone" viewBox="0 0 70 35" aria-hidden="true"><path d="${{level:'M8 10H62', rising:'M8 28 62 6', dipping:'M8 13 32 29 62 6', falling:'M8 6 62 28'}[shape]}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>` : '';
 const makeURL = path => new URL(path, import.meta.url).href;
 
-export function mountChallenge(container, {poem, saved, onChange, onComplete, playAudio, stopAudio, recognize} = {}) {
+export function mountChallenge(container, {poem, saved, onChange, onComplete, playAudio, stopAudio, recognize, onResearch = () => {}, onAnswer = () => {}} = {}) {
   const set = CHALLENGE_SETS[poem.slug];
   if (!set) throw new Error('missing-challenge');
   let attempt = prepareAttempt(set, saved), dead = false, screen = attempt.cursor;
@@ -41,6 +41,15 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
   const flushDraft = () => {if(draftTimer!==null){clearTimeout(draftTimer);draftTimer=null;save();}};
   const ordered = item => (attempt.orders[item.id] || []).map(id => (item.options || item.cards).find(card => card.id === id));
   const currentAnswer = () => attempt?.answers[screen];
+  let itemPresentedAt = performance.now();
+  function researchContext(){
+    const item=items[screen];
+    return {attemptId:attempt.attemptId,itemId:item?.id||'challenge-summary',activity:item?.type==='dictation'?'writing':'challenge',
+      context:{mode:attempt.mode||'standard',itemType:item?.type||'microgame',position:Math.min(screen+1,items.length),total:items.length,
+        optionOrder:(attempt.orders[item?.id]||[]).map(String),...(attempt.sourceAttempt?.attemptId?{sourceAttemptId:attempt.sourceAttempt.attemptId}:{})}};
+  }
+  function audit(type,fields={}){const base=researchContext();onResearch(type,{...base,...fields,context:{...base.context,...(fields.context||{})}});}
+  const recognizeItem=ink=>recognize(ink,researchContext());
   function release() {flushDraft();renderGeneration++; audioGeneration++; gameEpoch++;game?.destroy();game=null;pendingGameSolution=false;pageEvents?.abort(); writing?.destroy(); writing = null; model?.destroy(); model = null; livingField?.destroy();livingField=null;stopAudio?.(); playing = false;}
   function startPage(html) {
     release(); pageEvents = new AbortController(); container.innerHTML = html;
@@ -63,11 +72,12 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const locked = !!answer;
     const active = () => !dead && epoch === gameEpoch && generation === renderGeneration;
     try {
-      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20260919e');
+      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20260920a');
       if (!active()) return;
       let completionReceived = false;
       const mounted = mountPoemGame(holder, {slug: poem.slug, initialState: state, readOnly: locked,
-        playAudio: async audio => active() ? await playAudio?.(audio) : false,
+        onResearch:(type,fields)=>{if(active())audit(type,fields);},
+        playAudio: async audio => active() ? await playAudio?.(audio,researchContext()) : false,
         onState: value => {
           if (!active() || locked || completionReceived || currentAnswer()) return;
           const draft = safeGameState(value);
@@ -121,6 +131,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
   function showQuestion() {
     const item = items[screen];
     if (!item) {summary(); return;}
+    itemPresentedAt=performance.now();audit('item_presented');
     heard = false; selected = null; placements = {}; density = {};
     const answer = currentAnswer();
     if (answer?.response && item.type === 'sound') selected = answer.response;
@@ -131,7 +142,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     else if (item.type === 'dictation') {
       const holder = q('.challenge-writing-holder');
       holder.inert = !answer;
-      writing = mountChallengeWriting(holder, {target: item.target, recognize, initialResult: answer || null,
+      writing = mountChallengeWriting(holder, {target: item.target, recognize:recognizeItem, onResearch:audit, initialResult: answer || null,
         onSubmit: result => submit(result)});
     } else if (item.type === 'sound') {
       installDrag(q('.challenge-sound-token'), '[data-option]', button => chooseSound(button.dataset.option));
@@ -186,7 +197,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     if (status) status.textContent = '聽一聽…';
     button?.classList.add('is-playing');button?.setAttribute('aria-busy','true');
     let success = false;
-    try {success = await playAudio(item.audio) === true;} catch {}
+    try {success = await playAudio(item.audio,researchContext()) === true;} catch {}
     if (dead || generation !== renderGeneration || playback !== audioGeneration) return;
     playing = false;button?.classList.remove('is-playing');button?.removeAttribute('aria-busy');
     if (success) heard = true;
@@ -236,6 +247,10 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
   function submit(result) {
     if (dead || currentAnswer()) return;
     if(!recordAnswer(attempt,set,screen,result))return;
+    const response=typeof result.response==='string'?{choiceId:result.response}:result.response&&['match','sequence','scene-builder'].includes(items[screen].type)?{placements:Object.entries(result.response).filter(([,value])=>typeof value==='string').map(([slotId,choiceId])=>({slotId,choiceId}))}:undefined;
+    const measured=['correct','incorrect'].includes(result.status)&&items[screen].type!=='microgame';
+    audit('answer_submitted',{result:{status:items[screen].type==='microgame'&&result.status==='correct'?'completed':result.status,score:measured?(result.status==='correct'?100:0):null,correct:measured?result.status==='correct':null},metrics:{elapsedMs:Math.min(21600000,Math.round(performance.now()-itemPresentedAt))},...(response?{response}:{})});
+    onAnswer({...researchContext(),status:result.status,...(response?{response}:{})});
     save();if(attempt.answers.length===items.length)onComplete?.(challengeSummary(attempt,set));
     audioGeneration++;stopAudio?.();playing=false;
     container.querySelectorAll('.is-playing').forEach(button=>{button.classList.remove('is-playing');button.removeAttribute('aria-busy');});
@@ -245,6 +260,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
   }
   function feedback(answer) {
     const item=items[screen], correct=answer.status==='correct';
+    audit('feedback_shown',{result:{status:answer.status,score:null,correct:null}});
     q('[data-ch="skip"]').hidden=true;q('[data-ch="submit"]').hidden=true;
     const next=q('[data-ch="next"]');next.hidden=false;
     next.textContent=screen===items.length-1?'查看成果':'下一題 →';
@@ -252,7 +268,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     q('.challenge-footer').classList.add('has-feedback');
     if(item.type==='dictation' && answer.status==='skipped' && !writing?.getResult?.()) {
       writing?.destroy();q('.challenge-writing-holder').inert=false;
-      writing=mountChallengeWriting(q('.challenge-writing-holder'),{target:item.target,recognize,initialResult:answer,onSubmit:()=>{}});
+      writing=mountChallengeWriting(q('.challenge-writing-holder'),{target:item.target,recognize:recognizeItem,onResearch:audit,initialResult:answer,onSubmit:()=>{}});
     }
   }
   function summary() {
@@ -267,13 +283,15 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const allCorrect=result.correct===result.total, pending=attempt.reviewPending?.length || 0;
     startPage(`<section class="challenge-shell challenge-results"><header class="challenge-results-heading"><img src="media/poetry-motifs/${['goose','boat','mountain','moon','sprout','swallow'][poem.grade-1]}.svg" alt="" width="72" height="72"><div><p class="challenge-eyebrow">${attempt.mode==='review'?'錯題複習成果':'練一練成果'}</p><h2>${allCorrect?pending?'這一組答對了！':'全部答對了！':'把小發現帶走。'}</h2><p class="challenge-result-detail">${pending?`還有 ${pending} 道錯題，下次接着練。`:allCorrect?'每一題都完成得很好。':`答對 ${result.correct} / ${result.total} 題，再看看這些知識點。`}</p></div></header><div class="challenge-result-list" aria-label="每題結果與知識點">${entries}</div><div class="challenge-results-actions"><button class="challenge-primary" data-ch="new-round">再練五題 <span aria-hidden="true">→</span></button>${!allCorrect||pending?'<button class="challenge-secondary" data-ch="redo-wrong">錯題重做</button>':''}</div></section>`);
   }
-  function restart(mode='standard') {flushDraft();attempt=newAttempt(set,{previous:attempt,mode});items=attemptItems(attempt,set);screen=0;save();showQuestion();}
+  function restart(mode='standard') {flushDraft();attempt=newAttempt(set,{previous:attempt,mode});items=attemptItems(attempt,set);screen=0;audit('attempt_started',{metrics:{itemCount:items.length}});save();showQuestion();}
   function click(event) {
     const button=event.target.closest('[data-ch]');if(!button||button.disabled||dead)return;
     const action=button.dataset.ch,item=items[screen];
+    if(['listen','show-solution'].includes(action))audit('hint_used',{hint:{kind:action==='listen'?'audio':action==='skip'?'explanation':'reveal',count:1}});
+    if(['retry-game','redo-wrong'].includes(action))audit('retry',{retryCount:1});
     if(action==='retry-game'){loadGame();return;}
     if(action==='new-round'){restart();return;}
-    if(action==='redo-wrong'){const review=newReviewAttempt(set,attempt);if(review){attempt=review;items=attemptItems(attempt,set);screen=0;save();showQuestion();}}
+    if(action==='redo-wrong'){const review=newReviewAttempt(set,attempt);if(review){attempt=review;items=attemptItems(attempt,set);screen=0;audit('attempt_started',{metrics:{itemCount:items.length}});save();showQuestion();}}
     if(action==='listen')listen();
     if(action==='choose')chooseSound(button.dataset.option);
     if(action==='card'&&!currentAnswer()){selected=button.dataset.card;updatePlacements();}
@@ -315,6 +333,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
 
   }
   save();
+  if(saved?.attemptId!==attempt.attemptId)audit('attempt_started',{metrics:{itemCount:items.length}});
   if(attempt.answers.length===items.length)summary();else showQuestion();
   return {destroy(){dead=true;release();container.replaceChildren();},pause(){flushDraft();stopAudio?.();},getAttempt(){return attempt;}};
 }

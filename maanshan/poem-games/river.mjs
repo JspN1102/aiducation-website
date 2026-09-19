@@ -1,3 +1,4 @@
+import {createProcessResearch} from './research.mjs?v=20260920a';
 const media = path => new URL(`../media/${path}`, import.meta.url).href;
 
 const ART = media('exploration/bo-chuan-gua-zhou/scene.webp');
@@ -49,6 +50,7 @@ export function mountRiver(holder, {
   playAudio,
   onState,
   onComplete,
+  onResearch,
   reducedMotion = false
 } = {}) {
   const doc = holder.ownerDocument;
@@ -70,6 +72,7 @@ export function mountRiver(holder, {
   let drag = null;
   let suppressClickUntil = 0;
   let reported = initialState?.gameCompleted === true || readOnly;
+  const research = createProcessResearch(onResearch, {prefix:'game.river', alive:()=>!dead});
 
   const root = doc.createElement('section');
   root.className = 'river-puzzle-game';
@@ -152,6 +155,7 @@ export function mountRiver(holder, {
 
   function selectPiece(piece) {
     if (!interactive() || !isPiece(piece)) return;
+    research.action('tray', `piece.${piece}`, 'option_selected');
     selected = selected === piece ? null : piece;
     render();
     tell(selected === null ? '已取消選取。' : `第 ${piece + 1} 片選好了，點一個畫中位置。`);
@@ -168,6 +172,7 @@ export function mountRiver(holder, {
     }
 
     const displaced = slots[targetSlot];
+    research.answer(`slot.${targetSlot}`, `piece.${piece}`, piece===targetSlot);
     if (sourceSlot >= 0) {
       slots[sourceSlot] = isPiece(displaced) ? displaced : null;
     } else {
@@ -181,6 +186,7 @@ export function mountRiver(holder, {
     onState?.(snapshot());
 
     if (completed) {
+      research.complete();
       tell('拼好了！春風染綠兩岸，明月照着小舟。');
       notifyCompletion();
     } else {
@@ -241,7 +247,7 @@ export function mountRiver(holder, {
       suppressClickUntil = view.performance.now() + 650;
       clearDrag();
       if (slot) place(current.piece, Number(slot.dataset.riverSlot));
-      else tell('把畫片放到六格畫面裏，再試一次。');
+      else {research.action('board','drop-outside');research.hint('board');tell('把畫片放到六格畫面裏，再試一次。');}
     } else {
       clearDrag();
     }
@@ -249,6 +255,7 @@ export function mountRiver(holder, {
 
   async function listen() {
     if (dead || speaking || !ready) return;
+    research.hint('game','audio');
     const generation = ++voiceGeneration;
     speaking = true;
     updateAudioState();
@@ -266,10 +273,11 @@ export function mountRiver(holder, {
     if (dead || generation !== voiceGeneration) return;
     speaking = false;
     updateAudioState();
-    if (ok === false || ok === undefined) tell('聲音暫時未能播放，拼圖仍然可以繼續。');
+    if (ok === false || ok === undefined) {research.error('audio','audio_unavailable');tell('聲音暫時未能播放，拼圖仍然可以繼續。');}
   }
 
   async function load() {
+    if(loadGeneration)research.retry('assets');
     const generation = ++loadGeneration;
     ready = false;
     root.dataset.assets = 'loading';
@@ -290,6 +298,7 @@ export function mountRiver(holder, {
       ]);
       if (dead || generation !== loadGeneration) return;
       ready = true;
+      if(!readOnly&&!completed&&!solution)PIECES.forEach(slot=>research.present(`slot.${slot}`,{position:slot,total:PIECES.length,optionOrder:tray.map(piece=>`piece.${piece}`)}));
       root.dataset.assets = 'ready';
       board.setAttribute('aria-busy', 'false');
       render();
@@ -303,6 +312,7 @@ export function mountRiver(holder, {
       }
     } catch {
       if (dead || generation !== loadGeneration) return;
+      research.error('assets');
       root.dataset.assets = 'error';
       board.setAttribute('aria-busy', 'false');
       q('[data-river-retry]').hidden = false;
@@ -336,7 +346,8 @@ export function mountRiver(holder, {
 
   return {
     showSolution() {
-      if (dead) return;
+      if (dead || solution) return;
+      research.hint('game','reveal');
       clearDrag();
       voiceGeneration++;
       view.clearTimeout(voiceTimer);

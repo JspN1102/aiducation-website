@@ -1,4 +1,5 @@
 const { getPoem, poemContext, requestPoemText } = require('./_lib/poems.js');
+const {withSchoolLearning} = require('./_lib/school-learning.cjs');
 const pronunciationData = require('../maanshan/pronunciation.json');
 const { getGradeGuidance, reportFormatInstructions, buildReportFallback, createReportResponse } = require('./_lib/reading-report.js');
 
@@ -6,7 +7,7 @@ function isScore(value) {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100;
 }
 
-module.exports = async function handler(req, res) {
+module.exports = withSchoolLearning('report', async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -121,4 +122,4 @@ ${reportFormatInstructions(studentGrade)}`;
     { role: 'system', content: system },
     { role: 'user', content: JSON.stringify({ studentGrade, coverage, measured, wordCount: words.length, measuredWordCount: practice.assessedCount, practiceWordCount: practice.needsPracticeCount, unknownWords: practice.unknownWords, practiceWords }) }
   ], { field: 'report', temperature: 0.5, timeoutMs: 30000, maxTokens: gradeGuidance.maxTokens });
-};
+});

@@ -1,4 +1,5 @@
 import {RAIN_GLYPHS} from './rain-glyphs.mjs?v=20260919a';
+import {createProcessResearch} from './research.mjs?v=20260920a';
 
 const media = name => new URL(`../media/poem-games/rain-catcher/${name}`, import.meta.url).href;
 const ROUNDS = [
@@ -18,7 +19,7 @@ function glyph(char) {
   return strokes ? `<svg class="rc-character" viewBox="0 0 1024 1024" aria-hidden="true" focusable="false"><g transform="translate(0 900) scale(1 -1)">${strokes.map(d=>`<path d="${d}"/>`).join('')}</g></svg>` : char;
 }
 
-export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,onComplete,reducedMotion=false}={}) {
+export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,onComplete,onResearch,reducedMotion=false}={}) {
   const doc=holder.ownerDocument,view=doc.defaultView,events=new view.AbortController(),old=initialState||{};
   let caught=ROUNDS.map(()=>0);
   if(old.version===6&&Array.isArray(old.caught))caught=ROUNDS.map((_,i)=>old.caught[i]===1?1:0);
@@ -31,6 +32,9 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
   let phase=done?'done':readOnly?'readonly':'intro',round=Math.max(0,caught.findIndex(n=>n===0));
   let lane=1,wave=[],progress=0,raf=0,previousTime=0,drag=null,lastCorrect=false;
   let loading=0,loadTimer=0,audioGeneration=0,audioTimer=0,speaking=false,advanceTimer=0,advanceBlocked=false;
+  const research=createProcessResearch(onResearch,{prefix:'game.rain',context:()=>replaying?{mode:'free'}:{},alive:()=>!dead});
+  const step=index=>`word.${index}`;
+  const choiceId=(index,char)=>`option.${ROUNDS[index].options.findIndex(option=>option[0]===char)}`;
   const root=doc.createElement('section');root.className='rain-catcher';root.setAttribute('aria-label','春雨接字');
   root.classList.toggle('is-reduced',reducedMotion);
   root.innerHTML=`<header class="rc-heading"><h3>春雨接字</h3><span class="rc-round-count" data-rc-count aria-label="已收集的漢字"></span></header>
@@ -100,6 +104,7 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
   function makeWave(){
     round=Math.max(0,caught.findIndex(n=>n===0));wave=[...ROUNDS[round].options];
     for(let i=wave.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[wave[i],wave[j]]=[wave[j],wave[i]];}
+    research.present(step(round),{position:round,total:TOTAL,optionOrder:wave.map(option=>choiceId(round,option[0])),...(replaying?{mode:'free'}:{})},{repeat:true});
     drops.forEach((el,i)=>{
       el.dataset.char=wave[i][0];el.setAttribute('aria-label',wave[i][0]);
       el.querySelector('.rc-glyph').innerHTML=glyph(wave[i][0]);el.querySelector('small').textContent='';el.classList.remove('is-caught','is-wrong');
@@ -120,6 +125,8 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
   function catchRow(){
     if(!canMove())return;stopFrame();clearAdvance();advanceBlocked=false;progress=1;phase='feedback';
     const selected=wave[lane],target=ROUNDS[round];lastCorrect=selected[0]===target.char;
+    research.answer(step(round),choiceId(round,selected[0]),lastCorrect);
+    if(!lastCorrect)research.hint(step(round));
     drops.forEach((el,i)=>{el.querySelector('small').textContent=wave[i][1];el.setAttribute('aria-label',`${wave[i][0]}，${wave[i][1]}`);});
     drops[lane].classList.add(lastCorrect?'is-caught':'is-wrong');
     q('[data-rc-feedback]').dataset.result=lastCorrect?'correct':'incorrect';
@@ -128,7 +135,7 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
     if(lastCorrect){
       caught[round]=1;done=total()===TOTAL;save();
       tell(`接到了！「${target.char}」讀 ${target.pinyin}。已收集 ${total()} 個字，共五個。`);
-      if(done){phase='done';refresh();finish();return;}
+      if(done){research.complete();phase='done';refresh();finish();return;}
     }else tell(`這是「${selected[0]}」${selected[1]}；要找讀 ${target.pinyin} 的字。再來一次，不扣分。`);
     refresh();scheduleAdvance();
   }
@@ -149,15 +156,17 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
   function point(event){const r=field.getBoundingClientRect();move(clamp(Math.floor((event.clientX-r.left)/r.width*3),0,2));}
   function replay(){
     if(dead||!ready||!done||solved)return;
+    replaying=true;research.reset();
     clearAdvance();stopFrame();audioGeneration++;speaking=false;view.clearTimeout(audioTimer);
     replaying=true;done=false;caught=ROUNDS.map(()=>0);round=0;lane=1;wave=[];progress=0;lastCorrect=false;phase='intro';
     refresh();tell('再收集五個字，原來的成果已保留。');
   }
   async function listen(index){
     if(dead||!ready||speaking)return;const token=++audioGeneration,target=ROUNDS[index];speaking=true;pause();refresh();let result,timeout;
+    research.hint(step(index),'audio');
     try{result=await Promise.race([Promise.resolve(playAudio?.({char:target.char,pinyin:target.pinyin})),new Promise(resolve=>{timeout=view.setTimeout(()=>resolve(false),20000);audioTimer=timeout;})]);}catch{result=false;}finally{view.clearTimeout(timeout);if(audioTimer===timeout)audioTimer=0;}
     if(dead||token!==audioGeneration)return;speaking=false;refresh();
-    if(result===false)tell('聲音暫時未能播放，看拼音也可以練習。');
+    if(result===false){research.error(step(index),'audio_unavailable');tell('聲音暫時未能播放，看拼音也可以練習。');}
     scheduleAdvance();
   }
   field.addEventListener('pointerdown',event=>{
@@ -183,6 +192,7 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
   q('[data-rc-listen]').addEventListener('click',()=>void listen(round),{signal:events.signal});
   root.querySelectorAll('[data-rc-word]').forEach(button=>button.addEventListener('click',()=>void listen(Number(button.dataset.rcWord)),{signal:events.signal}));
   async function load(){
+    if(loading)research.retry('assets');
     const generation=++loading;ready=false;refresh();q('.rc-loading').hidden=false;q('[data-rc-retry]').hidden=true;
     const images=[q('.rc-scene'),q('.rc-boat img')];
     if(generation>1)images.forEach(img=>{const url=new URL(img.src);url.searchParams.set('retry',String(generation));img.src=url.href;});
@@ -192,13 +202,13 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
       ready=true;q('.rc-loading').hidden=true;field.setAttribute('aria-busy','false');refresh();
       // Recover a fully caught but not yet submitted v6 draft after a refresh.
       if(done)finish();
-    }catch{if(dead||generation!==loading)return;q('.rc-loading span').textContent='春日畫面未能載入。';q('[data-rc-retry]').hidden=false;field.setAttribute('aria-busy','false');}
+    }catch{if(dead||generation!==loading)return;research.error('assets');q('.rc-loading span').textContent='春日畫面未能載入。';q('[data-rc-retry]').hidden=false;field.setAttribute('aria-busy','false');}
     finally{view.clearTimeout(loadTimer);}
   }
   q('[data-rc-retry]').addEventListener('click',()=>void load(),{signal:events.signal});
   tell(done?'點字卡聽讀音，也可以再玩五個字。':readOnly?'看看這五個字的讀音。':'一局收集五個不同的字。接錯也能再來。');refresh();void load();
   return {
-    showSolution(){if(dead)return;clearAdvance();stopFrame();solved=true;phase='solution';audioGeneration++;speaking=false;view.clearTimeout(audioTimer);refresh();tell(KNOWLEDGE);},
+    showSolution(){if(dead||solved)return;research.hint('game','reveal');clearAdvance();stopFrame();solved=true;phase='solution';audioGeneration++;speaking=false;view.clearTimeout(audioTimer);refresh();tell(KNOWLEDGE);},
     destroy(){if(dead)return;dead=true;loading++;audioGeneration++;clearAdvance();stopFrame();view.clearTimeout(loadTimer);view.clearTimeout(audioTimer);events.abort();root.remove();}
   };
 }

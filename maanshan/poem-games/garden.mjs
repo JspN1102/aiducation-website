@@ -1,3 +1,4 @@
+import {createProcessResearch} from './research.mjs?v=20260920a';
 const file = path => new URL(`../media/${path}`, import.meta.url).href;
 const plants = [
   {id:'bean-a',kind:'bean',x:22,y:72,size:25,turn:-8},
@@ -16,10 +17,11 @@ const weedIds = plants.filter(p=>p.kind==='weed').map(p=>p.id);
 const facts = '詩裏是「草盛豆苗稀」：野草多，豆苗少。我們剛才幫忙照料這小片田。';
 
 /** A close-up tending activity; clearing this game bed does not rewrite the poem. */
-export function mountGarden(holder, {initialState, readOnly=false, playAudio, onState, onComplete}={}) {
+export function mountGarden(holder, {initialState, readOnly=false, playAudio, onState, onComplete, onResearch}={}) {
   const doc=holder.ownerDocument,view=doc.defaultView,abort=new view.AbortController();
   const removed=new Set(Array.isArray(initialState?.removed)?initialState.removed.filter(id=>weedIds.includes(id)):[]);
   let dead=false,ready=false,done=removed.size===weedIds.length,reported=done,drag=null,loadId=0,suppressClickUntil=0;
+  const research=createProcessResearch(onResearch,{prefix:'game.garden',alive:()=>!dead});
   const timers=new Set(),root=doc.createElement('section');root.className='poem-garden';root.setAttribute('aria-label','豆苗小幫手');
   root.innerHTML=`<div class="gr-instruction"><p>拔掉細長野草，留下寬葉豆苗。</p><span class="gr-count" aria-live="off"></span></div>
     <div class="garden-picture gr-picture" aria-label="三株豆苗和八叢野草的田地" aria-busy="true">
@@ -49,8 +51,10 @@ export function mountGarden(holder, {initialState, readOnly=false, playAudio, on
   function pull(id) {
     if(dead||!ready||readOnly||done||removed.has(id))return;
     const p=plants.find(item=>item.id===id);if(!p)return;
+    research.answer(id,'pull',p.kind==='weed');
     const button=q(`[data-plant="${id}"]`);
     if(p.kind==='bean'){
+      research.hint(id);
       button.classList.remove('is-shaking');void button.offsetWidth;button.classList.add('is-shaking');
       later(()=>button.classList.remove('is-shaking'),550);
       tell('這是豆苗，寬寬的葉子要留下。找找旁邊細長的草。');return;
@@ -58,7 +62,7 @@ export function mountGarden(holder, {initialState, readOnly=false, playAudio, on
     removed.add(id);done=removed.size===weedIds.length;render();
     if(!done)tell(removed.size===1?'拔起來了！寬葉豆苗要留下。':`又照料好一處，還有 ${weedIds.length-removed.size} 叢野草。`);
     onState?.(state());
-    if(done&&!reported){reported=true;onComplete?.({correct:true,response:{removed:[...removed],kept:plants.filter(p=>p.kind==='bean').map(p=>p.id)},knowledge:facts});}
+    if(done&&!reported){reported=true;research.complete();onComplete?.({correct:true,response:{removed:[...removed],kept:plants.filter(p=>p.kind==='bean').map(p=>p.id)},knowledge:facts});}
   }
 
   function down(event){
@@ -82,14 +86,17 @@ export function mountGarden(holder, {initialState, readOnly=false, playAudio, on
     if(event.type==='pointerup'){suppressClickUntil=Date.now()+600;pull(previous.id);}
   }
   async function load(){
+    if(loadId)research.retry('assets');
     const request=++loadId;ready=false;q('.gr-loading').hidden=false;q('[data-garden-retry]').hidden=true;render();
     let timeout;
     try{
       if(request>1)for(const image of root.querySelectorAll('img')){const url=new URL(image.src);url.searchParams.set('retry',String(request));image.src=url.href;}
       await Promise.race([Promise.all([...root.querySelectorAll('img')].map(img=>img.decode())),new Promise((_,reject)=>{timeout=view.setTimeout(()=>reject(new Error('Image timeout')),12000);timers.add(timeout);})]);
       if(dead||request!==loadId)return;ready=true;q('.gr-loading').hidden=true;q('.gr-picture').setAttribute('aria-busy','false');render();
+      if(!readOnly&&!done)plants.forEach((p,position)=>{if(!removed.has(p.id))research.present(p.id,{position,total:plants.length});});
     }catch{
       if(dead||request!==loadId)return;q('.gr-loading span').textContent='圖片暫時未載入。';q('[data-garden-retry]').hidden=false;q('.gr-picture').setAttribute('aria-busy','false');
+      research.error('assets');
     }finally{view.clearTimeout(timeout);timers.delete(timeout);}
   }
   root.addEventListener('pointerdown',down,{signal:abort.signal});
@@ -100,12 +107,13 @@ export function mountGarden(holder, {initialState, readOnly=false, playAudio, on
     const plant=event.target.closest?.('[data-plant]');if(plant&&(event.detail===0||Date.now()>suppressClickUntil))pull(plant.dataset.plant);
     if(event.target.closest?.('[data-garden-retry]'))void load();
     if(event.target.closest?.('[data-garden-audio]')){
-      Promise.resolve().then(()=>playAudio?.({text:done?'帶月荷鋤歸':'草盛豆苗稀'})).catch(()=>{if(!dead)tell('聲音暫時未能播放，稍後再試。');});
+      research.hint('game','audio');
+      Promise.resolve().then(()=>playAudio?.({text:done?'帶月荷鋤歸':'草盛豆苗稀'})).then(ok=>{if(ok===false)research.error('audio','audio_unavailable');}).catch(()=>{research.error('audio','audio_unavailable');if(!dead)tell('聲音暫時未能播放，稍後再試。');});
     }
   },{signal:abort.signal});
   tell(done?facts:'先看看葉子：豆苗寬，野草細長。');render();void load();
   return {
-    showSolution(){if(dead)return;weedIds.forEach(id=>removed.add(id));done=true;reported=true;render();},
+    showSolution(){if(dead||done)return;research.hint('game','reveal');weedIds.forEach(id=>removed.add(id));done=true;reported=true;render();},
     destroy(){if(dead)return;dead=true;loadId++;abort.abort();timers.forEach(id=>view.clearTimeout(id));drag=null;root.remove();}
   };
 }

@@ -1,3 +1,4 @@
+import {createProcessResearch} from './research.mjs?v=20260920a';
 const asset = name => new URL(`../media/poem-games/yong-e/${name}.webp`, import.meta.url).href;
 const parts = [
   {id:'feather',color:'white',name:'羽毛',label:'鵝的羽毛',x:48,y:48,feedback:'白毛，像一朵浮在水上的雲。',hint:'詩裏說「白毛」，再選一種顏色吧。'},
@@ -10,11 +11,13 @@ const colors = [{id:'white',name:'白色'},{id:'red',name:'紅色'},{id:'green',
  * No rendering engine, model, animation loop, microphone, or camera is loaded.
  * The caller owns navigation and scoring; only three correct fills can finish.
  */
-export function mountGoose(holder, {initialState, readOnly=false, onState, onComplete, onProgress, playAudio, reducedMotion=false} = {}) {
+export function mountGoose(holder, {initialState, readOnly=false, onState, onComplete, onProgress, playAudio, onResearch, reducedMotion=false} = {}) {
   const savedFilled=Array.isArray(initialState?.filled)?initialState.filled:Array.isArray(initialState?.completed)?initialState.completed:[];
   const restored=savedFilled.filter(id=>parts.some(part=>part.id===id));
   const abort = new AbortController(), found = new Set(restored), masks = new Map(), timers = new Set();
   let dead=false, ready=false, complete=found.size===3, solution=false, selected=null, loadGeneration=0, drag=null, suppressClick=false;
+  const research=createProcessResearch(onResearch,{prefix:'game.goose',alive:()=>!dead});
+  const presentParts=()=>{if(!readOnly&&!complete&&!solution)parts.forEach((part,position)=>{if(!found.has(part.id))research.present(part.id,{position,total:3,optionOrder:colors.map(c=>c.id)});});};
   const root=document.createElement('section');
   root.className=`poem-goose-game${reducedMotion?' is-reduced-motion':''}`;
   root.setAttribute('aria-label','白鵝的春水圖填色遊戲');
@@ -62,13 +65,15 @@ export function mountGoose(holder, {initialState, readOnly=false, onState, onCom
   }
   function choose(color) {
     if(!ready||complete||dead||readOnly||solution)return;
+    research.action('palette',color,'option_selected');
     selected=color;update();tell(`拿起${colors.find(c=>c.id===color).name}，點一點畫裏的${color==='white'?'羽毛':color==='red'?'腳掌':'水面'}。`);
   }
   function paint(part, point) {
     if(!part||!ready||complete||dead||readOnly||solution)return;
     if(found.has(part.id)){tell('這裏塗好啦，再看看其他地方。');return;}
-    if(!selected){tell('先在下面選一種顏色吧。');return;}
-    if(selected!==part.color){tell(part.hint);return;}
+    if(!selected){research.hint(part.id);tell('先在下面選一種顏色吧。');return;}
+    research.answer(part.id,selected,selected===part.color);
+    if(selected!==part.color){research.hint(part.id);tell(part.hint);return;}
     found.add(part.id);selected=null;
     if(!reducedMotion){
       const effect=document.createElement('i');effect.className='goose-ripple';effect.setAttribute('aria-hidden','true');
@@ -77,7 +82,7 @@ export function mountGoose(holder, {initialState, readOnly=false, onState, onCom
     complete=found.size===3;update();tell(complete?'三種顏色都回來了！白毛浮綠水，紅掌撥清波。':part.feedback);
     onState?.(state());
     onProgress?.({completed:found.size,total:3});
-    if(complete)onComplete?.({correct:true,response:state(),knowledge:'白毛浮綠水，紅掌撥清波。'});
+    if(complete){research.complete();onComplete?.({correct:true,response:state(),knowledge:'白毛浮綠水，紅掌撥清波。'});}
   }
   function partAt(clientX,clientY) {
     const rect=picture.getBoundingClientRect(),x=(clientX-rect.left)/rect.width,y=(clientY-rect.top)/rect.height;
@@ -114,6 +119,7 @@ export function mountGoose(holder, {initialState, readOnly=false, onState, onCom
     if(current.button.hasPointerCapture?.(event.pointerId))current.button.releasePointerCapture(event.pointerId);
   }
   async function load() {
+    if(loadGeneration)research.retry('assets');
     const generation=++loadGeneration;ready=false;masks.clear();update();
     const notice=q('.goose-loading');notice.hidden=false;notice.querySelector('span').textContent='畫卷正在展開…';notice.querySelector('button').hidden=true;
     try {
@@ -132,9 +138,10 @@ export function mountGoose(holder, {initialState, readOnly=false, onState, onCom
         if(name==='unpainted'){q('.goose-base').src=img.src;continue;}
         q(`[data-goose-layer="${name}"]`).src=img.src;ctx.clearRect(0,0,384,256);ctx.drawImage(img,0,0,384,256);masks.set(name,ctx.getImageData(0,0,384,256).data);
       }
-      ready=true;notice.hidden=true;update();if(complete)tell('三種顏色都回來了！白毛浮綠水，紅掌撥清波。');onProgress?.({completed:found.size,total:3});
+      ready=true;notice.hidden=true;update();presentParts();if(complete)tell('三種顏色都回來了！白毛浮綠水，紅掌撥清波。');onProgress?.({completed:found.size,total:3});
     } catch {
       if(dead||generation!==loadGeneration)return;
+      research.error('assets');
       notice.querySelector('span').textContent='畫卷還沒打開，再試一次吧。';notice.querySelector('button').hidden=false;
       tell('畫卷打開後，就可以替小白鵝上色了。');
     }
@@ -146,8 +153,8 @@ export function mountGoose(holder, {initialState, readOnly=false, onState, onCom
   root.addEventListener('pointercancel',up,{signal:abort.signal});
   load();
   return {
-    reset(){if(dead||readOnly)return;found.clear();complete=false;solution=false;selected=null;suppressClick=false;if(drag){drag.button.style.transform='';drag.button.classList.remove('is-dragging');drag=null;}cancelTimers();root.querySelectorAll('.goose-ripple').forEach(el=>el.remove());update();tell('讓詩裏的三種顏色回到畫中。');onState?.(state());onProgress?.({completed:0,total:3});if(!ready)load();},
-    showSolution(){if(dead)return;solution=true;selected=null;update();tell('看看詩裏的配色：白毛、紅掌、綠水。');},
+    reset(){if(dead||readOnly)return;research.reset();found.clear();complete=false;solution=false;selected=null;suppressClick=false;if(drag){drag.button.style.transform='';drag.button.classList.remove('is-dragging');drag=null;}cancelTimers();root.querySelectorAll('.goose-ripple').forEach(el=>el.remove());update();if(ready)presentParts();tell('讓詩裏的三種顏色回到畫中。');onState?.(state());onProgress?.({completed:0,total:3});if(!ready)load();},
+    showSolution(){if(dead||solution)return;research.hint('game','reveal');solution=true;selected=null;update();tell('看看詩裏的配色：白毛、紅掌、綠水。');},
     destroy(){if(dead)return;dead=true;loadGeneration++;abort.abort();cancelTimers();masks.clear();root.remove();},
   };
 }

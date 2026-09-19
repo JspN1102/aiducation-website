@@ -1,0 +1,28 @@
+[Unit]
+Description=Import structured research outbox and publish private teacher snapshots
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/srv/maanshan/current
+EnvironmentFile=/home/ubuntu/maanshan-shared/app.env
+EnvironmentFile=/home/ubuntu/maanshan-shared/bridge-backup.env
+EnvironmentFile=/home/ubuntu/maanshan-shared/research.env
+ExecStart=/usr/bin/node /srv/maanshan/current/deploy/research-sync.cjs
+Nice=15
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+CPUQuota=25%
+MemoryMax=768M
+TimeoutStartSec=150
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+StandardOutput=journal
+StandardError=journal

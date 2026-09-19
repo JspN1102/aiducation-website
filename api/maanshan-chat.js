@@ -1,6 +1,7 @@
 const { getPoem, poemContext, requestPoemText } = require('./_lib/poems.js');
+const {withSchoolLearning} = require('./_lib/school-learning.cjs');
 
-module.exports = async function handler(req, res) {
+module.exports = withSchoolLearning('chat', async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -60,4 +61,4 @@ ${grade<=3?'普通問答只用一至三個短句。若學生這一輪說「不�
     { role: 'system', content: system },
     ...messages.slice(-10).map(({ role, content }) => ({ role, content }))
   ], { field: 'reply', temperature: 0.8, timeoutMs: 20000, maxTokens: grade<=3?450:900 });
-};
+});
