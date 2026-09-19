@@ -613,13 +613,17 @@ async function playChallengeAudio(target) {
 }
 async function loadActivity(name,load) {
   const holder=$('#view'),version=routeVersion,generation=++activityLoad;
+  const active=()=>version===routeVersion&&generation===activityLoad&&holder.isConnected;
   let timer;
   holder.innerHTML=`<div class="loading-page" role="status"><span class="spinner"></span><p>正在準備${name}…</p></div>`;
   try {
-    const module=await Promise.race([load(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Load timeout')),15000);})]);
-    return version===routeVersion&&generation===activityLoad&&holder.isConnected?module:null;
+    // A slow dynamic import keeps downloading after a timeout. Keep listening
+    // for it so a successful download can open the activity without another tap.
+    timer=setTimeout(()=>{if(active())holder.innerHTML='<div class="loading-page" role="status"><p>載入有點慢，正在繼續準備…</p><button class="button primary" data-action="activity-retry">再試一次</button></div>';},15000);
+    const module=await load();
+    return active()?module:null;
   } catch {
-    if(version===routeVersion&&generation===activityLoad&&holder.isConnected)holder.innerHTML='<div class="loading-page"><p>剛才未能載入，請再試一次。</p><button class="button primary" data-action="activity-retry">再試一次</button></div>';
+    if(active())holder.innerHTML='<div class="loading-page"><p>剛才未能載入，請再試一次。</p><button class="button primary" data-action="activity-retry">再試一次</button></div>';
     return null;
   } finally {
     clearTimeout(timer);
