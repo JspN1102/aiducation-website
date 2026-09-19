@@ -46,6 +46,14 @@ COS只允许三个明确来源：原官网、mandarin、临时项目的固定ver
 便宣布迁移完成；切回前后需要核对DNS缓存、晚到记录及两个来源，保持Blob副本。
 原Vercel站与临时站是不同浏览器Origin，其本地进度不会自动互通。
 
+临时学习记录另由广州服务器每天北京时间03:15后随机0–15分钟导出一次。
+`maanshan-bridge-backup.timer` 调用 `backup-bridge.sh`，使用独立的
+`/home/ubuntu/maanshan-shared/bridge-backup.env`；不切换广州在线应用的PostgreSQL配置。
+导出保存在 `/home/ubuntu/maanshan-backups/blob/时间戳/records.json`，目录700、文件600。
+每次建立新快照，不删除Blob源或旧快照；失败会让systemd服务返回非零状态。
+管理员应检查定时器结果和磁盘空间。`python deploy/backup-local.py` 将这些快照和
+恢复所需的独立配置下载到本机私密灾备目录。
+
 ## 切回广州
 
 切换只改 `mandarin` 的DNS记录，不改根域、www或邮件MX。切回前必须完成适用备案并

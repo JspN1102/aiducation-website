@@ -27,6 +27,12 @@ CONFIG_PATHS = (
     'usr/local/lib/maanshan-backup.sh',
     'usr/local/lib/maanshan-certbot-dnspod.py',
 )
+OPTIONAL_CONFIG_PATHS = (
+    'home/ubuntu/maanshan-shared/bridge-backup.env',
+    'etc/systemd/system/maanshan-bridge-backup.service',
+    'etc/systemd/system/maanshan-bridge-backup.timer',
+    'usr/local/lib/maanshan-bridge-backup.sh',
+)
 
 
 def private_directory(path):
@@ -114,7 +120,16 @@ def main():
                    look_for_keys=False, allow_agent=False, timeout=20)
     staging = None
     staging_valid = False
+    files = FILES
     try:
+        optional_code = '''import json,pathlib
+configs = [name for name in OPTIONAL_CONFIGS if pathlib.Path('/' + name).is_file()]
+print(json.dumps({'configs': configs, 'blobBackups': pathlib.Path('/home/ubuntu/maanshan-backups/blob').is_dir()}))
+'''.replace('OPTIONAL_CONFIGS', repr(OPTIONAL_CONFIG_PATHS))
+        optional = json.loads(remote(client, 'python3 -', optional_code))
+        config_paths = CONFIG_PATHS + tuple(optional['configs'])
+        if optional['blobBackups']:
+            files += ('blob-student-backups.tar.gz',)
         staging = remote(client, 'umask 077; mktemp -d /home/ubuntu/maanshan-shared/recovery-XXXXXXXXXX').strip()
         if not staging.startswith('/home/ubuntu/maanshan-shared/recovery-') or '/' in staging.rsplit('recovery-', 1)[-1]:
             raise RuntimeError('Unexpected remote staging directory.')
@@ -124,9 +139,11 @@ def main():
             'sudo -n -u postgres pg_dump --format=custom maanshan_db > database.dump',
             'sudo -n -u postgres pg_restore --list < database.dump > /dev/null',
             'sudo -n -u postgres pg_dumpall --roles-only > database-roles.sql',
-            'sudo -n tar -czf - -C / ' + ' '.join(map(shlex.quote, CONFIG_PATHS)) + ' > runtime-config.tar.gz',
+            'sudo -n tar -czf - -C / ' + ' '.join(map(shlex.quote, config_paths)) + ' > runtime-config.tar.gz',
             "tar --exclude='*.tmp' -czf speech-cache.tar.gz -C /home/ubuntu/maanshan-shared tts-cache",
         ])
+        if optional['blobBackups']:
+            script += '\n' + "tar --exclude='*.tmp' -czf blob-student-backups.tar.gz -C /home/ubuntu/maanshan-backups blob"
         remote(client, script)
         metadata_code = '''import hashlib,json,pathlib
 p=pathlib.Path(STAGING)
@@ -139,10 +156,10 @@ for name in FILES:
   for block in iter(lambda:stream.read(1048576),b''):h.update(block)
  files[name]={'bytes':(p/name).stat().st_size,'sha256':h.hexdigest()}
 print(json.dumps({'release':str(release),'commit':manifest['commit'],'files':files}))
-'''.replace('STAGING', repr(staging)).replace('FILES', repr(FILES))
+'''.replace('STAGING', repr(staging)).replace('FILES', repr(files))
         metadata = json.loads(remote(client, 'python3 -', metadata_code))
         with client.open_sftp() as sftp:
-            for name in FILES:
+            for name in files:
                 partial = destination / (name + '.partial')
                 sftp.get(staging + '/' + name, str(partial))
                 if partial.stat().st_size != metadata['files'][name]['bytes'] or digest(partial) != metadata['files'][name]['sha256']:
@@ -151,9 +168,11 @@ print(json.dumps({'release':str(release),'commit':manifest['commit'],'files':fil
         with (destination / 'database.dump').open('rb') as stream:
             if stream.read(5) != b'PGDMP':
                 raise RuntimeError('Invalid PostgreSQL backup header.')
-        for name in FILES[2:]:
+        for name in files[2:]:
             metadata['files'][name]['readableFiles'] = check_archive(destination / name)
         metadata.update({'createdAtUTC': stamp, 'private': True,
+                         'includesTemporaryStudentBackups': optional['blobBackups'],
+                         'optionalConfigPaths': optional['configs'],
                          'databaseListValidatedOnServer': True,
                          'allTransferredHashesMatch': True})
         (destination / 'manifest.json').write_text(json.dumps(metadata, indent=2), encoding='utf-8')
@@ -162,12 +181,12 @@ print(json.dumps({'release':str(release),'commit':manifest['commit'],'files':fil
             '恢复时请结合独立 website-版本号.zip 和部署说明，由管理员选择对应配置和数据库恢复。\n'
             '服务器仍有每日数据库备份；这个命令是手动下载到本机，电脑关机不会自动下载。\n', encoding='utf-8')
         print(json.dumps({'ok': True, 'directory': str(destination), 'commit': metadata['commit'],
-                          'files': {name: metadata['files'][name]['bytes'] for name in FILES}}, ensure_ascii=True))
+                          'files': {name: metadata['files'][name]['bytes'] for name in files}}, ensure_ascii=True))
     finally:
         try:
             if staging_valid:
                 # Remove only this run's exact files, never a recursive directory.
-                cleanup = '\n'.join(['rm -f -- ' + shlex.quote(staging + '/' + name) for name in FILES])
+                cleanup = '\n'.join(['rm -f -- ' + shlex.quote(staging + '/' + name) for name in files])
                 cleanup += '\nrmdir -- ' + shlex.quote(staging)
                 remote(client, cleanup)
         finally:

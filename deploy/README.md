@@ -2,9 +2,11 @@
 
 普通话平台： https://mandarin.aiducation.asia/maanshan/
 
-线上入口按用户确认的双站方式保留：`https://aiducation.asia/maanshan/` 继续由
-Vercel 提供；`https://mandarin.aiducation.asia/` 由广州轻量服务器提供，并自动进入
-`/maanshan/`。主域名解析保持 Vercel，只有 `mandarin` 子域名解析到广州服务器。
+备案期间：`https://aiducation.asia/maanshan/` 保留原 Vercel 项目；
+`https://mandarin.aiducation.asia/` 使用独立临时 Vercel 项目，并自动进入
+`/maanshan/`。视频和模型继续使用广州 COS，广州轻量服务器保留完整部署。
+临时入口的发布、存储和切回说明见 `vercel-temporary.md`。两个 Vercel 项目分别更新，
+下面的 `update.py` 仅更新广州服务器，不会发布 Vercel 或改变 DNS。
 
 应用采用原生静态网页、Nginx、常驻 Node API、PostgreSQL。公司官网及原有
 Vercel 页面仍保留。`server/` 将原 Vercel handlers 打包运行，兼容原部署方式。
@@ -34,13 +36,15 @@ python deploy/update.py
 - `/home/ubuntu/maanshan-shared/app.env`：权限 600 的运行配置。
 - `/home/ubuntu/maanshan-shared/tts-cache/`：云小和合成语音持久缓存。
 - `/var/backups/maanshan/`：每日 PostgreSQL 自定义格式备份，不提供 HTTP 访问。
+- `/home/ubuntu/maanshan-backups/blob/`：临时入口学习记录的每日私密导出。
+- `/home/ubuntu/maanshan-shared/bridge-backup.env`：仅供上述导出使用的配置，权限600。
 - `/home/ubuntu/maanshan-backups/before-20260919/`：迁移前配置和数据库备份。
-- `/etc/nginx/maanshan-media.conf`：六段动画的精确 COS 路径重定向。
+- `/etc/nginx/maanshan-media.conf`：六段动画和六个模型的精确 COS 路径重定向。
 
 ```sh
 sudo systemctl status maanshan
 sudo journalctl -u maanshan -n 50 --no-pager
-sudo systemctl list-timers maanshan-backup.timer certbot.timer
+sudo systemctl list-timers maanshan-backup.timer maanshan-bridge-backup.timer certbot.timer
 sudo nginx -t
 ```
 
@@ -56,6 +60,8 @@ python deploy/backup-local.py
 默认保存在 `D:/桌面/马鞍山/腾讯云迁移_20260919/私密服务器备份/时间戳/`。
 命令建立仅当前 Windows 账号和 SYSTEM 可读写的目录，通过已固定主机指纹的 SSH
 下载数据库、数据库角色、运行环境变量、Nginx、证书及续期配置、服务配置和已生成语音。
+安装临时入口备份后，会一并下载它的私密配置及 Blob 学习记录快照；旧服务器未安装时
+自动略过这些可选项。备份清单记录实际包含内容。
 数据库先通过服务器 `pg_restore --list` 校验，所有下载文件核对 SHA-256，压缩包逐文件
 读取验证。源代码使用单独的 `website-版本号.zip`；服务器备份不会改变在线服务。
 
@@ -80,7 +86,8 @@ python deploy/backup-local.py
 广州服务器暂不能直连 Google 手写识别，因此配置
 `HANDWRITING_RELAY_URL=https://aiducation.asia/api/handwriting/`，只转发笔迹和
 识别上下文。这项功能仍依赖保留的 Vercel 接口；完全脱离 Vercel 需要后续替换
-识别供应商。其余新站 API 在腾讯服务器运行。
+识别供应商。以上为保留的广州服务配置；备案期间的公开临时入口 API 在 Vercel 运行，
+手写识别直接调用供应商，学习记录存入独立 private Blob 前缀。
 
 六段动画、四个现用山景/江岸/田地/春草模型及两个历史练习植物模型放在广州 COS，
 使用标准存储；未开启 CDN、全球加速或新增订阅。模型使用内容摘要命名的对象路径，
@@ -103,7 +110,7 @@ python deploy/backup-local.py
 腾讯官方 https://cloud.tencent.com/document/product/243/18907 明确说明未备案域名的
 HTTPS 也会被阻断。不能再把此前的 HTTPS 成功记录当作当前公网可用的证明。
 这不是 Nginx 重定向或开放端口能消除的问题。正式使用中国内地服务器需完成相应备案；
-或者在用户确认后选用香港等地域托管。保留原 Vercel 入口。
+备案期间按用户授权使用独立 Vercel 入口，原 Vercel 入口同时保留。
 
 证书 HTTP01 续期也受到这一拦截影响，因此单独采用 DNS01 验证所有权。
 DNS01 解决证书验证，不解除网站备案限制，不代表所有网络均可访问。

@@ -1,0 +1,16 @@
+[Unit]
+Description=Back up temporary Mandarin private Blob student records
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/srv/maanshan/current
+ExecStart=/usr/local/lib/maanshan-bridge-backup.sh
+TimeoutStartSec=240
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+UMask=0077
