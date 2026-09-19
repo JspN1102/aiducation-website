@@ -29,12 +29,13 @@ async function referenceFor(req, operation) {
   return {poem};
 }
 function outcomeFor(operation, payload, status, reference, elapsedMs) {
-  const error = status >= 400 || !!payload?.error;
+  const invalidPayload=!payload||typeof payload!=='object'||Array.isArray(payload);
+  const error = status >= 400 || invalidPayload || !!payload?.error;
   const result = {status:error?'error':'completed',score:null,correct:null};
   const value = {operation, provider:operation==='reading'?'tencent-soe':operation==='handwriting'?'google-input-tools':'deepseek',
     model:operation==='reading'?'16k_zh':operation==='handwriting'?'zh-hant-t-i0-handwrit':'deepseek-flash',
     providerVersion:operation==='reading'?'eval1-coeff1.5-edb20260919':operation==='handwriting'?'upstream-unversioned':'poet-report-prompts-20260920',
-    result, metrics:{latencyMs:Math.min(600000,Math.round(elapsedMs))}};
+    result, metrics:Number.isFinite(elapsedMs)&&elapsedMs>=0?{latencyMs:Math.min(600000,Math.round(elapsedMs))}:{}};
   if (error) { value.error={code:status===504?'timeout':status===429||status>=500?'provider_unavailable':'invalid_response',retryable:status>=500||status===429}; return value; }
   if (operation === 'reading') {
     result.score = score(payload.SuggestedScore) ?? score(payload.PronAccuracy);
@@ -88,6 +89,14 @@ function withSchoolLearning(operation, handler) {
       return res;
     };
     try { const value=await handler(req,res); if(responseWork)await responseWork; return value; }
+    catch(error){
+      if(responseWork){await responseWork;return res;}
+      const timedOut=error?.name==='TimeoutError'||error?.code==='TIMEOUT';
+      const outcome=outcomeFor(operation,{},timedOut?504:500,reference,performance.now()-started);
+      if(error?.name==='AbortError'){outcome.result.status='cancelled';outcome.error={code:'aborted',retryable:true};}
+      try{await research.recordVerifiedOutcome(req,outcome);}catch{}
+      throw error;
+    }
     finally {res.json=originalJSON;}
   };
 }

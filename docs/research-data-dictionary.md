@@ -74,6 +74,9 @@ challenge completion cannot replace a handwriting measurement. Microgame
 completion and report/chat generation never count as an assessment, even if
 the submitted event carries a numeric score. These original process events
 remain available in append-only exports.
+Within the same attempt, a later failed or unmeasured provider retry does not
+erase an earlier actual measurement. A different later attempt can remain
+unmeasured. The failed event is still present in the complete history.
 
 Top-level `readingWords` shows at most fifty character observations from the
 selected verified reading attempts. Groups retain poem, line/item, content
@@ -113,14 +116,28 @@ Content-addressed private day chunks preserve every imported event for teacher
 queries/exports; the default teacher overview also has a precomputed aggregate
 snapshot. A small manifest changes only after complete chunks are durable.
 An interrupted publisher leaves the day dirty for retry. No outbox or source
-object is deleted. Publication time and backlog status must be displayed as
+object is deleted. Invalid outbox objects have durable private retry references;
+healthy records may continue to import. `sync.status=attention` exposes pending
+integrity issues, while `catching_up` also covers transient retry backlog.
+Only aggregate counts and safe error codes are exposed, not private paths.
+Publication time and backlog status must be displayed as
 data freshness rather than described as realtime completeness.
+
+Stable challenge retries preserve the original event identity, contents and
+`clientAt`. Their immutable request intent is not an acknowledgement. A retry
+writes its transport batch to the current UTC hour, including when the old
+hour is already behind the sync watermark. Same-hour retries reuse the first
+durable transport receipt; different-hour retries may add transport objects.
+PostgreSQL deduplicates those objects and retains the first imported event row
+and its receipt date. The transport `serverReceivedAt` is therefore not an
+invariant timestamp for all retries of one event. Invalid incoming event
+contexts return a permanent 400 rejection; storage failures remain retryable.
 
 An operator can recover historical partitions by safely resetting the private
 watermark/cursor to the research start date while retaining events and receipts;
 idempotency avoids duplicate rows. This is a manual recovery action, never an
 unbounded automatic full-bucket scan. Any conflict/checksum failure stops the
-affected page for investigation instead of discarding it.
+affected object for investigation and bounded retry instead of discarding it.
 
 See `deploy/research-operations.md` for explicit installation and bounded timer
 configuration. Files alone do not enable collection, run migrations, publish

@@ -236,7 +236,9 @@ function createAuth({ env = process.env, store: suppliedStore, now = Date.now, r
   async function consumeLimit(key, max, milliseconds) {
     await retry('limit/' + digest(key), old => {
       const start = old && Number.isFinite(old.until) && old.until > now() ? old : { attempts: 0, until: now() + milliseconds };
-      if (!Number.isInteger(start.attempts) || start.attempts >= max) fail(429, 'LOGIN_THROTTLED');
+      if (!Number.isInteger(start.attempts) || start.attempts >= max) {
+        throw Object.assign(new AuthError(429, 'LOGIN_THROTTLED'), { retryAfter: Math.max(1, Math.ceil((start.until - now()) / 1000)) });
+      }
       return { attempts: start.attempts + 1, until: start.until };
     }, key.startsWith('ip:') ? { attempts: 8, jitterMs: 100 } : undefined);
   }
@@ -338,7 +340,9 @@ function createAuth({ env = process.env, store: suppliedStore, now = Date.now, r
         typeof newPassword !== 'string' || newPassword.length < 8 || Buffer.byteLength(newPassword) > 128) fail(400, 'PASSWORD_REQUIREMENTS');
     await consumeLimit('change:' + actor.id, 10, 15 * 60000);
     const account = (await directory(true)).accounts.find(a => a.id === actor.id);
-    if (!await verifyPassword(currentPassword, account)) fail(401, 'INVALID_CREDENTIALS');
+    // The session is still valid: a typo in this form must not trigger the
+    // clients' 401 handling and discard the current authenticated workspace.
+    if (!await verifyPassword(currentPassword, account)) fail(400, 'CURRENT_PASSWORD_INVALID');
     await updatePassword(account, newPassword, actor, 'password_change');
     await revoke(req, res);
     return { enabled: true, authenticated: false, passwordChanged: true };
@@ -365,10 +369,11 @@ function sendError(res, error) {
   const code = error instanceof AuthError ? error.code : 'AUTH_UNAVAILABLE';
   const messages = { INVALID_CREDENTIALS: '登入名稱或密碼不正確', AUTH_REQUIRED: '請先登入', LOGIN_THROTTLED: '嘗試次數較多，請稍後再試',
     ROLE_FORBIDDEN: '此帳戶沒有權限', AUTH_UNAVAILABLE: '登入服務暫時未能使用，請稍後再試', CSRF_REJECTED: '帳戶已變更，請重新整理後再試', ORIGIN_REJECTED: '請從學校平台登入',
-    PASSWORD_REQUIREMENTS: '新密碼請使用至少 8 個字元', ACCOUNT_CHANGED: '帳戶已更新，請重新登入' };
-  if (status === 429) res.setHeader('Retry-After', '900');
+    PASSWORD_REQUIREMENTS: '新密碼請使用至少 8 個字元', CURRENT_PASSWORD_INVALID: '目前密碼不正確，請再核對一次', ACCOUNT_CHANGED: '帳戶已更新，請重新登入' };
+  const retryAfter = status === 429 ? Math.min(900, Math.max(1, Math.ceil(Number(error.retryAfter) || 900))) : undefined;
+  if (retryAfter) res.setHeader('Retry-After', String(retryAfter));
   res.setHeader('Cache-Control', 'private, no-store');
-  return res.status(status).json({ ok: false, error: messages[code] || '未能完成操作', code });
+  return res.status(status).json({ ok: false, error: messages[code] || '未能完成操作', code, ...(retryAfter ? { retryAfter } : {}) });
 }
 const singleton = createAuth();
 module.exports = { NAMESPACE, COOKIE, SESSION_MS, FORMAT, SCHEMA, AuthError, Conflict, MAX_OBJECT,

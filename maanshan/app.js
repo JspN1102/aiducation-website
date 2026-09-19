@@ -9,10 +9,11 @@ import {mountLessonMap} from './lesson-map.mjs?v=20260919b';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260919d';
 import {challengeSummary} from './challenge-state.mjs?v=20260919d';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260920-school1';
-import {encodeRecording, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260920-school1';
-import {requestJSON} from './network.mjs?v=20260920-school1';
-import {initializeSchoolSession, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260920-school1';
-import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260920-school1';
+import {encodeRecording, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260920b';
+import {requestJSON} from './network.mjs?v=20260920b';
+import {initializeSchoolSession, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260920b';
+import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260920b';
+import {createAnswerOutbox} from './answer-outbox.mjs?v=20260920b';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -32,8 +33,22 @@ function writeStorage(key, value) { try { localStorage.setItem(key,JSON.stringif
 let saved = readStorage(STORE, {});
 if (!saved || Array.isArray(saved) || typeof saved !== 'object') saved={};
 let profile=school.enabled ? {id:school.user.id,name:school.user.displayName,grade:school.user.grade,cls:school.user.cls} : readStorage(PROFILE,null);
-const research=createResearchTracker({enabled:school.enabled,actorId:school.user?.id,csrfToken:school.csrfToken,onStatus:status=>{if(status==='session_changed')invalidateSchoolSession();}});
+let researchState=null,answerState=null;
+function recordSyncStatus(kind,status,state){
+  if(kind==='events')researchState=state;else answerState=state;
+  if(status==='session_changed')invalidateSchoolSession();
+  renderRecordSyncStatus();
+}
+const research=createResearchTracker({enabled:school.enabled,actorId:school.user?.id,csrfToken:school.csrfToken,onStatus:(status,state)=>recordSyncStatus('events',status,state)});
+const answerOutbox=createAnswerOutbox({enabled:school.enabled,actorId:school.user?.id,csrfToken:school.csrfToken,onStatus:(status,state)=>recordSyncStatus('answers',status,state)});
 if(school.enabled)attachResearchLifecycle(research);
+if(school.enabled){
+  const answerTimer=setInterval(()=>{void answerOutbox.flush();void sync.flush();},15000);
+  window.addEventListener('online',()=>void answerOutbox.flush({force:true}));
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')void answerOutbox.flush({keepalive:true});else void answerOutbox.flush();});
+  window.addEventListener('pagehide',()=>void answerOutbox.flush({keepalive:true}));
+  onSchoolSessionInvalid(()=>{clearInterval(answerTimer);answerOutbox.stop();});
+}
 let poems=[], poem=null, view='record', routeVersion=0, showPinyin=true, sessionLocked=false;
 let transientAudio=null, transientUrl=null, speechVersion=0, toastTimer=null;
 let currentLine=0, recorder=null, stream=null, recordContext=null, recordTimer=null, recordStarted=0, recordBusy=false, recordingVersion=0;
@@ -56,7 +71,7 @@ const pendingRecordings=new Map();
 let recordResearch=null, speechResearchItem=null, speechResearchContext=null, presentedReadingItem=null;
 const sync=createSyncQueue({
   read:()=>{const list=readStorage(PENDING,[]);return Array.isArray(list)?list:[];},
-  write:value=>writeStorage(PENDING,value),
+  write:value=>{const stored=writeStorage(PENDING,value);renderRecordSyncStatus();return stored;},
   send:item=>schoolFetch('/api/maanshan-save/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item),signal:AbortSignal.timeout(12000)})
 });
 const titleOf=p=>p.id===5 ? '歸園田居·其三' : p.title;
@@ -534,6 +549,7 @@ async function assessRecording(blob,p,index,version,generation,context,existing=
     if(!isCurrent())return;
     if(context?.state!=='closed')context?.close().catch(()=>{});if(recordContext===context)recordContext=null;
     const raw=await submitAssessment({audio:pending.encoded,refText:p.lines[index].simplified,...(school.enabled?{researchContext:pending.researchContext}: {})},{signal:controller.signal,onRetry:()=>{research.emit('retry',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,retryCount:1});if(isCurrent())assessmentStatus('正在重新連線，錄音已保留');},onWaiting:()=>{if(isCurrent())assessmentStatus('正在等候評測，錄音已保留');}});
+    if(raw.researchRecorded===false)research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code:'storage_unavailable',retryable:true}});
     if(!isCurrent())return;
     const result=mapAssessment(raw,p.lines[index]);result.words=result.words.map(w=>({...w,lineIndex:index}));const s=state(p);recordings.set(`${p.id}-${index}`,blob);s.reading[index]=result;s.report='';s.updatedAt=Date.now();
     research.emit('feedback_shown',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,result:{status:'completed',score:result.total_score,correct:null}});
@@ -643,7 +659,7 @@ function updateScoreLine(){
 }
 async function generateReport() {
   const button=$('#report-button');if(button.disabled)return;button.disabled=true;const version=routeVersion,p=poem,generation=++reportGeneration,grade=studentGrade(p);const result=poemAssessment(p);
-  const audit=research.context({itemId:'p'+p.id+'.report',activity:'read'});
+  const audit=research.context({itemId:'p'+p.id+'.report',activity:'read'}),requestedAt=performance.now();
   research.emit('hint_used',{poemId:p.id,activity:'read',attemptId:audit.attemptId,itemId:audit.itemId,hint:{kind:'explanation',count:1}});
   $('#advice-details').hidden=false;$('#advice-details').open=true;
   $('.advice-placeholder').hidden=true;
@@ -653,9 +669,10 @@ async function generateReport() {
     if(version!==routeVersion||generation!==reportGeneration)return;
     if(!data.report||data.studentGrade!==grade||data.reportVersion!==REPORT_VERSION)throw new Error('建議尚未生成，請稍後再試。');
     Object.assign(state(p),{report:data.report,reportStudentGrade:grade,reportVersion:REPORT_VERSION});
+    research.emit('feedback_shown',{poemId:p.id,activity:'read',attemptId:audit.attemptId,itemId:audit.itemId,metrics:{assistantCharacters:Math.min(20000,data.report.length),latencyMs:Math.min(600000,Math.round(performance.now()-requestedAt))}});
     queueSection('report',{content:data.report,totalScore:result.total_score,grade:result.grade,studentGrade:grade,reportVersion:REPORT_VERSION},p);$('#report-prose').textContent=data.report;
   }
-  catch(error){if(version===routeVersion&&generation===reportGeneration){$('#report-prose').textContent=quickAdvice(result);toast('先照這個方法練一練，稍後可以再試老師建議。');}}
+  catch(error){research.emit('error',{poemId:p.id,activity:'read',attemptId:audit.attemptId,itemId:audit.itemId,error:{code:researchErrorCode(error),retryable:true}});if(version===routeVersion&&generation===reportGeneration){$('#report-prose').textContent=quickAdvice(result);toast('先照這個方法練一練，稍後可以再試老師建議。');}}
   finally{if(version===routeVersion&&generation===reportGeneration){button.disabled=false;button.removeAttribute('aria-busy');button.innerHTML=icon('sparkles')+'更新建議';icons();}}
 }
 async function playChallengeAudio(target,auditFields={}) {
@@ -696,7 +713,7 @@ async function renderQuiz() {
     onChange:attempt=>{state(p).challenge=attempt;state(p).updatedAt=Date.now();persist();},
     onComplete:summary=>{research.emit('activity_end',{poemId:p.id,activity:'challenge',attemptId:summary.attemptId,itemId:'p'+p.id+'.challenge',context:{mode:summary.mode||'standard'},result:{status:'completed',score:null,correct:null},metrics:{itemCount:summary.total}});if(!school.enabled)queueReading(p);},
     onResearch:(type,fields)=>research.emit(type,{...fields,poemId:p.id}),
-    onAnswer:answer=>{if(!school.enabled)return;queueMicrotask(()=>queueReading(p));const audit={...research.context({...answer}),poemId:p.id};void api('/api/challenge-result',{poemId:p.id,itemId:answer.itemId,status:answer.status,response:answer.response||{},researchContext:audit},12000).catch(()=>research.emit('error',{poemId:p.id,activity:answer.activity,attemptId:answer.attemptId,itemId:answer.itemId,error:{code:'storage_unavailable',retryable:true}}));},
+    onAnswer:answer=>{if(!school.enabled)return;queueMicrotask(()=>queueReading(p));const audit={...research.context({...answer}),poemId:p.id};if(!answerOutbox.enqueue({poemId:p.id,itemId:answer.itemId,status:answer.status,response:answer.response||{},researchContext:audit}))research.emit('error',{poemId:p.id,activity:answer.activity,attemptId:answer.attemptId,itemId:answer.itemId,error:{code:'storage_unavailable',retryable:false}});},
     playAudio:playChallengeAudio,stopAudio:stopMedia,
     recognize:(ink,context)=>api('/api/handwriting',{ink,...(school.enabled?{researchContext:research.context(context)}:{})},16000)});
 }
@@ -849,6 +866,16 @@ function renderProfileResult(slug){
   const reviewing=current.mode==='review';
   $('#profile-results').innerHTML=`<h3>${esc(titleOf(p))}</h3><div class="profile-progress"><div><span>AI讀古詩</span><strong>${reading} / ${p.lines.length}<small>句</small></strong><p>${assessment?'朗讀得分 '+assessment.total_score:'還未開始朗讀'}</p></div><div><span>練習小遊戲</span><strong>${practice.answered} / ${practice.total}<small>題</small></strong><p>${practice.completed?(reviewing?'原輪答對 ':'本輪答對 ')+practice.correct+' 題':practice.answered?'這一輪還未完成':'還未開始練習'}</p></div></div>${reviewing?`<p class="profile-review-note">錯題複習：${current.answered} / ${current.total} 題${pending?'，另有 '+pending+' 題待複習':''}。</p>`:''}<div class="profile-result-links"><a class="button primary" data-profile-route href="${link(reading?'report':'record',p)}">${reading?'看朗讀成果':'開始朗讀'}</a><a class="button" data-profile-route href="${link('quiz',p)}">${reviewing?current.completed?'看複習成果':'繼續錯題複習':practice.completed?'看練習成果':practice.answered?'繼續練習':'開始練習'}</a></div>`;
 }
+function renderRecordSyncStatus(){
+  const target=$('#school-record-sync');if(!target)return;
+  const states=[researchState,answerState].filter(Boolean),progress=readStorage(PENDING,[]),progressPending=Array.isArray(progress)?progress.length:0;
+  const pending=states.reduce((n,s)=>n+(s.pending||0),progressPending),held=states.reduce((n,s)=>n+(s.held||0),0),volatile=states.reduce((n,s)=>n+(s.volatile||0),Object.hasOwn(memoryStore,PENDING)?progressPending:0);
+  const unavailable=states.some(s=>s.storageAvailable===false);
+  const busy=states.some(s=>s.lastStatus==='syncing');
+  target.querySelector('strong').textContent=held?'部分紀錄需要檢查':volatile||unavailable?'請先保留這個頁面':pending?'學習紀錄正在儲存':'學習紀錄已送達';
+  target.querySelector('p').textContent=held?'已保留有問題的紀錄，其餘紀錄會繼續上傳。請老師協助查看。':volatile||unavailable?'暫時無法使用裝置儲存，請保留本頁；連線後請按「再試同步」。':pending?'還有 '+pending+' 筆紀錄等待上傳。連線後會自動補傳。':'老師的資料會在下一次整理後更新，通常約五分鐘。';
+  const button=target.querySelector('button');button.hidden=!pending&&!unavailable;button.disabled=busy;button.textContent=busy?'正在同步…':'再試同步';
+}
 function openProfile(){
   if(sessionLocked)return;
   if(recordBusy)return;
@@ -862,8 +889,10 @@ function openProfile(){
     $('#profile-dialog .eyebrow').textContent='學校學習檔案';
     let account=$('#school-account-summary');
     if(!account){account=document.createElement('div');account.id='school-account-summary';account.className='school-account-summary';$('#profile-dialog').append(account);}
-    account.innerHTML='<p>'+esc(school.user.displayName)+' · '+school.user.grade+esc(school.user.cls)+'班 · '+esc(school.user.classNo||'')+'號</p><button class="button school-account-logout" type="button">登出帳戶</button>';
-    account.querySelector('button').onclick=async event=>{const button=event.currentTarget;button.disabled=true;try{stopMedia();cancelRecording();await Promise.allSettled([sync.flush(),research.flush()]);await logoutSchoolSession();}catch{button.disabled=false;toast('暫時未能登出，請再試一次。');}};
+    account.innerHTML='<p>'+esc(school.user.displayName)+' · '+school.user.grade+esc(school.user.cls)+'班 · '+esc(school.user.classNo||'')+'號</p><section id="school-record-sync" role="status" aria-live="polite"><strong></strong><p></p><button class="button small" type="button">再試同步</button></section><button class="button school-account-logout" type="button">登出帳戶</button>';
+    renderRecordSyncStatus();
+    account.querySelector('#school-record-sync button').onclick=()=>void Promise.allSettled([research.flush({force:true}),answerOutbox.flush({force:true}),sync.flush()]);
+    account.querySelector('.school-account-logout').onclick=async event=>{const button=event.currentTarget;button.disabled=true;try{stopMedia();cancelRecording();await Promise.race([Promise.allSettled([sync.flush(),research.flush({keepalive:true}),answerOutbox.flush({keepalive:true})]),new Promise(resolve=>setTimeout(resolve,2000))]);await logoutSchoolSession();}catch{button.disabled=false;toast('暫時未能登出，請再試一次。');}};
   }
   $('#profile-dialog').showModal();
 }
@@ -892,7 +921,7 @@ async function init(){
     const [data,pronunciation]=await Promise.all(responses.map(response=>response.json()));
     if(sessionLocked)return;
     poems=data.poems;if(!Array.isArray(poems)||!poems.length)throw new Error('catalog');
-    configurePronunciation(pronunciation);route();sync.flush();icons();
+    configurePronunciation(pronunciation);route();sync.flush();answerOutbox.flush();icons();
     if(school.enabled)void(async()=>{
       const hydratedRoute=routeVersion;
       try{

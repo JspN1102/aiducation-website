@@ -77,3 +77,7 @@
  .workspace .lesson-map-step{min-height:135px}
  .workspace .lesson-map-step h3{font-size:21px}
 }
+#school-record-sync{display:block;padding:16px;margin:12px 0 18px;background:#f1f5ed;border:1px solid #dbe5d5;border-radius:16px;text-align:left}
+#school-record-sync strong{display:block;font-size:18px;line-height:1.5;color:#2c5c47}
+#school-record-sync p{font-size:16px;line-height:1.65;margin:7px 0 0;color:#526453;overflow-wrap:anywhere}
+#school-record-sync .button{min-height:44px;margin-top:12px;font-size:16px}

@@ -107,7 +107,13 @@ test('login origin checking precedes mutation, and durable limits span independe
   f.records.set(key, { value: limit, version: 'existing-limit' });
   const other = auth.createAuth({ env: f.env, store: f.store, now: () => NOW });
   await assert.rejects(other.login(request(), response()), e => e.status === 429);
-  f.advance(900001); assert.equal((await login(f)).state.authenticated, true);
+  f.advance(825000);
+  await assert.rejects(login(f), error => {
+    const res = response(); auth.sendError(res, error);
+    assert.equal(res.statusCode, 429); assert.equal(res.headers['Retry-After'], '75');
+    assert.equal(res.body.retryAfter, 75); return true;
+  });
+  f.advance(75001); assert.equal((await login(f)).state.authenticated, true);
 });
 
 test('teacher roster is whole-school and individually audited without hashes or passwords', async () => {
@@ -146,7 +152,13 @@ test('self password change invalidates all sessions across independent instances
   const other = auth.createAuth({ env: f.env, store: f.store, now: () => NOW });
   const req = request({ cookie: first.cookie, csrf: first.state.csrfToken });
   req.body = { action: 'change_password', currentPassword: 'wrong', newPassword: 'new-password-value' };
-  await assert.rejects(f.service.changePassword(req, response()), e => e.status === 401);
+  await assert.rejects(f.service.changePassword(req, response()), error => {
+    const res = response(); auth.sendError(res, error);
+    assert.equal(res.statusCode, 400); assert.equal(res.body.code, 'CURRENT_PASSWORD_INVALID');
+    assert.match(res.body.error, /目前密碼不正確/); return true;
+  });
+  assert.equal((await other.state(request({ method: 'GET', cookie: first.cookie }))).authenticated, true);
+  assert.equal((await other.state(request({ method: 'GET', cookie: second.cookie }))).authenticated, true);
   req.body.currentPassword = 'test-password-0';
   assert.equal((await f.service.changePassword(req, response())).passwordChanged, true);
   assert.equal((await other.state(request({ method: 'GET', cookie: second.cookie }))).authenticated, false);

@@ -178,12 +178,12 @@ const DATA_DICTIONARY = {
     "gap": "lostEventCount reports local queue loss; sequence gaps are not reconstructed as invented activity."
   },
   "aggregation": {
-    "firstLatest": "Within filtered receipt dates, consolidate assessment results per researchId/poemId/activity/itemId/contentVersion/mode/construct/operation/attemptId; use latest eligible measurement inside each attempt, then earliest/latest observed attempt per item and construct. Missing attemptId falls back to eventId. Process feedback never replaces an assessment.",
+    "firstLatest": "Within filtered receipt dates, consolidate assessment results per researchId/poemId/activity/itemId/contentVersion/mode/construct/operation/attemptId; use latest eligible measurement inside each attempt, then earliest/latest observed attempt per item and construct. Missing attemptId falls back to eventId. Process feedback never replaces an assessment. Within one attempt, an error/unmeasured retry never replaces an existing measured result; later measured results may replace earlier measurements. A genuinely different later attempt can remain unmeasured. Original failures remain in exports.",
     "nAttempts": "Distinct researchId+attemptId in all filtered events, regardless of first/latest choice; includes review/free. Units differ by activity: a reading recording versus a challenge round. Do not interpret a pooled count as comparable test attempts.",
     "completedN": "Count of activity_end events with completed status, not count of unique students or attempts.",
     "meanScore": "Within one construct and source, arithmetic mean across selected measured item outcomes, not weighted by duration. Missing scores are excluded and counted separately. Overall meanScore is null and mixedConstructs=true if multiple measured constructs are present; never pool pronunciation scores with binary task accuracy.",
     "date": "UTC serverReceivedAt, inclusive from/to calendar dates.",
-    "sync": "Published snapshot time describes publication recency; status and watermark indicate backlog. Not a promise every client queued event has arrived.",
+    "sync": "Published snapshot time describes publication recency, not receipt of offline browser queues. status attention means integrity/quarantined objects require review; catching_up includes transient retry/publication backlog. sync.integrity exposes only aggregate pendingObjects/integrityIssues/retryPending, oldestPendingAt/lastAttemptAt and safe lastAttemptError. Invalid originals are retained and private retry references persist; healthy objects may continue to import and publish.",
     "assessmentEvents": "Client reading feedback_shown for a poem line, or answer_submitted with a recognised task type; server provider_result operation reading/handwriting, or challenge with sound/match/sequence/scene-builder. Microgame, report/chat, ordinary feedback and generic dictation challenge acknowledgements are process-only, even if a score field is present.",
     "byConstruct": {
       "shape": "Every summary, including student first/latest and cohort/trend rows, has a sparse byConstruct object using the documented keys. Each present value has clientReported and serverVerified score summaries; absent constructs mean no eligible outcome, not zero. Only top-level summary includes byMode with nested byConstruct to avoid repeating mode details in every list row. Student detail uses its filtered top-level summary.byMode. mixedConstructs appears only on overall source scores.",
@@ -198,7 +198,8 @@ const DATA_DICTIONARY = {
     },
     "practiceOutcomeN": "Count of eligible assessment outcome events in review/free modes, excluded from independent assessment summaries. Process feedback and game completion do not add assessment outcomes.",
     "readingWords": "Top-level readingWords only: at most 50 groups from selected server_verified reading outcomes, excluding review/free and invalid records. Group by poemId/itemId/contentVersion/index/char. Each entry has count, meanScore and below60Count; zero is measured, absent word scores do not add samples. readingWordSummary declares cutoff=60, totalGroups, returnedGroups, truncated and character_scores_not_phoneme_diagnosis. Lower scores are practice observations, not a consonant/tone disorder diagnosis. The limit affects teacher display only; raw exports are complete.",
-    "capacity": "Default analytics exceeding 100000 events or the snapshot byte bound does not block publication of the manifest and class/date chunks. The manifest marks overview.status=filter_required, and the API returns NARROW_DATE_OR_CLASS_FILTER with a class/date suggestion. This is not an empty dataset."
+    "capacity": "Default analytics exceeding 100000 events or the snapshot byte bound does not block publication of the manifest and class/date chunks. The manifest marks overview.status=filter_required, and the API returns NARROW_DATE_OR_CLASS_FILTER with a class/date suggestion. This is not an empty dataset.",
+    "answerReplay": "Challenge answer requests may carry stable requestId/requestedAt in researchContext. A server-derived event ID is scoped to the authenticated actor, and original clientAt and event contents remain stable across retries. The immutable request intent alone is not a receipt: successful current-hour outbox persistence determines the transport serverReceivedAt. Same-hour retries reuse that durable receipt; later-hour retries create new transport objects so a passed synchronization watermark cannot miss recovery. PostgreSQL deduplicates these objects and retains the first imported event row and receive date. Provider remeasurement is not replayed. Future timestamps over five minutes are rejected; old offline requests remain accepted and can be quality-flagged."
   },
   "export": {
     "default": "Pseudonymous JSONL or CSV; teacher authentication required.",
@@ -427,12 +428,26 @@ async function appendBlob(batch, client=blob,signal=AbortSignal.timeout(10000)) 
   }
   return batch.serverReceivedAt;
 }
-async function ingest(input,actor,{now=Date.now(),source='client',storage=mode(),db,client=blob,signal}={}) {
+async function appendStableBlob(batch,client=blob,signal=AbortSignal.timeout(10000)){
+  if(batch.events.length!==1||batch.events[0].source!=='server_verified'||batch.events[0].event.operation!=='challenge')fail('INVALID_STABLE_REQUEST');
+  const row=batch.events[0],pathname=`${NS}/requests/${row.researchId}/${row.event.eventId}.json`;
+  try{await client.put(pathname,canonical(batch),{access:'private',addRandomSuffix:false,allowOverwrite:false,contentType:'application/json',abortSignal:signal});}
+  catch(error){
+    if(!(error instanceof blob.BlobPreconditionFailedError)&&!/already exists/i.test(String(error?.message)))throw error;
+    const prior=verifyStoredBatch(await readPrivate(pathname,{client,maxBytes:MAX_BATCH_BYTES+32768,signal}));
+    if(prior.events.length!==1||prior.events[0].eventChecksum!==row.eventChecksum||prior.events[0].researchId!==row.researchId||prior.events[0].event.eventId!==row.event.eventId)fail('EVENT_ID_CONFLICT',409);
+  }
+  // The intent guards event content, not transport time, and alone is no receipt.
+  // Route retries to the current hour so a passed sync watermark cannot miss
+  // recovery. PostgreSQL retains the first imported row and deduplicates replays.
+  return appendBlob(batch,client,signal);
+}
+async function ingest(input,actor,{now=Date.now(),source='client',storage=mode(),db,client=blob,signal,stableRequest=false}={}) {
   if(!storage)fail('RESEARCH_DISABLED',503);
   const batch=validateBatch(input,actor,now,source);
   let received=batch.serverReceivedAt;
   if(storage==='postgres')await appendPostgres(batch,db||getPool());
-  else if(storage==='blob_outbox')received=await appendBlob(batch,client,signal);
+  else if(storage==='blob_outbox')received=await (stableRequest?appendStableBlob(batch,client,signal):appendBlob(batch,client,signal));
   else fail('RESEARCH_STORAGE_UNAVAILABLE',503);
   return {schemaVersion:1,accepted:true,durable:storage,batchId:batch.batchId,eventIds:batch.events.map(r=>r.event.eventId),serverReceivedAt:received};
 }
@@ -446,12 +461,22 @@ async function recordVerifiedOutcome(req,input) {
     if(!context || context.actorId!==actor.id)return {recorded:false,reason:'ACTOR_CHANGED'};
     const {eventId=crypto.randomUUID(),sessionId,attemptId,itemId,poemId,activity,appVersion,contentVersion,
       provider,model,operation,providerVersion='unspecified',result,error,metrics,wordScores,context:eventContext}={...context,...input};
-    const event={eventId,sessionId,seq:0,clientAt:new Date().toISOString(),activeMs:0,poemId,activity,
+    const event={eventId,sessionId,seq:0,clientAt:input.clientAt??new Date().toISOString(),activeMs:0,poemId,activity,
       type:'provider_result',appVersion,contentVersion,provider,model,operation,providerVersion};
     for(const [key,value] of Object.entries({attemptId,itemId,result,error,metrics,wordScores,context:eventContext}))if(value!==undefined)event[key]=value;
-    await ingest({schemaVersion:1,batchId:crypto.randomUUID(),actorId:actor.id,events:[event]},actor,{source:'server_verified',signal:AbortSignal.timeout(3000)});
+    if(input.response!==undefined)event.response=input.response;
+    // Distinguish an invalid incoming event from invalid data read from storage.
+    // Only the former is a permanent request rejection for the answer queue.
+    try{validateEvent(event,true);}
+    catch(error){if(error instanceof ResearchError&&error.code==='INVALID_EVENT')return {recorded:false,reason:error.code,invalidRequest:true};throw error;}
+    await ingest({schemaVersion:1,batchId:input.stableBatch===true?eventId:crypto.randomUUID(),actorId:actor.id,events:[event]},actor,{source:'server_verified',stableRequest:input.stableBatch===true,signal:AbortSignal.timeout(3000)});
     return {recorded:true,eventId};
   }catch(error){return {recorded:false,reason:error instanceof ResearchError?error.code:'outcome_storage_unavailable'};}
+}
+function stableOutcomeId(actorId,requestId){
+  uuid(requestId);
+  const hex=hash(canonical(['challenge-answer',actorId,requestId]));
+  return hex.slice(0,8)+'-'+hex.slice(8,12)+'-4'+hex.slice(13,16)+'-a'+hex.slice(17,20)+'-'+hex.slice(20,32);
 }
 function filtersFrom(query={},now=Date.now()) {
   object(query,['grade','cls','from','to','activity','student','attempt','format','cursor','limit','snapshot']);
@@ -494,7 +519,8 @@ function selectedOutcomes(rows,which,source){
   for(const row of rows){const construct=constructFor(row);if(row.source!==source||!construct||['review','free'].includes(row.event.context?.mode))continue;
     const e=row.event,key=canonical([row.researchId,e.poemId,e.activity,e.itemId||'',e.contentVersion,e.context?.mode||'unspecified',construct,e.operation||'client',e.attemptId||e.eventId]);
     let entry=attempts.get(key);if(!entry)attempts.set(key,entry={first:row.serverReceivedAt,last:row.serverReceivedAt,row});
-    if(row.serverReceivedAt>=entry.last){entry.last=row.serverReceivedAt;entry.row=row;}
+    if(row.serverReceivedAt>=entry.last){entry.last=row.serverReceivedAt;
+      if(typeof row.event.result.score==='number'||typeof entry.row.event.result.score!=='number')entry.row=row;}
     if(row.serverReceivedAt<entry.first)entry.first=row.serverReceivedAt;
   }
   const items=new Map();
@@ -525,13 +551,14 @@ function qualityAndDuration(rows){
   for(const row of rows){if(row.qualityFlags.length)flags.set(identity(row),new Set(row.qualityFlags));if(row.source!=='client')continue;
     const key=row.researchId+'/'+row.event.sessionId;if(!sessions.has(key))sessions.set(key,[]);sessions.get(key).push(row);}
   for(const session of sessions.values()){
-    session.sort((a,b)=>a.event.seq-b.event.seq||a.serverReceivedAt.localeCompare(b.serverReceivedAt));let last=null;
+    session.sort((a,b)=>a.event.seq-b.event.seq||a.serverReceivedAt.localeCompare(b.serverReceivedAt));let last=null,lastInvalid=false;
     for(const row of session){const e=row.event;const invalid=[];
       if(last&&e.seq===last.seq)invalid.push('duplicate_session_sequence');
       if(last&&e.activeMs<last.activeMs)invalid.push('non_monotonic_active_ms');
       if(invalid.length){if(!flags.has(identity(row)))flags.set(identity(row),new Set());invalid.forEach(f=>flags.get(identity(row)).add(f));}
-      else if(last&&e.seq===last.seq+1&&e.activity===last.activity)activeMs+=Math.max(0,e.activeMs-last.activeMs);
-      last=e;
+      const currentInvalid=flags.has(identity(row));
+      if(!currentInvalid&&!lastInvalid&&last&&e.seq===last.seq+1&&e.activity===last.activity)activeMs+=Math.max(0,e.activeMs-last.activeMs);
+      last=e;lastInvalid=currentInvalid;
     }
   }
   return {activeMs,flags,nInvalidEvents:flags.size,qualityFlags:[...new Set([...flags.values()].flatMap(s=>[...s]))]};
@@ -562,13 +589,13 @@ function readingWordSummary(rows,which){
   const sorted=[...groups.values()].map(({total,...group})=>({...group,meanScore:Math.round(total/group.count*10)/10})).sort((a,b)=>b.below60Count-a.below60Count||a.meanScore-b.meanScore||b.count-a.count||a.poemId-b.poemId||a.itemId.localeCompare(b.itemId)||a.index-b.index||a.contentVersion.localeCompare(b.contentVersion));
   return {readingWords:sorted.slice(0,limit),readingWordSummary:{cutoff,totalGroups:sorted.length,returnedGroups:Math.min(limit,sorted.length),truncated:sorted.length>limit,source:'server_verified',interpretation:'character_scores_not_phoneme_diagnosis'}};
 }
-function aggregateEvents(all,f,{generatedAt=new Date().toISOString(),source='postgres',lastImportedAt=null,syncStatus}={}){
+function aggregateEvents(all,f,{generatedAt=new Date().toISOString(),source='postgres',lastImportedAt=null,syncStatus,integrity=null}={}){
   const rows=all.filter(r=>matches(r,f));rows.sort((a,b)=>a.serverReceivedAt.localeCompare(b.serverReceivedAt)||a.event.eventId.localeCompare(b.event.eventId));
   const group=key=>{const buckets=new Map();for(const row of rows){const k=key(row);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(row);}return buckets;};
   const students=[...group(r=>r.researchId)].map(([researchId,items])=>({researchId,grade:items.at(-1).grade,cls:items.at(-1).cls,
     ...summarize(items,f.attempt),first:summarize(items,'first'),latest:summarize(items,'latest'),lastSeenAt:items.at(-1).serverReceivedAt}));
   return {schemaVersion:1,dictionaryVersion:'research-v1',generatedAt,source,filters:f,
-    sync:{status:syncStatus||(source==='postgres'?'direct':lastImportedAt?'published':'unavailable'),lastImportedAt,
+    sync:{status:syncStatus||(source==='postgres'?'direct':lastImportedAt?'published':'unavailable'),lastImportedAt,...integrity?{integrity}:{},
       lagMs:lastImportedAt?Math.max(0,Date.now()-Date.parse(lastImportedAt)):null},
     coverage:{nStudents:students.length,nEvents:rows.length,nInvalidEvents:summarize(rows).nInvalidEvents,rosterIncluded:false},
     summary:summarize(rows,f.attempt,true),students,
@@ -605,10 +632,14 @@ async function readPublished(f,client=blob){
   const needed=validatePublishedParts(manifest.parts).filter(p=>p.date>=f.from&&p.date<=f.to&&(f.grade===undefined||p.grade===f.grade)&&(!f.cls||p.cls===f.cls));let total=0,bytes=0;
   for(const part of needed){total+=part.count;bytes+=part.bytes;}
   if(total>MAX_READ_EVENTS||bytes>64*1024*1024)fail('NARROW_DATE_OR_CLASS_FILTER',413);
-  const rows=[];
-  for(const part of needed){const chunk=await readPrivate(part.path,{client,maxBytes:8*1024*1024});
-    if(!chunk||hash(canonical(chunk))!==part.sha256||chunk.schemaVersion!==1||chunk.events.length!==part.count)fail('SNAPSHOT_CHECKSUM',503);
-    rows.push(...chunk.events);}
+  const chunks=new Array(needed.length);let next=0;
+  await Promise.all(Array.from({length:Math.min(3,needed.length)},async()=>{
+    while(next<needed.length){const index=next++,part=needed[index],chunk=await readPrivate(part.path,{client,maxBytes:8*1024*1024});
+      if(!chunk||hash(canonical(chunk))!==part.sha256||chunk.schemaVersion!==1||!Array.isArray(chunk.events)||chunk.events.length!==part.count)fail('SNAPSHOT_CHECKSUM',503);
+      chunks[index]=chunk.events;
+    }
+  }));
+  const rows=chunks.flat();
   return {rows,lastImportedAt:manifest.generatedAt,manifest};
 }
 async function analytics(f){
@@ -622,9 +653,9 @@ async function analytics(f){
     const snapshot=await readPrivate(ref.path,{maxBytes:8*1024*1024});
     if(hash(canonical(snapshot))!==ref.sha256||snapshot.schemaVersion!==1)fail('SNAPSHOT_CHECKSUM',503);
     return {...snapshot.analytics,generatedAt:manifest.generatedAt,source:'published_snapshot',
-      sync:{status:manifest.status,lastImportedAt:manifest.generatedAt,lagMs:Math.max(0,Date.now()-Date.parse(manifest.generatedAt))}};
+      sync:{status:manifest.status,lastImportedAt:manifest.generatedAt,...manifest.integrity?{integrity:manifest.integrity}:{},lagMs:Math.max(0,Date.now()-Date.parse(manifest.generatedAt))}};
   }
-  const data=await readPublished(f);return aggregateEvents(data.rows,f,{source:'published_snapshot',lastImportedAt:data.lastImportedAt,syncStatus:data.manifest.status});
+  const data=await readPublished(f);return aggregateEvents(data.rows,f,{source:'published_snapshot',lastImportedAt:data.lastImportedAt,syncStatus:data.manifest.status,integrity:data.manifest.integrity});
 }
 function exportRows(rows,f,{format='jsonl',cursor=0,limit=5000,snapshot}={}){
   integer(cursor,0,MAX_READ_EVENTS);integer(limit,1,5000);
@@ -652,4 +683,4 @@ async function researchExport(f,options){
 function sendError(res,error){const safe=error instanceof ResearchError?error:new ResearchError('RESEARCH_STORAGE_UNAVAILABLE',503);return res.status(safe.status).json({error:safe.code,schemaVersion:1,...safe.code==='NARROW_DATE_OR_CLASS_FILTER'?{suggestion:'FILTER_BY_CLASS_OR_SHORTER_DATE_RANGE',maxEvents:MAX_READ_EVENTS,maxSelectedDays:31}:{}});}
 module.exports={NS,MAX_BATCH_BYTES,MAX_READ_EVENTS,ACTIVITIES,TYPES,ERRORS,STATUS,METRICS,DATA_DICTIONARY,ResearchError,canonical,hash,
   validateEvent,validateBatch,verifyStoredBatch,pgConfig,getPool,mode,outboxPath,readPrivate,appendPostgres,appendBlob,
-  ingest,recordVerifiedOutcome,filtersFrom,matches,aggregateEvents,validatePublishedParts,readPostgres,readPublished,analytics,exportRows,researchExport,sendError};
+  ingest,recordVerifiedOutcome,stableOutcomeId,filtersFrom,matches,aggregateEvents,validatePublishedParts,readPostgres,readPublished,analytics,exportRows,researchExport,sendError};

@@ -24,17 +24,17 @@ async function run({db,store,sync,exporter}={}){
         await store.appendPostgres(batch,session);
       }
     }
+    const objects=new Map();
+    const client={async put(name,body){objects.set(name,JSON.parse(body));return {pathname:name};}};
     for(const zone of ['UTC','Asia/Shanghai','America/New_York']){
       await connection.query("SELECT set_config('TimeZone',$1,false)",[zone]);
       for(const day of days){
         const expected=[day+'T00:00:00.000Z',day+'T12:00:00.000Z',day+'T23:59:59.999Z'];
         const rows=await store.readPostgres({from:day,to:day,attempt:'latest'},session);
         assert.deepEqual(rows.map(row=>row.serverReceivedAt).sort(),expected,zone+' readPostgres '+day);
-        const objects=new Map();
-        const client={async put(name,body){objects.set(name,JSON.parse(body));return {pathname:name};}};
         const parts=await sync.publishDay(day,{db:session,client,deadline:Date.now()+10000});
         assert.equal(parts.reduce((count,part)=>count+part.count,0),3);
-        assert.deepEqual([...objects.values()].flatMap(chunk=>chunk.events.map(row=>row.serverReceivedAt)).sort(),expected,zone+' publishDay '+day);
+        assert.deepEqual(parts.flatMap(part=>objects.get(part.path).events.map(row=>row.serverReceivedAt)).sort(),expected,zone+' publishDay '+day);
         const query=exporter.pageQuery({from:day,to:day},'0');
         const exported=(await connection.query(query.text,query.values)).rows;
         assert.deepEqual(exported.map(row=>row.record.serverReceivedAt).sort(),expected,zone+' export '+day);

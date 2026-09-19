@@ -88,6 +88,33 @@ test('Blob acknowledges only durable immutable outbox writes and preserves the i
   await assert.rejects(s.ingest(body,actor,{now,storage:'blob_outbox',client:{put:async()=>{throw new Error('offline');}}}));
   await assert.rejects(s.ingest(body,actor,{now,storage:null}),e=>e.code==='RESEARCH_DISABLED');
 });
+test('stable challenge receipts reject changed answers and route cross-day retries into the current outbox hour',async()=>{
+  const client=memoryBlob(),eventId=s.stableOutcomeId(actor.id,randomUUID());
+  const answer=event({eventId,type:'provider_result',provider:'aiducation',model:'curriculum',providerVersion:'v1',operation:'challenge',result:{status:'correct',score:100,correct:true}});
+  const body={...input([answer]),batchId:eventId};
+  const options={now,source:'server_verified',storage:'blob_outbox',client,stableRequest:true};
+  const first=await s.ingest(body,actor,options);
+  const sameHour=await s.ingest(body,actor,{...options,now:now+1000});
+  assert.equal(sameHour.serverReceivedAt,first.serverReceivedAt);assert.equal(client.objects.size,2);
+  const retry=await s.ingest(body,actor,{...options,now:now+86400000});
+  assert.equal(retry.serverReceivedAt,new Date(now+86400000).toISOString());assert.equal(client.objects.size,3);
+  const transported=[...client.objects].filter(([name])=>name.includes('/outbox/')).map(([,value])=>s.verifyStoredBatch(JSON.parse(value)));
+  assert.equal(transported[0].events[0].eventChecksum,transported[1].events[0].eventChecksum);
+  assert.equal(transported[1].events[0].serverReceivedAt,retry.serverReceivedAt);
+  const changed={...body,events:[{...answer,result:{status:'incorrect',score:0,correct:false}}]};
+  await assert.rejects(s.ingest(changed,actor,options),error=>error.code==='EVENT_ID_CONFLICT'&&error.status===409);
+  assert.equal(client.objects.size,3);
+});
+test('stable request intent alone is not acknowledged and a later retry finishes a failed outbox write',async()=>{
+  const client=memoryBlob(),put=client.put;let failed=true;
+  client.put=async(name,...args)=>{if(failed&&name.includes('/outbox/'))throw new Error('temporary outage');return put(name,...args);};
+  const eventId=s.stableOutcomeId(actor.id,randomUUID()),body={...input([event({eventId,type:'provider_result',provider:'aiducation',model:'curriculum',providerVersion:'v1',operation:'challenge',result:{status:'correct',score:100}})]),batchId:eventId};
+  const options={now,source:'server_verified',storage:'blob_outbox',client,stableRequest:true};
+  await assert.rejects(s.ingest(body,actor,options));assert.equal(client.objects.size,1);
+  failed=false;const completed=await s.ingest(body,actor,{...options,now:now+86400000});
+  assert.equal(completed.accepted,true);assert.equal(completed.serverReceivedAt,new Date(now+86400000).toISOString());assert.equal(client.objects.size,2);
+  assert.ok([...client.objects.keys()].some(name=>name.startsWith(s.NS+'/outbox/2026/09/21/08/')));
+});
 test('first/latest distinct attempts and real zero differ from null; client never becomes verified',()=>{
   const itemId='poem-2/item-1';
   const rows=[row({itemId,attemptId:randomUUID(),result:{status:'incorrect',score:0,correct:false}},now),
@@ -110,6 +137,10 @@ test('monotonic duration rejects decreasing clocks, skips gaps and does not accu
   assert.equal(result.summary.activeMs,1000);
   assert.equal(result.summary.nInvalidEvents,1);
   assert.ok(result.summary.qualityFlags.includes('non_monotonic_active_ms'));
+  const restored=[row({sessionId,seq:0,activeMs:0}),row({sessionId,seq:1,activeMs:1000}),row({sessionId,seq:2,activeMs:800}),row({sessionId,seq:3,activeMs:1200}),row({sessionId,seq:4,activeMs:1500})];
+  assert.equal(s.aggregateEvents(restored,f).summary.activeMs,1300);
+  const badClock={...restored[1],qualityFlags:['client_clock_out_of_range']};
+  assert.equal(s.aggregateEvents([restored[0],badClock,restored[3]],f).summary.activeMs,0);
 });
 test('feedback and generic completion cannot erase a measured answer or handwriting result',()=>{
   const attemptId=randomUUID(),itemId='p2-dictation-1',context={mode:'standard',itemType:'dictation'};
@@ -127,6 +158,15 @@ test('feedback and generic completion cannot erase a measured answer or handwrit
       assert.equal(scope.byConstruct['writing.dictation'][source].unmeasuredN,0);
     }
   }
+});
+test('later failed provider retry retains the successful measurement for the same attempt but remains in raw history',()=>{
+  const attemptId=randomUUID(),base={activity:'read',type:'provider_result',operation:'reading',itemId:'p2.l0',attemptId};
+  const rows=[row({...base,result:{status:'completed',score:0},wordScores:[{index:0,char:'李',score:0}]},now,'server_verified'),
+    row({...base,result:{status:'error',score:null},error:{code:'timeout',retryable:true}},now+1000,'server_verified')];
+  const result=s.aggregateEvents(rows,f);assert.equal(result.summary.serverVerified.meanScore,0);assert.equal(result.summary.serverVerified.measuredN,1);
+  assert.equal(result.readingWords[0].meanScore,0);assert.equal(s.exportRows(rows,f).manifest.totalMatched,2);
+  const another=row({...base,attemptId:randomUUID(),result:{status:'unmeasured',score:null}},now+2000,'server_verified');
+  assert.equal(s.aggregateEvents([...rows,another],f).summary.serverVerified.meanScore,null);
 });
 test('assessment constructs remain separate; games, report and chat completions never become accuracy',()=>{
   const reading=row({activity:'read',type:'feedback_shown',itemId:'p2.l0',attemptId:randomUUID(),result:{status:'completed',score:80}});

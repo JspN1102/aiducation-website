@@ -30,13 +30,13 @@ test('failed transport preserves pending data and a different account cannot inh
 test('new events enqueued during upload survive its exact acknowledgement',async()=>{
   const {createResearchTracker}=await moduleReady;let complete,body;
   const f=fixture({fetchImpl:async(_url,options)=>{body=JSON.parse(options.body);await new Promise(resolve=>complete=resolve);return {ok:true,status:200,json:async()=>({accepted:true,batchId:body.batchId,eventIds:body.events.map(e=>e.eventId)})};}});
-  const tracker=createResearchTracker(f.options),upload=tracker.flush();tracker.emit('item_presented',{itemId:'g5-s1'});complete();await upload;
+  const tracker=createResearchTracker(f.options),upload=tracker.flush();await Promise.resolve();tracker.emit('item_presented',{itemId:'g5-s1'});complete();await upload;
   assert.equal(tracker.status().pending,1);
 });
 test('partial or wrong-batch acknowledgements never delete queued records',async()=>{
-  const {createResearchTracker}=await moduleReady;let mode='partial';
-  const f=fixture({fetchImpl:async(_url,options)=>{const body=JSON.parse(options.body);return {ok:true,status:200,json:async()=>({accepted:true,batchId:mode==='wrong'?'wrong':body.batchId,eventIds:[]})};}});
-  const tracker=createResearchTracker(f.options);await tracker.flush();assert.equal(tracker.status().pending,1);mode='wrong';await tracker.flush();assert.equal(tracker.status().pending,1);
+  const {createResearchTracker}=await moduleReady;let mode='partial',calls=0;
+  const f=fixture({fetchImpl:async(_url,options)=>{calls++;const body=JSON.parse(options.body);return {ok:true,status:200,json:async()=>({accepted:true,batchId:mode==='wrong'?'wrong':body.batchId,eventIds:mode==='partial'?[]:body.events.map(e=>e.eventId)})};}});
+  const tracker=createResearchTracker(f.options);await tracker.flush();assert.equal(tracker.status().pending,1);mode='wrong';await tracker.flush({force:true});assert.equal(calls,2);assert.equal(tracker.status().pending,1);
 });
 test('active time remains monotonic across routes, excludes hidden and idle time, and closes a span once',async()=>{
   const {createResearchTracker}=await moduleReady;const f=fixture({fetchImpl:async()=>{throw new Error('offline');}}),tracker=createResearchTracker(f.options);
@@ -72,4 +72,53 @@ test('current progress excludes recursive archives and recognizer candidates',as
   attempt.sourceAttempt={...attempt};
   const state=compactLearningSnapshot({reading:[],challenge:attempt,chat:['private']});
   assert(!JSON.stringify(state).includes('private'));assert.equal(state.challenge.gameDrafts.one.stage,2);assert.equal(state.challenge.sourceAttempt.answers.length,1);
+});
+
+test('damaged stored record is retained separately while healthy records still upload',async()=>{
+  const {createResearchTracker}=await moduleReady;let sent=[];
+  const f=fixture({fetchImpl:async(_url,options)=>{const body=JSON.parse(options.body);sent.push(...body.events);return {ok:true,status:200,json:async()=>({accepted:true,batchId:body.batchId,eventIds:body.events.map(e=>e.eventId)})};}});
+  const broken='maanshan-research-v1:'+actor.id+':event:broken';f.memory.set(broken,'{bad json');
+  const tracker=createResearchTracker(f.options);tracker.emit('item_presented',{itemId:'healthy'});await tracker.flush();
+  assert.equal(sent.length,2);assert.equal(tracker.status().pending,0);assert.equal(tracker.status().held,1);assert.equal(f.memory.get(broken),'{bad json');assert.equal(tracker.status().stopped,false);
+});
+
+test('offline backlog drains several bounded batches without replaying new events in the same flush',async()=>{
+  const {createResearchTracker}=await moduleReady;let sent=0,calls=0;
+  const f=fixture({fetchImpl:async(_url,options)=>{const body=JSON.parse(options.body);calls++;sent+=body.events.length;assert(body.events.length<=32);validateBatch(body,actor);return {ok:true,status:200,json:async()=>({accepted:true,batchId:body.batchId,eventIds:body.events.map(e=>e.eventId)})};}});
+  for(let i=0;i<110;i++){
+    const event={eventId:f.options.uuid(),sessionId:'11111111-1111-4111-8111-111111111111',seq:i,clientAt:new Date(f.options.now()).toISOString(),activeMs:0,poemId:5,activity:'read',type:'item_presented',appVersion:'test',contentVersion:'test',itemId:'p5.l0'};
+    f.memory.set('maanshan-research-v1:'+actor.id+':event:'+event.eventId,JSON.stringify(event));
+  }
+  const tracker=createResearchTracker(f.options);await tracker.flush();assert.equal(sent,111);assert.equal(calls,4);assert.equal(tracker.status().pending,0);
+});
+
+test('schema poison and event conflicts cannot permanently block good events or log out the account',async()=>{
+  const {createResearchTracker}=await moduleReady;const sent=[];
+  const f=fixture({fetchImpl:async(_url,options)=>{const body=JSON.parse(options.body);if(body.events.some(e=>e.itemId==='bad'))return {ok:false,status:409,json:async()=>({error:'EVENT_ID_CONFLICT'})};sent.push(...body.events);return {ok:true,status:200,json:async()=>({accepted:true,batchId:body.batchId,eventIds:body.events.map(e=>e.eventId)})};}});
+  const tracker=createResearchTracker(f.options);tracker.emit('item_presented',{itemId:'bad'});for(let i=0;i<25;i++)tracker.emit('item_presented',{itemId:'good'});
+  for(let i=0;i<8&&tracker.status().pending;i++)await tracker.flush({force:true});
+  assert.equal(sent.length,26);assert.equal(tracker.status().pending,0);assert.equal(tracker.status().held,1);assert.equal(tracker.status().stopped,false);
+  assert(!f.statuses.includes('session_changed'));
+});
+
+test('network failure backs off automatic retries while manual retry remains available',async()=>{
+  const {createResearchTracker}=await moduleReady;let calls=0;
+  const f=fixture({fetchImpl:async()=>{calls++;throw Error('network');}}),tracker=createResearchTracker(f.options);
+  await tracker.flush();await tracker.flush();assert.equal(calls,1);assert(tracker.status().retryAt>f.options.now());
+  await tracker.flush({force:true});assert.equal(calls,2);f.clock(61000);await tracker.flush();assert.equal(calls,3);assert.equal(tracker.status().pending,1);
+});
+
+test('volatile records still upload when localStorage is completely absent, and callbacks cannot break learning',async()=>{
+  const {createResearchTracker}=await moduleReady;let sent;
+  const f=fixture({storage:null,onStatus(){throw Error('view destroyed');},fetchImpl:async(_url,options)=>{sent=JSON.parse(options.body);return {ok:true,status:200,json:async()=>({accepted:true,batchId:sent.batchId,eventIds:sent.events.map(e=>e.eventId)})};}});
+  const tracker=createResearchTracker(f.options);tracker.emit('item_presented',{itemId:'volatile'});assert.equal(tracker.status().volatile,2);await tracker.flush();assert.equal(sent.events.length,2);assert.equal(tracker.status().pending,0);
+});
+
+test('temporary storage access denial is retried rather than classifying valid JSON as damaged',async()=>{
+ const {createResearchTracker}=await moduleReady;let denied=false;
+ const f=fixture({fetchImpl:async()=>{throw Error('offline');}}),original=f.storage.getItem;
+ f.storage.getItem=key=>{if(denied)throw Error('access denied');return original(key);};
+ const tracker=createResearchTracker(f.options);tracker.emit('item_presented',{itemId:'safe'});denied=true;await tracker.flush();
+ assert.equal(tracker.status().held,0);assert.equal(tracker.status().pending,2);assert.equal(tracker.status().storageAvailable,false);
+ denied=false;await tracker.flush({force:true});assert.equal(tracker.status().held,0);assert.equal(f.memory.size,2);
 });

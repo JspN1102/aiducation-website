@@ -56,3 +56,49 @@ test('server verifies actual choice and canonical construct instead of browser s
  const res=response();await challenge(req,res);assert.equal(res.statusCode,200);assert.equal(saved.outcome.result.score,0);assert.equal(saved.context.context.itemType,'sound');
  req.body.status='skipped';await challenge(req,response());assert.equal(saved.outcome.result.score,null);
 });
+test('same queued challenge answer has stable server event identity and persistence failure is never acknowledged',async t=>{
+ t.mock.method(auth,'enabled',()=>true);t.mock.method(auth,'requireActor',async()=>actor);
+ const saved=[];let responseResult={recorded:true};
+ t.mock.method(research,'recordVerifiedOutcome',async(req,outcome)=>{saved.push(outcome);return responseResult;});
+ const {CHALLENGE_SETS}=await loader.load(),set=CHALLENGE_SETS[getPoem(2).slug],item=(set.bank||set.items).find(i=>i.type==='sound');
+ const requestId=require('node:crypto').randomUUID(),requestedAt='2026-01-01T00:00:00.000Z';
+ const req={method:'POST',body:{poemId:2,itemId:item.id,status:'correct',response:{choiceId:item.answerId},researchContext:{actorId:actor.id,poemId:2,itemId:item.id,requestId,requestedAt,context:{mode:'standard'}}}};
+ await challenge(req,response());await challenge(req,response());
+ assert.equal(saved[0].eventId,saved[1].eventId);assert.equal(saved[0].clientAt,requestedAt);assert.equal(saved[0].stableBatch,true);
+ assert.notEqual(research.stableOutcomeId('different-actor',requestId),saved[0].eventId);
+ responseResult={recorded:false,reason:'outcome_storage_unavailable'};const pending=response();await challenge(req,pending);assert.equal(pending.statusCode,503);assert.equal(pending.body.ok,false);assert.equal(pending.body.retryable,true);
+ for(const reason of ['INVALID_EVENT','BATCH_CHECKSUM','IDENTITY_UNAVAILABLE','RESEARCH_STORAGE_UNAVAILABLE']){
+  responseResult={recorded:false,reason};const storage=response();await challenge(req,storage);assert.equal(storage.statusCode,503);assert.equal(storage.body.retryable,true);
+ }
+ responseResult={recorded:false,reason:'INVALID_EVENT',invalidRequest:true};const invalid=response();await challenge(req,invalid);assert.equal(invalid.statusCode,400);assert.equal(invalid.body.retryable,false);
+ responseResult={recorded:false,reason:'outcome_storage_unavailable',invalidRequest:true};const unknown=response();await challenge(req,unknown);assert.equal(unknown.statusCode,503);assert.equal(unknown.body.retryable,true);
+ responseResult={recorded:false,reason:'EVENT_ID_CONFLICT'};const conflict=response();await challenge(req,conflict);assert.equal(conflict.statusCode,409);assert.equal(conflict.body.researchRecorded,false);assert.equal(conflict.body.retryable,false);
+ req.body.researchContext.requestedAt=new Date(Date.now()+600000).toISOString();const future=response();await challenge(req,future);assert.equal(future.statusCode,400);
+ req.body.researchContext.requestedAt=requestedAt;delete req.body.researchContext.requestId;const incomplete=response();await challenge(req,incomplete);assert.equal(incomplete.statusCode,400);
+});
+
+test('malformed challenge event context is rejected without touching storage or retrying forever',async t=>{
+ const oldEnabled=process.env.RESEARCH_ENABLED,oldStore=process.env.STUDENT_STORE;
+ process.env.RESEARCH_ENABLED='1';process.env.STUDENT_STORE='blob';
+ t.after(()=>{if(oldEnabled===undefined)delete process.env.RESEARCH_ENABLED;else process.env.RESEARCH_ENABLED=oldEnabled;if(oldStore===undefined)delete process.env.STUDENT_STORE;else process.env.STUDENT_STORE=oldStore;});
+ t.mock.method(auth,'enabled',()=>true);t.mock.method(auth,'requireActor',async()=>({...actor,researchId:'r_'+'a'.repeat(24),cls:'A'}));
+ // Any accidental storage access fails the test; validation must terminate first.
+ t.mock.method(globalThis,'fetch',async()=>{assert.fail('invalid answer reached storage');});
+ const {CHALLENGE_SETS}=await loader.load(),set=CHALLENGE_SETS[getPoem(2).slug],item=(set.bank||set.items).find(i=>i.type==='sound');
+ const context={actorId:actor.id,poemId:2,itemId:item.id,sessionId:require('node:crypto').randomUUID(),appVersion:'test',contentVersion:'v1',context:{mode:'standard'}};
+ for(const bad of [{...context,sessionId:undefined},{...context,attemptId:'invalid-uuid'},{...context,appVersion:'x'.repeat(65)}]){
+  const req={method:'POST',body:{poemId:2,itemId:item.id,status:'correct',response:{choiceId:item.answerId},researchContext:bad}},res=response();
+  await challenge(req,res);assert.equal(res.statusCode,400);assert.equal(res.body.code,'INVALID_EVENT');assert.equal(res.body.researchRecorded,false);assert.equal(res.body.retryable,false);
+ }
+});
+test('thrown provider errors record a safe failure without changing response/error semantics',async t=>{
+ t.mock.method(auth,'enabled',()=>true);t.mock.method(auth,'requireActor',async()=>actor);
+ let stored;
+ t.mock.method(research,'recordVerifiedOutcome',async(req,value)=>{stored=value;return {recorded:true};});
+ const problem=Object.assign(new Error('private upstream diagnostic must never be persisted'),{name:'TimeoutError'});
+ const handler=withSchoolLearning('chat',async()=>{throw problem;});
+ await assert.rejects(handler({method:'POST',body:{researchContext:{actorId:actor.id,poemId:2}}},response()),error=>error===problem);
+ assert.equal(stored.result.status,'error');assert.equal(stored.error.code,'timeout');assert.equal(stored.result.score,null);
+ assert.doesNotMatch(JSON.stringify(stored),/private upstream/);assert.ok(stored.metrics.latencyMs>=0);
+ assert.equal(outcomeFor('reading',null,200,{line:{text:'李',simplified:'李'}},NaN).result.status,'error');
+});
