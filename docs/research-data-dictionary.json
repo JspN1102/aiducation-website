@@ -32,7 +32,7 @@
     {
       "name": "serverReceivedAt",
       "type": "UTC ISO-8601",
-      "meaning": "Server ingress timestamp; used for date filtering and outbox partitioning, preserved after retries/import."
+      "meaning": "Transport receipt timestamp used for UTC outbox partitioning. Later-hour retries may have a new transport timestamp; PostgreSQL retains the first imported event row and receipt date for filtering and exports."
     },
     {
       "name": "qualityFlags",
