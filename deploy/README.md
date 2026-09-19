@@ -60,3 +60,24 @@ sudo nginx -t
 
 用户从旧域名切换到新域名时，浏览器本地进度不会自动跨域迁移；旧站保留，
 不要将域名切换误称为已完成旧本地记录迁移。
+
+## 已核实的 HTTP 备案限制
+
+2026-09-19 公网 HTTP 访问被腾讯云重定向到其“您的网站未完成备案”提示页；
+HTTPS 主站、API、各端浏览器检查通过。当前域名 DNS 正确，这不是 Nginx
+重定向或开放端口能消除的问题。正式使用中国内地服务器需完成相应备案；
+或者在用户确认后选用香港等地域托管。保留原 Vercel 入口。
+
+证书 HTTP01 续期也受到这一拦截影响，因此单独采用 DNS01 验证所有权。
+DNS01 解决证书验证，不解除网站备案限制，不代表所有网络均可访问。
+
+DNS01 hook 固定安装在 root 所有的
+`/usr/local/lib/maanshan-certbot-dnspod.py`；仅能为
+`_acme-challenge.mandarin.aiducation.asia` 添加本次验证 TXT 并核对后清理，
+不会改动网站 A 记录或邮件 MX。状态位于 `/var/lib/maanshan-acme/`（权限 700）。
+续期配置保留原 Certbot 账号和 Nginx 安装器，改用 manual DNS hooks。
+部署该 hook 或调整 DNS 后，可运行：
+
+```sh
+sudo certbot renew --dry-run --cert-name mandarin.aiducation.asia --non-interactive
+```

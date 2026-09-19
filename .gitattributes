@@ -1,0 +1,6 @@
+# Deployment files are executed on Linux even when edited on Windows.
+/deploy/*.sh text eol=lf
+/deploy/*.py text eol=lf
+/deploy/*.conf text eol=lf
+/deploy/*.service text eol=lf
+/deploy/*.timer text eol=lf
