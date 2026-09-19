@@ -44,13 +44,13 @@ async function publishDay(day,{db,client=blob,now=Date.now,deadline,priorParts=[
   const known=new Map(store.validatePublishedParts(priorParts).filter(part=>part.date===day).map(part=>[part.path,part]));
   const parts=[];
   const cohorts=(await db.query(`SELECT DISTINCT grade,cls FROM research_events
-    WHERE received_at >= $1::date AND received_at < $1::date + interval '1 day' ORDER BY grade,cls`,[day])).rows;
+    WHERE received_at >= ($1::date::timestamp AT TIME ZONE 'UTC') AND received_at < (($1::date + 1)::timestamp AT TIME ZONE 'UTC') ORDER BY grade,cls`,[day])).rows;
   for(const cohort of cohorts){
   let afterId=0;
   while(true){
     if(now()>=deadline)throw new Error('SNAPSHOT_DEADLINE');
     const result=await db.query(`SELECT id,record FROM research_events
-      WHERE received_at >= $1::date AND received_at < $1::date + interval '1 day' AND id > $2 AND grade=$3 AND cls=$4
+      WHERE received_at >= ($1::date::timestamp AT TIME ZONE 'UTC') AND received_at < (($1::date + 1)::timestamp AT TIME ZONE 'UTC') AND id > $2 AND grade=$3 AND cls=$4
       ORDER BY id LIMIT 250`,[day,afterId,cohort.grade,cohort.cls]);
     if(!result.rows.length)break;
     const value={schemaVersion:1,date:day,grade:cohort.grade,cls:cohort.cls,events:result.rows.map(r=>r.record)};

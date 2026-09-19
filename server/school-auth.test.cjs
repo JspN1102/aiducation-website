@@ -206,6 +206,88 @@ test('durable CAS rate counter cannot be bypassed by simultaneous login attempts
   assert.equal(results.filter(r => r.status === 'rejected' && r.reason.status === 429).length, 1);
 });
 
+function delayedStore(store, milliseconds = 4) {
+  const wait = () => new Promise(resolve => setTimeout(resolve, milliseconds));
+  const get = store.get, cas = store.cas;
+  store.get = async key => { const snapshot = await get(key); await wait(); return snapshot; };
+  store.cas = async (...args) => { await wait(); return cas(...args); };
+}
+
+test('thirty distinct students sharing one NAT can log in across independent delayed CAS instances', async () => {
+  const f = fixture();
+  const pupils = Array.from({ length: 30 }, (_, index) => ({ ...structuredClone(accounts[0]),
+    id: 's_' + (index + 100).toString(16).padStart(24, '0'), researchId: 'r_' + (index + 100).toString(16).padStart(24, '0'),
+    login: 'pupil' + index, classNo: index + 1 }));
+  f.records.set('directory/current', { version: 'directory-30', value: { format: auth.FORMAT,
+    generatedAt: new Date(NOW).toISOString(), accounts: pupils, sha256: auth.directoryHash(pupils) } });
+  delayedStore(f.store, 8);
+  const results = await Promise.allSettled(pupils.map(pupil => {
+    const service = auth.createAuth({ env: f.env, store: f.store, now: () => NOW });
+    return service.login(request({ login: pupil.login, password: 'test-password-0' }), response());
+  }));
+  assert.equal(results.filter(result => result.status === 'fulfilled').length, 30);
+  assert.equal([...f.records.keys()].filter(key => key.startsWith('session/')).length, 30);
+});
+
+test('IP bucket is fixed after username normalization and its 32-attempt ceiling spans instances', async () => {
+  const f = fixture(), hmac = value => crypto.createHmac('sha256', f.env.SCHOOL_AUTH_SECRET).update(value).digest('hex');
+  const bucket = parseInt(hmac('ip-bucket:test0').slice(0, 2), 16) % 64;
+  const key = 'limit/' + hmac('ip:127.0.0.1:bucket:' + bucket);
+  f.records.set(key, { value: { attempts: 32, until: NOW + 900000 }, version: 'full-bucket' });
+  const other = auth.createAuth({ env: f.env, store: f.store, now: () => NOW });
+  await assert.rejects(f.service.login(request(), response()), error => error.status === 429);
+  await assert.rejects(other.login(request({ login: ' ＴＥＳＴ０ ' }), response()), error => error.status === 429);
+  assert.equal(f.records.get(key).value.attempts, 32);
+  assert.equal([...f.records.keys()].some(name => name.startsWith('session/')), false);
+});
+
+test('thirty wrong passwords cannot race past the last remaining account attempt', async () => {
+  const f = fixture(), key = 'limit/' + crypto.createHmac('sha256', f.env.SCHOOL_AUTH_SECRET).update('account:test0').digest('hex');
+  f.records.set(key, { value: { attempts: 11, until: NOW + 900000 }, version: 'last-attempt' });
+  delayedStore(f.store);
+  const results = await Promise.allSettled(Array.from({ length: 30 }, () => {
+    const service = auth.createAuth({ env: f.env, store: f.store, now: () => NOW });
+    return service.login(request({ password: 'incorrect' }), response());
+  }));
+  assert.equal(results.filter(result => result.status === 'fulfilled').length, 0);
+  assert.equal(results.filter(result => result.reason?.code === 'INVALID_CREDENTIALS').length, 1);
+  assert.equal(f.records.get(key).value.attempts, 12);
+  assert.ok(results.every(result => ['INVALID_CREDENTIALS', 'LOGIN_THROTTLED', 'AUTH_UNAVAILABLE'].includes(result.reason?.code)));
+  assert.equal([...f.records.keys()].some(name => name.startsWith('session/')), false);
+});
+
+test('unchanged account login skips its write but concurrent revocation still invalidates the session', async () => {
+  const f = fixture(); await login(f);
+  const originalGet = f.store.get, originalCas = f.store.cas;
+  let accountWrites = 0;
+  f.store.cas = async (key, ...args) => { if (key.startsWith('account/')) accountWrites++; return originalCas(key, ...args); };
+  await login(f);
+  assert.equal(accountWrites, 0);
+  let changed = false;
+  f.store.get = async key => {
+    const snapshot = await originalGet(key);
+    if (key === 'account/' + accounts[0].id && !changed) {
+      changed = true;
+      await originalCas(key, { ...snapshot.value, authVersion: 'f'.repeat(32), generation: 1 }, snapshot.version);
+    }
+    return snapshot;
+  };
+  const result = await login(f);
+  assert.equal(accountWrites, 0);
+  await assert.rejects(f.service.requireActor(request({ method: 'GET', cookie: result.cookie })), error => error.code === 'AUTH_REQUIRED');
+});
+
+test('a fresh directory failure during parallel preflight cannot issue a session or restore the old identity', async () => {
+  const f = fixture(), previous = await login(f), originalGet = f.store.get;
+  const sessionCount = [...f.records.keys()].filter(key => key.startsWith('session/')).length;
+  f.store.get = async key => { if (key === 'directory/current') throw new Error('synthetic storage failure'); return originalGet(key); };
+  const res = response();
+  await assert.rejects(f.service.login(request({ cookie: previous.cookie }), res));
+  assert.ok(res.headers['Set-Cookie'].includes('Max-Age=0'));
+  assert.equal([...f.records.keys()].filter(key => key.startsWith('session/')).length, sessionCount);
+  await assert.rejects(f.service.requireActor(request({ method: 'GET', cookie: previous.cookie })), error => error.code === 'AUTH_REQUIRED');
+});
+
 test('one request reuses storage verification but always checks role and CSRF again', async () => {
   const f = fixture(), result = await login(f), original = f.store.get;
   let reads = 0; f.store.get = async key => { reads++; return original(key); };

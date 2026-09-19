@@ -161,13 +161,16 @@ function createAuth({ env = process.env, store: suppliedStore, now = Date.now, r
     const value = validateDirectory(result?.value);
     directoryCache = { value, loadedAt: now() }; return value;
   }
-  async function retry(key, transform) {
-    for (let i = 0; i < 5; i++) {
+  async function retry(key, transform, { attempts = 5, jitterMs = 0 } = {}) {
+    for (let i = 0; i < attempts; i++) {
       const previous = await store().get(key);
       const value = transform(previous?.value);
       if (value === null) return;
       try { await store().cas(key, value, previous?.version); return value; }
-      catch (error) { if (!(error instanceof Conflict)) throw error; }
+      catch (error) {
+        if (!(error instanceof Conflict)) throw error;
+        if (jitterMs && i + 1 < attempts) await new Promise(resolve => setTimeout(resolve, crypto.randomInt(10, jitterMs + 1)));
+      }
     }
     fail(503, 'AUTH_UNAVAILABLE');
   }
@@ -235,7 +238,7 @@ function createAuth({ env = process.env, store: suppliedStore, now = Date.now, r
       const start = old && Number.isFinite(old.until) && old.until > now() ? old : { attempts: 0, until: now() + milliseconds };
       if (!Number.isInteger(start.attempts) || start.attempts >= max) fail(429, 'LOGIN_THROTTLED');
       return { attempts: start.attempts + 1, until: start.until };
-    });
+    }, key.startsWith('ip:') ? { attempts: 8, jitterMs: 100 } : undefined);
   }
   function clientIp(req) {
     // Trust only headers supplied by the known frontend proxy. No raw IP is stored.
@@ -255,16 +258,28 @@ function createAuth({ env = process.env, store: suppliedStore, now = Date.now, r
     await revoke(req, res);
     const username = normalizeLogin(req.body?.login), password = req.body?.password;
     if (!username || username.length > 64 || typeof password !== 'string' || !password || Buffer.byteLength(password) > 256) fail(401, 'INVALID_CREDENTIALS');
-    await consumeLimit('ip:' + clientIp(req), 1200, 15 * 60000); // school NAT is shared by hundreds of pupils
-    await consumeLimit('account:' + username, 12, 15 * 60000);
-    const account = (await directory(true)).accounts.find(a => a.login === username);
+    // Fixed HMAC buckets spread a school's shared NAT across independent CAS
+    // objects. 64 x 32 attempts per 15-minute bucket window; an account always
+    // selects the same bucket and still has its separate 12-attempt limit.
+    const ipBucket = parseInt(digest('ip-bucket:' + username).slice(0, 2), 16) % 64;
+    await consumeLimit('ip:' + clientIp(req) + ':bucket:' + ipBucket, 32, 15 * 60000);
+    const [, currentDirectory] = await Promise.all([
+      consumeLimit('account:' + username, 12, 15 * 60000), directory(true)
+    ]);
+    const account = currentDirectory.accounts.find(a => a.login === username);
     if (!await verifyPassword(password, account) || !account.active) {
       await audit('login_failed', account); fail(401, 'INVALID_CREDENTIALS');
     }
     const value = token(), csrf = token();
     await retry('account/' + account.id, previous => {
       if (previous && !same(previous.authVersion, account.authVersion)) fail(409, 'ACCOUNT_CHANGED');
-      return { active: account.active, authVersion: account.authVersion, generation: account.authGeneration || 0, user: publicActor(account) };
+      const current = { active: account.active, authVersion: account.authVersion, generation: account.authGeneration || 0, user: publicActor(account) };
+      // A fresh read still checks revocation/version. Do not rewrite an
+      // identical account on every login; session validity remains checked
+      // against this durable account record on every subsequent request.
+      if (previous && previous.active === current.active && previous.generation === current.generation &&
+          same(previous.authVersion, current.authVersion) && canonical(previous.user) === canonical(current.user)) return null;
+      return current;
     });
     await audit('login', account);
     await store().cas('session/' + hash(value), { version: 1, actorId: account.id, authVersion: account.authVersion,

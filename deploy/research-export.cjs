@@ -82,8 +82,8 @@ function pageQuery(requested,after){
   const values=[after],conditions=['id > $1::bigint'];
   for(const [key,column,sql] of [['from','received_at','>='],['to','received_at','<'],['grade','grade','='],['cls','cls','=']]){
     if(requested[key]===undefined)continue;values.push(requested[key]);
-    const cast=key==='from'?'::date':key==='to'?"::date + interval '1 day'":'';
-    conditions.push(`${column} ${sql} $${values.length}${cast}`);
+    const bound=key==='from'?`($${values.length}::date::timestamp AT TIME ZONE 'UTC')`:key==='to'?`(($${values.length}::date + 1)::timestamp AT TIME ZONE 'UTC')`:`$${values.length}`;
+    conditions.push(`${column} ${sql} ${bound}`);
   }
   return {text:`SELECT id::text AS id,research_id,event_checksum,record FROM research_events WHERE ${conditions.join(' AND ')} ORDER BY id LIMIT ${PAGE_SIZE}`,values};
 }

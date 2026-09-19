@@ -582,7 +582,7 @@ function aggregateEvents(all,f,{generatedAt=new Date().toISOString(),source='pos
       omitted:{rawAudio:true,handwritingCoordinates:true,chatText:true,names:true,ipOrFingerprint:true}}};
 }
 async function readPostgres(f,db=getPool()){
-  const values=[f.from,f.to],where=['received_at >= $1::date','received_at < $2::date + interval \'1 day\''];
+  const values=[f.from,f.to],where=["received_at >= ($1::date::timestamp AT TIME ZONE 'UTC')","received_at < (($2::date + 1)::timestamp AT TIME ZONE 'UTC')"];
   for(const [key,column] of [['grade','grade'],['cls','cls'],['activity','activity'],['student','research_id']])if(f[key]!==undefined){values.push(f[key]);where.push(column+'=$'+values.length);}
   const rows=(await db.query('SELECT record FROM research_events WHERE '+where.join(' AND ')+' ORDER BY received_at,event_id LIMIT '+(MAX_READ_EVENTS+1),values)).rows;
   if(rows.length>MAX_READ_EVENTS)fail('NARROW_DATE_OR_CLASS_FILTER',413);
