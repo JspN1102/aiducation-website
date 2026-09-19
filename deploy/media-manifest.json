@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "origin": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com",
+  "assets": [
+    {
+      "source": "/maanshan/media/bo-chuan-gua-zhou/animation-20260917.mp4",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/bo-chuan-gua-zhou/animation-20260917.mp4",
+      "bytes": 30795790,
+      "sha256": "4d0e645da50946ef5a0658bb6643139a0665a40e0ad5f9029a5da56d442caab1",
+      "md5": "5df5dcc6f9e84dc6890722fc10f33f95",
+      "contentType": "video/mp4",
+      "objectCacheControl": "public, max-age=2592000"
+    },
+    {
+      "source": "/maanshan/media/exploration/bo-chuan-gua-zhou/model-20260919b.glb",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2ea7d5ebb933becacdb4/maanshan/media/exploration/bo-chuan-gua-zhou/model-20260919b.glb",
+      "bytes": 2005312,
+      "sha256": "2ea7d5ebb933becacdb45647415a68e6eff4821c222f84838006c65fbf1788e6",
+      "md5": "e4ff4c122d136f772aa751992c34edbc",
+      "contentType": "model/gltf-binary",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/exploration/gui-yuan-tian-ju/model.glb",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/9dd9f6ffc2f62a3452a2/maanshan/media/exploration/gui-yuan-tian-ju/model.glb",
+      "bytes": 11481124,
+      "sha256": "9dd9f6ffc2f62a3452a2df78a13232d91b3d5d0654b3a1de46cc33044b1e10df",
+      "md5": "09f6b2ea2a3f44d529b5e5e56404eb81",
+      "contentType": "model/gltf-binary",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/exploration/ti-xi-lin-bi/model.glb",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/fa9753ea598a3522da9b/maanshan/media/exploration/ti-xi-lin-bi/model.glb",
+      "bytes": 2144372,
+      "sha256": "fa9753ea598a3522da9b941bfeb11162e5418afd75a39856a77f1c09237b49e6",
+      "md5": "92d2affaacf272ee24b50b32006a7f5f",
+      "contentType": "model/gltf-binary",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/exploration/zao-chun/model-20260919b.glb",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/d026e39e93b3b8000955/maanshan/media/exploration/zao-chun/model-20260919b.glb",
+      "bytes": 1719700,
+      "sha256": "d026e39e93b3b80009550264d678bd67ec830e5483e0b69ea0d3faa22386ed22",
+      "md5": "94db31e298e53d93683fdd5ada07201b",
+      "contentType": "model/gltf-binary",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/gui-yuan-tian-ju/animation-20260919b.mp4",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/gui-yuan-tian-ju/animation-20260919b.mp4",
+      "bytes": 29172477,
+      "sha256": "496f113640019b4f75a09648b9457c315dba9d72b4c1d864c3935d60fa68f890",
+      "md5": "0303c4620d421ce3b46bcd0ddf438f2c",
+      "contentType": "video/mp4",
+      "objectCacheControl": "public, max-age=2592000"
+    },
+    {
+      "source": "/maanshan/media/living-scenes/bean-v1.glb",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4e819ae9a9782074c7ab/maanshan/media/living-scenes/bean-v1.glb",
+      "bytes": 693568,
+      "sha256": "4e819ae9a9782074c7abb3d9998f8fbd9412877e02b8dc08c2a052e6e1aadadd",
+      "md5": "5a2d0095553b82cf48f9c1f28a81c08b",
+      "contentType": "model/gltf-binary",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/living-scenes/grass-v1.glb",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/27224c03954d1ed4ef54/maanshan/media/living-scenes/grass-v1.glb",
+      "bytes": 461636,
+      "sha256": "27224c03954d1ed4ef54f694ea4389b9da14c0adaf186cb240940c54629deaad",
+      "md5": "4d1b21cff15f23e78bd1391fffb868f9",
+      "contentType": "model/gltf-binary",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/ti-xi-lin-bi/animation-20260917b.mp4",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/ti-xi-lin-bi/animation-20260917b.mp4",
+      "bytes": 16491213,
+      "sha256": "8a4e4eaecaa0f38cd288eebe5f0c1f04563eea6b659a0dcd2343feb5c32a5f3b",
+      "md5": "dac699e4382f20a016a1f7bf1b77ba47",
+      "contentType": "video/mp4",
+      "objectCacheControl": "public, max-age=2592000"
+    },
+    {
+      "source": "/maanshan/media/yong-e/animation-20260918c.mp4",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/yong-e/animation-20260918c.mp4",
+      "bytes": 17836964,
+      "sha256": "03060538e03b49e0b85192398c22a4de832b12ad0dc21025b23230d533eac204",
+      "md5": "5a5f5a239b9889763e10b8986b0a8228",
+      "contentType": "video/mp4",
+      "objectCacheControl": "public, max-age=2592000"
+    },
+    {
+      "source": "/maanshan/media/zao-chun/animation-20260917.mp4",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/zao-chun/animation-20260917.mp4",
+      "bytes": 30904798,
+      "sha256": "48ca3b79e6207225710ade627f8537c40edd5cd7ad1b3f16ee433e1838d7d4d7",
+      "md5": "5b1dbb2cd362fbc5d3d87582ee62e24d",
+      "contentType": "video/mp4",
+      "objectCacheControl": "public, max-age=2592000"
+    },
+    {
+      "source": "/maanshan/media/zeng-wang-lun/animation-20260917.mp4",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/zeng-wang-lun/animation-20260917.mp4",
+      "bytes": 37182614,
+      "sha256": "9638ad61285dba5b1c462bbfe383adb13e4f970e0b9a14b2cffd316539b95a64",
+      "md5": "e14996e96f34630aafa2fc0c6a8c42c8",
+      "contentType": "video/mp4",
+      "objectCacheControl": "public, max-age=2592000"
+    }
+  ]
+}

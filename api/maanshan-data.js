@@ -2,6 +2,7 @@ import { query, isDbReady } from './_lib/db.js';
 import { timingSafeEqual } from 'node:crypto';
 import poemHelpers from './_lib/poems.js';
 import { CHALLENGE_SETS } from '../maanshan/challenge-data.mjs';
+import studentStore from './_lib/student-store.js';
 
 function resultTime(...values) {
   for (const value of values) {
@@ -55,7 +56,7 @@ function writingResult(student, set) {
 
 function canReadData(req) {
   const expected = process.env.DATA_READ_TOKEN;
-  if (!expected) return true; // Preserve deployments using their own access layer.
+  if (!expected) return !studentStore.mode(); // Blob teacher data always requires an access code.
   const header = req.headers?.authorization;
   if (typeof header !== 'string' || !header.startsWith('Bearer ')) return false;
   const supplied = Buffer.from(header.slice(7));
@@ -92,13 +93,16 @@ export default async function handler(req, res) {
   const cls = classValue.toUpperCase();
   const poemId = Number(poemValue);
 
-  if (!isDbReady()) {
+  if (studentStore.mode() && !studentStore.configured()) {
+    return res.status(503).json({ grade, cls, poemId, hasData: false, error: 'Student storage unavailable' });
+  }
+  if (!studentStore.mode() && !isDbReady()) {
     return res.status(200).json({ grade, cls, poemId, hasData: false });
   }
 
   try {
     // 取该班该诗所有记录，按 student_id + section 分组取最新
-    const rows = await query(
+    const rows = studentStore.mode() ? await studentStore.readClass(grade, cls, poemId) : await query(
       { mysql: `SELECT student_id, name, section, payload, updated_at
        FROM student_data
        WHERE grade = ? AND cls = ? AND poem_id = ?

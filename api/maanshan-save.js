@@ -1,5 +1,6 @@
 import { execute, isDbReady } from './_lib/db.js';
 import poemHelpers from './_lib/poems.js';
+import studentStore from './_lib/student-store.js';
 
 const { getPoem } = poemHelpers;
 
@@ -42,6 +43,14 @@ export default async function handler(req, res) {
     const payloadJson = JSON.stringify(payload);
     if (Buffer.byteLength(payloadJson) > 256 * 1024 || Buffer.byteLength(JSON.stringify(req.body)) > 320 * 1024) {
       return res.status(413).json({ ok: false, error: 'Payload too large' });
+    }
+    if (studentStore.mode()) {
+      if (!studentStore.configured()) {
+        res.setHeader('Retry-After', '30');
+        return res.status(503).json({ ok: false, stored: 'local-only', error: 'Student storage unavailable' });
+      }
+      await studentStore.save(req.body);
+      return res.status(200).json({ ok: true, stored: 'blob' });
     }
     if (!isDbReady()) {
       res.setHeader('Retry-After', '30');

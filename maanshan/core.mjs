@@ -84,7 +84,7 @@ export function createSyncQueue({read,write,send}) {
           const response=await send(item);
           if (!response.ok) return;
           const result=await response.json();
-          if (result.ok !== true || result.stored !== 'db') return;
+          if (result.ok !== true || !['db', 'blob'].includes(result.stored)) return;
           // Read again after acknowledgement to retain records added during upload.
           if (write(read().filter(p => p.syncId !== item.syncId)) === false) return;
         } catch { return; }
