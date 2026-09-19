@@ -145,7 +145,7 @@ async function speechSource(text,{markup=null}={}) {
   if(speechCache.has(key))return speechCache.get(key);
   if(speechPending.has(key))return speechPending.get(key);
   const pending=(async()=>{
-    const response=await fetch('/api/tts/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:requestText,voice:TTS_VOICE,speed:TTS_SPEED,pronunciationVersion:TTS_PRONUNCIATION,delivery:'url'}),signal:AbortSignal.timeout(20000)});
+    const response=await fetch('/api/tts/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:requestText,voice:TTS_VOICE,speed:TTS_SPEED,pronunciationVersion:TTS_PRONUNCIATION,delivery:'url',allowSSML:Boolean(markup)}),signal:AbortSignal.timeout(20000)});
     if(!response.ok)throw new Error('TTS');
     let source;
     const type=response.headers.get('content-type')||'';
