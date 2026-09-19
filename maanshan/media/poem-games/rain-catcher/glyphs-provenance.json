@@ -1,0 +1,147 @@
+{
+  "asset": "Spring Rain Catcher offline Chinese character outlines",
+  "created": "2026-09-19",
+  "package": "hanzi-writer-data",
+  "version": "2.0.1",
+  "packageUrl": "https://registry.npmjs.org/hanzi-writer-data/-/hanzi-writer-data-2.0.1.tgz",
+  "packageSha256": "72baf3d82b114e60d6e40ea05f24d2262a05cd39d544e2f322ba2fceb7beff15",
+  "packageIntegrity": "sha512-nbQwM+MaryGoq7pBMIZLCd3lFq03nXuJuwku1+6UbjL58uU+9OULVcMkoNvNuJSoIV7f1bbPRfD4D/LQa5S7qg==",
+  "upstream": [
+    "https://github.com/chanind/hanzi-writer-data",
+    "https://github.com/skishore/makemeahanzi"
+  ],
+  "license": "Arphic Public License",
+  "copyright": [
+    "Copyright 1999 Arphic Technology Co., Ltd.",
+    "Copyright 2016 Shaunak Kishore"
+  ],
+  "licenseFile": "/maanshan/vendor/licenses/ARPHICPL.TXT",
+  "attributionFile": "/maanshan/vendor/licenses/hanzi-writer-data.txt",
+  "creditsPage": "/maanshan/credits.html",
+  "modification": "Select 15 characters and omit medians and metadata. Package as an ES module. All original stroke SVG path strings are unchanged. No generated or redrawn character shapes.",
+  "module": "/maanshan/poem-games/rain-glyphs.mjs",
+  "moduleSha256": "3c91e757b8b7dfcd9be2f4da536731a20adc2b8f7858f58613c46f0fd16c117c",
+  "moduleBytes": 30035,
+  "characters": [
+    {
+      "character": "小",
+      "codepoint": "U+5C0F",
+      "archivePath": "package/小.json",
+      "sha256": "72bf769c8c3426bffa578502eb8b1532fb1e622ddb6f40ded04e484290c0fe8c",
+      "strokeCount": 3,
+      "originalBytes": 830
+    },
+    {
+      "character": "少",
+      "codepoint": "U+5C11",
+      "archivePath": "package/少.json",
+      "sha256": "de5cd9d5b1bbd468411f82f7d57881b11b3a9b9c7bb812ff891ac66c06b31ef7",
+      "strokeCount": 4,
+      "originalBytes": 1050
+    },
+    {
+      "character": "掃",
+      "codepoint": "U+6383",
+      "archivePath": "package/掃.json",
+      "sha256": "f4e01c8f666cc2b7a156937f9afa13e6493d507afa1ea58544d7164626256b35",
+      "strokeCount": 11,
+      "originalBytes": 3405
+    },
+    {
+      "character": "酥",
+      "codepoint": "U+9165",
+      "archivePath": "package/酥.json",
+      "sha256": "77154c7bc8c270b7dad6d994e3307575715ac07d4206d3e4a7ace35e3b133d63",
+      "strokeCount": 12,
+      "originalBytes": 3552
+    },
+    {
+      "character": "書",
+      "codepoint": "U+66F8",
+      "archivePath": "package/書.json",
+      "sha256": "fd2cd069be927655d223dc69eaeda5b52645d7067306682dfcd5c46539e20150",
+      "strokeCount": 10,
+      "originalBytes": 3162
+    },
+    {
+      "character": "需",
+      "codepoint": "U+9700",
+      "archivePath": "package/需.json",
+      "sha256": "6bf567ecbb67b6cb2fccb5e60a109bafb1d0f49ee66c6d1475caf78784076665",
+      "strokeCount": 14,
+      "originalBytes": 3665
+    },
+    {
+      "character": "色",
+      "codepoint": "U+8272",
+      "archivePath": "package/色.json",
+      "sha256": "42da4bb8eb6b22d796e73b226c71c1ceb5486d1cd31df3d1963c31e712f80ab3",
+      "strokeCount": 6,
+      "originalBytes": 2126
+    },
+    {
+      "character": "社",
+      "codepoint": "U+793E",
+      "archivePath": "package/社.json",
+      "sha256": "7ddab0a3f727fad0772ddc0a5ee1d5f0873bdc0fd98381800a80238072f7189b",
+      "strokeCount": 7,
+      "originalBytes": 1927
+    },
+    {
+      "character": "謝",
+      "codepoint": "U+8B1D",
+      "archivePath": "package/謝.json",
+      "sha256": "949b23920641f12282c82bb7823ee22bd83eb59809f30677869e07e7c62e81f2",
+      "strokeCount": 17,
+      "originalBytes": 4323
+    },
+    {
+      "character": "是",
+      "codepoint": "U+662F",
+      "archivePath": "package/是.json",
+      "sha256": "73249157dc9e08c1eb3fb029ca12288b15c597f85eb4a6c72f5bdc6893ded27b",
+      "strokeCount": 9,
+      "originalBytes": 2411
+    },
+    {
+      "character": "四",
+      "codepoint": "U+56DB",
+      "archivePath": "package/四.json",
+      "sha256": "8aa7b3e16a0c3f67fc4ed3b08c7f24e80b2e90d8f6ade512d20109a625bea3b9",
+      "strokeCount": 5,
+      "originalBytes": 1800
+    },
+    {
+      "character": "細",
+      "codepoint": "U+7D30",
+      "archivePath": "package/細.json",
+      "sha256": "84e9d0c2550e6f1e11ac4e38c645308179f8d8a5f2980673494f5da5196fc1bf",
+      "strokeCount": 11,
+      "originalBytes": 3154
+    },
+    {
+      "character": "勝",
+      "codepoint": "U+52DD",
+      "archivePath": "package/勝.json",
+      "sha256": "47972f1cceeda9e717d78fba911a95810c41c8df573fb23bf96c8c52fdf4ab13",
+      "strokeCount": 12,
+      "originalBytes": 3627
+    },
+    {
+      "character": "送",
+      "codepoint": "U+9001",
+      "archivePath": "package/送.json",
+      "sha256": "585655112de1aab9819bd0e612fe8f765248c6473f6524d707f30fceaf73d146",
+      "strokeCount": 9,
+      "originalBytes": 2578
+    },
+    {
+      "character": "杏",
+      "codepoint": "U+674F",
+      "archivePath": "package/杏.json",
+      "sha256": "e2eb97f62eb5d6e7822b80aadc8925e79dfa90d4549ac6f93b029eb7872cfa1c",
+      "strokeCount": 7,
+      "originalBytes": 1868
+    }
+  ]
+}

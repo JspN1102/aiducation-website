@@ -8,3 +8,5 @@ Created on 2026-09-19 for AIDUCATION's Ma On Shan Mandarin learning platform.
 These are generated project assets; this record does not grant an open-source licence. Original prompts, Image2 PNGs, the Tripo GLB, render evidence and checksums are retained in the local project backup.
 
 The browser loads only the two WebP files (about 192 KiB combined). The 3D model is not downloaded during play, and the game requires no WebGL renderer.
+
+The five-word edition uses 15 offline Chinese character outlines from `hanzi-writer-data@2.0.1`, rendered as SVG with the original stroke paths. The additional module is approximately 30 KB. The word cards use the Arphic Public License and the attribution already provided on the credits page; see `glyphs-provenance.json` for source hashes and licence references. The generated scene and boat above are separate assets with separate provenance.

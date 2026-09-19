@@ -1,4 +1,4 @@
-import {CHALLENGE_VERSION} from './challenge-data.mjs?v=20260919c';
+import {CHALLENGE_VERSION} from './challenge-data.mjs?v=20260919d';
 
 const TOTAL = 5;
 const LEGACY_PLAN = ['sound', 'dictation', 'sound', 'dictation', 'other'];

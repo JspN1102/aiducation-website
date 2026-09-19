@@ -7,7 +7,7 @@ const loaders={
  'ti-xi-lin-bi':()=>import('./views.mjs?v=20260919a').then(m=>m.mountMountain),
  'bo-chuan-gua-zhou':()=>import('./river.mjs?v=20260919c').then(m=>m.mountRiver),
  'gui-yuan-tian-ju':()=>import('./garden.mjs?v=20260919a').then(m=>m.mountGarden),
- 'zao-chun':()=>import('./rain.mjs?v=20260919e').then(m=>m.mountRain)
+ 'zao-chun':()=>import('./rain.mjs?v=20260919f').then(m=>m.mountRain)
 };
 export function mountPoemGame(holder,{slug,...options}={}){
  if(!loaders[slug])throw new TypeError('Unknown poem game');
