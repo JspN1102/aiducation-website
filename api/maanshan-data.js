@@ -1,7 +1,6 @@
 import { query, isDbReady } from './_lib/db.js';
 import { timingSafeEqual } from 'node:crypto';
 import poemHelpers from './_lib/poems.js';
-import { CHALLENGE_SETS } from '../maanshan/challenge-data.mjs';
 import studentStore from './_lib/student-store.js';
 
 function resultTime(...values) {
@@ -132,6 +131,9 @@ export default async function handler(req, res) {
       }
     }
     const students = Object.values(studentMap);
+    // Vercel loads this handler as CommonJS. Native import keeps the shared
+    // browser .mjs question bank compatible with that server runtime.
+    const { CHALLENGE_SETS } = await import('../maanshan/challenge-data.mjs');
     const set = CHALLENGE_SETS[poemHelpers.getPoem(poemId, null)?.slug];
     students.forEach(student => { student.writingResult = writingResult(student, set); });
 
