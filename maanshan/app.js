@@ -41,8 +41,9 @@ let practiceIndex=0, reportTab='advice', reportLine=0, practiceMode='sound';
 const TTS_VOICE=502001;
 const TTS_SPEED=-.75;
 const TTS_PRONUNCIATION='20260919b3';
-const speechCache=new Map(), speechPending=new Map();
-let ttsUnavailableUntil=0;
+const speechCache=new Map(), speechPending=new Map(), speechFailureUntil=new Map(), staticAudioFailures=new Map();
+const STATIC_AUDIO_RETRY_MS=60000;
+let ttsUnavailableUntil=0,ttsSuccessVersion=0;
 const recordings=new Map(), requests=new Set();
 const pendingRecordings=new Map();
 const sync=createSyncQueue({
@@ -150,11 +151,15 @@ async function speechSource(text,{markup=null}={}) {
   const requestText=markup||String(text),key=speechKey(requestText,markup);
   if(speechCache.has(key))return speechCache.get(key);
   if(speechPending.has(key))return speechPending.get(key);
+  const failedUntil=speechFailureUntil.get(key);
+  if(failedUntil>Date.now())throw new Error('TTS phrase temporarily unavailable');
+  if(failedUntil)speechFailureUntil.delete(key);
   if(Date.now()<ttsUnavailableUntil)throw new Error('TTS temporarily unavailable');
   const pending=(async()=>{
+    const successVersion=ttsSuccessVersion;
     try{
       const response=await fetch('/api/tts/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:requestText,voice:TTS_VOICE,speed:TTS_SPEED,pronunciationVersion:TTS_PRONUNCIATION,delivery:'url',allowSSML:Boolean(markup)}),signal:AbortSignal.timeout(20000)});
-      if(!response.ok)throw new Error('TTS');
+      if(!response.ok){const error=new Error('TTS');error.status=response.status;throw error;}
       let source;
       const type=response.headers.get('content-type')||'';
       if(type.startsWith('application/json')){
@@ -166,9 +171,18 @@ async function speechSource(text,{markup=null}={}) {
         if(!source.size)throw new Error('empty audio');
       }else throw new Error('TTS response');
       if(speechCache.size>=80)speechCache.delete(speechCache.keys().next().value);
-      speechCache.set(key,source);return source;
+      speechCache.set(key,source);
+      speechFailureUntil.delete(key);
+      ttsUnavailableUntil=0;
+      ttsSuccessVersion++;
+      return source;
     }catch(error){
-      if(error?.name!=='AbortError')ttsUnavailableUntil=Date.now()+45000;
+      if(error?.name!=='AbortError'){
+        if([400,413,422].includes(error.status)){
+          if(speechFailureUntil.size>=80)speechFailureUntil.delete(speechFailureUntil.keys().next().value);
+          speechFailureUntil.set(key,Date.now()+45000);
+        }else if(ttsSuccessVersion===successVersion)ttsUnavailableUntil=Date.now()+45000;
+      }
       throw error;
     }
   })().finally(()=>speechPending.delete(key));
@@ -180,24 +194,55 @@ function playBlob(blob) {
 function playSpeech(source) {
   return typeof source==='string'?playSource(source,false,.85):playBlob(source);
 }
+const BROWSER_PHONEME_SUBSTITUTIONS=Object.freeze({
+  '還|huan2':'環','还|huan2':'环','還|hai2':'孩','还|hai2':'孩',
+  '荷|he4':'賀','行|hang2':'航','行|xing2':'形',
+  '種|zhong4':'仲','种|zhong4':'仲','種|zhong3':'腫','种|zhong3':'肿',
+  '數|shu4':'樹','数|shu4':'树','數|shu3':'鼠','数|shu3':'鼠',
+  '重|chong2':'崇','重|zhong4':'仲','長|chang2':'常','长|chang2':'常','長|zhang3':'掌','长|zhang3':'掌',
+  '盛|sheng4':'勝','盛|cheng2':'成','橫|heng2':'衡','横|heng2':'衡',
+  '曲|qu1':'區','曲|qu3':'取','處|chu4':'觸','处|chu4':'触','都|du1':'嘟'
+});
 function browserSpeechText(value){
   return String(value).trim()
     .replace(/^<speak\b[^>]*>/i,'').replace(/<\/speak>$/i,'')
     .replace(/<break\b[^>]*\/?>/gi,'，')
-    .replace(/<phoneme\b[^>]*>([^<>]*)<\/phoneme>/gi,'$1')
+    .replace(/<phoneme\b([^>]*)>([^<>]*)<\/phoneme>/gi,(_,attributes,content)=>{
+      const phoneme=/\bph="([a-z0-9]+)"/i.exec(attributes)?.[1]?.toLowerCase();
+      return BROWSER_PHONEME_SUBSTITUTIONS[content+'|'+phoneme]||content;
+    })
     .replace(/<[^>]+>/g,'')
     .replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').trim();
 }
-function playBrowserSpeech(text){
+function isCantoneseVoice(voice){
+  const label=(voice?.lang||'')+' '+(voice?.name||'');
+  return /^(?:yue)(?:-|\s|$)/i.test(voice?.lang||'')||/^zh-(?:hant-)?(?:hk|mo)(?:-|$)/i.test(voice?.lang||'')||/cantonese|廣東話|广东话|粵語|粤语/i.test(label);
+}
+function mandarinVoice(voices){
+  const candidates=voices.filter(voice=>!isCantoneseVoice(voice)&&(/^(?:zh|cmn)(?:-|$)/i.test(voice?.lang||'')||/普通話|普通话|國語|国语|mandarin|chinese/i.test(voice?.name||'')));
+  return candidates.find(voice=>/女|female|xiaoxiao|tingting|婷婷|曉曉|晓晓|曉萱|晓萱/i.test(voice.name||''))||candidates[0]||null;
+}
+function waitForMandarinVoice(synthesis){
+  const initial=synthesis.getVoices?.()||[],selected=mandarinVoice(initial);
+  if(selected||initial.length)return Promise.resolve(selected);
+  return new Promise(resolve=>{
+    let settled=false;
+    const finish=voice=>{if(settled)return;settled=true;clearTimeout(timer);synthesis.removeEventListener?.('voiceschanged',changed);resolve(voice);};
+    const changed=()=>{const voices=synthesis.getVoices?.()||[];if(voices.length)finish(mandarinVoice(voices));};
+    const timer=setTimeout(()=>finish(mandarinVoice(synthesis.getVoices?.()||[])),800);
+    synthesis.addEventListener?.('voiceschanged',changed);
+  });
+}
+async function playBrowserSpeech(text,isCurrent=()=>true,onReady=()=>{}){
   if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance!=='function')return Promise.resolve(false);
   if(browserSpeechTimer){clearTimeout(browserSpeechTimer);browserSpeechTimer=null;}
   if(browserSpeechResolve){const old=browserSpeechResolve;browserSpeechResolve=null;browserSpeech=null;old(false);}
   try{window.speechSynthesis.cancel();}catch{}
   const utterance=new SpeechSynthesisUtterance(browserSpeechText(text));
-  const voices=window.speechSynthesis.getVoices?.()||[];
-  const zh=voices.filter(voice=>/^zh(?:-|$)/i.test(voice.lang)||/中文|普通話|普通话|mandarin|chinese/i.test(voice.name));
-  utterance.voice=zh.find(voice=>/女|female|xiaoxiao|tingting|婷婷|晓晓|晓萱/i.test(voice.name))||zh[0]||voices.find(voice=>/^zh/i.test(voice.lang))||null;
-  utterance.lang=utterance.voice?.lang||'zh-CN';utterance.rate=.78;utterance.pitch=1.04;utterance.volume=1;
+  utterance.voice=await waitForMandarinVoice(window.speechSynthesis);
+  if(!isCurrent()||!utterance.voice)return false;
+  utterance.lang=utterance.voice.lang||'zh-CN';utterance.rate=.78;utterance.pitch=1.04;utterance.volume=1;
+  onReady();
   return new Promise(resolve=>{
     const finish=ok=>{
       if(browserSpeech!==utterance)return;
@@ -231,26 +276,43 @@ function playSource(url,revoke=false,playbackRate=1) {
     player.load();
   });
 }
-async function playDemonstration(url,text,markup,isCurrent){
+function shouldTryStaticAudio(url){
+  const failedAt=staticAudioFailures.get(url);
+  if(!failedAt)return true;
+  if(Date.now()-failedAt<STATIC_AUDIO_RETRY_MS)return false;
+  staticAudioFailures.delete(url);return true;
+}
+function rememberStaticAudioFailure(url){
+  if(staticAudioFailures.size>=80)staticAudioFailures.delete(staticAudioFailures.keys().next().value);
+  staticAudioFailures.set(url,Date.now());
+}
+async function playDemonstration(url,text,markup,isCurrent,onPhase=()=>{}){
+  const requestText=markup||String(text),key=speechKey(requestText,markup);
   try{
-    if(url){
+    if(url&&shouldTryStaticAudio(url)){
+      onPhase('playing');
       const finished=await playSource(url);
       if(finished||!isCurrent())return finished;
+      rememberStaticAudioFailure(url);
     }
+    onPhase('loading');
     const source=await speechSource(text,{markup});
     if(!isCurrent())return false;
+    onPhase('playing');
     const finished=await playSpeech(source);
     if(finished||!isCurrent())return finished;
+    if(typeof source==='string')speechCache.delete(key);
   }catch{}
   if(!isCurrent())return false;
-  return playBrowserSpeech(markup||text);
+  onPhase('loading');
+  return playBrowserSpeech(markup||text,isCurrent,()=>onPhase('playing'));
 }
 async function speakWord(char,pinyin,button=null) {
   if(button&&activeSpeechButton===button){stopMedia();return;}
   stopMedia();const version=speechVersion,route=routeVersion;activeSpeechButton=button;
-  speechState(button,'playing');
+  speechState(button,'loading');
   let finished=false;
-  try{finished=await playDemonstration(getWordAudioURL(char,pinyin),char,wordMarkup(char,pinyin),()=>version===speechVersion&&route===routeVersion);}catch{}
+  try{finished=await playDemonstration(getWordAudioURL(char,pinyin),char,wordMarkup(char,pinyin),()=>version===speechVersion&&route===routeVersion,status=>speechState(button,status));}catch{}
   if(version!==speechVersion||route!==routeVersion)return;
   if(!finished)toast('字音暫時未能播放，請再試一次。');
   stopTransient();
@@ -262,8 +324,8 @@ function focusSound(sample){
 }
 async function speakWords(items,button){
   if(activeSpeechButton===button){stopMedia();return;}
-  stopMedia();const version=speechVersion,route=routeVersion;activeSpeechButton=button;speechState(button,'playing');
-  try{for(const item of items){const finished=await playDemonstration(getWordAudioURL(item.char,item.pinyin),item.char,wordMarkup(item.char,item.pinyin),()=>version===speechVersion&&route===routeVersion);if(version!==speechVersion||route!==routeVersion)return;if(!finished)throw new Error('playback');}}
+  stopMedia();const version=speechVersion,route=routeVersion;activeSpeechButton=button;speechState(button,'loading');
+  try{for(const item of items){const finished=await playDemonstration(getWordAudioURL(item.char,item.pinyin),item.char,wordMarkup(item.char,item.pinyin),()=>version===speechVersion&&route===routeVersion,status=>speechState(button,status));if(version!==speechVersion||route!==routeVersion)return;if(!finished)throw new Error('playback');}}
   catch{if(version===speechVersion&&route===routeVersion)toast('字音暫時未能播放，請再試一次。');}
   finally{if(version===speechVersion&&route===routeVersion)stopTransient();}
 }
@@ -383,11 +445,10 @@ async function speak(text,context='',button=null) {
   try {
     for(const phrase of texts){
       const url=getSpeechAudioURL(phrase);
-      speechState(button,url?'playing':'loading');
+      speechState(button,'loading');
       const line=poem?.lines?.[currentLine];
       const markup=line?.text?.includes(phrase)?lineMarkup(line,phrase):null;
-      const finished=await playDemonstration(url,phrase,markup,()=>version===speechVersion&&route===routeVersion);
-      if(version!==speechVersion||route!==routeVersion)return;
+      const finished=await playDemonstration(url,phrase,markup,()=>version===speechVersion&&route===routeVersion,status=>speechState(button,status));
       if(version!==speechVersion||route!==routeVersion)return;
       if(!finished)throw new Error('playback');
     }
