@@ -5,3 +5,5 @@ node_modules/
 .git/
 .DS_Store
 *.log
+server/
+deploy/

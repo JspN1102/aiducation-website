@@ -7,7 +7,7 @@ const { getPoem } = poemHelpers;
  * POST /api/maanshan-save
  *
  * 学生端每完成一个环节就调用一次。
- * localStorage 先存 → POST 这里 → 写入 MySQL。
+ * localStorage 先存 → POST 这里 → 写入配置的数据库。
  *
  * Body: {
  *   syncId, studentId, name, grade, cls, poemId,
@@ -50,12 +50,19 @@ export default async function handler(req, res) {
 
     // Preserve the sync identifier so a retry updates the same record.
     const result = await execute(
-      `INSERT INTO student_data (student_id, name, grade, cls, poem_id, section, payload, sync_id)
+      { mysql: `INSERT INTO student_data (student_id, name, grade, cls, poem_id, section, payload, sync_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
          payload = VALUES(payload),
          name = VALUES(name),
          updated_at = CURRENT_TIMESTAMP`,
+        postgres: `INSERT INTO student_data (student_id, name, grade, cls, poem_id, section, payload, sync_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8)
+        ON CONFLICT (sync_id) DO UPDATE SET
+          payload = EXCLUDED.payload,
+          name = EXCLUDED.name,
+          updated_at = CURRENT_TIMESTAMP`
+      },
       [studentId, name, grade, cls.toUpperCase(), poemId, section, payloadJson, syncId || null]
     );
 

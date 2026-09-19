@@ -8,3 +8,5 @@ node_modules/
 .env*.local
 .env*
 culture-village/
+server/.build/
+__pycache__/

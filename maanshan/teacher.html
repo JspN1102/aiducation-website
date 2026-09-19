@@ -21,6 +21,8 @@ button,input{font:inherit}button,a{touch-action:manipulation}button{cursor:point
 .table-wrap{max-width:100%;overflow:auto}.stu-table{width:100%;border-collapse:collapse;min-width:680px}.stu-table th{text-align:left;font-size:11px;font-weight:500;color:var(--muted);padding:9px 10px;border-bottom:2px solid var(--line);min-width:62px;max-width:140px;overflow-wrap:anywhere}.stu-table td{padding:10px;border-bottom:1px solid var(--line);font-size:12px;max-width:170px;overflow-wrap:anywhere}.stu-table tr:hover td{background:var(--green-bg)}.stu-name{font-weight:500}.stu-score{font-variant-numeric:tabular-nums;font-weight:600;font-size:15px}.grade-tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px}.g-ex{background:var(--green-bg);color:var(--green)}.g-good{background:var(--blue-bg);color:var(--blue)}.g-pass{background:#eef1f1;color:var(--muted)}.g-fail{background:var(--red-bg);color:var(--red)}.unmeasured{color:var(--muted)}.empty-state{padding:36px 18px;text-align:center;color:var(--muted);font-size:13px}.status-panel{min-height:210px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#fff;border-top:1px solid var(--line);padding:28px;text-align:center}.status-panel p{color:var(--muted);font-size:13px}.retry-button{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:8px 14px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--green)}
 @media(max-width:900px){.main{gap:20px;padding:20px}.sidebar{width:150px}.stat-value{font-size:23px}.stat-card{padding:14px 10px}}
 @media(max-width:700px){.top-nav{padding:14px 16px;align-items:flex-start}.top-nav-left{gap:7px 12px}.top-nav-user{width:100%;font-size:11px}.main{display:block;padding:16px}.sidebar{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:8px}.sidebar-section{padding-bottom:12px;margin-bottom:0}.sidebar-section:last-child{grid-column:1/-1}.filter-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.filter-btn{min-height:40px;padding:8px;font-size:12px;margin:0}.content-toolbar{margin-top:18px}.view-title{font-size:18px}.stats-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.section{padding:16px 12px}.phon-label{width:112px}.error-bar-bg{width:64px}.demo-badge{font-size:12px}.student-link{font-size:11px}.top-nav-logo{font-size:10px}}
+.access-panel{align-items:stretch;text-align:left;max-width:460px;margin:0 auto;border:1px solid var(--line);border-radius:10px;padding:24px}.access-panel h2{font:600 19px/1.5 var(--serif)}.access-panel p{font-size:14px}.access-form{display:grid;gap:10px;min-width:0}.access-form label{font-size:14px;font-weight:600}.access-form input{display:block;width:100%;min-width:0;min-height:48px;border:1px solid #a9bcb6;border-radius:6px;padding:10px 12px;background:#fff;color:var(--ink);font-size:16px}.access-submit{min-height:46px;border:0;border-radius:6px;padding:10px 16px;background:var(--green);color:#fff;font-size:15px;font-weight:600}.access-error{color:var(--red)!important}.signout-button{min-height:38px;border:0;border-bottom:1px solid var(--line);padding:5px 0;background:none;color:var(--muted);font-size:12px;white-space:nowrap}.toolbar-actions{flex-wrap:wrap}.access-panel .access-hint{font-size:13px}
+@media(max-width:700px){.access-panel{padding:20px 18px}.access-panel h2{font-size:18px}.toolbar-actions{gap:12px}}
 </style>
 <script src="./vendor/lucide.min.js" defer></script>
 </head>
@@ -39,6 +41,7 @@ button,input{font:inherit}button,a{touch-action:manipulation}button{cursor:point
     <div class="content-toolbar">
       <div><h1 class="view-title" id="view-title">班級練習紀錄</h1><p class="view-subtitle" id="view-subtitle">實際已同步紀錄</p></div>
       <div class="toolbar-actions">
+        <button class="signout-button" id="signout-button" type="button" hidden>退出存取</button>
         <label class="demo-control"><input type="checkbox" id="demo-toggle">示範數據</label>
         <button class="icon-button" id="refresh-button" type="button" title="重新載入" aria-label="重新載入" disabled><i data-lucide="refresh-cw" aria-hidden="true"></i></button>
       </div>
@@ -57,6 +60,39 @@ let demoMode = false;
 let requestGeneration = 0;
 let activeRequest = null;
 let activeDistribution = null;
+const ACCESS_STORAGE_KEY = 'maanshan-teacher-access';
+let accessCode = '';
+try{ accessCode = sessionStorage.getItem(ACCESS_STORAGE_KEY) || ''; }catch{}
+
+function rememberAccessCode(value){
+  accessCode = value;
+  try{
+    if(value) sessionStorage.setItem(ACCESS_STORAGE_KEY,value);
+    else sessionStorage.removeItem(ACCESS_STORAGE_KEY);
+  }catch{}
+  document.getElementById('signout-button').hidden = !value;
+}
+function renderAccessForm(rejected = false){
+  activeDistribution = null;
+  document.getElementById('view-subtitle').textContent = '教師專用紀錄';
+  document.getElementById('content').innerHTML =
+    '<section class="status-panel access-panel" aria-labelledby="access-title">' +
+    '<h2 id="access-title">查看班級紀錄</h2><p id="access-hint">請輸入學校提供的教師存取碼。</p>' +
+    '<form class="access-form" id="access-form"><label for="access-code">教師存取碼</label>' +
+    '<input id="access-code" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" required maxlength="512" aria-describedby="access-hint' + (rejected ? ' access-error' : '') + '"' + (rejected ? ' aria-invalid="true"' : '') + '>' +
+    (rejected ? '<p class="access-error" id="access-error" role="alert">存取碼不正確或已更新，請重新輸入。</p>' : '') +
+    '<button class="access-submit" type="submit">查看紀錄</button></form>' +
+    '<p class="access-hint">未有存取碼？請向平台管理員索取。也可先查看示範數據。</p></section>';
+  document.getElementById('access-form').addEventListener('submit',event => {
+    event.preventDefault();
+    const input = document.getElementById('access-code');
+    const value = input.value.trim();
+    if(!value){ input.focus(); return; }
+    input.value = '';
+    accessCode = value;
+    renderContent();
+  });
+}
 
 function escapeHtml(value){
   return String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
@@ -162,11 +198,20 @@ async function renderContent(){
   const selection = {grade:curGrade,cls:curClass,poemId:selectedPoemId};
   renderState('正在載入練習紀錄');
   try{
-    const response = await fetch('/api/maanshan-data?' + new URLSearchParams(selection), {signal:controller.signal,cache:'no-store'});
+    const sentCode = accessCode;
+    const headers = sentCode ? {Authorization:'Bearer ' + sentCode} : {};
+    const response = await fetch('/api/maanshan-data?' + new URLSearchParams(selection), {signal:controller.signal,cache:'no-store',headers});
+    if(generation !== requestGeneration) return;
+    if(response.status === 403){
+      rememberAccessCode('');
+      renderAccessForm(!!sentCode);
+      return;
+    }
     if(!response.ok) throw new Error('Data request failed');
     const data = await response.json();
     if(generation !== requestGeneration) return;
     if(data.error) throw new Error('Data source unavailable');
+    if(sentCode) rememberAccessCode(sentCode);
     if(!data.hasData){ renderState('這個班別和古詩暫未有已同步的練習紀錄。'); return; }
     const dashboard = createDashboard(data);
     if(!dashboard.total){ renderState('這個班別和古詩暫未有已同步的練習紀錄。'); return; }
@@ -278,6 +323,12 @@ document.getElementById('poem-filter').addEventListener('click',event => {
 });
 document.getElementById('demo-toggle').addEventListener('change',event => { demoMode = event.target.checked; renderContent(); });
 document.getElementById('refresh-button').addEventListener('click',renderContent);
+document.getElementById('signout-button').addEventListener('click',() => {
+  rememberAccessCode('');
+  demoMode = false;
+  document.getElementById('demo-toggle').checked = false;
+  renderContent();
+});
 window.addEventListener('resize',drawDistChart);
 window.addEventListener('DOMContentLoaded',icons);
 renderFilters();

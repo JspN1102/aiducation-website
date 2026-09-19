@@ -1,19 +1,44 @@
 import { query, isDbReady } from './_lib/db.js';
+import { timingSafeEqual } from 'node:crypto';
+
+function canReadData(req) {
+  const expected = process.env.DATA_READ_TOKEN;
+  if (!expected) return true; // Preserve deployments using their own access layer.
+  const header = req.headers?.authorization;
+  if (typeof header !== 'string' || !header.startsWith('Bearer ')) return false;
+  const supplied = Buffer.from(header.slice(7));
+  const wanted = Buffer.from(expected);
+  return supplied.length === wanted.length && timingSafeEqual(supplied, wanted);
+}
 
 /**
  * GET /api/maanshan-data?grade=2&cls=A&poemId=2
  *
- * 教师后台查询。从 MySQL 读取并聚合一个班的数据。
+ * 教师后台查询。从配置的数据库读取并聚合一个班的数据。
+ * DATA_READ_TOKEN 配置后，必须通过 Authorization: Bearer <token> 访问。
  * 数据库未配置时返回 hasData:false，前端自动用 mock 数据。
  */
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization,Content-Type');
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+  if (!canReadData(req)) return res.status(403).json({ error: 'Forbidden' });
 
-  const grade = parseInt(req.query.grade) || 2;
-  const cls = (req.query.cls || 'A').toUpperCase();
-  const poemId = parseInt(req.query.poemId) || grade;
+  const params = req.query || {};
+  const gradeValue = params.grade ?? '2';
+  const poemValue = params.poemId ?? gradeValue;
+  const classValue = params.cls ?? 'A';
+  if (typeof gradeValue !== 'string' || !/^[1-6]$/.test(gradeValue) ||
+      typeof poemValue !== 'string' || !/^[1-6]$/.test(poemValue) ||
+      typeof classValue !== 'string' || !/^[A-Za-z]$/.test(classValue)) {
+    return res.status(400).json({ error: 'Invalid grade, class or poem' });
+  }
+  const grade = Number(gradeValue);
+  const cls = classValue.toUpperCase();
+  const poemId = Number(poemValue);
 
   if (!isDbReady()) {
     return res.status(200).json({ grade, cls, poemId, hasData: false });
@@ -22,10 +47,15 @@ export default async function handler(req, res) {
   try {
     // 取该班该诗所有记录，按 student_id + section 分组取最新
     const rows = await query(
-      `SELECT student_id, name, section, payload, updated_at
+      { mysql: `SELECT student_id, name, section, payload, updated_at
        FROM student_data
        WHERE grade = ? AND cls = ? AND poem_id = ?
-       ORDER BY student_id, section, updated_at DESC`,
+       ORDER BY student_id, section, updated_at DESC, id DESC`,
+        postgres: `SELECT student_id, name, section, payload, updated_at
+        FROM student_data
+        WHERE grade = $1 AND cls = $2 AND poem_id = $3
+        ORDER BY student_id, section, updated_at DESC, id DESC`
+      },
       [grade, cls, poemId]
     );
 
@@ -34,7 +64,7 @@ export default async function handler(req, res) {
     }
 
     // 按学生聚合（每个 section 只取最新一条）
-    const studentMap = {};
+    const studentMap = Object.create(null);
     for (const row of rows) {
       const sid = row.student_id;
       if (!studentMap[sid]) studentMap[sid] = { id: sid, name: row.name };
@@ -70,7 +100,7 @@ export default async function handler(req, res) {
     };
 
     // 语音知识聚合
-    const phonAgg = {};
+    const phonAgg = Object.create(null);
     students.forEach(s => {
       if (!s.reading || !s.reading.phonics) return;
       const ph = typeof s.reading.phonics === 'string'
@@ -80,13 +110,13 @@ export default async function handler(req, res) {
         phonAgg[k].push(v);
       });
     });
-    const phonAvg = {};
+    const phonAvg = Object.create(null);
     Object.entries(phonAgg).forEach(([k, vals]) => {
       phonAvg[k] = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
     });
 
     // 错字聚合
-    const errMap = {};
+    const errMap = Object.create(null);
     let writeTested = 0;
     students.forEach(s => {
       if (!s.writing || !s.writing.results) return;
@@ -118,7 +148,7 @@ export default async function handler(req, res) {
       }))
     });
   } catch (err) {
-    console.error('maanshan-data error:', err);
-    return res.status(200).json({ grade, cls, poemId, hasData: false, error: err.message });
+    console.error('maanshan-data aggregation failed');
+    return res.status(200).json({ grade, cls, poemId, hasData: false, error: 'Unable to read data' });
   }
 }

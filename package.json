@@ -1,8 +1,17 @@
 {
   "private": true,
+  "scripts": {
+    "build:server": "node server/build.cjs",
+    "start": "node --env-file=.env server/index.cjs",
+    "test:server": "node server/build.cjs && node --test server/server.test.cjs server/handwriting.test.cjs server/tts-cache.test.cjs"
+  },
   "dependencies": {
     "@vercel/blob": "^2.8.0",
     "mysql2": "^3.11.0",
+    "pg": "^8.23.0",
     "ws": "^8.20.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }
