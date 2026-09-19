@@ -1,0 +1,33 @@
+[Unit]
+Description=Optional latest Blob backup to local PostgreSQL standby copy
+After=maanshan-bridge-backup.service postgresql.service
+ConditionPathExists=/etc/maanshan/standby.enabled
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/srv/maanshan/current
+ExecStart=/usr/bin/python3 /usr/local/lib/maanshan-maintenance/standby-run.py
+StateDirectory=maanshan-standby
+StateDirectoryMode=0700
+TimeoutStartSec=480
+TimeoutStopSec=10
+KillMode=control-group
+UMask=0077
+Nice=15
+IOSchedulingClass=idle
+CPUQuota=25%
+MemoryMax=512M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/maanshan-standby /var/backups/maanshan
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LogRateLimitIntervalSec=1h
+LogRateLimitBurst=4
+StandardOutput=null
+StandardError=null

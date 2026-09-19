@@ -6,6 +6,45 @@ const { BlobNotFoundError, get, head, put } = require('@vercel/blob');
 const MAX_AUDIO_BYTES = 2 * 1024 * 1024;
 const CACHE_VERSION = '20260919b3';
 const blobPath = key => `speech/${CACHE_VERSION}/${key}.wav`;
+// Repeated taps should not issue another overseas HEAD + GET in a warm
+// instance. Persistent storage remains authoritative after this short TTL.
+const HOT_TTL_MS = 60000;
+const HOT_MAX_BYTES = 16 * 1024 * 1024;
+const HOT_MAX_ENTRIES = 128;
+const hot = new Map(), pendingReads = new Map(), pendingHeads = new Map();
+let hotBytes = 0;
+function hotKey(key) {
+  return crypto.createHash('sha256').update(process.env.BLOB_READ_WRITE_TOKEN).digest('hex') + ':' + key;
+}
+function forget(id) {
+  const item = hot.get(id);
+  if (item) hotBytes -= item.audio?.length || 0;
+  hot.delete(id);
+}
+function recall(id) {
+  const item = hot.get(id);
+  if (!item) return null;
+  if (item.until <= Date.now()) { forget(id); return null; }
+  hot.delete(id); hot.set(id, item);
+  return item;
+}
+function remember(id, audio = null) {
+  // A late HEAD must not replace an already downloaded waveform with metadata.
+  const previous = recall(id);
+  if (!audio && previous) return;
+  forget(id);
+  hot.set(id, { audio, until: Date.now() + HOT_TTL_MS });
+  hotBytes += audio?.length || 0;
+  while (hot.size > HOT_MAX_ENTRIES || hotBytes > HOT_MAX_BYTES) forget(hot.keys().next().value);
+}
+async function coalesce(pending, id, operation) {
+  if (pending.has(id)) return pending.get(id);
+  // Bound bookkeeping even if many distinct phrases arrive at once.
+  if (pending.size >= 64) return operation();
+  const work = operation().finally(() => pending.delete(id));
+  pending.set(id, work);
+  return work;
+}
 // A persistent directory on the standalone server avoids an overseas cache
 // round-trip. Vercel keeps using Blob when this setting is absent.
 function diskPath(key) {
@@ -50,30 +89,46 @@ function cacheKey({ text, voice, speed, pronunciationVersion = '', profile = '' 
 async function hasAudio(key) {
   if (process.env.TTS_CACHE_DIR) { const result = await readDisk(key); return { status: result.status }; }
   if (!process.env.BLOB_READ_WRITE_TOKEN) return { status: 'disabled' };
-  try {
+  if (!/^[0-9a-f]{64}$/.test(key)) return { status: 'unavailable' };
+  const id = hotKey(key);
+  if (recall(id)) return { status: 'hit' };
+  return coalesce(pendingHeads, id, async () => { try {
     const info = await head(blobPath(key), { abortSignal: AbortSignal.timeout(3000) });
-    return info.size >= 44 && info.size <= MAX_AUDIO_BYTES && info.contentType === 'audio/wav'
-      ? { status: 'hit' } : { status: 'unavailable' };
+    if (info.size > 44 && info.size <= MAX_AUDIO_BYTES && info.contentType === 'audio/wav') {
+      remember(id);
+      return { status: 'hit' };
+    }
+    return { status: 'unavailable' };
   } catch (error) {
     return { status: error instanceof BlobNotFoundError ? 'miss' : 'unavailable' };
-  }
+  } });
 }
 async function readAudio(key) {
   if (process.env.TTS_CACHE_DIR) return readDisk(key);
   if (!process.env.BLOB_READ_WRITE_TOKEN) return { status: 'disabled', audio: null };
-  try {
+  if (!/^[0-9a-f]{64}$/.test(key)) return { status: 'unavailable', audio: null };
+  const id = hotKey(key), existing = recall(id);
+  if (existing?.audio) return { status: 'hit', audio: existing.audio };
+  return coalesce(pendingReads, id, async () => { try {
     const response = await get(blobPath(key), { access: 'private', useCache: false, abortSignal: AbortSignal.timeout(3000) });
-    if (!response) return { status: 'miss', audio: null };
-    if (response.statusCode !== 200 || response.blob.size > MAX_AUDIO_BYTES || response.blob.contentType !== 'audio/wav') return { status: 'unavailable', audio: null };
+    if (!response) { forget(id); return { status: 'miss', audio: null }; }
+    if (response.statusCode !== 200 || response.blob.size > MAX_AUDIO_BYTES || response.blob.contentType !== 'audio/wav') {
+      await response.stream?.cancel();
+      forget(id);
+      return { status: 'unavailable', audio: null };
+    }
     const reader = response.stream.getReader(), chunks = []; let length = 0;
     while (true) {
       const { done, value } = await reader.read(); if (done) break;
       length += value.byteLength;
-      if (length > MAX_AUDIO_BYTES) { await reader.cancel(); return { status: 'unavailable', audio: null }; }
+      if (length > MAX_AUDIO_BYTES) { await reader.cancel(); forget(id); return { status: 'unavailable', audio: null }; }
       chunks.push(Buffer.from(value));
     }
-    return length >= 44 ? { status: 'hit', audio: Buffer.concat(chunks) } : { status: 'unavailable', audio: null };
-  } catch { return { status: 'unavailable', audio: null }; }
+    const audio = Buffer.concat(chunks);
+    if (!validDiskAudio(audio)) { forget(id); return { status: 'unavailable', audio: null }; }
+    remember(id, audio);
+    return { status: 'hit', audio };
+  } catch { forget(id); return { status: 'unavailable', audio: null }; } });
 }
 async function writeAudio(key, audio) {
   if (process.env.TTS_CACHE_DIR) {
@@ -89,9 +144,11 @@ async function writeAudio(key, audio) {
     } catch { return false; }
     finally { if (temporary) await fs.unlink(temporary).catch(() => {}); }
   }
-  if (!process.env.BLOB_READ_WRITE_TOKEN || !Buffer.isBuffer(audio) || audio.length < 44 || audio.length > MAX_AUDIO_BYTES) return false;
+  if (!process.env.BLOB_READ_WRITE_TOKEN || !/^[0-9a-f]{64}$/.test(key) || !validDiskAudio(audio)) return false;
+  const id = hotKey(key);
   try {
     await put(blobPath(key), audio, { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'audio/wav', cacheControlMaxAge: 31536000, abortSignal: AbortSignal.timeout(3000) });
+    remember(id, audio);
     return true;
   } catch { return false; }
 }

@@ -32,6 +32,19 @@ OPTIONAL_CONFIG_PATHS = (
     'etc/systemd/system/maanshan-bridge-backup.service',
     'etc/systemd/system/maanshan-bridge-backup.timer',
     'usr/local/lib/maanshan-bridge-backup.sh',
+    'etc/systemd/system/maanshan-health-check.service',
+    'etc/systemd/system/maanshan-health-check.timer',
+    'etc/systemd/system/maanshan-health-restore.service',
+    'etc/systemd/system/maanshan-health-restore.timer',
+    'etc/systemd/system/maanshan-standby-import.service',
+    'etc/systemd/system/maanshan-standby-import.timer',
+    'etc/maanshan/standby.enabled',
+    'usr/local/lib/maanshan-maintenance/health-check.py',
+    'usr/local/lib/maanshan-maintenance/health-restore.py',
+    'usr/local/lib/maanshan-maintenance/standby-run.py',
+    'var/lib/maanshan-health/health-latest.json',
+    'var/lib/maanshan-restore/restore-latest.json',
+    'var/lib/maanshan-standby/standby-latest.json',
 )
 
 
@@ -126,7 +139,7 @@ def main():
 configs = [name for name in OPTIONAL_CONFIGS if pathlib.Path('/' + name).is_file()]
 print(json.dumps({'configs': configs, 'blobBackups': pathlib.Path('/home/ubuntu/maanshan-backups/blob').is_dir()}))
 '''.replace('OPTIONAL_CONFIGS', repr(OPTIONAL_CONFIG_PATHS))
-        optional = json.loads(remote(client, 'python3 -', optional_code))
+        optional = json.loads(remote(client, 'sudo -n python3 -', optional_code))
         config_paths = CONFIG_PATHS + tuple(optional['configs'])
         if optional['blobBackups']:
             files += ('blob-student-backups.tar.gz',)

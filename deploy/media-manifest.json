@@ -21,6 +21,15 @@
       "objectCacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "source": "/maanshan/media/exploration/gui-yuan-tian-ju/model-20260920a.glb",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/8314aa1050f459812960/maanshan/media/exploration/gui-yuan-tian-ju/model-20260920a.glb",
+      "bytes": 3998540,
+      "sha256": "8314aa1050f4598129603acfab6cdc0c19917df2f8afe0ec4b28907979efb358",
+      "md5": "81ac3d2795f114a16d302cc46820e4bc",
+      "contentType": "model/gltf-binary",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "source": "/maanshan/media/exploration/gui-yuan-tian-ju/model.glb",
       "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/9dd9f6ffc2f62a3452a2/maanshan/media/exploration/gui-yuan-tian-ju/model.glb",
       "bytes": 11481124,

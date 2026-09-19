@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Maanshan locally every 15 minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+RandomizedDelaySec=60
+Unit=maanshan-health-check.service
+
+[Install]
+WantedBy=timers.target

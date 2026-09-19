@@ -30,6 +30,7 @@ class CurrentReleaseTests(unittest.TestCase):
         self.pid = b'123\n'
         self.health = b'{"ok":true}'
         self.served_page = self.page
+        self.compressed = b'{"verified":true}'
 
     def external(self, command, **_kwargs):
         if command[0] == 'systemctl':
@@ -40,6 +41,8 @@ class CurrentReleaseTests(unittest.TestCase):
             return self.health
         if command[0] == 'curl':
             return self.served_page
+        if command[0] == 'python3' and '--verify' in command:
+            return self.compressed
         self.fail('Unexpected external command')
 
     def inspect(self, release=None):
@@ -80,6 +83,12 @@ class CurrentReleaseTests(unittest.TestCase):
         self.health = b'not json'
         self.assertFalse(self.inspect()['matches'])
         self.health = b'[]'
+        self.assertFalse(self.inspect()['matches'])
+
+    def test_missing_or_corrupted_generated_gzip_requires_repair(self):
+        self.compressed = b'{"verified":false}'
+        self.assertFalse(self.inspect()['matches'])
+        self.compressed = b'not json'
         self.assertFalse(self.inspect()['matches'])
 
     def test_bad_or_missing_metadata_is_not_treated_as_an_empty_server(self):

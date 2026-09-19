@@ -50,7 +50,8 @@ if pid.isdigit() and int(pid)>0:
    health=subprocess.check_output(['curl','-fsS','--max-time','3','http://127.0.0.1:3100/api/health'],timeout=5)
    page=subprocess.check_output(['curl','-fsS','--max-time','10','--resolve','mandarin.aiducation.asia:443:127.0.0.1','https://mandarin.aiducation.asia/maanshan/'],timeout=12)
    status=json.loads(health)
-   healthy=isinstance(status,dict) and status.get('ok') is True and hashlib.sha256(page).hexdigest()==desired['files']['public/maanshan/index.html']
+   compressed=json.loads(subprocess.check_output(['python3',str(release/'deploy/performance-precompress.py'),'--public-root',str(release/'public'),'--verify','--summary'],timeout=30))
+   healthy=isinstance(status,dict) and status.get('ok') is True and hashlib.sha256(page).hexdigest()==desired['files']['public/maanshan/index.html'] and compressed.get('verified') is True
  except (subprocess.CalledProcessError,subprocess.TimeoutExpired,json.JSONDecodeError):
   healthy=False
 state['matches']=healthy
@@ -98,7 +99,7 @@ def main():
             current=json.loads(command(client,'python3 -',current_release_probe(commit,manifest)))
             if current.get('matches') is True:
                 print('Already current: '+commit[:10]+'. Release files and live service verified; no restart needed.')
-                print('Live: https://mandarin.aiducation.asia/maanshan/')
+                print('Guangzhou origin verified; public DNS routing is managed separately.')
                 print('Release:',current['release'])
                 return
         data={'release':release,'manifest':manifest,'commit':commit}
@@ -134,6 +135,8 @@ print('All release hashes verified.')
 """.replace('RELEASE',repr(release))
         print(command(client,'python3 -',verification),flush=True)
         build='set -e\ncd '+shlex.quote(release)+'\nnpm ci --no-audit --no-fund\nnpm run build:server\n'
+        build+='nice -n 10 python3 deploy/performance-precompress.py --public-root public --write --summary\n'
+        build+='python3 deploy/performance-precompress.py --public-root public --verify --summary\n'
         print(command(client,build),flush=True)
         activate="""set -e
 exec 9>/srv/maanshan/.deploy.lock
@@ -165,7 +168,7 @@ fi
 printf 'Deployment healthy. Previous release retained: %s\\n' "$previous"
 """.replace('RELEASE',shlex.quote(release))
         print(command(client,activate,timeout=150),flush=True)
-        print('Live: https://mandarin.aiducation.asia/maanshan/')
+        print('Guangzhou origin verified; public DNS routing is managed separately.')
         print('Release:',release)
     finally:client.close()
 

@@ -67,7 +67,7 @@ export const EXPLORATION_CONTENT = Object.freeze({
   },
   'gui-yuan-tian-ju': {
     object: '田地', motif: 'sprout', scene: '草盛豆苗稀',
-    assetVersion: '20260914-overgrown',
+    assetVersion: '20260920a', modelFile: 'model-20260920a.glb',
     initialView: [0, 1.05, 1],
     viewDistance: .72,
     alt: '田地裏細長的野草密密生長，只有幾株寬葉豆苗疏疏落落地夾在其中。',

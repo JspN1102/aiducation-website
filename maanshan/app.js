@@ -641,7 +641,7 @@ async function renderQuiz() {
     recognize:ink=>api('/api/handwriting',{ink},12000)});
 }
 async function renderExploration(){
-  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260919b'));
+  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260920a'));
   if(!module)return;
   const holder=$('#view');
   if(!holder||!poem)return;

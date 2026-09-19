@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily isolated Maanshan PostgreSQL recovery check
+
+[Timer]
+OnCalendar=*-*-* 04:45:00 Asia/Shanghai
+RandomizedDelaySec=600
+Persistent=true
+Unit=maanshan-health-restore.service
+
+[Install]
+WantedBy=timers.target

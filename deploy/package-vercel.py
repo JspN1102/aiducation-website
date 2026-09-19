@@ -35,6 +35,7 @@ def main():
     # Keep old assessment mountain/river models for existing browser records.
     unused = {'maanshan/media/shishi/model.glb', 'maanshan/media/shishi/guide-v2.glb',
               'maanshan/media/challenges/sound-pod-v1.glb',
+              'maanshan/media/exploration/gui-yuan-tian-ju/model.glb',
               'maanshan/media/exploration/yong-e/model.glb',
               'maanshan/media/exploration/zeng-wang-lun/model.glb'}
     paths = subprocess.check_output(['git', 'ls-files', '-z'], cwd=ROOT).decode().split('\0')

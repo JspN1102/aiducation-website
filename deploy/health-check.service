@@ -1,0 +1,30 @@
+[Unit]
+Description=Local Maanshan health and backup verification (no notifications)
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/bin/python3 /usr/local/lib/maanshan-maintenance/health-check.py
+StateDirectory=maanshan-health
+StateDirectoryMode=0700
+UMask=0077
+TimeoutStartSec=150
+Nice=15
+IOSchedulingClass=idle
+CPUQuota=25%
+MemoryMax=512M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/maanshan-health
+ReadOnlyPaths=/var/backups/maanshan /home/ubuntu/maanshan-backups /var/lib/maanshan-restore
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET
+LogRateLimitIntervalSec=1h
+LogRateLimitBurst=8
+StandardOutput=null
+StandardError=null

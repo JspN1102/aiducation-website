@@ -1,4 +1,4 @@
-import {EXPLORATION_CONTENT} from './exploration-data.mjs?v=20260919b';
+import {EXPLORATION_CONTENT} from './exploration-data.mjs?v=20260920a';
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ICONS = {

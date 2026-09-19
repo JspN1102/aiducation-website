@@ -3,7 +3,7 @@
   "scripts": {
     "build:server": "node server/build.cjs",
     "start": "node --env-file=.env server/index.cjs",
-    "test:server": "node server/build.cjs && node --test server/server.test.cjs server/handwriting.test.cjs server/tts-cache.test.cjs server/teacher-data.test.cjs server/student-store.test.cjs"
+    "test:server": "node server/build.cjs && node --test server/server.test.cjs server/handwriting.test.cjs server/tts-cache.test.cjs server/tts-hot-cache.test.cjs server/teacher-data.test.cjs server/student-store.test.cjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0",

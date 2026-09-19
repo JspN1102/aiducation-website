@@ -25,7 +25,7 @@ class MediaConfigTests(unittest.TestCase):
         manifest = json.loads(Path(__file__).with_name('media-manifest.json').read_text(encoding='utf-8'))
         original = copy.deepcopy(manifest)
         config = media_config.build_media_config(manifest)
-        self.assertEqual(len(config['redirects']), 12)
+        self.assertEqual(len(config['redirects']), 13)
         self.assertEqual(config['totalExcludedBytes'], sum(a['bytes'] for a in manifest['assets']))
         self.assertEqual({r['source'].lstrip('/') for r in config['redirects']}, set(config['excludedFiles']))
         self.assertTrue(all(r['statusCode'] == 307 for r in config['redirects']))
