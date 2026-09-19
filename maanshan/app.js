@@ -6,8 +6,8 @@ import {getSpeechAudioURL} from './speech-audio.mjs?v=20260919c';
 import {mountShishi} from './shishi.mjs?v=20260919a';
 import {mountPoemSwipe} from './poem-swipe.mjs?v=20260915a';
 import {mountLessonMap} from './lesson-map.mjs?v=20260919b';
-import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260919b';
-import {challengeSummary} from './challenge-state.mjs?v=20260919b';
+import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260919c';
+import {challengeSummary} from './challenge-state.mjs?v=20260919c';
 import {encodeRecording, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260918a';
 import {requestJSON} from './network.mjs?v=20260918a';
 
@@ -627,7 +627,7 @@ async function loadActivity(name,load) {
 }
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260919c'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260919d'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,

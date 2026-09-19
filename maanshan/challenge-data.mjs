@@ -186,7 +186,7 @@ export const POEM_GAME_ITEMS = Object.freeze(Object.fromEntries([
   ['ti-xi-lin-bi', 3, '山中小攝影師', '換個角度，拍下山的樣子。', '橫看成嶺，側看成峯。同一座山，從不同位置看，樣子也不同。'],
   ['bo-chuan-gua-zhou', 4, '春風與月光', '聽詩停泊、喚醒江岸，把月光送到小舟。', '王安石泊船瓜洲，春風使江岸草木變綠；月光下，他盼望回到鍾山的家。'],
   ['gui-yuan-tian-ju', 5, '豆苗小園丁', '照顧小豆苗，整理詩中的田地。', '草盛豆苗稀。野草茂盛，豆苗稀疏；詩人一早起來整理田地。'],
-  ['zao-chun', 6, '把春天找出來', '讓春雨落下，再找一找草色。', '草色遙看近卻無。遠看有一片淡綠，近看仍是稀疏小草和泥土。']
+  ['zao-chun', 6, '春雨接字', '左右移動小葉舟，接住符合拼音的漢字雨滴。', '「小」xiǎo 的聲母是 x，「酥」sū 是 s，「勝」shèng 是 sh。把三個字放回詩句，再讀一讀。']
 ].map(([slug, grade, title, prompt, explanation]) => [slug, Object.freeze({
   id: `g${grade}-play-20260918`, type: 'microgame', slug, title, prompt, explanation, difficulty: 1
 })])));

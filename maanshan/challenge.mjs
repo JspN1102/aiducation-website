@@ -1,5 +1,5 @@
-import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260919b';
-import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20260919b';
+import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260919c';
+import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20260919c';
 import {mountChallengeWriting} from './challenge-writing.mjs?v=20260919c';
 import {mountChallengeModel} from './challenge-model.mjs?v=20260918b';
 import {mountLivingField} from './living-field.mjs?v=20260914f';
@@ -63,7 +63,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const locked = !!answer;
     const active = () => !dead && epoch === gameEpoch && generation === renderGeneration;
     try {
-      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20260919c');
+      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20260919d');
       if (!active()) return;
       let completionReceived = false;
       const mounted = mountPoemGame(holder, {slug: poem.slug, initialState: state, readOnly: locked,
@@ -261,7 +261,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const entries=items.map((item,i)=>{
       const answer=attempt.answers[i], number=attempt.mode==='review'?attempt.sourceAttempt.itemIds.indexOf(item.id)+1:i+1;
       const focus=item.type==='dictation'?`聽寫「${item.target.char}」`:item.type==='sound'?`${poem.grade===1?'聲調':poem.grade===2||poem.grade===4?'韻母':'聲母'}・${item.focus}`:item.type==='microgame'?item.title:KIND[item.type];
-      const detail=item.type==='dictation'?item.target.pinyin:item.type==='sound'?`${item.audio.char} ${item.audio.pinyin}`:{'yong-e':'白毛・紅掌・綠水','zeng-wang-lun':'乘舟・踏歌・送別','ti-xi-lin-bi':'橫看成嶺，側看成峯','bo-chuan-gua-zhou':'江水・春意・思鄉','gui-yuan-tian-ju':'草盛豆苗稀','zao-chun':'草色遙看近卻無'}[poem.slug];
+      const detail=item.type==='dictation'?item.target.pinyin:item.type==='sound'?`${item.audio.char} ${item.audio.pinyin}`:{'yong-e':'白毛・紅掌・綠水','zeng-wang-lun':'乘舟・踏歌・送別','ti-xi-lin-bi':'橫看成嶺，側看成峯','bo-chuan-gua-zhou':'江水・春意・思鄉','gui-yuan-tian-ju':'草盛豆苗稀','zao-chun':'小 xiǎo・酥 sū・勝 shèng'}[poem.slug];
       return `<div class="challenge-result-row"><span class="challenge-result-number" aria-label="原第 ${number} 題">${number}</span><span class="challenge-result-knowledge">${esc(focus)}<small>${esc(detail)}</small></span><em class="${answer.correct?'is-correct':'needs-practice'}">${answer.correct?'答對':answer.status==='skipped'?'未作答':'答錯'}</em></div>`;
     }).join('');
     const allCorrect=result.correct===result.total, pending=attempt.reviewPending?.length || 0;
