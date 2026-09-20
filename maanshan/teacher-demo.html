@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><meta name="referrer" content="same-origin"><meta name="theme-color" content="#f4f6f2">
-<title>模擬教學觀察室 · 功能示範</title>
-<link rel="stylesheet" href="./teacher-dashboard.css?v=20260920-tools3">
-<script type="module" src="./teacher-dashboard.mjs?v=20260920-tools3"></script>
+<title>教師後台 · 模擬數據</title>
+<link rel="stylesheet" href="./teacher-dashboard.css?v=20260920-simple1">
+<script type="module" src="./teacher-dashboard.mjs?v=20260920-simple1"></script>
 </head>
 <body>
-<a class="skip-link" href="#teacher-main">跳至教學資料</a>
+<a class="skip-link" href="#teacher-main">跳至學生資料</a>
 <header class="teacher-header">
-<a class="teacher-brand" href="./teacher-demo.html" aria-label="教學觀察室首頁"><span class="brand-mark" aria-hidden="true">言</span><span><strong>模擬教學觀察室</strong><small>虛構資料 · 僅供測試</small></span></a>
-<div class="header-actions"><a class="text-link" href="./">學生平台 <span aria-hidden="true">↗</span></a><span id="teacher-identity" class="teacher-identity" hidden></span><button type="button" class="button quiet" id="teacher-logout" hidden>登出</button></div>
+<a class="teacher-brand" href="./teacher-demo.html" aria-label="教師後台首頁"><strong>教師後台</strong></a><span class="demo-tag">模擬數據</span>
+<div class="header-actions"><a class="text-link" href="./teacher.html">正式後台</a><a class="text-link" href="./">學生平台</a><span id="teacher-identity" class="teacher-identity" hidden></span><button type="button" class="button quiet" id="teacher-logout" hidden>登出</button></div>
 </header>
-<div id="teacher-root"><main id="teacher-main" class="initial-state" aria-busy="true"><span class="loader" aria-hidden="true"></span><h1>正在確認登入狀態</h1><p>請稍候。</p></main></div>
+<div id="teacher-root"><main id="teacher-main" class="initial-state" aria-busy="true"><span class="loader" aria-hidden="true"></span><h1>正在確認登入狀態</h1></main></div>
 <div id="teacher-notice" class="toast" role="status" hidden></div>
 <dialog id="student-dialog" class="student-dialog" aria-labelledby="student-dialog-title"><div id="student-dialog-content"></div></dialog>
 <noscript><p class="initial-state">請啟用 JavaScript，然後重新載入教師後台。</p></noscript>

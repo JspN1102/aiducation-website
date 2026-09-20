@@ -20,10 +20,12 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
   if(pending)return pending;
   const config=configuration(env),client=clientFactory();
   pending=new Promise((resolve,reject)=>{
-   let ready=false;
+   let ready=false,tcpConnected=false,handshakeComplete=false;
+   client.once('connect',()=>{tcpConnected=true;});
+   client.once('handshake',()=>{handshakeComplete=true;});
    const clear=()=>{if(connection===client){connection=null;pending=null;}};
    client.once('ready',()=>{ready=true;connection=client;resolve(client);});
-   client.on('error',error=>{clear();if(!ready){pending=null;const code=typeof error?.code==='string'&&/^[A-Z0-9_]+$/.test(error.code)?error.code:'SSH_CONNECT_ERROR';console.error('Guangzhou relay transport:',code,error?.level==='client-timeout'?'HANDSHAKE_TIMEOUT':'CONNECT_FAILED');reject(new Error('RELAY_CONNECT_FAILED'));}});
+   client.on('error',error=>{clear();if(!ready){pending=null;const code=typeof error?.code==='string'&&/^[A-Z0-9_]+$/.test(error.code)?error.code:'SSH_CONNECT_ERROR';console.error('Guangzhou relay transport:',code,error?.level==='client-timeout'?'HANDSHAKE_TIMEOUT':'CONNECT_FAILED',JSON.stringify({tcpConnected,handshakeComplete}));reject(new Error('RELAY_CONNECT_FAILED'));}});
    client.once('close',()=>{clear();if(!ready){pending=null;reject(new Error('RELAY_CONNECT_FAILED'));}});
    client.connect({host:config.host,port:22,username:config.username,privateKey:config.privateKey,hostHash:'sha256',hostVerifier:hash=>hash===config.hostHash,readyTimeout:8000,keepaliveInterval:15000,keepaliveCountMax:2,tryKeyboard:false});
   });

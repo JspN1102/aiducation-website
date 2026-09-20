@@ -13,7 +13,7 @@ API_FILES = {'soe.js', 'tts.js', 'maanshan-chat.js', 'maanshan-report.js',
              'maanshan-save.js', 'maanshan-data.js', 'handwriting.js',
              'school-auth.js', 'research-events.js', 'teacher-analytics.js', 'challenge-result.js', 'teacher-tools.js'}
 RELAY_FILE = 'api/_lib/guangzhou-relay.cjs'
-# One warm gateway shares the pinned SSH connection across all school APIs.
+# Keep one function per existing school endpoint (the Hobby limit is 12).
 # The 65-second Guangzhou report route is capped by Vercel's 60-second limit;
 # the relay enforces its own shorter upstream deadline before that limit.
 FUNCTION_SECONDS = {name: 60 for name in API_FILES}
@@ -31,7 +31,8 @@ def relay_entry(filename):
 def functions_config():
     if set(FUNCTION_SECONDS) != API_FILES or len(API_FILES) != 12:
         raise RuntimeError('School relay endpoints and duration limits disagree.')
-    return {'api/[schoolRoute].js': {'maxDuration': 60}}
+    return {'api/' + name: {'maxDuration': FUNCTION_SECONDS[name]}
+            for name in sorted(API_FILES)}
 
 
 def main():
@@ -68,7 +69,7 @@ def main():
         public = relative.startswith('maanshan/') or relative == 'favicon.png'
         # All stateful/auth/research/provider work stays on Guangzhou. None of
         # the old Blob, database or AI modules belongs in a public function.
-        runtime = relative == RELAY_FILE
+        runtime = relative == RELAY_FILE or relative in {'api/' + name for name in API_FILES}
         if not (public or runtime or relative in {'package.json', 'package-lock.json'}):
             continue
         source = ROOT / relative
@@ -85,11 +86,7 @@ def main():
             shutil.copyfile(source, target)
         copied.append({'path': relative, 'bytes': target.stat().st_size,
                        'sha256': hashlib.sha256(target.read_bytes()).hexdigest()})
-    gateway=destination/'api/[schoolRoute].js'
-    gateway.parent.mkdir(parents=True,exist_ok=True)
-    gateway.write_text("'use strict';\nmodule.exports=require('./_lib/guangzhou-relay.cjs').gateway;\n",encoding='utf-8')
-    copied.append({'path':'api/[schoolRoute].js','bytes':gateway.stat().st_size,'sha256':hashlib.sha256(gateway.read_bytes()).hexdigest()})
-    expected_runtime = {RELAY_FILE, 'api/[schoolRoute].js'}
+    expected_runtime = {RELAY_FILE} | {'api/' + name for name in API_FILES}
     packaged_runtime = {row['path'] for row in copied if row['path'].startswith('api/')}
     if packaged_runtime != expected_runtime:
         raise RuntimeError('The school relay runtime is incomplete; commit all reviewed relay files.')
@@ -100,7 +97,7 @@ def main():
             raise RuntimeError('A current animation has no verified COS mapping.')
     config = {
         'trailingSlash': True,
-        'regions': ['hkg1'],
+        'regions': ['hnd1'],
         'functions': functions_config(),
         'redirects': [{'source': '/', 'destination': '/maanshan/', 'statusCode': 307},
                       {'source': '/favicon.ico', 'destination': '/favicon.png', 'statusCode': 307},
@@ -128,7 +125,7 @@ def main():
                'fileCount': len(copied), 'uploadBytes': sum(row['bytes'] for row in copied),
                'omittedBytes': sum(row['bytes'] for row in skipped),
                'companyProjectUnchanged': True,
-               'apiRuntime': 'guangzhou-ssh-relay', 'apiFunctions': 1}
+               'apiRuntime': 'guangzhou-ssh-relay', 'apiFunctions': len(API_FILES)}
     destination.with_suffix('.manifest.json').write_text(json.dumps(summary, indent=2), encoding='utf-8')
     print(json.dumps({key: summary[key] for key in summary if key not in ['files', 'excluded']}))
 
