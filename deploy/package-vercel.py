@@ -31,7 +31,7 @@ def relay_entry(filename):
 def functions_config():
     if set(FUNCTION_SECONDS) != API_FILES or len(API_FILES) != 12:
         raise RuntimeError('School relay endpoints and duration limits disagree.')
-    return {'api/school-gateway.js': {'maxDuration': 60}}
+    return {'api/[schoolRoute].js': {'maxDuration': 60}}
 
 
 def main():
@@ -85,11 +85,11 @@ def main():
             shutil.copyfile(source, target)
         copied.append({'path': relative, 'bytes': target.stat().st_size,
                        'sha256': hashlib.sha256(target.read_bytes()).hexdigest()})
-    gateway=destination/'api/school-gateway.js'
+    gateway=destination/'api/[schoolRoute].js'
     gateway.parent.mkdir(parents=True,exist_ok=True)
     gateway.write_text("'use strict';\nmodule.exports=require('./_lib/guangzhou-relay.cjs').gateway;\n",encoding='utf-8')
-    copied.append({'path':'api/school-gateway.js','bytes':gateway.stat().st_size,'sha256':hashlib.sha256(gateway.read_bytes()).hexdigest()})
-    expected_runtime = {RELAY_FILE, 'api/school-gateway.js'}
+    copied.append({'path':'api/[schoolRoute].js','bytes':gateway.stat().st_size,'sha256':hashlib.sha256(gateway.read_bytes()).hexdigest()})
+    expected_runtime = {RELAY_FILE, 'api/[schoolRoute].js'}
     packaged_runtime = {row['path'] for row in copied if row['path'].startswith('api/')}
     if packaged_runtime != expected_runtime:
         raise RuntimeError('The school relay runtime is incomplete; commit all reviewed relay files.')
@@ -102,7 +102,6 @@ def main():
         'trailingSlash': True,
         'regions': ['hkg1'],
         'functions': functions_config(),
-        'rewrites': [{'source':'/api/'+Path(name).stem+'/:rest*','destination':'/api/school-gateway?__school_route='+Path(name).stem} for name in sorted(API_FILES)],
         'redirects': [{'source': '/', 'destination': '/maanshan/', 'statusCode': 307},
                       {'source': '/favicon.ico', 'destination': '/favicon.png', 'statusCode': 307},
                       *media_config['redirects']],

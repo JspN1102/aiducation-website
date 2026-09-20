@@ -100,12 +100,13 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
 let singleton;
 const relay=(name,req,res)=>(singleton||(singleton=createRelay())).relay(name,req,res);
 function createGateway(forward=relay){return function gateway(req,res){
- const name=req.query?.__school_route;
+ const url=new URL(req.url,'https://mandarin.aiducation.asia');
+ const name=/^\/api\/([a-z-]+)\/?$/.exec(url.pathname)?.[1];
  if(typeof name!=='string'||!Object.hasOwn(LIMITS,name)){
   res.statusCode=404;res.setHeader('Cache-Control','private, no-store');res.setHeader('Content-Type','application/json');return res.end('{"ok":false,"code":"NOT_FOUND"}');
  }
- const search=new URL(req.url,'https://mandarin.aiducation.asia').searchParams;
- search.delete('__school_route');
+ const search=url.searchParams;
+ search.delete('schoolRoute');
  req.url='/api/'+name+(search.size?'?'+search.toString():'');
  return forward(name,req,res);
 };}
