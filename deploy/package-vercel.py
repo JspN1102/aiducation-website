@@ -100,7 +100,7 @@ def main():
             raise RuntimeError('A current animation has no verified COS mapping.')
     config = {
         'trailingSlash': True,
-        'regions': ['hnd1'],
+        'regions': ['iad1'],
         'functions': functions_config(),
         'rewrites': [{'source':'/api/'+Path(name).stem+'/', 'destination':'/api/school-gateway/?__school_route='+Path(name).stem} for name in sorted(API_FILES)],
         'redirects': [{'source': '/', 'destination': '/maanshan/', 'statusCode': 307},
