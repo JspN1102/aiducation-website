@@ -15,11 +15,12 @@ function configuration(env){
 }
 function createRelay({env=process.env,clientFactory=()=>new Client(),request=http.request,now=Date.now,timeoutMs=55000}={}){
  let pending=null,connection=null,lastUsed=0,active=0;
- async function tunnel(){
+ async function tunnel(alternate=false){
   if(connection&&now()-lastUsed>20000&&active<=1){connection.end();connection=null;pending=null;}
   lastUsed=now();
   if(pending)return pending;
   const config=configuration(env),client=clientFactory();
+  const port=alternate?(config.port===2222?22:2222):config.port;
   pending=new Promise((resolve,reject)=>{
    let ready=false,tcpConnected=false,handshakeComplete=false;
    client.once('connect',()=>{tcpConnected=true;});
@@ -28,7 +29,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
    client.once('ready',()=>{ready=true;connection=client;resolve(client);});
    client.on('error',error=>{clear();if(!ready){pending=null;const code=typeof error?.code==='string'&&/^[A-Z0-9_]+$/.test(error.code)?error.code:'SSH_CONNECT_ERROR';console.error('Guangzhou relay transport:',code,error?.level==='client-timeout'?'HANDSHAKE_TIMEOUT':'CONNECT_FAILED',JSON.stringify({tcpConnected,handshakeComplete}));reject(new Error('RELAY_CONNECT_FAILED'));}});
    client.once('close',()=>{clear();if(!ready){pending=null;reject(new Error('RELAY_CONNECT_FAILED'));}});
-   client.connect({host:config.host,port:config.port,username:config.username,privateKey:config.privateKey,hostHash:'sha256',hostVerifier:hash=>hash===config.hostHash,readyTimeout:8000,keepaliveInterval:15000,keepaliveCountMax:2,tryKeyboard:false});
+   client.connect({host:config.host,port,username:config.username,privateKey:config.privateKey,hostHash:'sha256',hostVerifier:hash=>hash===config.hostHash,readyTimeout:4500,keepaliveInterval:15000,keepaliveCountMax:2,tryKeyboard:false});
   });
   try{return await pending;}catch(error){pending=null;client.destroy();throw error;}
  }
@@ -59,7 +60,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
     try{
      // A second handshake is safe before any request reaches the origin.
      // Never retry once a channel/request has been opened.
-     let client;try{client=await tunnel();}catch{if(done||res.destroyed){finish();return;}client=await tunnel();}
+     let client;try{client=await tunnel();}catch{if(done||res.destroyed){finish();return;}client=await tunnel(true);}
      if(done||res.destroyed){finish();return;}
      const headers={host:'mandarin.aiducation.asia','accept-encoding':'identity','x-forwarded-proto':'https',connection:'close'};
      for(const key of ['origin','cookie','content-type','x-csrf-token','sec-fetch-site','accept','user-agent','if-none-match','range'])if(typeof req.headers?.[key]==='string')headers[key]=req.headers[key];

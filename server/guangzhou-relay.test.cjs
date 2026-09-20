@@ -7,7 +7,7 @@ const listen=server=>new Promise(resolve=>server.listen(0,'127.0.0.1',()=>resolv
 async function fixture(fn,options={}){
  const origin=http.createServer(fn),originPort=await listen(origin),clients=[],requests=[];
  class SSH extends EventEmitter{
-  connect(config){this.config=config;queueMicrotask(()=>config.hostVerifier(options.hostHash||'a'.repeat(64))?this.emit('ready'):this.emit('error',new Error('synthetic key mismatch')));return this;}
+  connect(config){this.config=config;queueMicrotask(()=>{if(options.failFirstHandshake&&clients.length===1)return this.emit('error',new Error('synthetic transport timeout'));config.hostVerifier(options.hostHash||'a'.repeat(64))?this.emit('ready'):this.emit('error',new Error('synthetic key mismatch'));});return this;}
   forwardOut(from,port,to,target,cb){requests.push({from,port,to,target});const socket=net.connect(originPort,'127.0.0.1');socket.once('connect',()=>cb(null,socket));socket.once('error',cb);}
   end(){this.emit('close');}destroy(){this.end();}
  }
@@ -63,6 +63,11 @@ test('disconnects do not retry a POST and timeout returns an honest bounded fail
  try{const r=await broken.call('/api/school-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"action":"login"}'});assert.equal(r.status,502);assert.equal(calls,1);}finally{await broken.close();}
  const stalled=await fixture(()=>{},{timeoutMs:70});
  try{const r=await stalled.call();assert.equal(r.status,504);assert.equal((await r.json()).code,'ORIGIN_TIMEOUT');}finally{await stalled.close();}
+});
+
+test('transport failure can switch between the two restricted ports before forwarding a POST once',async()=>{
+ let calls=0;const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{failFirstHandshake:true});
+ try{const r=await f.call('/api/school-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"action":"login"}'});assert.equal(r.status,200);assert.equal(calls,1);assert.deepEqual(f.clients.map(c=>c.config.port),[22,2222]);assert.equal(f.requests.length,1);}finally{await f.close();}
 });
 test('oversized upstream data is never delivered as a truncated Office download',async()=>{
  const f=await fixture((req,res)=>res.end(Buffer.alloc(5*1024*1024)),{name:'teacher-tools'});
