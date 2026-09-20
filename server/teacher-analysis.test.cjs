@@ -260,7 +260,7 @@ test('v15 retains exactly one paired cohort and whole-class follow-up totals',as
  input.filters={...input.filters,grade:6,poemId:6};
  input.students=[[45,90,40],[45,80,90],[90,40,90],[null,40,90]].map(([reading,writing,sound])=>({rosterMatched:true,stats:{nEvents:3,latest:{byConstruct:{'reading.pronunciation':{serverVerified:metric(reading)},'writing.dictation':{serverVerified:metric(writing)},'sound.recognition':{serverVerified:metric(sound)}}}}}));
  const payload=analysis.aggregateEvidence(input);
- assert.equal(analysis.PROMPT_VERSION,'teacher-analysis-v15-clear-references');
+ assert.equal(analysis.PROMPT_VERSION,'teacher-analysis-v16-prevalence-safe');
  assert.equal(payload.evidence.filter(f=>f.label.endsWith('：同一批學生觀察')).length,3,'keep every paired fact in the stored audit evidence');
  assert.equal(payload.teachingGroups.length,1);assert.deepEqual(payload.teachingGroups[0].domains,['朗讀字音評分','辨音答題準確度']);
  await analysis.requestAnalysis(payload,analysis.modelConfig(env),{fetchImpl:async(_url,options)=>{
@@ -283,7 +283,7 @@ test('the actual defensive sentence triggers a private single revision that dele
  }});
  const pending=await svc.generate({},dataset().filters,teacher);assert.equal(pending.report,undefined);assert.equal(pending.nextAction,'continue');
  await assert.rejects(svc.getReport(pending.reportId),e=>e.code==='REPORT_NOT_READY');
- const done=await svc.continueReport(pending.reportId,teacher);assert.equal(done.report.qualityReview.revisions,1);assert.equal(done.report.promptVersion,'teacher-analysis-v15-clear-references');
+ const done=await svc.continueReport(pending.reportId,teacher);assert.equal(done.report.qualityReview.revisions,1);assert.equal(done.report.promptVersion,'teacher-analysis-v16-prevalence-safe');
  assert.doesNotMatch(done.report.analysis.findings[0].interpretation,/參考|推論|不能|局限/);
  assert.equal((await svc.generate({},dataset().filters,teacher)).cached,true);assert.equal(calls,2);
 });
