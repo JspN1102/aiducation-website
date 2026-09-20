@@ -1,10 +1,11 @@
 // Local browser/device compatibility checks; no student accounts or API writes.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
+const os = require('node:os'), {randomUUID} = require('node:crypto');
 const assert = require('node:assert/strict');
 const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const root = path.resolve(__dirname, '..');
 const evidence = process.env.CAMERA_EVIDENCE_DIR;
-const mime = {'.mjs':'text/javascript','.css':'text/css','.js':'text/javascript','.webp':'image/webp','.svg':'image/svg+xml','.glb':'model/gltf-binary','.woff2':'font/woff2'};
+const mime = {'.mjs':'text/javascript','.css':'text/css','.js':'text/javascript','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.svg':'image/svg+xml','.glb':'model/gltf-binary','.woff2':'font/woff2'};
 const fixture = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/maanshan/app.bundle.css"><style>body{overflow:auto}#holder{max-width:1148px;margin:16px auto}.explore-stage{height:400px!important;min-height:200px!important}.explore-canvas canvas{width:100%;height:100%}</style><main class="workspace view-explore"><div id="view"><div id="holder"></div></div></main>';
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
@@ -14,9 +15,16 @@ const server = http.createServer((req, res) => {
   fs.readFile(file, (error, bytes) => {if (error) {res.writeHead(404).end();return;}res.setHeader('Content-Type',mime[path.extname(file)]);res.end(bytes);});
 });
 let browser;
+const cameraFixture = path.join(os.tmpdir(), 'maanshan-camera-' + randomUUID() + '.y4m');
 (async () => {
   await new Promise(resolve => server.listen(0,'127.0.0.1',resolve));
-  browser = await chromium.launch({channel:'msedge',headless:true,args:['--enable-unsafe-swiftshader','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});
+  // Edge's generated fake_device_0 can terminate before its first frame on
+  // Windows, even on an otherwise empty <video> page. A looped Y4M fixture
+  // exercises real getUserMedia/play/track cleanup without that generator.
+  const width=320,height=240,frames=[Buffer.from(`YUV4MPEG2 W${width} H${height} F30:1 Ip A0:0 C420jpeg\n`)];
+  for(let n=0;n<30;n++)frames.push(Buffer.from('FRAME\n'),Buffer.alloc(width*height,90+n),Buffer.alloc(width*height/4,120),Buffer.alloc(width*height/4,150));
+  fs.writeFileSync(cameraFixture,Buffer.concat(frames));
+  browser = await chromium.launch({channel:'msedge',headless:true,args:['--enable-unsafe-swiftshader','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream','--use-file-for-fake-video-capture='+cameraFixture]});
   const results = [], errors = [];
   const context = await browser.newContext({viewport:{width:1180,height:820},deviceScaleFactor:2,hasTouch:true});
   const page = await context.newPage();page.on('pageerror',error => errors.push(error.message));
@@ -62,4 +70,4 @@ let browser;
   assert.deepEqual(errors,[]);
   const result={passed:true,results,errors};if(evidence)fs.writeFileSync(path.join(evidence,'results.json'),JSON.stringify(result,null,2));
   console.log(JSON.stringify(result,null,2));
-})().catch(error=>{console.error(error);process.exitCode=1;}).finally(async()=>{await browser?.close();server.close();});
+})().catch(error=>{console.error(error);process.exitCode=1;}).finally(async()=>{await browser?.close();server.close();if(fs.existsSync(cameraFixture))fs.unlinkSync(cameraFixture);});
