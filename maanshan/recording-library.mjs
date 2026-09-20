@@ -28,18 +28,19 @@ export function createRecordingQueue(indexedDB=globalThis.indexedDB) {
     return new Promise((resolve,reject)=>{
       const tx=db.transaction('pending',mode),store=tx.objectStore('pending');let result;
       tx.oncomplete=()=>resolve(result);tx.onerror=tx.onabort=()=>reject(tx.error||new Error('Recording queue unavailable'));
-      work(store,value=>{result=value;});
+      const fail=error=>{try{tx.abort();}catch{}reject(error);};
+      try{work(store,value=>{result=value;},fail);}catch(error){fail(error);}
     });
   }
   return {
     list(scope){return transact('readonly',(store,done)=>{const request=store.index('scope').getAll(scope);request.onsuccess=()=>done(request.result);});},
-    put(scope,item){return transact('readwrite',(store,done)=>{
+    put(scope,item){return transact('readwrite',(store,done,fail)=>{
       const key=`${scope}:${slot(item)}`,request=store.get(key);
-      request.onsuccess=()=>{if(newer(item,request.result?.item)){store.put({key,scope,item});done(true);}else done(false);};
+      request.onsuccess=()=>{try{if(newer(item,request.result?.item)){store.put({key,scope,item});done(true);}else done(false);}catch(error){fail(error);}};
     });},
-    remove(scope,item){return transact('readwrite',store=>{
+    remove(scope,item){return transact('readwrite',(store,_done,fail)=>{
       const key=`${scope}:${slot(item)}`,request=store.get(key);
-      request.onsuccess=()=>{if(request.result?.item?.recordingId===item.recordingId)store.delete(key);};
+      request.onsuccess=()=>{try{if(request.result?.item?.recordingId===item.recordingId)store.delete(key);}catch(error){fail(error);}};
     });}
   };
 }
@@ -47,12 +48,13 @@ export function createRecordingLibrary({enabled,actorId,learningEpoch,fetch:requ
   onChange=()=>{},onEpochChanged=()=>{},onStorageError=()=>{},preparePayload=async value=>value,
   storage=createRecordingQueue(),online=()=>globalThis.navigator?.onLine!==false,
   timers=globalThis}={}) {
-  const records=new Map(),pending=new Map(),controllers=new Set(),loadedPoems=new Map();
+  const records=new Map(),pending=new Map(),held=new Map(),volatile=new Map(),controllers=new Set(),loadedPoems=new Map();
   const scope=`${actorId||'demo'}:${learningEpoch||'student'}`;
-  let stopped=false,flushing=null,retryTimer=null,retryCount=0,hydrating=null;
+  let stopped=false,flushing=null,retryTimer=null,retryCount=0,hydrating=null,syncing=false;
   const active=()=>!stopped&&canUse();
   const identity={actorId,...(learningEpoch?{learningEpoch}:{})};
-  const notify=()=>{if(active())onChange();};
+  const status=()=>({pending:pending.size,held:held.size,volatile:volatile.size,syncing});
+  const notify=()=>{if(active())onChange(status());};
   function remember(item,blob) {
     const key=slot(item),previous=records.get(key);
     if(!previous||newer(item,previous)||item.recordingId===previous.recordingId){records.set(key,{...item,blob:blob||previous?.recordingId===item.recordingId&&previous.blob||null});return true;}
@@ -75,13 +77,21 @@ export function createRecordingLibrary({enabled,actorId,learningEpoch,fetch:requ
     retryTimer=timers.setTimeout(()=>{retryTimer=null;void flush();},[1500,5000,15000,60000][Math.min(retryCount++,3)]);
     retryTimer?.unref?.();
   }
-  async function flush() {
+  async function flush({force=false}={}) {
     if(!enabled||!active()||!online())return;
     if(flushing)return flushing;
+    if(force){for(const [key,item]of held){if(newer(item,pending.get(key)))pending.set(key,item);}held.clear();}
+    if(!pending.size)return;
+    syncing=true;notify();
     flushing=(async()=>{
       while(active()&&pending.size&&online()) {
         const item=pending.values().next().value;
         try {
+          // A failed IndexedDB write must remain visible until the server has
+          // acknowledged it, or a later retry really saves a local fallback.
+          if(volatile.get(slot(item))===item.recordingId){
+            try{await storage.put(scope,item);if(volatile.get(slot(item))===item.recordingId)volatile.delete(slot(item));notify();}catch{}
+          }
           const payload=await preparePayload({...identity,...item});
           if(!active())return;
           const {response,data}=await call('/api/school-recordings/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
@@ -92,17 +102,19 @@ export function createRecordingLibrary({enabled,actorId,learningEpoch,fetch:requ
             if([400,401,403,409,413,422].includes(response.status)){
               // Keep the private local copy: a rejected upload is not an
               // acknowledgement. A later fresh session can retry it once.
-              if(pending.get(slot(item))?.recordingId===item.recordingId)pending.delete(slot(item));
+              if(pending.get(slot(item))?.recordingId===item.recordingId){pending.delete(slot(item));held.set(slot(item),item);notify();}
               continue;
             }
             throw new Error('Recording upload unavailable');
           }
           await storage.remove(scope,item).catch(()=>{});
           if(pending.get(slot(item))?.recordingId===item.recordingId)pending.delete(slot(item));
+          if(held.get(slot(item))?.recordingId===item.recordingId)held.delete(slot(item));
+          if(volatile.get(slot(item))===item.recordingId)volatile.delete(slot(item));
           remember(data.recording);retryCount=0;notify();
         }catch {retry();return;}
       }
-    })().finally(()=>{flushing=null;});
+    })().finally(()=>{flushing=null;syncing=false;notify();});
     return flushing;
   }
   async function save({poemId,lineIndex,recordingId,recordedAt,audio,blob}) {
@@ -110,10 +122,10 @@ export function createRecordingLibrary({enabled,actorId,learningEpoch,fetch:requ
     const item={poemId,lineIndex,recordingId,recordedAt,audio};
     if(!valid(item)||typeof audio!=='string'||audio.length>MAX_AUDIO)return;
     if(!remember(item,blob))return;
+    if(!enabled){notify();return;}
+    const key=slot(item);pending.set(key,item);held.delete(key);volatile.set(key,item.recordingId);notify();
+    try {await storage.put(scope,item);if(volatile.get(key)===item.recordingId)volatile.delete(key);}catch {if(active())onStorageError();}
     notify();
-    if(!enabled)return;
-    pending.set(slot(item),item);
-    try {await storage.put(scope,item);}catch {if(active())onStorageError();}
     if(active())void flush();
   }
   async function hydrate({remote=true,poemId}={}) {
@@ -128,7 +140,8 @@ export function createRecordingLibrary({enabled,actorId,learningEpoch,fetch:requ
           const item=row.scope===scope&&row.item;
           if(valid(item)&&typeof item.audio==='string'&&item.audio.length<=MAX_AUDIO){
             const current=pending.get(slot(item));
-            if(newer(item,current))pending.set(slot(item),item);
+            if(newer(item,current)){pending.set(slot(item),item);held.delete(slot(item));}
+            if(volatile.get(slot(item))===item.recordingId)volatile.delete(slot(item));
             if(newer(item,records.get(slot(item))))remember(item,wavBlob(item.audio));
           }
         }
@@ -154,6 +167,7 @@ export function createRecordingLibrary({enabled,actorId,learningEpoch,fetch:requ
     if(item.blob)return item.blob;
     return '/api/school-recordings/?'+new URLSearchParams({action:'audio',...identity,poemId:item.poemId,lineIndex:item.lineIndex,recordingId:item.recordingId});
   }
-  function stop(){if(stopped)return;stopped=true;timers.clearTimeout(retryTimer);controllers.forEach(c=>c.abort());controllers.clear();records.clear();pending.clear();}
-  return {save,hydrate,flush,source,stop,has:key=>active()&&records.has(key),pendingCount:()=>pending.size};
+  function stop(){if(stopped)return;stopped=true;timers.clearTimeout(retryTimer);controllers.forEach(c=>c.abort());controllers.clear();records.clear();pending.clear();held.clear();volatile.clear();}
+  return {save,hydrate,flush,source,stop,has:key=>active()&&records.has(key),pendingCount:()=>pending.size+held.size,
+    status};
 }

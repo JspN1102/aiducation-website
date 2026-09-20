@@ -238,3 +238,27 @@ test('one grouping pair is followed across findings and advice without treating 
  assert(codes(wrong,p).includes('REPORT_MULTIPLE_GROUPING_PAIRS'));
  assert(!codes({findings:[{interpretation:'朗讀與默寫都先由教師示範，學生再練習。'}]},p).includes('REPORT_MULTIPLE_GROUPING_PAIRS'),'ordinary mentions of two activities do not describe a paired cohort');
 });
+
+test('actual first-and-third-line teaching cannot be ambiguously renamed the first two poem lines',()=>{
+ const focus={readingLines:[{lineNumber:1,text:'天街小雨潤如酥'},{lineNumber:3,text:'最是一年春好處'}]};
+ const p={reportStyle:'narrative-teaching-review',teachingFocus:[focus]};
+ const actual='課堂可先全班跟讀「天街小雨潤如酥」和「最是一年春好處」，教師示範後，學生齊讀。其餘低於80的「看、勝、皇」則在第二、四句跟讀時一併處理，但先集中練好前兩句，讓學生有足夠次數熟習。';
+ const issue=inspectAnalysis({findings:[{interpretation:actual}]},p).find(item=>item.code==='REPORT_AMBIGUOUS_LINE_REFERENCE');
+ assert(issue);assert.match(issue.message,/1、3/);assert.match(issue.message,/定點改為「上述兩句」/);
+ for(const replacement of ['上述兩句','第一、第三句'])assert(!codes({findings:[{interpretation:actual.replace('前兩句',replacement)}]},p).includes('REPORT_AMBIGUOUS_LINE_REFERENCE'));
+ const firstTwo={...p,teachingFocus:[{readingLines:[{lineNumber:1,text:'天街小雨潤如酥'},{lineNumber:2,text:'草色遙看近卻無'}]}]};
+ assert(!codes({findings:[{interpretation:'跟讀「天街小雨潤如酥」和「草色遙看近卻無」，先集中練好前兩句。'}]},firstTwo).includes('REPORT_AMBIGUOUS_LINE_REFERENCE'));
+});
+
+test('actual measured-student counts stay distinct from activity completion and future assignments',()=>{
+ const p={reportStyle:'narrative-teaching-review',evidence:[
+  {id:'F001',source:'平台評分',label:'朗讀字音評分：有評分的名冊學生',value:20},
+  {id:'F002',source:'平台評分',label:'默寫辨識準確度：有評分的名冊學生',value:21},
+  {id:'F003',source:'平台評分',label:'辨音答題準確度：有評分的名冊學生',value:22},
+  {id:'F004',source:'structured_records',label:'有活動完成紀錄的名冊學生',value:22}
+ ]};
+ for(const text of ['朗讀字音評分有20人完成。','默寫辨識有21人完成。','辨音答題有22人完成。','同時，已完成的20名學生可進行延續練習。'])
+  assert(codes({findings:[{evidenceIds:['F001','F002','F003'],interpretation:text}]},p).includes('REPORT_MEASUREMENT_CALLED_COMPLETION'),text);
+ for(const text of ['朗讀已有20人留下評分，接著安排原句跟讀。','默寫已有21人留下評分。','有活動完成紀錄的22人可延續練習。','22人完成，另安排原句朗讀。','下一課請這20人完成朗讀練習。','已留下朗讀評分的20名學生可互相聽讀。'])
+  assert(!codes({findings:[{evidenceIds:['F001','F002','F003','F004'],interpretation:text}]},p).includes('REPORT_MEASUREMENT_CALLED_COMPLETION'),text);
+});

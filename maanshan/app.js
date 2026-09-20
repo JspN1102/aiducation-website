@@ -1,24 +1,24 @@
 import {imageAsset} from './media-images.mjs?v=20260920-art2';
-import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260921-school4';
-import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260921-school4';
+import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260921-school5';
+import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260921-school5';
 import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
 import {getWordAudioURL} from './word-audio.mjs?v=20260921natural1';
 import {getSpeechAudioURL} from './speech-audio.mjs?v=20260921natural1';
-import {mountShishi} from './shishi.mjs?v=20260921-school4';
-import {mountLibraryShishi} from './library-shishi.mjs?v=20260921-school4';
-import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school4';
-import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school4';
+import {mountShishi} from './shishi.mjs?v=20260921-school5';
+import {mountLibraryShishi} from './library-shishi.mjs?v=20260921-school5';
+import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school5';
+import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school5';
 import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
-import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school4';
+import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school5';
 import {challengeSummary} from './challenge-state.mjs?v=20260919d';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260920-school1';
-import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260921-school4';
-import {createRecordingLibrary} from './recording-library.mjs?v=20260921-school4';
-import {requestJSON, requestChat} from './network.mjs?v=20260921-school4';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260921-school4';
-import {schoolSession} from './bootstrap.mjs?v=20260921-school4';
-import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school4';
-import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school4';
+import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260921-school5';
+import {createRecordingLibrary} from './recording-library.mjs?v=20260921-school5';
+import {requestJSON, requestChat} from './network.mjs?v=20260921-school5';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260921-school5';
+import {schoolSession} from './bootstrap.mjs?v=20260921-school5';
+import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school5';
+import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school5';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -50,7 +50,7 @@ if(isTeacher){
 let saved = readStorage(STORE, {});
 if (!saved || Array.isArray(saved) || typeof saved !== 'object') saved={};
 let profile=school.enabled ? {id:school.user.id,name:school.user.displayName,grade:school.user.grade,cls:school.user.cls} : readStorage(PROFILE,null);
-let researchState=null,answerState=null;
+let researchState=null,answerState=null,recordingState={pending:0,held:0,volatile:0,syncing:false};
 function recordSyncStatus(kind,status,state){
   if(kind==='events')researchState=state;else answerState=state;
   if(status==='session_changed')invalidateSchoolSession();
@@ -87,7 +87,9 @@ const requests=new Set();
 const recordings=createRecordingLibrary({enabled:school.enabled,actorId:school.user?.id,learningEpoch,fetch:schoolFetch,
   canUse:()=>!sessionLocked&&(!school.enabled||schoolState().user?.id===school.user.id),preparePayload:prepareAssessmentPayload,
   onEpochChanged:()=>reloadTeacherLearning(),onStorageError:()=>toast('錄音正在同步，請稍後再關閉本頁。'),
-  onChange:()=>{
+  onChange:status=>{
+    recordingState=status;
+    renderRecordSyncStatus();
     if(!poem)return;
     document.querySelectorAll('#view [data-action="replay"]').forEach(button=>{if(recordings.has(poem.id+'-'+Number(button.dataset.value))){button.disabled=false;button.removeAttribute('title');}});
   }});
@@ -746,7 +748,7 @@ async function loadActivity(name,load) {
 }
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260921-school4'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260921-school5'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
@@ -758,7 +760,7 @@ async function renderQuiz() {
     recognize:(ink,context)=>api('/api/handwriting',{ink,poemId:poem.id,...(collectResearch?{researchContext:research.context(context)}:{})},16000)});
 }
 async function renderExploration(){
-  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260921-school4'));
+  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260921-school5'));
   if(!module)return;
   const holder=$('#view');
   if(!holder||!poem)return;
@@ -925,15 +927,24 @@ function renderProfileResult(slug){
   $('#profile-results').innerHTML=`<h3>${esc(titleOf(p))}</h3><div class="profile-progress"><div><span>AI讀古詩</span><strong>${reading} / ${p.lines.length}<small>句</small></strong><p>${assessment?'朗讀得分 '+assessment.total_score:'還未開始朗讀'}</p></div><div><span>練習小遊戲</span><strong>${practice.answered} / ${practice.total}<small>題</small></strong><p>${practice.completed?(reviewing?'原輪答對 ':'本輪答對 ')+practice.correct+' 題':practice.answered?'這一輪還未完成':'還未開始練習'}</p></div></div>${reviewing?`<p class="profile-review-note">錯題複習：${current.answered} / ${current.total} 題${pending?'，另有 '+pending+' 題待複習':''}。</p>`:''}<div class="profile-result-links"><a class="button primary" data-profile-route href="${link(reading===p.lines.length?'report':'record',p)}">${reading===p.lines.length?'看朗讀成果':reading?'繼續朗讀':'開始朗讀'}</a><a class="button" data-profile-route href="${link('quiz',p)}">${reviewing?current.completed?'看複習成果':'繼續錯題複習':practice.completed?'看練習成果':practice.answered?'繼續練習':'開始練習'}</a></div>`;
 }
 function renderRecordSyncStatus(){
+  let recordingWarning=$('#recording-save-warning');
+  if(recordingState.volatile&&['record','report'].includes(view)&&!recordingWarning){
+    recordingWarning=document.createElement('p');recordingWarning.id='recording-save-warning';recordingWarning.className='record-status';recordingWarning.setAttribute('role','status');
+    const message=document.createElement('span');message.textContent='錄音尚未保存，請保留本頁';
+    const retry=document.createElement('button');retry.type='button';retry.className='text-button';retry.textContent='再試同步';retry.onclick=()=>void recordings.flush({force:true});
+    recordingWarning.append(message,retry);$('#view')?.append(recordingWarning);
+  }
+  if(recordingWarning){recordingWarning.hidden=!recordingState.volatile;recordingWarning.querySelector('button').disabled=recordingState.syncing;}
   const target=$('#school-record-sync');if(!target)return;
   const states=[researchState,answerState].filter(Boolean),progress=readStorage(PENDING,[]),progressPending=Array.isArray(progress)?progress.length:0;
-  const pending=states.reduce((n,s)=>n+(s.pending||0),progressPending),held=states.reduce((n,s)=>n+(s.held||0),0),volatile=states.reduce((n,s)=>n+(s.volatile||0),Object.hasOwn(memoryStore,PENDING)?progressPending:0);
+  const pending=states.reduce((n,s)=>n+(s.pending||0),progressPending+recordingState.pending),held=states.reduce((n,s)=>n+(s.held||0),recordingState.held),volatile=states.reduce((n,s)=>n+(s.volatile||0),(Object.hasOwn(memoryStore,PENDING)?progressPending:0)+recordingState.volatile);
   const unavailable=states.some(s=>s.storageAvailable===false);
-  const busy=states.some(s=>s.lastStatus==='syncing');
+  const busy=recordingState.syncing||states.some(s=>s.lastStatus==='syncing');
   target.hidden=!pending&&!held&&!volatile&&!unavailable;
   target.querySelector('strong').textContent=held?'部分紀錄需要檢查':volatile||unavailable?'請先保留這個頁面':pending?'學習紀錄正在儲存':'';
   target.querySelector('p').textContent=held?'已保留有問題的紀錄，其餘紀錄會繼續上傳。請老師協助查看。':volatile||unavailable?'暫時無法使用裝置儲存，請保留本頁；連線後請按「再試同步」。':pending?'還有 '+pending+' 筆紀錄等待上傳。連線後會自動補傳。':'';
-  const button=target.querySelector('button');button.hidden=!pending&&!unavailable;button.disabled=busy;button.textContent=busy?'正在同步…':'再試同步';
+  if(recordingState.volatile){target.querySelector('strong').textContent='錄音尚未保存，請保留本頁';target.querySelector('p').textContent='連線後按「再試同步」。';}
+  const button=target.querySelector('button');button.hidden=!pending&&!held&&!unavailable;button.disabled=busy;button.textContent=busy?'正在同步…':'再試同步';
 }
 function openProfile(){
   if(sessionLocked)return;
@@ -952,7 +963,7 @@ function openProfile(){
       syncStatus.setAttribute('role','status');syncStatus.setAttribute('aria-live','polite');
       syncStatus.innerHTML='<strong></strong><p></p><button class="button small" type="button">再試同步</button>';
       $('#profile-dialog').append(syncStatus);
-      syncStatus.querySelector('button').onclick=()=>void Promise.allSettled([research.flush({force:true}),answerOutbox.flush({force:true}),sync.flush()]);
+      syncStatus.querySelector('button').onclick=()=>void Promise.allSettled([recordings.flush({force:true}),research.flush({force:true}),answerOutbox.flush({force:true}),sync.flush()]);
     }
     renderRecordSyncStatus();
   }

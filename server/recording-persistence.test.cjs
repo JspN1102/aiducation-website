@@ -132,3 +132,19 @@ test('response headers never end the deadline: stalled JSON upload/list bodies t
  const stopped=createRecordingLibrary({enabled:true,actorId:student.id,fetch,storage});const load=stopped.hydrate();
  await new Promise(resolve=>setImmediate(resolve));assert.equal(bodyWaits.at(-1).aborted,false);stopped.stop();await load;assert.equal(bodyWaits.at(-1).aborted,true);
 });
+
+test('recording status remains visible through storage failure, rejection and explicit retry acknowledgement',async()=>{
+ const {createRecordingLibrary}=await import('../maanshan/recording-library.mjs');
+ let denyStorage=true,offline=true,rejectUpload=false,putCalls=0;const states=[];
+ const library=createRecordingLibrary({enabled:true,actorId:student.id,onChange:state=>states.push(state),
+  storage:{async list(){return [];},async put(){putCalls++;if(denyStorage)throw new Error('QuotaExceeded');},async remove(){}},
+  fetch:async(_url,options)=>{if(offline)throw new TypeError('Offline');if(rejectUpload)return new Response('{"ok":false,"code":"INVALID_RECORDING"}',{status:400});const item=JSON.parse(options.body);delete item.audio;return new Response(JSON.stringify({ok:true,userId:student.id,recording:item}));}});
+ try{
+  await library.save({poemId:1,lineIndex:0,recordingId:crypto.randomUUID(),recordedAt:NOW,audio:wav().toString('base64')});await library.flush();
+  assert.deepEqual(library.status(),{pending:1,held:0,volatile:1,syncing:false});
+  denyStorage=false;await library.flush({force:true});assert.equal(library.status().volatile,0);assert.equal(library.pendingCount(),1);assert(putCalls>=3);
+  offline=false;rejectUpload=true;await library.flush({force:true});assert.deepEqual(library.status(),{pending:0,held:1,volatile:0,syncing:false});assert.equal(library.pendingCount(),1);
+  rejectUpload=false;await library.flush({force:true});assert.deepEqual(library.status(),{pending:0,held:0,volatile:0,syncing:false});
+  assert(states.some(s=>s.volatile===1)&&states.some(s=>s.held===1));assert.deepEqual(states.at(-1),library.status());
+ }finally{library.stop();}
+});

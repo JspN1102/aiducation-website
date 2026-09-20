@@ -92,3 +92,20 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 @media(max-width:700px){.workspace.view-report .report-line-actions .report-reread{flex-basis:100%;max-width:240px}.workspace.view-report .report-line-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.workspace.view-report .report-line-actions .report-reread{grid-column:1/-1;justify-self:center}.workspace.view-report .report-line-actions .button{padding-inline:10px;font-size:18px}}
 
 .workspace .challenge-shell .challenge-writing .cw-status{font-size:18px;line-height:1.5}
+
+/* Pinyin needs its own space: a syllable wider than the character must not touch
+   the next syllable. Keep the whole sentence's existing read action. */
+.workspace.view-record .record-tool>.verse ruby{flex:0 0 auto;min-width:0;padding-inline:3px}
+@media(max-width:360px){
+ .workspace.view-record .record-counter:has([data-action="record-feedback"]):has(.extension-entry){grid-template-columns:minmax(0,1fr) auto;gap:0 8px}
+ .workspace.view-record .record-counter:has([data-action="record-feedback"])>.extension-entry{grid-column:2;grid-row:1}
+ .workspace.view-record .record-counter:has(.extension-entry)>[data-action="record-feedback"]{grid-column:1/-1;grid-row:2;justify-self:center;min-height:44px}
+ .workspace.view-record .record-tool>.verse:has(>ruby:nth-of-type(7)),
+ .workspace.view-record .record-tool>.verse>.verse-clause:has(>ruby:nth-of-type(7)){display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px 0;width:100%;max-width:300px;margin-inline:auto}
+ .workspace.view-record .record-tool>.verse:has(>ruby:nth-of-type(7))>ruby,
+ .workspace.view-record .record-tool>.verse>.verse-clause:has(>ruby:nth-of-type(7))>ruby{grid-column:span 2;min-width:0;padding-inline:0}
+ .workspace.view-record .record-tool>.verse:has(>ruby:nth-of-type(7))>ruby:nth-of-type(5),
+ .workspace.view-record .record-tool>.verse>.verse-clause:has(>ruby:nth-of-type(7))>ruby:nth-of-type(5){grid-column:2/span 2}
+ .workspace.view-record .record-tool>.verse:has(>ruby:nth-of-type(7))>.punct,
+ .workspace.view-record .record-tool>.verse>.verse-clause:has(>ruby:nth-of-type(7))>.punct{grid-column:8;grid-row:2;justify-self:start;width:auto}
+}

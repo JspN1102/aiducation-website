@@ -2599,12 +2599,55 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 
 .workspace .challenge-shell .challenge-writing .cw-status{font-size:18px;line-height:1.5}
 
+/* Pinyin needs its own space: a syllable wider than the character must not touch
+   the next syllable. Keep the whole sentence's existing read action. */
+.workspace.view-record .record-tool>.verse ruby{flex:0 0 auto;min-width:0;padding-inline:3px}
+@media(max-width:360px){
+ .workspace.view-record .record-counter:has([data-action="record-feedback"]):has(.extension-entry){grid-template-columns:minmax(0,1fr) auto;gap:0 8px}
+ .workspace.view-record .record-counter:has([data-action="record-feedback"])>.extension-entry{grid-column:2;grid-row:1}
+ .workspace.view-record .record-counter:has(.extension-entry)>[data-action="record-feedback"]{grid-column:1/-1;grid-row:2;justify-self:center;min-height:44px}
+ .workspace.view-record .record-tool>.verse:has(>ruby:nth-of-type(7)),
+ .workspace.view-record .record-tool>.verse>.verse-clause:has(>ruby:nth-of-type(7)){display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px 0;width:100%;max-width:300px;margin-inline:auto}
+ .workspace.view-record .record-tool>.verse:has(>ruby:nth-of-type(7))>ruby,
+ .workspace.view-record .record-tool>.verse>.verse-clause:has(>ruby:nth-of-type(7))>ruby{grid-column:span 2;min-width:0;padding-inline:0}
+ .workspace.view-record .record-tool>.verse:has(>ruby:nth-of-type(7))>ruby:nth-of-type(5),
+ .workspace.view-record .record-tool>.verse>.verse-clause:has(>ruby:nth-of-type(7))>ruby:nth-of-type(5){grid-column:2/span 2}
+ .workspace.view-record .record-tool>.verse:has(>ruby:nth-of-type(7))>.punct,
+ .workspace.view-record .record-tool>.verse>.verse-clause:has(>ruby:nth-of-type(7))>.punct{grid-column:8;grid-row:2;justify-self:start;width:auto}
+}
+
 /* access-ui.css */
 .header-right{display:flex;align-items:center;gap:12px}
 .teacher-entry{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 13px;border:1px solid #c8d8c5;border-radius:12px;background:#f7faee;color:#315b43;font:600 17px/1.35 var(--sans);text-decoration:none;white-space:nowrap}
 .teacher-entry:focus-visible{outline:3px solid #377460;outline-offset:3px}
 .library-books:has(>.poem-card:only-child){grid-template-columns:minmax(0,560px);justify-content:center}
 @media(max-width:700px){.lesson-tools:has(.teacher-entry){gap:6px}.lesson-tools .teacher-entry{font-size:15px;padding:7px 9px}.lesson-bar:has(.teacher-entry) .lesson-heading h1{font-size:20px}.lesson-bar:has(.teacher-entry) .lesson-portrait{display:none}.header-right{gap:8px}}
+/* A teacher has one more action than a pupil. Give the title its own row
+   before the controls can squeeze a long poem name into a vertical column. */
+@media(max-width:520px){
+ .workspace .lesson-bar:has(.teacher-entry){grid-template-columns:44px minmax(0,1fr) auto;grid-template-rows:auto 76px;min-height:0;gap:4px 8px;padding-block:8px}
+ .workspace .lesson-bar:has(.teacher-entry)>.lesson-title{grid-column:2/-1;grid-row:1}
+ .workspace .lesson-bar:has(.teacher-entry)>.shishi-touch-slot{grid-column:1/3;grid-row:2;justify-self:end}
+ .workspace .lesson-bar:has(.teacher-entry)>.lesson-tools{grid-column:3;grid-row:2}
+ .workspace .lesson-bar:has(.teacher-entry) .lesson-heading h1{font-size:23px;line-height:1.3;text-wrap:initial}
+ .workspace .lesson-bar:has(.teacher-entry) .lesson-title p{overflow-wrap:normal}
+ .workspace .lesson-bar:has(.teacher-entry) .shishi-touch-slot{--shishi-width:52px;--shishi-height:72px;width:110px;height:76px}
+ .workspace .lesson-bar:has(.teacher-entry) .shishi-guide-button{flex-direction:row;justify-content:flex-start;gap:4px}
+ .workspace .lesson-bar:has(.teacher-entry) .shishi-guide-art{order:0}
+ .workspace .lesson-bar:has(.teacher-entry) .shishi-poet-label{order:1}
+}
+@media(max-width:360px){
+ .workspace .lesson-bar:has(.shishi-touch-slot){grid-template-columns:44px minmax(0,1fr) auto;grid-template-rows:auto 76px;min-height:0;gap:4px 8px;padding-block:8px}
+ .workspace .lesson-bar>.lesson-title{grid-column:2/-1;grid-row:1}
+ .workspace .lesson-bar>.shishi-touch-slot{grid-column:1/3;grid-row:2;justify-self:end}
+ .workspace .lesson-bar>.lesson-tools{grid-column:3;grid-row:2}
+ .workspace .lesson-title h1{font-size:23px;line-height:1.3;text-wrap:initial}
+ .workspace .lesson-title p{overflow-wrap:normal}
+ .workspace .shishi-touch-slot{--shishi-width:52px;--shishi-height:72px;width:110px;height:76px}
+ .workspace .shishi-touch-slot .shishi-guide-button{flex-direction:row;justify-content:flex-start;gap:4px}
+ .workspace .shishi-touch-slot .shishi-guide-art{order:0}
+ .workspace .shishi-touch-slot .shishi-poet-label{order:1}
+}
 
 /* tablet-layout.css */
 /* Give landscape tablets the space below a compact lesson bar. The game

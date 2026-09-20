@@ -1,7 +1,7 @@
 'use strict';
 const crypto=require('node:crypto'),blob=require('@vercel/blob');
 const research=require('./research-store.cjs');
-const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v14-focused-prose';
+const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v15-clear-references';
 const MAX_RECORD_BYTES=12*1024*1024,MAX_PROVIDER_BYTES=160*1024,MAX_RESPONSE_BYTES=128*1024;
 const LEASE_MS=120000,PROVIDER_TIMEOUT_MS=42000;
 const SCHEMA=`CREATE TABLE IF NOT EXISTS teacher_analysis_records (
@@ -126,7 +126,7 @@ function aggregateEvidence(dataset){
  // target in its source line so follow-up never assesses an unpractised word.
  const teachingFocus=curriculum.map(poem=>{
   const positions=analytics.readingCharacterAnalysis?.poems?.find(item=>item.grade===poem.grade)?.lines||[];
-  const readingLines=positions.map(line=>({lineIndex:line.lineIndex,words:(line.words||[]).filter(word=>safeScore(word.meanScore)!==null&&word.meanScore<80&&safeCount(word.count)>0).sort((a,b)=>a.meanScore-b.meanScore)})).filter(line=>line.words.length&&poem.lines[line.lineIndex]).sort((a,b)=>b.words.length-a.words.length||a.lineIndex-b.lineIndex).slice(0,2).map(line=>({text:poem.lines[line.lineIndex].text,observeCharacters:line.words.slice(0,2).map(word=>word.char)}));
+  const readingLines=positions.map(line=>({lineIndex:line.lineIndex,words:(line.words||[]).filter(word=>safeScore(word.meanScore)!==null&&word.meanScore<80&&safeCount(word.count)>0).sort((a,b)=>a.meanScore-b.meanScore)})).filter(line=>line.words.length&&poem.lines[line.lineIndex]).sort((a,b)=>b.words.length-a.words.length||a.lineIndex-b.lineIndex).slice(0,2).map(line=>({lineNumber:line.lineIndex+1,text:poem.lines[line.lineIndex].text,observeCharacters:line.words.slice(0,2).map(word=>word.char)}));
   return {grade:poem.grade,poem:poem.title,readingLines,writingCharacters:poem.dictation.map(item=>item.char),listeningActivity:'沿用本詩已有的辨音或配對練習，聽後再答；教師聽取學生重讀所聽內容。'};
  });
  // Give the writer actual, disjoint groups. An empty intersection must never
@@ -159,8 +159,8 @@ function validateAnalysis(value,evidence,filters){
 const SYSTEM_PROMPT=`你是香港小學普通話科的資深教師，向同科老師撰寫可直接使用的教研報告。以繁體中文連貫論述，用「整體評價→主要發現→教學建議」形成清楚的教學判斷。evidence是本班實際觀察，curriculum是正確課文，teachingFocus是可採用的課堂安排；教學安排並不表示學生已經做過。
 【成稿結構】
 overview約100字，說清下一課的重心及其主要依據。findings寫3個互不重複的完整段落，每段約220至280字，合計至少650字且佔正文一半以上。有數據時依次分析：
-第一段：參與及不同活動的覆蓋。連起名冊、有紀錄、有完成紀錄及各分項有評分的學生人數，說明課堂應先補齊哪一環的觀察，並照顧已完成學生的練習延續。完成紀錄筆數不是完成學生數，有活動紀錄也不是完成全課；直接提出教學決策即可。
-第二段：具體字音在原句中的分布。以全詩逐字平均及有評分學生數支持判斷，挑teachingFocus中的少量字和所在原句，解釋為何先從這些句子練起，以及教師應如何分辨需要全班再練還是個別再聽。不重列整個字表，不猜學生錯誤原因，不把全班平均說成人人都錯。
+第一段：參與及不同活動的覆蓋。連起名冊、有紀錄、有完成紀錄及各分項有評分的學生人數，說明課堂應先補齊哪一環的觀察，並照顧已有評分學生的練習延續。「有評分的名冊學生」只寫「已有評分」「已留下朗讀/聽辨/默寫評分」，不能寫成「有X人完成」「已完成的X人」，標題也沿用「已有評分」。只有明確的完成事件人數才寫「有活動完成紀錄」，而非完成整課。這是內部用詞要求，正文直接提出教學決策。
+第二段：具體字音在原句中的分布。以全詩逐字平均及有評分學生數支持判斷，挑teachingFocus中的少量字和所在原句，解釋為何先從這些句子練起，以及教師應如何分辨需要全班再練還是個別再聽。readingLines的lineNumber就是原詩實際句號；若選的是第一、第三句，就明寫「第一、第三句」或「上述兩句」，不能改稱「前兩句」，後者只指原詩第一、第二句。正文、教學建議及複查沿用同一批句號和原句。不重列整個字表，不猜學生錯誤原因，不把全班平均說成人人都錯。
 第三段：學生分布及分層跟進。teachingGroups只提供一對已選定的學習分項，整篇報告的交集、僅一項低分及分組敘述都只沿用這同一對。先自然交代這兩項都有評分的學生人數，再說明實際存在的各組如何練習、以甚麼表現調整；交集為0時分別安排，不補空組或假設組。第三個分項只引用「個人平均低於60分的名冊學生」全體跟進人數並寫具體教法，例如交代默寫需跟進的實際人數後，直接安排練寫本課指定字及觀察字形。不再談第三項與其他項的重疊、不寫「全體X人中有Y人僅默寫低」，不把未納入同一對觀察的學生推成另一組。沒有兩項都有結果的觀察時，用各分項覆蓋和具體題目決定先後，避免重複第二段的字音清單。
 每個發現的標題精簡，正文充分連結事實、教學含義和取捨；至少兩種相關證據共同支持一段，不能只有均分播報或把清單串起來。單班全文約1100至1500字，全校約1500至1900字，資料少則如實簡短。
 teachingActions單年級1至2項、全校2至3項。每項steps放1段100至180字的完整中文建議，連貫交代理由、具體課文、師生活動和觀察目標。reviewPlan只放1項、1段80至120字，沿用前述同一句和同一觀察字，寫清如何根據下一次實際表現調整。不使用1)/2)、一二三操作清單，也不附教案或課時表。

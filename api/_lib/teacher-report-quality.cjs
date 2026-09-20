@@ -139,6 +139,13 @@ function inspectAnalysis(analysis,payload={}){
     const selectedDomains=selectedGrouping?mentionedDomains(selectedGrouping.domains.join('與')).sort().join('/') : null;
     for(const {value,path}of textFields(analysis)){
       const itemMatch=/^(findings|teachingActions|reviewPlan)\[(\d+)\]/u.exec(path),item=itemMatch?analysis[itemMatch[1]][Number(itemMatch[2])]:null;
+      const itemText=item?[item.title,item.interpretation,...(item.steps||[])].filter(part=>typeof part==='string').join('。'):value;
+      if(/前[兩两二2]句/u.test(value))for(const focus of payload.teachingFocus||[]){
+        const lines=(focus.readingLines||[]).filter(line=>Number.isInteger(line.lineNumber)&&typeof line.text==='string');
+        const numbers=lines.map(line=>line.lineNumber).sort((a,b)=>a-b);
+        if(lines.length===2&&(numbers[0]!==1||numbers[1]!==2)&&lines.every(line=>itemText.includes(line.text)))
+          add('REPORT_AMBIGUOUS_LINE_REFERENCE',`本段引用的原詩句號是${numbers.join('、')}，不是原詩前兩句。把「前兩句」定點改為「上述兩句」或明寫第${numbers.join('、第')}句；保留正確原句和練習安排，不更換觀察字、不另加說明。`,path);
+      }
       const cited=(item?.evidenceIds||[]).map(id=>byId.get(id)).filter(Boolean),citedPairs=pairs.filter(pair=>cited.some(fact=>fact.id===pair.id));
       const emptyGroup=emptyObservedGroup(value,item?.title,citedPairs.length?citedPairs:pairs);
       if(emptyGroup)add('EMPTY_LEARNING_GROUP',`「${emptyGroup.label}」兩項皆低於60分的學生為0人。刪除針對這個空組的練習安排及湊成三組的表述；沿用teachingGroups中實際存在的組別，分別說清原句聽讀或寫字的做法。保留其餘正確分析，不另補假設組或免責文字。`,path);
@@ -171,6 +178,15 @@ function inspectAnalysis(analysis,payload={}){
         const prevalence=/(?:問題|问题|困難|困难|弱項|弱项|[讀读]不[準准]|需.{0,5}(?:糾正|纠正)).{0,18}(?:普遍|廣泛|广泛)|(?:普遍|廣泛|广泛|多數|多数|大部分|大多[數数]|全班(?:都|均|皆)|人人).{0,25}(?:問題|问题|困難|困难|弱項|弱项|[讀读]不[準准]|未[讀读][準准]|不清楚|有[錯错])/u;
         if(characterContext&&asserted(sentence,prevalence))add('UNSUPPORTED_CHARACTER_PREVALENCE','逐字均分和受測人數沒有提供讀錯或低分的學生比例。刪除字音問題普遍、多數學生讀不準等結論；保留具體字和所在原句，改成先共同跟讀、再逐一聽取，據課堂表現安排個別再讀。不要把這條核對規則改寫成報告中的免責句。',path);
         if(mentionedDomains(sentence).length>=2&&asserted(sentence,/(?:關聯|关联|相[關关])(?:性|程度)?(?:[較较更]|稍|相[對对])(?:高|強|强|低|弱)|(?:高度|密切|顯著|显著)(?:相[關关]|關聯|关联)/u))add('UNSUPPORTED_DOMAIN_ASSOCIATION','兩項低分名單的交集只用來安排哪些學生一起跟進。刪除關聯較高、密切相關等推論，改為說清這批學生先聽後讀或分別練習的安排，不加入統計免責說明。',path);
+      }
+      for(const clause of clauses(value)){
+        const completed=clause.match(/(?:已)?完成(?:[評评]分)?的?\s*(\d+)\s*(?:名|位)?(?:學生|学生|人)|(?<!\d)(\d+)\s*(?:名|位)?(?:學生|学生|人)(?:已)?完成/u);
+        if(!completed||/下一|下次|安排|請|请|可|將|将|讓|让/u.test(clause.slice(0,completed.index)))continue;
+        const count=Number(completed[1]||completed[2]),domains=mentionedDomains(clause);
+        const measured=facts.filter(fact=>fact.source==='平台評分'&&fact.label?.endsWith('：有評分的名冊學生')&&fact.value===count&&(!domains.length||mentionedDomains(fact.label).some(domain=>domains.includes(domain))));
+        const actualCompletion=facts.some(fact=>fact.value===count&&/有活動完成紀錄的名冊學生/u.test(fact.label||'')&&(!domains.length||mentionedDomains(fact.label).some(domain=>domains.includes(domain))));
+        if(measured.length&&!actualCompletion)
+          add('REPORT_MEASUREMENT_CALLED_COMPLETION',`「${clause}」的${count}人來自有評分學生人數，不能改称完成。改為「已有評分」或「已留下相應評分的${count}人」，相關標題也用「已有評分」；保留人數和教法，不補寫資料局限。只有明確完成事件的人數才稱有活動完成紀錄。`,path);
       }
     }
     const collectNumbers=(value,set)=>{

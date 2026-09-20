@@ -203,7 +203,7 @@ test('narrative evidence distinguishes unique completed students, paired learnin
  assert.deepEqual(p.teachingGroups[0],{evidenceId:paired.id,domains:['朗讀字音評分','默寫辨識準確度'],bothMeasuredStudents:3,groups:[{count:1,focus:['朗讀字音評分']},{count:1,focus:['默寫辨識準確度']},{count:1,focus:['朗讀字音評分','默寫辨識準確度']}]});
  assert.deepEqual(p.evidence.find(f=>f.label==='全詩逐字平均的觀察範圍').value,{measuredPositions:2,meanBelow80Positions:1});
  assert.deepEqual(p.evidence.find(f=>f.label==='「舟」逐字平均').value,{meanScore:72,measuredStudents:3});
- assert.deepEqual(p.teachingFocus[0].readingLines,[{text:'李白乘舟將欲行',observeCharacters:['舟']}]);
+ assert.deepEqual(p.teachingFocus[0].readingLines,[{lineNumber:1,text:'李白乘舟將欲行',observeCharacters:['舟']}]);
  assert.deepEqual(p.teachingFocus[0].writingCharacters,['舟']);
  assert.doesNotMatch(JSON.stringify(p),/researchId|displayName|PRIVATE_/);
 });
@@ -216,6 +216,22 @@ test('teaching groups contain only observed nonempty disjoint groups and exclude
  assert.deepEqual(pair.value,{bothMeasuredStudents:4,bothBelow60Students:0,leftBelow60Students:2,rightBelow60Students:1,leftOnlyBelow60Students:2,rightOnlyBelow60Students:1,neitherBelow60Students:1});
  assert.deepEqual(payload.teachingGroups[0].groups,[{count:2,focus:['朗讀字音評分']},{count:1,focus:['默寫辨識準確度']}]);
  assert.doesNotMatch(JSON.stringify(payload.teachingGroups),/researchId|displayName|PRIVATE_/);
+});
+
+test('selected teaching lines retain their original poem numbers when the focus skips a line',async()=>{
+ const input=dataset();input.filters={...input.filters,grade:6,poemId:6};
+ input.analytics.readingCharacterAnalysis={poems:[{grade:6,poemId:6,title:'初春小雨',lines:[
+  {lineIndex:0,words:[{char:'天',meanScore:68.9,count:20},{char:'潤',meanScore:68.9,count:20}]},
+  {lineIndex:1,words:[{char:'看',meanScore:68.9,count:20}]},
+  {lineIndex:2,words:[{char:'一',meanScore:68.9,count:20},{char:'處',meanScore:68.9,count:20}]}
+ ]}]};
+ const p=analysis.aggregateEvidence(input);
+ assert.deepEqual(p.teachingFocus[0].readingLines,[{lineNumber:1,text:'天街小雨潤如酥',observeCharacters:['天','潤']},{lineNumber:3,text:'最是一年春好處',observeCharacters:['一','處']}]);
+ await analysis.requestAnalysis(p,analysis.modelConfig(env),{fetchImpl:async(_url,options)=>{
+  const request=JSON.parse(options.body),sent=JSON.parse(request.messages[1].content);
+  assert.deepEqual(sent.teachingFocus[0].readingLines.map(line=>line.lineNumber),[1,3]);
+  assert.match(request.messages[0].content,/「第一、第三句」或「上述兩句」/);assert.match(request.messages[0].content,/「有X人完成」/);return provider();
+ }});
 });
 
 test('empty groups and character prevalence trigger one targeted revision before report export',async()=>{
@@ -239,12 +255,12 @@ test('empty groups and character prevalence trigger one targeted revision before
  assert.equal((await svc.generate({},input.filters,teacher)).cached,true);assert.equal(calls,2);
 });
 
-test('v14 supplies exactly one paired cohort to the writer and retains whole-class follow-up totals',async()=>{
+test('v15 retains exactly one paired cohort and whole-class follow-up totals',async()=>{
  const input=dataset(),metric=value=>({measuredN:value===null?0:1,meanScore:value});
  input.filters={...input.filters,grade:6,poemId:6};
  input.students=[[45,90,40],[45,80,90],[90,40,90],[null,40,90]].map(([reading,writing,sound])=>({rosterMatched:true,stats:{nEvents:3,latest:{byConstruct:{'reading.pronunciation':{serverVerified:metric(reading)},'writing.dictation':{serverVerified:metric(writing)},'sound.recognition':{serverVerified:metric(sound)}}}}}));
  const payload=analysis.aggregateEvidence(input);
- assert.equal(analysis.PROMPT_VERSION,'teacher-analysis-v14-focused-prose');
+ assert.equal(analysis.PROMPT_VERSION,'teacher-analysis-v15-clear-references');
  assert.equal(payload.evidence.filter(f=>f.label.endsWith('：同一批學生觀察')).length,3,'keep every paired fact in the stored audit evidence');
  assert.equal(payload.teachingGroups.length,1);assert.deepEqual(payload.teachingGroups[0].domains,['朗讀字音評分','辨音答題準確度']);
  await analysis.requestAnalysis(payload,analysis.modelConfig(env),{fetchImpl:async(_url,options)=>{
@@ -267,7 +283,7 @@ test('the actual defensive sentence triggers a private single revision that dele
  }});
  const pending=await svc.generate({},dataset().filters,teacher);assert.equal(pending.report,undefined);assert.equal(pending.nextAction,'continue');
  await assert.rejects(svc.getReport(pending.reportId),e=>e.code==='REPORT_NOT_READY');
- const done=await svc.continueReport(pending.reportId,teacher);assert.equal(done.report.qualityReview.revisions,1);assert.equal(done.report.promptVersion,'teacher-analysis-v14-focused-prose');
+ const done=await svc.continueReport(pending.reportId,teacher);assert.equal(done.report.qualityReview.revisions,1);assert.equal(done.report.promptVersion,'teacher-analysis-v15-clear-references');
  assert.doesNotMatch(done.report.analysis.findings[0].interpretation,/參考|推論|不能|局限/);
  assert.equal((await svc.generate({},dataset().filters,teacher)).cached,true);assert.equal(calls,2);
 });
@@ -308,10 +324,10 @@ test('provider reference completion fixes a uniquely supported count without rew
  assert(require('../api/_lib/teacher-report-quality.cjs').inspectAnalysis(result.analysis,{...p,reportStyle:'narrative-teaching-review'}).some(issue=>issue.code==='UNSUPPORTED_REPORTED_NUMBER'));
 });
 
-test('completed v7 and v13 reports cannot satisfy the v14 teacher-prose generation cache',async()=>{
+test('completed v7, v13 and v14 reports cannot satisfy the v15 teacher-prose generation cache',async()=>{
  const research=require('../api/_lib/research-store.cjs'),input=dataset(),payload=analysis.aggregateEvidence(input),store=memoryStore();
  const dataFingerprint=research.hash(research.canonical({snapshotId:input.snapshotId,payload}));
- const oldIds=['teacher-analysis-v7-reviewed-demo','teacher-analysis-v13-observed-groups'].map(promptVersion=>{
+ const oldIds=['teacher-analysis-v7-reviewed-demo','teacher-analysis-v13-observed-groups','teacher-analysis-v14-focused-prose'].map(promptVersion=>{
   const oldId='ta_'+research.hash(research.canonical({dataFingerprint,model:env.TEACHER_AI_MODEL,provider:analysis.modelConfig(env).url,promptVersion}));
   store.data.set('report/'+oldId.slice(3),{version:'1',value:{status:'completed',report:{reportId:oldId,analysis:{overview:'Old technical report'}}}});return oldId;
  });
