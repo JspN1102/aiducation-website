@@ -22,14 +22,14 @@ const facts = '詩裏是「草盛豆苗稀」：野草多，豆苗少。我們�
 export function mountGarden(holder, {initialState, readOnly=false, playAudio, onState, onComplete, onResearch}={}) {
   const doc=holder.ownerDocument,view=doc.defaultView,abort=new view.AbortController();
   const removed=new Set(Array.isArray(initialState?.removed)?initialState.removed.filter(id=>weedIds.includes(id)):[]);
-  let dead=false,ready=false,done=removed.size===weedIds.length,reported=done,drag=null,loadId=0,suppressClickUntil=0;
+  let dead=false,ready=false,done=removed.size===weedIds.length,reported=done,drag=null,dragFrame=0,loadId=0,suppressClickUntil=0;
   const research=createProcessResearch(onResearch,{prefix:'game.garden',alive:()=>!dead});
   const timers=new Set(),root=doc.createElement('section');root.className='poem-garden';root.setAttribute('aria-label','豆苗小幫手');
   root.innerHTML=`<div class="gr-instruction"><p>拔掉細長野草，留下寬葉豆苗。</p><span class="gr-count" aria-live="off"></span></div>
     <div class="garden-picture gr-picture" aria-label="三株豆苗和八叢野草的田地" aria-busy="true">
       <img class="gr-background" src="${file('poem-games/garden/garden-bed-20260919a.webp')}" alt="月亮升起，遠山前有一小片田地。" width="1152" height="768" draggable="false">
       <div class="garden-moonlight" aria-hidden="true"></div>
-      ${plants.map(p=>`<button type="button" class="garden-plant is-${p.kind}" data-plant="${p.id}" style="--x:${p.x}%;--y:${p.y}%;--size:${p.size}%;--turn:${p.turn}deg;--depth:${Math.round(p.y)}" aria-label="${p.kind==='bean'?'寬葉豆苗，請保留':'細長野草，點一下拔起'}" disabled><img src="${file(`living-scenes/${p.kind==='bean'?'bean':'grass'}-v1.webp`)}" alt="" draggable="false"><span class="garden-root" aria-hidden="true"></span></button>`).join('')}
+      ${plants.map(p=>`<button type="button" class="garden-plant is-${p.kind}" data-plant="${p.id}" style="--x:${p.x}%;--y:${p.y}%;--size:${p.size}%;--turn:${p.turn}deg;--depth:${Math.round(p.y)}" aria-label="${p.kind==='bean'?'寬葉豆苗，請保留':'細長野草，向上拔起，也可以點一下'}" disabled><img src="${file(`living-scenes/${p.kind==='bean'?'bean':'grass'}-v1.webp`)}" alt="" draggable="false"><span class="garden-root" aria-hidden="true"></span></button>`).join('')}
       <div class="garden-end" hidden><span>帶月荷鋤歸</span><small>伴着月光，扛起鋤頭。</small></div>
       <div class="gr-loading" role="status"><span>田園正在展開…</span><button type="button" data-garden-retry hidden>再試一次</button></div>
     </div>
@@ -69,23 +69,42 @@ export function mountGarden(holder, {initialState, readOnly=false, playAudio, on
 
   function down(event){
     const button=event.target.closest?.('[data-plant]');
-    if(!button||button.disabled||event.button>0)return;
-    drag={pointerId:event.pointerId,id:button.dataset.plant,x:event.clientX,y:event.clientY,button};
+    if(dead||drag||!button||button.disabled||event.button>0||event.isPrimary===false)return;
+    if(event.cancelable)event.preventDefault();
+    drag={pointerId:event.pointerId,id:button.dataset.plant,x:event.clientX,y:event.clientY,dx:0,dy:0,distance:0,threshold:Math.max(24,Math.min(42,button.clientHeight*.3)),button};
+    button.classList.add('is-pulling');
+    if(event.pointerType!=='touch')button.focus({preventScroll:true});
     try{button.setPointerCapture(event.pointerId);}catch{}
+  }
+  function paintDrag(){
+    dragFrame=0;if(!drag||dead)return;
+    drag.button.style.setProperty('--lift',`${Math.min(0,drag.dy)}px`);
+    drag.button.style.setProperty('--sway',`${Math.max(-22,Math.min(22,drag.dx*.3))}px`);
+  }
+  function cancelDrag(){
+    const previous=drag;drag=null;view.cancelAnimationFrame(dragFrame);dragFrame=0;
+    if(!previous)return null;
+    previous.button.classList.remove('is-pulling');previous.button.style.removeProperty('--lift');previous.button.style.removeProperty('--sway');
+    try{previous.button.releasePointerCapture(previous.pointerId);}catch{}
+    suppressClickUntil=Date.now()+600;
+    return previous;
   }
   function move(event){
     if(!drag||event.pointerId!==drag.pointerId)return;
     if(event.cancelable)event.preventDefault();
+    drag.dx=event.clientX-drag.x;drag.dy=event.clientY-drag.y;
+    drag.distance=Math.max(drag.distance,Math.hypot(drag.dx,drag.dy));
     if(drag.id.startsWith('weed')){
-      const lift=Math.max(-32,Math.min(0,event.clientY-drag.y));
-      drag.button.style.setProperty('--lift',`${lift}px`);
+      if(-drag.dy>=drag.threshold&&-drag.dy>=Math.abs(drag.dx)*.7){
+        drag.button.style.setProperty('--pull-distance',`${-drag.dy+65}px`);
+        const previous=cancelDrag();pull(previous.id);
+      }else if(!dragFrame)dragFrame=view.requestAnimationFrame(paintDrag);
     }
   }
   function release(event){
     if(!drag||event.pointerId!==drag.pointerId)return;
-    const previous=drag;drag=null;previous.button.style.removeProperty('--lift');
-    try{previous.button.releasePointerCapture(event.pointerId);}catch{}
-    if(event.type==='pointerup'){suppressClickUntil=Date.now()+600;pull(previous.id);}
+    const previous=cancelDrag();
+    if(event.type==='pointerup'&&Math.max(previous.distance,Math.hypot(event.clientX-previous.x,event.clientY-previous.y))<=10)pull(previous.id);
   }
   async function load(){
     if(loadId)research.retry('assets');
@@ -105,6 +124,10 @@ export function mountGarden(holder, {initialState, readOnly=false, playAudio, on
   root.addEventListener('pointermove',move,{signal:abort.signal,passive:false});
   root.addEventListener('pointerup',release,{signal:abort.signal});
   root.addEventListener('pointercancel',release,{signal:abort.signal});
+  root.addEventListener('lostpointercapture',release,{signal:abort.signal});
+  for(const type of ['contextmenu','selectstart','dragstart'])root.addEventListener(type,event=>{if(event.target.closest?.('[data-plant]')&&event.cancelable)event.preventDefault();},{signal:abort.signal});
+  doc.addEventListener('visibilitychange',()=>{if(doc.hidden)cancelDrag();},{signal:abort.signal});
+  view.addEventListener('blur',()=>cancelDrag(),{signal:abort.signal});
   root.addEventListener('click',event=>{
     const plant=event.target.closest?.('[data-plant]');if(plant&&(event.detail===0||Date.now()>suppressClickUntil))pull(plant.dataset.plant);
     if(event.target.closest?.('[data-garden-retry]'))void load();
@@ -115,7 +138,7 @@ export function mountGarden(holder, {initialState, readOnly=false, playAudio, on
   },{signal:abort.signal});
   tell(done?facts:'先看看葉子：豆苗寬，野草細長。');render();void load();
   return {
-    showSolution(){if(dead||done)return;research.hint('game','reveal');weedIds.forEach(id=>removed.add(id));done=true;reported=true;render();},
-    destroy(){if(dead)return;dead=true;loadId++;abort.abort();timers.forEach(id=>view.clearTimeout(id));drag=null;root.remove();}
+    showSolution(){if(dead||done)return;cancelDrag();research.hint('game','reveal');weedIds.forEach(id=>removed.add(id));done=true;reported=true;render();},
+    destroy(){if(dead)return;dead=true;loadId++;cancelDrag();abort.abort();timers.forEach(id=>view.clearTimeout(id));root.remove();}
   };
 }

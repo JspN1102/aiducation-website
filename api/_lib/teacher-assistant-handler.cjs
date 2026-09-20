@@ -1,7 +1,7 @@
 const auth=require('./school-auth.cjs');
 const analysis=require('./teacher-analysis.cjs');
 const research=require('./research-store.cjs');
-const {TeacherDataError}=require('./teacher-data.cjs');
+const {TeacherDataError,normalizeFilters,requireTeacherScope}=require('./teacher-data.cjs');
 function createHandler({authModule=auth,analysisModule=analysis}={}){return async function handler(req,res){
  res.setHeader('Cache-Control','private, no-store');
  if(!['GET','POST'].includes(req.method))return res.status(405).json({ok:false,code:'METHOD_NOT_ALLOWED',retryable:false});
@@ -19,8 +19,8 @@ function createHandler({authModule=auth,analysisModule=analysis}={}){return asyn
    if(Object.keys(body).length===1&&typeof body.reportId==='string')result=await analysisModule.continueReport(body.reportId,actor,{signal:controller.signal});
    else{
     if(Object.keys(body).some(key=>key!=='filters')||!body.filters||typeof body.filters!=='object'||Array.isArray(body.filters))throw new analysis.AnalysisError('INVALID_REPORT_REQUEST',400,false);
-    if(Object.keys(body.filters).some(key=>!['grade','cls','from','to','activity','attempt'].includes(key)))throw new analysis.AnalysisError('INVALID_REPORT_FILTERS',400,false);
-    result=await analysisModule.generate(req,body.filters,actor,{signal:controller.signal});
+    if(Object.keys(body.filters).some(key=>!['grade','poemId','cls','from','to','activity','attempt'].includes(key)))throw new analysis.AnalysisError('INVALID_REPORT_FILTERS',400,false);
+    result=await analysisModule.generate(req,requireTeacherScope(normalizeFilters(body.filters)),actor,{signal:controller.signal});
    }
   }
   if(result.status==='generating'){res.setHeader('Retry-After',String(result.retryAfterSeconds));return res.status(202).json(result);}

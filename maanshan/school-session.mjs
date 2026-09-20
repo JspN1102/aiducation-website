@@ -1,5 +1,5 @@
-import {TERMS_VERSION, termsConfirmationMarkup, bindTermsConfirmation} from './platform-terms.mjs?v=20260920-terms1';
-import {mountShishiSprite} from './shishi-sprite.mjs?v=20260921-school1';
+import {TERMS_VERSION, termsConfirmationMarkup, bindTermsConfirmation} from './platform-terms.mjs?v=20260921-school2';
+import {mountShishiSprite} from './shishi-sprite.mjs?v=20260921-school2';
 // The cookie is HttpOnly. Only the current user's display profile and CSRF
 // token live in memory; passwords and bearer credentials are never persisted.
 let current = {enabled: false, authenticated: false, user: null, csrfToken: ''};
@@ -54,6 +54,7 @@ export async function loadSchoolProgress() {
   const data = await response.json();
   if (blocked || current.user?.id !== actorId) throw Object.assign(new Error('請重新登入。'), {code:'AUTH_REQUIRED'});
   if (data.userId !== actorId || !data.poems) throw new Error('學習進度未能核對。');
+  if (current.user.role === 'teacher' && (data.learningEpoch || 'initial') !== (current.learningEpoch || 'initial')) throw Object.assign(new Error('試用進度已重設，正在重新載入。'), {code:'LEARNING_RESET'});
   return data.poems;
 }
 export async function logoutSchoolSession() {

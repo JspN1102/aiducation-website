@@ -1,7 +1,9 @@
 'use strict';
 
 const http = require('node:http');
+const {gzipSync} = require('node:zlib');
 const routes = require('./routes.cjs');
+const {TEACHER_ROUTES,acceptsGzip,varyAcceptEncoding} = require('../api/_lib/response-encoding.cjs');
 
 class RequestError extends Error {
   constructor(status, message) { super(message); this.status = status; }
@@ -32,7 +34,21 @@ function addResponseHelpers(req, res) {
   res.json = function (body) {
     if (this.writableEnded || this.destroyed) return this;
     this.setHeader('Content-Type', 'application/json; charset=utf-8');
-    return this.send(JSON.stringify(body));
+    const content=Buffer.from(JSON.stringify(body)??'');
+    const route=/^\/api\/([a-z-]+)\/?(?:\?|$)/.exec(req.url)?.[1];
+    if(TEACHER_ROUTES.has(route)){
+      this.setHeader('Vary',varyAcceptEncoding(this.getHeader('Vary')));
+      // Low-level synchronous gzip costs only a few milliseconds for the bounded
+      // teacher payload and cannot race a timeout/late provider response.
+      if(content.length>=1024&&this.statusCode!==204&&this.statusCode!==304&&!this.hasHeader('Content-Encoding')&&acceptsGzip(req.headers['accept-encoding'])){
+        const compressed=gzipSync(content,{level:1});
+        if(compressed.length<content.length){
+          this.setHeader('Content-Encoding','gzip');this.setHeader('Content-Length',compressed.length);
+          return this.send(compressed);
+        }
+      }
+    }
+    return this.send(content);
   };
 }
 

@@ -16,3 +16,18 @@ test('an unavailable handwriting score is unmeasured and is never described as a
  const summary=buildPracticeSummary([event({item:'write',type:'dictation',operation:'handwriting',result:{status:'unmeasured',score:null,correct:null}})]);
  assert.equal(summary.items[0].status,'unmeasured');assert.equal(summary.measuredN,0);assert.equal(summary.correctN,0);
 });
+
+test('historical microgame correctness acknowledgements never become correct exam answers',()=>{
+ const summary=buildPracticeSummary([event({result:{status:'correct',score:100,correct:true}}),event({item:'sound',type:'sound',position:2,result:{status:'incorrect',score:0,correct:false}})]);
+ assert.equal(summary.completedN,2);assert.equal(summary.correctN,0);assert.equal(summary.measuredN,1);
+ assert.deepEqual(summary.items.map(item=>[item.status,item.score]),[['completed',null],['incorrect',0]]);
+});
+
+test('skipped prompts remain visible but count neither as completed nor correct',()=>{
+ const summary=buildPracticeSummary([
+  event({item:'skip',type:'sound',result:{status:'skipped',score:null,correct:null}}),
+  event({item:'write',type:'dictation',operation:'handwriting',position:2,result:{status:'incorrect',score:0,correct:false}})
+ ]);
+ assert.equal(summary.completedN,1);assert.equal(summary.correctN,0);assert.equal(summary.measuredN,1);
+ assert.deepEqual(summary.items.map(item=>item.status),['skipped','incorrect']);
+});

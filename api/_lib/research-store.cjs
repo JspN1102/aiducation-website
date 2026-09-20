@@ -486,7 +486,7 @@ function stableOutcomeId(actorId,requestId){
   return hex.slice(0,8)+'-'+hex.slice(8,12)+'-4'+hex.slice(13,16)+'-a'+hex.slice(17,20)+'-'+hex.slice(20,32);
 }
 function filtersFrom(query={},now=Date.now()) {
-  object(query,['grade','cls','from','to','activity','student','attempt','format','cursor','limit','snapshot']);
+  object(query,['grade','poemId','cls','from','to','activity','student','attempt','format','cursor','limit','snapshot']);
   const to=query.to||new Date(now).toISOString().slice(0,10);
   if(typeof to!=='string'||!/^\d{4}-\d\d-\d\d$/.test(to)||!Number.isFinite(Date.parse(to)))fail('INVALID_DATE');
   const from=query.from||new Date(Date.parse(to)-29*86400000).toISOString().slice(0,10);
@@ -495,13 +495,14 @@ function filtersFrom(query={},now=Date.now()) {
   const f={from,to,attempt:query.attempt||'latest'};
   if(!['first','latest'].includes(f.attempt))fail('INVALID_ATTEMPT_FILTER');
   if(query.grade!==undefined){if(typeof query.grade!=='string'||!/^[1-6]$/.test(query.grade))fail();f.grade=Number(query.grade);}
+  if(query.poemId!==undefined){if(typeof query.poemId!=='string'||!/^\d{1,4}$/.test(query.poemId)||!poems.some(poem=>poem.id===Number(query.poemId)))fail('INVALID_POEM_FILTER');f.poemId=Number(query.poemId);}
   if(query.cls!==undefined){if(typeof query.cls!=='string'||!/^[A-Za-z]$/.test(query.cls))fail();f.cls=query.cls.toUpperCase();}
   if(query.activity!==undefined){if(!ACTIVITIES.includes(query.activity))fail();f.activity=query.activity;}
   if(query.student!==undefined){if(typeof query.student!=='string'||!/^r_[a-zA-Z0-9_-]{8,80}$/.test(query.student))fail();f.student=query.student;}
   return f;
 }
 function matches(row,f) { return row.serverReceivedAt.slice(0,10)>=f.from&&row.serverReceivedAt.slice(0,10)<=f.to&&
-  (f.grade===undefined||row.grade===f.grade)&&(!f.cls||row.cls===f.cls)&&(!f.activity||row.event.activity===f.activity)&&(!f.student||row.researchId===f.student); }
+  (f.grade===undefined||row.grade===f.grade)&&(f.poemId===undefined||row.event.poemId===f.poemId)&&(!f.cls||row.cls===f.cls)&&(!f.activity||row.event.activity===f.activity)&&(!f.student||row.researchId===f.student); }
 const CONSTRUCTS=['reading.pronunciation','writing.dictation','sound.recognition','match.accuracy','sequence.accuracy','scene_builder.accuracy'];
 const ITEM_CONSTRUCTS={dictation:'writing.dictation',sound:'sound.recognition',match:'match.accuracy',sequence:'sequence.accuracy','scene-builder':'scene_builder.accuracy'};
 function constructFor(row){
@@ -596,17 +597,26 @@ function readingWordSummary(rows,which,filters={}){
   const sorted=[...groups.values()].map(({total,...group})=>({...group,meanScore:Math.round(total/group.count*10)/10})).sort((a,b)=>b.below60Count-a.below60Count||a.meanScore-b.meanScore||b.count-a.count||a.poemId-b.poemId||a.itemId.localeCompare(b.itemId)||a.index-b.index||a.contentVersion.localeCompare(b.contentVersion));
   return {readingWords:sorted.slice(0,limit),readingWordSummary:{cutoff,totalGroups:sorted.length,returnedGroups:Math.min(limit,sorted.length),truncated:sorted.length>limit,source:'server_verified',interpretation:'character_scores_not_phoneme_diagnosis'},readingCharacterAnalysis:buildCharacterAnalysis(outcomes,{...filters,attempt:which})};
 }
-function aggregateEvents(all,f,{generatedAt=new Date().toISOString(),source='postgres',lastImportedAt=null,syncStatus,integrity=null}={}){
+function aggregateEvents(all,f,{generatedAt=new Date().toISOString(),source='postgres',lastImportedAt=null,syncStatus,integrity=null,includeStudentDetails=false}={}){
   const rows=all.filter(r=>matches(r,f));rows.sort((a,b)=>a.serverReceivedAt.localeCompare(b.serverReceivedAt)||a.event.eventId.localeCompare(b.event.eventId));
   const detailQuality=f.student?qualityAndDuration(rows):null;
   const group=key=>{const buckets=new Map();for(const row of rows){const k=key(row);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(row);}return buckets;};
-  const students=[...group(r=>r.researchId)].map(([researchId,items])=>({researchId,grade:items.at(-1).grade,cls:items.at(-1).cls,
-    ...summarize(items,f.attempt),first:summarize(items,'first'),latest:summarize(items,'latest'),lastSeenAt:items.at(-1).serverReceivedAt}));
+  const studentGroups=group(r=>r.researchId),studentDetails={};
+  const students=[...studentGroups].map(([researchId,items])=>{
+    const first=summarize(items,'first'),latest=summarize(items,'latest');
+    if(includeStudentDetails){
+      const quality=qualityAndDuration(items),valid=items.filter(row=>!quality.flags.has(row.researchId+'/'+row.source+'/'+row.event.eventId));
+      const outcomes=selectedOutcomes(valid,f.attempt,'server_verified').filter(row=>constructFor(row)==='reading.pronunciation');
+      studentDetails[researchId]={readingCharacterAnalysis:buildCharacterAnalysis(outcomes,{...f,student:researchId}),practiceSummary:buildPracticeSummary(valid)};
+    }
+    return {researchId,grade:items.at(-1).grade,cls:items.at(-1).cls,...(f.attempt==='first'?first:latest),first,latest,lastSeenAt:items.at(-1).serverReceivedAt};
+  });
+  const summary=summarize(rows,f.attempt,true);
   return {schemaVersion:1,dictionaryVersion:'research-v1',generatedAt,source,filters:f,
     sync:{status:syncStatus||(source==='postgres'?'direct':lastImportedAt?'published':'unavailable'),lastImportedAt,...integrity?{integrity}:{},
       lagMs:lastImportedAt?Math.max(0,Date.now()-Date.parse(lastImportedAt)):null},
-    coverage:{nStudents:students.length,nEvents:rows.length,nInvalidEvents:summarize(rows).nInvalidEvents,rosterIncluded:false},
-    summary:summarize(rows,f.attempt,true),students,
+    coverage:{nStudents:students.length,nEvents:rows.length,nInvalidEvents:summary.nInvalidEvents,rosterIncluded:false},
+    summary,students,...includeStudentDetails?{studentDetails}:{},
     byGrade:[...group(r=>r.grade)].map(([grade,items])=>({grade,...summarize(items,f.attempt)})),
     byClass:[...group(r=>r.grade+'/'+r.cls)].map(([,items])=>({grade:items[0].grade,cls:items[0].cls,...summarize(items,f.attempt)})),
     trend:[...group(r=>r.serverReceivedAt.slice(0,10))].map(([date,items])=>({date,...summarize(items,f.attempt)})),
@@ -619,7 +629,7 @@ function aggregateEvents(all,f,{generatedAt=new Date().toISOString(),source='pos
 }
 async function readPostgres(f,db=getPool()){
   const values=[f.from,f.to],where=["received_at >= ($1::date::timestamp AT TIME ZONE 'UTC')","received_at < (($2::date + 1)::timestamp AT TIME ZONE 'UTC')"];
-  for(const [key,column] of [['grade','grade'],['cls','cls'],['activity','activity'],['student','research_id']])if(f[key]!==undefined){values.push(f[key]);where.push(column+'=$'+values.length);}
+  for(const [key,column] of [['grade','grade'],['poemId','poem_id'],['cls','cls'],['activity','activity'],['student','research_id']])if(f[key]!==undefined){values.push(f[key]);where.push(column+'=$'+values.length);}
   const rows=(await db.query('SELECT record FROM research_events WHERE '+where.join(' AND ')+' ORDER BY received_at,event_id LIMIT '+(MAX_READ_EVENTS+1),values)).rows;
   if(rows.length>MAX_READ_EVENTS)fail('NARROW_DATE_OR_CLASS_FILTER',413);
   return rows.map(r=>r.record);
@@ -651,12 +661,12 @@ async function readPublished(f,client=blob){
   const rows=chunks.flat();
   return {rows,lastImportedAt:manifest.generatedAt,manifest};
 }
-async function analytics(f){
+async function analytics(f,{includeStudentDetails=false}={}){
   if(!mode())fail('RESEARCH_DISABLED',503);
-  if(mode()==='postgres')return aggregateEvents(await readPostgres(f),f);
+  if(mode()==='postgres')return aggregateEvents(await readPostgres(f),f,{includeStudentDetails});
   const manifest=await readPrivate(`${NS}/published/manifest.json`);
   if(manifest?.overview?.status==='filter_required'&&canonical(manifest.overview.filters)===canonical(f))fail('NARROW_DATE_OR_CLASS_FILTER',413);
-  if(manifest?.snapshot&&canonical(manifest.snapshot.filters)===canonical(f)){
+  if(!includeStudentDetails&&manifest?.snapshot&&canonical(manifest.snapshot.filters)===canonical(f)){
     const ref=manifest.snapshot;
     if(!new RegExp('^'+NS+'/published/analytics/[a-f0-9]{64}\\.json$').test(ref.path))fail('INVALID_MANIFEST',503);
     const snapshot=await readPrivate(ref.path,{maxBytes:8*1024*1024});
@@ -664,7 +674,7 @@ async function analytics(f){
     return {...snapshot.analytics,generatedAt:manifest.generatedAt,source:'published_snapshot',
       sync:{status:manifest.status,lastImportedAt:manifest.generatedAt,...manifest.integrity?{integrity:manifest.integrity}:{},lagMs:Math.max(0,Date.now()-Date.parse(manifest.generatedAt))}};
   }
-  const data=await readPublished(f);return aggregateEvents(data.rows,f,{source:'published_snapshot',lastImportedAt:data.lastImportedAt,syncStatus:data.manifest.status,integrity:data.manifest.integrity});
+  const data=await readPublished(f);return aggregateEvents(data.rows,f,{source:'published_snapshot',lastImportedAt:data.lastImportedAt,syncStatus:data.manifest.status,integrity:data.manifest.integrity,includeStudentDetails});
 }
 function exportRows(rows,f,{format='jsonl',cursor=0,limit=5000,snapshot}={}){
   integer(cursor,0,MAX_READ_EVENTS);integer(limit,1,5000);

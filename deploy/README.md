@@ -8,6 +8,10 @@
 临时入口的发布、存储和切回说明见 `vercel-temporary.md`。两个 Vercel 项目分别更新，
 下面的 `update.py` 仅更新广州服务器，不会发布 Vercel 或改变 DNS。
 
+独立 Vercel 包只包含 gateway、广州 relay 与纯编码协商工具
+`api/_lib/response-encoding.cjs`；打包器逐项校验此白名单，不复制服务器业务代码。
+教师 JSON 在客户端接受 gzip 时由广州压缩并原样转发，Excel/Word 文件不重复压缩。
+
 应用采用原生静态网页、Nginx、常驻 Node API、PostgreSQL。公司官网及原有
 Vercel 页面仍保留。`server/` 将原 Vercel handlers 打包运行，兼容原部署方式。
 

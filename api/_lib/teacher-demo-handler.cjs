@@ -4,7 +4,7 @@ const data=require('./teacher-data.cjs');
 const research=require('./research-store.cjs');
 const demo=require('./teacher-demo-data.cjs');
 const analysis=require('./teacher-analysis.cjs');
-async function loadDemo(req,filters){return demo.createDemoDataset(filters,{roster:await auth.listAccounts(req)});}
+async function loadDemo(req,filters){const scope=data.requireTeacherScope(data.normalizeFilters(filters));return demo.createDemoDataset(scope,{roster:await auth.listAccounts(req)});}
 const service=analysis.createService({namespace:analysis.NS+'-demo',loadDataset:loadDemo});
 const assistant=require('./teacher-assistant-handler.cjs').createHandler({analysisModule:service});
 const exporter=require('./teacher-export-handler.cjs').createHandler({loadDataset:loadDemo,getReport:service.getReport});

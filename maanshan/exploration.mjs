@@ -1,5 +1,7 @@
 import {EXPLORATION_CONTENT} from './exploration-data.mjs?v=20260920a';
 import {createProcessResearch} from './poem-games/research.mjs?v=20260920a';
+import {startCameraObservation} from './camera-observation.mjs?v=20260921-ar1';
+import {modelPixelRatio} from './model-quality.mjs?v=20260921-ar1';
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ICONS = {
@@ -99,7 +101,7 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
   let dead = false, observation = 0, correct = false, completed = false, notified = false;
   let mode = 'picture', loadGeneration = 0, pending = null, viewer = null;
   let imageFailed = false, imagePending = true;
-  let arBusy = false, arSession = null;
+  let arBusy = false, cameraObservation = null;
   const research=createProcessResearch(onResearch,{prefix:`p${poem.id}.explore`,activity:'explore',context:{mode:'free'},alive:()=>!dead});
   const researchStep=()=>`observation.${observation}`;
   container.innerHTML = `<section class="explore" aria-labelledby="explore-title">
@@ -110,6 +112,7 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
         <img class="explore-scene" src="${escapeHTML(imageURL)}" alt="${escapeHTML(content.alt)}" decoding="async" fetchpriority="high">
         <div class="explore-image-loading" role="status"><img src="media/poetry-motifs/${content.motif}.svg" alt="" width="80" height="80"><p>正在準備畫面…</p></div>
         <div class="explore-image-fallback" hidden><img src="media/poetry-motifs/${content.motif}.svg" alt="" width="90" height="90"><p>畫面暫時未能打開</p><button type="button" data-explore="retry-image">再試一次</button></div>
+        <video class="explore-camera" muted playsinline aria-hidden="true" hidden></video>
         <div class="explore-canvas" data-explore-canvas hidden></div>
         <button class="explore-expand" type="button" data-explore="expand" aria-expanded="false" aria-label="放大觀察">${icon('expand')}<span>放大觀察</span></button>
         <span class="explore-scene-name">${escapeHTML(content.scene)}</span>
@@ -122,13 +125,13 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
       </div>
       <p class="explore-notice" role="status" hidden></p>
     </div><div class="explore-card" data-explore-card></div></div>
-    <div class="explore-ar-overlay" hidden><div class="explore-ar-instructions"><p role="status" data-ar-status>正在準備 AR…</p><button type="button" data-explore="ar-exit">結束 AR</button></div></div>
   </section>`;
   const q = selector => container.querySelector(selector);
   const section = q('.explore'), stage = q('[data-explore-stage]'), canvasHolder = q('[data-explore-canvas]');
   const picture = q('.explore-scene'), pictureFallback = q('.explore-image-fallback'), pictureLoading = q('.explore-image-loading');
   const card = q('[data-explore-card]'), loading = q('.explore-loading'), notice = q('.explore-notice');
-  const tools = q('.explore-model-tools'), modelButton = q('[data-explore="ar"]'), arOverlay = q('.explore-ar-overlay');
+  const tools = q('.explore-model-tools'), modelButton = q('[data-explore="ar"]'), cameraVideo = q('.explore-camera');
+  const sceneName = q('.explore-scene-name');
   const activityEvents = new AbortController();
   container.addEventListener('error', event => {
     if (event.target.matches?.('.explore-guide img, .explore-finish-shishi')) event.target.hidden = true;
@@ -208,6 +211,7 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
     modelButton.removeAttribute('aria-busy');
   }
   function releaseViewer() {
+    stopCamera();
     viewer?.destroy();
     viewer = null;
   }
@@ -282,52 +286,79 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
     }
   }
 
+  function resetCameraUI() {
+    viewer?.setCameraObservation(false);
+    cameraVideo.hidden = true;
+    section.classList.remove('is-camera');
+    sceneName.textContent = content.scene;
+    modelButton.querySelector('span').textContent = '點擊體驗 AR';
+    modelButton.removeAttribute('aria-pressed');
+  }
+  function stopCamera() {
+    const active = cameraObservation;
+    cameraObservation = null;
+    active?.stop();
+    resetCameraUI();
+  }
   async function startExperience() {
-    if (dead || arBusy || arSession) return;
+    if (dead || arBusy) return;
+    if (cameraObservation) {research.action('experience','exit');stopCamera();announce();return;}
     research.action('experience','start');
     arBusy = true; modelButton.disabled = true; announce();
-    let session = null, ended = false;
-    try {
-      // Request directly from the tap, before awaiting imports or downloads.
-      const request = navigator.xr?.requestSession && window.isSecureContext
-        ? navigator.xr.requestSession('immersive-ar', {requiredFeatures:['hit-test'],optionalFeatures:['dom-overlay'],domOverlay:{root:arOverlay}})
-          .then(value => ({session:value}), error => ({error})) : Promise.resolve({unsupported:true});
-      const prepared = showModel();
-      const result = await request;
-      if (result.session) {
-        session = result.session; arSession = session;
-        session.addEventListener('end', () => {ended = true; arSession = null; arOverlay.hidden = true;}, {once:true});
-        if (dead) {await session.end().catch(() => {}); return;}
-        arOverlay.hidden = false;
+    // getUserMedia stays in the browser, with no ARCore/App Store dependency.
+    // The video remains behind the transparent Three.js canvas; it is never recorded.
+    let camera;
+    camera = startCameraObservation(cameraVideo, {onEnd(reason) {
+      if (cameraObservation !== camera) return;
+      cameraObservation = null;
+      if (!dead) {
+        resetCameraUI();
+        if (reason === 'ended') announce('相機已關閉，仍可拖動模型觀察。');
       }
-      const target = await prepared;
-      if (!target || dead || ended) {await session?.end().catch(() => {}); return;}
-      if (!session) {
-        research.error('ar',result.error?.name==='NotAllowedError'||result.error?.name==='SecurityError'?'permission_denied':'unsupported');
-        announce(result.error?.name === 'NotAllowedError' || result.error?.name === 'SecurityError'
-          ? '沒有開啟相機權限，先用 3D 看一看。想再試 AR，請允許相機後再按按鈕。'
-          : '這個瀏覽器未支援相機 AR，現在是 3D 觀察。拖動模型換個角度，雙指可縮放。');
+    }});
+    cameraObservation = camera;
+    try {
+      const [target, result] = await Promise.all([showModel(), camera.ready]);
+      if (!target || dead || document.hidden || (result.ok && cameraObservation !== camera)) {
+        if (cameraObservation === camera) stopCamera();
+        else camera.stop();
         return;
       }
-      const {startSurfaceAR} = await import('./surface-ar.mjs?v=20260918b');
-      if (dead || ended) {await session.end().catch(() => {}); return;}
-      await target.enterAR(session, arOverlay, startSurfaceAR);
+      if (!result.ok) {
+        camera.stop();
+        if (cameraObservation === camera) cameraObservation = null;
+        research.error('ar',result.reason==='permission_denied'?'permission_denied':'unsupported');
+        announce(result.reason === 'permission_denied'
+          ? '相機未開啟，先用 3D 觀察。拖動轉向，雙指縮放。'
+          : result.reason === 'busy' ? '相機正在使用中，先用 3D 觀察。'
+          : '先用 3D 觀察，拖動轉向，雙指縮放。');
+        return;
+      }
+      cameraVideo.hidden = false;
+      target.setCameraObservation(true);
+      section.classList.add('is-camera');
+      sceneName.textContent = '相機觀察 · 模型跟隨畫面';
+      modelButton.querySelector('span').textContent = '關閉相機';
+      modelButton.setAttribute('aria-pressed', 'true');
     } catch {
-      await session?.end().catch(() => {});
+      camera.stop();
       research.error('ar','unknown');
-      if (!dead) announce('AR 暫時未能開啟，可以再試一次。先用畫面繼續觀察吧。');
+      if (!dead) announce('相機暫時未能開啟，先用 3D 觀察。');
     } finally {
       arBusy = false;
       if (!dead) modelButton.disabled = false;
     }
   }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && cameraObservation) stopCamera();
+  }, {signal: activityEvents.signal});
+  window.addEventListener('pagehide', stopCamera, {signal: activityEvents.signal});
 
   container.addEventListener('click', event => {
     const button = event.target.closest('[data-explore]');
     if (!button || !container.contains(button) || button.disabled || dead) return;
     const action = button.dataset.explore;
     if (action === 'ar') startExperience();
-    else if (action === 'ar-exit') {research.action('experience','exit');arSession?.end().catch(() => {});}
     else if (action === 'expand') {research.action(researchStep(),section.classList.contains('is-expanded')?'collapse':'expand');setExpanded(!section.classList.contains('is-expanded'));}
     else if (action === 'retry-image') {
       research.retry('image');
@@ -390,7 +421,6 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
     destroy() {
       if (dead) return;
       dead = true;
-      arSession?.end().catch(() => {});
       stopPending();
       releaseViewer();
       activityEvents.abort();
@@ -402,13 +432,12 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
 export function createViewer({THREE, OrbitControls, gltf, holder, stage, content, onInteract, onInteractionEnd, onContextLost}) {
   let renderer;
   const lightRendering = matchMedia('(pointer: coarse), (max-width: 1100px)').matches;
-  try {renderer = new THREE.WebGLRenderer({alpha: true, antialias: !lightRendering, powerPreference: 'low-power'});}
+  try {renderer = new THREE.WebGLRenderer({alpha: true, antialias: true, powerPreference: 'low-power'});}
   catch {throw new Error('webgl-unavailable');}
   const canvas = renderer.domElement;
   canvas.setAttribute('role', 'img');
   canvas.setAttribute('aria-label', `${content.object}，可用方向鍵轉動，加減鍵縮放，Home 鍵回到原來角度`);
   canvas.tabIndex = 0;
-  renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, lightRendering ? 1.25 : 1.5));
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -434,7 +463,7 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
       // Keep each asset's PBR maps and material response. Anisotropy preserves
       // wood grain, feathers and soil detail when children inspect an angle.
       for (const value of Object.values(material || {})) {
-        if (value?.isTexture) value.anisotropy = Math.min(lightRendering ? 2 : 4, renderer.capabilities.getMaxAnisotropy());
+        if (value?.isTexture) value.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
       }
     }
   });
@@ -509,6 +538,7 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
     controls.maxDistance = baseDistance * 1.9;
     const direction = camera.position.clone().sub(controls.target).normalize();
     setView(direction.lengthSq() ? direction : normalDirection, baseDistance * THREE.MathUtils.clamp(ratio, .52, 1.9), false);
+    renderer.setPixelRatio(modelPixelRatio(width, height));
     renderer.setSize(width, height, false);
     requestRender();
   };
@@ -581,6 +611,7 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
   setView(normalDirection, baseDistance, false);
   return {
     resize, zoom, reset, preset,
+    setCameraObservation(active) {if (!disposed) {ground.visible = !active;requestRender();}},
     async enterAR(session, overlay, startSurfaceAR) {
       if(disposed){await session.end().catch(()=>{});return;}
       cancelAnimationFrame(frame);frame=0;transition=null;

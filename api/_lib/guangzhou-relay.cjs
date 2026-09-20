@@ -4,6 +4,7 @@
 const http=require('node:http');
 const net=require('node:net');
 const {Client}=require('ssh2');
+const {TEACHER_ROUTES,acceptsGzip}=require('./response-encoding.cjs');
 const LIMITS=Object.freeze({soe:4*1024*1024,tts:65536,'maanshan-chat':131072,'maanshan-report':524288,'maanshan-save':393216,'maanshan-data':1024,handwriting:524288,'school-auth':16384,'research-events':131072,'teacher-analytics':1024,'challenge-result':16384,'teacher-tools':16384});
 const HOP=new Set(['connection','keep-alive','proxy-authenticate','proxy-authorization','te','trailer','transfer-encoding','upgrade']);
 const RESPONSE_LIMIT=4*1024*1024+65536;
@@ -65,7 +66,8 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
      let client;try{client=await tunnel();}catch{if(done||res.destroyed){finish();return;}client=await tunnel(true);}
      if(done||res.destroyed){finish();return;}
      connectedAt=now();
-     const headers={host:'mandarin.aiducation.asia','accept-encoding':'identity','x-forwarded-proto':'https',connection:'close'};
+     const gzipAllowed=TEACHER_ROUTES.has(name)&&acceptsGzip(req.headers?.['accept-encoding']);
+     const headers={host:'mandarin.aiducation.asia','accept-encoding':gzipAllowed?'gzip':'identity','x-forwarded-proto':'https',connection:'close'};
      for(const key of ['origin','cookie','content-type','x-csrf-token','sec-fetch-site','accept','user-agent','if-none-match','range'])if(typeof req.headers?.[key]==='string')headers[key]=req.headers[key];
      // Vercel supplies this client address; never trust caller-provided X-Real-IP.
      const raw=String(req.headers?.['x-vercel-forwarded-for']||req.socket?.remoteAddress||'').split(',')[0].trim();
@@ -77,6 +79,8 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
       channel=stream;channelAt=now();
       upstream=request({host:'127.0.0.1',port:3100,method:req.method,path:'/api/'+name+url.search,headers,createConnection:()=>stream},response=>{
        if(done){response.destroy();return;}
+       const encoding=String(response.headers['content-encoding']||'identity').toLowerCase().trim();
+       if(TEACHER_ROUTES.has(name)&&encoding!=='identity'&&(encoding!=='gzip'||!gzipAllowed)){response.destroy();error(502,'ORIGIN_ENCODING_UNSUPPORTED');return;}
        const chunks=[];let size=0;
        response.on('error',()=>error(502,'ORIGIN_INTERRUPTED'));
        response.on('data',chunk=>{size+=chunk.length;if(size>RESPONSE_LIMIT){response.destroy();error(502,'ORIGIN_RESPONSE_TOO_LARGE');}else chunks.push(chunk);});
@@ -93,6 +97,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
          res.setHeader('Server-Timing',originTiming+'relay_connect;dur='+duration(startedAt,connectedAt)+', relay_channel;dur='+duration(connectedAt,channelAt)+', relay_origin;dur='+duration(channelAt,now()));
          const result=Buffer.concat(chunks);
          if(req.method!=='HEAD')res.setHeader('Content-Length',result.length);
+         else if(/^\d+$/.test(String(response.headers['content-length']||'')))res.setHeader('Content-Length',response.headers['content-length']);
          res.end(req.method==='HEAD'?undefined:result);
         }
         finish();

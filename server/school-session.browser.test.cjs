@@ -39,12 +39,13 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
   async function open(page, handler) { await page.route('**/api/school-auth/**', handler); await page.goto(origin + '/maanshan/fixture'); }
   async function enter(page) { await page.locator('input[name=login]').fill('test-pupil'); await page.locator('input[name=password]').fill('synthetic-password'); await page.locator('input[name=termsAccepted]').check(); }
   try {
-    await run('platform terms start unchecked, are readable before login and remain separate from research consent', async (page, context) => {
+    await run('platform terms start checked, can be withdrawn and remain separate from research consent', async (page, context) => {
       let posts = 0;
       await open(page, route => { if (route.request().method() === 'POST') posts++; return reply(route, signedOut); });
       const checkbox = page.locator('input[name=termsAccepted]');
-      await checkbox.waitFor(); assert.equal(await checkbox.isChecked(), false);
+      await checkbox.waitFor(); assert.equal(await checkbox.isChecked(), true);
       assert.equal(await checkbox.getAttribute('required'), '');
+      await checkbox.uncheck();
       const popupEvent = context.waitForEvent('page');
       await page.locator('.platform-terms-confirmation a').click();
       const agreement = await popupEvent; await agreement.waitForLoadState('domcontentloaded');
@@ -55,8 +56,8 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
       assert.equal(await agreement.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.equal(await checkbox.isChecked(), false); assert.equal(posts, 0);
       await agreement.close();
-      await checkbox.check(); await page.reload(); await checkbox.waitFor();
-      assert.equal(await checkbox.isChecked(), false); assert.equal(posts, 0);
+      await page.reload(); await checkbox.waitFor();
+      assert.equal(await checkbox.isChecked(), true); assert.equal(posts, 0);
     });
     await run('unchecked or withdrawn terms cannot submit even with a synthetic submit event; checked login sends the exact version', async page => {
       const bodies = [];
@@ -66,6 +67,7 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
       });
       await page.locator('input[name=login]').fill('test-pupil');
       await page.locator('input[name=password]').fill('synthetic-password');
+      await page.locator('input[name=termsAccepted]').uncheck();
       await page.locator('[type=submit]').click();
       await page.evaluate(() => document.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
       await page.waitForTimeout(50); assert.equal(bodies.length, 0);
@@ -79,6 +81,31 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
       assert.equal(bodies.length, 1);
       assert.equal(bodies[0].termsAccepted, true); assert.equal(bodies[0].termsVersion, '2026-09-20-v1');
       assert.equal('termsAcceptedAt' in bodies[0], false); assert.equal('researchConsent' in bodies[0], false);
+    });
+    await run('teacher login also defaults to checked terms but withdrawal still blocks native and synthetic submit', async page => {
+      const bodies = [];
+      await page.route('**/api/school-auth**', route => {
+        if (route.request().method() === 'POST') {
+          bodies.push(route.request().postDataJSON());
+          return reply(route, { code: 'INVALID_CREDENTIALS' }, 401);
+        }
+        return reply(route, signedOut);
+      });
+      await page.goto(origin + '/maanshan/teacher.html');
+      const checkbox = page.locator('#teacher-login-form input[name=termsAccepted]');
+      await checkbox.waitFor(); assert.equal(await checkbox.isChecked(), true);
+      await page.locator('#teacher-login-form input[name=login]').fill('test-teacher');
+      await page.locator('#teacher-login-form input[name=password]').fill('synthetic-password');
+      await checkbox.uncheck(); await page.locator('#teacher-login-form [type=submit]').click();
+      await page.evaluate(() => document.querySelector('#teacher-login-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+      await page.waitForTimeout(50); assert.equal(bodies.length, 0);
+      assert.match(await checkbox.evaluate(el => el.validationMessage), /閱讀並同意/);
+      await checkbox.check(); await page.locator('#teacher-login-form [type=submit]').click();
+      await page.waitForFunction(() => document.querySelector('#login-error')?.textContent.includes('密碼不正確'));
+      assert.equal(bodies.length, 1);
+      assert.equal(bodies[0].termsAccepted, true); assert.equal(bodies[0].termsVersion, '2026-09-20-v1');
+      assert.equal('researchConsent' in bodies[0], false);
+      assert.equal(await checkbox.isChecked(), true);
     });
     await run('teacher uses the common login and can load private study progress without automatic dashboard redirect',async page=>{
       const teacher={...signedIn,user:{...signedIn.user,id:'t_'+'2'.repeat(24),role:'teacher',grade:null,cls:null,learningScope:'all-grades',researchEnabled:false}};let progressReads=0;

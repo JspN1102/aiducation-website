@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict');
 const http = require('node:http');
+const {gunzipSync}=require('node:zlib');
 const { test } = require('node:test');
 const { createApiServer } = require('./index.cjs');
 const routes = require('./routes.cjs');
@@ -18,6 +19,7 @@ function fixtures(handler) {
 function post(base, path, body, headers = {}) {
   return fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body });
 }
+function raw(url,options={}){return new Promise((resolve,reject)=>{const req=http.request(url,options,res=>{const chunks=[];res.on('error',reject);res.on('data',chunk=>chunks.push(chunk));res.on('end',()=>resolve({status:res.statusCode,headers:res.headers,body:Buffer.concat(chunks)}));});req.on('error',reject);req.end();});}
 
 test('bundled real handlers preserve health, validation, methods and dynamic teaching import', async t => {
   // No paid API or real database requests are made by this test.
@@ -116,4 +118,37 @@ test('late provider callbacks cannot change a timeout response or crash the serv
   assert.deepEqual(await response.json(), { error: 'Request timed out' });
   assert.equal(await callback, undefined);
   assert.equal((await fetch(base + '/api/health')).status, 200);
+});
+
+test('only large teacher JSON negotiates gzip, preserving Vary, bytes and HEAD representation',async t=>{
+ const payload={students:Array.from({length:160},(_,n)=>({id:n,reading:83.25,text:'普通話學習紀錄'}))},plain=Buffer.from(JSON.stringify(payload));
+ const base=await start(t,{handlers:fixtures((req,res)=>{res.setHeader('Vary','Cookie');res.json(req.query.small?{ok:true}:payload);})});
+ for(const route of ['teacher-analytics','teacher-tools']){
+   const compressed=await raw(`${base}/api/${route}`,{headers:{'Accept-Encoding':'br, gzip;q=0.5'}});
+   assert.equal(compressed.headers['content-encoding'],'gzip');assert.deepEqual(gunzipSync(compressed.body),plain);
+   assert.equal(Number(compressed.headers['content-length']),compressed.body.length);assert.match(compressed.headers.vary,/Cookie/);assert.match(compressed.headers.vary,/Accept-Encoding/);
+   assert.ok(compressed.body.length<plain.length/3);
+   const head=await raw(`${base}/api/${route}`,{method:'HEAD',headers:{'Accept-Encoding':'gzip'}});
+   assert.equal(head.body.length,0);assert.equal(head.headers['content-encoding'],'gzip');assert.equal(head.headers['content-length'],compressed.headers['content-length']);
+ }
+ for(const encoding of [undefined,'identity','gzip;q=0','gzip;q=0, *;q=1','br','gzip;q=invalid','gzip;q=1, gzip;q=0']){
+   const result=await raw(base+'/api/teacher-analytics',{headers:encoding===undefined?{}:{'Accept-Encoding':encoding}});
+   assert.equal(result.headers['content-encoding'],undefined);assert.deepEqual(result.body,plain);assert.match(result.headers.vary,/Accept-Encoding/);
+ }
+ const wildcard=await raw(base+'/api/teacher-analytics',{headers:{'Accept-Encoding':'*;q=0.3'}});assert.equal(wildcard.headers['content-encoding'],'gzip');
+ for(const route of ['school-auth','tts']){const result=await raw(`${base}/api/${route}`,{headers:{'Accept-Encoding':'gzip'}});assert.equal(result.headers['content-encoding'],undefined);assert.deepEqual(result.body,plain);assert.equal(result.headers.vary,'Cookie');}
+ const small=await raw(base+'/api/teacher-tools?small=1',{headers:{'Accept-Encoding':'gzip'}});assert.equal(small.headers['content-encoding'],undefined);assert.deepEqual(JSON.parse(small.body),{ok:true});
+});
+
+test('Office bytes remain unchanged and JSON errors preserve status under gzip',async t=>{
+ const bytes=Buffer.concat([Buffer.from([80,75,3,4]),Buffer.alloc(5000)]),error={code:'SYNTHETIC',details:'read unavailable '.repeat(100)};
+ const base=await start(t,{handlers:fixtures((req,res)=>{if(req.query.error)return res.status(503).json(error);res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');res.send(bytes);})});
+ const file=await raw(base+'/api/teacher-tools?tool=export',{headers:{'Accept-Encoding':'gzip'}});assert.equal(file.headers['content-encoding'],undefined);assert.equal(Number(file.headers['content-length']),bytes.length);assert.deepEqual(file.body,bytes);
+ const failure=await raw(base+'/api/teacher-tools?error=1',{headers:{'Accept-Encoding':'gzip'}});assert.equal(failure.status,503);assert.equal(failure.headers['content-encoding'],'gzip');assert.deepEqual(JSON.parse(gunzipSync(failure.body)),error);
+});
+
+test('late large teacher JSON cannot overwrite a completed timeout or leave gzip headers',async t=>{
+ let finish;const settled=new Promise(resolve=>finish=resolve);
+ const base=await start(t,{requestTimeoutMs:15,handlers:fixtures((req,res)=>{setTimeout(()=>{try{res.setHeader('Content-Length',100000);res.json({large:'word '.repeat(20000)});finish();}catch(error){finish(error);}},45);})});
+ const result=await raw(base+'/api/teacher-analytics',{headers:{'Accept-Encoding':'gzip'}});assert.equal(result.status,504);assert.equal(result.headers['content-encoding'],undefined);assert.deepEqual(JSON.parse(result.body),{error:'Request timed out'});assert.equal(await settled,undefined);
 });

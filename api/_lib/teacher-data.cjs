@@ -1,20 +1,26 @@
 'use strict';
 const research = require('./research-store.cjs');
 const auth = require('./school-auth.cjs');
+const {poems} = require('../../maanshan/poems.json');
 const CONSTRUCTS = Object.freeze({ 'reading.pronunciation':'朗讀字音評分', 'writing.dictation':'聽寫', 'sound.recognition':'聽音辨識', 'match.accuracy':'配對', 'sequence.accuracy':'排序', 'scene_builder.accuracy':'場景組合' });
 const SOURCES = Object.freeze({serverVerified:'平台評分',clientReported:'練習回報'});
 class TeacherDataError extends Error { constructor(code,status=503){super(code);this.code=code;this.status=status;} }
 function normalizeFilters(input={}) {
-  if (!input || typeof input!=='object' || Array.isArray(input) || Object.keys(input).some(key=>!['grade','cls','from','to','attempt','activity','student'].includes(key))) throw new TeacherDataError('INVALID_FILTER',400);
-  const copy={...input};if(Number.isInteger(copy.grade))copy.grade=String(copy.grade);
+  if (!input || typeof input!=='object' || Array.isArray(input) || Object.keys(input).some(key=>!['grade','poemId','cls','from','to','attempt','activity','student'].includes(key))) throw new TeacherDataError('INVALID_FILTER',400);
+  const copy={...input};for(const key of ['grade','poemId'])if(Number.isInteger(copy[key]))copy[key]=String(copy[key]);
   return research.filtersFrom(copy);
+}
+function requireTeacherScope(filters){
+  if(filters.grade===undefined||filters.poemId===undefined)throw new research.ResearchError('TEACHER_SCOPE_REQUIRED',400);
+  if(!poems.some(poem=>poem.id===Number(filters.poemId)&&poem.grade===Number(filters.grade)))throw new research.ResearchError('POEM_GRADE_MISMATCH',400);
+  return filters;
 }
 function fingerprint(filters,students,rows) {
   return research.hash(research.canonical({filters,roster:students.map(({researchId,displayName,grade,cls,classNo,rosterMatched})=>({researchId,displayName,grade,cls,classNo,rosterMatched})),events:rows.map(row=>[row.researchId,row.source,row.event.eventId,row.eventChecksum]).sort((a,b)=>research.canonical(a).localeCompare(research.canonical(b)))}));
 }
 function buildDataset(raw,people,filters,now=Date.now()) {
   const rows=raw.rows.filter(row=>research.matches(row,filters));
-  const analytics=research.aggregateEvents(rows,filters,{generatedAt:new Date(now).toISOString(),source:raw.source||'postgres',lastImportedAt:raw.lastImportedAt||null,syncStatus:raw.syncStatus,integrity:raw.integrity});
+  const analytics=research.aggregateEvents(rows,filters,{generatedAt:new Date(now).toISOString(),source:raw.source||'postgres',lastImportedAt:raw.lastImportedAt||null,syncStatus:raw.syncStatus,integrity:raw.integrity,includeStudentDetails:true});
   const stats=new Map(analytics.students.map(row=>[row.researchId,row]));
   const roster=people.filter(person=>(filters.grade===undefined||person.grade===filters.grade)&&(!filters.cls||person.cls===filters.cls)&&(!filters.student||person.researchId===filters.student));
   const students=roster.map(person=>({researchId:person.researchId,displayName:person.displayName,grade:person.grade,cls:person.cls,classNo:person.classNo??null,rosterMatched:true,stats:stats.get(person.researchId)||null}));
@@ -59,4 +65,4 @@ function createDatasetLoader({requireTeacher=req=>auth.requireActor(req,{roles:[
     cache.set(key,entry);return structuredClone(await entry.promise);
   };
 }
-module.exports={CONSTRUCTS,SOURCES,TeacherDataError,normalizeFilters,buildDataset,buildFollowUp,createDatasetLoader,loadTeacherDataset:createDatasetLoader()};
+module.exports={CONSTRUCTS,SOURCES,TeacherDataError,normalizeFilters,requireTeacherScope,buildDataset,buildFollowUp,createDatasetLoader,loadTeacherDataset:createDatasetLoader()};

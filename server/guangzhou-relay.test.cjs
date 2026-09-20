@@ -1,11 +1,14 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),http=require('node:http'),net=require('node:net');
 const {EventEmitter}=require('node:events');
+const {gzipSync,gunzipSync}=require('node:zlib');
+const {createApiServer}=require('./index.cjs');
+const routes=require('./routes.cjs');
 const {createRelay,configuration,createGateway}=require('../api/_lib/guangzhou-relay.cjs');
 const env={GUANGZHOU_RELAY_HOST:'134.175.149.14',GUANGZHOU_RELAY_USERNAME:'maanshan-relay',GUANGZHOU_RELAY_HOST_SHA256:'a'.repeat(64),GUANGZHOU_RELAY_PRIVATE_KEY:'-----BEGIN OPENSSH PRIVATE KEY-----\nSYNTHETIC-ONLY\n-----END OPENSSH PRIVATE KEY-----'};
 const listen=server=>new Promise(resolve=>server.listen(0,'127.0.0.1',()=>resolve(server.address().port)));
 async function fixture(fn,options={}){
- const origin=http.createServer(fn),originPort=await listen(origin),clients=[],requests=[];
+ const origin=options.origin||http.createServer(fn),originPort=await listen(origin),clients=[],requests=[];
  class SSH extends EventEmitter{
   constructor(){super();this.closed=false;this.once('close',()=>{this.closed=true;});}
   connect(config){this.config=config;if(options.onConnect){options.onConnect(this,clients);return this;}queueMicrotask(()=>{if(options.failFirstHandshake&&clients.length===1)return this.emit('error',new Error('synthetic transport timeout'));config.hostVerifier(options.hostHash||'a'.repeat(64))?this.emit('ready'):this.emit('error',new Error('synthetic key mismatch'));});return this;}
@@ -15,8 +18,9 @@ async function fixture(fn,options={}){
  const relay=createRelay({env,clientFactory:()=>{const client=new SSH();clients.push(client);return client;},timeoutMs:options.timeoutMs||1500});
  const frontend=http.createServer(async(req,res)=>{const chunks=[];for await(const chunk of req)chunks.push(chunk);if(chunks.length){try{req.body=JSON.parse(Buffer.concat(chunks));}catch{req.body=Buffer.concat(chunks);}}options.onRequest?.(req);await relay.relay(options.name||'school-auth',req,res);});
  const port=await listen(frontend);
- return {clients,requests,call:(url='/api/school-auth',init={})=>fetch('http://127.0.0.1:'+port+url,init),close:async()=>{relay.close();frontend.closeAllConnections();origin.closeAllConnections();await Promise.all([new Promise(r=>frontend.close(r)),new Promise(r=>origin.close(r))]);}};
+ return {clients,requests,call:(url='/api/school-auth',init={})=>fetch('http://127.0.0.1:'+port+url,init),raw:(url,init)=>raw('http://127.0.0.1:'+port+url,init),close:async()=>{relay.close();frontend.closeAllConnections();origin.closeAllConnections();await Promise.all([new Promise(r=>frontend.close(r)),new Promise(r=>origin.close(r))]);}};
 }
+function raw(url,options={}){return new Promise((resolve,reject)=>{const req=http.request(url,options,res=>{const chunks=[];res.on('error',reject);res.on('data',chunk=>chunks.push(chunk));res.on('end',()=>resolve({status:res.statusCode,headers:res.headers,body:Buffer.concat(chunks)}));});req.on('error',reject);req.end();});}
 test('fixed host and pinned key are mandatory; environment cannot create an arbitrary destination',()=>{
  assert.equal(configuration(env).host,'134.175.149.14');
  assert.equal(configuration(env).port,22);
@@ -105,4 +109,32 @@ test('late close from a failed SSH connection preserves the shared fallback for 
 test('oversized upstream data is never delivered as a truncated Office download',async()=>{
  const f=await fixture((req,res)=>res.end(Buffer.alloc(5*1024*1024)),{name:'teacher-tools'});
  try{const r=await f.call('/api/teacher-tools');assert.equal(r.status,502);assert.equal((await r.json()).code,'ORIGIN_RESPONSE_TOO_LARGE');}finally{await f.close();}
+});
+
+test('real teacher JSON server and relay negotiate gzip and preserve exact payload and HEAD headers',async()=>{
+ const payload={students:Array.from({length:140},(_,id)=>({id,text:'測試學習資料',score:81}))},plain=Buffer.from(JSON.stringify(payload)),encodings=[];
+ const handler=(req,res)=>{encodings.push(req.headers['accept-encoding']);res.setHeader('Vary','Cookie');res.json(payload);};
+ const origin=createApiServer({handlers:Object.fromEntries(Object.keys(routes).map(name=>[name,handler]))});
+ const f=await fixture(null,{name:'teacher-analytics',origin});
+ try{
+   const compressed=await f.raw('/api/teacher-analytics',{headers:{'Accept-Encoding':'br, gzip'}});
+   assert.equal(encodings.at(-1),'gzip');assert.equal(compressed.headers['content-encoding'],'gzip');assert.deepEqual(gunzipSync(compressed.body),plain);assert.equal(Number(compressed.headers['content-length']),compressed.body.length);assert.match(compressed.headers.vary,/Cookie.*Accept-Encoding/);
+   for(const encoding of [undefined,'identity','gzip;q=0','gzip;q=0, *;q=1','br']){
+     const response=await f.raw('/api/teacher-analytics',{headers:encoding===undefined?{}:{'Accept-Encoding':encoding}});assert.equal(encodings.at(-1),'identity');assert.equal(response.headers['content-encoding'],undefined);assert.deepEqual(response.body,plain);
+   }
+   const head=await f.raw('/api/teacher-analytics',{method:'HEAD',headers:{'Accept-Encoding':'gzip'}});assert.equal(head.body.length,0);assert.equal(head.headers['content-encoding'],'gzip');assert.equal(head.headers['content-length'],compressed.headers['content-length']);
+ }finally{await f.close();}
+});
+
+test('teacher relay keeps Office identity and compressed error status; rejects unexpected encoding',async()=>{
+ const bytes=Buffer.concat([Buffer.from([80,75,3,4]),Buffer.alloc(3000)]),failure={code:'NOT_READY',detail:'synthetic '.repeat(150)};
+ const handler=(req,res)=>{if(req.query.error)return res.status(503).json(failure);res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');res.send(bytes);};
+ const origin=createApiServer({handlers:Object.fromEntries(Object.keys(routes).map(name=>[name,handler]))});
+ const f=await fixture(null,{name:'teacher-tools',origin});
+ try{
+   const file=await f.raw('/api/teacher-tools?tool=export',{headers:{'Accept-Encoding':'gzip'}});assert.equal(file.headers['content-encoding'],undefined);assert.deepEqual(file.body,bytes);
+   const error=await f.raw('/api/teacher-tools?error=1',{headers:{'Accept-Encoding':'gzip'}});assert.equal(error.status,503);assert.deepEqual(JSON.parse(gunzipSync(error.body)),failure);
+ }finally{await f.close();}
+ const bad=await fixture((req,res)=>{res.setHeader('Content-Type','application/json');res.setHeader('Content-Encoding','gzip');res.end(gzipSync(Buffer.from(JSON.stringify(failure))));},{name:'teacher-tools'});
+ try{const response=await bad.raw('/api/teacher-tools',{headers:{'Accept-Encoding':'gzip;q=0'}});assert.equal(response.status,502);assert.equal(response.headers['content-encoding'],undefined);assert.equal(JSON.parse(response.body).code,'ORIGIN_ENCODING_UNSUPPORTED');}finally{await bad.close();}
 });

@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),ExcelJS=require('exceljs')
 const research=require('../api/_lib/research-store.cjs'),auth=require('../api/_lib/school-auth.cjs');
 const data=require('../api/_lib/teacher-data.cjs'),docs=require('../api/_lib/teacher-documents.cjs');
 const {createHandler}=require('../api/_lib/teacher-export-handler.cjs');
-const NOW=Date.parse('2026-09-20T10:00:00Z'),filters={grade:2,cls:'A',from:'2026-09-01',to:'2026-09-20',attempt:'latest'};
+const NOW=Date.parse('2026-09-20T10:00:00Z'),filters={grade:2,poemId:2,cls:'A',from:'2026-09-01',to:'2026-09-20',attempt:'latest'};
 const teacher={id:'t_'+'a'.repeat(24),role:'teacher'};
 function fixture(){
   const roster=[{researchId:'r_'+'1'.repeat(24),displayName:'=測試學生',grade:2,cls:'A',classNo:1,login:'DO_NOT_EXPORT_LOGIN'},
@@ -41,25 +41,33 @@ test('dataset timeout has bounded in-flight concurrency and a late completion ca
   await assert.rejects(load({},filters),e=>e.code==='EXPORT_TIMEOUT');await assert.rejects(load({},filters),e=>e.code==='EXPORT_TIMEOUT');assert.equal(calls,1);
   await assert.rejects(load({},{...filters,cls:'B'}),e=>e.code==='EXPORT_BUSY');gate.resolve();await new Promise(resolve=>setImmediate(resolve));assert.equal((await load({},filters)).students.length,2);assert.equal(calls,2);
 });
-test('Excel is one usable student sheet with only requested columns, follow-up last and zero distinct from unmeasured',async()=>{
+test('Excel has eight clear learning columns and keeps zero distinct from unmeasured',async()=>{
   const f=fixture(),buffer=await docs.buildXlsx(f.dataset);assert.equal(buffer.subarray(0,2).toString(),'PK');const wb=new ExcelJS.Workbook();await wb.xlsx.load(buffer);assert.deepEqual(wb.worksheets.map(sheet=>sheet.name),['學生明細']);
   const students=wb.getWorksheet('學生明細');
-  assert.deepEqual(students.getRow(1).values.slice(1),['年級','班別','座號','姓名','期內狀態','朗讀字音評分（分）','聽寫（分）','聽音辨識（分）','配對（分）','排序（分）','場景組合（分）','紀錄數','嘗試數','完成紀錄','有效時間（分鐘）','跟進提示']);
-  assert.equal(students.getCell('D2').value,'=測試學生');assert.equal(students.rowCount,3);assert.equal(students.getCell('F2').value,0);assert.equal(students.getCell('G2').value,null);assert.equal(students.getCell('F3').value,null);assert.match(students.getCell('P2').value,/朗讀字音評分 0 分（平台評分，1 筆）/);assert.match(students.getCell('P3').value,/未見紀錄/);
-  assert.deepEqual(students.getRow(2).values.slice(12,16),[3,3,0,0]);assert.equal(students.views[0].xSplit,4);assert.equal(students.autoFilter,'A1:P3');assert.equal(students.pageSetup.printTitlesRow,'1:1');assert.match(wb.subject,/2 年級 A 班.*2026-09-01 至 2026-09-20/);
-  assert.equal(students.getCell('P2').alignment.wrapText,true);assert(students.getRow(2).height>=38);
+  assert.deepEqual(students.getRow(1).values.slice(1),['年級','班別','座號','姓名','朗讀得分','聽音辨字（分）','聽寫（分）','練一練完成情況']);
+  assert.equal(students.getCell('D2').value,'=測試學生');assert.equal(students.rowCount,3);assert.equal(students.getCell('E2').value,0);assert.equal(students.getCell('G2').value,null);assert.equal(students.getCell('E3').value,null);assert.equal(students.getCell('H2').value,'未有紀錄');
+  assert.equal(students.views[0].xSplit,4);assert.equal(students.autoFilter,'A1:H3');assert.equal(students.pageSetup.printTitlesRow,'1:1');assert.match(wb.subject,/2 年級.*贈汪倫.*A 班.*2026-09-01 至 2026-09-20/);
+  assert.equal(students.getCell('H2').alignment.wrapText,true);assert(students.getRow(2).height>=40);
   for(const sheet of wb.worksheets){assert.equal(sheet.views[0].state,'frozen');assert(sheet.autoFilter);sheet.eachRow(row=>row.eachCell(cell=>assert.notEqual(cell.type,ExcelJS.ValueType.Formula)));}
   const zip=await JSZip.loadAsync(buffer);for(const [name,file]of Object.entries(zip.files))if(name.startsWith('xl/')&&name.endsWith('.xml')){const xml=await file.async('string');assert(!/<f[ >]/.test(xml));assert(!xml.includes('DO_NOT_EXPORT_LOGIN'));assert(!xml.includes('其他班學生'));assert(!f.roster.some(person=>xml.includes(person.researchId)));}
   const folder=process.env.TEACHER_DOCUMENT_EVIDENCE_DIR;if(folder){fs.mkdirSync(folder,{recursive:true});fs.writeFileSync(path.join(folder,'synthetic-teacher.xlsx'),buffer);}
 });
 test('empty class learning data still exports its entire selected roster without invented scores',async()=>{
-  const f=fixture(),dataset=data.buildDataset({rows:[]},f.roster,filters,NOW),wb=new ExcelJS.Workbook();await wb.xlsx.load(await docs.buildXlsx(dataset));const students=wb.getWorksheet('學生明細');assert.equal(students.rowCount,3);assert.equal(students.getCell('F2').value,null);assert.match(students.getCell('P2').value,/未見紀錄/);assert.equal(wb.worksheets.length,1);assert.equal(dataset.rosterSummary.noRecords,2);
+  const f=fixture(),dataset=data.buildDataset({rows:[]},f.roster,filters,NOW),wb=new ExcelJS.Workbook();await wb.xlsx.load(await docs.buildXlsx(dataset));const students=wb.getWorksheet('學生明細');assert.equal(students.rowCount,3);assert.equal(students.getCell('E2').value,null);assert.equal(students.getCell('H2').value,'未有紀錄');assert.equal(wb.worksheets.length,1);assert.equal(dataset.rosterSummary.noRecords,2);
+});
+
+test('Excel shows practice completion without turning a completed game into a correct answer',async()=>{
+  const f=fixture(),id=f.dataset.students[0].researchId;
+  f.dataset.analytics.studentDetails={...f.dataset.analytics.studentDetails,[id]:{practiceSummary:{completedN:1,total:5,correctN:0}}};
+  const wb=new ExcelJS.Workbook();await wb.xlsx.load(await docs.buildXlsx(f.dataset));
+  const sheet=wb.getWorksheet('學生明細');assert.equal(sheet.getCell('H2').value,'完成 1 / 5 題；答對 0 題');
+  for(const label of ['跟進提示','練習重點','配對（分）','場景組合（分）','排序（分）','紀錄數'])assert(!sheet.getRow(1).values.includes(label));
 });
 test('single-sheet Excel never substitutes client scores for assessed scores or blanks',async()=>{
   const f=fixture(),client=structuredClone(f.rows[0]);client.source='client';client.event.type='feedback_shown';client.event.eventId=randomUUID();client.event.result.score=95;client.eventChecksum=research.hash(research.canonical({researchId:client.researchId,source:client.source,event:client.event}));
   for(const [rows,expectedScore]of [[[...f.rows,client],0],[[client],null]]){
-    const dataset=data.buildDataset({rows},f.roster,filters,NOW),wb=new ExcelJS.Workbook();await wb.xlsx.load(await docs.buildXlsx(dataset));const students=wb.getWorksheet('學生明細');assert.equal(students.getCell('F2').value,expectedScore);assert.equal(wb.worksheets.length,1);
-    if(expectedScore===null)assert.match(students.getCell('P2').value,/僅有練習回報，尚未有平台評分/);else assert.match(students.getCell('P2').value,/平台評分/);
+    const dataset=data.buildDataset({rows},f.roster,filters,NOW),wb=new ExcelJS.Workbook();await wb.xlsx.load(await docs.buildXlsx(dataset));const students=wb.getWorksheet('學生明細');assert.equal(students.getCell('E2').value,expectedScore);assert.equal(wb.worksheets.length,1);
+    assert.equal(students.columnCount,8);assert(!students.getRow(1).values.includes('跟進提示'));
   }
 });
 
@@ -68,7 +76,7 @@ test('single-sheet Excel preserves grade, class, dates, first/latest and seat or
   for(const [scope,seats,score]of [[filters,[1,2],0],[{...filters,attempt:'first'},[1,2],80],[{...filters,from:'2026-09-10',to:'2026-09-10'},[1,2],80],[{...filters,from:'2026-09-20',to:'2026-09-20'},[1,2],null],[{...filters,cls:'B'},[1],99],[{...filters,grade:1},[],null]]){
     const dataset=data.buildDataset({rows:f.rows},[...f.roster].reverse(),scope,NOW),wb=new ExcelJS.Workbook();await wb.xlsx.load(await docs.buildXlsx(dataset));const students=wb.getWorksheet('學生明細');
     assert.deepEqual(wb.worksheets.map(sheet=>sheet.name),['學生明細']);assert.deepEqual(students.getRows(2,seats.length)?.map(row=>row.getCell(3).value)||[],seats);assert.equal(students.rowCount,seats.length+1);
-    if(seats.length)assert.equal(students.getCell('F2').value,score);assert.match(wb.subject,new RegExp(scope.from+' 至 '+scope.to));
+    if(seats.length)assert.equal(students.getCell('E2').value,score);assert.match(wb.subject,new RegExp(scope.from+' 至 '+scope.to));
   }
 });
 

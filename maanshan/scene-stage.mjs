@@ -8,7 +8,7 @@ export function getScenePreview(poemSlug, scene = 1) {
   return scene === 0 ? '' : PREVIEWS[poemSlug]?.[scene] || '';
 }
 
-// Warm only the verse being practised; the paper stays blank until show().
+// Warm a nearby painting without revealing it; the paper stays blank until show().
 export function preloadScene(poemSlug, scene) {
   checkScene(scene);
   if (!scene || !getScenePreview(poemSlug, scene)) return Promise.resolve();
@@ -67,6 +67,10 @@ export function mountStage(container, options) {
   viewport.setAttribute('role', 'img');
   viewport.setAttribute('aria-label', String(alt));
   Object.assign(viewport.style, { position: 'absolute', inset: '0', overflow: 'hidden' });
+  const strip = document.createElement('div');
+  strip.className = 'scene-stage-strip';
+  Object.assign(strip.style, {position:'absolute',inset:'0',overflow:'visible',transform:'translate3d(0,0,0)'});
+  strip.append(viewport);
   const status = document.createElement('div');
   status.className = 'scene-stage-status';
   status.setAttribute('role', 'status');
@@ -81,7 +85,7 @@ export function mountStage(container, options) {
     padding: '5px 9px', minHeight: '34px', flexShrink: '0', cursor: 'pointer', font: 'inherit'
   });
   status.append(statusText, retryButton);
-  host.append(viewport, status);
+  host.append(strip, status);
 
   let disposed = false;
   let generation = 0;
@@ -93,6 +97,14 @@ export function mountStage(container, options) {
   let currentLayer = null;
   const layers = [];
   const animations = new Set();
+  let swipe = null, swipeGeneration = 0, swipeAnimation = null;
+  // Decode the four tiny embedded paintings before the first gesture. Reuse
+  // these actual image nodes, because cloned nodes lose their decode state.
+  const previewImages = new Map();
+  for(let scene=1;scene<=4;scene++){
+    const image=new Image(192,108);image.decoding='sync';image.src=getScenePreview(poemSlug,scene);
+    previewImages.set(scene,image);void image.decode().catch(()=>{});
+  }
 
   function layerFor(image, scene, quality) {
     const layer = document.createElement('div');
@@ -109,9 +121,7 @@ export function mountStage(container, options) {
 
   if (initialScene === 0) currentLayer = layerFor(null, 0, 'blank');
   else {
-    const preview = new Image(192, 108);
-    preview.decoding = 'sync';
-    preview.src = getScenePreview(poemSlug, initialScene);
+    const preview = previewImages.get(initialScene);
     currentLayer = layerFor(preview, initialScene, 'preview');
   }
   viewport.append(currentLayer);
@@ -180,9 +190,85 @@ export function mountStage(container, options) {
     removeCoveredLayers(layer);
   }
 
+  function cancelSwipe() {
+    swipeGeneration++;
+    swipeAnimation?.cancel(); swipeAnimation = null;
+    if (swipe) for (const entry of [swipe.previous,swipe.next]) entry?.panel.remove();
+    swipe = null;
+    strip.style.transform = 'translate3d(0,0,0)';
+    strip.style.willChange = '';
+  }
+
+  function beginSwipe(adjacent = {}) {
+    if (disposed) return false;
+    cancelSwipe();
+    // A crossfade must not leave translucent stacked pages inside the moving strip.
+    for (const animation of animations) {try {animation.finish();} catch {animation.cancel();}}
+    currentLayer.style.opacity = '1';
+    removeCoveredLayers(currentLayer);
+    const gesture = {previous:null,next:null,offset:0,width:Math.max(1,host.getBoundingClientRect().width)};
+    swipe = gesture;
+    strip.style.willChange = 'transform';
+    for (const [side,offset] of [['previous',-100],['next',100]]) {
+      const info = adjacent[side]; if (!info) continue;
+      checkScene(info.scene);
+      const panel = document.createElement('div');
+      panel.className = 'scene-stage-neighbor';panel.dataset.side = side;panel.setAttribute('aria-hidden','true');
+      Object.assign(panel.style,{position:'absolute',top:'0',bottom:'0',left:offset+'%',width:'100%',overflow:'hidden',pointerEvents:'none'});
+      let image = null;
+      if (info.scene) image=previewImages.get(info.scene);
+      const entry = {panel,scene:info.scene,alt:String(info.alt||lastRequest.alt),layer:layerFor(image,info.scene,info.scene?'preview':'blank')};
+      gesture[side] = entry;panel.append(entry.layer);strip.append(panel);
+      if (!info.scene) continue;
+      const url = new URL(imageAsset('media/' + poemSlug + '/scene-' + info.scene + '.webp'),import.meta.url).href;
+      void decodeSource(url).then(async source=>{
+        // Cloning an already decoded source does not transfer its decode state.
+        // Keep the embedded preview painted until the replacement is ready.
+        const image=source.cloneNode(false);await image.decode();
+        if (disposed || swipe !== gesture) return;
+        entry.layer = layerFor(image,info.scene,'full');panel.replaceChildren(entry.layer);
+      }).catch(()=>{}); // The embedded painting is usable while its full image is unavailable.
+    }
+    return true;
+  }
+
+  function moveSwipe(offset) {
+    if (disposed || !swipe) return;
+    swipe.offset = Number.isFinite(offset) ? offset : 0;
+    strip.style.transform = `translate3d(${swipe.offset}px,0,0)`;
+  }
+
+  async function settleSwipe(step = 0) {
+    if (disposed || !swipe) return {committed:false};
+    const gesture = swipe, request = swipeGeneration;
+    const selected = step === -1 ? gesture.previous : step === 1 ? gesture.next : null;
+    const target = selected ? -step * gesture.width : 0;
+    if (!reducedMotion.matches && typeof strip.animate === 'function' && Math.abs(target-gesture.offset)>1) {
+      const animation = strip.animate([{transform:`translate3d(${gesture.offset}px,0,0)`},{transform:`translate3d(${target}px,0,0)`}],
+        {duration:210,easing:'cubic-bezier(.2,.75,.25,1)',fill:'forwards'});
+      swipeAnimation = animation;
+      try {await animation.finished;} catch {return {committed:false};}
+    }
+    if (disposed || swipe !== gesture || request !== swipeGeneration) return {committed:false};
+    if (selected) {
+      // Adopt the actual neighbour at the same frame as snapping the strip back.
+      // Full-image loading can continue, but never underneath another verse's index.
+      generation++;pending = null;
+      currentLayer = selected.layer;currentLayer.style.opacity = '1';
+      currentScene = selected.scene;
+      lastRequest = {scene:selected.scene,alt:selected.alt,animate:false};
+      viewport.replaceChildren(currentLayer);layers.splice(0,layers.length,currentLayer);
+      viewport.setAttribute('aria-label',selected.alt);
+    }
+    cancelSwipe();
+    if (selected) void show(selected.scene,selected.alt,{animate:false});
+    return {committed:Boolean(selected),scene:currentScene};
+  }
+
   function show(scene, nextAlt = lastRequest.alt, settings = {}) {
     checkScene(scene);
     if (disposed) return Promise.resolve({ status: 'destroyed', scene });
+    cancelSwipe();
     const description = String(nextAlt || '\u53e4\u8a69\u756b\u5377');
     if (lastRequest.scene === scene && pending && !settings.force) {
       lastRequest.alt = description;
@@ -213,7 +299,7 @@ export function mountStage(container, options) {
     }
     // The first completed verse can reveal its embedded preview immediately,
     // even when the full painting is slow. Never leave completed work blank.
-    if (currentLayer.dataset.quality === 'blank') {
+    if (currentLayer.dataset.quality === 'blank' || settings.previewImmediately && currentScene !== scene) {
       const preview = new Image(192, 108);
       preview.src = getScenePreview(poemSlug, scene);
       const layer = layerFor(preview, scene, 'preview');
@@ -265,6 +351,7 @@ export function mountStage(container, options) {
     if (disposed) return;
     disposed = true;
     generation++;
+    cancelSwipe();
     for (const animation of animations) animation.cancel();
     animations.clear();
     reducedMotion.removeEventListener?.('change', motionChanged);
@@ -274,10 +361,10 @@ export function mountStage(container, options) {
   }
 
   function motionChanged(event) {
-    if (event.matches) for (const animation of animations) animation.finish();
+    if (event.matches) {for (const animation of animations) animation.finish();swipeAnimation?.finish();}
   }
 
-  const api = { element: host, show, retry, getState, destroy };
+  const api = { element: host, show, retry, getState, beginSwipe, moveSwipe, settleSwipe, cancelSwipe, destroy };
   retryButton.addEventListener('click', retry);
   reducedMotion.addEventListener?.('change', motionChanged);
   mountedStages.set(container, api);

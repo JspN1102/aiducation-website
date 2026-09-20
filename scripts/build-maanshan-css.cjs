@@ -5,10 +5,10 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '../maanshan');
 const files = [
   'styles.css', 'visuals.css', 'exploration.css', 'exploration-loading.css',
-  'shishi.css', 'refresh.css', 'challenge.css', 'lesson-map.css', 'platform.css',
+  'shishi.css', 'library-shishi.css', 'refresh.css', 'challenge.css', 'lesson-map.css', 'platform.css',
   'simplify.css', 'large-type.css', 'compact-activities.css',
   'extension.css', 'animation.css', 'mobile-tablet.css', 'exploration-touch.css',
-  'challenge-revision.css', 'client-review.css', 'ar-experience.css',
+  'challenge-revision.css', 'client-review.css', 'ar-experience.css', 'camera-observation.css',
   'poem-games/goose.css', 'poem-games/zeng.css', 'poem-games/views.css',
   'poem-games/garden-river.css', 'poem-games/river-puzzle.css', 'poem-games/spring-search.css', 'challenge-game-integration.css', 'student-ui.css', 'access-ui.css', 'tablet-layout.css', 'tablet-games.css'
 ];

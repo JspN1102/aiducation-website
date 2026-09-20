@@ -42,6 +42,12 @@ deployments must run `npm ci` locally rather than copying Windows dependencies,
 because esbuild installs a platform-specific executable. The generated
 `server/.build/handlers.cjs` is private deployment output.
 
+Teacher analytics and teacher-tools JSON responses of at least 1 KiB negotiate
+gzip at level 1 through the built-in Node zlib module. The response retains
+`Vary: Cookie` when set and adds `Accept-Encoding`; Office files are unchanged.
+The shared negotiation helper is `api/_lib/response-encoding.cjs` and must remain
+available beside the API sources when running `server/index.cjs`.
+
 If Google handwriting recognition is unreachable from the server, set
 `HANDWRITING_RELAY_URL=https://aiducation.asia/api/handwriting/` in its private
 environment. That request goes directly to the existing Vercel recognizer, with

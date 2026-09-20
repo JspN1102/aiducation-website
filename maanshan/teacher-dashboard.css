@@ -56,3 +56,8 @@
 .teacher-tools-actions{max-width:670px}.teacher-tools-actions .button{min-width:0;white-space:normal}
 @media(max-width:540px){.teacher-tools-actions{flex-direction:column}.teacher-tools-actions .button{width:100%;font-size:18px}.student-practice-progress{font-size:15px}.student-practice-list li{font-size:16px;gap:8px}.practice-result{font-size:15px}}
 @media(max-width:620px){.character-score.precise{font-size:13px;letter-spacing:-.02em}}
+.character-card.needs-practice .character-glyph,.character-card.needs-practice .character-pinyin{color:var(--red)}
+.filters{grid-template-columns:minmax(110px,.8fr) minmax(200px,1.5fr) minmax(120px,.9fr) minmax(200px,1.2fr);max-width:none}
+.field select:disabled{color:#859086;background:#f0f3ef;border-color:#dce4da}
+@media(max-width:1000px){.filters{grid-template-columns:minmax(110px,1fr) minmax(180px,1.5fr) minmax(120px,1fr)}.date-presets{grid-column:1/-1;display:flex;gap:18px;align-items:center}.date-presets .field-label{margin:0}.date-presets>div{min-width:230px;max-width:320px}}
+@media(max-width:540px){.filters{grid-template-columns:minmax(0,1fr) minmax(0,1.35fr)}.filters .field[for=filter-class]{grid-column:1/-1}.date-presets>div{min-width:0;max-width:none}.scope-line h1{font-size:22px;line-height:1.5;overflow-wrap:anywhere}.scope-actions{flex:none}}

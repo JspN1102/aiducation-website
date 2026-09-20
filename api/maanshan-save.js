@@ -2,6 +2,7 @@ import { execute, isDbReady } from './_lib/db.js';
 import poemHelpers from './_lib/poems.js';
 import studentStore from './_lib/student-store.js';
 import schoolAuth from './_lib/school-auth.cjs';
+import teacherLearning from './_lib/teacher-learning-reset.cjs';
 
 const { getPoem } = poemHelpers;
 
@@ -32,7 +33,8 @@ export default async function handler(req, res) {
       const actor=await schoolAuth.requireActor(req,{roles:['student','teacher'],csrf:true});
       if(req.body?.studentId!==actor.id)return res.status(409).json({ok:false,code:'ACTOR_CHANGED',error:'Account changed'});
       const poem=schoolAuth.assertPoemAccess(actor,req.body?.poemId);
-      req.body={...req.body,studentId:actor.id,name:actor.displayName,grade:poem.grade,cls:actor.cls||'T'};
+      const learning=await teacherLearning.scope(actor,{forSave:true,learningEpoch:req.body?.learningEpoch});
+      req.body={...req.body,studentId:learning.studentId,name:actor.displayName,grade:poem.grade,cls:actor.cls||'T'};
     }catch(error){return schoolAuth.sendError(res,error);}
   }
 

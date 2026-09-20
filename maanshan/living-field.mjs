@@ -1,4 +1,5 @@
-import {readModel} from './exploration.mjs?v=20260914f';
+import {readModel} from './exploration.mjs?v=20260921-school2';
+import {modelPixelRatio} from './model-quality.mjs?v=20260921-ar1';
 
 // Source meshes own GPU resources; plant clones only borrow them. Rendering is
 // scheduled by interaction, resize or a density change, never by an idle loop.
@@ -161,7 +162,8 @@ export function mountLivingField(holder, {density = {}, onStatus = () => {}} = {
       const map = outcomes[2].value;
       // Allocate the context only when both models and the soil are ready.
       renderer = new THREE.WebGLRenderer({alpha: true, antialias: true, powerPreference: 'low-power'});
-      canvas = renderer.domElement;renderer.setPixelRatio(Math.min(view.devicePixelRatio || 1, 1.5));renderer.setClearColor(0, 0);
+      canvas = renderer.domElement;renderer.setClearColor(0, 0);
+      for (const texture of textures) texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
       renderer.outputColorSpace = THREE.SRGBColorSpace;renderer.toneMapping = THREE.ACESFilmicToneMapping;renderer.toneMappingExposure = 1.1;
       scene = new THREE.Scene();scene.add(new THREE.HemisphereLight(0xfffcf0, 0x8b9b79, 2));
       const sun = new THREE.DirectionalLight(0xfff0d8, 2.7);sun.position.set(-3, 6, 5);scene.add(sun);
@@ -193,7 +195,7 @@ export function mountLivingField(holder, {density = {}, onStatus = () => {}} = {
       const resize = () => {
         if (!alive() || !renderer) return;
         const {width, height} = holder.getBoundingClientRect();if (!width || !height) return;
-        camera.aspect = width / height;camera.updateProjectionMatrix();renderer.setSize(width, height, false);render();
+        camera.aspect = width / height;camera.updateProjectionMatrix();renderer.setPixelRatio(modelPixelRatio(width, height, view.devicePixelRatio));renderer.setSize(width, height, false);render();
       };
       if (view.ResizeObserver) {observer = new view.ResizeObserver(resize);observer.observe(holder);}
       else view.addEventListener('resize', resize, {signal: events.signal});

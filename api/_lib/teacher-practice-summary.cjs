@@ -19,13 +19,15 @@ function buildPracticeSummary(rows){
   if(row.source!=='server_verified'||event.type!=='provider_result')continue;
   item.observed=true;
   if(event.operation==='challenge')item.ack=event.result;
-  if(['challenge','handwriting'].includes(event.operation)&&typeof event.result?.correct==='boolean')item.assessment=event.result;
+  if(item.type!=='microgame'&&['challenge','handwriting'].includes(event.operation)&&typeof event.result?.correct==='boolean')item.assessment=event.result;
  }
  const actual=[...items.values()].map((item,index)=>{
-  const status=item.ack?.status==='skipped'?'skipped':item.assessment?item.assessment.correct?'correct':'incorrect':item.ack?.status==='completed'&&item.type==='microgame'?'completed':item.observed||item.submitted?'unmeasured':'unanswered';
+  const status=item.ack?.status==='skipped'?'skipped':item.assessment?item.assessment.correct?'correct':'incorrect':item.type==='microgame'&&['completed','correct','incorrect'].includes(item.ack?.status)?'completed':item.observed||item.submitted?'unmeasured':'unanswered';
   return {itemId:item.itemId,type:item.type,position:item.position,status,score:item.assessment&&status!=='skipped'?item.assessment.score:null,order:index};
  }).sort((a,b)=>(a.position??99)-(b.position??99)||a.order-b.order).map(({order,...item})=>item);
- const completed=actual.filter(item=>!['unanswered','unmeasured'].includes(item.status));
+ // A skipped prompt is visible to the teacher, but it was left unfinished and
+ // therefore must not inflate the completed-practice count.
+ const completed=actual.filter(item=>['correct','incorrect','completed'].includes(item.status));
  return {poemId:latest.poemId,title:poems.find(poem=>poem.id===latest.poemId)?.title||'古詩',attemptId:latest.attemptId,updatedAt:latest.lastAt,total,completedN:completed.length,correctN:actual.filter(item=>item.status==='correct').length,measuredN:actual.filter(item=>['correct','incorrect'].includes(item.status)).length,items:actual};
 }
 module.exports={buildPracticeSummary};

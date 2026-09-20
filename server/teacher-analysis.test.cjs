@@ -6,7 +6,7 @@ const now=Date.parse('2026-09-20T10:00:00.000Z');
 const teacher={id:'t_'+'a'.repeat(24),role:'teacher'};
 const env={TEACHER_AI_MODEL:'deepseek-v4-pro',GPT_API_KEY:'synthetic-only-not-a-credential',GPT_API_BASE:'https://api.example.invalid'};
 function dataset(){const score={measuredN:1,unmeasuredN:1,meanScore:0,correctN:0,incorrectN:1};return {
- schemaVersion:1,filters:{from:'2026-09-01',to:'2026-09-20',grade:2,cls:'A',attempt:'latest'},snapshotId:'synthetic-snapshot',generatedAt:new Date(now).toISOString(),rosterSummary:{totalStudents:2,withRecords:1,noRecords:1},
+ schemaVersion:1,filters:{from:'2026-09-01',to:'2026-09-20',grade:2,poemId:2,cls:'A',attempt:'latest'},snapshotId:'synthetic-snapshot',generatedAt:new Date(now).toISOString(),rosterSummary:{totalStudents:2,withRecords:1,noRecords:1},
  analytics:{coverage:{nEvents:2,nStudents:1,nInvalidEvents:0},sync:{status:'current',lastImportedAt:new Date(now).toISOString(),lagMs:0},summary:{nEvents:2,nStudents:1,nAttempts:1,completedN:0,nInvalidEvents:0,practiceOutcomeN:0,byConstruct:{'reading.pronunciation':{serverVerified:score,clientReported:{...score,meanScore:100}}}},byGrade:[],byClass:[],trend:[],readingWords:[{char:'李',poemId:2,meanScore:0,count:1,below60Count:1}],students:[{researchId:'r_private-id',displayName:'PRIVATE_NAME',login:'PRIVATE_LOGIN'}]},
  students:[{researchId:'r_private-id',displayName:'PRIVATE_NAME',grade:2,cls:'A',classNo:1,stats:{private:'PRIVATE_STUDENT_CONTENT'}}]
 };}
@@ -113,7 +113,7 @@ test('analysis endpoint requires teacher, POST CSRF, allows read-only GET withou
 test('normalized dataset filter errors retain 400 instead of becoming storage failures',async()=>{
  const {TeacherDataError}=require('../api/_lib/teacher-data.cjs');
  const handler=createHandler({authModule:{requireActor:async()=>teacher},analysisModule:{generate:async()=>{throw new TeacherDataError('INVALID_FILTERS',400);}}}),res=response();
- await handler({method:'POST',body:{filters:{grade:'nine'}}},res);assert.equal(res.statusCode,400);assert.equal(res.body.code,'INVALID_FILTERS');assert.equal(res.body.retryable,false);
+ await handler({method:'POST',body:{filters:dataset().filters}},res);assert.equal(res.statusCode,400);assert.equal(res.body.code,'INVALID_FILTERS');assert.equal(res.body.retryable,false);
 });
 
 test('a provider returning another model is rejected, never silently labelled as the selected model',async()=>{

@@ -4,7 +4,7 @@ const assert=require('node:assert/strict'),{randomUUID}=require('node:crypto');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const {validateEvent,aggregateEvents}=require('../api/_lib/research-store.cjs');
 const repo=path.resolve(__dirname,'..');
-const mime={'.mjs':'text/javascript','.js':'text/javascript','.css':'text/css','.webp':'image/webp','.png':'image/png','.svg':'image/svg+xml','.glb':'model/gltf-binary'};
+const mime={'.mjs':'text/javascript','.js':'text/javascript','.css':'text/css','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.svg':'image/svg+xml','.glb':'model/gltf-binary'};
 const fixture='<!doctype html><meta charset="utf-8"><style>[hidden]{display:none!important}#holder{width:560px}img{max-width:100%}.pvg-stage,.fs-stage,.rc-field{width:480px;height:300px;position:relative}.rc-scene{max-height:140px}.rc-boat img{width:90px}</style><div id="holder"></div>';
 const server=http.createServer((req,res)=>{
   const url=new URL(req.url,'http://localhost');

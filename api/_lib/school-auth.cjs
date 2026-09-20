@@ -83,7 +83,7 @@ function assertPoemAccess(actor, poemId) {
 
 function createBlobStore(client = blob) {
   const pathname = key => {
-    if (!/^(?:directory\/current|account\/[st]_[a-f0-9]{24}|session\/[a-f0-9]{64}|limit\/[a-f0-9]{64}|audit\/\d{8}\/[a-f0-9]{32})$/.test(key)) throw new Error('Invalid auth key');
+    if (!/^(?:directory\/current|account\/[st]_[a-f0-9]{24}|learning\/t_[a-f0-9]{24}|session\/[a-f0-9]{64}|limit\/[a-f0-9]{64}|audit\/\d{8}\/[a-f0-9]{32})$/.test(key)) throw new Error('Invalid auth key');
     return `${NAMESPACE}/${key}.json`;
   };
   return {

@@ -1,0 +1,6 @@
+/* A live browser-camera layer beneath the transparent model canvas. */
+.explore-stage .explore-camera{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:1}
+.explore.is-camera .explore-scene{visibility:hidden}
+.explore.is-camera .explore-canvas{z-index:2;background:transparent}
+.explore.is-camera .explore-expand,.explore.is-camera .explore-scene-name{z-index:3}
+.workspace.view-explore #view .explore.is-camera .explore-scene-name{display:block;background:#203a33d9;color:#fff;font-size:clamp(14px,1.5vw,18px);line-height:1.4}

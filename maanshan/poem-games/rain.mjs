@@ -32,7 +32,8 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
   const priorAnswer=readOnly&&(old.completed===true||old.gameCompleted===true);
   let done=caught.every(n=>n===1)||priorAnswer,solved=false,reported=readOnly,dead=false,ready=false,replaying=false;
   let phase=done?'done':readOnly?'readonly':'intro',round=Math.max(0,caught.findIndex(n=>n===0));
-  let lane=1,wave=[],progress=0,raf=0,previousTime=0,drag=null,lastCorrect=false;
+  let lane=1,boatPercent=50,wave=[],progress=0,raf=0,motionFrame=0,previousTime=0,drag=null,lastCorrect=false;
+  let fieldWidth=1,fieldHeight=1,paintedBoatX=null,paintedRainY=null;
   let loading=0,loadTimer=0,audioGeneration=0,audioTimer=0,speaking=false,advanceTimer=0,advanceBlocked=false;
   const research=createProcessResearch(onResearch,{prefix:'game.rain',context:()=>replaying?{mode:'free'}:{},alive:()=>!dead});
   const step=index=>`word.${index}`;
@@ -60,6 +61,7 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
   <p class="rc-status" role="status" aria-live="polite"></p>`;
   holder.append(root);
   const q=s=>root.querySelector(s),field=q('.rc-field'),drops=[...root.querySelectorAll('[data-rc-drop]')];
+  const boat=q('.rc-boat'),dropLayer=q('.rc-drops'),leftButton=q('[data-rc-left]'),rightButton=q('[data-rc-right]');
   const total=()=>caught.reduce((a,b)=>a+b,0);
   const snapshot=()=>({version:6,caught:[...caught],completed:done});
   const terminal=()=>done||solved||(readOnly&&!replaying);
@@ -73,10 +75,30 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
     reported=true;onComplete?.({correct:true,response:snapshot(),knowledge:KNOWLEDGE});
   }
   function paintPosition(){
-    q('.rc-boat').style.left=POSITIONS[lane]+'%';
-    q('.rc-boat').setAttribute('aria-label',`小葉舟在${['左邊','中間','右邊'][lane]}`);
-    root.dataset.lane=String(lane);
-    q('.rc-drops').style.top=(26+progress*47)+'%';
+    const x=Math.round(fieldWidth*boatPercent)/100,y=Math.round(fieldHeight*(.26+progress*.47)*100)/100;
+    if(x!==paintedBoatX){boat.style.transform=`translate3d(${x}px,0,0) translate(-50%,-30%)`;paintedBoatX=x;}
+    if(y!==paintedRainY){dropLayer.style.transform=`translate3d(0,${y}px,0)`;paintedRainY=y;}
+  }
+  function requestPosition(){
+    if(dead||motionFrame||raf)return;
+    motionFrame=view.requestAnimationFrame(()=>{motionFrame=0;if(!dead)paintPosition();});
+  }
+  function measure(){
+    if(dead)return;
+    fieldWidth=field.clientWidth||1;fieldHeight=field.clientHeight||1;
+    if(drag){const rect=field.getBoundingClientRect();drag.left=rect.left+field.clientLeft;drag.width=fieldWidth;}
+    requestPosition();
+  }
+  function syncLane(){
+    if(root.dataset.lane!==String(lane)){
+      root.dataset.lane=String(lane);
+      boat.setAttribute('aria-label',`小葉舟在${['左邊','中間','右邊'][lane]}`);
+    }
+    leftButton.disabled=!canMove()||lane===0;rightButton.disabled=!canMove()||lane===2;
+  }
+  function stopDrag(){
+    const previous=drag;drag=null;root.classList.remove('is-dragging');
+    if(previous){try{field.releasePointerCapture(previous.pointerId);}catch{}boatPercent=POSITIONS[lane];requestPosition();}
   }
   function refresh(){
     root.dataset.phase=phase;root.dataset.round=String(round);root.dataset.caught=String(total());root.dataset.ready=String(ready);
@@ -94,7 +116,7 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
     q('[data-rc-catch]').hidden=phase!=='paused';q('[data-rc-listen]').disabled=!ready||speaking;
     q('[data-rc-listen]').setAttribute('aria-busy',String(speaking));
     root.querySelectorAll('[data-rc-word]').forEach(button=>{button.disabled=!ready||speaking;});
-    q('[data-rc-left]').disabled=!canMove()||lane===0;q('[data-rc-right]').disabled=!canMove()||lane===2;
+    syncLane();
     root.querySelectorAll('[data-rc-bud]').forEach((el,i)=>{
       el.classList.toggle('is-earned',caught[i]===1);el.classList.toggle('is-current',!terminal()&&i===round&&!caught[i]);
       el.querySelector('b').textContent=caught[i]?ROUNDS[i].char:String(i+1);
@@ -102,7 +124,7 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
     });
     field.tabIndex=terminal()?-1:0;paintPosition();
   }
-  function move(next){if(!canMove())return;lane=clamp(next,0,2);paintPosition();q('[data-rc-left]').disabled=lane===0;q('[data-rc-right]').disabled=lane===2;}
+  function move(next,position=POSITIONS[clamp(next,0,2)]){if(!canMove())return;const changed=lane!==clamp(next,0,2);lane=clamp(next,0,2);boatPercent=position;if(changed)syncLane();requestPosition();}
   function makeWave(){
     round=Math.max(0,caught.findIndex(n=>n===0));wave=[...ROUNDS[round].options];
     for(let i=wave.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[wave[i],wave[j]]=[wave[j],wave[i]];}
@@ -125,7 +147,7 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
     root.dataset.auto='true';advanceTimer=view.setTimeout(()=>{advanceTimer=0;root.dataset.auto='false';startWave({automatic:true});},ADVANCE_MS);
   }
   function catchRow(){
-    if(!canMove())return;stopFrame();clearAdvance();advanceBlocked=false;progress=1;phase='feedback';
+    if(!canMove())return;stopDrag();stopFrame();clearAdvance();advanceBlocked=false;progress=1;phase='feedback';
     const selected=wave[lane],target=ROUNDS[round];lastCorrect=selected[0]===target.char;
     research.answer(step(round),choiceId(round,selected[0]),lastCorrect);
     if(!lastCorrect)research.hint(step(round));
@@ -152,15 +174,19 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
   function pause(){
     clearAdvance();advanceBlocked=true;
     if(phase!=='falling')return;
-    stopFrame();phase='paused';drag=null;refresh();tell('雨滴等着你。移好小舟，再繼續；也可直接接這一排。');
+    stopDrag();stopFrame();phase='paused';refresh();tell('雨滴等着你。移好小舟，再繼續；也可直接接這一排。');
   }
   function resume(){if(phase!=='paused'||dead||terminal()||doc.hidden)return;phase='falling';refresh();tell('看好字音，讓小葉舟接住它。');raf=view.requestAnimationFrame(frame);}
-  function point(event){const r=field.getBoundingClientRect();move(clamp(Math.floor((event.clientX-r.left)/r.width*3),0,2));}
+  function point(event){
+    if(!drag)return;
+    const percent=clamp((event.clientX-drag.left)/drag.width*100,POSITIONS[0],POSITIONS[2]);
+    move(Math.round((percent-POSITIONS[0])/(POSITIONS[1]-POSITIONS[0])),percent);
+  }
   function replay(){
     if(dead||!ready||!done||solved)return;
     replaying=true;research.reset();
-    clearAdvance();stopFrame();audioGeneration++;speaking=false;view.clearTimeout(audioTimer);
-    replaying=true;done=false;caught=ROUNDS.map(()=>0);round=0;lane=1;wave=[];progress=0;lastCorrect=false;phase='intro';
+    stopDrag();clearAdvance();stopFrame();audioGeneration++;speaking=false;view.clearTimeout(audioTimer);
+    replaying=true;done=false;caught=ROUNDS.map(()=>0);round=0;lane=1;boatPercent=50;wave=[];progress=0;lastCorrect=false;phase='intro';
     refresh();tell('再收集五個字，原來的成果已保留。');
   }
   async function listen(index){
@@ -172,11 +198,13 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
     scheduleAdvance();
   }
   field.addEventListener('pointerdown',event=>{
-    if(!canMove()||event.button>0||event.isPrimary===false||event.target.closest('button'))return;
-    event.preventDefault();drag=event.pointerId;try{field.setPointerCapture(drag);}catch{}point(event);
+    if(drag||!canMove()||event.button>0||event.isPrimary===false||event.target.closest('button'))return;
+    event.preventDefault();const rect=field.getBoundingClientRect();
+    drag={pointerId:event.pointerId,left:rect.left+field.clientLeft,width:field.clientWidth||1};
+    root.classList.add('is-dragging');try{field.setPointerCapture(event.pointerId);}catch{}point(event);
   },{signal:events.signal,passive:false});
-  field.addEventListener('pointermove',event=>{if(drag!==event.pointerId||!canMove())return;if(event.cancelable)event.preventDefault();point(event);},{signal:events.signal,passive:false});
-  const release=event=>{if(drag!==event.pointerId)return;drag=null;try{field.releasePointerCapture(event.pointerId);}catch{}};
+  field.addEventListener('pointermove',event=>{if(drag?.pointerId!==event.pointerId||!canMove())return;if(event.cancelable)event.preventDefault();point(event);},{signal:events.signal,passive:false});
+  const release=event=>{if(drag?.pointerId!==event.pointerId)return;if(event.type==='pointerup')point(event);stopDrag();};
   for(const type of ['pointerup','pointercancel','lostpointercapture'])field.addEventListener(type,release,{signal:events.signal});
   for(const type of ['touchstart','touchmove','contextmenu','selectstart','dragstart'])field.addEventListener(type,event=>{if(canMove()&&!event.target.closest('button')&&event.cancelable)event.preventDefault();},{signal:events.signal,passive:false});
   field.addEventListener('keydown',event=>{
@@ -190,7 +218,8 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
   q('[data-rc-main]').addEventListener('click',()=>{if(phase==='falling')pause();else if(phase==='paused')resume();else if(phase==='steady')catchRow();else startWave();},{signal:events.signal});
   q('[data-rc-catch]').addEventListener('click',catchRow,{signal:events.signal});
   q('[data-rc-replay]').addEventListener('click',replay,{signal:events.signal});
-  doc.addEventListener('visibilitychange',()=>{if(doc.hidden)pause();},{signal:events.signal});view.addEventListener('blur',pause,{signal:events.signal});
+  const leave=()=>{stopDrag();pause();};
+  doc.addEventListener('visibilitychange',()=>{if(doc.hidden)leave();},{signal:events.signal});view.addEventListener('blur',leave,{signal:events.signal});
   q('[data-rc-listen]').addEventListener('click',()=>void listen(round),{signal:events.signal});
   root.querySelectorAll('[data-rc-word]').forEach(button=>button.addEventListener('click',()=>void listen(Number(button.dataset.rcWord)),{signal:events.signal}));
   async function load(){
@@ -208,9 +237,10 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
     finally{view.clearTimeout(loadTimer);}
   }
   q('[data-rc-retry]').addEventListener('click',()=>void load(),{signal:events.signal});
+  const resizeObserver=new view.ResizeObserver(measure);resizeObserver.observe(field);measure();
   tell(done?'點字卡聽讀音，也可以再玩五個字。':readOnly?'看看這五個字的讀音。':'一局收集五個不同的字。接錯也能再來。');refresh();void load();
   return {
-    showSolution(){if(dead||solved)return;research.hint('game','reveal');clearAdvance();stopFrame();solved=true;phase='solution';audioGeneration++;speaking=false;view.clearTimeout(audioTimer);refresh();tell(KNOWLEDGE);},
-    destroy(){if(dead)return;dead=true;loading++;audioGeneration++;clearAdvance();stopFrame();view.clearTimeout(loadTimer);view.clearTimeout(audioTimer);events.abort();root.remove();}
+    showSolution(){if(dead||solved)return;stopDrag();research.hint('game','reveal');clearAdvance();stopFrame();solved=true;phase='solution';audioGeneration++;speaking=false;view.clearTimeout(audioTimer);refresh();tell(KNOWLEDGE);},
+    destroy(){if(dead)return;dead=true;loading++;audioGeneration++;stopDrag();clearAdvance();stopFrame();view.cancelAnimationFrame(motionFrame);motionFrame=0;resizeObserver.disconnect();view.clearTimeout(loadTimer);view.clearTimeout(audioTimer);events.abort();root.remove();}
   };
 }
