@@ -44,7 +44,12 @@ OPTIONAL_CONFIG_PATHS = (
     'etc/maanshan/standby.enabled',
     'etc/maanshan/direct-postgres.enabled',
     'etc/ssh/sshd_config',
+    'etc/ssh/sshd_config.d',
+    'etc/ssh/ssh_host_ed25519_key',
+    'etc/ssh/ssh_host_ed25519_key.pub',
     'etc/ssh/maanshan-relay.conf',
+    'etc/ssh/maanshan-relay-2222.conf',
+    'etc/systemd/system/maanshan-relay-2222.service',
     'var/lib/maanshan-relay/.ssh/authorized_keys',
     'usr/local/lib/maanshan-maintenance/health-check.py',
     'usr/local/lib/maanshan-maintenance/health-restore.py',
@@ -143,7 +148,7 @@ def main():
     files = FILES
     try:
         optional_code = '''import json,pathlib
-configs = [name for name in OPTIONAL_CONFIGS if pathlib.Path('/' + name).is_file()]
+configs = [name for name in OPTIONAL_CONFIGS if pathlib.Path('/' + name).is_file() or pathlib.Path('/' + name).is_dir()]
 print(json.dumps({'configs': configs, 'blobBackups': pathlib.Path('/home/ubuntu/maanshan-backups/blob').is_dir()}))
 '''.replace('OPTIONAL_CONFIGS', repr(OPTIONAL_CONFIG_PATHS))
         optional = json.loads(remote(client, 'sudo -n python3 -', optional_code))

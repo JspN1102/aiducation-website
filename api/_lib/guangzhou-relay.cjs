@@ -8,9 +8,10 @@ const LIMITS=Object.freeze({soe:4*1024*1024,tts:65536,'maanshan-chat':131072,'ma
 const HOP=new Set(['connection','keep-alive','proxy-authenticate','proxy-authorization','te','trailer','transfer-encoding','upgrade']);
 const RESPONSE_LIMIT=4*1024*1024+65536;
 function configuration(env){
- const host=env.GUANGZHOU_RELAY_HOST,username=env.GUANGZHOU_RELAY_USERNAME,privateKey=env.GUANGZHOU_RELAY_PRIVATE_KEY,hostHash=env.GUANGZHOU_RELAY_HOST_SHA256;
+ const host=env.GUANGZHOU_RELAY_HOST,username=env.GUANGZHOU_RELAY_USERNAME,privateKey=env.GUANGZHOU_RELAY_PRIVATE_KEY,hostHash=env.GUANGZHOU_RELAY_HOST_SHA256,port=Number(env.GUANGZHOU_RELAY_PORT||22);
  if(host!=='134.175.149.14'||username!=='maanshan-relay'||typeof privateKey!=='string'||!privateKey.startsWith('-----BEGIN OPENSSH PRIVATE KEY-----')||privateKey.length>8192||!/^([a-f0-9]{64})$/.test(hostHash||''))throw new Error('RELAY_NOT_CONFIGURED');
- return {host,username,privateKey,hostHash};
+ if(![22,2222].includes(port))throw new Error('RELAY_NOT_CONFIGURED');
+ return {host,port,username,privateKey,hostHash};
 }
 function createRelay({env=process.env,clientFactory=()=>new Client(),request=http.request,now=Date.now,timeoutMs=55000}={}){
  let pending=null,connection=null,lastUsed=0,active=0;
@@ -27,7 +28,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
    client.once('ready',()=>{ready=true;connection=client;resolve(client);});
    client.on('error',error=>{clear();if(!ready){pending=null;const code=typeof error?.code==='string'&&/^[A-Z0-9_]+$/.test(error.code)?error.code:'SSH_CONNECT_ERROR';console.error('Guangzhou relay transport:',code,error?.level==='client-timeout'?'HANDSHAKE_TIMEOUT':'CONNECT_FAILED',JSON.stringify({tcpConnected,handshakeComplete}));reject(new Error('RELAY_CONNECT_FAILED'));}});
    client.once('close',()=>{clear();if(!ready){pending=null;reject(new Error('RELAY_CONNECT_FAILED'));}});
-   client.connect({host:config.host,port:22,username:config.username,privateKey:config.privateKey,hostHash:'sha256',hostVerifier:hash=>hash===config.hostHash,readyTimeout:8000,keepaliveInterval:15000,keepaliveCountMax:2,tryKeyboard:false});
+   client.connect({host:config.host,port:config.port,username:config.username,privateKey:config.privateKey,hostHash:'sha256',hostVerifier:hash=>hash===config.hostHash,readyTimeout:8000,keepaliveInterval:15000,keepaliveCountMax:2,tryKeyboard:false});
   });
   try{return await pending;}catch(error){pending=null;client.destroy();throw error;}
  }

@@ -18,6 +18,9 @@ async function fixture(fn,options={}){
 }
 test('fixed host and pinned key are mandatory; environment cannot create an arbitrary destination',()=>{
  assert.equal(configuration(env).host,'134.175.149.14');
+ assert.equal(configuration(env).port,22);
+ assert.equal(configuration({...env,GUANGZHOU_RELAY_PORT:'2222'}).port,2222);
+ assert.throws(()=>configuration({...env,GUANGZHOU_RELAY_PORT:'5432'}));
  for(const update of [{GUANGZHOU_RELAY_HOST:'127.0.0.1'},{GUANGZHOU_RELAY_USERNAME:'ubuntu'},{GUANGZHOU_RELAY_HOST_SHA256:''},{GUANGZHOU_RELAY_PRIVATE_KEY:'password'}])assert.throws(()=>configuration({...env,...update}));
 });
 test('shared gateway only accepts allowed endpoints and preserves repeated business query values',()=>{
