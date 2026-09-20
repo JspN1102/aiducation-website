@@ -1,3 +1,4 @@
+import {waitForImageElement} from './image-ready.mjs?v=20260920-tablet1';
 import {imageAsset} from '../media-images.mjs?v=20260920-art2';
 import {RAIN_GLYPHS} from './rain-glyphs.mjs?v=20260919a';
 import {createProcessResearch} from './research.mjs?v=20260920a';
@@ -198,7 +199,7 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
     const images=[q('.rc-scene'),q('.rc-boat img')];
     if(generation>1)images.forEach(img=>{const url=new URL(img.src);url.searchParams.set('retry',String(generation));img.src=url.href;});
     try{
-      await Promise.race([Promise.all(images.map(img=>img.decode())),new Promise((_,reject)=>{loadTimer=view.setTimeout(()=>reject(new Error('image-timeout')),15000);})]);
+      await Promise.all(images.map(img=>waitForImageElement(img,{signal:events.signal,timeout:15000})));
       if(dead||generation!==loading)return;
       ready=true;q('.rc-loading').hidden=true;field.setAttribute('aria-busy','false');refresh();
       // Recover a fully caught but not yet submitted v6 draft after a refresh.

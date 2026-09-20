@@ -1,3 +1,4 @@
+import {waitForImageElement} from './image-ready.mjs?v=20260920-tablet1';
 import {imageAsset} from '../media-images.mjs?v=20260920-art2';
 import {createProcessResearch} from './research.mjs?v=20260920a';
 const media = path => new URL(imageAsset(`media/${path}`), import.meta.url).href;
@@ -293,11 +294,10 @@ export function mountRiver(holder, {
       root.style.setProperty('--river-art', `url("${retryURL.href}")`);
     }
     try {
-      await Promise.race([
-        image.decode(),
-        new Promise((_, reject) => { loadTimer = view.setTimeout(() => reject(new Error('image-timeout')), 12000); })
-      ]);
+      await waitForImageElement(image,{signal:abort.signal});
       if (dead || generation !== loadGeneration) return;
+      // Pieces and drag previews must use the same copy that actually loaded.
+      root.style.setProperty('--river-art', `url("${image.currentSrc || image.src}")`);
       ready = true;
       if(!readOnly&&!completed&&!solution)PIECES.forEach(slot=>research.present(`slot.${slot}`,{position:slot,total:PIECES.length,optionOrder:tray.map(piece=>`piece.${piece}`)}));
       root.dataset.assets = 'ready';

@@ -1,0 +1,157 @@
+/* Tablets keep the play area and its controls together, using the space below
+   the lesson bar rather than sizing a tall scene from the screen width. */
+@media (min-width:701px){
+ .workspace.view-quiz.lesson-shell{padding-inline:20px;padding-bottom:10px}
+ .workspace.view-quiz .lesson-bar:has(.shishi-touch-slot){grid-template-columns:auto minmax(0,1fr) 94px auto;min-height:82px;padding-block:3px;margin-bottom:6px;gap:16px}
+ .workspace.view-quiz .shishi-touch-slot{--shishi-width:54px;--shishi-height:70px;width:94px;height:74px;flex-basis:94px}
+ .workspace.view-quiz .shishi-touch-slot .shishi-guide-button{flex-direction:row;justify-content:center;gap:0}
+ .workspace.view-quiz .shishi-touch-slot .shishi-guide-art{width:54px;height:70px;order:0}
+ .workspace.view-quiz .shishi-touch-slot .shishi-poet-label{order:1;font-size:15px;line-height:20px}
+ .workspace.view-quiz .lesson-title h1{font-size:28px;line-height:1.25}
+ .workspace.view-quiz .lesson-title p{font-size:17px;line-height:1.35;margin-top:4px}
+ .workspace.view-quiz .study-main{width:100%;max-width:1440px;min-height:0}
+ .workspace.view-quiz #view{overflow:auto;padding:0;min-height:0}
+ .workspace.view-quiz .challenge-shell{padding:10px 18px 12px;border-radius:20px;overflow:visible}
+ .workspace.view-quiz .challenge-header{max-width:none;margin-bottom:6px;padding:0 0 6px}
+ .workspace.view-quiz .challenge-header>div:first-child{margin-bottom:7px}
+ .workspace.view-quiz .challenge-header .challenge-eyebrow{font-size:18px;letter-spacing:0}
+ .workspace.view-quiz .challenge-count{font-size:24px}
+ .workspace.view-quiz .challenge-body{container:tablet-play / size;min-width:0;min-height:0;overflow:auto;justify-content:safe center}
+ .workspace.view-quiz .challenge-game-holder{height:100%;display:grid;align-items:center;min-height:0}
+ .workspace.view-quiz .challenge-type-microgame .challenge-body{display:flex}
+ .workspace.view-quiz .challenge-footer{margin-top:8px;padding-top:8px;gap:10px 18px;min-height:54px;flex-wrap:nowrap}
+ .workspace.view-quiz .challenge-footer-actions{width:auto;margin-inline:0;flex:none;gap:10px;padding:0}
+ .workspace.view-quiz .challenge-footer .challenge-primary{min-height:48px;min-width:150px;font-size:21px;padding:9px 20px}
+ .workspace.view-quiz .challenge-footer .challenge-feedback{font-size:18px;line-height:1.4;text-align:left}
+ .workspace.view-quiz .challenge-footer .challenge-feedback p{margin:3px 0 0;line-height:1.4}
+ .workspace.view-quiz .challenge-footer .challenge-feedback .challenge-text-button{display:inline-flex;min-height:40px;margin:0 0 0 12px;padding:3px 6px}
+ .workspace.view-quiz .challenge-footer .challenge-feedback strong{font-size:20px}
+ .workspace.view-quiz .challenge-shell .challenge-sound-layout{width:100%;max-width:1000px;gap:30px;padding:8px;grid-template-columns:minmax(220px,.8fr) minmax(0,1.2fr)}
+ .workspace.view-quiz .challenge-shell .challenge-sound-stage.is-walnut-market{width:min(100%,320px);max-height:100cqh;aspect-ratio:6/5}
+ .workspace.view-quiz .challenge-shell .challenge-sound-work .challenge-prompt{font-size:28px;line-height:1.4}
+ .workspace.view-quiz .challenge-shell .challenge-sound-work .challenge-audio-status{font-size:17px;min-height:0;margin-top:12px}
+ .workspace.view-quiz .challenge-shell .challenge-shelves{gap:14px}
+ .workspace.view-quiz .challenge-shell .challenge-shelf{min-height:90px}
+ .workspace.view-quiz .challenge-writing-layout{min-height:0;max-width:1050px;margin:auto;width:100%;align-items:center}
+ .workspace.view-quiz .challenge-writing .cw-board{width:min(100%,300px)}
+ .workspace.view-quiz .challenge-writing button{font-size:19px;min-height:48px}
+ .workspace.view-quiz .challenge-writing .cw-status{font-size:17px;line-height:1.4}
+ .workspace.view-quiz .challenge-shell.challenge-results{padding:18px 28px;overflow:auto}
+ .workspace.view-quiz .challenge-results-heading{margin-bottom:14px}
+ .workspace.view-quiz .challenge-result-list{max-width:900px;margin-bottom:15px;gap:8px}
+ .workspace.view-quiz .challenge-result-row{min-height:60px;padding:8px 14px}
+ .workspace.view-quiz .challenge-results-actions{padding:0}
+}
+
+@media (min-width:701px) and (orientation:landscape){
+ .workspace.view-quiz .challenge-game-holder>section{max-width:none;width:100%;margin:0;min-height:0;gap:10px 24px}
+ .workspace.view-quiz .poem-goose-game{grid-template-columns:minmax(0,1.65fr) minmax(240px,.8fr);grid-template-rows:auto auto 1fr;align-content:center;align-items:center}
+ .workspace.view-quiz .poem-goose-game .goose-picture{grid-column:1;grid-row:1/4;width:min(100%,calc(100cqh * 1.5));height:auto;aspect-ratio:3/2;align-self:center;justify-self:center}
+ .workspace.view-quiz .poem-goose-game .goose-instruction{grid-column:2;align-self:end}
+ .workspace.view-quiz .poem-goose-game .goose-instruction p{font-size:24px;line-height:1.45}
+ .workspace.view-quiz .poem-goose-game .goose-palette{grid-column:2;display:grid;gap:12px;padding:0}
+ .workspace.view-quiz .poem-goose-game .goose-paint{width:100%;max-width:none;min-height:58px;font-size:25px}
+ .workspace.view-quiz .poem-goose-game .goose-feedback{grid-column:2;align-self:start;font-size:19px;line-height:1.4;min-height:0}
+ .workspace.view-quiz .farewell-story{grid-template-columns:minmax(0,1.5fr) minmax(290px,1fr);grid-template-rows:auto auto auto auto auto auto;align-content:center;align-items:center}
+ .workspace.view-quiz .farewell-story>*{grid-column:2}
+ .workspace.view-quiz .farewell-story .fs-stage{grid-column:1;grid-row:1/6;width:min(100%,calc((100cqh - 58px) * 1.5));height:auto;aspect-ratio:3/2;justify-self:center;align-self:center}
+ .workspace.view-quiz .farewell-story .fs-verse{grid-column:1;grid-row:6;font-size:27px;line-height:1.4;letter-spacing:.04em}
+ .workspace.view-quiz .farewell-story .fs-header{grid-row:1}
+ .workspace.view-quiz .farewell-story .fs-header h3{font-size:24px;line-height:1.35}
+ .workspace.view-quiz .farewell-story .fs-eyebrow{display:none}
+ .workspace.view-quiz .farewell-story .fs-task{grid-row:2;font-size:19px;line-height:1.4}
+ .workspace.view-quiz .farewell-story .fs-rhythm,.workspace.view-quiz .farewell-story .fs-compose{grid-row:3}
+ .workspace.view-quiz .farewell-story .fs-actions{grid-row:4;gap:8px}
+ .workspace.view-quiz .farewell-story .fs-actions button{min-height:48px;padding:8px 15px;font-size:20px}
+ .workspace.view-quiz .farewell-story .fs-feedback{grid-row:5/7;min-height:0;font-size:18px;line-height:1.4}
+ .workspace.view-quiz .farewell-story .fs-feet button{min-height:55px;width:46%}
+ .workspace.view-quiz .farewell-story .fs-compose{gap:8px}
+ .workspace.view-quiz .farewell-story .fs-slot{min-width:52px}
+ .workspace.view-quiz .poem-view-game{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,.9fr);align-content:center;align-items:center}
+ .workspace.view-quiz .poem-view-game>*{grid-column:2}
+ .workspace.view-quiz .poem-view-game .pvg-stage{grid-column:1;grid-row:1/9;width:min(100%,calc(100cqh * 1.5));height:auto;max-height:none;aspect-ratio:3/2;justify-self:center;align-self:center}
+ .workspace.view-quiz .poem-view-game .pvg-heading h3{font-size:25px;margin:0}
+ .workspace.view-quiz .poem-view-game .pvg-camera-control{padding:0;gap:10px;font-size:20px}
+ .workspace.view-quiz .poem-view-game .pvg-photo-tray{gap:8px;flex-wrap:wrap}
+ .workspace.view-quiz .poem-view-game .pvg-status{font-size:18px;line-height:1.4;min-height:0}
+ .workspace.view-quiz .poem-garden{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(250px,.8fr);grid-template-rows:auto auto 1fr;align-content:center;align-items:center}
+ .workspace.view-quiz .poem-garden .gr-picture{grid-column:1;grid-row:1/4;width:min(100%,calc(100cqh * 1.5));height:auto;aspect-ratio:3/2;justify-self:center;align-self:center}
+ .workspace.view-quiz .poem-garden .gr-instruction{grid-column:2;display:grid;gap:14px;margin:0;align-self:end}
+ .workspace.view-quiz .poem-garden .gr-instruction p{font-size:24px;line-height:1.45}
+ .workspace.view-quiz .poem-garden .gr-count{justify-self:center;font-size:21px}
+ .workspace.view-quiz .poem-garden .gr-actionline{grid-column:2;flex-wrap:wrap;justify-content:center;margin:0}
+ .workspace.view-quiz .poem-garden .gr-feedback{grid-column:2;align-self:start;min-height:0;font-size:20px;line-height:1.5;margin:0}
+ .workspace.view-quiz .river-puzzle-game{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(280px,.9fr);grid-template-rows:auto auto auto auto;align-content:center;align-items:center}
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-work{display:contents}
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-board{grid-column:1;grid-row:1/5;width:min(100%,calc(100cqh * 1.5));height:auto;max-width:none;aspect-ratio:3/2;justify-self:center;align-self:center}
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-heading{grid-column:2;grid-row:1}
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-heading>div>span{display:none}
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-heading h3{font-size:25px}
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-side{grid-column:2;grid-row:2;gap:12px}
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-tray{width:min(100%,280px);align-self:center}
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-actions{grid-column:2;grid-row:3}
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-status{grid-column:2;grid-row:4;font-size:18px;line-height:1.4;min-height:0}
+ .workspace.view-quiz .rain-catcher{grid-template-columns:minmax(0,1.65fr) minmax(280px,.9fr);align-content:center;align-items:center}
+ .workspace.view-quiz .rain-catcher>*{grid-column:2}
+ .workspace.view-quiz .rain-catcher .rc-field{grid-column:1;grid-row:1/10;width:min(100%,calc(100cqh * 1.5));height:auto;min-height:0;max-height:none;aspect-ratio:3/2;justify-self:center;align-self:center}
+ .workspace.view-quiz .rain-catcher .rc-heading h3{font-size:27px}
+ .workspace.view-quiz .rain-catcher .rc-collection{gap:7px}
+ .workspace.view-quiz .rain-catcher .rc-mission{width:100%;font-size:20px}
+ .workspace.view-quiz .rain-catcher .rc-controls{gap:9px;grid-template-columns:52px minmax(0,1fr) 52px}
+ .workspace.view-quiz .rain-catcher .rc-status{min-height:0;font-size:18px;line-height:1.4}
+ .workspace.view-quiz .challenge-writing-layout{display:grid;grid-template-columns:minmax(220px,.7fr) minmax(440px,1.3fr);gap:24px}
+ .workspace.view-quiz .challenge-writing-heading .challenge-prompt{font-size:27px;line-height:1.45}
+ .workspace.view-quiz .challenge-writing-holder{min-width:0}
+ .workspace.view-quiz .challenge-writing{max-width:none;display:grid;grid-template-columns:minmax(0,1fr) 145px;gap:8px 16px;align-items:center}
+ .workspace.view-quiz .challenge-writing .cw-board{grid-column:1;grid-row:1/4;width:min(100%,calc(100cqh - 55px));max-width:330px;margin:0;justify-self:center}
+ .workspace.view-quiz .challenge-writing .cw-controls{grid-column:2;grid-row:1;flex-direction:column;gap:10px}
+ .workspace.view-quiz .challenge-writing .cw-tools,.workspace.view-quiz .challenge-writing .cw-submit{display:flex;flex-direction:column;gap:10px}
+ .workspace.view-quiz .challenge-writing .cw-skip{flex-basis:auto;font-size:17px;line-height:1.4;padding:6px 2px}
+ .workspace.view-quiz .challenge-writing .cw-status{grid-column:1/-1;grid-row:4;margin:0;min-height:0}
+ .workspace.view-quiz .challenge-writing .cw-review{grid-column:2;grid-row:2/4}
+ .workspace.view-quiz .challenge-writing .cw-answer{flex-wrap:wrap;gap:6px;margin:0 0 8px}
+ .workspace.view-quiz .challenge-writing .cw-review-actions{gap:8px}
+ .workspace.view-quiz .challenge-writing.is-answered .cw-board{width:min(100%,calc(100cqh - 55px));max-width:280px}
+}
+
+@media (min-width:701px) and (orientation:portrait){
+ .workspace.view-quiz .challenge-game-holder>section{max-width:760px;gap:12px}
+ .workspace.view-quiz .poem-goose-game .goose-picture{width:min(100%,calc((100cqh - 170px) * 1.5));justify-self:center}
+ .workspace.view-quiz .farewell-story .fs-stage{width:min(100%,calc((100cqh - 325px) * 1.5));justify-self:center}
+ .workspace.view-quiz .farewell-story .fs-feedback{min-height:0}
+ .workspace.view-quiz .poem-view-game .pvg-stage{width:min(100%,calc((100cqh - 270px) * 1.5));height:auto;max-height:none;align-self:center;aspect-ratio:3/2}
+ .workspace.view-quiz .poem-garden .gr-picture{width:min(100%,calc((100cqh - 170px) * 1.5));margin-inline:auto}
+ .workspace.view-quiz .rain-catcher .rc-field{width:min(100%,calc((100cqh - 300px) * 1.5));height:auto;min-height:210px;max-height:none;justify-self:center;aspect-ratio:3/2}
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-work{grid-template-columns:minmax(0,1.4fr) minmax(210px,.8fr);gap:15px}
+ .workspace.view-quiz .challenge-writing-layout{gap:14px}
+ .workspace.view-quiz .challenge-writing-heading .challenge-prompt{font-size:28px}
+}
+
+/* Very short landscape windows still retain scrolling as a fallback; no
+   overflow clipping is used to conceal a scene or an active control. */
+@media (min-width:701px) and (orientation:landscape) and (max-height:650px){
+ .workspace.view-quiz .lesson-bar:has(.shishi-touch-slot){min-height:74px;padding-block:0;margin-bottom:4px}
+ .workspace.view-quiz .shishi-touch-slot{height:70px;--shishi-height:66px}
+ .workspace.view-quiz .shishi-touch-slot .shishi-guide-art{height:66px}
+ .workspace.view-quiz .challenge-shell{padding:8px 14px}
+ .workspace.view-quiz .challenge-header{margin-bottom:4px;padding-bottom:4px}
+ .workspace.view-quiz .challenge-game-holder>section{column-gap:20px;row-gap:8px}
+ .workspace.view-quiz .challenge-footer{margin-top:6px;padding-top:6px}
+ .workspace.view-quiz .challenge-footer .challenge-feedback{font-size:17px}
+ .workspace.view-quiz .challenge-shell .challenge-sound-stage.is-walnut-market{width:min(100%,280px)}
+ .workspace.view-quiz .poem-goose-game .goose-palette{gap:9px}
+ .workspace.view-quiz .poem-goose-game .goose-paint{min-height:52px}
+ .workspace.view-quiz .farewell-story .fs-header h3{font-size:22px}
+ .workspace.view-quiz .farewell-story .fs-task,.workspace.view-quiz .farewell-story .fs-feedback{font-size:17px}
+ .workspace.view-quiz .farewell-story .fs-actions button{font-size:18px;padding:7px 12px}
+ .workspace.view-quiz .rain-catcher .rc-intro{padding:12px}
+ .workspace.view-quiz .rain-catcher .rc-intro>div{padding:12px 16px}
+ .workspace.view-quiz .rain-catcher .rc-intro-icon{width:26px;height:26px;margin-bottom:5px}
+ .workspace.view-quiz .rain-catcher .rc-intro p{margin:6px 0 10px;font-size:18px}
+ .workspace.view-quiz .rain-catcher .rc-collection>span{height:45px}
+ .workspace.view-quiz .rain-catcher .rc-heading h3{font-size:25px}
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-tray{width:min(100%,230px);gap:6px;padding:7px}
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-side{gap:8px}
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-instruction{font-size:17px;line-height:1.4}
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-actions button{padding:8px 14px;font-size:18px;min-height:46px}
+}

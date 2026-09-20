@@ -6,12 +6,12 @@
 <meta name="description" content="馬鞍山靈糧小學普通話古詩研習：六首古詩、詩人示範朗讀、逐句測評與默寫練習。">
 <title>AI普通話學習平台 · 馬鞍山靈糧小學</title>
 <link rel="preload" href="vendor/fonts/noto-serif-tc.woff2?v=20260920-full3" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="app.bundle.css?v=20260920-final4">
-<script type="module" src="bootstrap.mjs?v=20260920-final4" onerror="window.showLoadRecovery?.()"></script>
+<link rel="stylesheet" href="app.bundle.css?v=20260920-final5">
+<script type="module" src="bootstrap.mjs?v=20260920-final5" onerror="window.showLoadRecovery?.()"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">跳至內容</a>
-<header class="site-header"><div class="header-right"><button class="profile-button" id="profile-open" aria-label="學習檔案" title="學習檔案" hidden><i data-lucide="user-round"></i><span id="profile-name">學習檔案</span></button></div></header>
+<header class="site-header"><div class="header-right"><button class="profile-button" id="profile-open" aria-label="帳戶" title="帳戶" hidden><i data-lucide="user-round"></i><span id="profile-name">學習檔案</span></button></div></header>
 <div id="app"><main id="main" class="loading-page" aria-busy="true"><span class="spinner"></span><p>正在載入古詩</p></main></div>
 <script>
 window.showLoadRecovery=function(){
@@ -24,5 +24,6 @@ setTimeout(window.showLoadRecovery,20000);
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <dialog id="video-dialog" class="video-dialog" aria-labelledby="video-title"><div class="dialog-heading"><h2 id="video-title">示範朗讀</h2><button class="icon-button" data-close="video-dialog" aria-label="關閉影片" title="關閉影片"><i data-lucide="x"></i></button></div><video id="recital-video" controls playsinline preload="none"></video><p id="video-error" class="error-text" hidden>影片暫時無法播放，請稍後重試。</p></dialog>
 <dialog id="profile-dialog" class="profile-dialog" aria-labelledby="profile-title"><div class="dialog-heading"><div><p class="eyebrow">本機學習檔案</p><h2 id="profile-title">我的學習檔案</h2></div><button class="icon-button" data-close="profile-dialog" aria-label="關閉" title="關閉"><i data-lucide="x"></i></button></div><section class="profile-archive" aria-label="學習成果"><label for="profile-poem">看看這首詩的成果<select id="profile-poem"></select></label><div id="profile-results" aria-live="polite"></div></section><details id="profile-details" class="profile-details"><summary>我的學習資料</summary><form id="profile-form"><label>學習姓名<input name="name" maxlength="30" required autocomplete="given-name"></label><div class="form-row"><label>年級<select name="grade"><option value="1">一年級</option><option value="2">二年級</option><option value="3">三年級</option><option value="4">四年級</option><option value="5">五年級</option><option value="6">六年級</option></select></label><label>班別<select name="cls"><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option></select></label></div><div class="dialog-actions"><button type="submit" class="button primary"><i data-lucide="check"></i>儲存檔案</button></div></form></details></dialog>
+<dialog id="account-dialog" class="account-dialog" aria-labelledby="account-title"><div class="dialog-heading"><h2 id="account-title">帳戶</h2><button class="icon-button" data-close="account-dialog" aria-label="關閉" title="關閉"><i data-lucide="x"></i></button></div><button class="button primary" id="account-logout" type="button"><i data-lucide="log-out"></i>登出帳戶</button></dialog>
 <noscript><p class="loading-page">此學習平台需要啟用 JavaScript。</p></noscript>
 </body></html>

@@ -1,3 +1,4 @@
+import {waitForImageElement} from './image-ready.mjs?v=20260920-tablet1';
 import {imageAsset} from '../media-images.mjs?v=20260920-art2';
 import {createProcessResearch} from './research.mjs?v=20260920a';
 const file = path => new URL(imageAsset(`media/${path}`), import.meta.url).href;
@@ -92,7 +93,7 @@ export function mountGarden(holder, {initialState, readOnly=false, playAudio, on
     let timeout;
     try{
       if(request>1)for(const image of root.querySelectorAll('img')){const url=new URL(image.src);url.searchParams.set('retry',String(request));image.src=url.href;}
-      await Promise.race([Promise.all([...root.querySelectorAll('img')].map(img=>img.decode())),new Promise((_,reject)=>{timeout=view.setTimeout(()=>reject(new Error('Image timeout')),12000);timers.add(timeout);})]);
+      await Promise.all([...root.querySelectorAll('img')].map(img=>waitForImageElement(img,{signal:abort.signal})));
       if(dead||request!==loadId)return;ready=true;q('.gr-loading').hidden=true;q('.gr-picture').setAttribute('aria-busy','false');render();
       if(!readOnly&&!done)plants.forEach((p,position)=>{if(!removed.has(p.id))research.present(p.id,{position,total:plants.length});});
     }catch{

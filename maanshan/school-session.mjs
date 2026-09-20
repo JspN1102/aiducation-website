@@ -1,4 +1,4 @@
-import {mountShishiSprite} from './shishi-sprite.mjs?v=20260920-final4';
+import {mountShishiSprite} from './shishi-sprite.mjs?v=20260920-final5';
 // The cookie is HttpOnly. Only the current user's display profile and CSRF
 // token live in memory; passwords and bearer credentials are never persisted.
 let current = {enabled: false, authenticated: false, user: null, csrfToken: ''};

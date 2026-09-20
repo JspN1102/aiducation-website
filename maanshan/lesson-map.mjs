@@ -17,7 +17,7 @@ const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
   report:'<path d="M5 3h14v18H5zM9 16v2M12 12v6M15 8v10"/>',
   arrow:'<path d="M4 12h16m-6-6 6 6-6 6"/>'
 }[name] || ''}</svg>`;
-const allowedViews = new Set(['record','animation','quiz','explore']);
+const allowedViews = new Set(['record','animation','quiz','explore','report']);
 const count = (value, maximum) => Math.max(0, Math.min(maximum, Number.isFinite(Number(value)) ? Math.floor(Number(value)) : 0));
 
 /** A navigation hub: completion comes only from actual reading/writing/quiz work. */
@@ -43,7 +43,7 @@ export function mountLessonMap(holder, {poem, progress = {}, resume = null, onNa
     const challengeLabel = current.challengeMode==='review' ? completed?'本組錯題複習完成':`錯題複習 ${answered} / ${challengeTotal} 題` : completed ? '五題都練過了' : answered ? `已練 ${answered} / ${challengeTotal} 題` : poem.grade<=3?'玩一玩，再聽聲音':'玩一玩、聽音、寫字';
     const canResume = latestResume && allowedViews.has(latestResume.view);
     const steps = [
-      {view:'record',title:'AI讀古詩',status:readingLabel,done:done===total},
+      {view:'record',target:done===total?'report':'record',title:done===total?'看朗讀成果':'AI讀古詩',status:readingLabel,done:done===total},
       {view:'animation',title:'動畫看古詩',status:poem.animation?.src?'跟着詩人看故事':'動畫準備中',pending:!poem.animation?.src},
       {view:'explore',title:'AR體驗',status:'讓詩中風景來到身邊'},
       {view:'quiz',title:'練習小遊戲',status:challengeLabel,done:completed}
@@ -52,7 +52,7 @@ export function mountLessonMap(holder, {poem, progress = {}, resume = null, onNa
     root.innerHTML = `<header class="lesson-map-hero"><img class="lesson-map-motif" src="media/poetry-motifs/${details.motif}.svg" width="48" height="48" alt=""><h2>一起學古詩</h2></header>
       <nav class="lesson-map-steps" aria-label="學古詩的活動">${steps.map((step,index)=>{
         const tag='a';
-        const attributes=`href="${route(step.view)}" data-lesson-view="${step.view}"`;
+        const attributes=`href="${route(step.target||step.view)}" data-lesson-view="${step.target||step.view}"`;
         const resume=canResume&&latestResume.view===step.view;
         return `<${tag} class="lesson-map-step lesson-map-step-${step.view}${step.done?' is-complete':''}${step.pending?' is-pending':''}${resume?' is-resume':''}" ${attributes}><div class="lesson-map-step-top"><span class="lesson-map-number">${index+1}</span><span class="lesson-map-step-icon">${icon(step.view)}</span>${step.pending?'':`<span class="lesson-map-step-arrow">${icon('arrow')}</span>`}</div><div class="lesson-map-step-copy"><h3>${step.title}</h3><span class="lesson-map-status">${esc(step.status)}</span></div></${tag}>`;
       }).join('')}</nav>
