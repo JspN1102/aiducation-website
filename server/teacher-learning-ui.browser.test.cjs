@@ -58,20 +58,20 @@ async function setup({role='teacher',width=390,height=844,progressDelay=false,fa
  return{context,page,state,key,pending,id,release(){state.holdProgress=false;state.releases.splice(0).forEach(resolve=>resolve());},async close(){this.release();await context.close();}};
 }
 async function welcomeChecks(){
- for(const width of [390,768,1440]){const env=await setup({width,height:width===768?1024:900});try{
+ for(const [width,height] of [[320,740],[360,780],[390,844],[768,1024],[1024,768],[1440,900]]){const env=await setup({width,height});try{
   const {page,state}=env;
-  check(width+'px full-body welcome sits right of the title without overflow',await page.locator('.library-heading').evaluate(el=>{const a=el.querySelector('h1').getBoundingClientRect(),b=el.querySelector('button').getBoundingClientRect(),image=el.querySelector('img'),style=getComputedStyle(image);return b.left>=a.right-1&&b.height>=90&&b.height<=115&&b.width>=60&&b.width<90&&style.objectFit==='contain'&&document.documentElement.scrollWidth<=innerWidth+1;}));
-  if(width===390&&evidence)await page.screenshot({path:path.join(evidence,'library-phone.png')});
-  if(width!==390)continue;
-  await page.waitForFunction(()=>document.querySelector('.library-shishi-art')?.dataset.gesture==='wave',{},{timeout:9500});check('homepage automatically waves without audio/provider calls',state.tts.length===0);
+  await page.evaluate(()=>document.fonts.ready);
+  check(width+'px full-body welcome sits directly after the final title character',await page.locator('.library-heading').evaluate(el=>{const text=el.querySelector('.library-title-end').firstChild,range=document.createRange();range.setStart(text,text.textContent.length-1);range.setEnd(text,text.textContent.length);const a=range.getBoundingClientRect(),b=el.querySelector('.library-shishi').getBoundingClientRect(),image=el.querySelector('img'),style=getComputedStyle(image);return b.left-a.right>=0&&b.left-a.right<=8&&a.top>=b.top&&a.bottom<=b.bottom&&b.height>=90&&b.height<=115&&b.width>=60&&b.width<90&&style.objectFit==='contain'&&document.documentElement.scrollWidth<=innerWidth+1;}));
+  if(evidence)await page.screenshot({path:path.join(evidence,'library-'+width+'x'+height+'.png')});
+  if(width===390){await page.waitForFunction(()=>document.querySelector('.library-shishi-art')?.dataset.gesture==='wave',{},{timeout:9500});check('homepage automatically waves without audio/provider calls',state.tts.length===0);}
   await page.locator('.library-shishi').click();await page.waitForFunction(()=>document.querySelector('.library-shishi-art')?.dataset.gesture==='book');
-  await page.waitForFunction(()=>!document.querySelector('.library-shishi')?.dataset.audioState);
-  check('click plays a book gesture and the exact Yun Xiaohe greeting',state.tts.length===1&&state.tts[0].text==='選擇一首古詩，開始學習吧。'&&state.tts[0].voice===403001&&state.tts[0].speed===-.75);
-  await page.locator('.library-shishi').click();await page.waitForFunction(()=>!document.querySelector('.library-shishi')?.dataset.audioState);check('repeated greeting reuses cached speech',state.tts.length===1);
-  await page.locator('.poem-entry').first().click();await page.locator('.lesson-shell').waitFor();check('routing destroys homepage mascot while poem guide remains separate',await page.locator('.library-shishi').count()===0&&await page.locator('#shishi-guide-host').count()===1);
-  check('homepage does not open chat or emit student research data',state.requests.every(url=>['/api/school-auth','/api/maanshan-save','/api/tts'].includes(url)));
+  check(width+'px click shows a readable guide and never requests speech',state.tts.length===0&&await page.locator('#library-shishi-guide').evaluate(el=>{const b=el.getBoundingClientRect();return el.open&&b.left>=0&&b.right<=innerWidth&&b.top>=0&&b.bottom<=innerHeight;}));
+  if(evidence)await page.screenshot({path:path.join(evidence,'library-guide-'+width+'x'+height+'.png')});
+  await page.locator('.library-guide-done').click();check(width+'px guide closes and returns focus to Shishi',await page.evaluate(()=>!document.querySelector('#library-shishi-guide').open&&document.activeElement===document.querySelector('.library-shishi')));
+  await page.locator('.library-shishi').click();await page.keyboard.press('Escape');check(width+'px Escape also closes the guide',!await page.locator('#library-shishi-guide').isVisible());
+  await page.locator('.poem-entry').first().click();await page.locator('.lesson-shell').waitFor();check(width+'px routing removes the welcome and guide while keeping the poem guide',await page.locator('.library-shishi,#library-shishi-guide').count()===0&&await page.locator('#shishi-guide-host').count()===1);
+  check(width+'px homepage does not open chat or emit student research data',state.requests.every(url=>['/api/school-auth','/api/maanshan-save','/api/school-recordings'].includes(url)));
  }finally{await env.close();}}
- const failed=await setup({failTTS:true});try{await failed.page.locator('.library-shishi').click();await failed.page.locator('#toast.visible').waitFor();check('failed welcome speech gives a retry message and retains usable cards',(await failed.page.locator('#toast').innerText()).includes('語音暫時無法播放')&&await failed.page.locator('.poem-entry').count()===6);}finally{await failed.close();}
 }
 async function resetChecks(){
  const env=await setup({progressDelay:true});try{

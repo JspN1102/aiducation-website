@@ -61,7 +61,7 @@ test('new login requires an explicit boolean acceptance before credential checks
 });
 
 test('only the current exact terms version can create a new session', async () => {
-  assert.equal(auth.TERMS_VERSION, '2026-09-20-v1');
+  assert.equal(auth.TERMS_VERSION, '2026-09-21-v2');
   for (const version of [undefined, null, '', '2026-09-19-v1', '2026-09-20-v1 ', 1, { version: auth.TERMS_VERSION }]) {
     const f = fixture(), req = request(), res = response();
     if (version === undefined) delete req.body.termsVersion;

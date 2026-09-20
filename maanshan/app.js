@@ -1,23 +1,24 @@
 import {imageAsset} from './media-images.mjs?v=20260920-art2';
-import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260921-school2';
-import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260921-school2';
+import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260921-school3';
+import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260921-school3';
 import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
-import {getWordAudioURL} from './word-audio.mjs?v=20260919c';
-import {getSpeechAudioURL} from './speech-audio.mjs?v=20260920flow1';
-import {mountShishi} from './shishi.mjs?v=20260921-school2';
-import {mountLibraryShishi} from './library-shishi.mjs?v=20260921-school2';
-import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school2';
-import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school2';
+import {getWordAudioURL} from './word-audio.mjs?v=20260921natural1';
+import {getSpeechAudioURL} from './speech-audio.mjs?v=20260921natural1';
+import {mountShishi} from './shishi.mjs?v=20260921-school3';
+import {mountLibraryShishi} from './library-shishi.mjs?v=20260921-school3';
+import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school3';
+import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school3';
 import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
-import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260919d';
+import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school3';
 import {challengeSummary} from './challenge-state.mjs?v=20260919d';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260920-school1';
-import {encodeRecording, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260921-school2';
-import {requestJSON} from './network.mjs?v=20260921-school2';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260921-school2';
-import {schoolSession} from './bootstrap.mjs?v=20260921-school2';
-import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school2';
-import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school2';
+import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260921-school3';
+import {createRecordingLibrary} from './recording-library.mjs?v=20260921-school3';
+import {requestJSON, requestChat} from './network.mjs?v=20260921-school3';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260921-school3';
+import {schoolSession} from './bootstrap.mjs?v=20260921-school3';
+import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school3';
+import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school3';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -77,12 +78,19 @@ let animationPlayer=null,disposeAnimation=null;
 let activityLoad=0;
 let practiceIndex=0, reportTab='advice', reportLine=0, practiceMode='sound';
 const TTS_VOICE=403001;
-const TTS_SPEED=-.75;
-const TTS_PRONUNCIATION='edb-20260920-flow1-yunxiaohe';
+const TTS_SPEED=-.25;
+const TTS_PRONUNCIATION='edb-20260921-natural1-yunxiaohe';
 const speechCache=new Map(), speechPending=new Map(), speechFailureUntil=new Map(), staticAudioFailures=new Map();
 const STATIC_AUDIO_RETRY_MS=60000;
 let ttsUnavailableUntil=0,ttsSuccessVersion=0;
-const recordings=new Map(), requests=new Set();
+const requests=new Set();
+const recordings=createRecordingLibrary({enabled:school.enabled,actorId:school.user?.id,learningEpoch,fetch:schoolFetch,
+  canUse:()=>!sessionLocked&&(!school.enabled||schoolState().user?.id===school.user.id),preparePayload:prepareAssessmentPayload,
+  onEpochChanged:()=>reloadTeacherLearning(),onStorageError:()=>toast('錄音正在同步，請稍後再關閉本頁。'),
+  onChange:()=>{
+    if(!poem)return;
+    document.querySelectorAll('#view [data-action="replay"]').forEach(button=>{if(recordings.has(poem.id+'-'+Number(button.dataset.value))){button.disabled=false;button.removeAttribute('title');}});
+  }});
 const pendingRecordings=new Map();
 let recordResearch=null, speechResearchItem=null, speechResearchContext=null, presentedReadingItem=null;
 const sync=createSyncQueue({
@@ -174,7 +182,7 @@ function phonemeMarkup(char,pinyin){return '<phoneme alphabet="py" ph="'+pinyinN
 function lineMarkup(line,text){
   const phrase=String(text),characters=Array.from(String(line?.text||'')).filter(char=>/\p{Script=Han}/u.test(char));
   let cursor=0;
-  const out=['<speak>','<break time="160ms"/>'];
+  const out=['<speak>'];
   for(const char of phrase){
     if(!/\p{Script=Han}/u.test(char)){out.push(xmlText(char));continue;}
     const index=characters.indexOf(char,cursor),p=line?.pinyin?.[index];
@@ -183,12 +191,12 @@ function lineMarkup(line,text){
   }
   out.push('</speak>');return out.join('');
 }
-function wordMarkup(char,pinyin){return '<speak><break time="160ms"/>'+phonemeMarkup(char,pinyin)+'</speak>';}
+function wordMarkup(char,pinyin){return '<speak>'+phonemeMarkup(char,pinyin)+'</speak>';}
 function challengeMarkup(target){
   if(!target.text)return wordMarkup(target.char,target.pinyin);
   const readings=new Map((target.parts||[]).map(item=>[item.char,item.pinyin]));
   if(target.char&&target.pinyin)readings.set(target.char,target.pinyin);
-  return '<speak><break time="160ms"/>'+Array.from(target.text,char=>readings.has(char)?phonemeMarkup(char,readings.get(char)):xmlText(char)).join('')+'</speak>';
+  return '<speak>'+Array.from(target.text,char=>readings.has(char)?phonemeMarkup(char,readings.get(char)):xmlText(char)).join('')+'</speak>';
 }
 function speechKey(text,markup){return (markup?'ssml:':'plain:')+String(text);}
 async function speechSource(text,{markup=null}={}) {
@@ -233,10 +241,10 @@ async function speechSource(text,{markup=null}={}) {
   speechPending.set(key,pending);return pending;
 }
 function playBlob(blob) {
-  return playSource(URL.createObjectURL(blob),true,.85);
+  return playSource(URL.createObjectURL(blob),true,1);
 }
 function playSpeech(source) {
-  return typeof source==='string'?playSource(source,false,.85):playBlob(source);
+  return typeof source==='string'?playSource(source,false,1):playBlob(source);
 }
 function playSource(url,revoke=false,playbackRate=1) {
   return new Promise(resolve=>{
@@ -260,8 +268,9 @@ function playSource(url,revoke=false,playbackRate=1) {
     player.onerror=()=>{finish(false,'error');};
     player.onplaying=()=>{clearTimeout(watchdog);audibleAt=performance.now();research.touch();if(!playbackReported){playbackReported=true;research.emit('playback_started',{activity:audit.activity,poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,...(audit.context?{context:audit.context}:{}),metrics:{playbackRate}});}};player.onwaiting=waitForAudio;waitForAudio();
     const start=()=>{if(started||settled)return;started=true;player.playbackRate=playbackRate;player.play().catch(()=>finish(false));};
-    if(player.readyState>=3)start();else player.addEventListener('canplay',start,{once:true});
-    player.load();
+    // Queue playback during the original tap. Waiting for canplay before
+    // calling play() loses Safari's user gesture on slower mobile networks.
+    player.load();start();
   });
 }
 function shouldTryStaticAudio(url){
@@ -344,11 +353,11 @@ function verseHTML(line,extra='') {
 function renderLibrary() {
   poem=null;document.title='AI普通話學習平台 · 馬鞍山靈糧小學';
   app.innerHTML='<main class="library" id="main">'+
-    '<div class="library-heading library-with-shishi"><div><h1>AI普通話學習平台</h1></div></div>'+
+    '<div class="library-heading library-with-shishi"><div><h1><span class="library-title-start">AI普通話</span><span class="library-title-end">學習平台</span></h1></div></div>'+
     '<div class="poem-grid library-books" id="poem-grid" aria-label="選擇古詩"></div><footer class="library-footer"><a href="credits.html">素材來源 '+icon('arrow-up-right')+'</a></footer></main>';
   renderCards();icons();
   libraryShishi?.destroy();
-  libraryShishi=mountLibraryShishi($('.library-heading'),{canPlay:()=>!sessionLocked&&!poem,onSpeak:(text,button)=>{stopMedia();return speak(text,'',button);}});
+  libraryShishi=mountLibraryShishi($('.library-heading'),{canPlay:()=>!sessionLocked&&!poem});
 }
 function renderCards() {
   $('#poem-grid').innerHTML=poems.map(p=>'<article class="poem-card poem-color-'+p.id+'"><a class="poem-entry" href="'+link('lesson',p)+'" aria-label="學習'+esc(titleOf(p))+'"><div class="poem-art" style="background-image:url('+getScenePreview(p.slug,p.lines.at(-1).scene)+')"><img src="'+asset('cover-final.webp',p)+'" width="800" height="450" alt="'+esc(p.lines.at(-1).text)+'" '+(p.id>3?'loading="lazy"':'fetchpriority="high"')+'><span class="poem-grade">'+['','一','二','三','四','五','六'][p.grade]+'年級</span></div><div class="poem-card-body"><img class="poem-emblem" src="'+poemMotif(p)+'" width="56" height="56" alt="" aria-hidden="true"><div class="poem-card-title"><h2>'+esc(p.title)+(p.id===5?'<small>其三</small>':'')+'</h2></div><p class="poem-author">'+esc(p.dynasty)+' · '+esc(p.author)+'</p><span class="poem-open">'+icon('book-open')+'<span>一起讀</span>'+icon('arrow-right')+'</span></div></a></article>').join('');icons();
@@ -573,7 +582,7 @@ async function startRecording() {
 function stopRecording(){if(recorder?.state==='recording'){recorder.stop();$('#record-controls').innerHTML='<p class="record-status"><span class="spinner"></span> 正在聆聽你的朗讀</p>';}}
 async function assessRecording(blob,p,index,version,generation,context,existing=null) {
   const isCurrent=()=>version===routeVersion&&generation===recordingVersion;
-  const key=`${p.id}-${index}`,pending=existing||{blob,encoded:null,canRetry:true,message:'錄音已保留，可以再送一次。',researchContext:recordResearch};
+  const key=`${p.id}-${index}`,pending=existing||{blob,encoded:null,recordingId:crypto.randomUUID(),recordedAt:Date.now(),canRetry:true,message:'錄音已保留，可以再送一次。',researchContext:recordResearch};
   const controller=new AbortController();requests.add(controller);
   try {
     if(blob.size>=100)pendingRecordings.set(key,pending);
@@ -583,7 +592,10 @@ async function assessRecording(blob,p,index,version,generation,context,existing=
     const raw=await submitAssessment({audio:pending.encoded,poemId:p.id,refText:p.lines[index].simplified,...(collectResearch?{researchContext:pending.researchContext}: {})},{signal:controller.signal,onRetry:()=>{research.emit('retry',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,retryCount:1});if(isCurrent())assessmentStatus('正在重新連線，錄音已保留');},onWaiting:()=>{if(isCurrent())assessmentStatus('正在等候評測，錄音已保留');}});
     if(raw.researchRecorded===false)research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code:'storage_unavailable',retryable:true}});
     if(!isCurrent())return;
-    const result=mapAssessment(raw,p.lines[index]);result.words=result.words.map(w=>({...w,lineIndex:index}));const s=state(p);recordings.set(`${p.id}-${index}`,blob);s.reading[index]=result;s.report='';s.updatedAt=Date.now();
+    const result=mapAssessment(raw,p.lines[index]);result.words=result.words.map(w=>({...w,lineIndex:index}));result.recordingId=pending.recordingId;const s=state(p);s.reading[index]=result;s.report='';s.updatedAt=Date.now();
+    // Saving is independent of grading: return the score immediately, then
+    // upload privately with a durable retry queue. No second SOE call is needed.
+    void recordings.save({poemId:p.id,lineIndex:index,recordingId:pending.recordingId,recordedAt:pending.recordedAt,audio:pending.encoded,blob});
     research.emit('feedback_shown',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,result:{status:'completed',score:result.total_score,correct:null}});
     if(raw.researchRecorded===false)research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code:'storage_unavailable',retryable:true}});
     pendingRecordings.delete(key);
@@ -612,10 +624,10 @@ async function replayPendingRecording(button){
 }
 async function replay(index,button=null) {
   if(button&&activeSpeechButton===button){stopMedia();return;}
-  const blobs=(index===null?poem.lines.map((_,i)=>recordings.get(poem.id+'-'+i)):[recordings.get(poem.id+'-'+index)]).filter(Boolean);
-  if(!blobs.length){toast('這段錄音只保留在本次開啟的頁面。');return;}
+  const sources=(index===null?poem.lines.map((_,i)=>recordings.source(poem.id+'-'+i)):[recordings.source(poem.id+'-'+index)]).filter(Boolean);
+  if(!sources.length){toast('還沒有這一句的錄音，讀一次就能保存。');return;}
   stopMedia();const version=speechVersion,route=routeVersion;activeSpeechButton=button;speechState(button,'playing');
-  try{for(const blob of blobs){const finished=await playBlob(blob);if(version!==speechVersion||route!==routeVersion)return;if(!finished)throw new Error('playback');}}
+  try{for(const source of sources){const finished=await(typeof source==='string'?playSource(source,false,1):playBlob(source));if(version!==speechVersion||route!==routeVersion)return;if(!finished)throw new Error('playback');}}
   catch{if(version===speechVersion&&route===routeVersion)toast('錄音暫時無法播放。');}
   finally{if(version===speechVersion&&route===routeVersion)stopTransient();}
 }
@@ -734,7 +746,7 @@ async function loadActivity(name,load) {
 }
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260921-school2'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260921-school3'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
@@ -746,7 +758,7 @@ async function renderQuiz() {
     recognize:(ink,context)=>api('/api/handwriting',{ink,poemId:poem.id,...(collectResearch?{researchContext:research.context(context)}:{})},16000)});
 }
 async function renderExploration(){
-  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260921-school2'));
+  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260921-school3'));
   if(!module)return;
   const holder=$('#view');
   if(!holder||!poem)return;
@@ -798,17 +810,32 @@ async function sendChat(text,retry=false) {
   research.emit(retry?'retry':'attempt_started',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,metrics:{userCharacters:s.chat.at(-1)?.content?.length||0},...(retry?{retryCount:1}:{})});
   stopMedia();chatBusy=true;renderChat();$('#chat-send').disabled=true;
   $('#chat-error').innerHTML='<span class="spinner"></span><span>正在想一想…</span>';
-  const waiting=setTimeout(()=>{if(version===routeVersion&&chatBusy)$('#chat-error').innerHTML='<span class="spinner"></span><span>還在等回覆，你的問題已保留。</span>';},8000);
+  const controller=new AbortController();requests.add(controller);let partial=null;
+  const waiting=setTimeout(()=>{if(version===routeVersion&&chatBusy&&!partial)$('#chat-error').innerHTML='<span class="spinner"></span><span>還在等回覆，你的問題已保留。</span>';},8000);
   try {
-    const data=await api('/api/maanshan-chat/',{poemId:p.id,grade:Math.min(studentGrade(p),p.grade),messages:s.chat.slice(-10),...(collectResearch?{researchContext:audit}:{})},30000,true);
+    const data=await requestChat({poemId:p.id,grade:Math.min(studentGrade(p),p.grade),messages:s.chat.slice(-10),...(collectResearch?{researchContext:audit}:{})},{signal:controller.signal,onDelta:(_delta,text)=>{
+      if(version!==routeVersion||sessionLocked)return;
+      const holder=$('#chat-messages'),atBottom=holder.scrollHeight-holder.scrollTop-holder.clientHeight<100;
+      if(!partial){
+        $('#chat-error').textContent='';clearTimeout(waiting);
+        const row=document.createElement('div');row.className='chat-message';row.dataset.streaming='true';
+        const portrait=document.createElement('img');portrait.src=asset('avatar.webp');portrait.alt=p.author;portrait.width=portrait.height=32;
+        partial=document.createElement('div');partial.className='chat-bubble';partial.setAttribute('aria-busy','true');row.append(portrait,partial);holder.append(row);
+      }
+      partial.textContent=text;
+      if(atBottom)holder.scrollTop=holder.scrollHeight;
+    }});
     if(version!==routeVersion)return;
     if(typeof data.reply!=='string'||!data.reply.trim())throw new Error('暫時未能回答，可以再送一次。');
+    if(collectResearch&&data.researchRecorded===false)research.emit('error',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,error:{code:'storage_unavailable',retryable:true}});
     s.chat.push({role:'assistant',content:data.reply});persist();renderChat();
     research.emit('feedback_shown',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,metrics:{assistantCharacters:Math.min(20000,data.reply.length),latencyMs:Math.min(600000,Math.round(performance.now()-requestedAt))}});
   } catch(error) {
+    partial?.closest('[data-streaming]')?.remove();
     if(version===routeVersion)showChatRetry(error.message);
     research.emit('error',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,error:{code:researchErrorCode(error),retryable:true}});
   } finally {
+    requests.delete(controller);
     clearTimeout(waiting);
     if(version===routeVersion){chatBusy=false;$('#chat-send').disabled=false;}
   }
@@ -839,6 +866,7 @@ function route() {
   if(view==='report')reportTab='advice';
   if(view==='quiz')$('#video-title').textContent='示範朗讀';
   renderWorkspace();window.scrollTo({top:0});
+  if(view==='report'||view==='record'&&state(poem).reading.some(Boolean))void recordings.hydrate({poemId:poem.id});
 }
 document.addEventListener('click',event=>{
   if(sessionLocked)return;
@@ -940,6 +968,7 @@ function openAccount(){
 function reloadTeacherLearning(epoch){
   if(!isTeacher||sessionLocked)return;
   sessionLocked=true;routeVersion++;activityLoad++;reportGeneration++;
+  recordings.stop();
   stopMedia();cancelRecording();requests.forEach(controller=>controller.abort());
   poemSwipe?.destroy();sceneStage?.destroy();challenge?.destroy();lessonMap?.destroy();exploration?.destroy();shishi?.destroy();libraryShishi?.destroy();disposeAnimation?.();
   if(epoch){saved={};writeStorage(STORE,{});writeStorage(PENDING,[]);writeStorage(LEARNING_EPOCH,epoch);}
@@ -955,7 +984,7 @@ $('#account-logout').addEventListener('click',async event=>{
   const button=event.currentTarget;button.disabled=true;
   try{
     stopMedia();cancelRecording();
-    await Promise.race([Promise.allSettled([sync.flush(),research.flush({keepalive:true}),answerOutbox.flush({keepalive:true})]),new Promise(resolve=>setTimeout(resolve,2000))]);
+    await Promise.race([Promise.allSettled([sync.flush(),recordings.flush(),research.flush({keepalive:true}),answerOutbox.flush({keepalive:true})]),new Promise(resolve=>setTimeout(resolve,2000))]);
     await logoutSchoolSession();
   }catch{button.disabled=false;toast('暫時未能登出，請再試一次。');}
 });
@@ -978,7 +1007,9 @@ function updateViewport(){
 }
 window.visualViewport?.addEventListener('resize',updateViewport);
 document.addEventListener('focusin',updateViewport);document.addEventListener('focusout',()=>requestAnimationFrame(updateViewport));updateViewport();
-document.addEventListener('visibilitychange',()=>{if(sessionLocked)return;if(document.visibilityState==='hidden'){stopMedia();cancelRecording();if(poem&&view==='record')renderRecord();}else sync.flush();});
+document.addEventListener('visibilitychange',()=>{if(sessionLocked)return;if(document.visibilityState==='hidden'){stopMedia();cancelRecording();if(poem&&view==='record')renderRecord();}else{sync.flush();void recordings.hydrate({remote:Boolean(poem&&['record','report'].includes(view)),poemId:poem?.id});}});
+window.addEventListener('online',()=>{if(!sessionLocked)void recordings.hydrate({remote:Boolean(poem&&['record','report'].includes(view)),poemId:poem?.id});});
+onSchoolSessionInvalid(()=>recordings.stop());
 window.addEventListener('pagehide',()=>{if(sessionLocked)return;stopMedia();cancelRecording();persist();});
 onSchoolSessionInvalid(()=>{sessionLocked=true;routeVersion++;activityLoad++;reportGeneration++;stopMedia();cancelRecording();requests.forEach(controller=>controller.abort());libraryShishi?.destroy();libraryShishi=null;teacherReset?.destroy();teacherReset=null;challenge?.destroy();challenge=null;exploration?.destroy();exploration=null;disposeAnimation?.();disposeAnimation=null;research.stop();});
 async function init(){
@@ -991,6 +1022,7 @@ async function init(){
     poems=school.enabled&&!allGrades ? data.poems.filter(p=>p.grade===Number(school.user.grade)) : data.poems;
     if(!poems.length)throw new Error('catalog-grade');
     configurePronunciation(pronunciation);route();sync.flush();answerOutbox.flush();icons();
+    void recordings.hydrate({remote:false});
     if(school.enabled)void(async()=>{
       const hydratedRoute=routeVersion;
       try{
@@ -1010,6 +1042,10 @@ async function init(){
           if(report?.reportVersion===REPORT_VERSION&&report.studentGrade===school.user.grade&&!local.report){local.report=report.content;local.reportVersion=report.reportVersion;local.reportStudentGrade=report.studentGrade;}
         }
         persist();
+        if(routeVersion===hydratedRoute&&!recordBusy&&poem&&['record','report'].includes(view)){
+          if(view==='report')renderReport();else renderRecord();
+          if(state(poem).reading.some(Boolean))void recordings.hydrate({poemId:poem.id});
+        }
         if(routeVersion===hydratedRoute&&!recordBusy&&(!poem||view==='lesson'))route();
       }catch(error){if(error?.code==='LEARNING_RESET'){reloadTeacherLearning();return;}if(!sessionLocked)setTimeout(()=>{if(!sessionLocked)toast('本機進度已保留；網絡恢復後會繼續同步。');},500);}
     })();

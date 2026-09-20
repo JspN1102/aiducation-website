@@ -11,10 +11,10 @@ from media_config import build_media_config, verify_local_assets, obsolete_audio
 ROOT = Path(__file__).resolve().parent.parent
 API_FILES = {'soe.js', 'tts.js', 'maanshan-chat.js', 'maanshan-report.js',
              'maanshan-save.js', 'maanshan-data.js', 'handwriting.js',
-             'school-auth.js', 'research-events.js', 'teacher-analytics.js', 'challenge-result.js', 'teacher-tools.js'}
+             'school-auth.js', 'school-recordings.js', 'research-events.js', 'teacher-analytics.js', 'challenge-result.js', 'teacher-tools.js'}
 RELAY_FILE = 'api/_lib/guangzhou-relay.cjs'
 RELAY_RUNTIME = {RELAY_FILE, 'api/_lib/response-encoding.cjs'}
-# One shared function serves the twelve fixed school endpoints.
+# One shared function serves the thirteen fixed school endpoints.
 # The 65-second Guangzhou report route is capped by Vercel's 60-second limit;
 # the relay enforces its own shorter upstream deadline before that limit.
 FUNCTION_SECONDS = {name: 60 for name in API_FILES}
@@ -30,7 +30,7 @@ def relay_entry(filename):
 
 
 def functions_config():
-    if set(FUNCTION_SECONDS) != API_FILES or len(API_FILES) != 12:
+    if set(FUNCTION_SECONDS) != API_FILES or len(API_FILES) != 13:
         raise RuntimeError('School relay endpoints and duration limits disagree.')
     return {'api/school-gateway.js': {'maxDuration': 60}}
 
@@ -100,7 +100,7 @@ def main():
             raise RuntimeError('A current animation has no verified COS mapping.')
     config = {
         'trailingSlash': True,
-        'regions': ['iad1'],
+        'regions': ['sin1'],
         'functions': functions_config(),
         'rewrites': [{'source':'/api/'+Path(name).stem+'/', 'destination':'/api/school-gateway/?__school_route='+Path(name).stem} for name in sorted(API_FILES)],
         'redirects': [{'source': '/', 'destination': '/maanshan/', 'statusCode': 307},

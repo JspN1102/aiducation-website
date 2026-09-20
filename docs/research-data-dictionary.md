@@ -2,8 +2,11 @@
 
 The machine-readable source is `research-data-dictionary.json`. This release
 collects structured observations only, behind school login and
-`RESEARCH_ENABLED=1`. Ethics approval is not interpreted as permission to collect
-raw recordings, handwriting coordinates, chat text, names, IPs or fingerprints.
+`RESEARCH_ENABLED=1`. Its event/export schema does not contain raw recordings,
+handwriting coordinates, chat text, names, IPs or fingerprints. The separate
+private `school_recordings` table now keeps the latest assessed recording per
+account, poem and line for the learner's own playback. This table is covered by
+database backups but is not included in research-event or teacher exports.
 
 `POST /api/research-events` accepts `{schemaVersion:1,batchId,actorId,events}`.
 Cookie identity plus CSRF is required. `actorId` must match the current cookie;

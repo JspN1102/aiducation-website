@@ -1,9 +1,9 @@
 import {imageAsset} from './media-images.mjs?v=20260920-art2';
-import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260919d';
+import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school3';
 import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20260919d';
-import {mountChallengeWriting} from './challenge-writing.mjs?v=20260920-school1';
-import {mountChallengeModel} from './challenge-model.mjs?v=20260921-school2';
-import {mountLivingField} from './living-field.mjs?v=20260921-school2';
+import {mountChallengeWriting} from './challenge-writing.mjs?v=20260921-school3';
+import {mountChallengeModel} from './challenge-model.mjs?v=20260921-school3';
+import {mountLivingField} from './living-field.mjs?v=20260921-school3';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const COMPACT_PROMPTS = {
@@ -73,7 +73,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const locked = !!answer;
     const active = () => !dead && epoch === gameEpoch && generation === renderGeneration;
     try {
-      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20260921-school2');
+      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20260921-school3');
       if (!active()) return;
       let completionReceived = false;
       const mounted = mountPoemGame(holder, {slug: poem.slug, initialState: state, readOnly: locked,

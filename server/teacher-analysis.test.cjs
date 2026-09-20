@@ -199,12 +199,44 @@ test('narrative evidence distinguishes unique completed students, paired learnin
  const p=analysis.aggregateEvidence(input);assert.equal(p.reportStyle,'narrative-teaching-review');
  assert.equal(p.evidence.find(f=>f.label==='有活動完成紀錄的名冊學生').value,2);
  const paired=p.evidence.find(f=>f.label.startsWith('朗讀字音評分與默寫辨識準確度：'));
- assert.deepEqual(paired.value,{bothMeasuredStudents:3,bothBelow60Students:1,leftBelow60Students:2,rightBelow60Students:2});
+ assert.deepEqual(paired.value,{bothMeasuredStudents:3,bothBelow60Students:1,leftBelow60Students:2,rightBelow60Students:2,leftOnlyBelow60Students:1,rightOnlyBelow60Students:1,neitherBelow60Students:0});
+ assert.deepEqual(p.teachingGroups[0],{evidenceId:paired.id,domains:['朗讀字音評分','默寫辨識準確度'],bothMeasuredStudents:3,groups:[{count:1,focus:['朗讀字音評分']},{count:1,focus:['默寫辨識準確度']},{count:1,focus:['朗讀字音評分','默寫辨識準確度']}]});
  assert.deepEqual(p.evidence.find(f=>f.label==='全詩逐字平均的觀察範圍').value,{measuredPositions:2,meanBelow80Positions:1});
  assert.deepEqual(p.evidence.find(f=>f.label==='「舟」逐字平均').value,{meanScore:72,measuredStudents:3});
  assert.deepEqual(p.teachingFocus[0].readingLines,[{text:'李白乘舟將欲行',observeCharacters:['舟']}]);
  assert.deepEqual(p.teachingFocus[0].writingCharacters,['舟']);
  assert.doesNotMatch(JSON.stringify(p),/researchId|displayName|PRIVATE_/);
+});
+
+test('teaching groups contain only observed nonempty disjoint groups and exclude missing scores',()=>{
+ const input=dataset(),metric=value=>({measuredN:value===null?0:1,meanScore:value});
+ const person=(reading,writing)=>({rosterMatched:true,stats:{nEvents:2,latest:{byConstruct:{'reading.pronunciation':{serverVerified:metric(reading)},'writing.dictation':{serverVerified:metric(writing)}}}}});
+ input.students=[person(45,90),person(50,80),person(90,40),person(80,80),person(30,null)];
+ const payload=analysis.aggregateEvidence(input),pair=payload.evidence.find(f=>f.label.endsWith('：同一批學生觀察'));
+ assert.deepEqual(pair.value,{bothMeasuredStudents:4,bothBelow60Students:0,leftBelow60Students:2,rightBelow60Students:1,leftOnlyBelow60Students:2,rightOnlyBelow60Students:1,neitherBelow60Students:1});
+ assert.deepEqual(payload.teachingGroups[0].groups,[{count:2,focus:['朗讀字音評分']},{count:1,focus:['默寫辨識準確度']}]);
+ assert.doesNotMatch(JSON.stringify(payload.teachingGroups),/researchId|displayName|PRIVATE_/);
+});
+
+test('empty groups and character prevalence trigger one targeted revision before report export',async()=>{
+ const input=dataset(),metric=value=>({measuredN:1,meanScore:value});
+ input.filters={...input.filters,grade:6,poemId:6};
+ input.students=[[45,90],[90,40]].map(([reading,writing])=>({rosterMatched:true,stats:{nEvents:2,latest:{byConstruct:{'reading.pronunciation':{serverVerified:metric(reading)},'writing.dictation':{serverVerified:metric(writing)}}}}}));
+ input.analytics.readingCharacterAnalysis={poems:[{grade:6,poemId:6,title:'初春小雨',lines:[{lineIndex:0,words:[{char:'潤',meanScore:68.9,count:2}]}]}]};
+ const flawed=validOutput();flawed.overview='這些字音的問題具有普遍性。';flawed.teachingActions=[{title:'分組練習',priority:'high',evidenceIds:['F001'],steps:['朗讀與默寫可分成三組；兩項皆低於60分的學生，先做聽辨再寫字。']}];
+ let calls=0;const store=memoryStore(),svc=service({store,loadDataset:async()=>input,fetchImpl:async(url,options)=>{
+  calls++;const body=JSON.parse(options.body),payload=JSON.parse(body.messages[1].content);
+  assert.equal(payload.teachingGroups[0].groups.length,2);assert(payload.teachingGroups[0].groups.every(group=>group.focus.length===1));
+  if(calls===1)return provider(flawed);
+  assert.match(body.messages[3].content,/EMPTY_LEARNING_GROUP/);assert.match(body.messages[3].content,/UNSUPPORTED_CHARACTER_PREVALENCE/);
+  const revised=validOutput();revised.overview='下一課先共同跟讀原句，再逐一聽取，安排仍需鞏固的學生再讀。';revised.teachingActions[0].steps=['朗讀需要鞏固的學生先聽原句再讀；書寫需要鞏固的學生練寫「潤」，教師分別聽取和檢查，再調整下次練習。'];revised.limitations=[];
+  return provider(revised);
+ }});
+ const pending=await svc.generate({},input.filters,teacher);assert.equal(pending.nextAction,'continue');assert.equal(pending.report,undefined);
+ await assert.rejects(svc.getReport(pending.reportId),error=>error.code==='REPORT_NOT_READY');
+ const result=await svc.continueReport(pending.reportId,teacher);assert.equal(result.report.qualityReview.revisions,1);assert.deepEqual(result.report.analysis.limitations,[]);
+ assert.doesNotMatch(JSON.stringify(result.report.analysis),/普遍性|三組|兩項皆低|不足以|不能推斷/);
+ assert.equal((await svc.generate({},input.filters,teacher)).cached,true);assert.equal(calls,2);
 });
 test('continuation is a teacher-CSRF POST and accepts only a report identity',async()=>{
  let continued=0;const handler=createHandler({authModule:{requireActor:async(req,options)=>{assert.equal(options.csrf,true);return teacher;}},analysisModule:{continueReport:async(id,actor)=>{continued++;assert.equal(id,'ta_'+'a'.repeat(64));assert.equal(actor,teacher);return {ok:true,status:'generating',reportId:id,retryAfterSeconds:3};}}});

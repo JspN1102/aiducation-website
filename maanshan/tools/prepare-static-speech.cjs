@@ -11,8 +11,8 @@ const { pathToFileURL } = require('node:url');
 const root = path.resolve(__dirname, '..');
 const work = path.resolve(process.env.MAANSHAN_AUDIO_WORK || path.join(os.tmpdir(), 'maanshan-audio'));
 const endpoint = process.env.MAANSHAN_TTS_ENDPOINT || 'https://aiducation.asia/api/tts/';
-const voice = 403001, speed = -0.75, pronunciationVersion = 'edb-20260920-flow1-yunxiaohe';
-const assetVersion = '20260920flow1';
+const voice = 403001, speed = -0.25, pronunciationVersion = 'edb-20260921-natural1-yunxiaohe';
+const assetVersion = '20260921natural1';
 const directories = { words: path.join(root, 'media/words'), speech: path.join(root, 'media/speech') };
 const exportsByKind = { words: 'WORD_AUDIO_FILES', speech: 'SPEECH_AUDIO_FILES' };
 const reportPath = path.join(work, 'static-speech-generation.json');
@@ -191,7 +191,7 @@ async function synthesize(entry, kind) {
       assert.ok(response.ok && response.headers.get('content-type')?.startsWith('audio/wav'), 'TTS rejected request: HTTP ' + response.status);
       const wav = Buffer.from(await response.arrayBuffer());
       assert.equal(wav.toString('ascii', 0, 4), 'RIFF', 'Expected WAV audio');
-      const mp3 = command('ffmpeg', ['-v', 'error', '-f', 'wav', '-i', 'pipe:0', '-af', 'atempo=0.85,adelay=180,apad=pad_dur=0.08', '-ar', '16000', '-ac', '1', '-c:a', 'libmp3lame', '-b:a', '48k', '-f', 'mp3', 'pipe:1'], { input: wav });
+      const mp3 = command('ffmpeg', ['-v', 'error', '-f', 'wav', '-i', 'pipe:0', '-ar', '16000', '-ac', '1', '-c:a', 'libmp3lame', '-b:a', '64k', '-f', 'mp3', 'pipe:1'], { input: wav });
       fs.writeFileSync(temporary, mp3, { flag: 'wx' });
       const info = audioInfo(temporary, kind);
       // COPYFILE_EXCL prevents replacing media even if another process created it.

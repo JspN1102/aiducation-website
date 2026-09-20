@@ -92,11 +92,60 @@ function ambiguousListeningChoices(item,curriculum){
   }
   return false;
 }
+const DOMAIN_PATTERNS=[['reading',/朗[讀读]|跟[讀读]|[讀读]音/gu],['writing',/默[寫写]|[聽听][寫写]|[書书][寫写]/gu],['sound',/辨音|[聽听]辨|辨[識识]/gu]];
+function mentionedDomains(value){
+  const mentions=[];
+  for(const [domain,pattern]of DOMAIN_PATTERNS)for(const match of String(value||'').matchAll(pattern)){
+    // 「默寫辨識」 names one writing measure, not a separate listening measure.
+    if(domain==='sound'&&/默[寫写]$/u.test(String(value).slice(0,match.index)))continue;
+    mentions.push({domain,index:match.index});
+  }
+  const recent=[];
+  for(const {domain}of mentions.sort((a,b)=>a.index-b.index)){const prior=recent.indexOf(domain);if(prior!==-1)recent.splice(prior,1);recent.push(domain);}
+  return recent;
+}
+function namedDomainPair(value){
+  const domain='(?:朗[讀读](?:字音(?:評分|评分))?|默[寫写](?:辨[識识](?:[準准]確度)?)?|[聽听][寫写]|[書书][寫写]|辨音(?:答題[準准]確度)?|[聽听]辨)';
+  const matches=[...String(value||'').matchAll(new RegExp(domain+'(?:與|与|和|及|、|／|/)'+domain,'gu'))];
+  return matches.length?mentionedDomains(matches.at(-1)[0]):[];
+}
+function emptyObservedGroup(value,context,pairs){
+  const dualLow=/(?:兩項|两项|兩者|两者|二者)(?:個人平均|平均|分數|分数)?(?:皆|均|都|同時|同时)?(?:低於|低于|不足|未達|未达)\s*60\s*分|(?:皆|均|同時|同时)(?:低於|低于|不足|未達|未达)\s*60\s*分/gu;
+  for(const match of String(value).matchAll(dualLow)){
+    const sentenceStart=Math.max(value.lastIndexOf('。',match.index),value.lastIndexOf('\n',match.index))+1;
+    const prefix=value.slice(sentenceStart,match.index),suffix=value.slice(match.index+match[0].length).split(/[。；;\n]/u)[0];
+    if(negated(prefix,prefix.length)||/(?:若|如果|倘若|假如|一旦|如有|如出現|如出现)/u.test(prefix))continue;
+    if(/^(?:的)?(?:學生|学生|同學|同学)?(?:為|为|有|是|共|共有)?\s*(?:0|零)\s*(?:名|位)?人/u.test(suffix))continue;
+    if(!/(?:學生|学生|同學|同学|一組|一组|組別|组别)/u.test(suffix)||!/(?:先|再|安排|練|练|跟進|跟进|補|补|[聽听]|[寫写]|[讀读])/u.test(suffix))continue;
+    // Bind “both” to a named pair such as 朗讀與默寫. A later listening
+    // activity within that plan does not turn it into a different cohort.
+    const explicit=namedDomainPair(value.slice(0,match.index)),inContext=namedDomainPair(context);
+    const domains=explicit.length===2?explicit:inContext;
+    const candidates=domains.length===2?pairs.filter(pair=>domains.every(domain=>pair.domains.includes(domain))):pairs;
+    // Resolve only an unambiguous pair. A zero reading/writing intersection
+    // must not suppress a genuine reading/listening group in the same report.
+    if(candidates.length===1&&candidates[0].count===0)return candidates[0];
+  }
+  return null;
+}
 function inspectAnalysis(analysis,payload={}){
   const issues=[],keys=new Set();
   const add=(code,message,path)=>{if(!keys.has(code)&&issues.length<MAX_ISSUES){keys.add(code);issues.push({code,message,path});}};
   if(payload.reportStyle==='narrative-teaching-review'){
     const facts=Array.isArray(payload.evidence)?payload.evidence:[],byId=new Map(facts.map(fact=>[fact.id,fact]));
+    const pairs=facts.filter(fact=>fact.label?.endsWith('：同一批學生觀察')&&Number.isSafeInteger(fact.value?.bothBelow60Students)).map(fact=>({label:fact.label.split('：')[0],domains:mentionedDomains(fact.label),count:fact.value.bothBelow60Students,id:fact.id}));
+    for(const {value,path}of textFields(analysis)){
+      const itemMatch=/^(findings|teachingActions|reviewPlan)\[(\d+)\]/u.exec(path),item=itemMatch?analysis[itemMatch[1]][Number(itemMatch[2])]:null;
+      const cited=(item?.evidenceIds||[]).map(id=>byId.get(id)).filter(Boolean),citedPairs=pairs.filter(pair=>cited.some(fact=>fact.id===pair.id));
+      const emptyGroup=emptyObservedGroup(value,item?.title,citedPairs.length?citedPairs:pairs);
+      if(emptyGroup)add('EMPTY_LEARNING_GROUP',`「${emptyGroup.label}」兩項皆低於60分的學生為0人。刪除針對這個空組的練習安排及湊成三組的表述；沿用teachingGroups中實際存在的組別，分別說清原句聽讀或寫字的做法。保留其餘正確分析，不另補假設組或免責文字。`,path);
+      for(const sentence of value.split(/[。！？!?\n]/u)){
+        const characterContext=/字音|逐字|這些字|这些字|該字|该字|[讀读]不準|[讀读]不准/u.test(sentence);
+        const prevalence=/(?:問題|问题|困難|困难|弱項|弱项|[讀读]不[準准]|需.{0,5}(?:糾正|纠正)).{0,18}(?:普遍|廣泛|广泛)|(?:普遍|廣泛|广泛|多數|多数|大部分|大多[數数]|全班(?:都|均|皆)|人人).{0,25}(?:問題|问题|困難|困难|弱項|弱项|[讀读]不[準准]|未[讀读][準准]|不清楚|有[錯错])/u;
+        if(characterContext&&asserted(sentence,prevalence))add('UNSUPPORTED_CHARACTER_PREVALENCE','逐字均分和受測人數沒有提供讀錯或低分的學生比例。刪除字音問題普遍、多數學生讀不準等結論；保留具體字和所在原句，改成先共同跟讀、再逐一聽取，據課堂表現安排個別再讀。不要把這條核對規則改寫成報告中的免責句。',path);
+        if(mentionedDomains(sentence).length>=2&&asserted(sentence,/(?:關聯|关联|相[關关])(?:性|程度)?(?:[較较更]|稍|相[對对])(?:高|強|强|低|弱)|(?:高度|密切|顯著|显著)(?:相[關关]|關聯|关联)/u))add('UNSUPPORTED_DOMAIN_ASSOCIATION','兩項低分名單的交集只用來安排哪些學生一起跟進。刪除關聯較高、密切相關等推論，改為說清這批學生先聽後讀或分別練習的安排，不加入統計免責說明。',path);
+      }
+    }
     const collectNumbers=(value,set)=>{
       if(typeof value==='number'&&Number.isFinite(value))set.add(value);
       else if(value&&typeof value==='object')Object.values(value).forEach(part=>collectNumbers(part,set));
@@ -147,7 +196,7 @@ function inspectAnalysis(analysis,payload={}){
       return asserted(clause,/缺席|(?:完全|從未|从未|沒有|没有|未有|未曾|未)(?:參與|参与|參加|参加)(?![紀記记]錄|记录)/u);
     });
     if(assumedAbsence)add('UNSUPPORTED_ATTENDANCE_INFERENCE','未留平台紀錄不能寫成「缺席」「完全未參與」。只把這些斷言改為先了解練習情況、補齊觀察，保留其餘正確分析。相關段落中的尚無評分人數是全班總數（包含完全無紀錄者），不可套在已有紀錄子集或相加；按原始evidence修正範圍。教學建議只使用現有遊戲實際题目，不聲稱平台題庫已有指定字或短句。',path);
-    if(/伺服器|服务器|瀏覽器自報|浏览器自报|server[_ ]?verified|client[_ ]?reported|資料快照|数据快照|evidenceIds|teachingFocus|teachingConstraints|allowedCharacters|F\d{3,}/iu.test(value))
+    if(/伺服器|服务器|瀏覽器自報|浏览器自报|server[_ ]?verified|client[_ ]?reported|資料快照|数据快照|evidenceIds|teachingFocus|teachingGroups|teachingConstraints|allowedCharacters|bothBelow60Students|OnlyBelow60Students|F\d{3,}/iu.test(value))
       add('REPORT_TECHNICAL_LANGUAGE','把技術術語改成教師用語，例如朗讀字音評分、辨音答題或默寫練習。只寫實際數據與下一步做法，不以資料来源或核實方式作段落主題。',path);
     if(/(?:不能|無法|无法|不可|不足以|未能).{0,12}(?:推斷|推断|診斷|诊断|判斷|判断).{0,25}(?:[聲声]母|[韻韵]母|[聲声][調调]|病因)|(?:不代表|不能證明|不能证明|未經證明|未经证明).{0,12}(?:教[學学]成效|能力提高|[學学]習成效)/u.test(value))
       add('REPORT_DEFENSIVE_LANGUAGE','刪除此說明，不改成另一句免責文字。沒有細項資料時直接安排聽示範、跟讀同一句，再由老師聽取字音；不要補造錯誤原因。',path);

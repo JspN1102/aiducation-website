@@ -60,5 +60,5 @@ ${grade<=3?'普通問答只用一至三個短句。若學生這一輪說「不�
   return requestPoemText(res, [
     { role: 'system', content: system },
     ...messages.slice(-10).map(({ role, content }) => ({ role, content }))
-  ], { field: 'reply', temperature: 0.8, timeoutMs: 20000, maxTokens: grade<=3?450:900 });
+  ], { field: 'reply', temperature: 0.8, timeoutMs: 20000, maxTokens: grade<=3?450:900, stream:res.chatStreaming===true });
 });

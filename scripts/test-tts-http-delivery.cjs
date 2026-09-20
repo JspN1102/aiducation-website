@@ -4,7 +4,7 @@ const https = require('node:https');
 
 const key = 'a'.repeat(64), storage = new Map();
 let synthesisCalls = 0;
-let lastSynthesisText, lastSynthesisVoice, lastCacheText, lastCacheProfile;
+let lastSynthesisText, lastSynthesisVoice, lastSynthesisSpeed, lastCacheText, lastCacheProfile;
 const cachePath = require.resolve('../api/_lib/tts-cache');
 require.cache[cachePath] = {
   exports: {
@@ -25,6 +25,7 @@ https.request = (_, callback) => {
     const parsed = JSON.parse(payload);
     lastSynthesisText = parsed.Text;
     lastSynthesisVoice = parsed.VoiceType;
+    lastSynthesisSpeed = parsed.Speed;
     const response = new EventEmitter();
     callback(response);
     process.nextTick(() => {
@@ -51,10 +52,12 @@ async function request(method, {query, body, headers} = {}) {
 }
 
 async function run() {
-  const body = {text: '朗讀', voice: 403001, speed: -0.75, delivery: 'url', allowSSML: true};
+  const body = {text: '朗讀', voice: 403001, speed: -0.25, delivery: 'url', allowSSML: true};
   const first = await request('POST', {body});
   assert.equal(first.statusCode, 200);
   assert.equal(lastSynthesisVoice, 403001);
+  assert.equal(lastSynthesisSpeed, -0.25);
+  assert.equal(lastSynthesisText, '<speak>朗讀</speak>');
   assert.equal(first.headers['x-tts-cache'], 'MISS-STORED');
   assert.match(first.body.url, /^\/api\/tts\/\?key=[0-9a-f]{64}&sig=[0-9a-f]{64}$/);
   const url = new URL(first.body.url, 'http://localhost');
@@ -99,21 +102,21 @@ async function run() {
   storage.clear();
   const poemLine = '<speak><phoneme alphabet="py" ph="he4">荷</phoneme><phoneme alphabet="py" ph="chang2">長</phoneme><phoneme alphabet="py" ph="chong2">重</phoneme><phoneme alphabet="py" ph="zhong4">種</phoneme></speak>';
   await request('POST', {body: {...body, text: poemLine}});
-  assert.equal(lastSynthesisText, '<speak><break time="160ms"/><phoneme alphabet="py" ph="he4 chang2 chong2 zhong4">贺常崇仲</phoneme></speak>');
-  assert.equal(lastCacheProfile, 'pcm-silence-180-80-v1-ssml-flow-v2');
+  assert.equal(lastSynthesisText, '<speak><phoneme alphabet="py" ph="he4 chang2 chong2 zhong4">贺常崇仲</phoneme></speak>');
+  assert.equal(lastCacheProfile, 'pcm-silence-180-80-v1-ssml-flow-v3-natural');
   storage.clear();
   const connectedPoem = '<speak><phoneme alphabet="py" ph="qu1">曲</phoneme><phoneme alphabet="py" ph="xiang4">項</phoneme><phoneme alphabet="py" ph="xiang4">向</phoneme><phoneme alphabet="py" ph="tian1">天</phoneme><phoneme alphabet="py" ph="ge1">歌</phoneme>，<phoneme alphabet="py" ph="bai2">白</phoneme><phoneme alphabet="py" ph="mao2">毛</phoneme>。</speak>';
   await request('POST', {body: {...body, text: connectedPoem}});
-  assert.equal(lastSynthesisText, '<speak><break time="160ms"/><phoneme alphabet="py" ph="qu1 xiang4 xiang4 tian1 ge1">区項向天歌</phoneme>，<phoneme alphabet="py" ph="bai2 mao2">白毛</phoneme>。</speak>');
+  assert.equal(lastSynthesisText, '<speak><phoneme alphabet="py" ph="qu1 xiang4 xiang4 tian1 ge1">区項向天歌</phoneme>，<phoneme alphabet="py" ph="bai2 mao2">白毛</phoneme>。</speak>');
   storage.clear();
   await request('POST', {body: {...body, text: '<speak><phoneme alphabet="py" ph="dai4 yue4 he4 chu2 gui1">帶月荷鋤歸</phoneme></speak>'}});
-  assert.equal(lastSynthesisText, '<speak><break time="160ms"/><phoneme alphabet="py" ph="dai4 yue4 he4 chu2 gui1">帶月贺鋤歸</phoneme></speak>');
+  assert.equal(lastSynthesisText, '<speak><phoneme alphabet="py" ph="dai4 yue4 he4 chu2 gui1">帶月贺鋤歸</phoneme></speak>');
   storage.clear();
   await request('POST', {body: {...body, text: '<speak><phoneme alphabet="py" ph="dao4 xia2 cao3 mu4 chang2">道狹草木長</phoneme></speak>'}});
-  assert.equal(lastSynthesisText, '<speak><break time="160ms"/><phoneme alphabet="py" ph="dao4 xia2 cao3 mu4 chang2">道狹草木常</phoneme></speak>');
+  assert.equal(lastSynthesisText, '<speak><phoneme alphabet="py" ph="dao4 xia2 cao3 mu4 chang2">道狹草木常</phoneme></speak>');
   storage.clear();
   await request('POST', {body: {...body, text: '還有'}});
-  assert.equal(lastSynthesisText, '<speak><break time="160ms"/>還有</speak>');
+  assert.equal(lastSynthesisText, '<speak>還有</speak>');
   storage.clear();
   await request('POST', {body: {...body, text: '测试', allowSSML: false}});
   assert.equal(lastSynthesisText, '测试');

@@ -5,7 +5,7 @@ const http=require('node:http');
 const net=require('node:net');
 const {Client}=require('ssh2');
 const {TEACHER_ROUTES,acceptsGzip}=require('./response-encoding.cjs');
-const LIMITS=Object.freeze({soe:4*1024*1024,tts:65536,'maanshan-chat':131072,'maanshan-report':524288,'maanshan-save':393216,'maanshan-data':1024,handwriting:524288,'school-auth':16384,'research-events':131072,'teacher-analytics':1024,'challenge-result':16384,'teacher-tools':16384});
+const LIMITS=Object.freeze({soe:4*1024*1024,tts:65536,'maanshan-chat':131072,'maanshan-report':524288,'maanshan-save':393216,'maanshan-data':1024,handwriting:524288,'school-auth':16384,'school-recordings':1400000,'research-events':131072,'teacher-analytics':1024,'challenge-result':16384,'teacher-tools':16384});
 const HOP=new Set(['connection','keep-alive','proxy-authenticate','proxy-authorization','te','trailer','transfer-encoding','upgrade']);
 const RESPONSE_LIMIT=4*1024*1024+65536;
 function configuration(env){
@@ -17,7 +17,10 @@ function configuration(env){
 function createRelay({env=process.env,clientFactory=()=>new Client(),request=http.request,now=Date.now,timeoutMs=55000}={}){
  let pending=null,pendingClient=null,connection=null,lastUsed=0,active=0;
  async function tunnel(alternate=false){
-  if(connection&&now()-lastUsed>20000&&active<=1){connection.end();connection=null;pending=null;pendingClient=null;}
+  // A child can listen or write for much longer than 20 seconds between calls.
+  // Keep the verified SSH session across those pauses; transport errors/close
+  // still invalidate it immediately, and no forwarded POST is ever replayed.
+  if(connection&&now()-lastUsed>120000&&active<=1){connection.end();connection=null;pending=null;pendingClient=null;}
   lastUsed=now();
   if(pending)return pending;
   const config=configuration(env),client=clientFactory();
@@ -25,7 +28,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
   pendingClient=client;
   pending=new Promise((resolve,reject)=>{
    let ready=false,tcpConnected=false,handshakeComplete=false;
-   client.once('connect',()=>{tcpConnected=true;});
+   client.once('connect',()=>{tcpConnected=true;client.setNoDelay?.(true);});
    client.once('handshake',()=>{handshakeComplete=true;});
    const clear=()=>{if(connection===client)connection=null;if(pendingClient===client){pending=null;pendingClient=null;}};
    client.once('ready',()=>{ready=true;connection=client;resolve(client);});
@@ -81,20 +84,33 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
        if(done){response.destroy();return;}
        const encoding=String(response.headers['content-encoding']||'identity').toLowerCase().trim();
        if(TEACHER_ROUTES.has(name)&&encoding!=='identity'&&(encoding!=='gzip'||!gzipAllowed)){response.destroy();error(502,'ORIGIN_ENCODING_UNSUPPORTED');return;}
+       const streaming=name==='maanshan-chat'&&/^text\/event-stream(?:;|$)/i.test(String(response.headers['content-type']||''))&&String(req.headers?.accept||'').includes('text/event-stream');
        const chunks=[];let size=0;
+       const copyHeaders=()=>{
+        res.statusCode=response.statusCode||502;
+        const hop=new Set([...HOP,...String(response.headers.connection||'').toLowerCase().split(',').map(x=>x.trim())]);
+        for(const [key,value]of Object.entries(response.headers))if(value!==undefined&&!hop.has(key)&&key!=='content-length')res.setHeader(key,value);
+        res.setHeader('Cache-Control','private, no-store');res.setHeader('X-Content-Type-Options','nosniff');
+        const duration=(from,to)=>Math.max(0,to-from).toFixed(1);
+        const originTiming=typeof response.headers['server-timing']==='string'?response.headers['server-timing']+', ':'';
+        res.setHeader('Server-Timing',originTiming+'relay_connect;dur='+duration(startedAt,connectedAt)+', relay_channel;dur='+duration(connectedAt,channelAt)+', relay_origin;dur='+duration(channelAt,now()));
+       };
+       if(streaming){copyHeaders();res.setHeader('X-Accel-Buffering','no');res.flushHeaders?.();}
        response.on('error',()=>error(502,'ORIGIN_INTERRUPTED'));
-       response.on('data',chunk=>{size+=chunk.length;if(size>RESPONSE_LIMIT){response.destroy();error(502,'ORIGIN_RESPONSE_TOO_LARGE');}else chunks.push(chunk);});
+       response.on('aborted',()=>error(502,'ORIGIN_INTERRUPTED'));
+       response.on('data',chunk=>{
+        if(done)return;
+        size+=chunk.length;
+        if(size>RESPONSE_LIMIT){error(502,'ORIGIN_RESPONSE_TOO_LARGE');response.destroy();}
+        else if(streaming){if(!res.write(chunk)){response.pause();res.once('drain',()=>{if(!done)response.resume();});}}
+        else chunks.push(chunk);
+       });
        response.on('end',()=>{
         if(done){finish();return;}
         done=true;
         if(!res.writableEnded&&!res.destroyed){
-         res.statusCode=response.statusCode||502;
-         const hop=new Set([...HOP,...String(response.headers.connection||'').toLowerCase().split(',').map(x=>x.trim())]);
-         for(const [key,value]of Object.entries(response.headers))if(value!==undefined&&!hop.has(key)&&key!=='content-length')res.setHeader(key,value);
-         res.setHeader('Cache-Control','private, no-store');res.setHeader('X-Content-Type-Options','nosniff');
-         const duration=(from,to)=>Math.max(0,to-from).toFixed(1);
-         const originTiming=typeof response.headers['server-timing']==='string'?response.headers['server-timing']+', ':'';
-         res.setHeader('Server-Timing',originTiming+'relay_connect;dur='+duration(startedAt,connectedAt)+', relay_channel;dur='+duration(connectedAt,channelAt)+', relay_origin;dur='+duration(channelAt,now()));
+         if(streaming){res.end();finish();return;}
+         copyHeaders();
          const result=Buffer.concat(chunks);
          if(req.method!=='HEAD')res.setHeader('Content-Length',result.length);
          else if(/^\d+$/.test(String(response.headers['content-length']||'')))res.setHeader('Content-Length',response.headers['content-length']);

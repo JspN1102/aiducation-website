@@ -14,7 +14,7 @@
 
 项目 ID：`prj_BXHyIePcHYn42fprA8v1zB2rvSF1`。
 团队 ID：`team_6bMNzzu5QidBaJlDV3R4icEd`。
-函数区域以 `package-vercel.py` 生成的配置和最终部署元数据为准；变更区域后须重新验证接口。
+函数区域为 `sin1`（新加坡），学校数据库及业务处理仍在广州。部署元数据必须与打包配置一致；变更区域后须重新验证接口。
 
 提交经过验证的修改后，使用新的隔离目录：
 
@@ -24,9 +24,9 @@ Set-Location C:/Users/Administrator/maanshan-work/school-release-new
 vercel --prod --yes --scope jspn1102s-projects --local-config ./vercel.json
 ```
 
-打包器把 12 个固定入口交给同一个 `school-gateway` 函数：`soe`、`tts`、`maanshan-chat`、`maanshan-report`、
+打包器把 13 个固定入口交给同一个 `school-gateway` 函数：`soe`、`tts`、`maanshan-chat`、`maanshan-report`、
 `maanshan-save`、`maanshan-data`、`handwriting`、`school-auth`、`research-events`、
-`teacher-analytics`、`challenge-result`、`teacher-tools`。每个入口固定上游路径，
+`teacher-analytics`、`challenge-result`、`teacher-tools`、`school-recordings`。每个入口固定上游路径，
 只接受该白名单，调用者不能选择其他目标。路由重写的来源及目的都保留尾斜线，
 与 `trailingSlash: true` 一致。Vercel 只包含页面、relay 和必要依赖，
 不打包 `.env`、数据库、账号名单、广州业务模块、原官网或其他网站。
@@ -46,7 +46,7 @@ relay 校验 SSH 主机密钥指纹，并转发 Cookie、Origin 和 CSRF 字段�
 由广州应用执行账号及权限检查。不能把公网直连数据库作为故障降级方案。
 
 共享函数使用 60 秒上限，relay 总请求期限短于函数上限。
-响应不缓存，并保留 Word／Excel 下载头和二进制内容。发布后应逐个验证 12 个入口，
+响应不缓存，并保留 Word／Excel 下载头和二进制内容。聊天可使用 SSE 逐段返回，relay 不缓冲整段回复，断流不会作为完整回答保存。SSH 连接保留两分钟供连续学习复用。发布后应逐个验证 13 个入口，
 再验证一次完整的教师登录、筛选、Excel 下载、报告生成与 Word 下载，
 不能用某一个接口成功推断其他函数实例的网络连接正常。
 
@@ -66,6 +66,8 @@ relay 校验 SSH 主机密钥指纹，并转发 Cookie、Origin 和 CSRF 字段�
 `STUDENT_STORE` 不得继续配置为 `blob`。教师报告保存在 PostgreSQL，
 动态 TTS 由广州处理，持久语音缓存位于 `TTS_CACHE_DIR` 指定的服务器磁盘目录。
 同一已生成语音可复用；静态预生成录音仍随各自资源索引加载。
+
+学生最新逐句录音保存在 PostgreSQL 的 `school_recordings` 表中，浏览器 IndexedDB 保存待上传队列；评分不等待录音上传。回听接口校验账户、年级和教师练习重置批次，不使用公开 COS 链接。刷新后从服务端恢复最新录音，历史上只存在页面内存且已经丢失的音频无法补回。格式、容量与备份说明见 `recording-storage.md`。
 
 原官网示范站与学校独立域名是不同浏览器 Origin，本地进度不会自动互通。
 学校账户的服务端记录不依赖浏览器本地身份替代品。仍在浏览器队列中、尚未提交成功的

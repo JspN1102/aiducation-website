@@ -8,7 +8,7 @@ const {cacheKey, hasAudio, readAudio, writeAudio, CACHE_VERSION} = require('./_l
 // creating the same paid synthesis several times.
 const inflight = new Map();
 const DEFAULT_VOICE = 403001; // 超自然大模型：云小和，亲和女声
-const DEFAULT_SPEED = -0.75; // about 0.85x; children need time to hear initials
+const DEFAULT_SPEED = -0.25; // Natural speech, slightly slower; no extra playback slowdown.
 const SAMPLE_RATE = 16000;
 const LEADING_SAMPLES = Math.round(SAMPLE_RATE * .18);
 const TRAILING_SAMPLES = Math.round(SAMPLE_RATE * .08);
@@ -112,11 +112,12 @@ function stableKnownPoemPhrases(value) {
   return result;
 }
 
-function withLeadingPause(text) {
+function speechEnvelope(text) {
   const value = String(text).trim();
-  if (/^<speak\b[^>]*>\s*<break\b/i.test(value)) return value;
-  if (/^<speak\b/i.test(value)) return value.replace(/^<speak\b([^>]*)>/i, '<speak$1><break time="160ms"/>');
-  return `<speak><break time="160ms"/>${xmlEscape(value)}</speak>`;
+  // paddedWav already adds 180 ms of protection. Adding another SSML break
+  // made every short tap feel delayed and was then stretched by old players.
+  if (/^<speak\b/i.test(value)) return value;
+  return `<speak>${xmlEscape(value)}</speak>`;
 }
 
 function plainSynthesisText(text) {
@@ -142,7 +143,7 @@ function synthesisText(text, allowSSML = false) {
       ? '<speak>请写出，还乡的<phoneme alphabet="py" ph="huan2">环</phoneme>。</speak>'
       : '请写出，环乡的环。';
   }
-  return allowSSML ? withLeadingPause(connectedPhonemeSynthesis(stablePhoneticSynthesis(value))) : plainSynthesisText(value);
+  return allowSSML ? speechEnvelope(connectedPhonemeSynthesis(stablePhoneticSynthesis(value))) : plainSynthesisText(value);
 }
 
 function number(value, fallback) {
@@ -295,11 +296,11 @@ module.exports = async function handler(req, res) {
   if (text.length > 6000) return res.status(413).json({error: 'Text too long'});
   const voice = Math.trunc(number(req.body?.voice, Number(process.env.MAANSHAN_TTS_VOICE || DEFAULT_VOICE)));
   const speed = Math.max(-2, Math.min(6, number(req.body?.speed, Number(process.env.MAANSHAN_TTS_SPEED || DEFAULT_SPEED))));
-  const pronunciationVersion = String(req.body?.pronunciationVersion || process.env.MAANSHAN_PRONUNCIATION_VERSION || 'edb-20260919d-yunxiaohe');
+  const pronunciationVersion = String(req.body?.pronunciationVersion || process.env.MAANSHAN_PRONUNCIATION_VERSION || 'edb-20260921-natural1-yunxiaohe');
   const allowSSML = req.body?.allowSSML === true;
   // Isolate old segmented speech without deleting cached files or invalidating
   // unaffected plain-text audio. Browsers receive a new signed audio URL.
-  const profile = `pcm-silence-180-80-v1-${allowSSML ? 'ssml-flow-v2' : 'plain'}`;
+  const profile = `pcm-silence-180-80-v1-${allowSSML ? 'ssml-flow-v3-natural' : 'plain'}`;
   const key = cacheKey({text: text.normalize('NFC').trim(), voice, speed, pronunciationVersion, profile});
   const wantsURL = req.body?.delivery === 'url' && !!audioSignature(key);
   const cached = wantsURL ? await hasAudio(key) : await readAudio(key);

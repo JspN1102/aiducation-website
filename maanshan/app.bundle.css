@@ -656,12 +656,22 @@ body{background:radial-gradient(ellipse at 6% 0%,#fff9e7 0,transparent 48%),radi
 
 /* library-shishi.css */
 /* Independent full-body welcome, aligned with the library title. */
-.library-heading.library-with-shishi{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.library-with-shishi>div{min-width:0;flex:1}
-.library-heading .library-shishi{position:relative;display:block;flex:0 0 76px;width:76px;height:112px;padding:0;border:0;background:none;box-shadow:none;cursor:pointer;touch-action:manipulation;border-radius:18px}
+.library-heading.library-with-shishi{display:block}
+.library-with-shishi>div{min-width:0}
+.library-heading.library-with-shishi h1{display:block;white-space:normal;text-wrap:wrap;line-height:1.3}
+.library-title-start{white-space:nowrap}
+.library-title-end{display:inline-flex;align-items:center;vertical-align:middle;white-space:nowrap;gap:6px}
+.library-heading .library-shishi{position:relative;display:inline-block;flex:0 0 76px;width:76px;height:112px;padding:0;border:0;background:none;box-shadow:none;cursor:pointer;touch-action:manipulation;border-radius:18px;vertical-align:middle}
 .library-shishi:focus-visible{outline:3px solid #277e76;outline-offset:3px}
 .library-shishi-art{position:relative;display:block;width:100%;height:100%;pointer-events:none}
 .library-shishi-art img{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;object-fit:contain}
+.library-guide-dialog{box-sizing:border-box;width:min(440px,calc(100vw - 28px));max-height:calc(100dvh - 32px);overflow:auto;margin:auto;padding:30px 26px 26px;border:1px solid #d5dfd0;border-radius:24px;background:#fffdf6;color:#294f44;box-shadow:0 16px 55px #193d332e}
+.library-guide-dialog::backdrop{background:#173d354a}
+.library-guide-dialog h2{font:600 25px/1.5 var(--sans);margin:8px 25px 16px 0}
+.library-guide-dialog p{font:400 20px/1.8 var(--sans);margin:0 0 22px}
+.library-guide-dialog .library-guide-close{position:absolute;right:10px;top:8px;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:#476457;font:400 32px/1 var(--sans);cursor:pointer;touch-action:manipulation}
+.library-guide-dialog .library-guide-done{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;font-size:20px}
+.library-guide-dialog button:focus-visible{outline:3px solid #277e76;outline-offset:3px}
 .account-dialog .teacher-reset-open{margin-top:12px;width:100%;white-space:normal}
 .teacher-reset-dialog{width:min(440px,calc(100vw - 32px));padding:24px;border:0;border-radius:24px;color:#243c37;box-sizing:border-box}
 .teacher-reset-dialog::backdrop{background:rgb(18 35 31 / .38)}
@@ -670,7 +680,7 @@ body{background:radial-gradient(ellipse at 6% 0%,#fff9e7 0,transparent 48%),radi
 .teacher-reset-actions{display:flex;gap:12px;flex-wrap:wrap}
 .teacher-reset-actions .button{flex:1;min-width:128px;justify-content:center}
 .teacher-reset-dialog [role=alert]{margin-top:14px;font-size:16px;color:#a43630}
-@media(max-width:480px){.library-heading .library-shishi{flex-basis:66px;width:66px;height:98px}.library-heading.library-with-shishi{gap:8px}.teacher-reset-dialog{padding:22px}}
+@media(max-width:480px){.library-heading .library-shishi{flex-basis:60px;width:60px;height:90px}.library-title-end{gap:4px}.teacher-reset-dialog{padding:22px}.library-guide-dialog{padding:25px 22px 22px}.library-guide-dialog h2{font-size:23px}}
 
 /* refresh.css */
 /* Keep the catalogue focused on its six poems; illustrations support activities. */
@@ -2111,10 +2121,6 @@ dialog h2{font-size:26px;line-height:1.4}
 .workspace.view-explore #view .explore-finish h3{font-size:25px;line-height:1.4;margin:0 0 12px}
 .workspace.view-explore #view .explore-finish p{font-size:19px;line-height:1.7}
 .workspace.view-explore #view .explore-again{font-size:19px;min-height:48px}
-.explore-ar-overlay{position:fixed;inset:0;z-index:1000;pointer-events:none}
-.explore-ar-instructions{position:absolute;inset:max(16px,env(safe-area-inset-top)) 16px auto;display:flex;align-items:center;gap:14px;justify-content:space-between;padding:14px;border-radius:16px;background:#203a33e8;color:white}
-.explore-ar-instructions p{font-size:19px;line-height:1.5;margin:0}
-.explore-ar-instructions button{pointer-events:auto;flex:none;border:0;background:#fffdf4;color:#315b46;min-height:48px;border-radius:12px;padding:10px 15px;font:600 18px/1.4 var(--sans,sans-serif)}
 .workspace.view-explore #view .explore.is-expanded .explore-layout{display:block}
 .workspace.view-explore #view .explore.is-expanded .explore-visual{display:flex;width:100%}
 .workspace.view-explore #view .explore.is-expanded .explore-card{display:none}
@@ -2129,21 +2135,40 @@ dialog h2{font-size:26px;line-height:1.4}
  .workspace.view-explore #view .explore-view-controls{margin-top:12px}
  .workspace.view-explore #view .explore-answers button{font-size:20px;min-height:56px}
  .workspace.view-explore #view .explore-model-tools{display:flex}
- .explore-ar-instructions{flex-wrap:wrap;padding:12px}
- .explore-ar-instructions p{font-size:18px;flex:1;min-width:180px}
 }
 @media(max-width:370px){
  .workspace.view-explore #view .explore-card{padding:14px}
  .workspace.view-explore #view .explore-verse>p{font-size:22px}
 }
 
-/* camera-observation.css */
-/* A live browser-camera layer beneath the transparent model canvas. */
-.explore-stage .explore-camera{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:1}
-.explore.is-camera .explore-scene{visibility:hidden}
-.explore.is-camera .explore-canvas{z-index:2;background:transparent}
-.explore.is-camera .explore-expand,.explore.is-camera .explore-scene-name{z-index:3}
-.workspace.view-explore #view .explore.is-camera .explore-scene-name{display:block;background:#203a33d9;color:#fff;font-size:clamp(14px,1.5vw,18px);line-height:1.4}
+/* Model-only observation: no camera layer or system AR hand-off. */
+.workspace.view-explore #view .explore-model-hint{width:100%;margin:0;color:#536d58;text-align:center;font-size:18px;line-height:1.5;text-wrap:balance}
+.workspace.view-explore #view .explore-model-tools{gap:8px;margin-top:10px}
+.workspace.view-explore #view .explore-zoom button{width:48px;min-height:48px}
+.workspace.view-explore #view .explore-word small{font-size:17px;line-height:1.4}
+.workspace.view-explore #view .explore-expand{min-height:44px;font-size:17px!important}
+.workspace.view-explore #view .explore-scene-name{font-size:17px}
+.workspace.view-explore #view .explore-loading,.workspace.view-explore #view .explore-image-loading p,.workspace.view-explore #view .explore-image-fallback p{font-size:18px;line-height:1.5}
+.workspace.view-explore #view .explore-image-fallback button{min-height:48px;font-size:18px}
+@media(min-width:660px) and (orientation:landscape) and (max-height:700px){
+ .workspace.view-explore #view .explore-layout{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px}
+ .workspace.view-explore #view .explore-stage{height:clamp(220px,calc(100dvh - 230px),400px);min-height:220px}
+ .workspace.view-explore #view .explore-card{padding:16px}
+ .workspace.view-explore #view .explore-verse{margin-bottom:10px;padding-block:8px}
+ .workspace.view-explore #view .explore-model-hint{font-size:17px}
+ .workspace.view-explore #view .explore.is-expanded .explore-stage{height:calc(100dvh - 205px);min-height:220px}
+}
+@media(min-width:660px) and (orientation:landscape) and (max-height:480px){
+ .workspace.view-explore #view .explore-stage{height:200px;min-height:200px}
+ .workspace.view-explore #view .explore-card{padding:12px}
+ .workspace.view-explore #view .explore-card-top{margin-bottom:8px}
+ .workspace.view-explore #view .explore-verse{margin-bottom:8px;padding-block:4px}
+ .workspace.view-explore #view .explore-question legend{margin-bottom:8px}
+ .workspace.view-explore #view .explore-answers{gap:8px}
+ .workspace.view-explore #view .explore-answers button{min-height:52px;padding:9px 12px}
+ .workspace.view-explore #view .explore-zoom button{width:44px;min-height:44px}
+ .workspace.view-explore #view .explore.is-expanded .explore-stage{height:calc(100dvh - 190px);min-height:200px}
+}
 
 /* poem-games/goose.css */
 .poem-goose-game{width:100%;max-width:760px;margin-inline:auto;display:grid;gap:14px;color:#254a3f;font-family:inherit;min-width:0}
@@ -2528,8 +2553,8 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 .workspace.view-report .word-analysis .word-grid{display:grid;grid-template-columns:repeat(var(--report-columns,5),minmax(0,1fr));gap:8px;overflow:visible;padding:0}
 .workspace.view-report .word-analysis .word-result{display:block;width:100%;min-width:0;max-width:none;min-height:96px;padding:10px 3px;border-radius:12px}
 .workspace.view-report .word-analysis .word-result ruby{font-size:32px;line-height:1.6}
-.workspace.view-report .word-analysis .word-result rt{font:400 15px/1.2 var(--sans)}
-.workspace.view-report .word-analysis .word-result strong{font:600 19px/1.4 var(--sans)}
+.workspace.view-report .word-analysis .word-result rt{font:400 16px/1.2 var(--sans)}
+.workspace.view-report .word-analysis .word-result strong{font:600 19px/1.4 var(--sans);text-align:center}
 .workspace.view-report .report-line-actions{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:20px}
 .workspace.view-report .report-line-actions .button{margin:0;min-height:50px;padding:10px 20px;font-size:19px;justify-content:center}
 .workspace.view-report .report-empty{grid-column:1/-1}
@@ -2556,9 +2581,23 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace.view-report .report-line-actions{margin-top:12px}
 }
 
-@media(max-width:420px){.workspace.view-report .word-analysis .word-grid[data-columns="7"] .word-result ruby{font-size:28px}.workspace.view-report .word-analysis .word-grid[data-columns="7"] .word-result rt{font-size:13px}.workspace.view-report .word-analysis .word-result strong{font-size:17px}}
+/* Preserve readable pinyin by wrapping the verse into centred word groups. */
+@media(max-width:520px){
+ .workspace.view-report .word-analysis .word-grid[data-columns="7"]{grid-template-columns:repeat(8,minmax(0,1fr))}
+ .workspace.view-report .word-analysis .word-grid[data-columns="7"] .word-result{grid-column:span 2}
+ .workspace.view-report .word-analysis .word-grid[data-columns="7"] .word-result:nth-child(7n + 5){grid-column:2/span 2}
+ .workspace.view-report .word-analysis .word-result strong{font-size:18px}
+}
+@media(max-width:360px){
+ .workspace.view-report .score-line-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .workspace.view-report .word-analysis .word-grid[data-columns="5"]{grid-template-columns:repeat(6,minmax(0,1fr))}
+ .workspace.view-report .word-analysis .word-grid[data-columns="5"] .word-result{grid-column:span 2}
+ .workspace.view-report .word-analysis .word-grid[data-columns="5"] .word-result:nth-child(5n + 4){grid-column:2/span 2}
+}
 
 @media(max-width:700px){.workspace.view-report .report-line-actions .report-reread{flex-basis:100%;max-width:240px}.workspace.view-report .report-line-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.workspace.view-report .report-line-actions .report-reread{grid-column:1/-1;justify-self:center}.workspace.view-report .report-line-actions .button{padding-inline:10px;font-size:18px}}
+
+.workspace .challenge-shell .challenge-writing .cw-status{font-size:18px;line-height:1.5}
 
 /* access-ui.css */
 .header-right{display:flex;align-items:center;gap:12px}

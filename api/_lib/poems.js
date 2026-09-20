@@ -1,4 +1,6 @@
 const https = require('https');
+const {createSSEParser}=require('./chat-stream.cjs');
+const providerAgent=new https.Agent({keepAlive:true,maxSockets:16,maxFreeSockets:4,timeout:30000,scheduling:'lifo'});
 const { poems } = require('../../maanshan/poems.json');
 const teachingNotes = {
   2: '依教育局《積累與感興》〈贈汪倫〉第1–2頁：「將欲」是將要；「踏歌」是一邊用腳打節拍，一邊唱歌。「深千尺」是誇張地形容潭水深，不是測量結果；重點是汪倫送別的情意更深。送別有驚喜、熱情和感動，不必一律講成悲傷。「萬家酒樓／千尺桃花」的邀請故事在材料中明列為傳說，聊到時要先說是傳說，不當作已證史實。',
@@ -26,7 +28,7 @@ function poemContext(poem) {
   ].join('\n');
 }
 
-function requestPoemText(res, messages, { field, temperature, timeoutMs, maxTokens }) {
+function requestPoemText(res, messages, { field, temperature, timeoutMs, maxTokens, stream=false }) {
   const apiKey = process.env.GPT_API_KEY;
   const apiBase = process.env.GPT_API_BASE;
   if (!apiKey || !apiBase) return res.status(500).json({ error: 'GPT API not configured' });
@@ -39,30 +41,49 @@ function requestPoemText(res, messages, { field, temperature, timeoutMs, maxToke
     return res.status(500).json({ error: 'Invalid GPT API configuration' });
   }
   const basePath = url.pathname.replace(/\/+$/, '');
-  const path = basePath.endsWith('/v1') ? basePath + '/chat/completions' : basePath + '/v1/chat/completions';
+  const path = basePath.endsWith('/chat/completions') ? basePath : basePath.endsWith('/v1') ? basePath + '/chat/completions' : basePath + '/v1/chat/completions';
+  const streaming=stream===true&&typeof res.chatDelta==='function';
   const payload = JSON.stringify({
     model: 'deepseek-flash',
     messages,
     temperature,
     max_tokens: maxTokens,
-    stream: false,
+    stream: streaming,
     thinking: { type: 'disabled' }
   });
 
-  return new Promise(resolve => {
+  return new Promise((resolve,reject) => {
     let settled = false;
-    let apiReq;
+    let apiReq,apiResponse,drainListener;
     let timer;
+    const started=performance.now(),signal=res.chatSignal;
+    const cleanup=()=>{clearTimeout(timer);signal?.removeEventListener('abort',abort);res.off?.('close',onClose);if(drainListener)res.off?.('drain',drainListener);};
+    const abort=()=>{
+      if(settled)return;settled=true;cleanup();apiResponse?.destroy();apiReq?.destroy();
+      reject(new DOMException('Chat connection closed','AbortError'));
+    };
+    const onClose=()=>{if(!res.writableEnded)abort();};
     const finish = (status, body) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
-      res.status(status).json(body);
-      resolve();
+      cleanup();
+      res.chatTimings={...(res.chatTimings||{}),providerTotalMs:Math.round(performance.now()-started)};
+      // SSE has already sent HTTP 200; retain the provider's terminal status
+      // separately so research records still distinguish timeout from failure.
+      res.chatOutcomeStatus=status;
+      try{res.status(status).json(body);resolve();}catch(error){reject(error);}
     };
+    const failResponse=message=>{finish(502,{error:message});apiResponse?.destroy();apiReq?.destroy();};
+    const firstText=()=>{
+      if(res.chatTimings?.providerTtfbMs!==undefined)return;
+      const elapsed=Math.round(performance.now()-started);res.chatTimings={providerTtfbMs:elapsed};
+      if(!res.headersSent)res.setHeader('Server-Timing','ai_ttfb;dur='+elapsed);
+    };
+    if(signal?.aborted||res.destroyed){abort();return;}
+    signal?.addEventListener('abort',abort,{once:true});res.once?.('close',onClose);
     timer = setTimeout(() => {
       finish(504, { error: 'GPT timeout' });
-      if (apiReq) apiReq.destroy();
+      apiResponse?.destroy();apiReq?.destroy();
     }, timeoutMs);
 
     try {
@@ -71,35 +92,57 @@ function requestPoemText(res, messages, { field, temperature, timeoutMs, maxToke
         port: url.port || 443,
         path,
         method: 'POST',
+        agent:providerAgent,
         headers: {
           'Content-Type': 'application/json',
+          Accept:streaming?'text/event-stream':'application/json',
           Authorization: 'Bearer ' + apiKey,
           'Content-Length': Buffer.byteLength(payload)
         }
       }, apiRes => {
+        apiResponse=apiRes;
+        if(settled){apiRes.destroy();return;}
+        if(apiRes.statusCode<200||apiRes.statusCode>=300){failResponse('GPT service unavailable');return;}
+        const eventStream=streaming&&String(apiRes.headers?.['content-type']||'').toLowerCase().includes('text/event-stream');
         const chunks = [];
-        let bytes = 0;
+        let bytes = 0,reply='',done=false,finishReason=null;
+        const parser=eventStream?createSSEParser(data=>{
+          if(settled||done)return;
+          if(data.trim()==='[DONE]'){done=true;return;}
+          const event=JSON.parse(data);if(event.error)throw new Error('Provider error');
+          const choice=event.choices?.find(item=>item.index===0)||event.choices?.[0];if(!choice)return;
+          if(choice.finish_reason!=null)finishReason=choice.finish_reason;
+          if(choice.delta?.content==null)return;
+          if(typeof choice.delta.content!=='string')throw new Error('Invalid content');
+          let text=choice.delta.content.replace(/\*/g,'');if(!reply)text=text.trimStart();if(!text)return;
+          reply+=text;firstText();
+          if(res.chatDelta(text)===false&&typeof apiRes.pause==='function'&&typeof res.once==='function'&&!drainListener){
+            apiRes.pause();drainListener=()=>{drainListener=null;if(!settled)apiRes.resume();};res.once('drain',drainListener);
+          }
+        }):null;
         apiRes.on('data', chunk => {
           if (settled) return;
           bytes += chunk.length;
           if (bytes > 512 * 1024) {
-            finish(502, { error: 'GPT response too large' });
-            apiReq.destroy();
+            failResponse('GPT response too large');
             return;
           }
-          chunks.push(chunk);
+          if(parser){try{parser.push(chunk);}catch{failResponse('Invalid GPT stream');}}
+          else chunks.push(chunk);
         });
         apiRes.on('end', () => {
           if (settled) return;
-          if (apiRes.statusCode < 200 || apiRes.statusCode >= 300) {
-            finish(502, { error: 'GPT service unavailable' });
-            return;
-          }
           try {
+            if(parser){
+              parser.finish();
+              if((!done&&finishReason!=='stop')||finishReason&&finishReason!=='stop'||!reply.trim())throw new Error('Incomplete stream');
+              finish(200,{[field]:reply.trim()});return;
+            }
             const data = JSON.parse(Buffer.concat(chunks).toString('utf8'));
             const content = data.choices?.[0]?.message?.content;
             const text = typeof content === 'string' ? content.replace(/\*/g, '').trim() : '';
-            if (!text || data.error) throw new Error();
+            if (!text || data.error || streaming&&data.choices?.[0]?.finish_reason==='length') throw new Error();
+            firstText();
             finish(200, { [field]: text });
           } catch (_) {
             finish(502, { error: 'Invalid or empty GPT response' });

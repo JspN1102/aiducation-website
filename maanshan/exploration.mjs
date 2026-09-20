@@ -1,6 +1,5 @@
 import {EXPLORATION_CONTENT} from './exploration-data.mjs?v=20260920a';
 import {createProcessResearch} from './poem-games/research.mjs?v=20260920a';
-import {startCameraObservation} from './camera-observation.mjs?v=20260921-ar1';
 import {modelPixelRatio} from './model-quality.mjs?v=20260921-ar1';
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -101,7 +100,6 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
   let dead = false, observation = 0, correct = false, completed = false, notified = false;
   let mode = 'picture', loadGeneration = 0, pending = null, viewer = null;
   let imageFailed = false, imagePending = true;
-  let arBusy = false, cameraObservation = null;
   const research=createProcessResearch(onResearch,{prefix:`p${poem.id}.explore`,activity:'explore',context:{mode:'free'},alive:()=>!dead});
   const researchStep=()=>`observation.${observation}`;
   container.innerHTML = `<section class="explore" aria-labelledby="explore-title">
@@ -112,7 +110,6 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
         <img class="explore-scene" src="${escapeHTML(imageURL)}" alt="${escapeHTML(content.alt)}" decoding="async" fetchpriority="high">
         <div class="explore-image-loading" role="status"><img src="media/poetry-motifs/${content.motif}.svg" alt="" width="80" height="80"><p>正在準備畫面…</p></div>
         <div class="explore-image-fallback" hidden><img src="media/poetry-motifs/${content.motif}.svg" alt="" width="90" height="90"><p>畫面暫時未能打開</p><button type="button" data-explore="retry-image">再試一次</button></div>
-        <video class="explore-camera" muted playsinline aria-hidden="true" hidden></video>
         <div class="explore-canvas" data-explore-canvas hidden></div>
         <button class="explore-expand" type="button" data-explore="expand" aria-expanded="false" aria-label="放大觀察">${icon('expand')}<span>放大觀察</span></button>
         <span class="explore-scene-name">${escapeHTML(content.scene)}</span>
@@ -121,6 +118,7 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
       </div>
       <div class="explore-view-controls"><button class="explore-ar-entry" type="button" data-explore="ar">${icon('ar')}<span>點擊體驗 AR</span></button></div>
       <div class="explore-model-tools" role="group" aria-label="轉動觀察" hidden>
+        <p class="explore-model-hint">拖動轉一轉，雙指放大縮小。</p>
         <div class="explore-zoom"><button type="button" data-explore="zoom-in" aria-label="放大" title="放大">${icon('plus')}</button><button type="button" data-explore="zoom-out" aria-label="縮小" title="縮小">${icon('minus')}</button><button type="button" data-explore="reset" aria-label="回到原來角度" title="回到原來角度">${icon('reset')}</button></div>
       </div>
       <p class="explore-notice" role="status" hidden></p>
@@ -130,8 +128,7 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
   const section = q('.explore'), stage = q('[data-explore-stage]'), canvasHolder = q('[data-explore-canvas]');
   const picture = q('.explore-scene'), pictureFallback = q('.explore-image-fallback'), pictureLoading = q('.explore-image-loading');
   const card = q('[data-explore-card]'), loading = q('.explore-loading'), notice = q('.explore-notice');
-  const tools = q('.explore-model-tools'), modelButton = q('[data-explore="ar"]'), cameraVideo = q('.explore-camera');
-  const sceneName = q('.explore-scene-name');
+  const tools = q('.explore-model-tools'), modelButton = q('[data-explore="ar"]'), modelEntry = q('.explore-view-controls');
   const activityEvents = new AbortController();
   container.addEventListener('error', event => {
     if (event.target.matches?.('.explore-guide img, .explore-finish-shishi')) event.target.hidden = true;
@@ -211,7 +208,6 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
     modelButton.removeAttribute('aria-busy');
   }
   function releaseViewer() {
-    stopCamera();
     viewer?.destroy();
     viewer = null;
   }
@@ -221,6 +217,7 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
     mode = 'picture';
     canvasHolder.hidden = true;
     tools.hidden = true;
+    modelEntry.hidden = false;
     section.classList.remove('is-model');
     syncPicture();
     clearPreset();
@@ -264,6 +261,7 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
       canvasHolder.hidden = false;
       pictureFallback.hidden = true;
       tools.hidden = false;
+      modelEntry.hidden = true;
       viewer.resize();
       return viewer;
     } catch (error) {
@@ -286,73 +284,14 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
     }
   }
 
-  function resetCameraUI() {
-    viewer?.setCameraObservation(false);
-    cameraVideo.hidden = true;
-    section.classList.remove('is-camera');
-    sceneName.textContent = content.scene;
-    modelButton.querySelector('span').textContent = '點擊體驗 AR';
-    modelButton.removeAttribute('aria-pressed');
-  }
-  function stopCamera() {
-    const active = cameraObservation;
-    cameraObservation = null;
-    active?.stop();
-    resetCameraUI();
-  }
   async function startExperience() {
-    if (dead || arBusy) return;
-    if (cameraObservation) {research.action('experience','exit');stopCamera();announce();return;}
+    if (dead || pending || viewer) return;
     research.action('experience','start');
-    arBusy = true; modelButton.disabled = true; announce();
-    // getUserMedia stays in the browser, with no ARCore/App Store dependency.
-    // The video remains behind the transparent Three.js canvas; it is never recorded.
-    let camera;
-    camera = startCameraObservation(cameraVideo, {onEnd(reason) {
-      if (cameraObservation !== camera) return;
-      cameraObservation = null;
-      if (!dead) {
-        resetCameraUI();
-        if (reason === 'ended') announce('相機已關閉，仍可拖動模型觀察。');
-      }
-    }});
-    cameraObservation = camera;
-    try {
-      const [target, result] = await Promise.all([showModel(), camera.ready]);
-      if (!target || dead || document.hidden || (result.ok && cameraObservation !== camera)) {
-        if (cameraObservation === camera) stopCamera();
-        else camera.stop();
-        return;
-      }
-      if (!result.ok) {
-        camera.stop();
-        if (cameraObservation === camera) cameraObservation = null;
-        research.error('ar',result.reason==='permission_denied'?'permission_denied':'unsupported');
-        announce(result.reason === 'permission_denied'
-          ? '相機未開啟，先用 3D 觀察。拖動轉向，雙指縮放。'
-          : result.reason === 'busy' ? '相機正在使用中，先用 3D 觀察。'
-          : '先用 3D 觀察，拖動轉向，雙指縮放。');
-        return;
-      }
-      cameraVideo.hidden = false;
-      target.setCameraObservation(true);
-      section.classList.add('is-camera');
-      sceneName.textContent = '相機觀察 · 模型跟隨畫面';
-      modelButton.querySelector('span').textContent = '關閉相機';
-      modelButton.setAttribute('aria-pressed', 'true');
-    } catch {
-      camera.stop();
-      research.error('ar','unknown');
-      if (!dead) announce('相機暫時未能開啟，先用 3D 觀察。');
-    } finally {
-      arBusy = false;
-      if (!dead) modelButton.disabled = false;
-    }
+    modelButton.disabled = true;
+    announce();
+    try {await showModel();}
+    finally {if (!dead) modelButton.disabled = false;}
   }
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden && cameraObservation) stopCamera();
-  }, {signal: activityEvents.signal});
-  window.addEventListener('pagehide', stopCamera, {signal: activityEvents.signal});
 
   container.addEventListener('click', event => {
     const button = event.target.closest('[data-explore]');
@@ -497,14 +436,14 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
   controls.maxPolarAngle = Math.PI * .52;
   controls.target.copy(sphere.center);
   let disposed = false, frame = 0, baseDistance = 6, transition = null;
-  let visible = true, arController = null;
+  let visible = true;
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const normalDirection = new THREE.Vector3(...(content.initialView || [3.3, 2.4, 5.8])).normalize();
   const requestRender = () => {
-    if (disposed || frame || document.hidden || !visible || arController || renderer.xr.isPresenting) return;
+    if (disposed || frame || document.hidden || !visible) return;
     frame = requestAnimationFrame(time => {
       frame = 0;
-      if (disposed || document.hidden || !visible || arController || renderer.xr.isPresenting) return;
+      if (disposed || document.hidden || !visible) return;
       if (transition) {
         const progress = Math.min(1, (time - transition.started) / 360);
         const eased = 1 - Math.pow(1 - progress, 3);
@@ -524,7 +463,7 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
   };
   const reset = () => setView(normalDirection, baseDistance);
   const resize = () => {
-    if (disposed || arController || renderer.xr.isPresenting) return;
+    if (disposed) return;
     const width = stage.clientWidth, height = stage.clientHeight;
     if (!width || !height) return;
     const previousDistance = camera.position.distanceTo(controls.target);
@@ -583,7 +522,9 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
   canvas.addEventListener('keyup', finishKeyboard);
   canvas.addEventListener('blur', finishKeyboard);
   let interactionStart=null;
-  const interrupt = () => {transition = null;interactionStart=camera.position.clone().sub(controls.target); onInteract?.();};
+  // OrbitControls can emit another start when a second finger joins or leaves.
+  // Keep the first position until the full gesture ends, including a pinch.
+  const interrupt = () => {transition = null;if(!interactionStart)interactionStart=camera.position.clone().sub(controls.target); onInteract?.();};
   const finishInteraction=()=>{
     if(disposed||!interactionStart)return;
     const before=interactionStart;interactionStart=null;
@@ -611,19 +552,9 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
   setView(normalDirection, baseDistance, false);
   return {
     resize, zoom, reset, preset,
-    setCameraObservation(active) {if (!disposed) {ground.visible = !active;requestRender();}},
-    async enterAR(session, overlay, startSurfaceAR) {
-      if(disposed){await session.end().catch(()=>{});return;}
-      cancelAnimationFrame(frame);frame=0;transition=null;
-      arController=startSurfaceAR({THREE,renderer,scene,camera,model:wrapper,ground,controls,bounds:normalizedBounds,session,overlay,
-        onEnd(){arController=null;if(!disposed)requestAnimationFrame(()=>{resize();requestRender();});}
-      });
-      await arController.ready;
-    },
     destroy() {
       if (disposed) return;
       disposed = true;
-      arController?.destroy();arController=null;
       cancelAnimationFrame(frame);
       transition = null;
       resizeObserver.disconnect();

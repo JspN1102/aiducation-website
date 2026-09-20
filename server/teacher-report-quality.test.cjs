@@ -146,3 +146,59 @@ test('existing games cannot be described as containing the observed target words
  const issue=inspectAnalysis({teachingActions:[action('聽辨',[text])]},payload).find(issue=>issue.code==='UNVERIFIED_GAME_CONTENT');assert(issue);assert(issue.message.includes(text.slice(0,-1)));
  for(const valid of ['使用本詩現有遊戲的實際題目，讓學生聽後作答，再重讀所聽內容。','教師親自示範包含這些字的原句，學生跟讀。'])assert(!codes({teachingActions:[action('聽辨',[valid])]}).includes('UNVERIFIED_GAME_CONTENT'));
 });
+
+function pairedPayload(count=0){return {reportStyle:'narrative-teaching-review',filters:{grade:6},evidence:[
+ {id:'F001',label:'朗讀字音評分與默寫辨識準確度：同一批學生觀察',value:{bothMeasuredStudents:20,bothBelow60Students:count,leftBelow60Students:9,rightBelow60Students:4}},
+ {id:'F002',label:'「潤」逐字平均',value:{meanScore:68.9,measuredStudents:20}}
+]};}
+
+test('an empty paired group is not assigned a classroom activity',()=>{
+ for(const text of [
+  '朗讀與默寫可分成三組；兩項皆低於60分的學生，先做聽辨再寫字，降低負荷。',
+  '朗讀與默寫同時低於60分的學生，先聽原句，再練寫字。',
+  '兩者都低於60分的學生，安排先聽後寫。'
+ ]){
+  const item={...action('聽讀與寫字',[text]),evidenceIds:['F001']};
+  const issues=inspectAnalysis({teachingActions:[item]},pairedPayload());
+  assert(issues.some(issue=>issue.code==='EMPTY_LEARNING_GROUP'),text);
+  assert(!inspectAnalysis({teachingActions:[item]},pairedPayload(1)).some(issue=>issue.code==='EMPTY_LEARNING_GROUP'),text);
+ }
+});
+
+test('zero observations, omitted empty groups and explicit future conditions remain valid prose',()=>{
+ for(const text of [
+  '兩項皆低於60分的學生為0人，下一課分別聽取朗讀和檢查書寫。',
+  '朗讀與默寫的跟進對象沒有重疊，可分別安排原句跟讀和聽寫。',
+  '下次若兩項皆低於60分的學生需要更多時間，可先聽後寫。',
+  '不要為兩項皆低於60分的學生另設一組練習。'
+ ])assert(!codes({teachingActions:[{...action('跟進',[text]),evidenceIds:['F001']}]},pairedPayload()).includes('EMPTY_LEARNING_GROUP'),text);
+});
+
+test('a reading-writing zero does not suppress an observed reading-listening group',()=>{
+ const p=pairedPayload();p.evidence.push({id:'F003',label:'朗讀字音評分與辨音答題準確度：同一批學生觀察',value:{bothMeasuredStudents:20,bothBelow60Students:3}});
+ const valid={teachingActions:[{...action('聽辨與朗讀',['朗讀與辨音兩項皆低於60分的學生，先聽示範再跟讀原句。']),evidenceIds:['F001','F003']}]};
+ assert(!codes(valid,p).includes('EMPTY_LEARNING_GROUP'));
+ const bad={teachingActions:[{...action('跟進',['朗讀與辨音可共同練習。朗讀與默寫兩項皆低於60分的學生，安排先聽後寫。']),evidenceIds:['F001','F003']}]};
+ assert(codes(bad,p).includes('EMPTY_LEARNING_GROUP'));
+ const actualPlan='朗讀與默寫可分別練習：朗讀需要跟進的學生，專注聽辨遊戲；默寫需要跟進的學生，先練寫字；兩項皆低於60分的學生，先做聽辨再寫字。';
+ const threePairs=pairedPayload(3);threePairs.evidence.push({id:'F003',label:'默寫辨識準確度與辨音答題準確度：同一批學生觀察',value:{bothMeasuredStudents:20,bothBelow60Students:0}});
+ const plan={teachingActions:[{...action('分組練習',[actualPlan]),evidenceIds:['F001','F003']}]};
+ assert(!codes(plan,threePairs).includes('EMPTY_LEARNING_GROUP'),'a listening exercise does not change the explicitly named reading-writing pair');
+ threePairs.evidence[0].value.bothBelow60Students=0;
+ assert(codes(plan,threePairs).includes('EMPTY_LEARNING_GROUP'));
+});
+
+test('character means and measured students do not establish widespread individual difficulty',()=>{
+ for(const text of [
+  '「潤」的平均分數為68.9分，各有20名學生受測，代表這些字音的問題具有普遍性。',
+  '多數學生讀不準這些字，下一課要共同練習。',
+  '全班都有字音困難。'
+ ])assert(codes({findings:[{evidenceIds:['F002'],interpretation:text}]},pairedPayload()).includes('UNSUPPORTED_CHARACTER_PREVALENCE'),text);
+ const natural='「潤」字平均68.9分，涵蓋20人，可先共同跟讀所在原句，再逐一聽取，讓仍需鞏固的學生多讀一次。';
+ assert.deepEqual(codes({findings:[{evidenceIds:['F002'],interpretation:natural}],teachingActions:[action('共同跟讀',['教師帶全班跟讀原句，然後個別聽取「潤」字。'])]},pairedPayload()),[]);
+});
+
+test('paired low-score overlap supports teaching groups rather than an ability correlation',()=>{
+ assert(codes({findings:[{interpretation:'朗讀與辨音同時低於60分的有3人，顯示朗讀和辨音的關聯稍高。'}]},pairedPayload()).includes('UNSUPPORTED_DOMAIN_ASSOCIATION'));
+ assert(!codes({findings:[{interpretation:'朗讀與辨音的跟進名單有重疊，可讓這批學生先聽示範再跟讀。'}]},pairedPayload()).includes('UNSUPPORTED_DOMAIN_ASSOCIATION'));
+});

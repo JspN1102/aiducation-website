@@ -91,9 +91,9 @@ python deploy/backup-local.py
 ## 配置与边界
 
 `DB_DRIVER=postgres`，数据库仅本机可达。`INIT_KEY` 用于本机初始化，Nginx
-禁止公网调用初始化接口。`DATA_READ_TOKEN` 保护教师数据，教师页面支持存取码；
-浏览器仅保存到当前标签页的 sessionStorage。没有导入正式学生名册，也没有将
-现有本机学生标识改造成学校统一账号或跨设备登录系统。
+禁止公网调用初始化接口。学校已导入787个学生和9个教师账号，统一从学校登录页进入；
+教师数据通过服务器会话及角色权限保护。学生仅学习自己年级的古诗；教师及明确标记的
+测试账号可跨年级学习。原存取码方案仅属于旧演示接口，不能作为正式学校登录方式。
 
 `TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY`、`TENCENT_APP_ID` 用于 SOE/TTS。
 `GPT_API_BASE`、`GPT_API_KEY` 用于 DeepSeek。`TTS_CACHE_DIR` 启用服务器缓存；
@@ -102,8 +102,9 @@ python deploy/backup-local.py
 广州服务器暂不能直连 Google 手写识别，因此配置
 `HANDWRITING_RELAY_URL=https://aiducation.asia/api/handwriting/`，只转发笔迹和
 识别上下文。这项功能仍依赖保留的 Vercel 接口；完全脱离 Vercel 需要后续替换
-识别供应商。以上为保留的广州服务配置；备案期间的公开临时入口 API 在 Vercel 运行，
-手写识别直接调用供应商，学习记录存入独立 private Blob 前缀。
+识别供应商。备案期间学校网页和固定接口网关位于 Vercel，学校业务通过受限通道交给
+广州处理；学校账号、学习数据、研究事件及教师报告直接写入广州 PostgreSQL。
+不再使用旧 private Blob 暂存同步链。细节见 `vercel-temporary.md`。
 
 六段动画、四个现用山景/江岸/田地/春草模型及两个历史练习植物模型放在广州 COS，
 使用标准存储；未开启 CDN、全球加速或新增订阅。模型使用内容摘要命名的对象路径，

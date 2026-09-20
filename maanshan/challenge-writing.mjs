@@ -49,8 +49,8 @@ export function mountChallengeWriting(holder, {
 .challenge-writing button:disabled{opacity:.45;cursor:default}
 .challenge-writing .cw-primary{color:#fff;background:#286650;border-color:#286650;font-weight:700;min-width:110px}
 .challenge-writing .cw-submit{display:contents}
-.challenge-writing .cw-skip{background:transparent;border-color:transparent;font-size:14px;flex-basis:100%;min-height:36px;padding:6px 10px}
-.challenge-writing .cw-status{font-size:14px;line-height:1.6;text-align:center;min-height:23px;margin:10px 0 4px}
+.challenge-writing .cw-skip{background:transparent;border-color:transparent;font-size:18px;flex-basis:100%;min-height:44px;padding:6px 10px}
+.challenge-writing .cw-status{font-size:18px;line-height:1.6;text-align:center;min-height:29px;margin:10px 0 4px}
 .challenge-writing .cw-review{padding-top:2px;text-align:center}
 .challenge-writing .cw-answer{display:flex;align-items:center;justify-content:center;gap:14px;margin:6px 0 12px}
 .challenge-writing .cw-answer strong{font-family:'Noto Serif TC',serif;font-size:44px;line-height:1.2;font-weight:500}

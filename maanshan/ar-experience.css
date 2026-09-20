@@ -27,10 +27,6 @@
 .workspace.view-explore #view .explore-finish h3{font-size:25px;line-height:1.4;margin:0 0 12px}
 .workspace.view-explore #view .explore-finish p{font-size:19px;line-height:1.7}
 .workspace.view-explore #view .explore-again{font-size:19px;min-height:48px}
-.explore-ar-overlay{position:fixed;inset:0;z-index:1000;pointer-events:none}
-.explore-ar-instructions{position:absolute;inset:max(16px,env(safe-area-inset-top)) 16px auto;display:flex;align-items:center;gap:14px;justify-content:space-between;padding:14px;border-radius:16px;background:#203a33e8;color:white}
-.explore-ar-instructions p{font-size:19px;line-height:1.5;margin:0}
-.explore-ar-instructions button{pointer-events:auto;flex:none;border:0;background:#fffdf4;color:#315b46;min-height:48px;border-radius:12px;padding:10px 15px;font:600 18px/1.4 var(--sans,sans-serif)}
 .workspace.view-explore #view .explore.is-expanded .explore-layout{display:block}
 .workspace.view-explore #view .explore.is-expanded .explore-visual{display:flex;width:100%}
 .workspace.view-explore #view .explore.is-expanded .explore-card{display:none}
@@ -45,10 +41,37 @@
  .workspace.view-explore #view .explore-view-controls{margin-top:12px}
  .workspace.view-explore #view .explore-answers button{font-size:20px;min-height:56px}
  .workspace.view-explore #view .explore-model-tools{display:flex}
- .explore-ar-instructions{flex-wrap:wrap;padding:12px}
- .explore-ar-instructions p{font-size:18px;flex:1;min-width:180px}
 }
 @media(max-width:370px){
  .workspace.view-explore #view .explore-card{padding:14px}
  .workspace.view-explore #view .explore-verse>p{font-size:22px}
+}
+
+/* Model-only observation: no camera layer or system AR hand-off. */
+.workspace.view-explore #view .explore-model-hint{width:100%;margin:0;color:#536d58;text-align:center;font-size:18px;line-height:1.5;text-wrap:balance}
+.workspace.view-explore #view .explore-model-tools{gap:8px;margin-top:10px}
+.workspace.view-explore #view .explore-zoom button{width:48px;min-height:48px}
+.workspace.view-explore #view .explore-word small{font-size:17px;line-height:1.4}
+.workspace.view-explore #view .explore-expand{min-height:44px;font-size:17px!important}
+.workspace.view-explore #view .explore-scene-name{font-size:17px}
+.workspace.view-explore #view .explore-loading,.workspace.view-explore #view .explore-image-loading p,.workspace.view-explore #view .explore-image-fallback p{font-size:18px;line-height:1.5}
+.workspace.view-explore #view .explore-image-fallback button{min-height:48px;font-size:18px}
+@media(min-width:660px) and (orientation:landscape) and (max-height:700px){
+ .workspace.view-explore #view .explore-layout{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px}
+ .workspace.view-explore #view .explore-stage{height:clamp(220px,calc(100dvh - 230px),400px);min-height:220px}
+ .workspace.view-explore #view .explore-card{padding:16px}
+ .workspace.view-explore #view .explore-verse{margin-bottom:10px;padding-block:8px}
+ .workspace.view-explore #view .explore-model-hint{font-size:17px}
+ .workspace.view-explore #view .explore.is-expanded .explore-stage{height:calc(100dvh - 205px);min-height:220px}
+}
+@media(min-width:660px) and (orientation:landscape) and (max-height:480px){
+ .workspace.view-explore #view .explore-stage{height:200px;min-height:200px}
+ .workspace.view-explore #view .explore-card{padding:12px}
+ .workspace.view-explore #view .explore-card-top{margin-bottom:8px}
+ .workspace.view-explore #view .explore-verse{margin-bottom:8px;padding-block:4px}
+ .workspace.view-explore #view .explore-question legend{margin-bottom:8px}
+ .workspace.view-explore #view .explore-answers{gap:8px}
+ .workspace.view-explore #view .explore-answers button{min-height:52px;padding:9px 12px}
+ .workspace.view-explore #view .explore-zoom button{width:44px;min-height:44px}
+ .workspace.view-explore #view .explore.is-expanded .explore-stage{height:calc(100dvh - 190px);min-height:200px}
 }

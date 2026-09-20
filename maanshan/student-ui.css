@@ -47,8 +47,8 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 .workspace.view-report .word-analysis .word-grid{display:grid;grid-template-columns:repeat(var(--report-columns,5),minmax(0,1fr));gap:8px;overflow:visible;padding:0}
 .workspace.view-report .word-analysis .word-result{display:block;width:100%;min-width:0;max-width:none;min-height:96px;padding:10px 3px;border-radius:12px}
 .workspace.view-report .word-analysis .word-result ruby{font-size:32px;line-height:1.6}
-.workspace.view-report .word-analysis .word-result rt{font:400 15px/1.2 var(--sans)}
-.workspace.view-report .word-analysis .word-result strong{font:600 19px/1.4 var(--sans)}
+.workspace.view-report .word-analysis .word-result rt{font:400 16px/1.2 var(--sans)}
+.workspace.view-report .word-analysis .word-result strong{font:600 19px/1.4 var(--sans);text-align:center}
 .workspace.view-report .report-line-actions{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:20px}
 .workspace.view-report .report-line-actions .button{margin:0;min-height:50px;padding:10px 20px;font-size:19px;justify-content:center}
 .workspace.view-report .report-empty{grid-column:1/-1}
@@ -75,6 +75,20 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace.view-report .report-line-actions{margin-top:12px}
 }
 
-@media(max-width:420px){.workspace.view-report .word-analysis .word-grid[data-columns="7"] .word-result ruby{font-size:28px}.workspace.view-report .word-analysis .word-grid[data-columns="7"] .word-result rt{font-size:13px}.workspace.view-report .word-analysis .word-result strong{font-size:17px}}
+/* Preserve readable pinyin by wrapping the verse into centred word groups. */
+@media(max-width:520px){
+ .workspace.view-report .word-analysis .word-grid[data-columns="7"]{grid-template-columns:repeat(8,minmax(0,1fr))}
+ .workspace.view-report .word-analysis .word-grid[data-columns="7"] .word-result{grid-column:span 2}
+ .workspace.view-report .word-analysis .word-grid[data-columns="7"] .word-result:nth-child(7n + 5){grid-column:2/span 2}
+ .workspace.view-report .word-analysis .word-result strong{font-size:18px}
+}
+@media(max-width:360px){
+ .workspace.view-report .score-line-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .workspace.view-report .word-analysis .word-grid[data-columns="5"]{grid-template-columns:repeat(6,minmax(0,1fr))}
+ .workspace.view-report .word-analysis .word-grid[data-columns="5"] .word-result{grid-column:span 2}
+ .workspace.view-report .word-analysis .word-grid[data-columns="5"] .word-result:nth-child(5n + 4){grid-column:2/span 2}
+}
 
 @media(max-width:700px){.workspace.view-report .report-line-actions .report-reread{flex-basis:100%;max-width:240px}.workspace.view-report .report-line-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.workspace.view-report .report-line-actions .report-reread{grid-column:1/-1;justify-self:center}.workspace.view-report .report-line-actions .button{padding-inline:10px;font-size:18px}}
+
+.workspace .challenge-shell .challenge-writing .cw-status{font-size:18px;line-height:1.5}

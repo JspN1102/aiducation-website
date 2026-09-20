@@ -9,6 +9,7 @@ import maanshanData from '../api/maanshan-data.js';
 import maanshanInit from '../api/maanshan-init.js';
 import handwriting from '../api/handwriting.js';
 import schoolAuth from '../api/school-auth.js';
+import schoolRecordings from '../api/school-recordings.js';
 import researchEvents from '../api/research-events.js';
 import teacherAnalytics from '../api/teacher-analytics.js';
 import challengeResult from '../api/challenge-result.js';
@@ -22,6 +23,7 @@ export default Object.freeze({
   'maanshan-data': maanshanData,
   'maanshan-init': maanshanInit,
   'school-auth':schoolAuth,
+  'school-recordings':schoolRecordings,
   'research-events':researchEvents,
   'teacher-analytics':teacherAnalytics,
   'challenge-result':challengeResult,

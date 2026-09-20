@@ -15,7 +15,7 @@ async function fixture(fn,options={}){
   forwardOut(from,port,to,target,cb){requests.push({from,port,to,target});const socket=net.connect(originPort,'127.0.0.1');socket.once('connect',()=>cb(null,socket));socket.once('error',cb);}
   end(){this.emit('close');}destroy(){if(options.onDestroy)return options.onDestroy(this);this.end();}
  }
- const relay=createRelay({env,clientFactory:()=>{const client=new SSH();clients.push(client);return client;},timeoutMs:options.timeoutMs||1500});
+ const relay=createRelay({env,clientFactory:()=>{const client=new SSH();clients.push(client);return client;},timeoutMs:options.timeoutMs||1500,...options.now?{now:options.now}:{}});
  const frontend=http.createServer(async(req,res)=>{const chunks=[];for await(const chunk of req)chunks.push(chunk);if(chunks.length){try{req.body=JSON.parse(Buffer.concat(chunks));}catch{req.body=Buffer.concat(chunks);}}options.onRequest?.(req);await relay.relay(options.name||'school-auth',req,res);});
  const port=await listen(frontend);
  return {clients,requests,call:(url='/api/school-auth',init={})=>fetch('http://127.0.0.1:'+port+url,init),raw:(url,init)=>raw('http://127.0.0.1:'+port+url,init),close:async()=>{relay.close();frontend.closeAllConnections();origin.closeAllConnections();await Promise.all([new Promise(r=>frontend.close(r)),new Promise(r=>origin.close(r))]);}};
@@ -109,6 +109,42 @@ test('late close from a failed SSH connection preserves the shared fallback for 
 test('oversized upstream data is never delivered as a truncated Office download',async()=>{
  const f=await fixture((req,res)=>res.end(Buffer.alloc(5*1024*1024)),{name:'teacher-tools'});
  try{const r=await f.call('/api/teacher-tools');assert.equal(r.status,502);assert.equal((await r.json()).code,'ORIGIN_RESPONSE_TOO_LARGE');}finally{await f.close();}
+});
+
+test('a reading pause reuses the SSH connection and closed transports reconnect before forwarding',async()=>{
+ let clock=1000;const f=await fixture((req,res)=>res.end('{"ok":true}'),{now:()=>clock});
+ try{
+  await (await f.call()).text();clock+=60000;
+  await (await f.call()).text();assert.equal(f.clients.length,1);
+  f.clients[0].emit('close');clock+=10;
+  await (await f.call()).text();assert.equal(f.clients.length,2);assert.equal(f.requests.length,3);
+ }finally{await f.close();}
+});
+
+test('chat deltas reach the browser before completion without buffering the provider response',async()=>{
+ let finishOrigin;const f=await fixture((req,res)=>{
+  res.setHeader('Content-Type','text/event-stream; charset=utf-8');
+  res.write('data: {"type":"delta","text":"你好"}\n\n');
+  finishOrigin=()=>res.end('data: {"type":"done","reply":"你好"}\n\n');
+ },{name:'maanshan-chat'});
+ try{
+  const response=await f.call('/api/maanshan-chat',{headers:{accept:'text/event-stream'}});
+  assert.match(response.headers.get('content-type'),/text\/event-stream/);assert.equal(response.headers.get('content-length'),null);
+  const reader=response.body.getReader();const first=await reader.read();assert.match(new TextDecoder().decode(first.value),/"delta"/);
+  finishOrigin();let remainder='';for(;;){const part=await reader.read();if(part.done)break;remainder+=new TextDecoder().decode(part.value);}
+  assert.match(remainder,/"done"/);
+ }finally{finishOrigin?.();await f.close();}
+});
+
+test('a broken chat stream stays incomplete and is never replayed',async()=>{
+ let calls=0,breakOrigin;const f=await fixture((req,res)=>{
+  calls++;res.setHeader('Content-Type','text/event-stream');res.write('data: {"type":"delta","text":"部分"}\n\n');breakOrigin=()=>res.destroy();
+ },{name:'maanshan-chat'});
+ try{
+  const response=await f.call('/api/maanshan-chat',{method:'POST',headers:{accept:'text/event-stream','content-type':'application/json'},body:'{}'});
+  const reader=response.body.getReader();assert.equal((await reader.read()).done,false);breakOrigin();
+  await assert.rejects(reader.read());assert.equal(calls,1);
+ }finally{breakOrigin?.();await f.close();}
 });
 
 test('real teacher JSON server and relay negotiate gzip and preserve exact payload and HEAD headers',async()=>{

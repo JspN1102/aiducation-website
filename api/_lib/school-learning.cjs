@@ -64,6 +64,7 @@ function outcomeFor(operation, payload, status, reference, elapsedMs) {
 }
 function withSchoolLearning(operation, handler) {
   return async (req,res) => {
+    if(operation==='chat')require('./chat-stream.cjs').installChatStream(req,res);
     if (!auth.enabled() || req.method !== 'POST') return handler(req,res);
     res.setHeader('Cache-Control','private, no-store');
     let actor, reference;
@@ -82,7 +83,7 @@ function withSchoolLearning(operation, handler) {
     let responseWork=null;
     res.json=body=>{
       if (responseWork) return res;
-      const status=res.statusCode||200;
+      const status=operation==='chat'&&res.chatOutcomeStatus||res.statusCode||200;
       responseWork=(async()=>{
         let recorded=false;
         try { recorded=(await research.recordVerifiedOutcome(req,outcomeFor(operation,body,status,reference,performance.now()-started))).recorded===true; }
@@ -97,7 +98,8 @@ function withSchoolLearning(operation, handler) {
       const timedOut=error?.name==='TimeoutError'||error?.code==='TIMEOUT';
       const outcome=outcomeFor(operation,{},timedOut?504:500,reference,performance.now()-started);
       if(error?.name==='AbortError'){outcome.result.status='cancelled';outcome.error={code:'aborted',retryable:true};}
-      try{await research.recordVerifiedOutcome(req,outcome);}catch{}
+      let recorded=false;try{recorded=(await research.recordVerifiedOutcome(req,outcome)).recorded===true;}catch{}
+      if(res.chatStreaming&&!res.chatSignal?.aborted){res.status(timedOut?504:500);return originalJSON({error:timedOut?'GPT timeout':'Chat service unavailable',researchRecorded:recorded});}
       throw error;
     }
     finally {res.json=originalJSON;}
