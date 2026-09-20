@@ -81,6 +81,23 @@ function makeBase(today,people,rosterKey,poemId){
         emit('animation','playback_started',{itemId:`p${poem.id}.animation`});
         emit('animation','playback_ended',{itemId:`p${poem.id}.animation`,metrics:{watchedMs:90000,videoPositionMs:90000}},'client',90000);
       }
+      // AR is available to the upper grades. Keep semantic model actions in the
+      // demo so the teacher view can be exercised without camera/native-AR data.
+      if(person.grade>=4){
+        const exploreAttempt=uuid(base+'/explore');
+        emit('explore','activity_start',{attemptId:exploreAttempt,itemId:`p${poem.id}.explore`});
+        emit('explore','item_presented',{attemptId:exploreAttempt,itemId:`p${poem.id}.explore.observation.0`,context:{mode:'free',itemType:'microgame',position:0,total:2,optionOrder:['choice.0','choice.1']}});
+        emit('explore','item_interacted',{attemptId:exploreAttempt,itemId:`p${poem.id}.explore.observation.0`,interaction:'camera_rotate',response:{choiceId:'turn'}});
+        emit('explore','item_interacted',{attemptId:exploreAttempt,itemId:`p${poem.id}.explore.observation.0`,interaction:'camera_zoom',response:{choiceId:'in'}});
+        emit('explore','answer_submitted',{attemptId:exploreAttempt,itemId:`p${poem.id}.explore.observation.0`,context:{mode:'free',itemType:'microgame',position:0,total:2},response:{choiceId:'choice.0'},result:{status:'correct',score:null,correct:true}});
+        emit('explore','activity_end',{attemptId:exploreAttempt,itemId:`p${poem.id}.explore`,result:{status:'completed',score:null,correct:null},metrics:{elapsedMs:18000}});
+      }
+      // Poet chat is represented by turn metadata and provider timing only;
+      // synthetic reports never contain a conversation transcript.
+      const chatAttempt=uuid(base+'/chat');
+      emit('chat','attempt_started',{attemptId:chatAttempt,itemId:`p${poem.id}.chat`,metrics:{userCharacters:12}});
+      outcome('chat','chat',`p${poem.id}.chat`,null,{attemptId:chatAttempt,metrics:{assistantCharacters:54,latencyMs:760}});
+      emit('chat','feedback_shown',{attemptId:chatAttempt,itemId:`p${poem.id}.chat`,metrics:{assistantCharacters:54,latencyMs:760}});
     }
   }
   return {today,rosterKey,generatedAt:new Date(midnight).toISOString(),rows,snapshots:new Map()};

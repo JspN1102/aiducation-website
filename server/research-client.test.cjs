@@ -130,3 +130,37 @@ test('temporary storage access denial is retried rather than classifying valid J
  assert.equal(tracker.status().held,0);assert.equal(tracker.status().pending,2);assert.equal(tracker.status().storageAvailable,false);
  denied=false;await tracker.flush({force:true});assert.equal(tracker.status().held,0);assert.equal(f.memory.size,2);
 });
+
+test('learning telemetry contract covers reading, dwell, animation, AR, practice, writing and poet chat',async()=>{
+  const {createResearchTracker}=await moduleReady;let sent;
+  const f=fixture({fetchImpl:async(_url,options)=>{
+    sent=JSON.parse(options.body);validateBatch(sent,actor);
+    return {ok:true,status:200,json:async()=>({accepted:true,batchId:sent.batchId,eventIds:sent.events.map(e=>e.eventId)})};
+  }});
+  const tracker=createResearchTracker(f.options),attempt=f.options.uuid();
+  // Reading/TTS: presentation and successful playback are process observations.
+  tracker.emit('item_presented',{activity:'read',poemId:5,itemId:'p5.l0'});
+  tracker.emit('playback_started',{activity:'listen',poemId:5,itemId:'p5.l0',attemptId:attempt,metrics:{playbackRate:1}});
+  tracker.emit('playback_ended',{activity:'listen',poemId:5,itemId:'p5.l0',attemptId:attempt,result:{status:'completed',score:null,correct:null},metrics:{playbackMs:1200,playbackRate:1}});
+  // Animation and time-on-task: playback duration is retained without raw video data.
+  tracker.emit('activity_start',{activity:'animation',poemId:5,itemId:'p5.animation'});
+  tracker.emit('playback_started',{activity:'animation',poemId:5,itemId:'p5.animation',attemptId:attempt,metrics:{playbackRate:1}});
+  tracker.emit('playback_ended',{activity:'animation',poemId:5,itemId:'p5.animation',attemptId:attempt,result:{status:'cancelled',score:null,correct:null},metrics:{watchedMs:2400,videoPositionMs:2400}});
+  tracker.emit('activity_end',{activity:'animation',poemId:5,itemId:'p5.animation',result:{status:'completed',score:null,correct:null},metrics:{elapsedMs:3000}});
+  // AR/model interaction: only semantic actions, never coordinates or camera frames.
+  tracker.emit('item_interacted',{activity:'explore',poemId:5,itemId:'p5.explore.observation.0',interaction:'camera_rotate',response:{choiceId:'peak'},context:{mode:'free',itemType:'microgame'}});
+  tracker.emit('item_interacted',{activity:'explore',poemId:5,itemId:'p5.explore.observation.0',interaction:'camera_zoom',response:{choiceId:'in'},context:{mode:'free',itemType:'microgame'}});
+  tracker.emit('item_interacted',{activity:'explore',poemId:5,itemId:'p5.explore.observation.0',interaction:'camera_reset',response:{choiceId:'reset'},context:{mode:'free',itemType:'microgame'}});
+  // Practice and handwriting: answer metadata is structured and score-free on the client.
+  tracker.emit('answer_submitted',{activity:'challenge',poemId:5,itemId:'g5-s1',attemptId:attempt,attemptNo:1,
+    context:{mode:'standard',itemType:'sound',position:1,total:5,optionOrder:['one','two']},response:{choiceId:'two'},result:{status:'incorrect',score:0,correct:false}});
+  tracker.emit('item_interacted',{activity:'writing',poemId:5,itemId:'g5-d1',attemptId:attempt,interaction:'stroke_finished',context:{mode:'standard',itemType:'dictation'},metrics:{strokeCount:1}});
+  // Poet chat: turn metadata and latency are retained; the conversation text is not.
+  tracker.emit('attempt_started',{activity:'chat',poemId:5,itemId:'p5.chat',attemptId:attempt,metrics:{userCharacters:8}});
+  tracker.emit('feedback_shown',{activity:'chat',poemId:5,itemId:'p5.chat',attemptId:attempt,metrics:{assistantCharacters:24,latencyMs:850}});
+  tracker.emit('retry',{activity:'chat',poemId:5,itemId:'p5.chat',attemptId:attempt,retryCount:1});
+  await tracker.flush();
+  const observed=new Set(sent.events.map(e=>`${e.activity}:${e.type}`));
+  for(const key of ['read:item_presented','listen:playback_started','listen:playback_ended','animation:activity_start','animation:playback_started','animation:playback_ended','animation:activity_end','explore:item_interacted','challenge:answer_submitted','writing:item_interacted','chat:attempt_started','chat:feedback_shown','chat:retry']) assert(observed.has(key),`missing ${key}`);
+  assert.equal(JSON.stringify(sent).includes('conversation text'),false);
+});

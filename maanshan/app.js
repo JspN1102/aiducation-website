@@ -1,24 +1,24 @@
 import {imageAsset} from './media-images.mjs?v=20260920-art2';
-import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260921-school5';
-import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260921-school5';
+import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260921-school6';
+import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260921-school6';
 import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
 import {getWordAudioURL} from './word-audio.mjs?v=20260921natural1';
 import {getSpeechAudioURL} from './speech-audio.mjs?v=20260921natural1';
-import {mountShishi} from './shishi.mjs?v=20260921-school5';
-import {mountLibraryShishi} from './library-shishi.mjs?v=20260921-school5';
-import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school5';
-import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school5';
+import {mountShishi} from './shishi.mjs?v=20260921-school6';
+import {mountLibraryShishi} from './library-shishi.mjs?v=20260921-school6';
+import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school6';
+import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school6';
 import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
-import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school5';
+import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school6';
 import {challengeSummary} from './challenge-state.mjs?v=20260919d';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260920-school1';
-import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260921-school5';
-import {createRecordingLibrary} from './recording-library.mjs?v=20260921-school5';
-import {requestJSON, requestChat} from './network.mjs?v=20260921-school5';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260921-school5';
-import {schoolSession} from './bootstrap.mjs?v=20260921-school5';
-import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school5';
-import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school5';
+import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260921-school6';
+import {createRecordingLibrary} from './recording-library.mjs?v=20260921-school6';
+import {requestJSON, requestChat} from './network.mjs?v=20260921-school6';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260921-school6';
+import {schoolSession} from './bootstrap.mjs?v=20260921-school6';
+import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school6';
+import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school6';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -748,7 +748,7 @@ async function loadActivity(name,load) {
 }
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260921-school5'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260921-school6'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
@@ -760,7 +760,7 @@ async function renderQuiz() {
     recognize:(ink,context)=>api('/api/handwriting',{ink,poemId:poem.id,...(collectResearch?{researchContext:research.context(context)}:{})},16000)});
 }
 async function renderExploration(){
-  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260921-school5'));
+  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260921-school6'));
   if(!module)return;
   const holder=$('#view');
   if(!holder||!poem)return;

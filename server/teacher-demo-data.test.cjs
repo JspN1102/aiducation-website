@@ -31,6 +31,20 @@ test('full-scale demo uses real aggregate schema with sources, dates, missingnes
   for(const construct of ['reading.pronunciation','writing.dictation','sound.recognition','match.accuracy','sequence.accuracy','scene_builder.accuracy'])assert(data.analytics.summary.byConstruct[construct]?.serverVerified.measuredN>0,construct);
   assert(data.analytics.summary.byConstruct['reading.pronunciation'].clientReported.measuredN>0);assert(data.analytics.summary.byConstruct['reading.pronunciation'].serverVerified.unmeasuredN>0);
 });
+
+test('demo activity coverage includes upper-grade AR actions and poet-chat turn timing',()=>{
+  const research=require('../api/_lib/research-store.cjs'),captured=[],original=research.validateEvent;
+  research.validateEvent=(event,...args)=>{captured.push(event);return original(event,...args);};
+  try {
+    createDemoDataset({grade:5,poemId:5,cls:'A'},{now:NOW,roster:[{id:'telemetry-demo',role:'student',displayName:'示範學生',grade:5,cls:'A',classNo:1}]});
+  } finally {research.validateEvent=original;}
+  assert(captured.some(event=>event.activity==='explore'&&event.interaction==='camera_rotate'));
+  assert(captured.some(event=>event.activity==='explore'&&event.interaction==='camera_zoom'));
+  assert(captured.some(event=>event.activity==='chat'&&event.type==='attempt_started'));
+  assert(captured.some(event=>event.activity==='chat'&&event.type==='provider_result'&&event.operation==='chat'));
+  assert(captured.some(event=>event.activity==='chat'&&event.type==='feedback_shown'));
+  assert(!captured.some(event=>JSON.stringify(event).includes('conversation transcript')));
+});
 test('grade/class/student/activity/date filtering and first/latest are genuine and stable',()=>{
   const one=createDemoDataset({grade:2,cls:'a'},options);assert.equal(one.students.length,25);assert(one.students.every(p=>p.grade===2&&p.cls==='A'));assert.equal(one.rosterSummary.noRecords,3);
   const zero=one.students.find(p=>p.classNo===1),nullScore=one.students.find(p=>p.classNo===2),clientOnly=one.students.find(p=>p.classNo===3),absent=one.students.find(p=>p.classNo===25);

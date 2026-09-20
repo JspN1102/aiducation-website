@@ -1,4 +1,4 @@
-import {readModel, createViewer, disposeObject} from './exploration.mjs?v=20260921-school5';
+import {readModel, createViewer, disposeObject} from './exploration.mjs?v=20260921-school6';
 
 // Assessment viewer: no verse, vocabulary, answer caption or exploration hints.
 export function mountChallengeModel(holder, {slug, poster, label = '轉動觀察', controls = []} = {}) {
