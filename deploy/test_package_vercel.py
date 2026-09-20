@@ -44,8 +44,8 @@ for(const [name,source] of Object.entries(entries)){
 
     def test_function_limits_have_no_business_content_tracing(self):
         config=packager.functions_config()
-        self.assertEqual(len(config),12)
-        self.assertEqual(config['api/teacher-tools.js'],{'maxDuration':60})
+        self.assertEqual(len(config),1)
+        self.assertEqual(config['api/school-gateway.js'],{'maxDuration':60})
         self.assertTrue(all(value=={'maxDuration':60} for value in config.values()), 'Every function must outlive the relay 55-second deadline.')
 
     def test_package_contains_only_relay_runtime_and_source_is_untouched(self):
@@ -79,14 +79,15 @@ for(const [name,source] of Object.entries(entries)){
             with patch.object(packager,'ROOT',root),patch.object(packager.subprocess,'check_output',side_effect=git),patch.object(packager,'verify_local_assets'),patch.object(packager,'build_media_config',return_value=media),patch.object(packager,'obsolete_audio_files',return_value=set()),patch.object(sys,'argv',arguments),contextlib.redirect_stdout(io.StringIO()):
                 packager.main()
             runtime=sorted(p.relative_to(destination).as_posix() for p in (destination/'api').rglob('*') if p.is_file())
-            self.assertEqual(runtime,sorted([packager.RELAY_FILE]+['api/'+name for name in packager.API_FILES]))
+            self.assertEqual(runtime,sorted([packager.RELAY_FILE,'api/school-gateway.js']))
             for name,original in originals.items():self.assertEqual((root/name).read_bytes(),original)
             self.assertFalse((destination/'index.html').exists())
             self.assertFalse((destination/'.env').exists())
-            for name in packager.API_FILES:self.assertEqual((destination/'api'/name).read_text(),packager.relay_entry(name))
+            for name in packager.API_FILES:self.assertFalse((destination/'api'/name).exists())
+            self.assertIn('.gateway',(destination/'api/school-gateway.js').read_text())
             manifest=json.loads(destination.with_suffix('.manifest.json').read_text())
             self.assertEqual(manifest['apiRuntime'],'guangzhou-ssh-relay')
-            self.assertEqual(manifest['apiFunctions'],12)
+            self.assertEqual(manifest['apiFunctions'],1)
             for row in manifest['files']:
                 data=(destination/row['path']).read_bytes()
                 self.assertEqual(row['bytes'],len(data))

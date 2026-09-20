@@ -25,7 +25,7 @@ test('fixed host and pinned key are mandatory; environment cannot create an arbi
 });
 test('shared gateway only accepts allowed endpoints and preserves repeated business query values',()=>{
  let forwarded;const handler=createGateway((...args)=>{forwarded=args;});
- const req={query:{schoolRoute:'teacher-tools'},url:'/api/teacher-tools/?schoolRoute=teacher-tools&tool=demo-export&grade=2&x=1&x=2',body:{action:'xlsx'},headers:{cookie:'synthetic'}};
+ const req={query:{__school_route:'teacher-tools'},url:'/api/teacher-tools/?tool=demo-export&grade=2&x=1&x=2',body:{action:'xlsx'},headers:{cookie:'synthetic'}};
  handler(req,{});assert.equal(forwarded[0],'teacher-tools');assert.equal(req.url,'/api/teacher-tools?tool=demo-export&grade=2&x=1&x=2');assert.strictEqual(forwarded[1],req);
  for(const path of ['/api/maanshan-init','/api/teacher-tools/private','/api/school-gateway?__school_route=school-auth','/api/']){forwarded=null;const res={setHeader(){},end(){}};handler({url:path},res);assert.equal(res.statusCode,404);assert.equal(forwarded,null);}
 });
