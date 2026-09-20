@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),http=require('node:http'),net=require('node:net');
 const {EventEmitter}=require('node:events');
-const {createRelay,configuration}=require('../api/_lib/guangzhou-relay.cjs');
+const {createRelay,configuration,createGateway}=require('../api/_lib/guangzhou-relay.cjs');
 const env={GUANGZHOU_RELAY_HOST:'134.175.149.14',GUANGZHOU_RELAY_USERNAME:'maanshan-relay',GUANGZHOU_RELAY_HOST_SHA256:'a'.repeat(64),GUANGZHOU_RELAY_PRIVATE_KEY:'-----BEGIN OPENSSH PRIVATE KEY-----\nSYNTHETIC-ONLY\n-----END OPENSSH PRIVATE KEY-----'};
 const listen=server=>new Promise(resolve=>server.listen(0,'127.0.0.1',()=>resolve(server.address().port)));
 async function fixture(fn,options={}){
@@ -19,6 +19,12 @@ async function fixture(fn,options={}){
 test('fixed host and pinned key are mandatory; environment cannot create an arbitrary destination',()=>{
  assert.equal(configuration(env).host,'134.175.149.14');
  for(const update of [{GUANGZHOU_RELAY_HOST:'127.0.0.1'},{GUANGZHOU_RELAY_USERNAME:'ubuntu'},{GUANGZHOU_RELAY_HOST_SHA256:''},{GUANGZHOU_RELAY_PRIVATE_KEY:'password'}])assert.throws(()=>configuration({...env,...update}));
+});
+test('shared gateway only accepts allowed endpoints and preserves repeated business query values',()=>{
+ let forwarded;const handler=createGateway((...args)=>{forwarded=args;});
+ const req={query:{__school_route:'teacher-tools'},url:'/api/school-gateway?__school_route=teacher-tools&tool=demo-export&grade=2&x=1&x=2',body:{action:'xlsx'},headers:{cookie:'synthetic'}};
+ handler(req,{});assert.equal(forwarded[0],'teacher-tools');assert.equal(req.url,'/api/teacher-tools?tool=demo-export&grade=2&x=1&x=2');assert.strictEqual(forwarded[1],req);
+ for(const route of ['maanshan-init','../../private',['teacher-tools','soe'],undefined]){forwarded=null;const res={setHeader(){},end(){}};handler({query:{__school_route:route}},res);assert.equal(res.statusCode,404);assert.equal(forwarded,null);}
 });
 test('encrypted channel destination is fixed, auth headers and query survive; same connection reused',async()=>{
  const received=[];const f=await fixture(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;received.push({url:req.url,headers:req.headers,body});res.setHeader('set-cookie',['__Host-maanshan_session=synthetic; Secure; HttpOnly; Path=/; SameSite=Lax']);res.setHeader('content-type','application/json');res.end('{"ok":true}');});

@@ -98,4 +98,15 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
  return {relay,close(){connection?.end();connection=null;pending=null;}};
 }
 let singleton;
-module.exports={LIMITS,configuration,createRelay,relay:(name,req,res)=>(singleton||(singleton=createRelay())).relay(name,req,res)};
+const relay=(name,req,res)=>(singleton||(singleton=createRelay())).relay(name,req,res);
+function createGateway(forward=relay){return function gateway(req,res){
+ const name=req.query?.__school_route;
+ if(typeof name!=='string'||!Object.hasOwn(LIMITS,name)){
+  res.statusCode=404;res.setHeader('Cache-Control','private, no-store');res.setHeader('Content-Type','application/json');return res.end('{"ok":false,"code":"NOT_FOUND"}');
+ }
+ const search=new URL(req.url,'https://mandarin.aiducation.asia').searchParams;
+ search.delete('__school_route');
+ req.url='/api/'+name+(search.size?'?'+search.toString():'');
+ return forward(name,req,res);
+};}
+module.exports={LIMITS,configuration,createRelay,relay,createGateway,gateway:createGateway()};
