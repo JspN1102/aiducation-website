@@ -103,7 +103,7 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
   const research=createProcessResearch(onResearch,{prefix:`p${poem.id}.explore`,activity:'explore',context:{mode:'free'},alive:()=>!dead});
   const researchStep=()=>`observation.${observation}`;
   container.innerHTML = `<section class="explore" aria-labelledby="explore-title">
-    <header class="explore-heading"><div><p class="explore-eyebrow">一首詩，兩個小發現</p><h2 id="explore-title">找一找</h2></div>
+    <header class="explore-heading"><div><p class="explore-eyebrow">一首詩，兩個小發現</p><h2 id="explore-title">AR體驗</h2></div>
       <img class="explore-motif" src="media/poetry-motifs/${content.motif}.svg" alt="" width="56" height="56"></header>
     <div class="explore-layout"><div class="explore-visual">
       <div class="explore-stage" data-explore-stage>

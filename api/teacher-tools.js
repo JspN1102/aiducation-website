@@ -9,10 +9,14 @@ module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'private, no-store');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   const tool = req.query?.tool;
-  if (!['analysis', 'export'].includes(tool)) {
+  if (!['analysis', 'export', 'demo-analysis', 'demo-export', 'demo-data'].includes(tool)) {
     return res.status(400).json({ ok: false, code: 'INVALID_TEACHER_TOOL', error: '請使用教師後台的匯出或分析按鈕。' });
   }
   // Internal handlers validate their own query contract without routing keys.
   req.query = Object.fromEntries(Object.entries(req.query || {}).filter(([key]) => key !== 'tool'));
+  if(tool.startsWith('demo-')){
+    const demo=require('./_lib/teacher-demo-handler.cjs');
+    return (tool==='demo-analysis'?demo.assistant:tool==='demo-export'?demo.exporter:demo.demoData)(req,res);
+  }
   return (tool === 'analysis' ? analysis : documentExport)(req, res);
 };

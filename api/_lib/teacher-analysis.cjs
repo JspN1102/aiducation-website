@@ -1,7 +1,7 @@
 'use strict';
 const crypto=require('node:crypto'),blob=require('@vercel/blob');
 const research=require('./research-store.cjs');
-const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v6-reviewed-report';
+const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v7-reviewed-demo';
 const MAX_RECORD_BYTES=12*1024*1024,MAX_PROVIDER_BYTES=160*1024,MAX_RESPONSE_BYTES=128*1024;
 const LEASE_MS=120000,PROVIDER_TIMEOUT_MS=42000;
 const SCHEMA=`CREATE TABLE IF NOT EXISTS teacher_analysis_records (
@@ -17,10 +17,10 @@ const conflict=error=>error instanceof blob.BlobPreconditionFailedError||/alread
 function keyValid(key){return /^(?:report\/[a-f0-9]{64}|limit\/[a-f0-9]{64})$/.test(key);}
 function reportKey(id){if(typeof id!=='string'||!/^ta_[a-f0-9]{64}$/.test(id))fail('INVALID_REPORT_ID',400,false);return 'report/'+id.slice(3);}
 function bytes(value){const body=canonical(value);if(Buffer.byteLength(body)>MAX_RECORD_BYTES)fail('REPORT_TOO_LARGE',413,false);return body;}
-function createBlobStore(client=blob){return {
+function createBlobStore(client=blob,namespace=NS){if(![NS,NS+'-demo'].includes(namespace))throw new Error('Invalid teacher report namespace');return {
  async get(key){
   if(!keyValid(key))fail('INVALID_REPORT_KEY',400,false);
-  const response=await client.get(`${NS}/${key}.json`,{access:'private',useCache:false,abortSignal:AbortSignal.timeout(10000)});
+  const response=await client.get(`${namespace}/${key}.json`,{access:'private',useCache:false,abortSignal:AbortSignal.timeout(10000)});
   if(!response)return null;
   if(response.statusCode!==200||!response.stream||!response.blob?.etag||response.blob.size>MAX_RECORD_BYTES){await response.stream?.cancel();fail('REPORT_STORAGE_UNAVAILABLE');}
   const reader=response.stream.getReader(),chunks=[];let size=0;
@@ -32,18 +32,18 @@ function createBlobStore(client=blob){return {
  },
  async cas(key,value,version){
   if(!keyValid(key))fail('INVALID_REPORT_KEY',400,false);
-  try{await client.put(`${NS}/${key}.json`,bytes(value),{access:'private',addRandomSuffix:false,allowOverwrite:version!==null&&version!==undefined,...version!==null&&version!==undefined?{ifMatch:version}:{},contentType:'application/json',abortSignal:AbortSignal.timeout(10000)});return true;}
+  try{await client.put(`${namespace}/${key}.json`,bytes(value),{access:'private',addRandomSuffix:false,allowOverwrite:version!==null&&version!==undefined,...version!==null&&version!==undefined?{ifMatch:version}:{},contentType:'application/json',abortSignal:AbortSignal.timeout(10000)});return true;}
   catch(error){if(conflict(error))return false;throw error;}
  }
 };}
-function createPostgresStore(db){return {
- async get(key){if(!keyValid(key))fail('INVALID_REPORT_KEY',400,false);const row=(await db.query('SELECT value,version::text FROM teacher_analysis_records WHERE key=$1',[key])).rows[0];return row?{value:row.value,version:row.version}:null;},
+function createPostgresStore(db,prefix=''){if(!['','demo/'].includes(prefix))throw new Error('Invalid report prefix');return {
+ async get(key){if(!keyValid(key))fail('INVALID_REPORT_KEY',400,false);const row=(await db.query('SELECT value,version::text FROM teacher_analysis_records WHERE key=$1',[prefix+key])).rows[0];return row?{value:row.value,version:row.version}:null;},
  async cas(key,value,version){if(!keyValid(key))fail('INVALID_REPORT_KEY',400,false);const body=bytes(value);
-  const result=version===null||version===undefined?await db.query('INSERT INTO teacher_analysis_records(key,value) VALUES($1,$2::jsonb) ON CONFLICT(key) DO NOTHING RETURNING version',[key,body]):await db.query('UPDATE teacher_analysis_records SET value=$2::jsonb,version=version+1,updated_at=clock_timestamp() WHERE key=$1 AND version=$3 RETURNING version',[key,body,version]);
+  const result=version===null||version===undefined?await db.query('INSERT INTO teacher_analysis_records(key,value) VALUES($1,$2::jsonb) ON CONFLICT(key) DO NOTHING RETURNING version',[prefix+key,body]):await db.query('UPDATE teacher_analysis_records SET value=$2::jsonb,version=version+1,updated_at=clock_timestamp() WHERE key=$1 AND version=$3 RETURNING version',[prefix+key,body,version]);
   return result.rowCount===1;
  }
 };}
-function configuredStore(env=process.env){if(env.STUDENT_STORE==='blob')return createBlobStore();return createPostgresStore(research.getPool());}
+function configuredStore(env=process.env,namespace=NS){if(env.STUDENT_STORE==='blob')return createBlobStore(blob,namespace);return createPostgresStore(research.getPool(),namespace===NS?'':'demo/');}
 function modelConfig(env=process.env){
  const model=env.TEACHER_AI_MODEL,key=env.TEACHER_AI_API_KEY||env.GPT_API_KEY,base=env.TEACHER_AI_API_BASE||env.GPT_API_BASE;
  if(typeof model!=='string'||!model.trim()||model.length>120||!key||!base)fail('AI_NOT_CONFIGURED',503,false);
@@ -87,7 +87,7 @@ function aggregateEvidence(dataset){
  const syncStatus=['current','catching_up','attention','direct','published','unavailable'].includes(analytics.sync?.status)?analytics.sync.status:'unavailable';
  const curriculum=require('../../maanshan/poems.json').poems.filter(poem=>!dataset.filters.grade||poem.grade===dataset.filters.grade).map(poem=>({grade:poem.grade,title:poem.title,lines:poem.lines.map(line=>({text:line.text,pinyin:line.pinyin})),dictation:poem.dictation.slice(0,poem.grade<=2?1:poem.grade<=4?2:3).map(item=>({char:item.char,pinyin:item.pinyin,word:item.word}))}));
  const teachingConstraints=curriculum.map(poem=>({grade:poem.grade,poem:poem.title,writing:poem.grade<=2?{maxCharactersAcrossWholeReport:1,allowedCharacters:poem.dictation.slice(0,1).map(item=>item.char),instruction:'整份報告最多安排一個字，只選allowedCharacters；其餘全用聽選、短句跟讀。下次複查也沿用同一字，不能默寫詞語或字表。'}:{maxCharactersAcrossWholeReport:poem.grade<=4?2:3,allowedCharacters:poem.dictation.slice(0,poem.grade<=4?2:3).map(item=>item.char)}}));
- const payload={schemaVersion:1,filters:dataset.filters,curriculum,teachingConstraints,detailLevel:dataset.filters.cls?'selected_class':dataset.filters.grade?'grade_and_classes':'school_and_grades_with_class_participation',rosterSummary:{totalStudents:safeCount(roster.totalStudents),withRecords:safeCount(roster.withRecords),noRecords:safeCount(roster.noRecords)},sync:{status:syncStatus,integrityIssues:safeCount(analytics.sync?.integrity?.integrityIssues),retryPending:safeCount(analytics.sync?.integrity?.retryPending)},evidence:facts,
+ const payload={schemaVersion:1,demo:dataset.demo===true,filters:dataset.filters,curriculum,teachingConstraints,detailLevel:dataset.filters.cls?'selected_class':dataset.filters.grade?'grade_and_classes':'school_and_grades_with_class_participation',rosterSummary:{totalStudents:safeCount(roster.totalStudents),withRecords:safeCount(roster.withRecords),noRecords:safeCount(roster.noRecords)},sync:{status:syncStatus,integrityIssues:safeCount(analytics.sync?.integrity?.integrityIssues),retryPending:safeCount(analytics.sync?.integrity?.retryPending)},evidence:facts,
   interpretationRules:['未見記錄不等於沒有練習；離線未同步情況無法直接觀察。','零分是測量；null和缺少分數是未測量。','按構念及來源分開解讀，不可把朗讀分數與答題準確度混成平均分。','瀏覽器自報分數未經伺服器核實；伺服器核實亦不等於教育診斷。','字音分數不能推斷聲母、韻母、聲調的具體病因。','完成活動事件數和嘗試數均不是完成學生數。','各日人數不可相加作不重複總人數；分組數據與總計有重疊。','資料不能證明教學因果、學習障礙或學生態度。']};
  if(Buffer.byteLength(canonical(payload))>MAX_PROVIDER_BYTES)fail('NARROW_DATE_OR_CLASS_FILTER',413,false);
  return payload;
@@ -101,7 +101,7 @@ function validateAnalysis(value,evidence,filters){
  const action=value=>({title:text(value?.title,100),evidenceIds:refs(value?.evidenceIds),steps:list(value?.steps,5,item=>text(item,500))});
  return {title:text(value.title,120),overview:text(value.overview,1800),findings:list(value.findings,8,item=>({title:text(item?.title,100),evidenceIds:refs(item?.evidenceIds),interpretation:text(item?.interpretation,1200)})),teachingActions:list(value.teachingActions,6,item=>({...action(item),priority:['high','medium','low'].includes(item.priority)?item.priority:'medium'})),reviewPlan:list(value.reviewPlan,4,action),limitations:list(value.limitations,8,item=>text(item,500))};
 }
-const SYSTEM_PROMPT=`你為香港小學教師直接撰寫可下載使用的普通話教學報告，繁體中文，清楚具體，無填空模板、無操作說明、無另附正式教案。只根據本次JSON的evidence、curriculum、teachingConstraints寫作。
+const SYSTEM_PROMPT=`你為香港小學教師直接撰寫可下載使用的普通話教學報告，繁體中文，清楚具體，無填空模板、無操作說明、無另附正式教案。只根據本次JSON的evidence、curriculum、teachingConstraints寫作。demo為true時，概覽首句必須寫「以下全部是系統模擬資料，僅供功能演示，不代表真實學生或教學成效」。
 報告順序：概覽→學習發現→可直接採用的教學建議→後續跟進→必要限制。單班約450至650中文字，全校約700至950字。全校建議分低、中、高年級；選一個年級只写該年級。每項建議用2至3個短步驟，包含練習內容、教師示範、學生做法、觀察重點。建議尚未實施，不能寫成已完成的教学活動。
 必須遵守：
 1.所有數字及觀察來自evidence。每項引用有效evidenceIds；正文不寫F001等代碼。準確寫有紀錄/名冊人數，不加「大多數/少數」印象判斷。事件筆數不是學生人數，沒有某種事件不能推論沒有完成或全是嘗試。
@@ -155,8 +155,8 @@ async function requestAnalysis(payload,config,{fetchImpl=globalThis.fetch,signal
  return {analysis:validateAnalysis(raw,payload.evidence,payload.filters),syntaxRepaired,responseModel:provider.model||null,usage:{inputTokens:safeCount(provider.usage?.prompt_tokens),outputTokens:safeCount(provider.usage?.completion_tokens)}};
 }
 function publicReport(report){const {dataset,...visible}=report;return visible;}
-function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImpl=globalThis.fetch,now=Date.now,uuid=crypto.randomUUID}={}){
- const storage=()=>store||configuredStore(env);
+function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImpl=globalThis.fetch,now=Date.now,uuid=crypto.randomUUID,namespace=NS}={}){
+ const storage=()=>store||configuredStore(env,namespace);
  const load=loadDataset||((req,filters)=>require('./teacher-data.cjs').loadTeacherDataset(req,filters));
  const follow=buildFollowUp||(dataset=>require('./teacher-data.cjs').buildFollowUp(dataset));
  async function read(key){try{return await storage().get(key);}catch(error){if(error instanceof AnalysisError)throw error;fail('REPORT_STORAGE_UNAVAILABLE');}}
@@ -195,7 +195,7 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
    await quota(actor.id);
    const generated=await requestAnalysis(payload,config,{fetchImpl,signal});
    const f=dataset.filters;
-   generated.analysis.title=`${f.grade?f.grade+'年級'+(f.cls?f.cls+'班':''):f.cls?'全校'+f.cls+'班':'全校'}普通話教學報告`;
+   generated.analysis.title=`${dataset.demo?'【模擬數據】':''}${f.grade?f.grade+'年級'+(f.cls?f.cls+'班':''):f.cls?'全校'+f.cls+'班':'全校'}普通話教學報告`;
    const report={schemaVersion:1,reportId,createdAt:new Date(now()).toISOString(),model:config.model,responseModel:generated.responseModel,syntaxRepaired:generated.syntaxRepaired,promptVersion:PROMPT_VERSION,filters:dataset.filters,dataFingerprint,snapshotId:dataset.snapshotId,
     source:{sync:dataset.analytics.sync,coverage:dataset.analytics.coverage,rosterSummary:dataset.rosterSummary},evidence:payload.evidence,analysis:generated.analysis,followUp,usage:generated.usage,dataset};
    const current=await read(key);if(current?.value?.leaseId!==leaseId)fail('ANALYSIS_RETRY_REQUIRED',409,true);

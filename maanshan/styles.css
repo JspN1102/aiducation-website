@@ -1,5 +1,7 @@
-@font-face{font-family:'Noto Serif TC';src:url('vendor/fonts/noto-serif-tc.woff2?v=20260908e') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
-@font-face{font-family:'Noto Sans TC';src:url('vendor/fonts/noto-sans-tc.woff2?v=20260908e') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
+@font-face{font-family:'Noto Sans TC';src:url('vendor/fonts/noto-sans-tc-variants.woff2?v=20260920-full1') format('woff2');font-weight:400 700;font-style:normal;font-display:swap;unicode-range:U+4F26,U+4FA7,U+5C06,U+5E26,U+5E90,U+5F52,U+62E8,U+6570,U+65F6,U+6A2A,U+6DA6,U+6EE1,U+72ED,U+79FD,U+7EA2,U+7EDD,U+7EFF,U+7F18,U+8BC6,U+8FD8,U+8FDC,U+8FDD,U+9065,U+9504,U+95FB,U+9879,U+9E45}
+@font-face{font-family:'Noto Serif TC';src:url('vendor/fonts/noto-serif-tc-variants.woff2?v=20260920-full1') format('woff2');font-weight:400 700;font-style:normal;font-display:swap;unicode-range:U+4F26,U+4FA7,U+5C06,U+5E26,U+5E90,U+5F52,U+62E8,U+6570,U+65F6,U+6A2A,U+6DA6,U+6EE1,U+72ED,U+79FD,U+7EA2,U+7EDD,U+7EFF,U+7F18,U+8BC6,U+8FD8,U+8FDC,U+8FDD,U+9065,U+9504,U+95FB,U+9879,U+9E45}
+@font-face{font-family:'Noto Serif TC';src:url('vendor/fonts/noto-serif-tc.woff2?v=20260920-full1') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
+@font-face{font-family:'Noto Sans TC';src:url('vendor/fonts/noto-sans-tc.woff2?v=20260920-full1') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
 :root{color-scheme:light;--white:#fff;--bg:#fff;--ink:#183f3b;--muted:#5e746b;--line:#dce8df;--green:#147a62;--green-soft:#eaf6ed;--red:#b8493f;--red-soft:#fff0ea;--blue:#24758e;--blue-soft:#ecf6f9;--gold:#8d6514;--gold-soft:#fff6ce;--serif:'Noto Serif TC','Songti TC','PMingLiU',serif;--sans:'Noto Sans TC','Microsoft JhengHei',sans-serif}
 *{box-sizing:border-box;letter-spacing:0}
 html{scroll-padding:20px}

@@ -26,7 +26,7 @@ function createHandler({requireTeacher=req=>auth.requireActor(req,{roles:['teach
       })().finally(()=>{active--;});
       const result=await Promise.race([work,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new data.TeacherDataError('EXPORT_TIMEOUT',504)),timeoutMs);})]);
       const f=result.dataset.filters,date=f.from.replaceAll('-','')+'-'+f.to.replaceAll('-',''),scope=f.grade?f.grade+(f.cls?f.cls+'班':'年級'):'全校'+(f.cls?'_'+f.cls+'班':'');
-      const filename=`普通話學習${body.action==='docx'?'報告':'紀錄'}_${scope}_${date}.${body.action}`;
+      const filename=`${result.dataset.demo?'模擬_':''}普通話學習${body.action==='docx'?'報告':'紀錄'}_${scope}_${date}.${body.action}`;
       res.setHeader('Content-Type',MIME[body.action]);res.setHeader('Content-Disposition',`attachment; filename="mandarin-learning-${date}.${body.action}"; filename*=UTF-8''${encodeURIComponent(filename)}`);res.setHeader('Content-Length',String(result.bytes.length));res.setHeader('X-Data-Snapshot',result.dataset.snapshotId);
       return res.status(200).send(Buffer.from(result.bytes));
     }catch(error){

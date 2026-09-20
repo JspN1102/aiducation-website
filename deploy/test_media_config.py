@@ -8,15 +8,15 @@ import unittest
 import media_config
 
 
-def fixture(model=False):
+def fixture(model=False, image=False):
     data = b'representative fixture content'
     sha = hashlib.sha256(data).hexdigest()
-    source = '/maanshan/media/test/' + ('model.glb' if model else 'animation-20260919.mp4')
+    source = '/maanshan/media/test/' + ('model.glb' if model else 'scene-1.webp' if image else 'animation-20260919.mp4')
     entry = {'source': source,
-             'destination': media_config.COS_ORIGIN + ('/published/' + sha[:20] if model else '') + source,
+             'destination': media_config.COS_ORIGIN + ('/published/' + sha[:20] if model or image else '') + source,
              'bytes': len(data), 'sha256': sha, 'md5': hashlib.md5(data).hexdigest(),
-             'contentType': 'model/gltf-binary' if model else 'video/mp4',
-             'objectCacheControl': 'public, max-age=31536000, immutable' if model else 'public, max-age=2592000'}
+             'contentType': 'model/gltf-binary' if model else 'image/webp' if image else 'video/mp4',
+             'objectCacheControl': 'public, max-age=31536000, immutable' if model or image else 'public, max-age=2592000'}
     return {'schemaVersion': 1, 'origin': media_config.COS_ORIGIN, 'assets': [entry]}, data
 
 
@@ -25,13 +25,43 @@ class MediaConfigTests(unittest.TestCase):
         manifest = json.loads(Path(__file__).with_name('media-manifest.json').read_text(encoding='utf-8'))
         original = copy.deepcopy(manifest)
         config = media_config.build_media_config(manifest)
-        self.assertEqual(len(config['redirects']), 13)
+        self.assertEqual(len(config['redirects']), len(manifest['assets']))
+        images = [a for a in manifest['assets'] if a['contentType'] == 'image/webp']
+        poems = json.loads((Path(__file__).parent.parent / 'maanshan/poems.json').read_text(encoding='utf-8'))['poems']
+        for poem in poems:
+            for name in ['cover-final.webp', 'avatar.webp'] + [f'scene-{line["scene"]}.webp' for line in poem['lines']]:
+                self.assertIn('/maanshan/media/' + poem['slug'] + '/' + name, [a['source'] for a in images])
         self.assertEqual(config['totalExcludedBytes'], sum(a['bytes'] for a in manifest['assets']))
         self.assertEqual({r['source'].lstrip('/') for r in config['redirects']}, set(config['excludedFiles']))
         self.assertTrue(all(r['statusCode'] == 307 for r in config['redirects']))
         self.assertTrue(all(h['headers'] == [{'key': 'Cache-Control', 'value': 'no-cache'}] for h in config['headers']))
         self.assertEqual(manifest, original)
-        self.assertFalse(any(p.endswith(('.webp', '.mp3')) for p in config['excludedFiles']))
+        self.assertFalse(any(p.endswith('.mp3') for p in config['excludedFiles']))
+
+    def test_image_digest_type_and_cache_are_verified_before_exact_routes(self):
+        manifest, data = fixture(image=True)
+        config = media_config.build_media_config(manifest)
+        self.assertIn('/published/' + hashlib.sha256(data).hexdigest()[:20], config['redirects'][0]['destination'])
+        for key, invalid in [('contentType', 'video/mp4'), ('objectCacheControl', 'public, max-age=30'),
+                             ('sha256', '0' * 64)]:
+            changed = copy.deepcopy(manifest)
+            changed['assets'][0][key] = invalid
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                media_config.build_media_config(changed)
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder) / manifest['assets'][0]['source'].lstrip('/')
+            target.parent.mkdir(parents=True)
+            target.write_bytes(data)
+            self.assertEqual(media_config.verify_local_assets(folder, manifest)['verifiedFiles'], 1)
+
+    def test_generated_image_module_and_nginx_use_only_verified_public_mappings(self):
+        manifest, _ = fixture(image=True)
+        module = media_config.build_image_module(manifest)
+        self.assertIn(manifest['assets'][0]['destination'], module)
+        self.assertIn('return IMAGE_ASSETS[path] || source;', module)
+        nginx = media_config.build_nginx_config(manifest)
+        self.assertIn('location = ' + manifest['assets'][0]['source'], nginx)
+        self.assertIn('add_header Cache-Control "no-cache"; return 307 ', nginx)
 
     def test_modified_video_same_size_is_rejected(self):
         manifest, data = fixture()
@@ -81,7 +111,7 @@ class MediaConfigTests(unittest.TestCase):
 
     def test_traversal_redirect_patterns_and_non_media_sources_rejected(self):
         for source in ['/maanshan/media/../api/tts.mp4', '/maanshan/media/:path*.mp4',
-                       '/maanshan/media/%2e%2e/test.mp4', '/api/model.glb', '/maanshan/media/avatar.webp']:
+                       '/maanshan/media/%2e%2e/test.mp4', '/api/model.glb', '/maanshan/media/avatar.exe']:
             manifest, _ = fixture()
             manifest['assets'][0]['source'] = source
             with self.subTest(source=source), self.assertRaisesRegex(ValueError, 'exact supported'):

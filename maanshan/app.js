@@ -1,17 +1,18 @@
+import {imageAsset} from './media-images.mjs?v=20260920-images1';
 import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260920a';
-import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260919a';
+import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260920-ui1';
 import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
 import {getWordAudioURL} from './word-audio.mjs?v=20260919c';
 import {getSpeechAudioURL} from './speech-audio.mjs?v=20260919c';
-import {mountShishi} from './shishi.mjs?v=20260919a';
+import {mountShishi} from './shishi.mjs?v=20260920-ui1';
 import {mountPoemSwipe} from './poem-swipe.mjs?v=20260915a';
-import {mountLessonMap} from './lesson-map.mjs?v=20260919b';
+import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui1';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260919d';
 import {challengeSummary} from './challenge-state.mjs?v=20260919d';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260920-school1';
 import {encodeRecording, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260920b';
 import {requestJSON} from './network.mjs?v=20260920b';
-import {initializeSchoolSession, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260920b';
+import {initializeSchoolSession, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260920-ui1';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260920b';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260920b';
 
@@ -75,7 +76,7 @@ const sync=createSyncQueue({
   send:item=>schoolFetch('/api/maanshan-save/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item),signal:AbortSignal.timeout(12000)})
 });
 const titleOf=p=>p.id===5 ? '歸園田居·其三' : p.title;
-const asset=(name,p=poem)=>`media/${p.slug}/${name}`;
+const asset=(name,p=poem)=>imageAsset(`media/${p.slug}/${name}`);
 const poemMotif=(p=poem)=>'media/poetry-motifs/'+['goose','boat','mountain','moon','sprout','swallow'][p.id-1]+'.svg';
 const link=(v='record',p=poem)=>`#${p.slug}/${v}`;
 const state=p=>{
@@ -317,23 +318,23 @@ function verseHTML(line,extra='') {
   return `<div class="verse ${extra}${contents.length>1?' verse-compound':''}" aria-label="${esc(line.text+(line.punctuation||''))}">${contents.length>1?contents.map(part=>'<span class="verse-clause">'+part+'</span>').join(''):contents.join('')}</div>`;
 }
 function renderLibrary() {
-  poem=null;document.title='古詩朗讀 · 馬鞍山靈糧小學';
+  poem=null;document.title='AI普通話學習平台 · 馬鞍山靈糧小學';
   app.innerHTML='<main class="library" id="main">'+
-    '<div class="library-heading"><div><h1>把古詩，讀成<span class="title-ink">一幅畫</span></h1></div></div>'+
+    '<div class="library-heading"><div><h1>AI普通話學習平台</h1></div></div>'+
     '<div class="poem-grid library-books" id="poem-grid" aria-label="選擇古詩"></div><footer class="library-footer"><a href="credits.html">素材來源 '+icon('arrow-up-right')+'</a></footer></main>';
   renderCards();icons();
 }
 function renderCards() {
   $('#poem-grid').innerHTML=poems.map(p=>'<article class="poem-card poem-color-'+p.id+'"><a class="poem-entry" href="'+link('lesson',p)+'" aria-label="學習'+esc(titleOf(p))+'"><div class="poem-art" style="background-image:url('+getScenePreview(p.slug,p.lines.at(-1).scene)+')"><img src="'+asset('cover-final.webp',p)+'" width="800" height="450" alt="'+esc(p.lines.at(-1).text)+'" '+(p.id>3?'loading="lazy"':'fetchpriority="high"')+'><span class="poem-grade">'+['','一','二','三','四','五','六'][p.grade]+'年級</span></div><div class="poem-card-body"><img class="poem-emblem" src="'+poemMotif(p)+'" width="56" height="56" alt="" aria-hidden="true"><div class="poem-card-title"><h2>'+esc(p.title)+(p.id===5?'<small>其三</small>':'')+'</h2></div><p class="poem-author">'+esc(p.dynasty)+' · '+esc(p.author)+'</p><span class="poem-open">'+icon('book-open')+'<span>一起讀</span>'+icon('arrow-right')+'</span></div></a></article>').join('');icons();
 }
-const NAV=[['lesson','map','學習路線','路線'],['record','mic','聽一聽・讀一讀','讀一讀'],['animation','clapperboard','看一看動畫','看一看動畫'],['quiz','flag','練一練','練一練'],['explore','sparkles','找一找','找一找'],['chat','messages-square','與詩人對話','詩人'],['report','award','學習報告','報告']];
+const NAV=[['lesson','map','學習路線','路線'],['record','mic','AI讀古詩','AI讀古詩'],['animation','clapperboard','動畫看古詩','動畫看古詩'],['quiz','flag','練習小遊戲','練習小遊戲'],['explore','sparkles','AR體驗','AR體驗'],['chat','messages-square','與詩人對話','詩人'],['report','award','學習報告','報告']];
 function renderWorkspace() {
   if(sessionLocked)return;
   const name=NAV.find(n=>n[0]===view)?.[2]||'';
-  document.title=view==='quiz'?'練一練 · 馬鞍山靈糧小學':`${titleOf(poem)} · ${name} · AIDUCATION`;
+  document.title=view==='quiz'?'練習小遊戲 · 馬鞍山靈糧小學':`${titleOf(poem)} · ${name} · AIDUCATION`;
   const activityOrder=['record','animation','explore','quiz','chat','report'];
   const activities=NAV.filter(([id])=>activityOrder.includes(id)&&(id!=='explore'||poem.grade>=4)).sort((a,b)=>activityOrder.indexOf(a[0])-activityOrder.indexOf(b[0]));
-  app.innerHTML='<div class="workspace lesson-shell poem-color-'+poem.id+' view-'+view+'"><div class="lesson-bar"><a class="back-library" href="'+(view==='lesson'?'#':link('lesson'))+'">'+icon('arrow-left')+'<span>'+(view==='lesson'?'選詩':'路線')+'</span></a><div class="lesson-title">'+(view==='quiz'?'':'<img class="lesson-portrait" src="'+asset('avatar.webp')+'" width="48" height="48" alt="'+esc(poem.author)+'">')+'<div class="lesson-heading"><h1>'+(view==='quiz'?'練一練':esc(titleOf(poem)))+'</h1><p>'+(view==='quiz'?['','一','二','三','四','五','六'][poem.grade]+'年級':(view==='record'?esc(poem.author):esc(poem.dynasty)+' · '+esc(poem.author)))+'</p></div></div><div class="lesson-tools"><details class="lesson-menu"><summary title="切換學習欄目" aria-label="切換學習欄目">'+icon('ellipsis')+'<span>更多</span></summary><nav class="menu-panel" aria-label="切換學習欄目">'+activities.map(([id,symbol,label])=>'<a href="'+link(id)+'" '+(view===id?'aria-current="page"':'')+'>'+icon(symbol)+'<span>'+label+'</span></a>').join('')+'</nav></details></div></div>'+lessonTabs()+'<main class="study-main" id="main"><section id="view" class="view-section '+(showPinyin?'':'hide-pinyin')+'"></section></main></div>';
+  app.innerHTML='<div class="workspace lesson-shell poem-color-'+poem.id+' view-'+view+'"><div class="lesson-bar"><a class="back-library" href="'+(view==='lesson'?'#':link('lesson'))+'">'+icon('arrow-left')+'<span>'+(view==='lesson'?'選詩':'路線')+'</span></a><div class="lesson-title">'+(view==='quiz'?'':'<img class="lesson-portrait" src="'+asset('avatar.webp')+'" width="48" height="48" alt="'+esc(poem.author)+'">')+'<div class="lesson-heading"><h1>'+(view==='quiz'?'練習小遊戲':esc(titleOf(poem)))+'</h1><p>'+(view==='quiz'?['','一','二','三','四','五','六'][poem.grade]+'年級':(view==='record'?esc(poem.author):esc(poem.dynasty)+' · '+esc(poem.author)))+'</p></div></div><div class="lesson-tools"><details class="lesson-menu"><summary title="切換學習欄目" aria-label="切換學習欄目">'+icon('ellipsis')+'<span>更多</span></summary><nav class="menu-panel" aria-label="切換學習欄目">'+activities.map(([id,symbol,label])=>'<a href="'+link(id)+'" '+(view===id?'aria-current="page"':'')+'>'+icon(symbol)+'<span>'+label+'</span></a>').join('')+'</nav></details></div></div>'+lessonTabs()+'<main class="study-main" id="main"><section id="view" class="view-section '+(showPinyin?'':'hide-pinyin')+'"></section></main></div>';
   renderView();attachShishi();icons();
 }
 function lessonTabs(){
@@ -365,10 +366,10 @@ function sceneText(n,p=poem){return p.lines.filter(l=>l.scene===Math.max(1,n)).m
 function renderAnimation() {
   const media=poem.animation;
   if(!media?.src){
-    $('#view').innerHTML=`<section class="animation-pending"><img src="${poemMotif()}" width="88" height="88" alt=""><h2>看一看動畫</h2><p>這首詩的動畫還在準備中。</p><a class="button primary" href="${link('record')}">${icon('mic')}先讀一讀</a></section>`;
+    $('#view').innerHTML=`<section class="animation-pending"><img src="${poemMotif()}" width="88" height="88" alt=""><h2>動畫看古詩</h2><p>這首詩的動畫還在準備中。</p><a class="button primary" href="${link('record')}">${icon('mic')}先讀一讀</a></section>`;
     return;
   }
-  $('#view').innerHTML=`<section class="animation-lesson" aria-labelledby="animation-heading"><header class="animation-heading"><h2 id="animation-heading">看一看動畫</h2><p>${esc(media.caption||`跟着${poem.author}看動畫`)}</p></header><div class="animation-stage"><video id="animation-video" controls playsinline preload="metadata" poster="${esc(media.poster)}" aria-label="${esc(titleOf(poem))}動畫"></video></div><p class="animation-status" id="animation-status" role="status" aria-live="polite" hidden></p><div class="animation-actions"><button type="button" class="button primary" id="animation-toggle" aria-controls="animation-video">${icon('play')}<span>播放動畫</span></button><a class="button" href="${link(poem.grade<=3?'quiz':'explore')}"><span>${poem.grade<=3?'練一練':'找一找'}</span>${icon('arrow-right')}</a></div></section>`;
+  $('#view').innerHTML=`<section class="animation-lesson" aria-labelledby="animation-heading"><header class="animation-heading"><h2 id="animation-heading">動畫看古詩</h2><p>${esc(media.caption||`跟着${poem.author}看動畫`)}</p></header><div class="animation-stage"><video id="animation-video" controls playsinline preload="metadata" poster="${esc(imageAsset(media.poster))}" aria-label="${esc(titleOf(poem))}動畫"></video></div><p class="animation-status" id="animation-status" role="status" aria-live="polite" hidden></p><div class="animation-actions"><button type="button" class="button primary" id="animation-toggle" aria-controls="animation-video">${icon('play')}<span>播放動畫</span></button><a class="button" href="${link(poem.grade<=3?'quiz':'explore')}"><span>${poem.grade<=3?'練習小遊戲':'AR體驗'}</span>${icon('arrow-right')}</a></div></section>`;
   const player=$('#animation-video'),button=$('#animation-toggle'),label=$('span',button),status=$('#animation-status');
   const events=new AbortController(),listen=(target,event,callback)=>target.addEventListener(event,callback,{signal:events.signal});
   let started=false,failed=false,dead=false;

@@ -1,3 +1,4 @@
+import {imageAsset} from './media-images.mjs?v=20260920-images1';
 const mountedStages = new WeakMap();
 const decodedSources = new Map();
 const MAX_CACHED_SOURCES = 8;
@@ -10,7 +11,7 @@ export function getScenePreview(poemSlug, scene = 1) {
 export function preloadScene(poemSlug, scene) {
   checkScene(scene);
   if (!scene || !getScenePreview(poemSlug, scene)) return Promise.resolve();
-  return decodeSource(new URL('./media/' + poemSlug + '/scene-' + scene + '.webp', import.meta.url).href).then(() => true, () => false);
+  return decodeSource(new URL(imageAsset('media/' + poemSlug + '/scene-' + scene + '.webp'), import.meta.url).href).then(() => true, () => false);
 }
 
 function checkScene(scene) {
@@ -244,7 +245,7 @@ export function mountStage(container, options) {
       void fadeIn(layer, lastRequest.animate);
     }
     publish('loading');
-    const url = new URL('./media/' + poemSlug + '/scene-' + scene + '.webp', import.meta.url).href;
+    const url = new URL(imageAsset('media/' + poemSlug + '/scene-' + scene + '.webp'), import.meta.url).href;
     const request = (async () => {
       try {
         const source = await decodeSource(url, Boolean(settings.force));

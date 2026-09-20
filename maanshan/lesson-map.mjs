@@ -43,10 +43,10 @@ export function mountLessonMap(holder, {poem, progress = {}, resume = null, onNa
     const challengeLabel = current.challengeMode==='review' ? completed?'本組錯題複習完成':`錯題複習 ${answered} / ${challengeTotal} 題` : completed ? '五題都練過了' : answered ? `已練 ${answered} / ${challengeTotal} 題` : poem.grade<=3?'玩一玩，再聽聲音':'玩一玩、聽音、寫字';
     const canResume = latestResume && allowedViews.has(latestResume.view);
     const steps = [
-      {view:'record',title:'聽一聽・讀一讀',status:readingLabel,done:done===total},
-      {view:'animation',title:'看一看動畫',status:poem.animation?.src?'跟着詩人看故事':'動畫準備中',pending:!poem.animation?.src},
-      {view:'explore',title:'找一找',status:'讓詩中風景來到身邊'},
-      {view:'quiz',title:'練一練',status:challengeLabel,done:completed}
+      {view:'record',title:'AI讀古詩',status:readingLabel,done:done===total},
+      {view:'animation',title:'動畫看古詩',status:poem.animation?.src?'跟着詩人看故事':'動畫準備中',pending:!poem.animation?.src},
+      {view:'explore',title:'AR體驗',status:'讓詩中風景來到身邊'},
+      {view:'quiz',title:'練習小遊戲',status:challengeLabel,done:completed}
     ].filter(step=>step.view!=='explore'||poem.grade>=4);
     root.classList.toggle('lesson-map-lower',poem.grade<=3);
     root.innerHTML = `<header class="lesson-map-hero"><img class="lesson-map-motif" src="media/poetry-motifs/${details.motif}.svg" width="48" height="48" alt=""><h2>一起學古詩</h2></header>

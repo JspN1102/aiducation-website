@@ -1,3 +1,4 @@
+import {mountShishiSprite} from './shishi-sprite.mjs?v=20260920-ui1';
 // The cookie is HttpOnly. Only the current user's display profile and CSRF
 // token live in memory; passwords and bearer credentials are never persisted.
 let current = {enabled: false, authenticated: false, user: null, csrfToken: ''};
@@ -70,7 +71,7 @@ function connectSessionChannel() {
 function ensureStyle() {
   if (document.querySelector('link[data-school-auth-style]')) return;
   const link = document.createElement('link');
-  link.rel = 'stylesheet'; link.href = 'school-session.css?v=20260920-school2';
+  link.rel = 'stylesheet'; link.href = 'school-session.css?v=20260920-ui1';
   link.dataset.schoolAuthStyle = 'true'; document.head.append(link);
 }
 function validSignedIn(data) {
@@ -104,8 +105,13 @@ function loginError(response, data) {
 function loginScreen(host, initialError = '') {
   document.body.dataset.screen = 'school-login';
   document.querySelector('#profile-open')?.setAttribute('hidden', '');
-  host.innerHTML = `<main class="school-login" id="main"><section class="school-login-card" aria-labelledby="school-login-title"><div class="school-login-art" aria-hidden="true"><img src="media/poetry-motifs/goose.svg" width="88" height="88" alt=""><span>讀一首詩 · 遇見新世界</span></div><p class="school-login-eyebrow">馬鞍山靈糧小學 · 普通話學習平台</p><h1 id="school-login-title">準備好，一起學古詩</h1><p>用學校給你的帳戶登入，繼續上次的學習。</p><form id="school-login-form" aria-busy="false"><label for="school-login-name">登入名稱<input id="school-login-name" name="login" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="64" enterkeyhint="next" required placeholder="學校提供的登入名稱"></label><label for="school-login-password">登入密碼<span class="school-password"><input id="school-login-password" name="password" type="password" autocomplete="current-password" maxlength="128" enterkeyhint="go" required aria-describedby="school-login-error"><button type="button" aria-label="顯示密碼" aria-pressed="false" id="school-password-toggle">顯示</button></span></label><p id="school-login-error" role="alert">${escape(initialError)}</p><button class="button primary school-login-submit" type="submit">登入，開始學習</button></form><p class="school-login-help">忘記密碼？請找老師幫忙。<br>老師也可在這裏登入教師工作台。</p></section></main>`;
+  host.innerHTML = `<main class="school-login" id="main"><section class="school-login-card" aria-labelledby="school-login-title"><header class="school-login-heading"><button type="button" class="school-login-mascot" aria-label="點詩詩，看她翻書"><span class="school-login-sprite" aria-hidden="true"></span></button><div><h1 id="school-login-title">AI普通話學習平台</h1></div></header><form id="school-login-form" aria-busy="false"><label for="school-login-name">登入名稱<input id="school-login-name" name="login" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="64" enterkeyhint="next" required placeholder="學校提供的登入名稱"></label><label for="school-login-password">登入密碼<span class="school-password"><input id="school-login-password" name="password" type="password" autocomplete="current-password" maxlength="128" enterkeyhint="go" required aria-describedby="school-login-error"><button type="button" aria-label="顯示密碼" aria-pressed="false" id="school-password-toggle">顯示</button></span></label><p id="school-login-error" role="alert">${escape(initialError)}</p><button class="button primary school-login-submit" type="submit">登入，開始學習</button></form><p class="school-login-help">忘記密碼？請找老師幫忙。</p></section></main>`;
   const form = host.querySelector('form'), status = host.querySelector('#school-login-error');
+  const mascot=host.querySelector('.school-login-mascot');
+  const sprite=mountShishiSprite(mascot.querySelector('span'),{canPlay:()=>mascot.isConnected&&!form.querySelector('[type=submit]').disabled&&!form.contains(document.activeElement)});
+  mascot.addEventListener('click',()=>void sprite.play('book'));
+  form.addEventListener('focusin',()=>sprite.stop());
+  const stopMascot=onSchoolSessionInvalid(()=>sprite.destroy());
   host.querySelector('#school-password-toggle').addEventListener('click', event => {
     const show = form.elements.password.type === 'password';
     form.elements.password.type = show ? 'text' : 'password';
@@ -146,6 +152,7 @@ function loginScreen(host, initialError = '') {
         return;
       }
       form.elements.password.value = '';
+      sprite.destroy();stopMascot();
       succeeded = true; status.textContent = ''; button.textContent = '登入成功，正在開啟…';
       broadcast('signed-in');
       resolve(data);
