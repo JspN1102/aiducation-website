@@ -1,21 +1,21 @@
 import {imageAsset} from './media-images.mjs?v=20260920-art2';
-import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260920-final5';
-import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260920-final5';
+import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260921-school1';
+import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260921-school1';
 import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
 import {getWordAudioURL} from './word-audio.mjs?v=20260919c';
 import {getSpeechAudioURL} from './speech-audio.mjs?v=20260920flow1';
-import {mountShishi} from './shishi.mjs?v=20260920-final5';
-import {mountPoemSwipe} from './poem-swipe.mjs?v=20260920-final5';
+import {mountShishi} from './shishi.mjs?v=20260921-school1';
+import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school1';
 import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260919d';
 import {challengeSummary} from './challenge-state.mjs?v=20260919d';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260920-school1';
-import {encodeRecording, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260920-final5';
-import {requestJSON} from './network.mjs?v=20260920-final5';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260920-final5';
-import {schoolSession} from './bootstrap.mjs?v=20260920-final5';
-import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260920-final5';
-import {createAnswerOutbox} from './answer-outbox.mjs?v=20260920-final5';
+import {encodeRecording, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260921-school1';
+import {requestJSON} from './network.mjs?v=20260921-school1';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260921-school1';
+import {schoolSession} from './bootstrap.mjs?v=20260921-school1';
+import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school1';
+import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school1';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -648,11 +648,11 @@ function renderReport() {
   if(!result){$('#view').innerHTML='<div class="report-empty"><img class="empty-motif" src="'+poemMotif()+'" width="90" height="90" alt=""><h2>先讀一句，再看成果</h2><a class="button primary" href="'+link('record')+'">'+icon('mic')+'開始朗讀</a></div>';return;}
   const scoreLabel=value=>typeof value==='number'&&Number.isFinite(value)?String(Math.round(clamp(value,0,100)*10)/10):'—';
   $('#view').innerHTML='<div class="report-summary"><div class="score-ring"><div><strong>'+scoreLabel(result.total_score)+'</strong><span>朗讀得分</span></div></div></div>'+
-    '<section id="panel-scores" class="word-analysis" aria-label="朗讀成果"><div class="section-heading"><span>點句聽讀音</span>'+(poem.lines.some((_,i)=>recordings.has(poem.id+'-'+i))?'<button class="button small" data-action="replay-all">'+icon('headphones')+'全部回聽</button>':'')+'</div><div class="score-line-tabs" aria-label="選擇詩句">'+s.reading.map((r,i)=>r?'<button type="button" class="button" data-action="score-line" data-value="'+i+'">'+lineLabel(i)+'</button>':'').join('')+'</div>'+
+    '<section id="panel-scores" class="word-analysis" aria-label="朗讀成果"><div class="score-line-tabs" aria-label="選擇詩句">'+s.reading.map((r,i)=>r?'<button type="button" class="button" data-action="score-line" data-value="'+i+'">'+lineLabel(i)+'</button>':'').join('')+'</div>'+
     s.reading.map((lineResult,i)=>{
       if(!lineResult)return '';
       const columns=Math.min(7,lineResult.words.length>7?Math.ceil(lineResult.words.length/2):lineResult.words.length||1);
-      return '<div class="report-line" data-line="'+i+'"><button type="button" class="report-sentence" data-action="report-line-tts" data-value="'+i+'" aria-label="聽'+lineLabel(i)+'：'+esc(poem.lines[i].text)+'" aria-pressed="false"><span class="report-sentence-heading">'+icon('volume-2')+'</span><span class="word-grid" data-columns="'+columns+'" style="--report-columns:'+columns+'">'+lineResult.words.map(w=>'<span class="word-result '+esc(w.status)+'"><ruby>'+esc(w.c)+'<rt>'+esc(w.p)+'</rt></ruby><strong>'+(w.score??'未測')+'</strong></span>').join('')+'</span></button><div class="report-line-actions">'+(recordings.has(poem.id+'-'+i)?'<button class="button" data-action="replay" data-value="'+i+'">'+icon('headphones')+'聽我的錄音</button>':'')+'<a class="button" href="'+link('record')+'" data-action="record-target" data-value="'+i+'">'+icon('mic')+'再讀這一句</a></div></div>';
+      return '<div class="report-line" data-line="'+i+'"><div class="report-sentence" role="group" aria-label="'+esc(poem.lines[i].text)+'"><span class="word-grid" data-columns="'+columns+'" style="--report-columns:'+columns+'">'+lineResult.words.map(w=>'<span class="word-result '+esc(w.status)+'"><ruby>'+esc(w.c)+'<rt>'+esc(w.p)+'</rt></ruby><strong>'+(w.score??'未測')+'</strong></span>').join('')+'</span></div><div class="report-line-actions"><button type="button" class="button" data-action="report-line-tts" data-value="'+i+'" aria-pressed="false">'+icon('volume-2')+'聽原句</button><button type="button" class="button" data-action="replay" data-value="'+i+'" '+(recordings.has(poem.id+'-'+i)?'':'disabled title="這次重新朗讀後，就可以回聽錄音。"')+'>'+icon('headphones')+'聽自己讀</button><a class="button report-reread" href="'+link('record')+'" data-action="record-target" data-value="'+i+'">'+icon('mic')+'再讀這一句</a></div></div>';
     }).join('')+'</section>';
   if(!s.reading[reportLine])reportLine=s.reading.findIndex(Boolean);
   updateScoreLine();icons();
@@ -714,7 +714,7 @@ async function loadActivity(name,load) {
 }
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260920-final5'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260921-school1'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,

@@ -4,7 +4,7 @@
 const research=require('./research-store.cjs');
 const {normalizeFilters,buildDataset}=require('./teacher-data.cjs');
 const poems=require('../../maanshan/poems.json').poems;
-const VERSION='teacher-demo-v2-roster',DAY_MS=86400000,MAX_SNAPSHOTS=6;
+const VERSION='teacher-demo-v3-characters',DAY_MS=86400000,MAX_SNAPSHOTS=6;
 const CLASS_COUNTS=Object.freeze([5,5,5,5,5,6]);
 const ROSTER=Object.freeze(CLASS_COUNTS.flatMap((count,index)=>Array.from({length:count},(_,classIndex)=>Array.from({length:25},(_,n)=>{
   const grade=index+1,cls=String.fromCharCode(65+classIndex),classNo=n+1,tag=`g${grade}_${cls}_${String(classNo).padStart(2,'0')}`;
@@ -56,23 +56,24 @@ function makeBase(today,people,rosterKey){
       emit('listen','playback_ended',{itemId:`p${poem.id}.l0`,metrics:{playbackMs:18000,playbackRate:.8}},'client',18000+profile%12000);
       const score=readingScore(person,visit,profile);
       emit('read','activity_start',{attemptId,itemId:`p${poem.id}.l0`});
-      if(person.classNo!==3)outcome('reading','read',`p${poem.id}.l0`,score,{...(score===null?{}:{wordScores:[...line.text].map((char,index)=>({index,char,score:clamp(score+(index%3-1)*8)})),metrics:{accuracyScore:score,fluencyScore:clamp(score-3),completionScore:score===0?0:100}})});
+      if(person.classNo!==3)poem.lines.forEach((poemLine,lineIndex)=>outcome('reading','read',`p${poem.id}.l${lineIndex}`,score,{...(score===null?{}:{wordScores:[...poemLine.text].filter(char=>/\p{Script=Han}/u.test(char)).map((char,index)=>({index,char,score:score===0?0:clamp(((index+lineIndex)%4===0?67:91)+profile%8+visit)})),metrics:{accuracyScore:score,fluencyScore:clamp(score-3),completionScore:score===0?0:100}})}));
       // A browser outcome deliberately differs and must remain a separate source.
       emit('read','feedback_shown',{attemptId,itemId:`p${poem.id}.l0`,result:{status:score===null?'unmeasured':'completed',score:score===null?null:clamp(score+(profile%7-3)),correct:null}},'client',23000+profile%17000);
       emit('read','activity_end',{attemptId,itemId:`p${poem.id}.l0`,result:{status:'completed'}},'client',4000);
       emit('challenge','activity_start',{attemptId,itemId:`g${person.grade}.sound0`});
       const soundScore=(profile+visit)%5===0?0:100;
-      outcome('challenge','challenge',`g${person.grade}.sound0`,soundScore,{context:{mode,itemType:'sound'}});
+      outcome('challenge','challenge',`g${person.grade}.game0`,null,{context:{mode,itemType:'microgame',position:1,total:5},result:{status:'completed',score:null,correct:null}});
+      outcome('challenge','challenge',`g${person.grade}.sound0`,soundScore,{context:{mode,itemType:'sound',position:2,total:5}});
       emit('challenge','answer_submitted',{attemptId,itemId:`g${person.grade}.sound0`,context:{mode,itemType:'sound'},result:{status:soundScore?'correct':'incorrect',score:soundScore,correct:!!soundScore}},'client',12000+profile%8000);
       if(visit===0||visit===3){
         const type=person.grade<=2?'match':person.grade<=4?'sequence':'scene-builder',value=(profile+visit)%4?100:0;
-        outcome('challenge','challenge',`g${person.grade}.${type}0`,value,{context:{mode,itemType:type}});
+        outcome('challenge','challenge',`g${person.grade}.${type}0`,value,{context:{mode,itemType:type,position:4,total:5}});
       }
       emit('challenge','activity_end',{attemptId,itemId:`g${person.grade}.sound0`,result:{status:'completed'}},'client',5000);
       if(visit%2===1){
         const writing=person.classNo===2?null:(profile+visit)%4===0?0:100;
         emit('writing','activity_start',{attemptId,itemId:`g${person.grade}.dictation0`,context:{mode,itemType:'dictation'}});
-        outcome('handwriting','writing',`g${person.grade}.dictation0`,writing,{context:{mode,itemType:'dictation'}});
+        outcome('handwriting','writing',`g${person.grade}.dictation0`,writing,{context:{mode,itemType:'dictation',position:3,total:5}});
         emit('writing','activity_end',{attemptId,itemId:`g${person.grade}.dictation0`,context:{mode,itemType:'dictation'},result:{status:'completed'}},'client',38000+profile%20000);
       }
       if(visit===2){

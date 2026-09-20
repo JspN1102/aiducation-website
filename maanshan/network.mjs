@@ -1,4 +1,4 @@
-import {schoolFetch} from './school-session.mjs?v=20260920-final5';
+import {schoolFetch} from './school-session.mjs?v=20260921-school1';
 // Bound the complete request (including the response body), and cancel it when
 // its screen is left. Retry only an early transport failure, never a slow job.
 export async function requestJSON(path, body, {timeout = 35000, signal, retry = false} = {}) {

@@ -124,7 +124,7 @@ test('provider contract refuses truncated/non-JSON/oversized replies and does no
  for(const response of [new Response(JSON.stringify({choices:[{finish_reason:'length',message:{content:JSON.stringify(validOutput())}}]})),new Response(JSON.stringify({choices:[{message:{content:'private raw provider failure'}}]})),new Response('x'.repeat(140000))])await assert.rejects(analysis.requestAnalysis(analysis.aggregateEvidence(dataset()),analysis.modelConfig(env),{fetchImpl:async()=>response}),error=>error.code==='AI_INVALID_RESPONSE'&&!error.message.includes('private'));
 });
 
-test('whole-school summaries retain all 31 class participation rows within provider bounds',()=>{
+test('whole-school summaries retain all 31 classes and six grades in the focused provider evidence',async()=>{
  const input=dataset(),constructs=['reading.pronunciation','writing.dictation','sound.recognition','match.accuracy','sequence.accuracy','scene_builder.accuracy'];
  delete input.filters.grade;delete input.filters.cls;
  const full={nEvents:1200,nStudents:24,nAttempts:100,completedN:30,nInvalidEvents:0,practiceOutcomeN:20,byConstruct:Object.fromEntries(constructs.map(key=>[key,{serverVerified:{measuredN:24,unmeasuredN:2,meanScore:70},clientReported:{measuredN:24,unmeasuredN:2,meanScore:71}}]))};
@@ -135,6 +135,15 @@ test('whole-school summaries retain all 31 class participation rows within provi
  assert.equal(payload.detailLevel,'school_and_grades_with_class_participation');
  for(const row of input.analytics.byClass)assert(payload.evidence.some(f=>f.scope===row.grade+row.cls+'班'));
  assert.equal(payload.curriculum.length,6);
+ let sent;
+ const generated=await analysis.requestAnalysis(payload,analysis.modelConfig(env),{fetchImpl:async(url,options)=>{sent=JSON.parse(JSON.parse(options.body).messages[1].content);return provider(validOutput());}});
+ assert(generated.analysis.overview);
+ for(const row of input.analytics.byClass)assert(sent.evidence.some(f=>f.scope===row.grade+row.cls+'班'));
+ for(let grade=1;grade<=6;grade++){
+  for(const construct of ['朗讀字音評分','默寫辨識準確度','辨音答題準確度'])assert(sent.evidence.some(f=>f.scope===grade+'年級'&&f.label===construct+'：有效測量'));
+ }
+ assert.equal(sent.curriculum.length,6);assert.equal(sent.teachingFocus.length,6);assert.equal(sent.interpretationRules,undefined);
+ assert(!sent.evidence.some(f=>f.label.endsWith('：平均值')&&!f.label.startsWith('朗讀')));
 });
 
 module.exports={dataset,validOutput};
@@ -159,7 +168,7 @@ test('quality review persists an undisclosed draft, one leased model revision us
  const svc=service({store,loadDataset:async()=>{loads++;return dataset();},fetchImpl:async(url,options)=>{
   calls++;const body=JSON.parse(options.body);
   if(calls===1)return provider(flawed);
-  assert.equal(body.messages.length,4);assert.doesNotMatch(options.body,/PRIVATE_NAME|PRIVATE_LOGIN|r_private/);started();await new Promise(r=>release=r);return provider();
+  assert.equal(body.messages.length,4);assert.equal(body.messages[2].role,'assistant');assert.match(body.messages[3].content,/最小必要修正/);assert.match(body.messages[3].content,/不從零重寫/);assert.deepEqual(JSON.parse(body.messages[2].content).findings,flawed.findings);assert.doesNotMatch(options.body,/PRIVATE_NAME|PRIVATE_LOGIN|r_private/);started();await new Promise(r=>release=r);return provider();
  }});
  const initial=await svc.generate({},dataset().filters,teacher);assert.equal(initial.nextAction,'continue');assert.equal(initial.report,undefined);
  assert.equal((await svc.check(initial.reportId)).nextAction,'continue');assert.equal(calls,1);
@@ -167,7 +176,7 @@ test('quality review persists an undisclosed draft, one leased model revision us
  await assert.rejects(svc.continueReport(initial.reportId,{id:'student',role:'student'}),e=>e.status===403);
  const revision=svc.continueReport(initial.reportId,teacher);await begun;
  const concurrent=await svc.continueReport(initial.reportId,teacher);assert.equal(concurrent.status,'generating');assert.equal(calls,2);
- release();const done=await revision;assert.equal(done.report.qualityReview.passed,true);assert.equal(done.report.qualityReview.revisions,1);assert.equal(done.report.analysis.title,'2年級A班普通話教學報告');
+ release();const done=await revision;assert.equal(done.report.qualityReview.passed,true);assert.equal(done.report.qualityReview.revisions,1);assert.equal(done.report.analysis.title,'2年級A班普通話教研報告');
  assert.equal(loads,1);assert.equal((await svc.continueReport(initial.reportId,teacher)).cached,true);assert.equal(calls,2);
  assert.equal((await svc.getReport(initial.reportId)).dataset.students[0].displayName,'PRIVATE_NAME');
 });
@@ -181,6 +190,21 @@ test('a revision still violating content rules never becomes an exportable repor
  assert.equal(failed.promptVersion,analysis.PROMPT_VERSION);
  assert.deepEqual(failed.qualityIssues,[{code:'UNSUPPORTED_ABILITY_LEVEL',path:'overview'}]);
  assert.doesNotMatch(JSON.stringify(failed),/整體能力|PRIVATE_|draftReport|evidenceIds/);
+});
+
+test('narrative evidence distinguishes unique completed students, paired learning observations and character-average thresholds',()=>{
+ const input=dataset(),score=value=>({measuredN:1,meanScore:value}),person=(reading,writing,completedN)=>({rosterMatched:true,stats:{nEvents:4,completedN,latest:{byConstruct:{'reading.pronunciation':{serverVerified:score(reading)},'writing.dictation':{serverVerified:score(writing)}}}}});
+ input.students=[person(45,90,4),person(50,55,2),person(90,40,0)];input.rosterSummary={totalStudents:3,withRecords:3,noRecords:0};
+ input.analytics.readingCharacterAnalysis={poems:[{grade:2,poemId:2,title:'贈汪倫',lines:[{lineIndex:0,words:[{char:'舟',meanScore:72,count:3},{char:'乘',meanScore:88,count:2}]}]}]};
+ const p=analysis.aggregateEvidence(input);assert.equal(p.reportStyle,'narrative-teaching-review');
+ assert.equal(p.evidence.find(f=>f.label==='有活動完成紀錄的名冊學生').value,2);
+ const paired=p.evidence.find(f=>f.label.startsWith('朗讀字音評分與默寫辨識準確度：'));
+ assert.deepEqual(paired.value,{bothMeasuredStudents:3,bothBelow60Students:1,leftBelow60Students:2,rightBelow60Students:2});
+ assert.deepEqual(p.evidence.find(f=>f.label==='全詩逐字平均的觀察範圍').value,{measuredPositions:2,meanBelow80Positions:1});
+ assert.deepEqual(p.evidence.find(f=>f.label==='「舟」逐字平均').value,{meanScore:72,measuredStudents:3});
+ assert.deepEqual(p.teachingFocus[0].readingLines,[{text:'李白乘舟將欲行',observeCharacters:['舟']}]);
+ assert.deepEqual(p.teachingFocus[0].writingCharacters,['舟']);
+ assert.doesNotMatch(JSON.stringify(p),/researchId|displayName|PRIVATE_/);
 });
 test('continuation is a teacher-CSRF POST and accepts only a report identity',async()=>{
  let continued=0;const handler=createHandler({authModule:{requireActor:async(req,options)=>{assert.equal(options.csrf,true);return teacher;}},analysisModule:{continueReport:async(id,actor)=>{continued++;assert.equal(id,'ta_'+'a'.repeat(64));assert.equal(actor,teacher);return {ok:true,status:'generating',reportId:id,retryAfterSeconds:3};}}});
@@ -199,9 +223,24 @@ test('teacher prose prompt accepts no limitations, keeps the provider model, and
  const input=dataset();input.demo=true;const output={...validOutput(),overview:'本班2人，已有1人的練習紀錄。下一課先聽《贈汪倫》的首句，再分句跟讀。',limitations:[]};let request;
  const result=await analysis.requestAnalysis(analysis.aggregateEvidence(input),analysis.modelConfig(env),{fetchImpl:async(url,options)=>{request=JSON.parse(options.body);return provider(output);}});
  assert.deepEqual(result.analysis.limitations,[]);assert.equal(request.model,env.TEACHER_AI_MODEL);
- assert.match(request.messages[0].content,/文件頁首由系統加一次/);assert.match(request.messages[0].content,/limitations通常輸出\[\]/);
+ assert.match(request.messages[0].content,/文件頁首由系統加一次/);assert.match(request.messages[0].content,/"limitations":\[\]/);
+ assert.match(request.messages[0].content,/資深教師/);assert.match(request.messages[0].content,/普通話/);assert.match(request.messages[0].content,/整體評價→主要發現→教學建議/);
+ assert.doesNotMatch(request.messages[0].content,/\?{3,}|\uFFFD/);
  assert.doesNotMatch(request.messages[0].content,/概覽首句必須寫|必要限制。單班/);
  const omitted={...output};delete omitted.limitations;assert.deepEqual(analysis.validateAnalysis(omitted,analysis.aggregateEvidence(input).evidence).limitations,[]);
+ const oneParagraph=structuredClone(output);oneParagraph.teachingActions[0].steps=oneParagraph.teachingActions[0].steps[0];oneParagraph.reviewPlan[0].steps=oneParagraph.reviewPlan[0].steps[0];
+ const accepted=analysis.validateAnalysis(oneParagraph,analysis.aggregateEvidence(input).evidence);
+ assert.deepEqual(accepted.teachingActions[0].steps,output.teachingActions[0].steps);assert.deepEqual(accepted.reviewPlan[0].steps,output.reviewPlan[0].steps);
+});
+
+test('provider reference completion fixes a uniquely supported count without rewriting prose or adding ungrounded facts',async()=>{
+ const p=analysis.aggregateEvidence(dataset());
+ p.evidence.push({id:'F999',label:'朗讀字音評分：個人平均低於60分的名冊學生',value:8,unit:'人',scope:'所選範圍',source:'平台評分'});
+ const output=validOutput();output.findings=[{title:'跟進朗讀',evidenceIds:['F001'],interpretation:'朗讀個人平均低於60分的有8人，宜個別聽取原句。另有99人需要跟進。'}];
+ const result=await analysis.requestAnalysis(p,analysis.modelConfig(env),{fetchImpl:async()=>provider(output)});
+ assert.equal(result.analysis.findings[0].interpretation,output.findings[0].interpretation);
+ assert.deepEqual(result.analysis.findings[0].evidenceIds,['F001','F999']);
+ assert(require('../api/_lib/teacher-report-quality.cjs').inspectAnalysis(result.analysis,{...p,reportStyle:'narrative-teaching-review'}).some(issue=>issue.code==='UNSUPPORTED_REPORTED_NUMBER'));
 });
 
 test('a completed v7 report cannot satisfy the new teacher-prose generation cache',async()=>{

@@ -1,4 +1,4 @@
-import {escapeHTML as esc} from './core.mjs?v=20260920-final5';
+import {escapeHTML as esc} from './core.mjs?v=20260921-school1';
 
 // Hands-on practice records participation, never a fabricated speech score.
 export function mountPoetryPlay(container,{poem,mode,completed,stopAudio=()=>{},onComplete=()=>{},onExplore=()=>{},speak=()=>{}}){

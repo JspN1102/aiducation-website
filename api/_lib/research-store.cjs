@@ -4,6 +4,8 @@ const crypto = require('node:crypto');
 const blob = require('@vercel/blob');
 const { Pool } = require('pg');
 const { poems } = require('../../maanshan/poems.json');
+const {buildCharacterAnalysis}=require('./teacher-character-analysis.cjs');
+const {buildPracticeSummary}=require('./teacher-practice-summary.cjs');
 // Embedded from docs/research-data-dictionary.json; tested for equality.
 const DATA_DICTIONARY = {
   "version": "research-v1",
@@ -198,6 +200,7 @@ const DATA_DICTIONARY = {
     },
     "practiceOutcomeN": "Count of eligible assessment outcome events in review/free modes, excluded from independent assessment summaries. Process feedback and game completion do not add assessment outcomes.",
     "readingWords": "Top-level readingWords only: at most 50 groups from selected server_verified reading outcomes, excluding review/free and invalid records. Group by poemId/itemId/contentVersion/index/char. Each entry has count, meanScore and below60Count; zero is measured, absent word scores do not add samples. readingWordSummary declares cutoff=60, totalGroups, returnedGroups, truncated and character_scores_not_phoneme_diagnosis. Lower scores are practice observations, not a consonant/tone disorder diagnosis. The limit affects teacher display only; raw exports are complete.",
+    "readingCharacterAnalysis": "Complete curriculum lines per selected grade (all six poems separately when unfiltered). Verified character scores only, aligned to poemId, line index and Han-character index; punctuation is retained for display but excluded from SOE indices. Keep one selected recording per learner and line across content versions, then average measured character scores without rounding before the 80-point colour threshold. Missing scores remain null and are never inferred from sentence totals. Includes pinyin, counts, and all positions, including repeated characters. Student-only practiceSummary shows the latest observed challenge round; game completion is never a correct exam answer and browser-only results are unmeasured.",
     "capacity": "Default analytics exceeding 100000 events or the snapshot byte bound does not block publication of the manifest and class/date chunks. The manifest marks overview.status=filter_required, and the API returns NARROW_DATE_OR_CLASS_FILTER with a class/date suggestion. This is not an empty dataset.",
     "answerReplay": "Challenge answer requests may carry stable requestId/requestedAt in researchContext. A server-derived event ID is scoped to the authenticated actor, and original clientAt and event contents remain stable across retries. The immutable request intent alone is not a receipt: successful current-hour outbox persistence determines the transport serverReceivedAt. Same-hour retries reuse that durable receipt; later-hour retries create new transport objects so a passed synchronization watermark cannot miss recovery. PostgreSQL deduplicates these objects and retains the first imported event row and receive date. Provider remeasurement is not replayed. Future timestamps over five minutes are rejected; old offline requests remain accepted and can be quality-flagged."
   },
@@ -577,7 +580,7 @@ function summarize(rows,which='latest',includeModes=false){
     practiceOutcomeN:valid.filter(r=>constructFor(r)&&['review','free'].includes(r.event.context?.mode)).length,
     ...includeModes?{byMode:modeSummaries(valid,which)}:{}};
 }
-function readingWordSummary(rows,which){
+function readingWordSummary(rows,which,filters={}){
   const quality=qualityAndDuration(rows);
   const valid=rows.filter(row=>!quality.flags.has(row.researchId+'/'+row.source+'/'+row.event.eventId));
   const outcomes=selectedOutcomes(valid,which,'server_verified').filter(row=>constructFor(row)==='reading.pronunciation');
@@ -591,10 +594,11 @@ function readingWordSummary(rows,which){
     }
   }
   const sorted=[...groups.values()].map(({total,...group})=>({...group,meanScore:Math.round(total/group.count*10)/10})).sort((a,b)=>b.below60Count-a.below60Count||a.meanScore-b.meanScore||b.count-a.count||a.poemId-b.poemId||a.itemId.localeCompare(b.itemId)||a.index-b.index||a.contentVersion.localeCompare(b.contentVersion));
-  return {readingWords:sorted.slice(0,limit),readingWordSummary:{cutoff,totalGroups:sorted.length,returnedGroups:Math.min(limit,sorted.length),truncated:sorted.length>limit,source:'server_verified',interpretation:'character_scores_not_phoneme_diagnosis'}};
+  return {readingWords:sorted.slice(0,limit),readingWordSummary:{cutoff,totalGroups:sorted.length,returnedGroups:Math.min(limit,sorted.length),truncated:sorted.length>limit,source:'server_verified',interpretation:'character_scores_not_phoneme_diagnosis'},readingCharacterAnalysis:buildCharacterAnalysis(outcomes,{...filters,attempt:which})};
 }
 function aggregateEvents(all,f,{generatedAt=new Date().toISOString(),source='postgres',lastImportedAt=null,syncStatus,integrity=null}={}){
   const rows=all.filter(r=>matches(r,f));rows.sort((a,b)=>a.serverReceivedAt.localeCompare(b.serverReceivedAt)||a.event.eventId.localeCompare(b.event.eventId));
+  const detailQuality=f.student?qualityAndDuration(rows):null;
   const group=key=>{const buckets=new Map();for(const row of rows){const k=key(row);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(row);}return buckets;};
   const students=[...group(r=>r.researchId)].map(([researchId,items])=>({researchId,grade:items.at(-1).grade,cls:items.at(-1).cls,
     ...summarize(items,f.attempt),first:summarize(items,'first'),latest:summarize(items,'latest'),lastSeenAt:items.at(-1).serverReceivedAt}));
@@ -606,7 +610,8 @@ function aggregateEvents(all,f,{generatedAt=new Date().toISOString(),source='pos
     byGrade:[...group(r=>r.grade)].map(([grade,items])=>({grade,...summarize(items,f.attempt)})),
     byClass:[...group(r=>r.grade+'/'+r.cls)].map(([,items])=>({grade:items[0].grade,cls:items[0].cls,...summarize(items,f.attempt)})),
     trend:[...group(r=>r.serverReceivedAt.slice(0,10))].map(([date,items])=>({date,...summarize(items,f.attempt)})),
-    ...readingWordSummary(rows,f.attempt),
+    ...readingWordSummary(rows,f.attempt,f),
+    ...(f.student?{practiceSummary:buildPracticeSummary(rows.filter(row=>!detailQuality.flags.has(row.researchId+'/'+row.source+'/'+row.event.eventId)))}:{}),
     missingness:{scoreNullMeans:'not_measured',zeroScoreIsMeasured:true,clientScoresAreVerified:false,reviewAndFreeExcludedFromAssessment:true,
       sourceClock:'server_received_at',duration:'monotonic session activeMs deltas in selected events; lower bound if gaps or filter boundaries',
       roster:'Only students with events; merge authenticated school roster for not-started students',

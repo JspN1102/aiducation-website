@@ -1,3 +1,4 @@
+import {TERMS_VERSION,termsConfirmationMarkup,bindTermsConfirmation} from './platform-terms.mjs?v=20260920-terms1';
 const DEMO=location.pathname.endsWith('/teacher-demo.html');
 const AUTH='/api/school-auth',ANALYTICS=DEMO?'/api/teacher-tools?tool=demo-data&kind=analytics':'/api/teacher-analytics';
 const analyticsQuery=params=>ANALYTICS+(DEMO?'&':'?')+params;
@@ -17,6 +18,7 @@ function esc(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;'
 function number(value){return typeof value==='number'&&Number.isFinite(value)?value:null;}
 function score(value){const n=number(value);return n!==null&&n>=0&&n<=100?n:null;}
 function shown(value,digits=0){return number(value)===null?'—':value.toLocaleString('zh-HK',{maximumFractionDigits:digits});}
+function characterScore(value){return value<80&&Math.round(value*10)/10>=80?shown(Math.floor(value*100)/100,2):shown(value,1);}
 function scoreMarkup(value){const n=score(value);return `<span class="score${n===null?' missing':''}">${n===null?'未測':shown(n,1)}</span>`;}
 function mean(values){const valid=values.filter(v=>number(v)!==null);return valid.length?valid.reduce((a,b)=>a+b,0)/valid.length:null;}
 function dayOffset(offset){const date=new Date();date.setUTCDate(date.getUTCDate()+offset);return date.toISOString().slice(0,10);}
@@ -45,7 +47,8 @@ async function checkSession(){
 sessionChannel?.addEventListener('message',event=>{if(!state.legacy&&['signed-in','signed-out','session-changing','password-changed'].includes(event.data?.kind))lockSession();});
 function updateIdentity(){const el=document.querySelector('#teacher-identity');el.textContent=state.legacy?'舊版班級紀錄':state.auth?.user?.displayName||'教師';el.hidden=false;document.querySelector('#teacher-logout').hidden=false;if(!state.legacy&&state.auth?.user?.role==='teacher'&&!document.querySelector('#teacher-change-password')){const button=document.createElement('button');button.id='teacher-change-password';button.type='button';button.className='button quiet';button.textContent='修改密碼';button.addEventListener('click',showPasswordChange);el.after(button);}}
 function renderLogin(message='',success=false){
- root.innerHTML=`<main id="teacher-main" class="login-layout"><section class="login-card" aria-labelledby="login-title"><h1 id="login-title">教師登入</h1><form id="teacher-login-form" class="login-form">${state.legacy?'':`<label class="field" for="teacher-login">登入名稱<input id="teacher-login" name="login" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="128" required></label>`}<label class="field" for="teacher-password">${state.legacy?'教師存取碼':'登入密碼'}<input id="teacher-password" name="password" type="password" autocomplete="${state.legacy?'off':'current-password'}" maxlength="512" required></label><p id="login-error" class="form-error" role="alert" ${message?'':'hidden'}>${esc(message)}</p><button class="button primary" type="submit">登入</button></form></section></main>`;
+ root.innerHTML=`<main id="teacher-main" class="login-layout"><section class="login-card" aria-labelledby="login-title"><h1 id="login-title">教師登入</h1><form id="teacher-login-form" class="login-form">${state.legacy?'':`<label class="field" for="teacher-login">登入名稱<input id="teacher-login" name="login" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="128" required></label>`}<label class="field" for="teacher-password">${state.legacy?'教師存取碼':'登入密碼'}<input id="teacher-password" name="password" type="password" autocomplete="${state.legacy?'off':'current-password'}" maxlength="512" required></label>${termsConfirmationMarkup('teacher-terms')}<p id="login-error" class="form-error" role="alert" ${message?'':'hidden'}>${esc(message)}</p><button class="button primary" type="submit">登入</button></form></section></main>`;
+ bindTermsConfirmation(document.querySelector('#teacher-login-form'));
  if(success)document.querySelector('#login-error').classList.add('success');
 }
 async function boot(){
@@ -60,14 +63,15 @@ async function boot(){
 function renderBootError(){root.innerHTML=`<main id="teacher-main" class="initial-state"><h1>暫時未能連接教師後台</h1><p>請重新載入。學習資料不會因這次連線中斷而被清除。</p><button class="button primary" data-action="boot">重新連接</button></main>`;}
 function renderStudentAccount(){updateIdentity();root.innerHTML=`<main id="teacher-main" class="initial-state"><h1>這是學生帳戶</h1><p>教師後台需要學校教師帳戶。</p><button class="button primary" data-action="logout">登出並更換帳戶</button><a href="./">返回學生平台</a></main>`;}
 async function login(form){
- const button=form.querySelector('button'),password=form.elements.password.value,loginName=form.elements.login?.value.trim();button.disabled=true;const errorEl=document.querySelector('#login-error');errorEl.hidden=true;
+ if(!form.reportValidity())return;
+ const button=form.querySelector('button'),password=form.elements.password.value,loginName=form.elements.login?.value.trim(),termsAccepted=form.elements.termsAccepted.checked;button.disabled=true;const errorEl=document.querySelector('#login-error');errorEl.hidden=true;
  clearPrivate();const epoch=sessionEpoch;
  try{
   if(state.legacy){state.legacyCode=password;state.filters.grade='1';state.filters.cls='A';await enterDashboard();return;}
   broadcastSession('session-changing');
-  const auth=validateAuth(await requestJSON(AUTH,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'login',login:loginName,password})}));
+  const auth=validateAuth(await requestJSON(AUTH,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'login',login:loginName,password,termsAccepted,termsVersion:TERMS_VERSION})}));
   if(epoch!==sessionEpoch)return;state.auth=auth;if(!auth.authenticated)throw new Error('未能確認登入');broadcastSession('signed-in');if(auth.user?.role!=='teacher'){renderStudentAccount();return;}await enterDashboard();
- }catch(error){if(epoch!==sessionEpoch)return;clearPrivate();renderLogin(error.status===401?'登入名稱或密碼不正確，請再試一次。':error.status===429?'登入嘗試較多，請稍候再試。':'暫時未能登入，請稍後再試。');}
+ }catch(error){if(epoch!==sessionEpoch)return;clearPrivate();renderLogin(['TERMS_REQUIRED','TERMS_VERSION_CHANGED'].includes(error.code)?'請閱讀並同意最新的平台服務協議，再登入。':error.status===401?'登入名稱或密碼不正確，請再試一次。':error.status===429?'登入嘗試較多，請稍候再試。':'暫時未能登入，請稍後再試。');}
  finally{form.elements.password.value='';button.disabled=false;}
 }
 async function logout(){
@@ -144,47 +148,68 @@ function renderDashboard(){
  document.querySelector('#dashboard-content').innerHTML=note+overview();renderTeacherTools();
 }
 function overview(){
- const students=joinedStudents(),active=students.filter(isActive),support=students.filter(row=>supportSignals(row).length),ready=recordsReady();
+ const students=joinedStudents(),active=students.filter(isActive),ready=recordsReady();
  const total=state.roster&&!state.rosterError?filteredRoster().length:null,reading=score(readingMetric(state.data.summary).meanScore);
- const cards=`<article class="kpi"><p class="kpi-label">參與學生</p><p class="kpi-value">${ready?active.length:'—'}<small>${total===null?'人':' / '+total+' 人'}</small></p></article><article class="kpi"><p class="kpi-label">朗讀平均</p><p class="kpi-value">${reading===null?'未測':shown(reading,1)}<small>${reading===null?'':'分'}</small></p></article><article class="kpi warm" title="至少一項已測分項低於 60 分"><p class="kpi-label">可再練習</p><p class="kpi-value">${ready?support.length:'—'}<small>人</small></p></article>`;
+ const cards=`<article class="kpi"><p class="kpi-label">參與學生</p><p class="kpi-value">${ready?active.length:'—'}<small>${total===null?'人':' / '+total+' 人'}</small></p></article><article class="kpi"><p class="kpi-label">朗讀平均</p><p class="kpi-value">${reading===null?'未測':shown(reading,1)}<small>${reading===null?'':'分'}</small></p></article>`;
  const measured=students.map(readingScore),groups=[['80–100 分',measured.filter(v=>v!==null&&v>=80).length,'green'],['60–79 分',measured.filter(v=>v!==null&&v>=60&&v<80).length,'blue'],['低於 60 分',measured.filter(v=>v!==null&&v<60).length,'gold'],['未測',measured.filter(v=>v===null).length,'muted']];
  const max=Math.max(1,...groups.map(([,count])=>count));
  const chart=`<section class="class-chart performance-panel" aria-labelledby="reading-chart-title"><h2 id="reading-chart-title">朗讀分布</h2><div class="score-distribution">${groups.map(([label,count,tone])=>`<div class="distribution-row"><span>${label}</span><div class="distribution-track"><span class="distribution-fill ${tone}" style="width:${ready?count/max*100:0}%"></span></div><strong>${ready?count:'—'}<small>人</small></strong></div>`).join('')}</div><p class="chart-note">未測不計入平均分</p></section>`;
- return `<div class="kpi-grid">${cards}</div><div class="class-charts">${chart}<section class="class-chart participation-panel" aria-labelledby="participation-chart-title"><h2 id="participation-chart-title">每日參與</h2>${participationChart()}</section></div>${classWordIssues()}${studentList()}`;
-}
-function participationChart(){
- const known=new Map((state.data?.trend||[]).filter(row=>/^\d{4}-\d{2}-\d{2}$/.test(row.date)).map(row=>[row.date,number(row.nStudents)])),points=[];
- if(state.legacy)return empty('尚未有每日紀錄');
- if(!known.size&&absenceReliable())return empty('這段時間還沒有學習紀錄');
- for(let time=Date.parse(state.filters.from+'T00:00:00Z'),end=Date.parse(state.filters.to+'T00:00:00Z');time<=end;time+=86400000){const date=new Date(time).toISOString().slice(0,10);points.push({date,value:known.has(date)?known.get(date):absenceReliable()?0:null});}
- if(!points.length||!recordsReady())return empty('正在等候學習紀錄');
- const maximum=Math.max(2,...points.map(point=>point.value??0)),top=Math.ceil(maximum/2)*2;
- const descriptions=points.map(point=>`${point.date}：${point.value===null?'未有可用紀錄':point.value+' 人'}`);
- return `<div class="participation-chart" role="img" aria-label="${esc(scopeLabel()+'每日參與人數；'+descriptions.join('；'))}"><div class="participation-axis"><span>${top}</span><span>${top/2}</span><span>0</span></div><div class="participation-plot">${points.map((point,index)=>`<div class="participation-day" title="${esc(descriptions[index])}"><span class="participation-bar${point.value===null?' unknown':''}" style="height:${point.value===null?0:point.value/top*100}%"></span></div>`).join('')}</div><div class="participation-dates"><span>${esc(points[0].date.slice(5).replace('-','/'))}</span><span>${esc(points[Math.floor((points.length-1)/2)].date.slice(5).replace('-','/'))}</span><span>${esc(points.at(-1).date.slice(5).replace('-','/'))}</span></div></div><p class="chart-note">人／日 · 同一天只計一次</p>`;
+ return `<div class="overview-summary"><div class="kpi-grid">${cards}</div>${chart}</div>${classWordAnalysis()}${studentList()}`;
 }
 
 function wordIssues(data){
- if(data?.readingWordSummary?.source!=='server_verified'||!Array.isArray(data.readingWords))return [];
- const seen=new Set();return data.readingWords.filter(word=>{const key=JSON.stringify([word.poemId,word.itemId,word.contentVersion,word.index,word.char]);if(seen.has(key)||typeof word.char!=='string'||!word.char.trim()||score(word.meanScore)===null||!Number.isInteger(word.count)||word.count<1||!Number.isInteger(word.below60Count)||word.below60Count<1||word.below60Count>word.count||!Number.isInteger(word.index)||word.index<0)return false;seen.add(key);return true;}).sort((a,b)=>b.below60Count-a.below60Count||a.meanScore-b.meanScore||b.count-a.count);
+ const analysis=data?.readingCharacterAnalysis;if(analysis?.source!=='server_verified'||!Array.isArray(analysis.poems))return [];
+ return analysis.poems.flatMap(poem=>(poem.lines||[]).flatMap(line=>(line.words||[]).filter(word=>Number.isInteger(word.count)&&word.count>0&&score(word.meanScore)!==null&&word.meanScore<80).map(word=>({...word,poemId:poem.poemId,itemId:`p${poem.poemId}.l${line.lineIndex}`})))).sort((a,b)=>a.meanScore-b.meanScore||a.poemId-b.poemId||a.itemId.localeCompare(b.itemId)||a.index-b.index);
 }
 function wordContext(word){
  const poem=state.poems.find(p=>Number(p.id)===Number(word.poemId)),match=/^p([1-6])\.l(\d+)$/.exec(String(word.itemId)),lineIndex=match&&Number(match[1])===Number(word.poemId)?Number(match[2]):null,line=lineIndex===null?null:poem?.lines?.[lineIndex]?.text;
  const title=poem?.title||'古詩',position=lineIndex===null?'':'第 '+(lineIndex+1)+' 句';
- const chars=line?[...line]:[];const aligned=chars[word.index]===word.char;
- return{label:title+(position?' · '+position:''),text:aligned?chars.map((char,index)=>index===word.index?`<mark>${esc(char)}</mark>`:esc(char)).join(''):'',position};
+ const chars=line?[...line]:[],han=chars.filter(char=>/\p{Script=Han}/u.test(char));const aligned=han[word.index]===word.char;let index=-1;
+ return{label:title+(position?' · '+position:''),text:aligned?chars.map(char=>{if(/\p{Script=Han}/u.test(char))index++;return index===word.index&&/\p{Script=Han}/u.test(char)?`<mark>${esc(char)}</mark>`:esc(char);}).join(''):'',position};
 }
-function classWordIssues(){
- const words=wordIssues(state.data),visible=words.slice(0,6),max=Math.max(1,...visible.map(word=>word.below60Count));
- const body=visible.length?`<div class="word-frequency-grid">${visible.map(word=>{const context=wordContext(word),repeated=visible.some(other=>other!==word&&other.char===word.char&&other.poemId===word.poemId&&other.itemId===word.itemId);return `<article class="word-frequency" aria-label="${esc(word.char+'，'+context.label+'，第 '+(word.index+1)+' 字，'+word.below60Count+' 次字音低於60分，共 '+word.count+' 次有效字音評測')}"><div class="word-frequency-main"><strong class="word-glyph">${esc(word.char)}</strong><span class="word-frequency-count">${word.below60Count}<small>次</small></span></div><div class="word-frequency-track"><span style="width:${word.below60Count/max*100}%"></span></div><p class="word-context-label">${esc(context.label)}${repeated?' · 第 '+(word.index+1)+' 字':''}</p></article>`;}).join('')}</div><p class="chart-note">字音低於 60 分的次數 · 每項練習取最近一次${words.length>visible.length||state.data?.readingWordSummary?.truncated?' · 顯示前 '+visible.length+' 項':''}</p>`:empty(state.data?.readingWordSummary?.source==='server_verified'&&state.data?.readingWordSummary?.totalGroups>0?'暫時沒有需要重練的字音':'尚未有逐字朗讀紀錄');
- return `<section class="class-word-issues" aria-labelledby="class-words-title"><h2 id="class-words-title">重點字音</h2>${body}</section>`;
+function classWordAnalysis(){
+ const analysis=state.data?.readingCharacterAnalysis;
+ const catalog=state.poems.filter(poem=>!state.filters.grade||String(poem.grade)===state.filters.grade);
+ const trusted=analysis?.source==='server_verified'&&Array.isArray(analysis.poems);
+ const content=catalog.map(poem=>{
+  const measured=trusted?analysis.poems.find(item=>Number(item.poemId)===poem.id&&Number(item.grade)===poem.grade):null;
+  const lines=poem.lines.map((line,lineIndex)=>{
+   const source=measured?.lines?.find(item=>item.lineIndex===lineIndex),words=source?.text===line.text&&Array.isArray(source.words)?source.words:[];let index=-1;
+   const phrases=[];let phrase=[],phraseLength=0;
+   for(const char of [...(line.text+(line.punctuation||''))]){
+    if(!/\p{Script=Han}/u.test(char)){phrase.push(`<span class="character-punctuation" aria-hidden="true">${esc(char)}</span>`);phrases.push({html:phrase.join(''),length:phraseLength});phrase=[];phraseLength=0;continue;}
+    index++;const word=words.find(item=>item.index===index&&item.char===char),value=Number.isInteger(word?.count)&&word.count>0?score(word.meanScore):null;
+    const tone=value===null?'unmeasured':value<80?'needs-practice':'clear',pinyin=line.pinyin?.[index]||'',label=`${char}，${pinyin}，${value===null?'未測':characterScore(value)+' 分，'+word.count+' 位學生'}，第 ${lineIndex+1} 句第 ${index+1} 字`;
+    const display=value===null?'未測':characterScore(value);
+    phraseLength++;phrase.push(`<span class="character-card ${tone}" data-char-index="${index}" data-score="${value===null?'':value}" title="${esc(label)}" aria-label="${esc(label)}"><strong class="character-glyph">${esc(char)}</strong><span class="character-score${display.length>4?' precise':''}">${display}</span><span class="character-pinyin">${esc(pinyin)}</span></span>`);
+   }
+   if(phrase.length)phrases.push({html:phrase.join(''),length:phraseLength});
+   const pieces=phrases.map(part=>`<span class="character-phrase" style="--phrase-chars:${part.length}">${part.html}</span>`).join('');
+   return `<div class="character-line" data-line-index="${lineIndex}" aria-label="${esc(line.text+(line.punctuation||''))}">${pieces}</div>`;
+  }).join('');
+  const heading=`<span>${esc(poem.title)}</span><small>${poem.grade} 年級</small>`;
+  return state.filters.grade?`<article class="poem-character-sheet" data-poem-id="${poem.id}"><h3 class="poem-character-title">${heading}</h3><div class="character-lines">${lines}</div></article>`:`<details class="poem-character-sheet" data-poem-id="${poem.id}"><summary class="poem-character-title">${heading}<span class="details-chevron" aria-hidden="true">⌄</span></summary><div class="character-lines">${lines}</div></details>`;
+ }).join('');
+ return `<section class="class-character-analysis" aria-labelledby="class-words-title"><div class="character-section-heading"><h2 id="class-words-title">逐字分析</h2><div class="character-legend"><span class="legend-low">低於 80 分</span><span class="legend-clear">80 分或以上</span></div></div>${content||empty('古詩內容暫未載入')}<p class="chart-note">每字平均分 · 每位學生取${state.filters.attempt==='first'?'首次':'最近'}一次朗讀 · 未測不計分</p></section>`;
 }
 function studentWordBody(data,expanded=false){
- const words=wordIssues(data),visible=expanded?words:words.slice(0,12);
- if(!words.length)return empty(data?.readingWordSummary?.source==='server_verified'&&data?.readingWordSummary?.totalGroups>0?'最近的字音評測沒有低於 60 分的字':'尚未有逐字朗讀紀錄');
- return `<div class="student-word-grid">${visible.map(word=>{const context=wordContext(word);return `<article class="student-word-card"><div class="student-word-top"><strong class="word-glyph">${esc(word.char)}</strong><span class="word-score" title="字音平均分">${shown(word.meanScore,1)}<small>分</small></span></div><p class="word-context-label">${esc(context.label)}</p>${context.text?`<p class="word-original-line">${context.text}</p>`:''}</article>`;}).join('')}</div><p class="chart-note">最近字音平均分 · 只列有低於 60 分紀錄的字${data?.readingWordSummary?.truncated?' · 顯示最需練習的前 50 項':''}</p>${words.length>visible.length?'<button type="button" class="button" data-action="more-student-words">查看其餘字音</button>':''}`;
+ const words=wordIssues(data),visible=expanded?words:words.slice(0,6);
+ if(!words.length)return empty(data?.readingCharacterAnalysis?.source==='server_verified'&&data.readingCharacterAnalysis.poems?.some(poem=>poem.lines.some(line=>line.words.some(word=>word.count>0)))?'最近的字音評測沒有低於 80 分的字':'尚未有逐字朗讀紀錄');
+ return `<div class="student-word-grid">${visible.map(word=>{const context=wordContext(word);return `<article class="student-word-card"><div class="student-word-top"><strong class="word-glyph">${esc(word.char)}</strong><span class="word-score" title="字音平均分">${characterScore(word.meanScore)}<small>分</small></span></div><p class="word-context-label">${esc(context.label)}</p>${context.text?`<p class="word-original-line">${context.text}</p>`:''}</article>`;}).join('')}</div><p class="chart-note">最近字音平均分 · 只列低於 80 分的字</p>${words.length>visible.length?'<button type="button" class="button" data-action="more-student-words">查看其餘字音</button>':''}`;
 }
+function studentPracticeBody(data){
+ const summary=data?.practiceSummary;
+ if(!summary||!Array.isArray(summary.items))return '<section class="student-practice"><h3>練一練</h3><p class="helper">尚未有練習紀錄</p></section>';
+ const types={sound:'聽音辨字',dictation:'聽寫',microgame:'詩裏玩一玩',match:'配對',sequence:'排序','scene-builder':'情境選擇'};
+ const status={correct:'答對',incorrect:'再試一次',completed:'已完成',skipped:'已跳過',unmeasured:'未評分',unanswered:'尚未作答'};
+ const items=summary.items.slice(0,10),positions=new Set(items.map(item=>item.position));
+ if(Number.isInteger(summary.total)&&summary.total>0&&summary.total<=10)for(let position=1;position<=summary.total;position++)if(!positions.has(position))items.push({position,type:null,status:'unanswered'});
+ items.sort((a,b)=>(a.position??99)-(b.position??99));
+ return `<section class="student-practice"><div class="student-practice-heading"><h3>練一練</h3><span>${esc(summary.title)}</span></div><p class="student-practice-progress">已完成 <strong>${shown(summary.completedN)}${summary.total?' / '+summary.total:''}</strong> 題<span>答對 <strong>${shown(summary.correctN)}</strong> 題</span></p><ol class="student-practice-list">${items.map((item,index)=>`<li><span class="practice-position">${item.position||index+1}</span><span>${esc(types[item.type]||'待作答')}</span><strong class="practice-result ${item.status==='correct'||item.status==='completed'?'clear':item.status==='incorrect'?'needs-practice':''}">${esc(status[item.status]||'未評分')}</strong></li>`).join('')}</ol><p class="chart-note">最近一輪 · 小遊戲完成不計答對題數</p></section>`;
+}
+function studentLearningBody(data,expanded=false){return `<section class="student-pronunciation"><h3>字音</h3>${studentWordBody(data,expanded)}</section>${studentPracticeBody(data)}`;}
 function studentWordDialog(student,body){
- return `<header class="dialog-header"><div><h2 id="student-dialog-title">${esc(student.person.displayName)}</h2><p class="helper">${esc(student.grade+student.cls)} 班 · 需要多練的字</p></div><button type="button" class="button icon-only" data-action="close-dialog" aria-label="關閉學生字音">×</button></header><div class="dialog-body student-words-body">${body}</div>`;
+ return `<header class="dialog-header"><div><h2 id="student-dialog-title">${esc(student.person.displayName)}</h2><p class="helper">${esc(student.grade+student.cls)} 班</p></div><button type="button" class="button icon-only" data-action="close-dialog" aria-label="關閉學生紀錄">×</button></header><div class="dialog-body student-words-body">${body}</div>`;
 }
 async function openStudentWords(researchId){
  const student=joinedStudents().find(row=>row.researchId===researchId);if(!student)return;
@@ -195,14 +220,14 @@ async function openStudentWords(researchId){
  try{
   const data=await requestJSON(analyticsQuery(selectionQuery({student:researchId,grade:student.grade,cls:student.cls})),{signal:controller.signal});if(!current())return;
   if(data.filters?.student!==researchId||String(data.filters?.grade)!==String(student.grade)||data.filters?.cls!==student.cls||!Array.isArray(data.students)||data.students.some(row=>row.researchId!==researchId))throw new Error('Student scope mismatch');
-  state.detailData=data;content.innerHTML=studentWordDialog(student,studentWordBody(data));
+  state.detailData=data;content.innerHTML=studentWordDialog(student,studentLearningBody(data));
  }catch(error){if(!current())return;if(error.status===401||error.status===403){clearPrivate();renderLogin('登入已失效，請重新登入。');return;}content.innerHTML=studentWordDialog(student,empty('暫時未能讀取字音紀錄')+'<button type="button" class="button" data-action="retry-student-words">再試一次</button>');}
 }
 
 function studentList(){
  const filtered=selectedStudents(),size=8,pages=Math.max(1,Math.ceil(filtered.length/size));state.page=Math.min(state.page,pages-1);const page=filtered.slice(state.page*size,(state.page+1)*size);
- const rows=page.map(row=>{const needsPractice=supportSignals(row).length>0,status=!recordsReady()?'等待同步':!isActive(row)?absenceReliable()?'未有紀錄':'待同步':needsPractice?'可再練習':'已練習',tone=needsPractice?'warm':isActive(row)?'green':'';const attempts=isActive(row)?number(row.nAttempts):absenceReliable()?0:null;return `<tr><td><button type="button" class="student-name student-word-link" data-student-words="${esc(row.researchId)}" aria-label="查看${esc(row.person.displayName)}需要練習的字音">${esc(row.person.displayName)}</button><p class="student-meta">${esc(row.grade+row.cls)}${row.person.classNo?' · '+esc(row.person.classNo)+' 號':''}</p></td><td class="reading-cell">${scoreMarkup(readingScore(row))}</td><td class="attempt-cell">${shown(attempts)}</td><td class="status-cell"><span class="tag ${tone}">${esc(status)}</span></td></tr>`;}).join('');
- return `<details class="student-overview" id="student-list" ${state.studentsOpen?'open':''}><summary><span>學生概況 <small>${joinedStudents().length} 人</small></span><span class="details-chevron" aria-hidden="true">⌄</span></summary><div class="student-overview-content"><div class="list-toolbar"><label class="search-field"><span class="sr-only">搜尋學生</span><input type="search" id="student-search" value="${esc(state.search)}" placeholder="搜尋學生" autocomplete="off"></label><span class="list-result">${filtered.length} 人</span></div>${rows?`<div class="table-area"><table class="student-table"><thead><tr><th scope="col">學生</th><th scope="col">朗讀</th><th scope="col" class="attempt-cell">練習次數</th><th scope="col" class="status-cell">狀態</th></tr></thead><tbody>${rows}</tbody></table></div>${pages>1?`<div class="pagination"><button class="button small" data-page="${state.page-1}" ${state.page===0?'disabled':''}>上一頁</button><span>${state.page+1} / ${pages}</span><button class="button small" data-page="${state.page+1}" ${state.page+1>=pages?'disabled':''}>下一頁</button></div>`:''}`:empty('暫時沒有符合的學生')}</div></details>`;
+ const rows=page.map(row=>{const attempts=isActive(row)?number(row.nAttempts):absenceReliable()?0:null;return `<tr><td><button type="button" class="student-name student-word-link" data-student-words="${esc(row.researchId)}" aria-label="查看${esc(row.person.displayName)}的學習紀錄">${esc(row.person.displayName)}</button><p class="student-meta">${esc(row.grade+row.cls)}${row.person.classNo?' · '+esc(row.person.classNo)+' 號':''}</p></td><td class="reading-cell">${scoreMarkup(readingScore(row))}</td><td class="attempt-cell">${shown(attempts)}</td></tr>`;}).join('');
+ return `<details class="student-overview" id="student-list" ${state.studentsOpen?'open':''}><summary><span>學生概況 <small>${joinedStudents().length} 人</small></span><span class="details-chevron" aria-hidden="true">⌄</span></summary><div class="student-overview-content"><div class="list-toolbar"><label class="search-field"><span class="sr-only">搜尋學生</span><input type="search" id="student-search" value="${esc(state.search)}" placeholder="搜尋學生" autocomplete="off"></label><span class="list-result">${filtered.length} 人</span></div>${rows?`<div class="table-area"><table class="student-table"><thead><tr><th scope="col">學生</th><th scope="col">朗讀</th><th scope="col" class="attempt-cell">練習次數</th></tr></thead><tbody>${rows}</tbody></table></div>${pages>1?`<div class="pagination"><button class="button small" data-page="${state.page-1}" ${state.page===0?'disabled':''}>上一頁</button><span>${state.page+1} / ${pages}</span><button class="button small" data-page="${state.page+1}" ${state.page+1>=pages?'disabled':''}>下一頁</button></div>`:''}`:empty('暫時沒有符合的學生')}</div></details>`;
 }
 function updateStudentList(){const previous=document.querySelector('#student-list');if(previous){state.studentsOpen=previous.open;previous.outerHTML=studentList();}}
 
@@ -231,7 +256,7 @@ function validReportForScope(){const report=state.assistantReport;return !!repor
 function renderTeacherTools(){
  const host=document.querySelector('#teacher-tools');if(!host)return;if(state.legacy||state.auth?.user?.role!=='teacher'){host.replaceChildren();return;}
  const draft=draftFilters(),busy=state.toolsPreparing||state.assistantJob?.status==='running'||state.documentJob?.status==='running';
- host.innerHTML=`<section class="teacher-tools-bar" aria-label="下載檔案"><div class="teacher-tools-actions"><button class="button" data-teacher-tool="xlsx" ${busy?'disabled':''}>${icon('download')}下載 Excel</button><button class="button primary" data-teacher-tool="docx" ${busy?'disabled':''}>${icon('download')}${state.assistantJob?.status==='running'?'正在撰寫…':'下載 Word 報告'}</button></div><p class="tools-hint">Excel 查看學生紀錄；Word 由 AIDUCATION公司自研發AI Agent 寫好學習分析與教學建議，完成後自動下載。</p></section><div id="document-tool-status"></div><div id="teacher-analysis"></div>`;
+ host.innerHTML=`<section class="teacher-tools-bar" aria-label="下載檔案"><div class="teacher-tools-actions"><button class="button" data-teacher-tool="xlsx" ${busy?'disabled':''}>${icon('download')}下載學生數據表格</button><button class="button primary" data-teacher-tool="docx" ${busy?'disabled':''}>${icon('download')}${state.assistantJob?.status==='running'?'正在撰寫…':'AI生成教研報告'}</button></div><p class="tools-hint">Excel 查看學生紀錄；Word 由 AIDUCATION公司自研發AI Agent 寫好學習分析與教學建議，完成後自動下載。</p></section><div id="document-tool-status"></div><div id="teacher-analysis"></div>`;
  renderDocumentStatus();renderAssistant();
 }
 function renderDocumentStatus(){
@@ -321,7 +346,7 @@ root.addEventListener('compositionend',event=>{if(event.target.id==='student-sea
 function click(event){const button=event.target.closest('button');if(!button||button.disabled)return;
  if(button.dataset.studentWords){void openStudentWords(button.dataset.studentWords);return;}
  if(button.dataset.action==='retry-student-words'&&state.detailStudent){void openStudentWords(state.detailStudent.researchId);return;}
- if(button.dataset.action==='more-student-words'&&state.detailStudent&&state.detailData){document.querySelector('#student-dialog-content').innerHTML=studentWordDialog(state.detailStudent,studentWordBody(state.detailData,true));return;}
+ if(button.dataset.action==='more-student-words'&&state.detailStudent&&state.detailData){document.querySelector('#student-dialog-content').innerHTML=studentWordDialog(state.detailStudent,studentLearningBody(state.detailData,true));return;}
  if(button.dataset.teacherTool){const tool=button.dataset.teacherTool;if(tool==='docx')void generateAnalysis();else if(tool==='cancel-analysis')cancelAnalysis();else if(tool==='cancel-document')cancelDocument();else void exportDocument(tool);return;}
  if(button.dataset.action==='refresh'||button.dataset.action==='retry-roster'){if(state.rosterError||button.dataset.action==='retry-roster')void enterDashboard();else void loadData();}
  if(button.dataset.action==='boot')void boot();if(button.dataset.action==='logout')void logout();

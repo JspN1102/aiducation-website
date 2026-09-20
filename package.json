@@ -5,7 +5,7 @@
     "start": "node --env-file=.env server/index.cjs",
     "test:server": "node server/build.cjs && node --test server/server.test.cjs server/handwriting.test.cjs server/tts-cache.test.cjs server/tts-hot-cache.test.cjs server/teacher-data.test.cjs server/student-store.test.cjs",
     "test:school": "node --test server/school-auth.test.cjs server/research-store.test.cjs server/research-sync-reliability.test.cjs server/research-client.test.cjs server/answer-outbox.test.cjs server/school-learning.test.cjs server/poem-games-research.test.cjs server/research-export.test.cjs",
-    "test:teacher": "node --test server/teacher-analysis.test.cjs server/teacher-demo-data.test.cjs server/teacher-demo-routes.test.cjs server/teacher-report-quality.test.cjs server/teacher-documents.test.cjs server/teacher-report-backup.test.cjs",
+    "test:teacher": "node --test server/teacher-analysis.test.cjs server/teacher-demo-data.test.cjs server/teacher-demo-routes.test.cjs server/teacher-report-quality.test.cjs server/teacher-documents.test.cjs server/teacher-report-backup.test.cjs server/teacher-character-analysis.test.cjs server/teacher-practice-summary.test.cjs",
     "test:relay": "node --test server/guangzhou-relay.test.cjs"
   },
   "dependencies": {

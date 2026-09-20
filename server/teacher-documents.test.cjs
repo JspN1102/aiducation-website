@@ -41,28 +41,48 @@ test('dataset timeout has bounded in-flight concurrency and a late completion ca
   await assert.rejects(load({},filters),e=>e.code==='EXPORT_TIMEOUT');await assert.rejects(load({},filters),e=>e.code==='EXPORT_TIMEOUT');assert.equal(calls,1);
   await assert.rejects(load({},{...filters,cls:'B'}),e=>e.code==='EXPORT_BUSY');gate.resolve();await new Promise(resolve=>setImmediate(resolve));assert.equal((await load({},filters)).students.length,2);assert.equal(calls,2);
 });
-test('real Excel includes six formatted worksheets, literal names, selected roster and separate numeric zero/null',async()=>{
-  const f=fixture(),buffer=await docs.buildXlsx(f.dataset);assert.equal(buffer.subarray(0,2).toString(),'PK');const wb=new ExcelJS.Workbook();await wb.xlsx.load(buffer);assert.deepEqual(wb.worksheets.map(sheet=>sheet.name),['概覽','學生明細','分項表現','每日趨勢','字音重點','說明']);
-  const students=wb.getWorksheet('學生明細');assert.equal(students.getCell('D2').value,'=測試學生');assert.equal(students.rowCount,3);assert.equal(students.getCell('F2').value,0);assert.equal(students.getCell('G2').value,null);assert.equal(students.getCell('F3').value,null);assert.match(students.getCell('L2').value,/朗讀字音評分 0 分（平台評分，1 筆）/);assert.match(students.getCell('L3').value,/未見紀錄/);assert.equal(students.getCell('N1').value,'嘗試數');assert.equal(students.views[0].xSplit,4);const score=wb.getWorksheet('分項表現');assert.equal(score.rowCount,3);assert.equal(score.getCell('G2').value,0);assert.equal(score.getCell('J2').value,80);assert.equal(score.getCell('L2').value,0);assert.equal(score.getCell('G3').value,null);assert.equal(score.getCell('I3').value,1);assert.equal(score.getCell('N3').value,'未測');
+test('Excel is one usable student sheet with only requested columns, follow-up last and zero distinct from unmeasured',async()=>{
+  const f=fixture(),buffer=await docs.buildXlsx(f.dataset);assert.equal(buffer.subarray(0,2).toString(),'PK');const wb=new ExcelJS.Workbook();await wb.xlsx.load(buffer);assert.deepEqual(wb.worksheets.map(sheet=>sheet.name),['學生明細']);
+  const students=wb.getWorksheet('學生明細');
+  assert.deepEqual(students.getRow(1).values.slice(1),['年級','班別','座號','姓名','期內狀態','朗讀字音評分（分）','聽寫（分）','聽音辨識（分）','配對（分）','排序（分）','場景組合（分）','紀錄數','嘗試數','完成紀錄','有效時間（分鐘）','跟進提示']);
+  assert.equal(students.getCell('D2').value,'=測試學生');assert.equal(students.rowCount,3);assert.equal(students.getCell('F2').value,0);assert.equal(students.getCell('G2').value,null);assert.equal(students.getCell('F3').value,null);assert.match(students.getCell('P2').value,/朗讀字音評分 0 分（平台評分，1 筆）/);assert.match(students.getCell('P3').value,/未見紀錄/);
+  assert.deepEqual(students.getRow(2).values.slice(12,16),[3,3,0,0]);assert.equal(students.views[0].xSplit,4);assert.equal(students.autoFilter,'A1:P3');assert.equal(students.pageSetup.printTitlesRow,'1:1');assert.match(wb.subject,/2 年級 A 班.*2026-09-01 至 2026-09-20/);
+  assert.equal(students.getCell('P2').alignment.wrapText,true);assert(students.getRow(2).height>=38);
   for(const sheet of wb.worksheets){assert.equal(sheet.views[0].state,'frozen');assert(sheet.autoFilter);sheet.eachRow(row=>row.eachCell(cell=>assert.notEqual(cell.type,ExcelJS.ValueType.Formula)));}
-  const zip=await JSZip.loadAsync(buffer);for(const [name,file]of Object.entries(zip.files))if(name.startsWith('xl/worksheets/')&&name.endsWith('.xml'))assert(!/<f[ >]/.test(await file.async('string')));
+  const zip=await JSZip.loadAsync(buffer);for(const [name,file]of Object.entries(zip.files))if(name.startsWith('xl/')&&name.endsWith('.xml')){const xml=await file.async('string');assert(!/<f[ >]/.test(xml));assert(!xml.includes('DO_NOT_EXPORT_LOGIN'));assert(!xml.includes('其他班學生'));assert(!f.roster.some(person=>xml.includes(person.researchId)));}
   const folder=process.env.TEACHER_DOCUMENT_EVIDENCE_DIR;if(folder){fs.mkdirSync(folder,{recursive:true});fs.writeFileSync(path.join(folder,'synthetic-teacher.xlsx'),buffer);}
 });
 test('empty class learning data still exports its entire selected roster without invented scores',async()=>{
-  const f=fixture(),dataset=data.buildDataset({rows:[]},f.roster,filters,NOW),wb=new ExcelJS.Workbook();await wb.xlsx.load(await docs.buildXlsx(dataset));const students=wb.getWorksheet('學生明細');assert.equal(students.rowCount,3);assert.equal(students.getCell('F2').value,null);assert.match(students.getCell('L2').value,/未見紀錄/);assert.equal(wb.getWorksheet('分項表現').rowCount,1);assert.equal(dataset.rosterSummary.noRecords,2);
+  const f=fixture(),dataset=data.buildDataset({rows:[]},f.roster,filters,NOW),wb=new ExcelJS.Workbook();await wb.xlsx.load(await docs.buildXlsx(dataset));const students=wb.getWorksheet('學生明細');assert.equal(students.rowCount,3);assert.equal(students.getCell('F2').value,null);assert.match(students.getCell('P2').value,/未見紀錄/);assert.equal(wb.worksheets.length,1);assert.equal(dataset.rosterSummary.noRecords,2);
 });
-test('Excel quick view never substitutes client scores and detail separates both sources without empty permutations',async()=>{
+test('single-sheet Excel never substitutes client scores for assessed scores or blanks',async()=>{
   const f=fixture(),client=structuredClone(f.rows[0]);client.source='client';client.event.type='feedback_shown';client.event.eventId=randomUUID();client.event.result.score=95;client.eventChecksum=research.hash(research.canonical({researchId:client.researchId,source:client.source,event:client.event}));
-  for(const [rows,expectedScore,expectedDetailRows]of [[[...f.rows,client],0,4],[[client],null,2]]){
-    const dataset=data.buildDataset({rows},f.roster,filters,NOW),wb=new ExcelJS.Workbook();await wb.xlsx.load(await docs.buildXlsx(dataset));const students=wb.getWorksheet('學生明細'),scores=wb.getWorksheet('分項表現');assert.equal(students.getCell('F2').value,expectedScore);assert.equal(scores.rowCount,expectedDetailRows);
-    const reading=scores.getRows(2,scores.rowCount-1).filter(row=>row.getCell(5).value==='朗讀字音評分');assert(reading.some(row=>row.getCell(6).value==='練習回報'&&row.getCell(7).value===95));if(expectedScore===null)assert.match(students.getCell('L2').value,/僅有練習回報，尚未有平台評分/);else assert(reading.some(row=>row.getCell(6).value==='平台評分'&&row.getCell(7).value===0));
+  for(const [rows,expectedScore]of [[[...f.rows,client],0],[[client],null]]){
+    const dataset=data.buildDataset({rows},f.roster,filters,NOW),wb=new ExcelJS.Workbook();await wb.xlsx.load(await docs.buildXlsx(dataset));const students=wb.getWorksheet('學生明細');assert.equal(students.getCell('F2').value,expectedScore);assert.equal(wb.worksheets.length,1);
+    if(expectedScore===null)assert.match(students.getCell('P2').value,/僅有練習回報，尚未有平台評分/);else assert.match(students.getCell('P2').value,/平台評分/);
   }
 });
-test('real editable Word uses exact class summaries and omits individual rosters and technical appendices',async()=>{
+
+test('single-sheet Excel preserves grade, class, dates, first/latest and seat ordering',async()=>{
+  const f=fixture();
+  for(const [scope,seats,score]of [[filters,[1,2],0],[{...filters,attempt:'first'},[1,2],80],[{...filters,from:'2026-09-10',to:'2026-09-10'},[1,2],80],[{...filters,from:'2026-09-20',to:'2026-09-20'},[1,2],null],[{...filters,cls:'B'},[1],99],[{...filters,grade:1},[],null]]){
+    const dataset=data.buildDataset({rows:f.rows},[...f.roster].reverse(),scope,NOW),wb=new ExcelJS.Workbook();await wb.xlsx.load(await docs.buildXlsx(dataset));const students=wb.getWorksheet('學生明細');
+    assert.deepEqual(wb.worksheets.map(sheet=>sheet.name),['學生明細']);assert.deepEqual(students.getRows(2,seats.length)?.map(row=>row.getCell(3).value)||[],seats);assert.equal(students.rowCount,seats.length+1);
+    if(seats.length)assert.equal(students.getCell('F2').value,score);assert.match(wb.subject,new RegExp(scope.from+' 至 '+scope.to));
+  }
+});
+
+test('formula-like student text remains literal and never creates formulas or external links',async()=>{
+  const f=fixture(),names=['=SUM(1,2)','+1+2','-2+3','@SUM(A1)'],roster=names.map((displayName,index)=>({...f.roster[0],researchId:'r_'+String(index+4).repeat(24),classNo:index+1,displayName}));
+  const buffer=await docs.buildXlsx(data.buildDataset({rows:[]},roster,filters,NOW)),wb=new ExcelJS.Workbook();await wb.xlsx.load(buffer);const sheet=wb.getWorksheet('學生明細');
+  for(let index=0;index<names.length;index++){const cell=sheet.getCell(index+2,4);assert.equal(cell.value,names[index]);assert.equal(cell.type,ExcelJS.ValueType.String);}
+  const zip=await JSZip.loadAsync(buffer);for(const [name,file]of Object.entries(zip.files))if(name.endsWith('.xml')||name.endsWith('.rels')){const xml=await file.async('string');assert(!/<f[ >]/.test(xml));assert(!xml.includes('TargetMode="External"'));}assert(!Object.keys(zip.files).some(name=>name.includes('vbaProject')));
+});
+test('editable Word presents three narrative sections without data tables or numbered operation lists',async()=>{
   const f=fixture(),buffer=await docs.buildDocx(f.report),zip=await JSZip.loadAsync(buffer),xml=await zip.file('word/document.xml').async('string');
-  for(const text of ['學習概況','主要發現','教學建議','後續跟進','學習項目','朗讀字音評分','0 分'])assert(xml.includes(text),text);
+  for(const text of ['整體評價','主要發現','教學建議',f.report.analysis.overview,f.report.analysis.findings[0].interpretation])assert(xml.includes(text),text);
   for(const text of ['學生跟進','資料範圍與限制','伺服器','server_verified','依據：','=測試學生','未測學生','不代表已證明成效'])assert(!xml.includes(text),text);
-  assert((await zip.file('docProps/core.xml').async('string')).includes(f.dataset.snapshotId));assert(!xml.includes('課後反思'));assert(!xml.includes('授課日期'));assert(!xml.includes('其他班學生'));assert(!xml.includes('DO_NOT_EXPORT_LOGIN'));assert(!xml.includes('w:type="page"'));assert(xml.includes('<w:tbl>'));assert(!Object.keys(zip.files).some(name=>name.includes('vbaProject')));
+  assert((await zip.file('docProps/core.xml').async('string')).includes(f.dataset.snapshotId));assert(!xml.includes('課後反思'));assert(!xml.includes('授課日期'));assert(!xml.includes('其他班學生'));assert(!xml.includes('DO_NOT_EXPORT_LOGIN'));assert(!xml.includes('w:type="page"'));assert(!xml.includes('<w:tbl>'));assert(!Object.keys(zip.files).some(name=>name.includes('vbaProject')));assert.doesNotMatch(xml,/<w:t[^>]*>(?:\d+[.)）]|• )/);
   const folder=process.env.TEACHER_DOCUMENT_EVIDENCE_DIR;if(folder){fs.mkdirSync(folder,{recursive:true});fs.writeFileSync(path.join(folder,'synthetic-teacher.docx'),buffer);}
 });
 test('export handler enforces teacher+CSRF, rejects client report text, and reportId exports never reload live data',async()=>{
@@ -83,7 +103,7 @@ test('demo Word marks simulated learning once, has no forced limitations, and ke
  const f=fixture();f.dataset.demo=true;f.report.analysis.limitations=[];
  const zip=await JSZip.loadAsync(await docs.buildDocx(f.report)),xml=await zip.file('word/document.xml').async('string');
  assert.equal((xml.match(/模擬數據/g)||[]).length,1);assert.doesNotMatch(xml,/非真實學生|虛構|研究證據|伺服器|瀏覽器|資料範圍與限制|<w:t[^>]*>補充<\/w:t>/);
- assert(xml.includes('老师')||xml.includes('老師示範一句'));assert(xml.includes('學生跟讀後再嘗試一次'));assert(xml.includes('0 分'));
+ assert(xml.includes('老师')||xml.includes('老師示範一句'));assert(xml.includes('學生跟讀後再嘗試一次'));
 });
 
 test('adding hundreds of roster identities does not lengthen the class-focused Word report',async()=>{
@@ -93,12 +113,14 @@ test('adding hundreds of roster identities does not lengthen the class-focused W
  assert.equal(afterXML,beforeXML);assert.doesNotMatch(afterXML,/不應進入Word_|=測試學生|未測學生/);
 });
 
-test('Word shows each learning item once, preferring assessed zero over a higher practice return',async()=>{
+test('Word preserves the reviewed narrative without adding repeated score tables from other sources',async()=>{
  for(const assessed of [true,false]){
   const f=fixture(),client=structuredClone(f.rows[0]);client.source='client';client.event.type='feedback_shown';client.event.eventId=randomUUID();client.event.result.score=95;client.eventChecksum=research.hash(research.canonical({researchId:client.researchId,source:client.source,event:client.event}));
   f.dataset=data.buildDataset({rows:assessed?[...f.rows,client]:[client]},f.roster,filters,NOW);f.report.dataset=f.dataset;f.report.snapshotId=f.dataset.snapshotId;
+  f.report.analysis.findings[0].interpretation=`朗讀字音評分為 ${assessed?0:95} 分。教師可從同一句的朗讀觀察安排共同跟讀，再決定個別練習。`;
   const zip=await JSZip.loadAsync(await docs.buildDocx(f.report)),xml=await zip.file('word/document.xml').async('string');
   assert.equal((xml.match(/朗讀字音評分/g)||[]).length,1);assert.doesNotMatch(xml,/平台評分|練習回報/);
   assert(xml.includes(assessed?'0 分':'95 分'));if(assessed)assert(!xml.includes('95 分'));
+  assert(!xml.includes('<w:tbl>'));
  }
 });

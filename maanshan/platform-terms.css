@@ -1,0 +1,5 @@
+.platform-terms-confirmation{display:flex;align-items:flex-start;gap:10px;min-height:48px;margin:0;color:#365b4c}
+.school-login .platform-terms-confirmation input,.platform-terms-confirmation input[type=checkbox]{appearance:auto;flex:0 0 24px;width:24px;height:24px;min-width:24px;min-height:24px;margin:11px 0 0;padding:0;accent-color:#35664c;border-radius:4px;cursor:pointer}
+.school-login .platform-terms-confirmation label,.platform-terms-confirmation label{display:block;flex:1;min-height:48px;box-sizing:border-box;margin:0;padding:9px 0;font:400 17px/1.6 var(--sans, sans-serif);cursor:pointer}
+.platform-terms-confirmation a{color:#285840;text-decoration:underline;text-underline-offset:4px;font-weight:500}
+.platform-terms-confirmation input:focus-visible,.platform-terms-confirmation a:focus-visible{outline:3px solid #6f9979;outline-offset:4px}

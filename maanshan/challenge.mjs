@@ -73,7 +73,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const locked = !!answer;
     const active = () => !dead && epoch === gameEpoch && generation === renderGeneration;
     try {
-      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20260920-final5');
+      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20260921-school1');
       if (!active()) return;
       let completionReceived = false;
       const mounted = mountPoemGame(holder, {slug: poem.slug, initialState: state, readOnly: locked,

@@ -50,5 +50,5 @@ test('same-day snapshots are repeatable and defensive; day rollover is domain se
 });
 test('real XLSX can export a full demo class with explicit fictional names and null distinct from zero',async()=>{
   const dataset=createDemoDataset({grade:2,cls:'A'},options),buffer=await buildXlsx(dataset),wb=new ExcelJS.Workbook();await wb.xlsx.load(buffer);
-  assert.equal(buffer.subarray(0,2).toString(),'PK');assert.equal(wb.worksheets.length,6);const sheet=wb.getWorksheet('學生明細');assert.equal(sheet.rowCount,26);assert.match(sheet.getCell('D2').value,/示範學生/);assert.equal(sheet.getCell('F2').value,0);assert.equal(sheet.getCell('F3').value,null);
+  assert.equal(buffer.subarray(0,2).toString(),'PK');assert.deepEqual(wb.worksheets.map(sheet=>sheet.name),['學生明細']);assert.match(wb.title,/模擬數據/);const sheet=wb.getWorksheet('學生明細');assert.equal(sheet.rowCount,26);assert.match(sheet.getCell('D2').value,/示範學生/);assert.equal(sheet.getCell('F2').value,0);assert.equal(sheet.getCell('F3').value,null);assert.equal(sheet.getCell('P1').value,'跟進提示');assert.match(sheet.headerFooter.oddHeader,/模擬數據/);
 });

@@ -26,7 +26,7 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 .account-dialog #account-logout{display:flex;width:100%;min-height:52px;font-size:20px}
 .profile-dialog #school-record-sync{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);font-size:16px}
 
-/* One score and one selected verse. Tapping anywhere on the verse reads it. */
+/* One score and one selected verse, with two distinct audio actions. */
 .workspace.view-report .study-main{width:100%;max-width:1100px}
 .workspace.view-report #view{display:grid;grid-template-columns:160px minmax(0,1fr);align-items:start;gap:28px;overflow:auto;min-height:0;padding:20px 8px;scrollbar-width:thin;overscroll-behavior:contain}
 .workspace.view-report .report-summary{display:flex;justify-content:center;min-width:0;margin:0;padding:10px 0;position:sticky;top:0}
@@ -42,7 +42,6 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 .workspace.view-report .score-line-tabs button{width:auto;min-width:86px;height:auto;min-height:48px;padding:8px 14px;font-size:20px;border-radius:12px;white-space:nowrap;line-height:1.45}
 .workspace.view-report .report-line{padding:18px 0 0}
 .workspace.view-report .report-sentence{display:block;position:relative;width:100%;padding:16px 12px;border:1px solid #cfdcc9;border-radius:18px;background:#fffdf7;color:var(--ink);text-align:center;touch-action:manipulation}
-.workspace.view-report .report-sentence:is(:hover,:focus-visible,[aria-pressed=true]){border-color:#65856d;background:#f4f7ee}
 .workspace.view-report .report-sentence-heading{display:flex;justify-content:flex-end;color:#55765b;margin:0 0 8px}
 .workspace.view-report .report-sentence-heading svg{width:24px;height:24px}
 .workspace.view-report .word-analysis .word-grid{display:grid;grid-template-columns:repeat(var(--report-columns,5),minmax(0,1fr));gap:8px;overflow:visible;padding:0}
@@ -77,3 +76,5 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 }
 
 @media(max-width:420px){.workspace.view-report .word-analysis .word-grid[data-columns="7"] .word-result ruby{font-size:28px}.workspace.view-report .word-analysis .word-grid[data-columns="7"] .word-result rt{font-size:13px}.workspace.view-report .word-analysis .word-result strong{font-size:17px}}
+
+@media(max-width:700px){.workspace.view-report .report-line-actions .report-reread{flex-basis:100%;max-width:240px}.workspace.view-report .report-line-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.workspace.view-report .report-line-actions .report-reread{grid-column:1/-1;justify-self:center}.workspace.view-report .report-line-actions .button{padding-inline:10px;font-size:18px}}

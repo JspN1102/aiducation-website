@@ -1,7 +1,7 @@
 'use strict';
 const crypto=require('node:crypto'),blob=require('@vercel/blob');
 const research=require('./research-store.cjs');
-const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v9-grade-scopes';
+const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v12-targeted-review';
 const MAX_RECORD_BYTES=12*1024*1024,MAX_PROVIDER_BYTES=160*1024,MAX_RESPONSE_BYTES=128*1024;
 const LEASE_MS=120000,PROVIDER_TIMEOUT_MS=42000;
 const SCHEMA=`CREATE TABLE IF NOT EXISTS teacher_analysis_records (
@@ -59,11 +59,12 @@ function aggregateEvidence(dataset){
  const analytics=dataset.analytics||{},facts=[];
  const add=(label,value,unit,scope='所選範圍',source='structured_records')=>{const id='F'+String(facts.length+1).padStart(3,'0');facts.push({id,label,value,unit,scope,source});};
  const roster=dataset.rosterSummary||{};
- add('名冊學生',safeCount(roster.totalStudents),'人');add('名冊中有記錄學生',safeCount(roster.withRecords),'人');add('名冊中未見記錄學生',safeCount(roster.noRecords),'人');
+  add('名冊學生',safeCount(roster.totalStudents),'人');add('名冊中有記錄學生',safeCount(roster.withRecords),'人');add('名冊中未見記錄學生',safeCount(roster.noRecords),'人');
+ if(safeCount(roster.totalStudents))add('名冊中已有記錄比例',Math.round(safeCount(roster.withRecords)/roster.totalStudents*1000)/10,'%');
  if(safeCount(roster.unmatchedWithRecords))add('尚未連結名冊的記錄身份',safeCount(roster.unmatchedWithRecords),'個');
  function summary(value,scope){
   if(!value)return;
-  for(const [key,label,unit]of [['nEvents','已收集活動記錄','筆'],['nStudents','有記錄學生','人'],['nInvalidEvents','需排除的資料異常記錄','筆'],['practiceOutcomeN','複習或自由練習結果','筆']])add(label,safeCount(value[key]),unit,scope);
+  for(const [key,label,unit]of [['nEvents','已收集活動記錄','筆'],['nStudents','有記錄學生','人'],['nAttempts','練習嘗試','次'],['completedN','活動完成紀錄','筆'],['nInvalidEvents','需排除的資料異常記錄','筆'],['practiceOutcomeN','複習或自由練習結果','筆']])add(label,safeCount(value[key]),unit,scope);
   for(const [construct,label]of Object.entries(CONSTRUCTS))for(const [source,sourceLabel]of Object.entries(SOURCES)){
    const score=value.byConstruct?.[construct]?.[source];if(!score)continue;
    const n=safeCount(score.measuredN),missing=safeCount(score.unmeasuredN);
@@ -72,6 +73,26 @@ function aggregateEvidence(dataset){
   }
  }
  summary(analytics.summary,'所選範圍');
+ const people=(dataset.students||[]).filter(person=>person.rosterMatched!==false);
+ const measurable=(person,construct,source)=>{
+  const score=(person.stats?.[dataset.filters.attempt]||person.stats)?.byConstruct?.[construct]?.[source];
+  return score?.measuredN>0?safeScore(score.meanScore):null;
+ };
+ if(people.some(person=>person.stats?.nEvents>0)){
+  add('有活動完成紀錄的名冊學生',people.filter(person=>person.stats?.completedN>0).length,'人');
+  for(const [construct,label]of Object.entries(CONSTRUCTS))for(const [source,sourceLabel]of Object.entries(SOURCES)){
+   const measured=people.map(person=>measurable(person,construct,source)).filter(value=>value!==null);
+   if(!measured.length)continue;
+   add(label+'：有評分的名冊學生',measured.length,'人','所選範圍',sourceLabel);
+   add(label+'：個人平均低於60分的名冊學生',measured.filter(score=>score<60).length,'人','所選範圍',sourceLabel);
+   add(label+'：尚無評分的名冊學生',people.filter(person=>measurable(person,construct,source)===null).length,'人','所選範圍',sourceLabel);
+   add(label+'：有活動紀錄但尚無此項評分的名冊學生',people.filter(person=>person.stats?.nEvents>0&&measurable(person,construct,source)===null).length,'人','所選範圍',sourceLabel);
+  }
+  for(const [left,right]of [['reading.pronunciation','writing.dictation'],['reading.pronunciation','sound.recognition'],['writing.dictation','sound.recognition']]){
+   const paired=people.map(person=>[measurable(person,left,'serverVerified'),measurable(person,right,'serverVerified')]).filter(scores=>scores.every(score=>score!==null));
+   if(paired.length)add(CONSTRUCTS[left]+'與'+CONSTRUCTS[right]+'：同一批學生觀察',{bothMeasuredStudents:paired.length,bothBelow60Students:paired.filter(scores=>scores.every(score=>score<60)).length,leftBelow60Students:paired.filter(scores=>scores[0]<60).length,rightBelow60Students:paired.filter(scores=>scores[1]<60).length},'人','所選範圍','平台評分');
+  }
+ }
  if(!dataset.filters.grade)for(const item of analytics.byGrade||[])if(Number.isInteger(item.grade)&&item.grade>=1&&item.grade<=6)summary(item,item.grade+'年級');
  if(!dataset.filters.cls)for(const item of analytics.byClass||[])if(Number.isInteger(item.grade)&&item.grade>=1&&item.grade<=6&&/^[A-Z]$/.test(item.cls)){
   if(dataset.filters.grade)summary(item,item.grade+item.cls+'班');
@@ -83,11 +104,24 @@ function aggregateEvidence(dataset){
   if(typeof word.char!=='string'||[...word.char].length!==1||!Number.isInteger(word.poemId)||word.poemId<1||word.poemId>6||safeScore(word.meanScore)===null)continue;
   add('「'+word.char+'」字音觀察',{meanScore:word.meanScore,observations:safeCount(word.count),below60:safeCount(word.below60Count)},'字音評分','第'+word.poemId+'首古詩','平台評分');
  }
+ for(const poem of (analytics.readingCharacterAnalysis?.poems||[]).slice(0,6)){
+  const measured=(poem.lines||[]).flatMap(line=>(line.words||[]).filter(word=>safeScore(word.meanScore)!==null&&safeCount(word.count)>0).map(word=>({...word,lineIndex:line.lineIndex}))).sort((left,right)=>left.meanScore-right.meanScore||right.count-left.count);
+  if(!measured.length)continue;
+  add('全詩逐字平均的觀察範圍',{measuredPositions:measured.length,meanBelow80Positions:measured.filter(word=>word.meanScore<80).length},'字位',poem.grade+'年級《'+poem.title+'》','平台評分');
+  for(const word of measured.slice(0,8))add('「'+word.char+'」逐字平均',{meanScore:word.meanScore,measuredStudents:safeCount(word.count)},'字音評分',poem.grade+'年級《'+poem.title+'》第'+(word.lineIndex+1)+'句','平台評分');
+ }
  if(facts.length>2000)fail('NARROW_DATE_OR_CLASS_FILTER',413,false);
  const syncStatus=['current','catching_up','attention','direct','published','unavailable'].includes(analytics.sync?.status)?analytics.sync.status:'unavailable';
  const curriculum=require('../../maanshan/poems.json').poems.filter(poem=>!dataset.filters.grade||poem.grade===dataset.filters.grade).map(poem=>({grade:poem.grade,title:poem.title,lines:poem.lines.map(line=>({text:line.text,pinyin:line.pinyin})),dictation:poem.dictation.slice(0,poem.grade<=2?1:poem.grade<=4?2:3).map(item=>({char:item.char,pinyin:item.pinyin,word:item.word}))}));
  const teachingConstraints=curriculum.map(poem=>({grade:poem.grade,poem:poem.title,writing:poem.grade<=2?{maxCharactersAcrossWholeReport:1,allowedCharacters:poem.dictation.slice(0,1).map(item=>item.char),instruction:'整份報告最多安排一個字，只選allowedCharacters；其餘全用聽選、短句跟讀。下次複查也沿用同一字，不能默寫詞語或字表。'}:{maxCharactersAcrossWholeReport:poem.grade<=4?2:3,allowedCharacters:poem.dictation.slice(0,poem.grade<=4?2:3).map(item=>item.char)}}));
- const payload={schemaVersion:1,demo:dataset.demo===true,filters:dataset.filters,curriculum,teachingConstraints,detailLevel:dataset.filters.cls?'selected_class':dataset.filters.grade?'grade_and_classes':'school_and_grades_with_class_participation',rosterSummary:{totalStudents:safeCount(roster.totalStudents),withRecords:safeCount(roster.withRecords),noRecords:safeCount(roster.noRecords)},sync:{status:syncStatus,integrityIssues:safeCount(analytics.sync?.integrity?.integrityIssues),retryPending:safeCount(analytics.sync?.integrity?.retryPending)},evidence:facts,
+ // These are lesson choices, not additional measurements. Keep every proposed
+ // target in its source line so follow-up never assesses an unpractised word.
+ const teachingFocus=curriculum.map(poem=>{
+  const positions=analytics.readingCharacterAnalysis?.poems?.find(item=>item.grade===poem.grade)?.lines||[];
+  const readingLines=positions.map(line=>({lineIndex:line.lineIndex,words:(line.words||[]).filter(word=>safeScore(word.meanScore)!==null&&word.meanScore<80&&safeCount(word.count)>0).sort((a,b)=>a.meanScore-b.meanScore)})).filter(line=>line.words.length&&poem.lines[line.lineIndex]).sort((a,b)=>b.words.length-a.words.length||a.lineIndex-b.lineIndex).slice(0,2).map(line=>({text:poem.lines[line.lineIndex].text,observeCharacters:line.words.slice(0,2).map(word=>word.char)}));
+  return {grade:poem.grade,poem:poem.title,readingLines,writingCharacters:poem.dictation.map(item=>item.char),listeningActivity:'沿用本詩已有的辨音或配對練習，聽後再答；教師聽取學生重讀所聽內容。'};
+ });
+ const payload={schemaVersion:1,reportStyle:'narrative-teaching-review',demo:dataset.demo===true,filters:dataset.filters,curriculum,teachingConstraints,teachingFocus,detailLevel:dataset.filters.cls?'selected_class':dataset.filters.grade?'grade_and_classes':'school_and_grades_with_class_participation',rosterSummary:{totalStudents:safeCount(roster.totalStudents),withRecords:safeCount(roster.withRecords),noRecords:safeCount(roster.noRecords)},sync:{status:syncStatus,integrityIssues:safeCount(analytics.sync?.integrity?.integrityIssues),retryPending:safeCount(analytics.sync?.integrity?.retryPending)},evidence:facts,
   interpretationRules:['未見記錄不等於沒有練習；離線未同步情況無法直接觀察。','零分是測量；null和缺少分數是未測量。','按構念及來源分開解讀，不可把朗讀分數與答題準確度混成平均分。','瀏覽器自報分數未經伺服器核實；伺服器核實亦不等於教育診斷。','字音分數不能推斷聲母、韻母、聲調的具體病因。','完成活動事件數和嘗試數均不是完成學生數。','各日人數不可相加作不重複總人數；分組數據與總計有重疊。','資料不能證明教學因果、學習障礙或學生態度。']};
  if(Buffer.byteLength(canonical(payload))>MAX_PROVIDER_BYTES)fail('NARROW_DATE_OR_CLASS_FILTER',413,false);
  return payload;
@@ -98,25 +132,26 @@ function validateAnalysis(value,evidence,filters){
  const ids=new Set(evidence.map(item=>item.id));
  const refs=value=>{if(!Array.isArray(value)||!value.length||value.length>32||value.some(id=>!ids.has(id)))fail('AI_INVALID_RESPONSE',502,true);return [...new Set(value)];};
  const list=(values,max,mapper,min=1)=>{if(!Array.isArray(values)||values.length<min||values.length>max)fail('AI_INVALID_RESPONSE',502,true);return values.map(mapper);};
- const action=value=>({title:text(value?.title,100),evidenceIds:refs(value?.evidenceIds),steps:list(value?.steps,5,item=>text(item,500))});
- return {title:text(value.title,120),overview:text(value.overview,1800),findings:list(value.findings,8,item=>({title:text(item?.title,100),evidenceIds:refs(item?.evidenceIds),interpretation:text(item?.interpretation,1200)})),teachingActions:list(value.teachingActions,6,item=>({...action(item),priority:['high','medium','low'].includes(item.priority)?item.priority:'medium'})),reviewPlan:list(value.reviewPlan,4,action),limitations:list(value.limitations??[],1,item=>text(item,180),0)};
+ const action=value=>({title:text(value?.title,100),evidenceIds:refs(value?.evidenceIds),steps:list(typeof value?.steps==='string'?[value.steps]:value?.steps,5,item=>text(item,1000))});
+ return {title:text(value.title,120),overview:text(value.overview,1800),findings:list(value.findings,8,item=>({title:text(item?.title,100),evidenceIds:refs(item?.evidenceIds),interpretation:text(item?.interpretation,2000)})),teachingActions:list(value.teachingActions,6,item=>({...action(item),priority:['high','medium','low'].includes(item.priority)?item.priority:'medium'})),reviewPlan:list(value.reviewPlan,4,action),limitations:list(value.limitations??[],1,item=>text(item,180),0)};
 }
-const SYSTEM_PROMPT=`你是香港小學普通話教師，正為所選班級寫一份可以直接使用的教學報告。用自然、清楚的繁體中文，以「這次學生做了甚麼、哪些內容值得再練、下一課怎樣教」為主線。只根據本次JSON的evidence、curriculum、teachingConstraints寫作。
-文風與內容：
-概覽直接交代班級人數、練習情況及本次教學重點。主要發現每項先寫實際數字或字音觀察，再連到具體跟進，例如「『舟』字有3次評分低於60分，下一課先聽示範，再把這個字放回原句跟讀」；此例僅示範句式，数字與字必須用本次資料。沒有逐字資料時，就建議聽讀原句，不評論不存在的細項。
-教學建議每項用2至3個短步驟，寫明選哪首詩、哪一句或哪個允許字，老師怎樣示範、學生怎樣練習、最後聽看甚麼。後續跟進用一項簡短安排，讓老師下一課直接照做。單班約450至650中文字，全校約700至950字；全校分低、中、高年級，單年級只寫該年級。毋須另寫正式教案、操作指南或填空模板。
-不要防禦性寫作。不要輸出伺服器核實、瀏覽器自報、server_verified、資料快照等技術術語，也不要反覆寫「不能推斷聲母、韻母、聲調」「不代表教學成效」等聲明。用「朗讀字音評分」「辨音答題」「默寫練習」描述學習表現。若缺少一項資料會影響下一步，只說一句如「本次未有默寫紀錄，下一課先做一次聽寫觀察」；其餘直接省略。limitations通常輸出[]，只有必要時最多一句，不重複正文。
-demo為true時亦按正常教師報告寫作。文件頁首由系統加一次「模擬數據」，不要在標題、概覽、發現或建議再次提模擬、虛構、功能演示或研究證據，也不要聲稱學生姓名是虛構。
-下列規則只作內部核對，不能複述成報告中的限制段落：
-1.所有數字及觀察來自evidence。每項引用有效evidenceIds；正文不寫F001等代碼。準確寫有紀錄/名冊人數，不加「大多數/少數」印象判斷。事件筆數不是學生人數，沒有某種事件不能推論沒有完成或全是嘗試。
-2.朗讀、默寫、辨音分開寫，每個項目只選一組分數：有「平台評分」的有效平均值就優先使用；完全沒有該項有效平台評分才用「練習回報」。兩種數字不混合、不重複列出。正文直接稱「朗讀字音評分」「辨音答題」等學習項目，不把平台評分與練習回報的差异寫成教學發現。朗讀、默寫、辨音不能混成總分；不同來源沒有配對資料，不能推論偏高、可信度或比較能力。只報實際分數和樣本數，不發明能力等級或及格界線。不因70分稱有基礎或薄弱。
-3.字分數只提示值得再聽讀的字，不推斷聲母、韻母、聲調哪裏錯，不能要求糾正一個未觀察到的特定錯誤。不推論學生懶惰、病症或統計顯著進步。
-4.原詩及讀音依curriculum，不改詩、不加不存在的字。低年級指一二年級，中年級指三四年級，高年級指五六年級。教學建議嚴格按teachingConstraints：一二年級整份報告連同復查最多安排一個allowedCharacters中的字，不能默寫詞語、字表、每字抄多次；聽選與短句跟讀為主。中高年級按提供上限安排。若同一項建議涵蓋不同年級，各年級另列一個step並寫明年級；複查亦沿用同一安排。未提供題庫的臨時活動不能聲稱平台有該题或能保存教師自編紙筆測驗。
-5.聽選不用同音字互相充當正誤選項，不生成「李／里／理」等混淆題。只說跟聽原詩一句、對照示範、同一句再讀等可直接操作的安排。低分個別跟進由教師私下安排。
-6.未測不等於零分；未見紀錄的學生寫「先了解練習情況」，不要判定未參與。建議是下一步安排，不能寫成已做過或已提高。保持數據來源各自獨立，只在確有必要區分時用「平台評分」「練習回報」簡稱。
-請輸出一個JSON，無markdown。findings建議2至3項，teachingActions單年級2項/全校3項，reviewPlan 1項，limitations通常為空陣列。schema:
-{"title":"範圍普通話教學報告","overview":"班級練習情況與重點","findings":[{"title":"學習重點","evidenceIds":["F001"],"interpretation":"實際數據、觀察與跟進方向"}],"teachingActions":[{"priority":"high|medium|low","title":"教學重點","evidenceIds":["F001"],"steps":["具體短步驟"]}],"reviewPlan":[{"title":"下次跟進","evidenceIds":["F001"],"steps":["何時及如何再練習"]}],"limitations":[]}。
-最後檢查：沒有編造數字/錯誤成因/平台功能；低小整份只安排一個允許書寫字；只輸出完整JSON。`;
+const SYSTEM_PROMPT=`你是香港小學普通話科的資深教師，向同科老師撰寫可直接使用的教研報告。以繁體中文連貫論述，用「整體評價→主要發現→教學建議」形成清楚的教學判斷。evidence是本班實際觀察，curriculum是正確課文，teachingFocus是可採用的課堂安排；教學安排並不表示學生已經做過。
+【成稿結構】
+overview約100字，說清下一課的重心及其主要依據。findings寫3個互不重複的完整段落，每段約220至280字，合計至少650字且佔正文一半以上。有數據時依次分析：
+第一段：參與及不同活動的覆蓋。連起名冊、有紀錄、有完成紀錄及各分項有評分的學生人數，說明課堂應先補齊哪一環的觀察，並照顧已完成學生的練習延續。完成紀錄筆數不是完成學生數，有活動紀錄也不是完成全課；直接提出教學決策即可。
+第二段：具體字音在原句中的分布。以全詩逐字平均及有評分學生數支持判斷，挑teachingFocus中的少量字和所在原句，解釋為何先從這些句子練起，以及教師應如何分辨需要全班再練還是個別再聽。不重列整個字表，不猜學生錯誤原因，不把全班平均說成人人都錯。
+第三段：學生分布及分層跟進。用明確提供的同一批學生交集，分析朗讀、聽辨和書寫的跟進對象是否重疊，說明下一課如何安排不同練習、以甚麼表現決定是否調整。沒有交集時以各分項覆蓋和具體題目觀察決定先後，避免重複第二段的字音清單。不同題型的平均分不是能力排名。
+每個發現的標題精簡，正文充分連結事實、教學含義和取捨；至少兩種相關證據共同支持一段，不能只有均分播報或把清單串起來。單班全文約1100至1500字，全校約1500至1900字，資料少則如實簡短。
+teachingActions單年級1至2項、全校2至3項。每項steps放1段100至180字的完整中文建議，連貫交代理由、具體課文、師生活動和觀察目標。reviewPlan只放1項、1段80至120字，沿用前述同一句和同一觀察字，寫清如何根據下一次實際表現調整。不使用1)/2)、一二三操作清單，也不附教案或課時表。
+【教師自然語氣】
+正文只談教學，不解說系統規則或資料處理：例如自然寫「聽寫集中練好『舟』，讓其餘時間用於原句跟讀」，不要寫「唯一允許字」「二年級只准」「不得增加」；自然寫「下課先聽取尚未留下朗讀結果的學生」，不要說「不能判定未參與」。內部的閾值、來源名稱、校驗要求不充當論述主題。選有實際用處的數字，不重複列兩套字音資料。不作能力分級、病因推斷或防禦性免責。標題正文不提demo、模擬、虛構、伺服器、瀏覽器、evidenceIds、模型或技術流程。demo為true時，文件頁首由系統加一次「模擬數據」，正文照常寫教研報告。
+【可靠教學內容，內部遵守即可】
+每個觀察數字準確引用evidence並在evidenceIds列出依據；不自行相減推算未提供人數。未測不是0。數字可有明確約數，但不能變換人數/筆數/字位單位。「逐字平均」的meanBelow80Positions是平均低於80的字位數，measuredStudents是該字有分數的學生數；舊字音觀察below60是評分次數。優先使用逐字平均，不再單獨分析舊字音觀察。兩個閾值都是跟進線索，不是及格線。
+「尚無評分的名冊學生」是整份名冊中的總缺測人數，包含完全無活動紀錄的學生。表述為「全班朗讀尚有X人未留下評分」，不能放進「已有活動紀錄的學生中」的子集，也不能與無活動紀錄人數相加。無活動紀錄只表示尚未留下平台紀錄，直接建議先了解練習情況並補齊觀察；不將其說成缺席、未參與或沒有練習。
+同一批學生觀察：bothMeasuredStudents為兩項都有結果的人數，bothBelow60Students為兩項個人均分皆低於60的人數，leftBelow60Students/rightBelow60Students是這批學生各項低於60的總人數，已包含兩項皆低者。簡潔寫需要跟進的名單重疊多少人，據此安排聽讀或寫字練習，不把多組交集數字全部抄入報告。各分項優先用平台評分，不混合練習回報平均。只寫事實和可觀察的教學選擇，不指認未測的聲調/韻母錯誤、粵語干擾、字詞熟悉度、注意力或技術故障成因。
+所有建議集中聽、讀、字音、聽辨和寫字，不教詩意、作文或擴展默寫。選teachingFocus的原句和觀察字，複查同樣內容；需要其他句才從curriculum選並核對字確實在句內。聽辨只建議使用本詩現有遊戲的實際題目，學生聽後作答、再重讀所聽內容；沒有提供完整題庫，不聲稱遊戲已有指定四個字、指定短句或某一讀音的題目，也不自編選項。教師可親自示範原句和指定字，但要寫清是教師帶讀。低小整份報告連同複查只寫同一個teachingConstraints允許字，其餘用聽選跟讀；中高年級按各自指定字與上限。多個年級的建議寫清適用年級。
+只輸出完整JSON，不加markdown，schema：
+{"title":"範圍普通話教研報告","overview":"連貫整體評價","findings":[{"title":"具體教學判斷","evidenceIds":["F001","F002"],"interpretation":"完整分析段落"}],"teachingActions":[{"priority":"high|medium|low","title":"教學方向","evidenceIds":["F001"],"steps":["完整建議段落"]}],"reviewPlan":[{"title":"下一課觀察","evidenceIds":["F001"],"steps":["完整複查段落"]}],"limitations":[]}。`;
 function repairPunctuation(content){
  const source=content.trim();if(!source.startsWith('{')||!source.endsWith('}'))fail('AI_INVALID_RESPONSE',502,true);
  const stack=[],output=[];let quoted=false,escaped=false;
@@ -131,12 +166,55 @@ function repairPunctuation(content){
  if(quoted||stack.length)fail('AI_INVALID_RESPONSE',502,true);
  return require('jsonrepair').jsonrepair(output.join(''));
 }
+function reportEvidence(payload){
+ const facts=payload.evidence||[],hasCharacterAverages=facts.some(fact=>fact.label==='全詩逐字平均的觀察範圍');
+ return facts.filter(fact=>{
+  if(/^\d{4}-\d\d-\d\d$/u.test(fact.scope))return false;
+  if(['活動完成紀錄','練習嘗試','已收集活動記錄','需排除的資料異常記錄','複習或自由練習結果'].includes(fact.label))return false;
+  if(fact.label.includes('有活動紀錄但尚無此項評分'))return false;
+  if(hasCharacterAverages&&/字音觀察$/u.test(fact.label))return false;
+  if(fact.label.endsWith('：平均值')&&!fact.label.startsWith('朗讀'))return false;
+  if(fact.source==='練習回報'&&facts.some(other=>other.source==='平台評分'&&other.label===fact.label&&other.scope===fact.scope))return false;
+  return true;
+ });
+}
+function completeEvidenceReferences(analysis,facts){
+ // A real, exact observation sometimes lacks its internal reference in one
+ // paragraph. Repair that metadata only when its construct, count and unit
+ // identify one fact; never edit prose or accept an invented number.
+ const topics=['朗讀','默寫','辨音','配對','排序','場景'];
+ for(const finding of analysis.findings){
+  const ids=new Set(finding.evidenceIds);
+  for(const clause of finding.interpretation.split(/[。；]/u)){
+   const used=topics.filter(topic=>clause.includes(topic));
+   for(const match of clause.matchAll(/(\d+)\s*人/gu)){
+    const value=Number(match[1]);
+    const rosterLabels=[];
+    if(/名冊|名册/u.test(clause))rosterLabels.push('名冊學生');
+    if(/有(?:活動)?[紀記记]錄|有(?:活动)?记录/u.test(clause))rosterLabels.push('名冊中有記錄學生');
+    if(/未見(?:任何|活動)?[紀記记]錄|未见(?:任何|活动)?记录/u.test(clause))rosterLabels.push('名冊中未見記錄學生');
+    const rosterFacts=facts.filter(fact=>rosterLabels.includes(fact.label)&&fact.unit==='人'&&fact.value===value&&fact.scope==='所選範圍');
+    if(rosterFacts.length===1&&ids.size<32)ids.add(rosterFacts[0].id);
+    if(used.length!==1)continue;
+    const kind=/低於60分/u.test(clause)?'個人平均低於60分的名冊學生':/有(?:效)?(?:分數|評分)|評分有|都有結果/u.test(clause)?'有評分的名冊學生':null;
+    if(!kind)continue;
+    const candidates=facts.filter(fact=>fact.unit==='人'&&fact.value===value&&fact.label.startsWith(used[0])&&fact.label.endsWith(kind)&&fact.scope==='所選範圍'&&fact.source==='平台評分');
+    if(candidates.length===1&&ids.size<32)ids.add(candidates[0].id);
+   }
+  }
+  finding.evidenceIds=[...ids];
+ }
+ return analysis;
+}
 async function requestAnalysis(payload,config,{fetchImpl=globalThis.fetch,signal,revision}={}){
  const timeout=AbortSignal.timeout(PROVIDER_TIMEOUT_MS),combined=signal?AbortSignal.any([signal,timeout]):timeout;
- const messages=[{role:'system',content:SYSTEM_PROMPT},{role:'user',content:canonical(payload)}];
- if(revision)messages.push({role:'assistant',content:canonical(revision.analysis)},{role:'user',content:'請按內部覆核重寫完整JSON報告，保留正確數據，用老師的口吻直接寫學習發現和下一課做法。以下問題是修改指令，不要把它們改寫成限制、免責聲明或修改說明；刪除無依據判斷後，接上可行的聽讀練習。低小不確定寫字安排時可全部改用原句跟讀。limitations通常留空。問題：'+canonical(revision.issues)});
+ const facts=reportEvidence(payload),{interpretationRules,sync,...providerPayload}=payload;
+ providerPayload.evidence=facts;
+ providerPayload.teachingConstraints=(payload.teachingConstraints||[]).map(({grade,poem,writing})=>({grade,poem,writing:{maxCharactersAcrossWholeReport:writing.maxCharactersAcrossWholeReport,allowedCharacters:writing.allowedCharacters}}));
+ const messages=[{role:'system',content:SYSTEM_PROMPT},{role:'user',content:canonical(providerPayload)}];
+ if(revision)messages.push({role:'assistant',content:canonical(revision.analysis)},{role:'user',content:'請對上一份報告作最小必要修正，保留正確的分析、結構、篇幅與段落，不從零重寫。逐項糾正以下實際問題，相關句子也一併改正；不增加免責段落或解說內部規則。覆核若要求刪除某整句，直接刪除，不再改寫或補算，保留相鄰的正確敘述。總缺測人數以全班為範圍，不能放入「已有紀錄的X人中」的子集。無紀錄不寫成缺席或未參與；現有遊戲只按實際題目練習，不宣稱題庫含指定字音。輸出修正後的完整JSON，evidenceIds沿用真實依據。覆核問題：'+canonical(revision.issues)});
  let response;
- try{response=await fetchImpl(config.url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+config.key},body:JSON.stringify({model:config.model,messages,temperature:0.25,max_tokens:3500,thinking:{type:'disabled'},response_format:{type:'json_object'} }),signal:combined});}
+ try{response=await fetchImpl(config.url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+config.key},body:JSON.stringify({model:config.model,messages,temperature:0.3,max_tokens:6500,thinking:{type:'disabled'},response_format:{type:'json_object'} }),signal:combined});}
  catch(error){if(signal?.aborted)fail('ANALYSIS_INTERRUPTED',499,true,5);if(timeout.aborted||['TimeoutError','AbortError'].includes(error?.name))fail('AI_TIMEOUT',504,true,30);fail('AI_UNAVAILABLE',502,true,30);}
  if(response.status===429){await response.body?.cancel().catch(()=>{});fail('AI_RATE_LIMITED',429,true,60);}
  if(!response.ok){await response.body?.cancel().catch(()=>{});fail('AI_UNAVAILABLE',502,true,30);}
@@ -156,7 +234,7 @@ async function requestAnalysis(payload,config,{fetchImpl=globalThis.fetch,signal
   // schema/evidence validation below. Truncated provider output is rejected above.
   try{raw=JSON.parse(repairPunctuation(content));syntaxRepaired=true;}catch{fail('AI_INVALID_RESPONSE',502,true);}
  }
- return {analysis:validateAnalysis(raw,payload.evidence,payload.filters),syntaxRepaired,responseModel:provider.model||null,usage:{inputTokens:safeCount(provider.usage?.prompt_tokens),outputTokens:safeCount(provider.usage?.completion_tokens)}};
+ return {analysis:completeEvidenceReferences(validateAnalysis(raw,payload.evidence,payload.filters),facts),syntaxRepaired,responseModel:provider.model||null,usage:{inputTokens:safeCount(provider.usage?.prompt_tokens),outputTokens:safeCount(provider.usage?.completion_tokens)}};
 }
 function publicReport(report){const {dataset,...visible}=report;return visible;}
 function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImpl=globalThis.fetch,now=Date.now,uuid=crypto.randomUUID,namespace=NS}={}){
@@ -199,7 +277,7 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
    await quota(actor.id);
    const generated=await requestAnalysis(payload,config,{fetchImpl,signal});
    const f=dataset.filters;
-   generated.analysis.title=`${f.grade?f.grade+'年級'+(f.cls?f.cls+'班':''):f.cls?'全校'+f.cls+'班':'全校'}普通話教學報告`;
+   generated.analysis.title=`${f.grade?f.grade+'年級'+(f.cls?f.cls+'班':''):f.cls?'全校'+f.cls+'班':'全校'}普通話教研報告`;
    const report={schemaVersion:1,reportId,createdAt:new Date(now()).toISOString(),model:config.model,responseModel:generated.responseModel,syntaxRepaired:generated.syntaxRepaired,promptVersion:PROMPT_VERSION,filters:dataset.filters,dataFingerprint,snapshotId:dataset.snapshotId,
     source:{sync:dataset.analytics.sync,coverage:dataset.analytics.coverage,rosterSummary:dataset.rosterSummary},evidence:payload.evidence,analysis:generated.analysis,followUp,usage:generated.usage,dataset};
    const current=await read(key);if(current?.value?.leaseId!==leaseId)fail('ANALYSIS_RETRY_REQUIRED',409,true);

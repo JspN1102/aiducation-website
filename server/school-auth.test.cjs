@@ -30,9 +30,10 @@ function fixture() {
   const service = auth.createAuth({ env, store, now: () => time });
   return { service, store, records, env, advance: ms => { time += ms; } };
 }
-function request({ method = 'POST', login = 'test0', password = 'test-password-0', cookie, csrf, origin = 'https://school.test' } = {}) {
+function request({ method = 'POST', login = 'test0', password = 'test-password-0', cookie, csrf, origin = 'https://school.test',
+  termsAccepted = true, termsVersion = auth.TERMS_VERSION } = {}) {
   return { method, headers: { origin, ...(cookie ? { cookie } : {}), ...(csrf ? { 'x-csrf-token': csrf } : {}) },
-    body: { action: 'login', login, password }, socket: { remoteAddress: '127.0.0.1' } };
+    body: { action: 'login', login, password, termsAccepted, termsVersion }, socket: { remoteAddress: '127.0.0.1' } };
 }
 function response() {
   const headers = {};
@@ -42,6 +43,86 @@ async function login(f, options = {}) {
   const res = response(), state = await f.service.login(request(options), res);
   return { state, cookie: res.headers['Set-Cookie'].split(';')[0], res };
 }
+
+test('new login requires an explicit boolean acceptance before credential checks or new session storage', async () => {
+  for (const accepted of [undefined, false, null, 'true', 1, [], {}]) {
+    const f = fixture(), req = request(), res = response();
+    if (accepted === undefined) delete req.body.termsAccepted;
+    else req.body.termsAccepted = accepted;
+    await assert.rejects(f.service.login(req, res), error => {
+      assert.equal(error.status, 400); assert.equal(error.code, 'TERMS_REQUIRED');
+      auth.sendError(res, error);
+      assert.match(res.body.error, /閱讀並同意/); return true;
+    });
+    assert.equal(f.records.size, 1);
+    assert.match(res.headers['Set-Cookie'], /Max-Age=0/);
+    assert.equal(res.statusCode, 400);
+  }
+});
+
+test('only the current exact terms version can create a new session', async () => {
+  assert.equal(auth.TERMS_VERSION, '2026-09-20-v1');
+  for (const version of [undefined, null, '', '2026-09-19-v1', '2026-09-20-v1 ', 1, { version: auth.TERMS_VERSION }]) {
+    const f = fixture(), req = request(), res = response();
+    if (version === undefined) delete req.body.termsVersion;
+    else req.body.termsVersion = version;
+    await assert.rejects(f.service.login(req, res), error => {
+      assert.equal(error.status, 400); assert.equal(error.code, 'TERMS_VERSION_CHANGED');
+      auth.sendError(res, error); assert.match(res.body.error, /已更新/); return true;
+    });
+    assert.equal(f.records.size, 1);
+    assert.match(res.headers['Set-Cookie'], /Max-Age=0/);
+  }
+});
+
+test('terms receipt uses server time in the existing session write and does not grant research consent', async () => {
+  for (const person of [0, 2]) {
+    const f = fixture(), originalCas = f.store.cas; let sessionWrites = 0;
+    f.store.cas = async (key, ...args) => { if (key.startsWith('session/')) sessionWrites++; return originalCas(key, ...args); };
+    f.advance(1234);
+    const req = request({ login: 'test' + person, password: 'test-password-' + person });
+    Object.assign(req.body, { acceptedAt: 1, termsAcceptedAt: '1900-01-01', researchConsent: true,
+      termsAcceptance: { acceptedAt: 1, kind: 'guardian_consent', version: 'forged' } });
+    const state = await f.service.login(req, response());
+    const sessions = [...f.records].filter(([key]) => key.startsWith('session/')).map(([, row]) => row.value);
+    assert.equal(sessionWrites, 1); assert.equal(sessions.length, 1);
+    assert.deepEqual(sessions[0].termsAcceptance, { version: auth.TERMS_VERSION, acceptedAt: NOW + 1234, kind: 'platform_terms' });
+    assert.equal(sessions[0].issuedAt, sessions[0].termsAcceptance.acceptedAt);
+    assert.equal(sessions[0].expiresAt - sessions[0].issuedAt, auth.SESSION_MS);
+    assert.equal('researchConsent' in sessions[0], false);
+    assert.equal(state.user.researchEnabled, person === 0);
+    assert.equal('termsAcceptance' in state.user, false);
+  }
+});
+
+test('sessions created before terms acknowledgement remain authenticated without fabricated receipts', async () => {
+  const f = fixture(), signedIn = await login(f);
+  const row = [...f.records].find(([key]) => key.startsWith('session/'))[1];
+  delete row.value.termsAcceptance;
+  const readOnly = auth.createAuth({ env: f.env, store: f.store, now: () => NOW });
+  assert.equal((await readOnly.state(request({ method: 'GET', cookie: signedIn.cookie }))).authenticated, true);
+  assert.equal((await readOnly.requireActor(request({ cookie: signedIn.cookie, csrf: signedIn.state.csrfToken }))).id, accounts[0].id);
+  assert.equal('termsAcceptance' in row.value, false);
+});
+
+test('rejected terms on shared-device login still revoke the prior identity before returning an error', async () => {
+  for (const mismatch of [{ termsAccepted: false }, { termsVersion: 'old' }]) {
+    const f = fixture(), previous = await login(f), req = request({ cookie: previous.cookie, ...mismatch }), res = response();
+    await assert.rejects(f.service.login(req, res), error => error.status === 400 && error.code.startsWith('TERMS_'));
+    assert.match(res.headers['Set-Cookie'], /Max-Age=0/);
+    assert.equal((await f.service.state(request({ method: 'GET', cookie: previous.cookie }))).authenticated, false);
+    assert.equal([...f.records.keys()].filter(key => key.startsWith('session/')).length, 1);
+  }
+});
+
+test('failure to persist the session and its terms receipt cannot issue a signed-in cookie', async () => {
+  const f = fixture(), originalCas = f.store.cas;
+  f.store.cas = async (key, ...args) => { if (key.startsWith('session/')) throw new Error('synthetic session storage failure'); return originalCas(key, ...args); };
+  const res = response();
+  await assert.rejects(f.service.login(request(), res), /synthetic session storage failure/);
+  assert.match(res.headers['Set-Cookie'], /Max-Age=0/);
+  assert.equal([...f.records.keys()].some(key => key.startsWith('session/')), false);
+});
 
 test('scrypt uses independent salts, verifies exact secrets and never returns credential fields', async () => {
   const a = await auth.hashPassword('same'), b = await auth.hashPassword('same');

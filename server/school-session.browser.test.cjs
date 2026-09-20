@@ -12,7 +12,7 @@ const signedOut = { enabled: true, authenticated: false };
 const signedIn = { enabled: true, authenticated: true,
   user: { id: 's_' + '1'.repeat(24), role: 'student', displayName: 'Test pupil', grade: 2, cls: 'A' }, csrfToken: 'x'.repeat(43) };
 const fixture = '<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="app.bundle.css"><body><header class="site-header"><button id="profile-open">學習檔案</button></header><div id="app">Private learning screen</div><script type="module">import * as session from "./school-session.mjs";window.session=session;window.ready=false;session.initializeSchoolSession(document.querySelector("#app")).then(()=>window.ready=true).catch(e=>window.initError=e.message);</script></body></html>';
-const mime = { '.mjs': 'text/javascript', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.woff2': 'font/woff2' };
+const mime = { '.html': 'text/html', '.mjs': 'text/javascript', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.woff2': 'font/woff2' };
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
   if (url.pathname === '/maanshan/fixture') { res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(fixture); return; }
@@ -37,8 +37,49 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
     finally { await context.close(); }
   }
   async function open(page, handler) { await page.route('**/api/school-auth/**', handler); await page.goto(origin + '/maanshan/fixture'); }
-  async function enter(page) { await page.locator('input[name=login]').fill('test-pupil'); await page.locator('input[name=password]').fill('synthetic-password'); }
+  async function enter(page) { await page.locator('input[name=login]').fill('test-pupil'); await page.locator('input[name=password]').fill('synthetic-password'); await page.locator('input[name=termsAccepted]').check(); }
   try {
+    await run('platform terms start unchecked, are readable before login and remain separate from research consent', async (page, context) => {
+      let posts = 0;
+      await open(page, route => { if (route.request().method() === 'POST') posts++; return reply(route, signedOut); });
+      const checkbox = page.locator('input[name=termsAccepted]');
+      await checkbox.waitFor(); assert.equal(await checkbox.isChecked(), false);
+      assert.equal(await checkbox.getAttribute('required'), '');
+      const popupEvent = context.waitForEvent('page');
+      await page.locator('.platform-terms-confirmation a').click();
+      const agreement = await popupEvent; await agreement.waitForLoadState('domcontentloaded');
+      assert.equal(new URL(agreement.url()).pathname, '/maanshan/agreement.html');
+      assert.equal(await agreement.locator('h1').innerText(), '使用協議及私隱說明');
+      assert.match(await agreement.locator('.version').innerText(), /2026-09-20-v1/);
+      assert.match(await agreement.locator('body').innerText(), /並不代替研究參與或監護人的同意/);
+      assert.equal(await agreement.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      assert.equal(await checkbox.isChecked(), false); assert.equal(posts, 0);
+      await agreement.close();
+      await checkbox.check(); await page.reload(); await checkbox.waitFor();
+      assert.equal(await checkbox.isChecked(), false); assert.equal(posts, 0);
+    });
+    await run('unchecked or withdrawn terms cannot submit even with a synthetic submit event; checked login sends the exact version', async page => {
+      const bodies = [];
+      await open(page, route => {
+        if (route.request().method() === 'POST') { bodies.push(route.request().postDataJSON()); return reply(route, signedIn); }
+        return reply(route, signedOut);
+      });
+      await page.locator('input[name=login]').fill('test-pupil');
+      await page.locator('input[name=password]').fill('synthetic-password');
+      await page.locator('[type=submit]').click();
+      await page.evaluate(() => document.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+      await page.waitForTimeout(50); assert.equal(bodies.length, 0);
+      assert.match(await page.locator('input[name=termsAccepted]').evaluate(el => el.validationMessage), /閱讀並同意/);
+      await page.locator('input[name=termsAccepted]').check();
+      await page.locator('input[name=termsAccepted]').uncheck();
+      await page.evaluate(() => document.querySelector('form').requestSubmit());
+      await page.waitForTimeout(50); assert.equal(bodies.length, 0);
+      await page.locator('input[name=termsAccepted]').check(); await page.locator('[type=submit]').click();
+      await page.waitForFunction(() => window.ready);
+      assert.equal(bodies.length, 1);
+      assert.equal(bodies[0].termsAccepted, true); assert.equal(bodies[0].termsVersion, '2026-09-20-v1');
+      assert.equal('termsAcceptedAt' in bodies[0], false); assert.equal('researchConsent' in bodies[0], false);
+    });
     await run('teacher uses the common login and can load private study progress without automatic dashboard redirect',async page=>{
       const teacher={...signedIn,user:{...signedIn.user,id:'t_'+'2'.repeat(24),role:'teacher',grade:null,cls:null,learningScope:'all-grades',researchEnabled:false}};let progressReads=0;
       await open(page,route=>{
@@ -81,10 +122,11 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
       await enter(page); await page.locator('[type=submit]').click(); await sent.promise;
       const pending = await page.evaluate(() => {
         const form = document.querySelector('form'); form.requestSubmit();
-        return { busy: form.getAttribute('aria-busy'), locked: form.elements.login.readOnly && form.elements.password.readOnly };
+        return { busy: form.getAttribute('aria-busy'), locked: form.elements.login.readOnly && form.elements.password.readOnly,
+          termsLocked: form.elements.termsAccepted.disabled };
       });
       finish.resolve(); await page.waitForFunction(() => window.ready);
-      assert.deepEqual(pending, { busy: 'true', locked: true });
+      assert.deepEqual(pending, { busy: 'true', locked: true, termsLocked: true });
       assert.equal(await page.locator('[type=submit]').isDisabled(), true);
       await page.evaluate(() => document.querySelector('form').requestSubmit());
       await page.waitForTimeout(50); assert.equal(posts, 1);
@@ -94,6 +136,8 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
       { label: 'wrong password', status: 401, data: { code: 'INVALID_CREDENTIALS' }, message: /登入名稱或密碼不正確/, keepPassword: false },
       { label: 'temporary outage', status: 503, data: { error: 'sensitive provider details' }, message: /服務.*暫時/, keepPassword: true },
       { label: 'updated account', status: 409, data: { code: 'ACCOUNT_CHANGED' }, message: /帳戶已更新/, keepPassword: false },
+      { label: 'terms required', status: 400, data: { code: 'TERMS_REQUIRED' }, message: /閱讀並同意/, keepPassword: false },
+      { label: 'terms updated', status: 400, data: { code: 'TERMS_VERSION_CHANGED' }, message: /協議已更新/, keepPassword: false },
       { label: 'rate limit', status: 429, data: { code: 'LOGIN_THROTTLED' }, headers: { 'Retry-After': '120' }, message: /2 分鐘/, keepPassword: true },
       { label: 'missing session token', status: 200, data: { ...signedIn, csrfToken: undefined }, message: /回覆不完整/, keepPassword: false }
     ]) await run(`login error: ${item.label}`, async page => {
@@ -104,6 +148,7 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
       assert.match(await page.locator('#school-login-error').textContent(), item.message);
       assert.equal(await page.locator('input[name=password]').inputValue(), item.keepPassword ? 'synthetic-password' : '');
       assert.equal(await page.locator('[type=submit]').isEnabled(), true);
+      assert.equal(await page.locator('input[name=termsAccepted]').isEnabled(), true);
       assert.equal(await page.evaluate(() => window.ready || !!window.initError), false);
     });
     await run('initial service failure retries in place', async page => {
@@ -131,7 +176,7 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
         await page.setViewportSize({ width, height });
         const box = await page.evaluate(() => ({
           overflow: document.documentElement.scrollWidth > innerWidth,
-          controls: [...document.querySelectorAll('.school-login input,.school-login button')].map(el => {
+          controls: [...document.querySelectorAll('.school-login input:not([type=checkbox]),.school-login button,.platform-terms-confirmation label')].map(el => {
             const b = el.getBoundingClientRect(); return { width: b.width, height: b.height, left: b.left, right: b.right };
           })
         }));

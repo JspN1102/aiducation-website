@@ -1,4 +1,5 @@
-import {mountShishiSprite} from './shishi-sprite.mjs?v=20260920-final5';
+import {TERMS_VERSION, termsConfirmationMarkup, bindTermsConfirmation} from './platform-terms.mjs?v=20260920-terms1';
+import {mountShishiSprite} from './shishi-sprite.mjs?v=20260921-school1';
 // The cookie is HttpOnly. Only the current user's display profile and CSRF
 // token live in memory; passwords and bearer credentials are never persisted.
 let current = {enabled: false, authenticated: false, user: null, csrfToken: ''};
@@ -96,6 +97,8 @@ function loginError(response, data) {
     const seconds = Math.min(900, Math.max(1, Number(response.headers.get('Retry-After')) || Number(data?.retryAfter) || 900));
     return `剛才嘗試次數較多，請約 ${Math.ceil(seconds / 60)} 分鐘後再登入。`;
   }
+  if (data?.code === 'TERMS_REQUIRED') return '請先閱讀並同意使用協議及私隱說明。';
+  if (data?.code === 'TERMS_VERSION_CHANGED') return '使用協議已更新，請重新整理頁面後閱讀並確認。';
   if (response.status >= 500) return '帳戶服務暫時未能連線，請稍後再試。';
   if (data?.code === 'ACCOUNT_CHANGED') return '帳戶已更新，請核對老師提供的最新密碼後再試。';
   if (response.status === 403) return '請從學校提供的平台網址重新登入。';
@@ -105,8 +108,9 @@ function loginError(response, data) {
 function loginScreen(host, initialError = '') {
   document.body.dataset.screen = 'school-login';
   document.querySelector('#profile-open')?.setAttribute('hidden', '');
-  host.innerHTML = `<main class="school-login" id="main"><section class="school-login-card" aria-labelledby="school-login-title"><header class="school-login-heading"><button type="button" class="school-login-mascot" aria-label="點詩詩，看她翻書"><span class="school-login-sprite" aria-hidden="true"></span></button><div><h1 id="school-login-title">AI普通話學習平台</h1></div></header><form id="school-login-form" aria-busy="false"><label for="school-login-name">登入名稱<input id="school-login-name" name="login" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="64" enterkeyhint="next" required placeholder="學校提供的登入名稱"></label><label for="school-login-password">登入密碼<span class="school-password"><input id="school-login-password" name="password" type="password" autocomplete="current-password" maxlength="128" enterkeyhint="go" required aria-describedby="school-login-error"><button type="button" aria-label="顯示密碼" aria-pressed="false" id="school-password-toggle">顯示</button></span></label><p id="school-login-error" role="alert">${escape(initialError)}</p><button class="button primary school-login-submit" type="submit">登入，開始學習</button></form><p class="school-login-help">忘記密碼？請找老師幫忙。</p></section></main>`;
+  host.innerHTML = `<main class="school-login" id="main"><section class="school-login-card" aria-labelledby="school-login-title"><header class="school-login-heading"><button type="button" class="school-login-mascot" aria-label="點詩詩，看她翻書"><span class="school-login-sprite" aria-hidden="true"></span></button><div><h1 id="school-login-title">AI普通話學習平台</h1></div></header><form id="school-login-form" aria-busy="false"><label for="school-login-name">登入名稱<input id="school-login-name" name="login" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="64" enterkeyhint="next" required placeholder="學校提供的登入名稱"></label><label for="school-login-password">登入密碼<span class="school-password"><input id="school-login-password" name="password" type="password" autocomplete="current-password" maxlength="128" enterkeyhint="go" required aria-describedby="school-login-error"><button type="button" aria-label="顯示密碼" aria-pressed="false" id="school-password-toggle">顯示</button></span></label>${termsConfirmationMarkup()}<p id="school-login-error" role="alert">${escape(initialError)}</p><button class="button primary school-login-submit" type="submit">登入，開始學習</button></form><p class="school-login-help">忘記密碼？請找老師幫忙。</p></section></main>`;
   const form = host.querySelector('form'), status = host.querySelector('#school-login-error');
+  bindTermsConfirmation(form);
   const mascot=host.querySelector('.school-login-mascot');
   const sprite=mountShishiSprite(mascot.querySelector('span'),{canPlay:()=>mascot.isConnected&&!form.querySelector('[type=submit]').disabled&&!form.contains(document.activeElement)});
   mascot.addEventListener('click',()=>void sprite.play('book'));
@@ -123,6 +127,7 @@ function loginScreen(host, initialError = '') {
     event.preventDefault();
     const button = form.querySelector('[type="submit"]');
     if (button.disabled || blocked) return;
+    if (!form.elements.termsAccepted.checked) { form.elements.termsAccepted.reportValidity(); return; }
     const username = form.elements.login.value.trim(), password = form.elements.password.value;
     let succeeded = false;
     const controller = new AbortController(); loginRequest = controller;
@@ -131,12 +136,13 @@ function loginScreen(host, initialError = '') {
     form.setAttribute('aria-busy', 'true');
     form.elements.login.readOnly = form.elements.password.readOnly = true;
     form.querySelector('#school-password-toggle').disabled = true;
+    form.elements.termsAccepted.disabled = true;
     form.elements.password.removeAttribute('aria-invalid');
     status.dataset.kind = 'error';
     button.disabled = true; button.textContent = '正在登入…'; status.textContent = '';
     broadcast('sign-in-attempt');
     try {
-      const response = await fetch('/api/school-auth/', {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'login', login:username, password}), signal:controller.signal});
+      const response = await fetch('/api/school-auth/', {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'login', login:username, password, termsAccepted:true, termsVersion:TERMS_VERSION}), signal:controller.signal});
       const data = await response.json().catch(() => null);
       if (blocked || !form.isConnected) return;
       clearTimeout(waiting); status.dataset.kind = 'error';
@@ -165,6 +171,7 @@ function loginScreen(host, initialError = '') {
         form.setAttribute('aria-busy', 'false');
         form.elements.login.readOnly = form.elements.password.readOnly = false;
         form.querySelector('#school-password-toggle').disabled = false;
+        form.elements.termsAccepted.disabled = false;
         button.disabled = false; button.textContent = '登入，開始學習';
       }
     }
