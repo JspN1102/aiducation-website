@@ -7,12 +7,12 @@ const codes=(a,p=payload)=>inspectAnalysis(a,p).map(item=>item.code);
 test('flags actual provider ability/source claims without changing the model text',()=>{
   const analysis={findings:[{title:'朗讀字音評分平均70分，顯示整體朗讀表現中等',interpretation:'平均71.4分，顯示辨識能力尚可。此分數未達高水準。'}],limitations:['瀏覽器自報分數未經核實，其可信度較低。']};
   const before=JSON.stringify(analysis),issues=inspectAnalysis(analysis,payload);
-  assert.deepEqual(issues.map(i=>i.code),['UNSUPPORTED_ABILITY_LEVEL','UNSUPPORTED_SOURCE_COMPARISON']);assert.equal(JSON.stringify(analysis),before);
+  assert.deepEqual(issues.map(i=>i.code),['UNSUPPORTED_ABILITY_LEVEL','REPORT_TECHNICAL_LANGUAGE','UNSUPPORTED_SOURCE_COMPARISON']);assert.equal(JSON.stringify(analysis),before);
   assert(issues.every(i=>i.message.length>20&&i.path));
 });
-test('does not flag explicit negation of unsupported claims or ordinary evidence limits',()=>{
+test('negated claims are not false diagnoses, but technical disclaimers still need a teacher-voice rewrite',()=>{
   const analysis={overview:'不能因70分稱為中等。尚無依據說基礎薄弱。不可判斷自報偏高。',limitations:['不能據此判斷瀏覽器自報可信度較低。','未有證據表明自報偏高。自報偏高的說法沒有依據。','並非能力薄弱。「中等」的說法不成立。','字音分數不能推斷聲母、韻母或聲調錯誤。','未見紀錄不等於沒有練習，未測不當作零分。']};
-  assert.deepEqual(inspectAnalysis(analysis,payload),[]);
+  assert.deepEqual(codes(analysis),['REPORT_TECHNICAL_LANGUAGE','REPORT_DEFENSIVE_LANGUAGE']);
 });
 test('negative preface cannot hide a later affirmative unsupported claim',()=>{
   assert(codes({overview:'不能說能力差，但表現中等。'}).includes('UNSUPPORTED_ABILITY_LEVEL'));
@@ -58,4 +58,17 @@ test('flags listening choices that are all present in the specified first line, 
   const p={...payload,curriculum:[{title:'題西林壁',lines:[{text:'橫看成嶺側成峯'}]},{title:'初春小雨',lines:[{text:'天街小雨潤如酥'}]}]};
   for(const step of ['教師朗讀《題西林壁》首句，學生從「橫」「嶺」中選出聽到的字。','教師朗讀《初春小雨》第一句，學生從「街」「潤」「酥」中選出聽到的字。','教師朗讀「橫看成嶺側成峯」，學生從「橫」「嶺」中選出聽到的字。'])assert(codes({teachingActions:[action('聽選',[step])]},p).includes('AMBIGUOUS_LISTENING_CHOICES'),step);
   for(const step of ['教師朗讀《題西林壁》首句，學生從「橫」「雨」中選出聽到的字。','教師朗讀《題西林壁》首句，學生從「橫」「嶺」中選出全部聽到的字。','教師朗讀《題西林壁》首句，學生跟讀「橫」「嶺」。'])assert(!codes({teachingActions:[action('聽選',[step])]},p).includes('AMBIGUOUS_LISTENING_CHOICES'),step);
+});
+
+test('ordinary teacher findings and practical next steps need no defensive caveats',()=>{
+ const analysis={overview:'本班25人，22人已有練習紀錄。下次先聽《贈汪倫》的首句，再分句跟讀。',findings:[{title:'先練首句的字音',interpretation:'「舟」字有3次評分低於60分，課堂可先聽示範，再放回原句朗讀。'}],teachingActions:[action('聽讀首句',['老師示範「李白乘舟將欲行」，學生先聽一遍。','同桌輪流跟讀，老師聽取「舟」字，再邀請學生重讀原句。'])],reviewPlan:[action('下次再讀',['下一課用同一句再讀一次，記下需要繼續練習的字。'])],limitations:[]};
+ assert.deepEqual(inspectAnalysis(analysis,{...payload,demo:true}),[]);
+ assert.deepEqual(codes({limitations:['本次未有默寫紀錄，下一課先做一次聽寫觀察。']}),[]);
+});
+
+test('teacher reports reject implementation language and demo explanations but still reject unsupported diagnoses',()=>{
+ for(const text of ['伺服器核實的測量平均70分。','瀏覽器自報結果。','server_verified的評測結果。','資料快照顯示20筆。'])assert(codes({overview:text}).includes('REPORT_TECHNICAL_LANGUAGE'),text);
+ assert(codes({overview:'字音分數不能推斷聲母、韻母或聲調。'}).includes('REPORT_DEFENSIVE_LANGUAGE'));
+ assert(codes({overview:'本報告全部是虛構學生的模擬資料。'},{...payload,demo:true}).includes('DEMO_LABEL_IN_BODY'));
+ assert(codes({overview:'分數顯示聲調混淆。'}).includes('UNSUPPORTED_PHONEME_DIAGNOSIS'));
 });

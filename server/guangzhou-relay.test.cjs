@@ -7,12 +7,13 @@ const listen=server=>new Promise(resolve=>server.listen(0,'127.0.0.1',()=>resolv
 async function fixture(fn,options={}){
  const origin=http.createServer(fn),originPort=await listen(origin),clients=[],requests=[];
  class SSH extends EventEmitter{
-  connect(config){this.config=config;queueMicrotask(()=>{if(options.failFirstHandshake&&clients.length===1)return this.emit('error',new Error('synthetic transport timeout'));config.hostVerifier(options.hostHash||'a'.repeat(64))?this.emit('ready'):this.emit('error',new Error('synthetic key mismatch'));});return this;}
+  constructor(){super();this.closed=false;this.once('close',()=>{this.closed=true;});}
+  connect(config){this.config=config;if(options.onConnect){options.onConnect(this,clients);return this;}queueMicrotask(()=>{if(options.failFirstHandshake&&clients.length===1)return this.emit('error',new Error('synthetic transport timeout'));config.hostVerifier(options.hostHash||'a'.repeat(64))?this.emit('ready'):this.emit('error',new Error('synthetic key mismatch'));});return this;}
   forwardOut(from,port,to,target,cb){requests.push({from,port,to,target});const socket=net.connect(originPort,'127.0.0.1');socket.once('connect',()=>cb(null,socket));socket.once('error',cb);}
-  end(){this.emit('close');}destroy(){this.end();}
+  end(){this.emit('close');}destroy(){if(options.onDestroy)return options.onDestroy(this);this.end();}
  }
  const relay=createRelay({env,clientFactory:()=>{const client=new SSH();clients.push(client);return client;},timeoutMs:options.timeoutMs||1500});
- const frontend=http.createServer(async(req,res)=>{const chunks=[];for await(const chunk of req)chunks.push(chunk);if(chunks.length){try{req.body=JSON.parse(Buffer.concat(chunks));}catch{req.body=Buffer.concat(chunks);}}await relay.relay(options.name||'school-auth',req,res);});
+ const frontend=http.createServer(async(req,res)=>{const chunks=[];for await(const chunk of req)chunks.push(chunk);if(chunks.length){try{req.body=JSON.parse(Buffer.concat(chunks));}catch{req.body=Buffer.concat(chunks);}}options.onRequest?.(req);await relay.relay(options.name||'school-auth',req,res);});
  const port=await listen(frontend);
  return {clients,requests,call:(url='/api/school-auth',init={})=>fetch('http://127.0.0.1:'+port+url,init),close:async()=>{relay.close();frontend.closeAllConnections();origin.closeAllConnections();await Promise.all([new Promise(r=>frontend.close(r)),new Promise(r=>origin.close(r))]);}};
 }
@@ -69,6 +70,38 @@ test('transport failure can switch between the two restricted ports before forwa
  let calls=0;const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{failFirstHandshake:true});
  try{const r=await f.call('/api/school-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"action":"login"}'});assert.equal(r.status,200);assert.equal(calls,1);assert.deepEqual(f.clients.map(c=>c.config.port),[22,2222]);assert.equal(f.requests.length,1);}finally{await f.close();}
 });
+test('late close from a failed SSH connection preserves the shared fallback for concurrent POSTs', {timeout:5000},async()=>{
+ let fallbackStarted,secondArrived;
+ const fallback=new Promise(resolve=>{fallbackStarted=resolve;}),secondRequest=new Promise(resolve=>{secondArrived=resolve;});
+ const received=[];
+ const f=await fixture(async(req,res)=>{
+  let body='';for await(const chunk of req)body+=chunk;
+  received.push({method:req.method,id:JSON.parse(body).requestId});res.end('{"ok":true}');
+ },{
+  onConnect(client,clients){
+   if(clients.length===1)queueMicrotask(()=>client.emit('error',new Error('synthetic first-port timeout')));
+   else if(clients.length===2)fallbackStarted();
+  },
+  // A real failed socket may emit close after the fallback has begun connecting.
+  onDestroy(){},
+  onRequest(req){if(req.body?.requestId==='second')secondArrived();}
+ });
+ const post=id=>f.call('/api/school-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'login',requestId:id})});
+ try{
+  const first=post('first');await fallback;
+  f.clients[0].emit('close');
+  const second=post('second');await secondRequest;
+  // Complete every pending handshake so regressions fail by assertion, not timeout.
+  for(const client of f.clients.slice(1))client.emit('ready');
+  const responses=await Promise.all([first,second]);
+  for(const response of responses){assert.equal(response.status,200);assert.deepEqual(await response.json(),{ok:true});}
+  assert.deepEqual(f.clients.map(client=>client.config.port),[22,2222]);
+  assert.equal(f.requests.length,2);
+  assert.deepEqual(received.sort((a,b)=>a.id.localeCompare(b.id)),[{method:'POST',id:'first'},{method:'POST',id:'second'}]);
+ }finally{await f.close();}
+ assert(f.clients.every(client=>client.closed),'relay cleanup must close every SSH connection');
+});
+
 test('oversized upstream data is never delivered as a truncated Office download',async()=>{
  const f=await fixture((req,res)=>res.end(Buffer.alloc(5*1024*1024)),{name:'teacher-tools'});
  try{const r=await f.call('/api/teacher-tools');assert.equal(r.status,502);assert.equal((await r.json()).code,'ORIGIN_RESPONSE_TOO_LARGE');}finally{await f.close();}

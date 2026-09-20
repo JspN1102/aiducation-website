@@ -10,6 +10,18 @@ test('demo roster is exactly 775 clearly fictional students in 31 classes, no cr
   for(const forbidden of ['password','login','email','phone'])assert(roster.every(p=>!(forbidden in p)));
   roster[0].displayName='changed';assert.notEqual(demoRoster()[0].displayName,'changed');
 });
+
+test('authorized school roster supplies names and classes while identities and results stay simulated',()=>{
+ const real=[{id:'real-student-alpha',researchId:'r_real_alpha',role:'student',displayName:'測試陳同學',grade:2,cls:'B',classNo:1,login:'private-login',password:'private-password'},
+ {id:'real-student-beta',researchId:'r_real_beta',role:'student',displayName:'測試李同學',grade:2,cls:'B',classNo:2},
+ {id:'teacher',role:'teacher',displayName:'測試老師'}];
+ const roster=demoRoster(real);assert.equal(roster.length,2);assert.deepEqual(roster.map(p=>p.displayName),['測試陳同學','測試李同學']);
+ assert(roster.every(p=>p.researchId.startsWith('r_demo_')&&p.id.startsWith('s_demo_')));
+ assert(!JSON.stringify(roster).includes('private-'));assert(!JSON.stringify(roster).includes('r_real_'));
+ const dataset=createDemoDataset({grade:2,cls:'B'},{...options,roster:real});assert.equal(dataset.students.length,2);assert.equal(dataset.rosterSummary.totalStudents,2);assert.equal(dataset.analytics.source,'synthetic_demo');assert(dataset.students.every(p=>p.displayName.startsWith('測試')));assert.equal(dataset.rosterSummary.unmatchedWithRecords,0);
+ const renamed=real.map(p=>({...p,displayName:p.displayName+'新'}));const next=createDemoDataset({grade:2,cls:'B'},{...options,roster:renamed});assert.notEqual(next.snapshotId,dataset.snapshotId);assert(next.students.every(p=>p.displayName.endsWith('新')));
+ assert.equal(real[0].displayName,'測試陳同學');assert.equal(createDemoDataset({grade:2,cls:'B'},{...options,roster:[]}).students.length,0);
+});
 test('full-scale demo uses real aggregate schema with sources, dates, missingness and no invalid events',()=>{
   const data=createDemoDataset({},options);
   assert.equal(data.schemaVersion,1);assert.equal(data.demo,true);assert.equal(data.analytics.demo,true);assert.equal(data.analytics.source,'synthetic_demo');assert.match(data.snapshotId,/^[a-f0-9]{64}$/);

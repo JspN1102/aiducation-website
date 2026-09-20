@@ -24,10 +24,11 @@ Set-Location C:/Users/Administrator/maanshan-work/school-release-new
 vercel --prod --yes --scope jspn1102s-projects --local-config ./vercel.json
 ```
 
-打包器生成 12 个固定入口：`soe`、`tts`、`maanshan-chat`、`maanshan-report`、
+打包器把 12 个固定入口交给同一个 `school-gateway` 函数：`soe`、`tts`、`maanshan-chat`、`maanshan-report`、
 `maanshan-save`、`maanshan-data`、`handwriting`、`school-auth`、`research-events`、
 `teacher-analytics`、`challenge-result`、`teacher-tools`。每个入口固定上游路径，
-调用者不能通过 URL 选择其他目标。Vercel 只包含页面、relay 和必要依赖，
+只接受该白名单，调用者不能选择其他目标。路由重写的来源及目的都保留尾斜线，
+与 `trailingSlash: true` 一致。Vercel 只包含页面、relay 和必要依赖，
 不打包 `.env`、数据库、账号名单、广州业务模块、原官网或其他网站。
 
 学校 production 的 relay 使用四个加密环境变量：`GUANGZHOU_RELAY_HOST`、
@@ -44,7 +45,7 @@ vercel --prod --yes --scope jspn1102s-projects --local-config ./vercel.json
 relay 校验 SSH 主机密钥指纹，并转发 Cookie、Origin 和 CSRF 字段，
 由广州应用执行账号及权限检查。不能把公网直连数据库作为故障降级方案。
 
-所有函数使用相同的 60 秒上限，relay 总请求期限短于函数上限。
+共享函数使用 60 秒上限，relay 总请求期限短于函数上限。
 响应不缓存，并保留 Word／Excel 下载头和二进制内容。发布后应逐个验证 12 个入口，
 再验证一次完整的教师登录、筛选、Excel 下载、报告生成与 Word 下载，
 不能用某一个接口成功推断其他函数实例的网络连接正常。

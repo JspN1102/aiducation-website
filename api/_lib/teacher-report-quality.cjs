@@ -77,12 +77,18 @@ function inspectAnalysis(analysis,payload={}){
   const issues=[],keys=new Set();
   const add=(code,message,path)=>{if(!keys.has(code)&&issues.length<MAX_ISSUES){keys.add(code);issues.push({code,message,path});}};
   for(const {value,path}of textFields(analysis)){
+    if(/伺服器|服务器|瀏覽器自報|浏览器自报|server[_ ]?verified|client[_ ]?reported|資料快照|数据快照|evidenceIds|F\d{3,}/iu.test(value))
+      add('REPORT_TECHNICAL_LANGUAGE','把技術術語改成教師用語，例如朗讀字音評分、辨音答題或默寫練習。只寫實際數據與下一步做法，不以資料来源或核實方式作段落主題。',path);
+    if(/(?:不能|無法|无法|不可|不足以|未能).{0,12}(?:推斷|推断|診斷|诊断|判斷|判断).{0,25}(?:[聲声]母|[韻韵]母|[聲声][調调]|病因)|(?:不代表|不能證明|不能证明|未經證明|未经证明).{0,12}(?:教[學学]成效|能力提高|[學学]習成效)/u.test(value))
+      add('REPORT_DEFENSIVE_LANGUAGE','刪除此說明，不改成另一句免責文字。沒有細項資料時直接安排聽示範、跟讀同一句，再由老師聽取字音；不要補造錯誤原因。',path);
+    if(payload.demo&&/模[擬拟]|[虛虚][構构]|非真[實实][學学]生|功能演示|研究[證证][據据]/u.test(value))
+      add('DEMO_LABEL_IN_BODY','頁首會統一標示「模擬數據」。刪除正文及標題的模擬、虛構或研究證據說明，按正常班級教學報告寫數據和建議；不要描述學生姓名的真假。',path);
     if(asserted(value,/(?:中等|尚可|(?:未達|未达)?高水[準准平]|基[礎础]薄弱|已有(?:一定)?基[礎础]|能力(?:薄弱|良好|較弱|较弱)|不?及格)/u))
       add('UNSUPPORTED_ABILITY_LEVEL','未提供能力等級或及格界線。刪除「中等、尚可、高水準、基礎薄弱」等定級，只寫實際分數、測量筆數和可觀察的練習線索；不能用均分推斷能力高低。',path);
     if(/朗[讀读]|默[寫写]|辨音|[聽听]辨|字音/u.test(value)&&!/(?:同一|相同).{0,8}(?:原句|題目|题目)|上次|前[後后]兩次|前[後后]两次/u.test(value)&&asserted(value,/(?:平均分|均分|分[數数]|[準准]確度|准确度|成[績绩]|表[現现]).{0,5}(?:相近|接近|[較较更]高|[較较更]低|[優优]於|[優优]于|[遜逊]於|[遜逊]于)/u))
       add('UNSUPPORTED_SCORE_COMPARISON','不同學習分項不能比較高低或以均分接近推論能力。刪除標題及正文中的「朗讀與默寫平均分接近」「辨音準確度較高」等相對判斷；各項只列實際分數及測量筆數，也不要另造高低標準。',path);
     if(/自報|自报|[學学]生端|[瀏浏]覽器|浏览器|來源|来源|可信度/u.test(value)&&asserted(value,/(?:可信度|可靠性).{0,5}(?:較低|较低|較高|较高|偏低|偏高|低於|低于|高於|高于)|自[報报].{0,8}(?:偏高|偏低|誇大|夸大)/u))
-      add('UNSUPPORTED_SOURCE_COMPARISON','沒有同一學生同一題的配對證據，不能說自報偏高或某來源可信度較低／較高。只說學生端回報未經伺服器核實，兩類來源分開呈現。',path);
+      add('UNSUPPORTED_SOURCE_COMPARISON','刪除來源可信度或自報偏高的判斷。按各分項實際數字安排練習；不要補寫來源核實方式或免責說明。',path);
     const diagnosis=clauses(value).some(clause=>{
       if(/(?:觀察|观察|[聽听]|[檢检]查|了解).{0,5}(?:是否|有否)/u.test(clause))return false;
       return asserted(clause,/(?:[糾纠]正|改正|矯正|矫正).{0,18}(?:[聲声]母|[韻韵]母|[聲声][調调]|[一二三四]聲|[一二三四]声)|(?:[聲声]母|[韻韵]母|[聲声][調调]|[一二三四][聲声]).{0,10}(?:[錯错][誤误]|有[誤误]|偏[誤误]|不[準准]|混淆)/u);

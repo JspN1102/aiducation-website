@@ -4,14 +4,22 @@
 const research=require('./research-store.cjs');
 const {normalizeFilters,buildDataset}=require('./teacher-data.cjs');
 const poems=require('../../maanshan/poems.json').poems;
-const VERSION='teacher-demo-v1',DAY_MS=86400000,MAX_SNAPSHOTS=6;
+const VERSION='teacher-demo-v2-roster',DAY_MS=86400000,MAX_SNAPSHOTS=6;
 const CLASS_COUNTS=Object.freeze([5,5,5,5,5,6]);
 const ROSTER=Object.freeze(CLASS_COUNTS.flatMap((count,index)=>Array.from({length:count},(_,classIndex)=>Array.from({length:25},(_,n)=>{
   const grade=index+1,cls=String.fromCharCode(65+classIndex),classNo=n+1,tag=`g${grade}_${cls}_${String(classNo).padStart(2,'0')}`;
   return Object.freeze({id:'s_demo_'+tag,researchId:'r_demo_'+tag,role:'student',displayName:`示範學生 ${grade}${cls}${String(classNo).padStart(2,'0')}`,grade,cls,classNo,demo:true});
 })).flat()));
 let current=null;
-function demoRoster(){return ROSTER.map(person=>({...person}));}
+function demoRoster(people){
+ if(people===undefined)return ROSTER.map(person=>({...person}));
+ if(!Array.isArray(people))throw new TypeError('INVALID_DEMO_ROSTER');
+ return people.filter(p=>p.role==='student').map((p,index)=>{
+  if(!Number.isInteger(p.grade)||p.grade<1||p.grade>6||!String(p.cls||'').match(/^[A-F]$/)||typeof p.displayName!=='string'||!p.displayName.trim())throw new TypeError('INVALID_DEMO_ROSTER');
+  const tag=research.hash(String(p.id||p.researchId||`${p.grade}/${p.cls}/${p.classNo}/${index}`)).slice(0,24);
+  return {id:'s_demo_'+tag,researchId:'r_demo_'+tag,role:'student',displayName:p.displayName,grade:p.grade,cls:p.cls,classNo:Number.isInteger(p.classNo)&&p.classNo>0?p.classNo:index+1,demo:true};
+ });
+}
 function seed(value){return Number.parseInt(research.hash(value).slice(0,8),16);}
 function uuid(value){const h=research.hash(VERSION+'/'+value);return `${h.slice(0,8)}-${h.slice(8,12)}-5${h.slice(13,16)}-a${h.slice(17,20)}-${h.slice(20,32)}`;}
 function clamp(value){return Math.max(0,Math.min(100,value));}
@@ -21,9 +29,9 @@ function readingScore(person,visit,profile){
   const change=profile%4===0?-visit*3:visit*3;
   return clamp(43+profile%48+change+(person.cls.charCodeAt(0)%5-2)*2);
 }
-function makeBase(today){
+function makeBase(today,people,rosterKey){
   const midnight=Date.parse(today),rows=[];
-  for(const person of ROSTER){
+  for(const person of people){
     // Three clearly present but unstarted roster members per class.
     if(person.classNo>=23)continue;
     const poem=poems.find(item=>item.grade===person.grade),profile=seed(person.researchId),line=poem.lines[0];
@@ -73,24 +81,25 @@ function makeBase(today){
       }
     }
   }
-  return {today,generatedAt:new Date(midnight).toISOString(),rows,snapshots:new Map()};
+  return {today,rosterKey,generatedAt:new Date(midnight).toISOString(),rows,snapshots:new Map()};
 }
 function createDemoDataset(input={},options={}){
   const now=options.now===undefined?Date.now():Number(options.now);
   if(!Number.isFinite(now))throw new TypeError('INVALID_DEMO_DATE');
   const today=new Date(now).toISOString().slice(0,10);
   const filters=normalizeFilters({...input,from:input.from||new Date(Date.parse(today)-29*DAY_MS).toISOString().slice(0,10),to:input.to||today});
-  if(!current||current.today!==today)current=makeBase(today);
+  const people=demoRoster(options.roster),rosterKey=research.hash(research.canonical(people));
+  if(!current||current.today!==today||current.rosterKey!==rosterKey)current=makeBase(today,people,rosterKey);
   const key=research.canonical(filters),cached=current.snapshots.get(key);
   if(cached){current.snapshots.delete(key);current.snapshots.set(key,cached);return structuredClone(cached);}
-  const dataset=buildDataset({rows:current.rows,source:'synthetic_demo',syncStatus:'current',lastImportedAt:current.generatedAt,integrity:{pendingObjects:0,integrityIssues:0,retryPending:0}},ROSTER,filters,Date.parse(current.generatedAt));
+  const dataset=buildDataset({rows:current.rows,source:'synthetic_demo',syncStatus:'current',lastImportedAt:current.generatedAt,integrity:{pendingObjects:0,integrityIssues:0,retryPending:0}},people,filters,Date.parse(current.generatedAt));
   dataset.demo=true;dataset.demoVersion=VERSION;
   // A domain-separated hash makes collisions with formal snapshots impossible
   // even if a caller accidentally builds an otherwise identical empty scope.
   dataset.snapshotId=research.hash(VERSION+'/isolated/'+today+'/'+dataset.snapshotId);
   dataset.analytics.demo=true;dataset.analytics.demoVersion=VERSION;
   dataset.analytics.sync.demo=true;
-  dataset.demoNotice='全部為模擬資料，非真實學生；僅供教師後台與匯出功能體驗，不納入學校紀錄或研究資料。';
+  dataset.demoNotice='模擬資料：本報告使用模擬學習紀錄。';
   if(current.snapshots.size>=MAX_SNAPSHOTS)current.snapshots.delete(current.snapshots.keys().next().value);
   current.snapshots.set(key,dataset);return structuredClone(dataset);
 }

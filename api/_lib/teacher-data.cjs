@@ -1,8 +1,8 @@
 'use strict';
 const research = require('./research-store.cjs');
 const auth = require('./school-auth.cjs');
-const CONSTRUCTS = Object.freeze({ 'reading.pronunciation':'朗讀發音', 'writing.dictation':'聽寫', 'sound.recognition':'聽音辨識', 'match.accuracy':'配對', 'sequence.accuracy':'排序', 'scene_builder.accuracy':'場景組合' });
-const SOURCES = Object.freeze({serverVerified:'伺服器評測',clientReported:'學生端回報'});
+const CONSTRUCTS = Object.freeze({ 'reading.pronunciation':'朗讀字音評分', 'writing.dictation':'聽寫', 'sound.recognition':'聽音辨識', 'match.accuracy':'配對', 'sequence.accuracy':'排序', 'scene_builder.accuracy':'場景組合' });
+const SOURCES = Object.freeze({serverVerified:'平台評分',clientReported:'練習回報'});
 class TeacherDataError extends Error { constructor(code,status=503){super(code);this.code=code;this.status=status;} }
 function normalizeFilters(input={}) {
   if (!input || typeof input!=='object' || Array.isArray(input) || Object.keys(input).some(key=>!['grade','cls','from','to','attempt','activity','student'].includes(key))) throw new TeacherDataError('INVALID_FILTER',400);
@@ -36,7 +36,7 @@ function buildFollowUp(dataset) {
     return reasons.length?[{researchId:person.researchId,displayName:person.displayName,grade:person.grade,cls:person.cls,classNo:person.classNo,reasons}]:[];
   });
   return {students,unstartedIds:dataset.students.filter(person=>person.rosterMatched&&!person.stats?.nEvents).map(person=>person.researchId),absenceReliable,
-    criteria:'按所選首次／最近紀錄，逐項列出有效評測平均分低於 60 分的觀察；兩種資料來源分開，未測不當作零分。無紀錄只指所選日期及活動範圍，不代表學生從未學習。'};
+    criteria:'下列學生有分項平均分低於 60 分，可先安排相應內容的聽讀或練習。'};
 }
 function createDatasetLoader({requireTeacher=req=>auth.requireActor(req,{roles:['teacher']}),listAccounts=req=>auth.listAccounts(req),readRows=async filters=>{
   if(!research.mode())throw new TeacherDataError('RESEARCH_DISABLED');

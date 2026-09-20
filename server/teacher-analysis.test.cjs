@@ -28,8 +28,8 @@ test('LLM evidence whitelist excludes every identity and per-student record and 
  const input=dataset();input.analytics.byGrade.push({grade:2,displayName:'PRIVATE_NAME',nStudents:1,byConstruct:input.analytics.summary.byConstruct});
  const payload=analysis.aggregateEvidence(input),serialized=JSON.stringify(payload);
  assert.doesNotMatch(serialized,/PRIVATE_|private-id|researchId|displayName|login/);
- assert.ok(payload.evidence.some(f=>f.label.endsWith('平均值')&&f.value===0&&f.source==='伺服器核實的測量'));
- assert.ok(payload.evidence.some(f=>f.label.endsWith('平均值')&&f.value===100&&f.source==='瀏覽器自報結果'));
+ assert.ok(payload.evidence.some(f=>f.label.endsWith('平均值')&&f.value===0&&f.source==='平台評分'));
+ assert.ok(payload.evidence.some(f=>f.label.endsWith('平均值')&&f.value===100&&f.source==='練習回報'));
  assert.ok(payload.evidence.some(f=>f.label.endsWith('未測量')&&f.value===1));
 });
 
@@ -189,4 +189,31 @@ test('compressed private Blob reads use the stored entity tag for conditional re
  const client={get:async()=>({statusCode:200,blob:{etag:'W/"stored-revision"',size:0},stream:new Response('{"status":"pending"}').body}),put:async(key,body,options)=>{match=options.ifMatch;if(match!=='"stored-revision"')throw new Error('already exists');}};
  const store=analysis.createBlobStore(client),key='report/'+'b'.repeat(64),prior=await store.get(key);
  assert.equal(prior.value.status,'pending');assert.equal(await store.cas(key,{status:'completed'},prior.version),true);assert.equal(match,'"stored-revision"');
+});
+
+test('teacher prose prompt accepts no limitations, keeps the provider model, and reserves demo marking for the document header',async()=>{
+ const input=dataset();input.demo=true;const output={...validOutput(),overview:'本班2人，已有1人的練習紀錄。下一課先聽《贈汪倫》的首句，再分句跟讀。',limitations:[]};let request;
+ const result=await analysis.requestAnalysis(analysis.aggregateEvidence(input),analysis.modelConfig(env),{fetchImpl:async(url,options)=>{request=JSON.parse(options.body);return provider(output);}});
+ assert.deepEqual(result.analysis.limitations,[]);assert.equal(request.model,env.TEACHER_AI_MODEL);
+ assert.match(request.messages[0].content,/文件頁首由系統加一次/);assert.match(request.messages[0].content,/limitations通常輸出\[\]/);
+ assert.doesNotMatch(request.messages[0].content,/概覽首句必須寫|必要限制。單班/);
+ const omitted={...output};delete omitted.limitations;assert.deepEqual(analysis.validateAnalysis(omitted,analysis.aggregateEvidence(input).evidence).limitations,[]);
+});
+
+test('a completed v7 report cannot satisfy the new teacher-prose generation cache',async()=>{
+ const research=require('../api/_lib/research-store.cjs'),input=dataset(),payload=analysis.aggregateEvidence(input),store=memoryStore();
+ const dataFingerprint=research.hash(research.canonical({snapshotId:input.snapshotId,payload}));
+ const oldId='ta_'+research.hash(research.canonical({dataFingerprint,model:env.TEACHER_AI_MODEL,provider:analysis.modelConfig(env).url,promptVersion:'teacher-analysis-v7-reviewed-demo'}));
+ store.data.set('report/'+oldId.slice(3),{version:'1',value:{status:'completed',report:{reportId:oldId,analysis:{overview:'Old technical report'}}}});
+ let calls=0;const svc=service({store,fetchImpl:async()=>{calls++;return provider({...validOutput(),limitations:[]});}}),result=await svc.generate({},input.filters,teacher);
+ assert.notEqual(result.reportId,oldId);assert.equal(result.cached,false);assert.equal(calls,1);assert.equal(result.report.promptVersion,'teacher-analysis-v8-teacher-voice');
+});
+
+test('technical or repetitive demo prose is revised without releasing the draft as a report',async()=>{
+ const input=dataset();input.demo=true;let calls=0;
+ const svc=service({loadDataset:async()=>input,fetchImpl:async()=>{calls++;return provider(calls===1?{...validOutput(),overview:'以下全部是模擬資料。伺服器核實的測量不能推斷聲母、韻母或聲調錯誤。'}:{...validOutput(),overview:'本班2人，已有1人的練習紀錄。先安排原句聽讀，再了解另一位學生的練習情況。',limitations:[]});}});
+ const first=await svc.generate({},input.filters,teacher);assert.equal(first.nextAction,'continue');assert.equal(first.report,undefined);
+ await assert.rejects(svc.getReport(first.reportId),e=>e.code==='REPORT_NOT_READY');
+ const done=await svc.continueReport(first.reportId,teacher);assert.equal(done.report.qualityReview.passed,true);assert.equal(calls,2);
+ assert.doesNotMatch(JSON.stringify(done.report.analysis),/伺服器|模擬|不能推斷/);assert.deepEqual(done.report.analysis.limitations,[]);
 });

@@ -14,24 +14,25 @@ function configuration(env){
  return {host,port,username,privateKey,hostHash};
 }
 function createRelay({env=process.env,clientFactory=()=>new Client(),request=http.request,now=Date.now,timeoutMs=55000}={}){
- let pending=null,connection=null,lastUsed=0,active=0;
+ let pending=null,pendingClient=null,connection=null,lastUsed=0,active=0;
  async function tunnel(alternate=false){
-  if(connection&&now()-lastUsed>20000&&active<=1){connection.end();connection=null;pending=null;}
+  if(connection&&now()-lastUsed>20000&&active<=1){connection.end();connection=null;pending=null;pendingClient=null;}
   lastUsed=now();
   if(pending)return pending;
   const config=configuration(env),client=clientFactory();
   const port=alternate?(config.port===2222?22:2222):config.port;
+  pendingClient=client;
   pending=new Promise((resolve,reject)=>{
    let ready=false,tcpConnected=false,handshakeComplete=false;
    client.once('connect',()=>{tcpConnected=true;});
    client.once('handshake',()=>{handshakeComplete=true;});
-   const clear=()=>{if(connection===client){connection=null;pending=null;}};
+   const clear=()=>{if(connection===client)connection=null;if(pendingClient===client){pending=null;pendingClient=null;}};
    client.once('ready',()=>{ready=true;connection=client;resolve(client);});
-   client.on('error',error=>{clear();if(!ready){pending=null;const code=typeof error?.code==='string'&&/^[A-Z0-9_]+$/.test(error.code)?error.code:'SSH_CONNECT_ERROR';console.error('Guangzhou relay transport:',code,error?.level==='client-timeout'?'HANDSHAKE_TIMEOUT':'CONNECT_FAILED',JSON.stringify({tcpConnected,handshakeComplete}));reject(new Error('RELAY_CONNECT_FAILED'));}});
-   client.once('close',()=>{clear();if(!ready){pending=null;reject(new Error('RELAY_CONNECT_FAILED'));}});
+   client.on('error',error=>{clear();if(!ready){const code=typeof error?.code==='string'&&/^[A-Z0-9_]+$/.test(error.code)?error.code:'SSH_CONNECT_ERROR';console.error('Guangzhou relay transport:',code,error?.level==='client-timeout'?'HANDSHAKE_TIMEOUT':'CONNECT_FAILED',JSON.stringify({tcpConnected,handshakeComplete}));reject(new Error('RELAY_CONNECT_FAILED'));}});
+   client.once('close',()=>{clear();if(!ready)reject(new Error('RELAY_CONNECT_FAILED'));});
    client.connect({host:config.host,port,username:config.username,privateKey:config.privateKey,hostHash:'sha256',hostVerifier:hash=>hash===config.hostHash,readyTimeout:4500,keepaliveInterval:15000,keepaliveCountMax:2,tryKeyboard:false});
   });
-  try{return await pending;}catch(error){pending=null;client.destroy();throw error;}
+  try{return await pending;}catch(error){if(pendingClient===client){pending=null;pendingClient=null;}client.destroy();throw error;}
  }
  function fail(res,status,code){if(res.writableEnded||res.destroyed)return;if(res.headersSent){res.destroy();return;}res.statusCode=status;res.setHeader('Cache-Control','private, no-store');res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify({ok:false,code,error:'服務暫時未能連線，請稍後再試。'}));}
  async function relay(name,req,res){
@@ -99,7 +100,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
    });
   }finally{clearTimeout(timer);res.off('close',disconnected);close();active--;}
  }
- return {relay,close(){connection?.end();connection=null;pending=null;}};
+ return {relay,close(){const connecting=pendingClient;if(connecting&&connecting!==connection)connecting.destroy();connection?.end();connection=null;pending=null;pendingClient=null;}};
 }
 let singleton;
 const relay=(name,req,res)=>(singleton||(singleton=createRelay())).relay(name,req,res);

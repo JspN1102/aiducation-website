@@ -1,7 +1,7 @@
 'use strict';
 const crypto=require('node:crypto'),blob=require('@vercel/blob');
 const research=require('./research-store.cjs');
-const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v7-reviewed-demo';
+const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v8-teacher-voice';
 const MAX_RECORD_BYTES=12*1024*1024,MAX_PROVIDER_BYTES=160*1024,MAX_RESPONSE_BYTES=128*1024;
 const LEASE_MS=120000,PROVIDER_TIMEOUT_MS=42000;
 const SCHEMA=`CREATE TABLE IF NOT EXISTS teacher_analysis_records (
@@ -9,7 +9,7 @@ const SCHEMA=`CREATE TABLE IF NOT EXISTS teacher_analysis_records (
  updated_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );`;
 const CONSTRUCTS={'reading.pronunciation':'朗讀字音評分','writing.dictation':'默寫辨識準確度','sound.recognition':'辨音答題準確度','match.accuracy':'配對準確度','sequence.accuracy':'排序準確度','scene_builder.accuracy':'場景選擇準確度'};
-const SOURCES={serverVerified:'伺服器核實的測量',clientReported:'瀏覽器自報結果'};
+const SOURCES={serverVerified:'平台評分',clientReported:'練習回報'};
 const hash=research.hash,canonical=research.canonical;
 class AnalysisError extends Error{constructor(code,status=503,retryable=true,retryAfterSeconds){super(code);Object.assign(this,{code,status,retryable,...retryAfterSeconds?{retryAfterSeconds}:{}});}}
 const fail=(...args)=>{throw new AnalysisError(...args);};
@@ -81,7 +81,7 @@ function aggregateEvidence(dataset){
  for(const item of days){add('有記錄學生',safeCount(item.nStudents),'人',item.date);add('收集記錄',safeCount(item.nEvents),'筆',item.date);}
  for(const word of (analytics.readingWords||[]).slice(0,20)){
   if(typeof word.char!=='string'||[...word.char].length!==1||!Number.isInteger(word.poemId)||word.poemId<1||word.poemId>6||safeScore(word.meanScore)===null)continue;
-  add('「'+word.char+'」字音觀察',{meanScore:word.meanScore,observations:safeCount(word.count),below60:safeCount(word.below60Count)},'字音評分，非音素診斷','第'+word.poemId+'首古詩','server_verified');
+  add('「'+word.char+'」字音觀察',{meanScore:word.meanScore,observations:safeCount(word.count),below60:safeCount(word.below60Count)},'字音評分','第'+word.poemId+'首古詩','平台評分');
  }
  if(facts.length>2000)fail('NARROW_DATE_OR_CLASS_FILTER',413,false);
  const syncStatus=['current','catching_up','attention','direct','published','unavailable'].includes(analytics.sync?.status)?analytics.sync.status:'unavailable';
@@ -99,19 +99,23 @@ function validateAnalysis(value,evidence,filters){
  const refs=value=>{if(!Array.isArray(value)||!value.length||value.length>32||value.some(id=>!ids.has(id)))fail('AI_INVALID_RESPONSE',502,true);return [...new Set(value)];};
  const list=(values,max,mapper,min=1)=>{if(!Array.isArray(values)||values.length<min||values.length>max)fail('AI_INVALID_RESPONSE',502,true);return values.map(mapper);};
  const action=value=>({title:text(value?.title,100),evidenceIds:refs(value?.evidenceIds),steps:list(value?.steps,5,item=>text(item,500))});
- return {title:text(value.title,120),overview:text(value.overview,1800),findings:list(value.findings,8,item=>({title:text(item?.title,100),evidenceIds:refs(item?.evidenceIds),interpretation:text(item?.interpretation,1200)})),teachingActions:list(value.teachingActions,6,item=>({...action(item),priority:['high','medium','low'].includes(item.priority)?item.priority:'medium'})),reviewPlan:list(value.reviewPlan,4,action),limitations:list(value.limitations,8,item=>text(item,500))};
+ return {title:text(value.title,120),overview:text(value.overview,1800),findings:list(value.findings,8,item=>({title:text(item?.title,100),evidenceIds:refs(item?.evidenceIds),interpretation:text(item?.interpretation,1200)})),teachingActions:list(value.teachingActions,6,item=>({...action(item),priority:['high','medium','low'].includes(item.priority)?item.priority:'medium'})),reviewPlan:list(value.reviewPlan,4,action),limitations:list(value.limitations??[],1,item=>text(item,180),0)};
 }
-const SYSTEM_PROMPT=`你為香港小學教師直接撰寫可下載使用的普通話教學報告，繁體中文，清楚具體，無填空模板、無操作說明、無另附正式教案。只根據本次JSON的evidence、curriculum、teachingConstraints寫作。demo為true時，概覽首句必須寫「以下全部是系統模擬資料，僅供功能演示，不代表真實學生或教學成效」。
-報告順序：概覽→學習發現→可直接採用的教學建議→後續跟進→必要限制。單班約450至650中文字，全校約700至950字。全校建議分低、中、高年級；選一個年級只写該年級。每項建議用2至3個短步驟，包含練習內容、教師示範、學生做法、觀察重點。建議尚未實施，不能寫成已完成的教学活動。
-必須遵守：
+const SYSTEM_PROMPT=`你是香港小學普通話教師，正為所選班級寫一份可以直接使用的教學報告。用自然、清楚的繁體中文，以「這次學生做了甚麼、哪些內容值得再練、下一課怎樣教」為主線。只根據本次JSON的evidence、curriculum、teachingConstraints寫作。
+文風與內容：
+概覽直接交代班級人數、練習情況及本次教學重點。主要發現每項先寫實際數字或字音觀察，再連到具體跟進，例如「『舟』字有3次評分低於60分，下一課先聽示範，再把這個字放回原句跟讀」；此例僅示範句式，数字與字必須用本次資料。沒有逐字資料時，就建議聽讀原句，不評論不存在的細項。
+教學建議每項用2至3個短步驟，寫明選哪首詩、哪一句或哪個允許字，老師怎樣示範、學生怎樣練習、最後聽看甚麼。後續跟進用一項簡短安排，讓老師下一課直接照做。單班約450至650中文字，全校約700至950字；全校分低、中、高年級，單年級只寫該年級。毋須另寫正式教案、操作指南或填空模板。
+不要防禦性寫作。不要輸出伺服器核實、瀏覽器自報、server_verified、資料快照等技術術語，也不要反覆寫「不能推斷聲母、韻母、聲調」「不代表教學成效」等聲明。用「朗讀字音評分」「辨音答題」「默寫練習」描述學習表現。若缺少一項資料會影響下一步，只說一句如「本次未有默寫紀錄，下一課先做一次聽寫觀察」；其餘直接省略。limitations通常輸出[]，只有必要時最多一句，不重複正文。
+demo為true時亦按正常教師報告寫作。文件頁首由系統加一次「模擬數據」，不要在標題、概覽、發現或建議再次提模擬、虛構、功能演示或研究證據，也不要聲稱學生姓名是虛構。
+下列規則只作內部核對，不能複述成報告中的限制段落：
 1.所有數字及觀察來自evidence。每項引用有效evidenceIds；正文不寫F001等代碼。準確寫有紀錄/名冊人數，不加「大多數/少數」印象判斷。事件筆數不是學生人數，沒有某種事件不能推論沒有完成或全是嘗試。
-2.按分項和來源各自解讀。朗讀、默寫、辨音不能混成總分；不同來源沒有配對資料，不能推論偏高、可信度或比較能力。只報實際分數和樣本數，不發明能力等級或及格界線。不因70分稱有基礎或薄弱。
+2.朗讀、默寫、辨音分開寫，每個項目只選一組分數：有「平台評分」的有效平均值就優先使用；完全沒有該項有效平台評分才用「練習回報」。兩種數字不混合、不重複列出。正文直接稱「朗讀字音評分」「辨音答題」等學習項目，不把平台評分與練習回報的差异寫成教學發現。朗讀、默寫、辨音不能混成總分；不同來源沒有配對資料，不能推論偏高、可信度或比較能力。只報實際分數和樣本數，不發明能力等級或及格界線。不因70分稱有基礎或薄弱。
 3.字分數只提示值得再聽讀的字，不推斷聲母、韻母、聲調哪裏錯，不能要求糾正一個未觀察到的特定錯誤。不推論學生懶惰、病症或統計顯著進步。
 4.原詩及讀音依curriculum，不改詩、不加不存在的字。教學建議嚴格按teachingConstraints：一二年級整份報告連同復查最多安排一個allowedCharacters中的字，不能默寫詞語、字表、每字抄多次；聽選與短句跟讀為主。中高年級按提供上限安排。未提供題庫的臨時活動不能聲稱平台有該题或能保存教師自編紙筆測驗。
 5.聽選不用同音字互相充當正誤選項，不生成「李／里／理」等混淆題。只說跟聽原詩一句、對照示範、同一句再讀等可直接操作的安排。低分個別跟進由教師私下安排。
-6.未測不等於零分；未見紀錄不等於未練習，可能尚未同步；人數少則說是暫時線索。下一次只建議同一學生相同原句/題目再觀察，不能宣稱已提高。
-請輸出一個JSON，無markdown。findings建議2至3項，teachingActions單年級2項/全校3項，reviewPlan 1項，limitations 1至3項。schema:
-{"title":"範圍普通話教學報告","overview":"概覽段落","findings":[{"title":"重點","evidenceIds":["F001"],"interpretation":"有證據的解讀"}],"teachingActions":[{"priority":"high|medium|low","title":"教學重點","evidenceIds":["F001"],"steps":["具體短步驟"]}],"reviewPlan":[{"title":"後續跟進","evidenceIds":["F001"],"steps":["何時及如何再觀察"]}],"limitations":["必要資料限制"]}。
+6.未測不等於零分；未見紀錄的學生寫「先了解練習情況」，不要判定未參與。建議是下一步安排，不能寫成已做過或已提高。保持數據來源各自獨立，只在確有必要區分時用「平台評分」「練習回報」簡稱。
+請輸出一個JSON，無markdown。findings建議2至3項，teachingActions單年級2項/全校3項，reviewPlan 1項，limitations通常為空陣列。schema:
+{"title":"範圍普通話教學報告","overview":"班級練習情況與重點","findings":[{"title":"學習重點","evidenceIds":["F001"],"interpretation":"實際數據、觀察與跟進方向"}],"teachingActions":[{"priority":"high|medium|low","title":"教學重點","evidenceIds":["F001"],"steps":["具體短步驟"]}],"reviewPlan":[{"title":"下次跟進","evidenceIds":["F001"],"steps":["何時及如何再練習"]}],"limitations":[]}。
 最後檢查：沒有編造數字/錯誤成因/平台功能；低小整份只安排一個允許書寫字；只輸出完整JSON。`;
 function repairPunctuation(content){
  const source=content.trim();if(!source.startsWith('{')||!source.endsWith('}'))fail('AI_INVALID_RESPONSE',502,true);
@@ -130,7 +134,7 @@ function repairPunctuation(content){
 async function requestAnalysis(payload,config,{fetchImpl=globalThis.fetch,signal,revision}={}){
  const timeout=AbortSignal.timeout(PROVIDER_TIMEOUT_MS),combined=signal?AbortSignal.any([signal,timeout]):timeout;
  const messages=[{role:'system',content:SYSTEM_PROMPT},{role:'user',content:canonical(payload)}];
- if(revision)messages.push({role:'assistant',content:canonical(revision.analysis)},{role:'user',content:'這是內部品質覆核，原稿尚未交付。請重寫完整JSON報告，逐項修正以下問題。保留正確數據，刪除無依據能力等級或來源可信度判斷；低小若不確定寫字安排，全部改用聽示範和原句跟讀，沒有必須安排寫字。不要解釋修改過程，只給最終完整報告。問題：'+canonical(revision.issues)});
+ if(revision)messages.push({role:'assistant',content:canonical(revision.analysis)},{role:'user',content:'請按內部覆核重寫完整JSON報告，保留正確數據，用老師的口吻直接寫學習發現和下一課做法。以下問題是修改指令，不要把它們改寫成限制、免責聲明或修改說明；刪除無依據判斷後，接上可行的聽讀練習。低小不確定寫字安排時可全部改用原句跟讀。limitations通常留空。問題：'+canonical(revision.issues)});
  let response;
  try{response=await fetchImpl(config.url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+config.key},body:JSON.stringify({model:config.model,messages,temperature:0.25,max_tokens:3500,thinking:{type:'disabled'},response_format:{type:'json_object'} }),signal:combined});}
  catch(error){if(signal?.aborted)fail('ANALYSIS_INTERRUPTED',499,true,5);if(timeout.aborted||['TimeoutError','AbortError'].includes(error?.name))fail('AI_TIMEOUT',504,true,30);fail('AI_UNAVAILABLE',502,true,30);}
@@ -195,7 +199,7 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
    await quota(actor.id);
    const generated=await requestAnalysis(payload,config,{fetchImpl,signal});
    const f=dataset.filters;
-   generated.analysis.title=`${dataset.demo?'【模擬數據】':''}${f.grade?f.grade+'年級'+(f.cls?f.cls+'班':''):f.cls?'全校'+f.cls+'班':'全校'}普通話教學報告`;
+   generated.analysis.title=`${f.grade?f.grade+'年級'+(f.cls?f.cls+'班':''):f.cls?'全校'+f.cls+'班':'全校'}普通話教學報告`;
    const report={schemaVersion:1,reportId,createdAt:new Date(now()).toISOString(),model:config.model,responseModel:generated.responseModel,syntaxRepaired:generated.syntaxRepaired,promptVersion:PROMPT_VERSION,filters:dataset.filters,dataFingerprint,snapshotId:dataset.snapshotId,
     source:{sync:dataset.analytics.sync,coverage:dataset.analytics.coverage,rosterSummary:dataset.rosterSummary},evidence:payload.evidence,analysis:generated.analysis,followUp,usage:generated.usage,dataset};
    const current=await read(key);if(current?.value?.leaseId!==leaseId)fail('ANALYSIS_RETRY_REQUIRED',409,true);

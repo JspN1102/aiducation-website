@@ -43,7 +43,7 @@ test('dataset timeout has bounded in-flight concurrency and a late completion ca
 });
 test('real Excel includes six formatted worksheets, literal names, selected roster and separate numeric zero/null',async()=>{
   const f=fixture(),buffer=await docs.buildXlsx(f.dataset);assert.equal(buffer.subarray(0,2).toString(),'PK');const wb=new ExcelJS.Workbook();await wb.xlsx.load(buffer);assert.deepEqual(wb.worksheets.map(sheet=>sheet.name),['概覽','學生明細','分項表現','每日趨勢','字音重點','說明']);
-  const students=wb.getWorksheet('學生明細');assert.equal(students.getCell('D2').value,'=測試學生');assert.equal(students.rowCount,3);assert.equal(students.getCell('F2').value,0);assert.equal(students.getCell('G2').value,null);assert.equal(students.getCell('F3').value,null);assert.match(students.getCell('L2').value,/朗讀發音 0 分（伺服器評測，1 筆）/);assert.match(students.getCell('L3').value,/未見紀錄/);assert.equal(students.getCell('N1').value,'嘗試數');assert.equal(students.views[0].xSplit,4);const score=wb.getWorksheet('分項表現');assert.equal(score.rowCount,3);assert.equal(score.getCell('G2').value,0);assert.equal(score.getCell('J2').value,80);assert.equal(score.getCell('L2').value,0);assert.equal(score.getCell('G3').value,null);assert.equal(score.getCell('I3').value,1);assert.equal(score.getCell('N3').value,'未測');
+  const students=wb.getWorksheet('學生明細');assert.equal(students.getCell('D2').value,'=測試學生');assert.equal(students.rowCount,3);assert.equal(students.getCell('F2').value,0);assert.equal(students.getCell('G2').value,null);assert.equal(students.getCell('F3').value,null);assert.match(students.getCell('L2').value,/朗讀字音評分 0 分（平台評分，1 筆）/);assert.match(students.getCell('L3').value,/未見紀錄/);assert.equal(students.getCell('N1').value,'嘗試數');assert.equal(students.views[0].xSplit,4);const score=wb.getWorksheet('分項表現');assert.equal(score.rowCount,3);assert.equal(score.getCell('G2').value,0);assert.equal(score.getCell('J2').value,80);assert.equal(score.getCell('L2').value,0);assert.equal(score.getCell('G3').value,null);assert.equal(score.getCell('I3').value,1);assert.equal(score.getCell('N3').value,'未測');
   for(const sheet of wb.worksheets){assert.equal(sheet.views[0].state,'frozen');assert(sheet.autoFilter);sheet.eachRow(row=>row.eachCell(cell=>assert.notEqual(cell.type,ExcelJS.ValueType.Formula)));}
   const zip=await JSZip.loadAsync(buffer);for(const [name,file]of Object.entries(zip.files))if(name.startsWith('xl/worksheets/')&&name.endsWith('.xml'))assert(!/<f[ >]/.test(await file.async('string')));
   const folder=process.env.TEACHER_DOCUMENT_EVIDENCE_DIR;if(folder){fs.mkdirSync(folder,{recursive:true});fs.writeFileSync(path.join(folder,'synthetic-teacher.xlsx'),buffer);}
@@ -55,12 +55,13 @@ test('Excel quick view never substitutes client scores and detail separates both
   const f=fixture(),client=structuredClone(f.rows[0]);client.source='client';client.event.type='feedback_shown';client.event.eventId=randomUUID();client.event.result.score=95;client.eventChecksum=research.hash(research.canonical({researchId:client.researchId,source:client.source,event:client.event}));
   for(const [rows,expectedScore,expectedDetailRows]of [[[...f.rows,client],0,4],[[client],null,2]]){
     const dataset=data.buildDataset({rows},f.roster,filters,NOW),wb=new ExcelJS.Workbook();await wb.xlsx.load(await docs.buildXlsx(dataset));const students=wb.getWorksheet('學生明細'),scores=wb.getWorksheet('分項表現');assert.equal(students.getCell('F2').value,expectedScore);assert.equal(scores.rowCount,expectedDetailRows);
-    const reading=scores.getRows(2,scores.rowCount-1).filter(row=>row.getCell(5).value==='朗讀發音');assert(reading.some(row=>row.getCell(6).value==='學生端回報'&&row.getCell(7).value===95));if(expectedScore===null)assert.match(students.getCell('L2').value,/僅有學生端回報，尚無伺服器有效評測/);else assert(reading.some(row=>row.getCell(6).value==='伺服器評測'&&row.getCell(7).value===0));
+    const reading=scores.getRows(2,scores.rowCount-1).filter(row=>row.getCell(5).value==='朗讀字音評分');assert(reading.some(row=>row.getCell(6).value==='練習回報'&&row.getCell(7).value===95));if(expectedScore===null)assert.match(students.getCell('L2').value,/僅有練習回報，尚未有平台評分/);else assert(reading.some(row=>row.getCell(6).value==='平台評分'&&row.getCell(7).value===0));
   }
 });
-test('real editable Word uses persisted snapshot, exact evidence/support identities, and has no forced cover page',async()=>{
+test('real editable Word uses exact class summaries and omits individual rosters and technical appendices',async()=>{
   const f=fixture(),buffer=await docs.buildDocx(f.report),zip=await JSZip.loadAsync(buffer),xml=await zip.file('word/document.xml').async('string');
-  for(const text of ['學習概況','主要發現','教學建議','後續跟進','附錄：學生跟進參考','資料範圍與限制','=測試學生','未測學生','最近朗讀平均分：0 分'])assert(xml.includes(text),text);
+  for(const text of ['學習概況','主要發現','教學建議','後續跟進','學習項目','朗讀字音評分','0 分'])assert(xml.includes(text),text);
+  for(const text of ['學生跟進','資料範圍與限制','伺服器','server_verified','依據：','=測試學生','未測學生','不代表已證明成效'])assert(!xml.includes(text),text);
   assert((await zip.file('docProps/core.xml').async('string')).includes(f.dataset.snapshotId));assert(!xml.includes('課後反思'));assert(!xml.includes('授課日期'));assert(!xml.includes('其他班學生'));assert(!xml.includes('DO_NOT_EXPORT_LOGIN'));assert(!xml.includes('w:type="page"'));assert(xml.includes('<w:tbl>'));assert(!Object.keys(zip.files).some(name=>name.includes('vbaProject')));
   const folder=process.env.TEACHER_DOCUMENT_EVIDENCE_DIR;if(folder){fs.mkdirSync(folder,{recursive:true});fs.writeFileSync(path.join(folder,'synthetic-teacher.docx'),buffer);}
 });
@@ -76,4 +77,28 @@ test('timed out document generation keeps concurrency bounded until its worker s
   let res=response();await handler({method:'POST',body:{action:'xlsx',filters}},res);assert.equal(res.statusCode,504);
   res=response();await handler({method:'POST',body:{action:'xlsx',filters}},res);assert.equal(res.statusCode,429);assert.equal(renders,1);gate.resolve();await new Promise(resolve=>setImmediate(resolve));
   res=response();await handler({method:'POST',body:{action:'xlsx',filters}},res);assert.equal(res.statusCode,200);assert.equal(renders,2);
+});
+
+test('demo Word marks simulated learning once, has no forced limitations, and keeps classroom advice',async()=>{
+ const f=fixture();f.dataset.demo=true;f.report.analysis.limitations=[];
+ const zip=await JSZip.loadAsync(await docs.buildDocx(f.report)),xml=await zip.file('word/document.xml').async('string');
+ assert.equal((xml.match(/模擬數據/g)||[]).length,1);assert.doesNotMatch(xml,/非真實學生|虛構|研究證據|伺服器|瀏覽器|資料範圍與限制|<w:t[^>]*>補充<\/w:t>/);
+ assert(xml.includes('老师')||xml.includes('老師示範一句'));assert(xml.includes('學生跟讀後再嘗試一次'));assert(xml.includes('0 分'));
+});
+
+test('adding hundreds of roster identities does not lengthen the class-focused Word report',async()=>{
+ const f=fixture(),before=await JSZip.loadAsync(await docs.buildDocx(f.report)),beforeXML=await before.file('word/document.xml').async('string');
+ f.dataset.students.push(...Array.from({length:500},(_,i)=>({...f.dataset.students[0],displayName:'不應進入Word_'+i,researchId:'synthetic-extra-'+i})));
+ const after=await JSZip.loadAsync(await docs.buildDocx(f.report)),afterXML=await after.file('word/document.xml').async('string');
+ assert.equal(afterXML,beforeXML);assert.doesNotMatch(afterXML,/不應進入Word_|=測試學生|未測學生/);
+});
+
+test('Word shows each learning item once, preferring assessed zero over a higher practice return',async()=>{
+ for(const assessed of [true,false]){
+  const f=fixture(),client=structuredClone(f.rows[0]);client.source='client';client.event.type='feedback_shown';client.event.eventId=randomUUID();client.event.result.score=95;client.eventChecksum=research.hash(research.canonical({researchId:client.researchId,source:client.source,event:client.event}));
+  f.dataset=data.buildDataset({rows:assessed?[...f.rows,client]:[client]},f.roster,filters,NOW);f.report.dataset=f.dataset;f.report.snapshotId=f.dataset.snapshotId;
+  const zip=await JSZip.loadAsync(await docs.buildDocx(f.report)),xml=await zip.file('word/document.xml').async('string');
+  assert.equal((xml.match(/朗讀字音評分/g)||[]).length,1);assert.doesNotMatch(xml,/平台評分|練習回報/);
+  assert(xml.includes(assessed?'0 分':'95 分'));if(assessed)assert(!xml.includes('95 分'));
+ }
 });

@@ -10,9 +10,10 @@ import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui1';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260919d';
 import {challengeSummary} from './challenge-state.mjs?v=20260919d';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260920-school1';
-import {encodeRecording, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260920b';
-import {requestJSON} from './network.mjs?v=20260920b';
-import {initializeSchoolSession, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260920-ui1';
+import {encodeRecording, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260920-login-first1';
+import {requestJSON} from './network.mjs?v=20260920-login-first1';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260920-ui1';
+import {schoolSession} from './bootstrap.mjs?v=20260920-login-first1';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260920b';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260920b';
 
@@ -21,7 +22,10 @@ const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
 const icons = () => window.lucide?.createIcons();
 const video = $('#recital-video');
 const app = $('#app');
-const school = await initializeSchoolSession(app);
+const school = await schoolSession;
+// Login may be invalidated while the learning modules are downloading.
+// Do not restore a previous pupil's storage or queues after that happens.
+if (schoolState() !== school || school.enabled && (!school.authenticated || school.user?.role !== 'student')) throw new Error('School session changed during startup');
 const accountSuffix = school.enabled ? ':' + school.user.id : '';
 const STORE = 'maanshan-learning-v2' + accountSuffix;
 const PROFILE = 'ms_student_info' + accountSuffix;

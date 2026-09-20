@@ -13,7 +13,7 @@ API_FILES = {'soe.js', 'tts.js', 'maanshan-chat.js', 'maanshan-report.js',
              'maanshan-save.js', 'maanshan-data.js', 'handwriting.js',
              'school-auth.js', 'research-events.js', 'teacher-analytics.js', 'challenge-result.js', 'teacher-tools.js'}
 RELAY_FILE = 'api/_lib/guangzhou-relay.cjs'
-# Keep one function per existing school endpoint (the Hobby limit is 12).
+# One shared function serves the twelve fixed school endpoints.
 # The 65-second Guangzhou report route is capped by Vercel's 60-second limit;
 # the relay enforces its own shorter upstream deadline before that limit.
 FUNCTION_SECONDS = {name: 60 for name in API_FILES}

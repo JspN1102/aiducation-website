@@ -7,13 +7,11 @@
 <title>AI普通話學習平台 · 馬鞍山靈糧小學</title>
 <link rel="preload" href="vendor/fonts/noto-serif-tc.woff2?v=20260920-full1" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="app.bundle.css?v=20260920-ui1">
-<script src="vendor/lucide-maanshan.js?v=20260918c" defer></script>
-<script src="vendor/hanzi-writer.min.js" defer></script>
-<script type="module" src="app.js?v=20260920-ui1" onerror="window.showLoadRecovery?.()"></script>
+<script type="module" src="bootstrap.mjs?v=20260920-login-first1" onerror="window.showLoadRecovery?.()"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">跳至內容</a>
-<header class="site-header"><div class="header-right"><button class="profile-button" id="profile-open" aria-label="學習檔案" title="學習檔案"><i data-lucide="user-round"></i><span id="profile-name">學習檔案</span></button></div></header>
+<header class="site-header"><div class="header-right"><button class="profile-button" id="profile-open" aria-label="學習檔案" title="學習檔案" hidden><i data-lucide="user-round"></i><span id="profile-name">學習檔案</span></button></div></header>
 <div id="app"><main id="main" class="loading-page" aria-busy="true"><span class="spinner"></span><p>正在載入古詩</p></main></div>
 <script>
 window.showLoadRecovery=function(){

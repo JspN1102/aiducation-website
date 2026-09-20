@@ -6,9 +6,10 @@ const ExcelJS=require('exceljs');
 const actor={id:'t_demo_route_unit',role:'teacher'};
 const response=()=>({headers:{},statusCode:200,setHeader(k,v){this.headers[k]=v;},status(v){this.statusCode=v;return this;},json(v){this.body=v;return this;},send(v){this.body=v;return this;}});
 async function withAuth(run){
- const previous=auth.requireActor,permissions=[];
+ const previous=auth.requireActor,previousList=auth.listAccounts,permissions=[];
+ auth.listAccounts=async()=>demo.demoRoster();
  auth.requireActor=async(req,options)=>{permissions.push(options);if(req.denied)throw new auth.AuthError(req.denied,'DENIED_TEST');return req.student?{id:'s_demo_student',role:'student'}:actor;};
- try{return await run(permissions);}finally{auth.requireActor=previous;}
+ try{return await run(permissions);}finally{auth.requireActor=previous;auth.listAccounts=previousList;}
 }
 test('real demo multiplexer rejects anonymous/student and requires CSRF on both paid and export POSTs',async()=>withAuth(async permissions=>{
  for(const [tool,body]of [['demo-data',undefined],['demo-analysis',{filters:{}}],['demo-export',{action:'xlsx',filters:{}}]])for(const mode of ['anonymous','student','csrf']){

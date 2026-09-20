@@ -7,7 +7,6 @@ Object.assign(state,{studentFilter:'all',constructFilter:'',detailTab:'learning'
 Object.assign(state,{assistantJob:null,assistantReport:null,documentJob:null,toolsPreparing:false,rosterGeneration:0});
 const ASSISTANT='/api/teacher-tools?tool='+(DEMO?'demo-analysis':'analysis'),DOCUMENTS='/api/teacher-tools?tool='+(DEMO?'demo-export':'export');
 const CONSTRUCTS={'reading.pronunciation':'朗讀發音','writing.dictation':'聽寫辨字','sound.recognition':'字音辨認','match.accuracy':'配對練習','sequence.accuracy':'排序練習','scene_builder.accuracy':'情境選擇'};
-const ACTIVITY_LABELS={'':'全部活動',listen:'聽一聽',read:'讀一讀',animation:'看一看動畫',explore:'詩境探索',challenge:'練一練',writing:'寫字練習',chat:'與詩人聊天',navigation:'瀏覽與選詩'};
 const pendingRequests=new Set();let sessionEpoch=0,sessionCheck=null;
 const legacyHost=['aiducation.asia','www.aiducation.asia'].includes(location.hostname)||/^aiducation-website(?:-[a-z0-9-]+)?\.vercel\.app$/.test(location.hostname);
 const sessionChannel=globalThis.BroadcastChannel?new BroadcastChannel('maanshan-school-session'):null;
@@ -23,7 +22,6 @@ function mean(values){const valid=values.filter(v=>number(v)!==null);return vali
 function dayOffset(offset){const date=new Date();date.setUTCDate(date.getUTCDate()+offset);return date.toISOString().slice(0,10);}
 function timestamp(value,short=false){if(!value||!Number.isFinite(new Date(value).getTime()))return '尚未同步';return new Intl.DateTimeFormat('zh-HK',{timeZone:'Asia/Hong_Kong',month:'2-digit',day:'2-digit',...(short?{}:{hour:'2-digit',minute:'2-digit'}),hour12:false}).format(new Date(value));}
 function empty(title,note=''){return `<div class="empty"><span class="empty-icon">${icon('empty')}</span><strong>${esc(title)}</strong>${esc(note)}</div>`;}
-function panel(title,subtitle,body,wide=false,action=''){return `<section class="panel${wide?' wide':''}"><div class="panel-heading"><h2>${esc(title)}</h2>${action}</div><p class="panel-subtitle">${esc(subtitle)}</p>${body}</section>`;}
 function toast(message){const el=document.querySelector('#teacher-notice');el.textContent=message;el.hidden=false;clearTimeout(toast.timer);toast.timer=setTimeout(()=>{el.hidden=true;},4500);}
 function selectionQuery(extra={}){const q=new URLSearchParams();for(const [key,value]of Object.entries({...state.filters,...extra}))if(value!==''&&value!==null&&value!==undefined)q.set(key,String(value));return q;}
 async function requestJSON(url,{signal,headers={},timeoutMs=25000,...options}={}){
@@ -35,7 +33,7 @@ async function requestJSON(url,{signal,headers={},timeoutMs=25000,...options}={}
   if(!data||typeof data!=='object')throw new Error('回應格式不完整');return data;
  }finally{pendingRequests.delete(controller);clearTimeout(timeout);signal?.removeEventListener('abort',abort);}
 }
-function clearPrivate(){clearTeacherTools();state.exportJob?.controller.abort();state.exportJob=null;state.detailData=null;state.studentFilter='all';state.constructFilter='';sessionEpoch++;for(const controller of pendingRequests)controller.abort();pendingRequests.clear();sessionCheck=null;state.request?.abort();state.detailRequest?.abort();state.generation++;state.data=null;state.roster=null;state.rosterError=false;state.auth=null;state.legacyCode='';state.search='';state.page=0;state.detailStudent=null;if(dialog.open)dialog.close();document.querySelector('#student-dialog-content').replaceChildren();const identity=document.querySelector('#teacher-identity');identity.textContent='';identity.hidden=true;document.querySelector('#teacher-logout').hidden=true;document.querySelector('#teacher-change-password')?.remove();}
+function clearPrivate(){clearTeacherTools();state.exportJob?.controller.abort();state.exportJob=null;state.detailData=null;state.studentsOpen=false;state.studentFilter='all';state.constructFilter='';sessionEpoch++;for(const controller of pendingRequests)controller.abort();pendingRequests.clear();sessionCheck=null;state.request?.abort();state.detailRequest?.abort();state.generation++;state.data=null;state.roster=null;state.rosterError=false;state.auth=null;state.legacyCode='';state.search='';state.page=0;state.detailStudent=null;if(dialog.open)dialog.close();document.querySelector('#student-dialog-content').replaceChildren();const identity=document.querySelector('#teacher-identity');identity.textContent='';identity.hidden=true;document.querySelector('#teacher-logout').hidden=true;document.querySelector('#teacher-change-password')?.remove();}
 function lockSession(){clearPrivate();state.legacy=false;renderLogin('帳戶已登出或在另一個分頁切換，請重新登入。');}
 function validateAuth(auth){if(typeof auth.enabled!=='boolean'||location.hostname==='mandarin.aiducation.asia'&&!auth.enabled||auth.authenticated&&(!auth.user?.id||!['student','teacher'].includes(auth.user.role)||typeof auth.csrfToken!=='string'||!auth.csrfToken))throw new Error('帳戶服務回覆不完整');return auth;}
 async function checkSession(){
@@ -88,7 +86,7 @@ async function enterDashboard(){
  if(!current())return;renderFilters();await loadData();
 }
 function renderShell(){
- root.innerHTML=`<main class="teacher-main workspace" id="teacher-main"><section class="teacher-controls" aria-label="班級與下載"><div id="filter-holder"></div><div id="teacher-tools"></div></section><div class="scope-line"><h1 id="view-title">${esc(scopeLabel())}</h1><div class="scope-actions"><span id="sync-state" class="sync-state" role="status"></span><button type="button" class="button quiet" data-action="refresh" aria-label="更新學生資料">${icon('refresh')}更新</button></div></div><div id="dashboard-content"></div></main>`;renderFilters();renderTeacherTools();
+ root.innerHTML=`<main class="teacher-main workspace" id="teacher-main"><section class="cohort-panel" aria-labelledby="view-title"><div class="teacher-controls"><div id="filter-holder"></div></div><div class="cohort-content"><div class="scope-line"><h1 id="view-title">${esc(scopeLabel())}</h1><div class="scope-actions"><span id="sync-state" class="sync-state" role="status"></span><button type="button" class="button quiet" data-action="refresh" aria-label="更新學生資料">${icon('refresh')}更新</button></div></div><div id="dashboard-content"></div></div></section><div id="teacher-tools" class="downloads-panel"></div></main>`;renderFilters();renderTeacherTools();
 }
 function renderFilters(){
  const f=state.filters,classes=[...new Set((state.roster||[]).filter(s=>!f.grade||String(s.grade)===f.grade).map(s=>String(s.cls||'')))].filter(Boolean).sort();
@@ -101,12 +99,12 @@ function renderFilters(){
 }
 function draftFilters(){const form=document.querySelector('#teacher-filters'),next={...state.filters};if(form)for(const key of ['grade','cls','from','to','attempt','activity'])if(form.elements[key]&&!form.elements[key].disabled)next[key]=form.elements[key].value;return next;}
 function markFilterDraft(){const draft=draftFilters();if(filterKey(draft)!==filterKey(state.filters))void applyFilters(draft);}
-async function applyFilters(next){if(!state.legacy&&!rangeValid(next)){const detail=document.querySelector('.filter-details');if(detail)detail.open=true;toast('請選擇有效日期，開始至結束日期最多 31 天。');return false;}if(filterKey(next)!==filterKey(state.filters))clearTeacherTools();state.filters=next;state.search='';state.studentFilter='all';state.constructFilter='';renderFilters();renderTeacherTools();await loadData();return !!state.data;}
+async function applyFilters(next){if(!state.legacy&&!rangeValid(next)){const detail=document.querySelector('.filter-details');if(detail)detail.open=true;toast('請選擇有效日期，開始至結束日期最多 31 天。');return false;}if(filterKey(next)!==filterKey(state.filters))clearTeacherTools();state.filters=next;state.search='';state.studentFilter='all';state.constructFilter='';state.studentsOpen=false;renderFilters();renderTeacherTools();await loadData();return !!state.data;}
 function scopeLabel(){return `${state.filters.grade?state.filters.grade+' 年級':'全校'}${state.filters.cls?' · '+state.filters.cls+' 班':''}`;}
 function rangeValid(f=state.filters){const a=new Date(f.from+'T00:00:00Z'),b=new Date(f.to+'T00:00:00Z');return /^\d{4}-\d{2}-\d{2}$/.test(f.from)&&/^\d{4}-\d{2}-\d{2}$/.test(f.to)&&Number.isFinite(a.getTime())&&Number.isFinite(b.getTime())&&a.toISOString().slice(0,10)===f.from&&b.toISOString().slice(0,10)===f.to&&b>=a&&(b-a)/86400000<31;}
 async function loadData(){
  const generation=++state.generation;state.detailRequest?.abort();state.detailStudent=null;state.detailData=null;if(dialog.open)dialog.close();state.request?.abort();const controller=new AbortController();state.request=controller;state.data=null;state.page=0;
- const host=document.querySelector('#dashboard-content');if(!host)return;
+ const host=document.querySelector('#dashboard-content');if(!host)return;document.querySelector('#view-title').textContent=scopeLabel();document.querySelector('#sync-state').textContent='';
  if(!state.legacy&&!rangeValid()){host.innerHTML='<p class="status-strip error" role="alert">請選擇有效日期，開始至結束日期最多 31 天。</p>';return;}
  host.innerHTML='<div class="data-loading" role="status"><span class="loader" aria-hidden="true"></span><p>正在整理學習紀錄</p></div>';
  try{
@@ -126,7 +124,6 @@ function joinedStudents(){
 function isActive(row){return number(row.nEvents)!==null&&row.nEvents>0;}
 function readingMetric(summary){return state.legacy?summary?.serverVerified||{}:summary?.byConstruct?.['reading.pronunciation']?.serverVerified||{};}
 function readingScore(row){return score(readingMetric(selectedSummary(row)).meanScore);}
-function practiceCount(row){return number(selectedSummary(row).clientReported?.measuredN);}
 function recordsReady(){return state.data&&state.data.sync?.status!=='unavailable';}
 function absenceReliable(){return !state.legacy&&!state.rosterError&&Array.isArray(state.roster)&&recordsReady()&&['direct','current','fresh','ready','ok','synced','live','published'].includes(state.data.sync?.status);}
 function supportSignals(row){
@@ -135,10 +132,7 @@ function supportSignals(row){
 }
 function studentMatches(row,filter=state.studentFilter,construct=state.constructFilter){if(construct&&!supportSignals(row).some(signal=>signal.key===construct))return false;return filter==='active'?isActive(row):filter==='unstarted'?absenceReliable()&&!!row.person.id&&!isActive(row):filter==='support'?supportSignals(row).length>0:filter==='completed'?row.completedN>0:filter==='unmeasured'?recordsReady()&&isActive(row)&&readingScore(row)===null:true;}
 function selectedStudents(){const term=state.search.trim().toLowerCase();return joinedStudents().filter(row=>studentMatches(row)&&(!term||[row.person.displayName,row.researchId,row.person.classNo,row.grade+row.cls,row.person.login].some(value=>String(value??'').toLowerCase().includes(term))));}
-function showStudentGroup(filter='all',construct=''){state.studentFilter=filter;state.constructFilter=construct;state.search='';state.page=0;updateStudentList();const list=document.querySelector('#student-list');list?.scrollIntoView({block:'start',behavior:'instant'});list?.querySelector('h2')?.focus({preventScroll:true});}
-function activeStatus(row){return !recordsReady()?['等待同步','']:!isActive(row)?[absenceReliable()?'期內未有紀錄':'暫未見已同步紀錄','']:number(row.completedN)>0?['有完成紀錄','green']:['已有練習紀錄','blue'];}
 
-function kpi(label,value,note,unit=''){return `<article class="kpi"><div class="kpi-accent"></div><p class="kpi-label">${esc(label)}</p><p class="kpi-value">${esc(value)}${unit?`<small>${esc(unit)}</small>`:''}</p><p class="kpi-note">${esc(note)}</p></article>`;}
 function renderDashboard(){
  if(!state.data)return;
  document.querySelector('#view-title').textContent=scopeLabel();
@@ -152,67 +146,30 @@ function renderDashboard(){
 function overview(){
  const students=joinedStudents(),active=students.filter(isActive),support=students.filter(row=>supportSignals(row).length),ready=recordsReady();
  const total=state.roster&&!state.rosterError?filteredRoster().length:null,reading=score(readingMetric(state.data.summary).meanScore);
- const cards=`<button class="kpi action-kpi" data-student-filter="active"><span class="kpi-label">已練習學生</span><span class="kpi-value">${ready?active.length:'—'}<small>${total===null?'人':' / '+total+' 人'}</small></span></button><article class="kpi"><p class="kpi-label">朗讀平均</p><p class="kpi-value">${reading===null?'—':shown(reading,1)}<small>分</small></p></article><button class="kpi action-kpi warm" data-student-filter="support" title="至少一項已測分項低於60分"><span class="kpi-label">可再練習</span><span class="kpi-value">${ready?support.length:'—'}<small>人</small></span></button>`;
+ const cards=`<article class="kpi"><p class="kpi-label">參與學生</p><p class="kpi-value">${ready?active.length:'—'}<small>${total===null?'人':' / '+total+' 人'}</small></p></article><article class="kpi"><p class="kpi-label">朗讀平均</p><p class="kpi-value">${reading===null?'未測':shown(reading,1)}<small>${reading===null?'':'分'}</small></p></article><article class="kpi warm" title="至少一項已測分項低於 60 分"><p class="kpi-label">可再練習</p><p class="kpi-value">${ready?support.length:'—'}<small>人</small></p></article>`;
  const measured=students.map(readingScore),groups=[['80–100 分',measured.filter(v=>v!==null&&v>=80).length,'green'],['60–79 分',measured.filter(v=>v!==null&&v>=60&&v<80).length,'blue'],['低於 60 分',measured.filter(v=>v!==null&&v<60).length,'gold'],['未測',measured.filter(v=>v===null).length,'muted']];
  const max=Math.max(1,...groups.map(([,count])=>count));
- const chart=`<section class="panel performance-panel" aria-labelledby="reading-chart-title"><h2 id="reading-chart-title">朗讀表現</h2><div class="score-distribution">${groups.map(([label,count,tone])=>`<div class="distribution-row"><span>${label}</span><div class="distribution-track"><span class="distribution-fill ${tone}" style="width:${count/max*100}%"></span></div><strong>${ready?count:'—'}<small>人</small></strong></div>`).join('')}</div><p class="chart-note">未測不計入平均分</p></section>`;
- return `<div class="kpi-grid teaching-actions">${cards}</div><div class="data-layout">${chart}${studentList()}</div>`;
+ const chart=`<section class="class-chart performance-panel" aria-labelledby="reading-chart-title"><h2 id="reading-chart-title">朗讀分布</h2><div class="score-distribution">${groups.map(([label,count,tone])=>`<div class="distribution-row"><span>${label}</span><div class="distribution-track"><span class="distribution-fill ${tone}" style="width:${ready?count/max*100:0}%"></span></div><strong>${ready?count:'—'}<small>人</small></strong></div>`).join('')}</div><p class="chart-note">未測不計入平均分</p></section>`;
+ return `<div class="kpi-grid">${cards}</div><div class="class-charts">${chart}<section class="class-chart participation-panel" aria-labelledby="participation-chart-title"><h2 id="participation-chart-title">每日參與</h2>${participationChart()}</section></div>${studentList()}`;
 }
-function renderLegacySkills(phonics){const entries=Object.entries(phonics).filter(([,v])=>score(v)!==null);return entries.length?`<div class="skill-list">${entries.map(([label,v])=>`<div><div class="skill-header"><span>${esc(label)}</span><span>${shown(v,1)} 分</span></div><div class="skill-track" role="img" aria-label="${esc(label)}，${v} 分"><span style="width:${v}%"></span></div></div>`).join('')}</div>`:empty('尚未有語音細項成績');}
-function readingWordPractice(data){
- const words=(Array.isArray(data.readingWords)?data.readingWords:[]).filter(word=>typeof word.char==='string'&&word.count>0&&word.below60Count>0&&score(word.meanScore)!==null),visible=words.slice(0,8);
- if(!visible.length)return empty(data.readingWordSummary?.totalGroups>0?'目前沒有需要重練的字音紀錄':'尚未有逐字評測紀錄',data.readingWordSummary?.totalGroups>0?'所選範圍內，已驗證的逐字評測沒有低於 60 分的紀錄。':'逐字評測同步後會列出可重練的字；不由總分推斷聲母、韻母或聲調問題。');
- return `<ul class="word-practice-list">${visible.map(word=>{const poem=state.poems.find(p=>Number(p.id)===Number(word.poemId)),line=/\.l(\d+)$/.exec(String(word.itemId)),position=line?'第 '+(Number(line[1])+1)+' 句':'';return `<li><strong class="word-practice-glyph">${esc(word.char)}</strong><div><h3>${esc(poem?.title||'第 '+word.poemId+' 首古詩')}${position?' · '+position:''}</h3><p>${shown(word.below60Count)} / ${shown(word.count)} 次低於 60 分 · 均分 ${shown(word.meanScore,1)}</p></div></li>`;}).join('')}</ul>${data.readingWordSummary?.truncated||words.length>visible.length?'<p class="helper">還有其他字音紀錄，可選年級或班別進一步查看。</p>':''}`;
+function participationChart(){
+ const known=new Map((state.data?.trend||[]).filter(row=>/^\d{4}-\d{2}-\d{2}$/.test(row.date)).map(row=>[row.date,number(row.nStudents)])),points=[];
+ if(state.legacy)return empty('尚未有每日紀錄');
+ if(!known.size&&absenceReliable())return empty('這段時間還沒有學習紀錄');
+ for(let time=Date.parse(state.filters.from+'T00:00:00Z'),end=Date.parse(state.filters.to+'T00:00:00Z');time<=end;time+=86400000){const date=new Date(time).toISOString().slice(0,10);points.push({date,value:known.has(date)?known.get(date):absenceReliable()?0:null});}
+ if(!points.length||!recordsReady())return empty('正在等候學習紀錄');
+ const maximum=Math.max(2,...points.map(point=>point.value??0)),top=Math.ceil(maximum/2)*2;
+ const descriptions=points.map(point=>`${point.date}：${point.value===null?'未有可用紀錄':point.value+' 人'}`);
+ return `<div class="participation-chart" role="img" aria-label="${esc(scopeLabel()+'每日參與人數；'+descriptions.join('；'))}"><div class="participation-axis"><span>${top}</span><span>${top/2}</span><span>0</span></div><div class="participation-plot">${points.map((point,index)=>`<div class="participation-day" title="${esc(descriptions[index])}"><span class="participation-bar${point.value===null?' unknown':''}" style="height:${point.value===null?0:point.value/top*100}%"></span></div>`).join('')}</div><div class="participation-dates"><span>${esc(points[0].date.slice(5).replace('-','/'))}</span><span>${esc(points[Math.floor((points.length-1)/2)].date.slice(5).replace('-','/'))}</span><span>${esc(points.at(-1).date.slice(5).replace('-','/'))}</span></div></div><p class="chart-note">人／日 · 同一天只計一次</p>`;
 }
+
 function studentList(){
- const all=joinedStudents(),filtered=selectedStudents(),size=6,pages=Math.max(1,Math.ceil(filtered.length/size));state.page=Math.min(state.page,pages-1);const page=filtered.slice(state.page*size,(state.page+1)*size);
- const options=[['all','全部'],['active','已練習'],['unstarted','未有紀錄'],['support','可再練習']];
- const rows=page.map(row=>{const [status,tone]=activeStatus(row);return `<tr><td><button class="name-button" data-student="${esc(row.researchId)}">${esc(row.person.displayName)}</button><p class="student-meta">${esc(row.grade+row.cls)}${row.person.classNo?' · '+esc(row.person.classNo)+' 號':''}</p></td><td class="reading-cell">${scoreMarkup(readingScore(row))}</td><td class="attempt-cell">${isActive(row)?shown(row.nAttempts):'—'}</td><td class="status-cell"><span class="tag ${tone}">${esc(status)}</span></td><td class="student-action"><button class="button small" data-student="${esc(row.researchId)}" aria-label="查看${esc(row.person.displayName)}的資料">查看${icon('overview')}</button></td></tr>`;}).join('');
- return `<section class="panel" id="student-list"><div class="list-toolbar"><h2 tabindex="-1">學生紀錄 <span>${filtered.length} 人</span></h2><label class="search-field"><span class="sr-only">搜尋學生</span><input type="search" id="student-search" value="${esc(state.search)}" placeholder="搜尋學生" autocomplete="off"></label></div><div class="student-filter-tabs" role="group" aria-label="學生紀錄篩選">${options.map(([key,label])=>`<button type="button" data-student-filter="${key}" aria-pressed="${state.studentFilter===key}" ${key==='unstarted'&&!absenceReliable()?'disabled':''}>${label}</button>`).join('')}</div>${rows?`<div class="table-area"><table class="student-table"><thead><tr><th scope="col">學生</th><th scope="col">朗讀</th><th scope="col" class="attempt-cell">練習次數</th><th scope="col" class="status-cell">狀態</th><th scope="col"><span class="sr-only">查看資料</span></th></tr></thead><tbody>${rows}</tbody></table></div><div class="pagination"><button class="button small" data-page="${state.page-1}" ${state.page===0?'disabled':''}>上一頁</button><span>${state.page+1} / ${pages}</span><button class="button small" data-page="${state.page+1}" ${state.page+1>=pages?'disabled':''}>下一頁</button></div>`:empty('暫時沒有符合的學生')}</section>`;
+ const filtered=selectedStudents(),size=8,pages=Math.max(1,Math.ceil(filtered.length/size));state.page=Math.min(state.page,pages-1);const page=filtered.slice(state.page*size,(state.page+1)*size);
+ const rows=page.map(row=>{const needsPractice=supportSignals(row).length>0,status=!recordsReady()?'等待同步':!isActive(row)?absenceReliable()?'未有紀錄':'待同步':needsPractice?'可再練習':'已練習',tone=needsPractice?'warm':isActive(row)?'green':'';const attempts=isActive(row)?number(row.nAttempts):absenceReliable()?0:null;return `<tr><td><span class="student-name">${esc(row.person.displayName)}</span><p class="student-meta">${esc(row.grade+row.cls)}${row.person.classNo?' · '+esc(row.person.classNo)+' 號':''}</p></td><td class="reading-cell">${scoreMarkup(readingScore(row))}</td><td class="attempt-cell">${shown(attempts)}</td><td class="status-cell"><span class="tag ${tone}">${esc(status)}</span></td></tr>`;}).join('');
+ return `<details class="student-overview" id="student-list" ${state.studentsOpen?'open':''}><summary><span>學生概況 <small>${joinedStudents().length} 人</small></span><span class="details-chevron" aria-hidden="true">⌄</span></summary><div class="student-overview-content"><div class="list-toolbar"><label class="search-field"><span class="sr-only">搜尋學生</span><input type="search" id="student-search" value="${esc(state.search)}" placeholder="搜尋學生" autocomplete="off"></label><span class="list-result">${filtered.length} 人</span></div>${rows?`<div class="table-area"><table class="student-table"><thead><tr><th scope="col">學生</th><th scope="col">朗讀</th><th scope="col" class="attempt-cell">練習次數</th><th scope="col" class="status-cell">狀態</th></tr></thead><tbody>${rows}</tbody></table></div>${pages>1?`<div class="pagination"><button class="button small" data-page="${state.page-1}" ${state.page===0?'disabled':''}>上一頁</button><span>${state.page+1} / ${pages}</span><button class="button small" data-page="${state.page+1}" ${state.page+1>=pages?'disabled':''}>下一頁</button></div>`:''}`:empty('暫時沒有符合的學生')}</div></details>`;
 }
-function updateStudentList(){const previous=document.querySelector('#student-list');if(previous)previous.outerHTML=studentList();}
+function updateStudentList(){const previous=document.querySelector('#student-list');if(previous){state.studentsOpen=previous.open;previous.outerHTML=studentList();}}
 
-function modeBreakdown(summary){
- if(!summary?.byMode)return '';
- const modes=[['standard','標準練習'],['advanced','進階練習'],['review','輔助重練'],['free','自由練習'],['unspecified','未標示模式']];
- const list=modes.filter(([key])=>summary.byMode[key]?.nOutcomeEvents>0);
- if(!list.length)return '';
- return `<details class="mode-details panel wide"><summary>各模式的練習紀錄</summary><p class="helper">不同模式分開查看；輔助與自由練習不計入獨立表現均分。</p><dl class="definition-list">${list.map(([key,label])=>{const mode=summary.byMode[key],practice=['review','free'].includes(key);return `<div><dt>${label}</dt><dd>${shown(mode.nOutcomeEvents)} 筆結果${practice?' · 用作練習過程紀錄':` · 已驗證測量 ${shown(mode.serverVerified?.measuredN)} 筆 · 有效練習回報 ${shown(mode.clientReported?.measuredN)} 筆`}</dd></div>`;}).join('')}</dl></details>`;
-}
-function constructBreakdown(summary,compare=null){
- if(!summary?.byConstruct)return '';
- const labels={'reading.pronunciation':'朗讀發音','writing.dictation':'聽寫辨字','sound.recognition':'字音辨認','match.accuracy':'配對練習','sequence.accuracy':'排序練習','scene_builder.accuracy':'情境選擇'},sources=[['serverVerified','伺服器評測'],['clientReported','學生端回報']];
- const groups=Object.entries(labels).map(([key,label])=>{const measured=summary.byConstruct[key]||{},rows=sources.filter(([source])=>measured[source]?.measuredN>0||measured[source]?.unmeasuredN>0||compare?.first?.byConstruct?.[key]?.[source]?.measuredN>0||compare?.latest?.byConstruct?.[key]?.[source]?.measuredN>0).map(([source,sourceLabel])=>{const metric=measured[source]||{},first=compare?.first?.byConstruct?.[key]?.[source],latest=compare?.latest?.byConstruct?.[key]?.[source];return `<div class="construct-source"><span>${sourceLabel}</span><strong>${score(metric.meanScore)===null?'未測':shown(metric.meanScore,1)+' 分'}</strong><p>${shown(metric.measuredN)} 筆有效測量${metric.unmeasuredN>0?' · '+shown(metric.unmeasuredN)+' 筆未測':''}</p>${compare?`<p>首次 ${score(first?.meanScore)===null?'未測':shown(first.meanScore,1)+' 分'} · 最近 ${score(latest?.meanScore)===null?'未測':shown(latest.meanScore,1)+' 分'}</p>`:''}</div>`;}).join('');return rows?`<article class="construct-card"><h3>${label}</h3>${rows}</article>`:'';}).filter(Boolean);
- return groups.length?panel('分項學習表現','發音、字音辨認與聽寫分開計算；不同題目及模式的分數仍需配合教學內容解讀。',`<div class="construct-grid">${groups.join('')}</div>`,true):'';
-}
-function trendChart(rows,kind){
- const points=rows.map(r=>({date:r.date,time:Date.parse(r.date+'T00:00:00Z'),value:kind==='participation'?number(r.nStudents):score(readingMetric(r).meanScore)})).filter(p=>p.value!==null&&Number.isFinite(p.time)).sort((a,b)=>a.time-b.time);
- if(!points.length)return empty(kind==='participation'?'期內還沒有學習節奏紀錄':'尚未有足夠的朗讀紀錄','資料累積後會顯示；不將缺失日期補成 0 分。');
- const max=kind==='participation'?Math.max(...points.map(p=>p.value),1):100,w=540,h=180,left=36,right=18,top=16,bottom=30,span=points.at(-1).time-points[0].time;const xs=points.map(p=>left+(w-left-right)*(span?(p.time-points[0].time)/span:.5)),ys=points.map(p=>h-bottom-(h-top-bottom)*p.value/max);
- const label=points.map(p=>`${p.date}：${shown(p.value,1)}${kind==='participation'?'人':'分'}`).join('；');
- return `<svg class="chart-svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label)}"><title>${esc(kind==='participation'?'每日有紀錄學生人數':'每日已驗證朗讀均分')}</title>${[0,.5,1].map(f=>`<line x1="${left}" x2="${w-right}" y1="${h-bottom-(h-top-bottom)*f}" y2="${h-bottom-(h-top-bottom)*f}" stroke="#e4e9e0"/><text x="${left-8}" y="${h-bottom-(h-top-bottom)*f+4}" text-anchor="end" class="chart-label">${shown(max*f)}</text>`).join('')}${points.length>1?`<polyline points="${points.map((_,i)=>`${xs[i]},${ys[i]}`).join(' ')}" fill="none" stroke="#47765b" stroke-width="2.5"/>`:''}${points.map((p,i)=>`<circle cx="${xs[i]}" cy="${ys[i]}" r="3.5" fill="#47765b"><title>${esc(p.date)}：${p.value}</title></circle>`).join('')}<text x="${left}" y="${h-6}" class="chart-label">${esc(points[0].date.slice(5))}</text><text x="${w-right}" y="${h-6}" text-anchor="end" class="chart-label">${esc(points.at(-1).date.slice(5))}</text></svg><p class="chart-accessible">${points.length} 個有資料的日期${kind==='participation'?'':' · 各日題目可能不同，變化不直接等於能力增減'}</p>`;
-}
-async function openStudent(researchId,{keepTab=false}={}){
- const student=joinedStudents().find(row=>row.researchId===researchId);if(!student)return;state.detailStudent=student;state.detailData=null;if(!keepTab)state.detailTab='learning';state.detailRequest?.abort();const controller=new AbortController();state.detailRequest=controller;
- document.querySelector('#student-dialog-content').innerHTML=detailShell(student,'<div class="empty"><span class="loader"></span><p>正在取得個人歷程</p></div>',false);if(!dialog.open)dialog.showModal();dialog.scrollTop=0;
- try{const data=state.legacy?state.data:await requestJSON(analyticsQuery(selectionQuery({student:researchId,grade:student.grade,cls:student.cls})),{signal:controller.signal});if(controller.signal.aborted)return;state.detailData=data;
-  const record=data.students?.find(row=>row.researchId===researchId)||student;document.querySelector('#student-dialog-content').innerHTML=detailShell(student,detailBody(record,data));
- }catch(error){if(controller.signal.aborted)return;if(error.status===401||error.status===403){clearPrivate();renderLogin('登入已失效，請重新登入。');return;}document.querySelector('#student-dialog-content').innerHTML=detailShell(student,empty('個人歷程暫時未能載入','目前範圍與學生選擇已保留。')+'<button class="button primary" data-action="retry-detail">重新載入</button>',false);}
-}
-function detailShell(student,body,ready=true){
- const cohort=selectedStudents(),index=cohort.findIndex(row=>row.researchId===student.researchId);
- const navigation=index>=0?`<div class="detail-navigation"><button class="button small" data-detail-next="-1" ${index===0?'disabled':''}>上一位</button><span>${index+1} / ${cohort.length} 位學生</span><button class="button small" data-detail-next="1" ${index===cohort.length-1?'disabled':''}>下一位</button></div>`:'';
- return `<header class="dialog-header"><div><p class="eyebrow">學生學習歷程</p><h2 id="student-dialog-title">${esc(student.person.displayName)}</h2><p class="helper">${esc(student.grade+student.cls)} 班${student.person.classNo?' · '+esc(student.person.classNo)+' 號':''} · ${esc(state.filters.from)} 至 ${esc(state.filters.to)}</p></div><button class="button icon-only" data-action="close-dialog" aria-label="關閉學生歷程">×</button></header><div class="dialog-body">${navigation}${ready?`<div class="detail-tabs" role="tablist" aria-label="學生歷程內容"><button role="tab" id="detail-tab-learning" aria-controls="detail-learning" aria-selected="${state.detailTab==='learning'}" tabindex="${state.detailTab==='learning'?0:-1}" data-detail-tab="learning">表現與字音</button><button role="tab" id="detail-tab-history" aria-controls="detail-history" aria-selected="${state.detailTab==='history'}" tabindex="${state.detailTab==='history'?0:-1}" data-detail-tab="history">練習歷程</button></div>`:''}${body}${ready&&!DEMO&&!state.legacy&&student.person.id?`<details class="password-reset-section"><summary>帳戶協助</summary><button class="button quiet small" data-action="confirm-reset">重設學生密碼</button><div id="student-password-reset"></div></details>`:''}</div>`;
-}
-
-function detailBody(record,data){
- const first=record.first||{},latest=record.latest||{},firstScore=score(readingMetric(first).meanScore),latestScore=score(readingMetric(latest).meanScore);
- const cards=kpi('首次朗讀',shown(firstScore,1),'所選範圍的首次嘗試','分')+kpi('最近朗讀',shown(latestScore,1),'所選範圍的最近嘗試','分')+kpi('嘗試次數',isActive(record)?shown(record.nAttempts):'—','不同活動的嘗試紀錄','次');
- const signals=supportSignals(record),suggestion=signals.length?`<div class="detail-guidance"><h3>下一次可以一起練</h3><ul>${signals.map(signal=>`<li><strong>${esc(signal.label)}</strong><span>${shown(signal.score,1)} 分 · ${esc(signal.source)}</span></li>`).join('')}</ul><p>這是所選嘗試的分項紀錄，請配合題目內容安排練習。</p></div>`:!isActive(record)?'<p class="status-strip">所選範圍暫未見練習紀錄，可以調整日期或確認同步狀態。</p>':'<p class="status-strip">目前沒有低於 60 分的已測分項；未測項目仍需等待有效紀錄。</p>';
- const daily=(data.trend||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
- return `<section id="detail-learning" role="tabpanel" aria-labelledby="detail-tab-learning" ${state.detailTab==='learning'?'':'hidden'}><div class="kpi-grid">${cards}</div>${suggestion}${constructBreakdown(selectedSummary(record),{first,latest})}${data.readingWordSummary?panel('可以再練的字','逐字評測低於 60 分的紀錄；按詩句位置分開。',readingWordPractice(data)):''}</section><section id="detail-history" role="tabpanel" aria-labelledby="detail-tab-history" ${state.detailTab==='history'?'':'hidden'}>${panel('朗讀變化',state.legacy?'舊版沒有每日評測紀錄。':'不同日期的題目可能不同；沒有分數時留空。',trendChart(data.trend||[],'reading'))}${panel('每日練習歷程','分開觀察嘗試、完成與有效評測。',daily.length?`<ol class="timeline">${daily.map(day=>`<li><time datetime="${esc(day.date)}">${esc(day.date)}</time><div><h3>${shown(day.nAttempts)} 次嘗試 · ${shown(day.completedN)} 項完成紀錄</h3><p>朗讀 ${score(readingMetric(day).meanScore)===null?'未測':shown(readingMetric(day).meanScore,1)+' 分'} · 有效練習 ${shown(day.clientReported?.measuredN)} 筆</p></div></li>`).join('')}</ol>`:empty('尚未有每日歷程',state.legacy?'舊版只保存最新摘要。':''))}${modeBreakdown(data.summary)}</section>`;
-}
-function switchDetailTab(tab,{focus=false}={}){if(!['learning','history'].includes(tab))return;state.detailTab=tab;for(const button of dialog.querySelectorAll('[data-detail-tab]')){const selected=button.dataset.detailTab===tab;button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;if(selected&&focus)button.focus();}for(const id of ['learning','history']){const panel=dialog.querySelector('#detail-'+id);if(panel)panel.hidden=id!==tab;}}
 
 function showPasswordChange(){
  state.detailRequest?.abort();state.detailStudent=null;
@@ -228,27 +185,6 @@ async function changePassword(form){
  catch(error){if(epoch!==sessionEpoch)return;if(error.status===401&&error.code!=='INVALID_CREDENTIALS'||error.status===403){clearPrivate();renderLogin('登入已失效，請重新登入。');return;}if(!form.isConnected)return;errorEl.textContent=['INVALID_CREDENTIALS','CURRENT_PASSWORD_INVALID'].includes(error.code)?'目前密碼不正確。':error.status===429?'修改次數較多，請 15 分鐘後再試。':error.status===409?'帳戶資料已變更，請重新登入後再試。':error.status===400?'新密碼不符合要求，請檢查長度。':'修改尚未確認，請檢查連線後重新登入。';errorEl.hidden=false;}
  finally{form.reset();button.disabled=false;button.textContent='儲存新密碼';}
 }
-function confirmPasswordReset(){
- const student=state.detailStudent,host=document.querySelector('#student-password-reset');if(DEMO||!student?.person.id||!host)return;
- host.innerHTML=`<div class="reset-confirmation"><h3>確認重設 ${esc(student.person.displayName)} 的密碼？</h3><p>學生所有已登入裝置將登出。新密碼只會在這次畫面顯示，請當面交給學生。</p><div class="form-actions"><button class="button" data-action="cancel-reset">取消</button><button class="button primary" data-action="reset-password">確認重設</button></div><p class="form-error" role="alert" hidden></p></div>`;
- host.querySelector('[data-action=cancel-reset]').focus();
-}
-async function resetStudentPassword(button){
- const student=state.detailStudent,host=document.querySelector('#student-password-reset');if(DEMO||!student?.person.id||!host)return;
- button.disabled=true;button.textContent='正在重設…';
- try{const result=await requestJSON(AUTH,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':state.auth?.csrfToken||''},body:JSON.stringify({action:'reset_student_password',studentId:student.person.id})});if(!result.reset||result.studentId!==student.person.id||typeof result.initialPassword!=='string')throw new Error('重設結果未獲確認');if(!host.isConnected||state.detailStudent!==student)return;
-  host.innerHTML=`<div class="reset-confirmation"><h3>密碼已重設</h3><p>只在這次畫面顯示，關閉後不會保存。</p><label class="field">${esc(student.person.displayName)} 的新密碼<input id="reset-password-value" type="text" readonly autocomplete="off" spellcheck="false"></label><div class="form-actions"><button class="button primary" data-action="copy-password">複製新密碼</button><button class="button" data-action="cancel-reset">已記下，隱藏密碼</button></div></div>`;host.querySelector('input').value=result.initialPassword;
- }catch(error){if(error.status===401||error.status===403){clearPrivate();renderLogin('登入已失效，請重新登入。');return;}if(!host.isConnected)return;const el=host.querySelector('.form-error');if(el){el.textContent=error.status===429?'重設次數較多，請 15 分鐘後再試。':error.status===404?'這位學生的帳戶已停用或不存在。':error.status===409?'學生帳戶已變更，請關閉後重新查看。':'重設結果未獲確認，請檢查連線後再試。';el.hidden=false;}button.disabled=false;button.textContent='確認重設';}
-}
-async function copyStudentPassword(){const input=document.querySelector('#reset-password-value');if(!input)return;try{await navigator.clipboard.writeText(input.value);toast('已複製新密碼，請妥善交給學生。');}catch{input.focus();input.select();toast('請複製已選取的新密碼。');}}
-function updateExportProgress(){
- const job=state.exportJob,host=document.querySelector('#export-progress');
- for(const button of document.querySelectorAll('[data-export]'))button.disabled=job?.status==='running';
- if(!host)return;if(!job){host.replaceChildren();return;}
- const running=job.status==='running',context=`${job.scope} · ${job.from} 至 ${job.to} · ${job.format.toUpperCase()}`;
- host.innerHTML=`<div class="export-progress ${job.status}" role="status"><div><strong>${esc(running?'正在核對匯出紀錄':job.status==='complete'?'檔案已準備完成':job.status==='cancelled'?'已取消匯出':'匯出未完成')}</strong><p>${esc(context)}</p></div>${running?`<progress ${job.total!==null&&job.total>0?`max="${job.total}" value="${job.rows}"`:''} aria-label="匯出紀錄進度"></progress><p>已核對 ${shown(job.pages)} 頁 · ${shown(job.rows)}${job.total!==null?' / '+shown(job.total):''} 筆</p><button class="button small" data-action="cancel-export">取消匯出</button>`:`<p>${esc(job.message||'')}</p>${job.status==='complete'?'':`<button class="button small" data-export="${job.format}">重新匯出 ${job.format.toUpperCase()}</button>`}`}</div>`;
-}
-function cancelExport(){const job=state.exportJob;if(!job||job.status!=='running')return;job.cancelled=true;job.controller.abort();job.status='cancelled';job.message='沒有下載任何部分檔案；準備好時可以重新匯出。';updateExportProgress();}
 
 function filterKey(filters){return JSON.stringify(Object.fromEntries(['grade','cls','from','to','attempt','activity'].map(key=>[key,String(filters?.[key]??(key==='attempt'?'latest':''))])));}
 function filterDescription(filters){return `${filters.grade?filters.grade+' 年級':'全校'}${filters.cls?' · '+filters.cls+' 班':''} · ${filters.from} 至 ${filters.to}`;}
@@ -321,29 +257,6 @@ async function exportDocument(action){
  finally{clearTimeout(timer);pendingRequests.delete(job.controller);}
 }
 
-async function exportData(format,button){
- if(DEMO||state.legacy||!state.data||!state.auth||state.exportJob?.status==='running'||!['csv','jsonl'].includes(format))return;
- const epoch=sessionEpoch,authAtStart=state.auth,snapshots={query:selectionQuery(),from:state.filters.from,to:state.filters.to},job={format,scope:scopeLabel(),from:state.filters.from,to:state.filters.to,rows:0,pages:0,total:null,status:'running',message:'',cancelled:false,controller:new AbortController()};state.exportJob=job;updateExportProgress();
- const valid=()=>epoch===sessionEpoch&&state.auth===authAtStart&&state.exportJob===job&&!job.cancelled;
- try{let cursor=0,chunks=[],manifests=[],snapshot=null,dictionary=null;
-  for(let page=0;page<50;page++){
-   const params=new URLSearchParams(snapshots.query);params.set('format',format);params.set('cursor',String(cursor));params.set('limit','5000');if(snapshot)params.set('snapshot',snapshot);
-   const result=await requestJSON(analyticsQuery(params),{signal:job.controller.signal});if(!valid())return;
-   if(typeof result.content!=='string'||!result.manifest||!result.dictionary)throw new Error('匯出資料不完整');
-   const manifest=result.manifest;if(!manifest.snapshotId||snapshot&&manifest.snapshotId!==snapshot)throw new Error('匯出資料已更新');snapshot=manifest.snapshotId;
-   if(!Number.isSafeInteger(manifest.returned)||manifest.returned<0||!Number.isSafeInteger(manifest.totalMatched)||manifest.totalMatched<0)throw new Error('匯出資料不完整');
-   if(job.total!==null&&manifest.totalMatched!==job.total)throw new Error('匯出資料已更新');job.total=manifest.totalMatched;
-   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(result.content)),checksum=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');if(!valid())return;if(checksum!==manifest.sha256)throw new Error('匯出完整性檢查未通過');
-   if(dictionary&&JSON.stringify(dictionary)!==JSON.stringify(result.dictionary))throw new Error('匯出資料已更新');dictionary=result.dictionary;manifests.push(manifest);let content=result.content;if(format==='csv'&&page>0){const newline=content.indexOf('\n');if(newline<0)throw new Error('匯出資料不完整');content=content.slice(newline+1);}chunks.push(content);job.rows+=manifest.returned;job.pages++;updateExportProgress();
-   if(manifest.nextCursor===null||manifest.nextCursor===undefined)break;const next=Number(manifest.nextCursor);if(!Number.isFinite(next)||next<=cursor)throw new Error('分頁順序不完整');cursor=next;if(page===49)throw new Error('紀錄較多，請縮短日期範圍再匯出。');
-  }
-  if(!valid())return;if(job.rows!==job.total)throw new Error('匯出筆數未齊');
-  const content=chunks.join(''),blob=new Blob([format==='csv'?'\uFEFF':'',content],{type:format==='csv'?'text/csv;charset=utf-8':'application/x-ndjson'});
-  download(blob,`普通話研究紀錄_${snapshots.from}_${snapshots.to}.${format}`);download(new Blob([JSON.stringify({exportedAt:new Date().toISOString(),filters:Object.fromEntries(snapshots.query),rows:job.rows,dictionary,pages:manifests},null,2)],{type:'application/json'}),`普通話研究紀錄_${snapshots.from}_${snapshots.to}_說明.json`);
-  job.status='complete';job.message=`已核對 ${job.pages} 頁、${job.rows.toLocaleString()} 筆紀錄；已下載資料檔與字典說明。`;toast(`已匯出 ${job.rows.toLocaleString()} 筆研究事件及資料字典。`);
- }catch(error){if(!valid())return;if(error.status===401||error.status===403){clearPrivate();renderLogin('登入已失效，請重新登入。');return;}job.status='error';job.message=error.code==='NARROW_DATE_OR_CLASS_FILTER'?'紀錄較多，請先縮短日期範圍或選擇一個班別，再重新匯出。':error.status===409||error.message==='匯出資料已更新'?'匯出期間有新紀錄加入，沒有下載部分檔案。請重新匯出。':error.message==='紀錄較多，請縮短日期範圍再匯出。'?error.message:'完整性核對或連線未完成，沒有下載部分檔案。請重新匯出。';toast(job.message);
- }finally{if(epoch===sessionEpoch&&state.exportJob===job)updateExportProgress();}
-}
 
 function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);}
 async function loadLegacy(signal){
@@ -375,18 +288,12 @@ function click(event){const button=event.target.closest('button');if(!button||bu
  if(button.dataset.action==='boot')void boot();if(button.dataset.action==='logout')void logout();
  if(button.dataset.action==='reset-filters')applyFilters({grade:'',cls:'',from:dayOffset(-29),to:dayOffset(0),attempt:'latest',activity:''});
  if(button.dataset.dateOffset!==undefined){const form=document.querySelector('#teacher-filters');form.elements.from.value=dayOffset(Number(button.dataset.dateOffset));form.elements.to.value=dayOffset(0);markFilterDraft();}
- if(button.dataset.studentFilter){showStudentGroup(button.dataset.studentFilter,button.dataset.construct||'');}
- if(button.dataset.detailTab)switchDetailTab(button.dataset.detailTab);
- if(button.dataset.detailNext){const cohort=selectedStudents(),index=cohort.findIndex(row=>row.researchId===state.detailStudent?.researchId),next=cohort[index+Number(button.dataset.detailNext)];if(next)void openStudent(next.researchId,{keepTab:true});}
- if(button.dataset.action==='retry-detail'&&state.detailStudent)void openStudent(state.detailStudent.researchId,{keepTab:true});
  if(button.dataset.action==='close-dialog'){state.detailRequest?.abort();state.detailStudent=null;state.detailData=null;dialog.close();document.querySelector('#student-dialog-content').replaceChildren();}
- if(button.dataset.action==='confirm-reset')confirmPasswordReset();if(button.dataset.action==='reset-password')void resetStudentPassword(button);if(button.dataset.action==='cancel-reset')document.querySelector('#student-password-reset')?.replaceChildren();if(button.dataset.action==='copy-password')void copyStudentPassword();
- if(button.dataset.student)void openStudent(button.dataset.student);if(button.dataset.export)void exportData(button.dataset.export,button);if(button.dataset.action==='cancel-export')cancelExport();
  if(button.dataset.page!==undefined){state.page=Math.max(0,Number(button.dataset.page)||0);updateStudentList();document.querySelector('#student-list')?.scrollIntoView({block:'start',behavior:'instant'});}
  if(button.dataset.groupGrade)applyFilters({...state.filters,grade:button.dataset.groupGrade,cls:button.dataset.groupClass||''});
 }
 root.addEventListener('click',click);dialog.addEventListener('click',click);
-dialog.addEventListener('keydown',event=>{if(!event.target.matches('[data-detail-tab]')||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();switchDetailTab(event.key==='Home'?'learning':event.key==='End'?'history':state.detailTab==='learning'?'history':'learning',{focus:true});});
+root.addEventListener('toggle',event=>{if(event.target.id==='student-list')state.studentsOpen=event.target.open;},true);
 dialog.addEventListener('close',()=>{if(dialog.open)return;state.detailRequest?.abort();state.detailStudent=null;state.detailData=null;document.querySelector('#student-dialog-content').replaceChildren();});
 dialog.addEventListener('submit',event=>{if(event.target.id==='teacher-password-form'){event.preventDefault();void changePassword(event.target);}});document.querySelector('#teacher-logout').addEventListener('click',logout);
 // Remove the old teacher-token persistence once; school credentials are never stored in browser storage.
