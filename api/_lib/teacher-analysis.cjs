@@ -1,7 +1,7 @@
 'use strict';
 const crypto=require('node:crypto'),blob=require('@vercel/blob');
 const research=require('./research-store.cjs');
-const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v13-observed-groups';
+const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v14-focused-prose';
 const MAX_RECORD_BYTES=12*1024*1024,MAX_PROVIDER_BYTES=160*1024,MAX_RESPONSE_BYTES=128*1024;
 const LEASE_MS=120000,PROVIDER_TIMEOUT_MS=42000;
 const SCHEMA=`CREATE TABLE IF NOT EXISTS teacher_analysis_records (
@@ -131,12 +131,17 @@ function aggregateEvidence(dataset){
  });
  // Give the writer actual, disjoint groups. An empty intersection must never
  // turn into a third class group merely to make the prose look comprehensive.
- const teachingGroups=facts.filter(fact=>fact.label.endsWith('：同一批學生觀察')).map(fact=>{
+ const observedGroups=facts.filter(fact=>fact.label.endsWith('：同一批學生觀察')).map(fact=>{
   const [left,right]=fact.label.split('：')[0].split('與');
   return {evidenceId:fact.id,domains:[left,right],bothMeasuredStudents:fact.value.bothMeasuredStudents,
    groups:[['leftOnlyBelow60Students',[left]],['rightOnlyBelow60Students',[right]],['bothBelow60Students',[left,right]]]
     .filter(([key])=>fact.value[key]>0).map(([key,focus])=>({count:fact.value[key],focus}))};
  });
+ // One paired cohort is enough to explain a classroom grouping. Supplying all
+ // three pairs encouraged prose to mix paired counts with whole-class totals.
+ // Prefer an observed overlap involving reading, then another real overlap.
+ const groupPriority=group=>(group.domains.some(domain=>domain.startsWith('朗讀'))?2:0)+(group.groups.some(item=>item.focus.length===2)?4:0);
+ const teachingGroups=observedGroups.sort((left,right)=>groupPriority(right)-groupPriority(left)).slice(0,1);
  const payload={schemaVersion:1,reportStyle:'narrative-teaching-review',demo:dataset.demo===true,filters:dataset.filters,curriculum,teachingConstraints,teachingFocus,teachingGroups,detailLevel:dataset.filters.cls?'selected_class':dataset.filters.grade?'grade_and_classes':'school_and_grades_with_class_participation',rosterSummary:{totalStudents:safeCount(roster.totalStudents),withRecords:safeCount(roster.withRecords),noRecords:safeCount(roster.noRecords)},sync:{status:syncStatus,integrityIssues:safeCount(analytics.sync?.integrity?.integrityIssues),retryPending:safeCount(analytics.sync?.integrity?.retryPending)},evidence:facts,
   interpretationRules:['未見記錄不等於沒有練習；離線未同步情況無法直接觀察。','零分是測量；null和缺少分數是未測量。','按構念及來源分開解讀，不可把朗讀分數與答題準確度混成平均分。','瀏覽器自報分數未經伺服器核實；伺服器核實亦不等於教育診斷。','字音分數不能推斷聲母、韻母、聲調的具體病因。','完成活動事件數和嘗試數均不是完成學生數。','各日人數不可相加作不重複總人數；分組數據與總計有重疊。','資料不能證明教學因果、學習障礙或學生態度。']};
  if(Buffer.byteLength(canonical(payload))>MAX_PROVIDER_BYTES)fail('NARROW_DATE_OR_CLASS_FILTER',413,false);
@@ -156,11 +161,11 @@ const SYSTEM_PROMPT=`你是香港小學普通話科的資深教師，向同科�
 overview約100字，說清下一課的重心及其主要依據。findings寫3個互不重複的完整段落，每段約220至280字，合計至少650字且佔正文一半以上。有數據時依次分析：
 第一段：參與及不同活動的覆蓋。連起名冊、有紀錄、有完成紀錄及各分項有評分的學生人數，說明課堂應先補齊哪一環的觀察，並照顧已完成學生的練習延續。完成紀錄筆數不是完成學生數，有活動紀錄也不是完成全課；直接提出教學決策即可。
 第二段：具體字音在原句中的分布。以全詩逐字平均及有評分學生數支持判斷，挑teachingFocus中的少量字和所在原句，解釋為何先從這些句子練起，以及教師應如何分辨需要全班再練還是個別再聽。不重列整個字表，不猜學生錯誤原因，不把全班平均說成人人都錯。
-第三段：學生分布及分層跟進。用明確提供的同一批學生交集，分析朗讀、聽辨和書寫的跟進對象是否重疊，說明下一課如何安排不同練習、以甚麼表現決定是否調整。teachingGroups已列出實際存在的跟進組別，只選一組有用的兩項觀察展開；交集為0時分別安排聽讀或寫字，不另設「兩項皆低」組，也不為湊齊三組補一個假設組。沒有兩項都有結果的觀察時，用各分項覆蓋和具體題目決定先後，避免重複第二段的字音清單。不同題型的平均分不是能力排名。
+第三段：學生分布及分層跟進。teachingGroups只提供一對已選定的學習分項，整篇報告的交集、僅一項低分及分組敘述都只沿用這同一對。先自然交代這兩項都有評分的學生人數，再說明實際存在的各組如何練習、以甚麼表現調整；交集為0時分別安排，不補空組或假設組。第三個分項只引用「個人平均低於60分的名冊學生」全體跟進人數並寫具體教法，例如交代默寫需跟進的實際人數後，直接安排練寫本課指定字及觀察字形。不再談第三項與其他項的重疊、不寫「全體X人中有Y人僅默寫低」，不把未納入同一對觀察的學生推成另一組。沒有兩項都有結果的觀察時，用各分項覆蓋和具體題目決定先後，避免重複第二段的字音清單。
 每個發現的標題精簡，正文充分連結事實、教學含義和取捨；至少兩種相關證據共同支持一段，不能只有均分播報或把清單串起來。單班全文約1100至1500字，全校約1500至1900字，資料少則如實簡短。
 teachingActions單年級1至2項、全校2至3項。每項steps放1段100至180字的完整中文建議，連貫交代理由、具體課文、師生活動和觀察目標。reviewPlan只放1項、1段80至120字，沿用前述同一句和同一觀察字，寫清如何根據下一次實際表現調整。不使用1)/2)、一二三操作清單，也不附教案或課時表。
 【教師自然語氣】
-正文只談教學，不解說系統規則或資料處理：例如自然寫「聽寫集中練好『舟』，讓其餘時間用於原句跟讀」，不要寫「唯一允許字」「二年級只准」「不得增加」；自然寫「下課先聽取尚未留下朗讀結果的學生」，不要說「不能判定未參與」。內部的閾值、來源名稱、校驗要求不充當論述主題。選有實際用處的數字，不重複列兩套字音資料。不作能力分級、病因推斷或防禦性免責。標題正文不提demo、模擬、虛構、伺服器、瀏覽器、evidenceIds、模型或技術流程。demo為true時，文件頁首由系統加一次「模擬數據」，正文照常寫教研報告。
+正文只談教學，不解說系統規則或資料處理：例如自然寫「聽寫集中練好『舟』，讓其餘時間用於原句跟讀」，不要寫「唯一允許字」「二年級只准」「不得增加」；自然寫「下課先聽取尚未留下朗讀結果的學生」，不要說「不能判定未參與」。內部的閾值、來源名稱、校驗要求不充當論述主題。選有實際用處的數字，不重複列兩套字音資料。不作能力分級、病因推斷或防禦性免責。「平均分只是參考」「不能直接推論每個人都錯」「不能代表全班」「因此個別聽取是必要的」這類解釋數據局限的句子整句省略；直接寫「全班跟讀後，教師逐一聽取，讓仍需鞏固的學生再讀一次」，不先辯解為甚麼不能推論。標題正文不提demo、模擬、虛構、伺服器、瀏覽器、evidenceIds、模型或技術流程。demo為true時，文件頁首由系統加一次「模擬數據」，正文照常寫教研報告。
 【可靠教學內容，內部遵守即可】
 每個觀察數字準確引用evidence並在evidenceIds列出依據；不自行相減推算未提供人數。未測不是0。數字可有明確約數，但不能變換人數/筆數/字位單位。「逐字平均」的meanBelow80Positions是平均低於80的字位數，measuredStudents是該字有分數的學生數，不是讀錯或低分的學生數；舊字音觀察below60是評分次數。逐字均分用來選擇共同跟讀的原句，不能與受測人數相乘或結合成「字音問題普遍」「多數學生讀不準」的結論。自然寫「可先共同跟讀這些字所在原句，再逐一聽取，安排仍需鞏固的學生再讀」，不把這條內部規則或免責說明寫進報告。優先使用逐字平均，不再單獨分析舊字音觀察。兩個閾值都是跟進線索，不是及格線。
 「尚無評分的名冊學生」是整份名冊中的總缺測人數，包含完全無活動紀錄的學生。表述為「全班朗讀尚有X人未留下評分」，不能放進「已有活動紀錄的學生中」的子集，也不能與無活動紀錄人數相加。無活動紀錄只表示尚未留下平台紀錄，直接建議先了解練習情況並補齊觀察；不將其說成缺席、未參與或沒有練習。
@@ -184,7 +189,9 @@ function repairPunctuation(content){
 }
 function reportEvidence(payload){
  const facts=payload.evidence||[],hasCharacterAverages=facts.some(fact=>fact.label==='全詩逐字平均的觀察範圍');
+ const groupingId=payload.teachingGroups?.[0]?.evidenceId;
  return facts.filter(fact=>{
+  if(groupingId&&fact.label.endsWith('：同一批學生觀察')&&fact.id!==groupingId)return false;
   if(/^\d{4}-\d\d-\d\d$/u.test(fact.scope))return false;
   if(['活動完成紀錄','練習嘗試','已收集活動記錄','需排除的資料異常記錄','複習或自由練習結果'].includes(fact.label))return false;
   if(fact.label.includes('有活動紀錄但尚無此項評分'))return false;
@@ -228,7 +235,7 @@ async function requestAnalysis(payload,config,{fetchImpl=globalThis.fetch,signal
  providerPayload.evidence=facts;
  providerPayload.teachingConstraints=(payload.teachingConstraints||[]).map(({grade,poem,writing})=>({grade,poem,writing:{maxCharactersAcrossWholeReport:writing.maxCharactersAcrossWholeReport,allowedCharacters:writing.allowedCharacters}}));
  const messages=[{role:'system',content:SYSTEM_PROMPT},{role:'user',content:canonical(providerPayload)}];
- if(revision)messages.push({role:'assistant',content:canonical(revision.analysis)},{role:'user',content:'請對上一份報告作最小必要修正，保留正確的分析、結構、篇幅與段落，不從零重寫。逐項糾正以下實際問題，相關句子也一併改正；不增加免責段落或解說內部規則。覆核若要求刪除某整句，直接刪除，不再改寫或補算，保留相鄰的正確敘述。總缺測人數以全班為範圍，不能放入「已有紀錄的X人中」的子集。無紀錄不寫成缺席或未參與；現有遊戲只按實際題目練習，不宣稱題庫含指定字音。輸出修正後的完整JSON，evidenceIds沿用真實依據。覆核問題：'+canonical(revision.issues)});
+ if(revision)messages.push({role:'assistant',content:canonical(revision.analysis)},{role:'user',content:'請對上一份報告作最小必要修正，保留正確的分析、結構、篇幅與段落，不從零重寫。逐項糾正以下實際問題，相關句子也一併改正；不增加免責段落或解說內部規則。覆核若要求刪除某整句，直接刪除，不再改寫或補算，保留相鄰的正確敘述。分組敘事只沿用teachingGroups這一對；第三項只寫全班實際跟進人數及教法，刪除第二對的交集與「全體X人中僅Y人」敘述。總缺測人數以全班為範圍，不能放入「已有紀錄的X人中」的子集。無紀錄不寫成缺席或未參與；現有遊戲只按實際題目練習，不宣稱題庫含指定字音。輸出修正後的完整JSON，evidenceIds沿用真實依據。覆核問題：'+canonical(revision.issues)});
  let response;
  try{response=await fetchImpl(config.url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+config.key},body:JSON.stringify({model:config.model,messages,temperature:0.3,max_tokens:6500,thinking:{type:'disabled'},response_format:{type:'json_object'} }),signal:combined});}
  catch(error){if(signal?.aborted)fail('ANALYSIS_INTERRUPTED',499,true,5);if(timeout.aborted||['TimeoutError','AbortError'].includes(error?.name))fail('AI_TIMEOUT',504,true,30);fail('AI_UNAVAILABLE',502,true,30);}

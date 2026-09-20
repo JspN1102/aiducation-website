@@ -1,4 +1,4 @@
-import {mountShishiSprite} from './shishi-sprite.mjs?v=20260921-school3';
+import {mountShishiSprite} from './shishi-sprite.mjs?v=20260921-school4';
 let instanceID = 0;
 
 /** A small navigation companion. No model downloads, rendering loop or floating placement. */

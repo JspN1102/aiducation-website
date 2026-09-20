@@ -104,11 +104,12 @@ function mentionedDomains(value){
   for(const {domain}of mentions.sort((a,b)=>a.index-b.index)){const prior=recent.indexOf(domain);if(prior!==-1)recent.splice(prior,1);recent.push(domain);}
   return recent;
 }
-function namedDomainPair(value){
-  const domain='(?:朗[讀读](?:字音(?:評分|评分))?|默[寫写](?:辨[識识](?:[準准]確度)?)?|[聽听][寫写]|[書书][寫写]|辨音(?:答題[準准]確度)?|[聽听]辨)';
+function namedDomainPairs(value){
+  const domain='(?:朗[讀读](?:字音(?:評分|评分)?)?|默[寫写](?:辨[識识](?:[準准]確度)?)?|[聽听][寫写]|[書书][寫写]|辨音(?:答題(?:[準准]確度)?)?|[聽听]辨)';
   const matches=[...String(value||'').matchAll(new RegExp(domain+'(?:與|与|和|及|、|／|/)'+domain,'gu'))];
-  return matches.length?mentionedDomains(matches.at(-1)[0]):[];
+  return matches.map(match=>mentionedDomains(match[0])).filter(domains=>domains.length===2);
 }
+function namedDomainPair(value){return namedDomainPairs(value).at(-1)||[];}
 function emptyObservedGroup(value,context,pairs){
   const dualLow=/(?:兩項|两项|兩者|两者|二者)(?:個人平均|平均|分數|分数)?(?:皆|均|都|同時|同时)?(?:低於|低于|不足|未達|未达)\s*60\s*分|(?:皆|均|同時|同时)(?:低於|低于|不足|未達|未达)\s*60\s*分/gu;
   for(const match of String(value).matchAll(dualLow)){
@@ -134,12 +135,38 @@ function inspectAnalysis(analysis,payload={}){
   if(payload.reportStyle==='narrative-teaching-review'){
     const facts=Array.isArray(payload.evidence)?payload.evidence:[],byId=new Map(facts.map(fact=>[fact.id,fact]));
     const pairs=facts.filter(fact=>fact.label?.endsWith('：同一批學生觀察')&&Number.isSafeInteger(fact.value?.bothBelow60Students)).map(fact=>({label:fact.label.split('：')[0],domains:mentionedDomains(fact.label),count:fact.value.bothBelow60Students,id:fact.id}));
+    const groupingPairs=new Set(),selectedGrouping=payload.teachingGroups?.length===1?payload.teachingGroups[0]:null;
+    const selectedDomains=selectedGrouping?mentionedDomains(selectedGrouping.domains.join('與')).sort().join('/') : null;
     for(const {value,path}of textFields(analysis)){
       const itemMatch=/^(findings|teachingActions|reviewPlan)\[(\d+)\]/u.exec(path),item=itemMatch?analysis[itemMatch[1]][Number(itemMatch[2])]:null;
       const cited=(item?.evidenceIds||[]).map(id=>byId.get(id)).filter(Boolean),citedPairs=pairs.filter(pair=>cited.some(fact=>fact.id===pair.id));
       const emptyGroup=emptyObservedGroup(value,item?.title,citedPairs.length?citedPairs:pairs);
       if(emptyGroup)add('EMPTY_LEARNING_GROUP',`「${emptyGroup.label}」兩項皆低於60分的學生為0人。刪除針對這個空組的練習安排及湊成三組的表述；沿用teachingGroups中實際存在的組別，分別說清原句聽讀或寫字的做法。保留其餘正確分析，不另補假設組或免責文字。`,path);
       for(const sentence of value.split(/[。！？!?\n]/u)){
+        if(/(?:不能|不可|不宜|不應|不应|無法|无法|未能).{0,12}(?:推論|推论|推斷|推断|判斷|判断|代表).{0,25}(?:每[個个]|人人|全班|所有[學学]生|普遍)|(?:平均分|均分|逐字平均|[評评]分|分[數数]).{0,12}(?:只是|僅[供为為]?|仅[供为為]?|只供|僅僅|仅仅).{0,12}(?:[參参]考|[線线]索)|(?:平均分|均分|逐字平均).{0,18}不(?:等[於于]|代表).{0,15}(?:每[個个]|人人|全班)/u.test(sentence))
+          add('REPORT_DEFENSIVE_LANGUAGE',`刪除整句「${sentence}」。這是解說數據局限的防禦文字，不要改寫成另一句「不能推論」「只是參考」。保留前後的教學安排；若缺少做法，直接寫全班跟讀後逐一聽取，讓仍需鞏固的學生再讀。`,path);
+        if(/同一批|交集|重[疊叠]|兩項|两项|低[於于]\s*60|分[組组層层]/u.test(sentence)){
+          for(const domains of namedDomainPairs(sentence)){
+            const key=[...domains].sort().join('/');groupingPairs.add(key);
+            if(groupingPairs.size>1||selectedDomains&&key!==selectedDomains)
+              add('REPORT_MULTIPLE_GROUPING_PAIRS','整篇分組敘述只展開teachingGroups提供的同一對學習分項。保留這一對的實際組別與教法；刪除其餘配對的交集、重疊及「僅某項低」人數。第三項只保留全班個人平均低於60分的实际跟進人數和具體教法，不追加分母解釋或免責段落。',path);
+          }
+        }
+        // A whole-class low-score total may include pupils without the other
+        // measurement. Do not turn a smaller paired-only count into its split.
+        const total=sentence.match(/低[於于]\s*60\s*分的?\s*(\d+)\s*(?:名|位)?人中/u);
+        const exclusive=sentence.match(/(?:有)?\s*(\d+)\s*(?:名|位)?人(?:僅|仅|只有|只).{0,12}低/u);
+        if(total&&exclusive){
+          const domains=mentionedDomains(sentence),whole=Number(total[1]),subset=Number(exclusive[1]);
+          const wholeFact=facts.find(fact=>fact.source==='平台評分'&&fact.label?.endsWith('：個人平均低於60分的名冊學生')&&fact.value===whole&&mentionedDomains(fact.label).some(domain=>domains.includes(domain)));
+          const pairedSubset=wholeFact&&facts.some(fact=>{
+            if(!fact.label?.endsWith('：同一批學生觀察'))return false;
+            const pairDomains=mentionedDomains(fact.label),domain=mentionedDomains(wholeFact.label)[0],index=pairDomains.indexOf(domain);if(index<0)return false;
+            const side=index===0?'left':'right';
+            return fact.value?.[side+'OnlyBelow60Students']===subset&&fact.value?.[side+'Below60Students']<whole;
+          });
+          if(pairedSubset)add('REPORT_MIXED_GROUP_DENOMINATORS',`刪除「${sentence}」中「有${subset}人僅某項低」這個拆分，保留全班${whole}人的實際跟進安排。這個拆分取自不同觀察範圍；不要補算其餘學生、改寫成第二對分組，或向老師加入分母解說。`,path);
+        }
         const characterContext=/字音|逐字|這些字|这些字|該字|该字|[讀读]不準|[讀读]不准/u.test(sentence);
         const prevalence=/(?:問題|问题|困難|困难|弱項|弱项|[讀读]不[準准]|需.{0,5}(?:糾正|纠正)).{0,18}(?:普遍|廣泛|广泛)|(?:普遍|廣泛|广泛|多數|多数|大部分|大多[數数]|全班(?:都|均|皆)|人人).{0,25}(?:問題|问题|困難|困难|弱項|弱项|[讀读]不[準准]|未[讀读][準准]|不清楚|有[錯错])/u;
         if(characterContext&&asserted(sentence,prevalence))add('UNSUPPORTED_CHARACTER_PREVALENCE','逐字均分和受測人數沒有提供讀錯或低分的學生比例。刪除字音問題普遍、多數學生讀不準等結論；保留具體字和所在原句，改成先共同跟讀、再逐一聽取，據課堂表現安排個別再讀。不要把這條核對規則改寫成報告中的免責句。',path);

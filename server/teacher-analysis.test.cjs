@@ -238,6 +238,39 @@ test('empty groups and character prevalence trigger one targeted revision before
  assert.doesNotMatch(JSON.stringify(result.report.analysis),/普遍性|三組|兩項皆低|不足以|不能推斷/);
  assert.equal((await svc.generate({},input.filters,teacher)).cached,true);assert.equal(calls,2);
 });
+
+test('v14 supplies exactly one paired cohort to the writer and retains whole-class follow-up totals',async()=>{
+ const input=dataset(),metric=value=>({measuredN:value===null?0:1,meanScore:value});
+ input.filters={...input.filters,grade:6,poemId:6};
+ input.students=[[45,90,40],[45,80,90],[90,40,90],[null,40,90]].map(([reading,writing,sound])=>({rosterMatched:true,stats:{nEvents:3,latest:{byConstruct:{'reading.pronunciation':{serverVerified:metric(reading)},'writing.dictation':{serverVerified:metric(writing)},'sound.recognition':{serverVerified:metric(sound)}}}}}));
+ const payload=analysis.aggregateEvidence(input);
+ assert.equal(analysis.PROMPT_VERSION,'teacher-analysis-v14-focused-prose');
+ assert.equal(payload.evidence.filter(f=>f.label.endsWith('：同一批學生觀察')).length,3,'keep every paired fact in the stored audit evidence');
+ assert.equal(payload.teachingGroups.length,1);assert.deepEqual(payload.teachingGroups[0].domains,['朗讀字音評分','辨音答題準確度']);
+ await analysis.requestAnalysis(payload,analysis.modelConfig(env),{fetchImpl:async(_url,options)=>{
+  const body=JSON.parse(options.body),provided=JSON.parse(body.messages[1].content);
+  assert.equal(provided.teachingGroups.length,1);
+  const pairFacts=provided.evidence.filter(f=>f.label.endsWith('：同一批學生觀察'));assert.equal(pairFacts.length,1);assert.equal(pairFacts[0].id,provided.teachingGroups[0].evidenceId);
+  assert.equal(provided.evidence.find(f=>f.label==='默寫辨識準確度：個人平均低於60分的名冊學生').value,2,'the missing-reading pupil remains in whole-class dictation follow-up');
+  assert.match(body.messages[0].content,/整篇報告的交集/);assert.match(body.messages[0].content,/這類解釋數據局限的句子整句省略/);
+  return provider();
+ }});
+});
+
+test('the actual defensive sentence triggers a private single revision that deletes it rather than restating it',async()=>{
+ const flawed=validOutput();flawed.findings=[{title:'先跟讀再個別聽取',evidenceIds:['F001'],interpretation:'逐字平均分是全班整體表現的參考，不能直接推論每個人都錯，因此個別聽取是必要的。'}];flawed.limitations=[];
+ let calls=0;const store=memoryStore(),svc=service({store,fetchImpl:async(_url,options)=>{
+  calls++;const body=JSON.parse(options.body);
+  if(calls===1)return provider(flawed);
+  assert.match(body.messages[3].content,/REPORT_DEFENSIVE_LANGUAGE/);assert.match(body.messages[3].content,/刪除整句/);assert.match(body.messages[3].content,/第三項只寫全班實際跟進人數及教法/);
+  const repaired={...flawed,findings:[{...flawed.findings[0],interpretation:'全班跟讀原句後，教師逐一聽取，讓仍需鞏固的學生再讀一次。'}]};return provider(repaired);
+ }});
+ const pending=await svc.generate({},dataset().filters,teacher);assert.equal(pending.report,undefined);assert.equal(pending.nextAction,'continue');
+ await assert.rejects(svc.getReport(pending.reportId),e=>e.code==='REPORT_NOT_READY');
+ const done=await svc.continueReport(pending.reportId,teacher);assert.equal(done.report.qualityReview.revisions,1);assert.equal(done.report.promptVersion,'teacher-analysis-v14-focused-prose');
+ assert.doesNotMatch(done.report.analysis.findings[0].interpretation,/參考|推論|不能|局限/);
+ assert.equal((await svc.generate({},dataset().filters,teacher)).cached,true);assert.equal(calls,2);
+});
 test('continuation is a teacher-CSRF POST and accepts only a report identity',async()=>{
  let continued=0;const handler=createHandler({authModule:{requireActor:async(req,options)=>{assert.equal(options.csrf,true);return teacher;}},analysisModule:{continueReport:async(id,actor)=>{continued++;assert.equal(id,'ta_'+'a'.repeat(64));assert.equal(actor,teacher);return {ok:true,status:'generating',reportId:id,retryAfterSeconds:3};}}});
  const res=response();await handler({method:'POST',body:{reportId:'ta_'+'a'.repeat(64)}},res);assert.equal(res.statusCode,202);assert.equal(continued,1);
@@ -275,13 +308,15 @@ test('provider reference completion fixes a uniquely supported count without rew
  assert(require('../api/_lib/teacher-report-quality.cjs').inspectAnalysis(result.analysis,{...p,reportStyle:'narrative-teaching-review'}).some(issue=>issue.code==='UNSUPPORTED_REPORTED_NUMBER'));
 });
 
-test('a completed v7 report cannot satisfy the new teacher-prose generation cache',async()=>{
+test('completed v7 and v13 reports cannot satisfy the v14 teacher-prose generation cache',async()=>{
  const research=require('../api/_lib/research-store.cjs'),input=dataset(),payload=analysis.aggregateEvidence(input),store=memoryStore();
  const dataFingerprint=research.hash(research.canonical({snapshotId:input.snapshotId,payload}));
- const oldId='ta_'+research.hash(research.canonical({dataFingerprint,model:env.TEACHER_AI_MODEL,provider:analysis.modelConfig(env).url,promptVersion:'teacher-analysis-v7-reviewed-demo'}));
- store.data.set('report/'+oldId.slice(3),{version:'1',value:{status:'completed',report:{reportId:oldId,analysis:{overview:'Old technical report'}}}});
+ const oldIds=['teacher-analysis-v7-reviewed-demo','teacher-analysis-v13-observed-groups'].map(promptVersion=>{
+  const oldId='ta_'+research.hash(research.canonical({dataFingerprint,model:env.TEACHER_AI_MODEL,provider:analysis.modelConfig(env).url,promptVersion}));
+  store.data.set('report/'+oldId.slice(3),{version:'1',value:{status:'completed',report:{reportId:oldId,analysis:{overview:'Old technical report'}}}});return oldId;
+ });
  let calls=0;const svc=service({store,fetchImpl:async()=>{calls++;return provider({...validOutput(),limitations:[]});}}),result=await svc.generate({},input.filters,teacher);
- assert.notEqual(result.reportId,oldId);assert.equal(result.cached,false);assert.equal(calls,1);assert.equal(result.report.promptVersion,analysis.PROMPT_VERSION);
+ assert(oldIds.every(oldId=>result.reportId!==oldId));assert.equal(result.cached,false);assert.equal(calls,1);assert.equal(result.report.promptVersion,analysis.PROMPT_VERSION);
 });
 
 test('technical or repetitive demo prose is revised without releasing the draft as a report',async()=>{

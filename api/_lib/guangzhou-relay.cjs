@@ -3,11 +3,61 @@
 // loopback-only Guangzhou service. No database port or public origin is opened.
 const http=require('node:http');
 const net=require('node:net');
+const {Duplex}=require('node:stream');
 const {Client}=require('ssh2');
 const {TEACHER_ROUTES,acceptsGzip}=require('./response-encoding.cjs');
 const LIMITS=Object.freeze({soe:4*1024*1024,tts:65536,'maanshan-chat':131072,'maanshan-report':524288,'maanshan-save':393216,'maanshan-data':1024,handwriting:524288,'school-auth':16384,'school-recordings':1400000,'research-events':131072,'teacher-analytics':1024,'challenge-result':16384,'teacher-tools':16384});
 const HOP=new Set(['connection','keep-alive','proxy-authenticate','proxy-authorization','te','trailer','transfer-encoding','upgrade']);
 const RESPONSE_LIMIT=4*1024*1024+65536;
+// The loopback HTTP server closes idle sockets after 35 seconds. Expire earlier,
+// including after a suspended serverless instance resumes without firing timers.
+const CHANNEL_IDLE_MS=25000;
+class ChannelAgent extends http.Agent{
+ constructor(client,now){
+  super({keepAlive:true,maxSockets:16,maxTotalSockets:16,maxFreeSockets:4,scheduling:'lifo'});
+  this.client=client;this.now=now;this.idle=new Map();this.closed=false;
+ }
+ createConnection(options,callback){
+  if(this.closed){queueMicrotask(()=>callback(new Error('RELAY_CLOSED')));return;}
+  this.client.forwardOut('127.0.0.1',0,'127.0.0.1',3100,(error,stream)=>{
+   if(error){callback(error);return;}
+   if(this.closed){stream.destroy();callback(new Error('RELAY_CLOSED'));return;}
+   // ssh2 channels lack Socket ref/unref and synchronous destroyed semantics.
+   // A Duplex wrapper supplies reliable abort/close handling for the HTTP pool.
+   const socket=Duplex.from({readable:stream,writable:stream});
+   socket.ref=socket.unref=()=>socket;
+   socket.on('error',()=>{});
+   socket.once('close',()=>this.clearIdle(socket));
+   callback(null,socket);
+  });
+ }
+ clearIdle(socket){const idle=this.idle.get(socket);if(idle){clearTimeout(idle.timer);this.idle.delete(socket);}}
+ keepSocketAlive(socket){
+  if(this.closed||socket.destroyed)return false;
+  let lifetime=CHANNEL_IDLE_MS;
+  const hint=/(?:^|,)\s*timeout=(\d+)/i.exec(String(socket._httpMessage?.res?.headers['keep-alive']||''));
+  if(hint)lifetime=Math.min(lifetime,Number(hint[1])*1000-1000);
+  if(lifetime<=0)return false;
+  this.clearIdle(socket);
+  const timer=setTimeout(()=>{this.clearIdle(socket);socket.destroy();},lifetime);timer.unref?.();
+  this.idle.set(socket,{timer,expiresAt:this.now()+lifetime});return true;
+ }
+ addRequest(req,options){
+  for(const [name,sockets]of Object.entries(this.freeSockets)){
+   this.freeSockets[name]=sockets.filter(socket=>{
+    const expiry=this.idle.get(socket)?.expiresAt;
+    if(this.closed||socket.destroyed||!expiry||expiry<=this.now()){
+     this.clearIdle(socket);socket.destroy();return false;
+    }
+    return true;
+   });
+   if(!this.freeSockets[name].length)delete this.freeSockets[name];
+  }
+  super.addRequest(req,options);
+ }
+ reuseSocket(socket,req){this.clearIdle(socket);super.reuseSocket(socket,req);}
+ destroy(){this.closed=true;for(const socket of this.idle.keys())this.clearIdle(socket);super.destroy();}
+}
 function configuration(env){
  const host=env.GUANGZHOU_RELAY_HOST,username=env.GUANGZHOU_RELAY_USERNAME,privateKey=env.GUANGZHOU_RELAY_PRIVATE_KEY,hostHash=env.GUANGZHOU_RELAY_HOST_SHA256,port=Number(env.GUANGZHOU_RELAY_PORT||22);
  if(host!=='134.175.149.14'||username!=='maanshan-relay'||typeof privateKey!=='string'||!privateKey.startsWith('-----BEGIN OPENSSH PRIVATE KEY-----')||privateKey.length>8192||!/^([a-f0-9]{64})$/.test(hostHash||''))throw new Error('RELAY_NOT_CONFIGURED');
@@ -16,11 +66,14 @@ function configuration(env){
 }
 function createRelay({env=process.env,clientFactory=()=>new Client(),request=http.request,now=Date.now,timeoutMs=55000}={}){
  let pending=null,pendingClient=null,connection=null,lastUsed=0,active=0;
+ const agents=new Map();
+ const disposeAgent=client=>{const agent=agents.get(client);if(agent){agents.delete(client);agent.destroy();}};
+ const agentFor=client=>{if(!agents.has(client))agents.set(client,new ChannelAgent(client,now));return agents.get(client);};
  async function tunnel(alternate=false){
   // A child can listen or write for much longer than 20 seconds between calls.
   // Keep the verified SSH session across those pauses; transport errors/close
   // still invalidate it immediately, and no forwarded POST is ever replayed.
-  if(connection&&now()-lastUsed>120000&&active<=1){connection.end();connection=null;pending=null;pendingClient=null;}
+  if(connection&&now()-lastUsed>120000&&active<=1){disposeAgent(connection);connection.end();connection=null;pending=null;pendingClient=null;}
   lastUsed=now();
   if(pending)return pending;
   const config=configuration(env),client=clientFactory();
@@ -30,7 +83,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
    let ready=false,tcpConnected=false,handshakeComplete=false;
    client.once('connect',()=>{tcpConnected=true;client.setNoDelay?.(true);});
    client.once('handshake',()=>{handshakeComplete=true;});
-   const clear=()=>{if(connection===client)connection=null;if(pendingClient===client){pending=null;pendingClient=null;}};
+   const clear=()=>{disposeAgent(client);if(connection===client)connection=null;if(pendingClient===client){pending=null;pendingClient=null;}};
    client.once('ready',()=>{ready=true;connection=client;resolve(client);});
    client.on('error',error=>{clear();if(!ready){const code=typeof error?.code==='string'&&/^[A-Z0-9_]+$/.test(error.code)?error.code:'SSH_CONNECT_ERROR';console.error('Guangzhou relay transport:',code,error?.level==='client-timeout'?'HANDSHAKE_TIMEOUT':'CONNECT_FAILED',JSON.stringify({tcpConnected,handshakeComplete}));reject(new Error('RELAY_CONNECT_FAILED'));}});
    client.once('close',()=>{clear();if(!ready)reject(new Error('RELAY_CONNECT_FAILED'));});
@@ -52,7 +105,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
   }catch{return fail(res,400,'INVALID_REQUEST');}
   if(active>=16)return fail(res,503,'SERVICE_BUSY');
   active++;
-  let upstream,channel,timer,done=false;
+  let upstream,channel,timer,done=false,responseComplete=false;
   const startedAt=now();let connectedAt=startedAt,channelAt=startedAt;
   const close=()=>{upstream?.destroy();channel?.destroy();};
   const disconnected=()=>{if(!res.writableEnded){done=true;close();}};
@@ -70,17 +123,13 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
      if(done||res.destroyed){finish();return;}
      connectedAt=now();
      const gzipAllowed=TEACHER_ROUTES.has(name)&&acceptsGzip(req.headers?.['accept-encoding']);
-     const headers={host:'mandarin.aiducation.asia','accept-encoding':gzipAllowed?'gzip':'identity','x-forwarded-proto':'https',connection:'close'};
+     const headers={host:'mandarin.aiducation.asia','accept-encoding':gzipAllowed?'gzip':'identity','x-forwarded-proto':'https'};
      for(const key of ['origin','cookie','content-type','x-csrf-token','sec-fetch-site','accept','user-agent','if-none-match','range'])if(typeof req.headers?.[key]==='string')headers[key]=req.headers[key];
      // Vercel supplies this client address; never trust caller-provided X-Real-IP.
      const raw=String(req.headers?.['x-vercel-forwarded-for']||req.socket?.remoteAddress||'').split(',')[0].trim();
      if(net.isIP(raw))headers['x-real-ip']=raw;
      if(body)headers['content-length']=String(body.length);
-     client.forwardOut('127.0.0.1',0,'127.0.0.1',3100,(failure,stream)=>{
-      if(failure)return error(503,'ORIGIN_UNAVAILABLE');
-      if(done||res.destroyed){stream.destroy();finish();return;}
-      channel=stream;channelAt=now();
-      upstream=request({host:'127.0.0.1',port:3100,method:req.method,path:'/api/'+name+url.search,headers,createConnection:()=>stream},response=>{
+      upstream=request({host:'127.0.0.1',port:3100,method:req.method,path:'/api/'+name+url.search,headers,agent:agentFor(client)},response=>{
        if(done){response.destroy();return;}
        const encoding=String(response.headers['content-encoding']||'identity').toLowerCase().trim();
        if(TEACHER_ROUTES.has(name)&&encoding!=='identity'&&(encoding!=='gzip'||!gzipAllowed)){response.destroy();error(502,'ORIGIN_ENCODING_UNSUPPORTED');return;}
@@ -107,6 +156,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
        });
        response.on('end',()=>{
         if(done){finish();return;}
+        responseComplete=true;
         done=true;
         if(!res.writableEnded&&!res.destroyed){
          if(streaming){res.end();finish();return;}
@@ -119,14 +169,14 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
         finish();
        });
       });
+      upstream.once('socket',socket=>{channel=socket;channelAt=now();if(done||res.destroyed){socket.destroy();finish();}});
       upstream.on('error',()=>error(502,'ORIGIN_INTERRUPTED'));
       if(body)upstream.write(body);upstream.end();
-     });
     }catch{error(503,'ORIGIN_UNAVAILABLE');}
    });
-  }finally{clearTimeout(timer);res.off('close',disconnected);close();active--;}
+  }finally{clearTimeout(timer);res.off('close',disconnected);if(!responseComplete)close();active--;}
  }
- return {relay,close(){const connecting=pendingClient;if(connecting&&connecting!==connection)connecting.destroy();connection?.end();connection=null;pending=null;pendingClient=null;}};
+ return {relay,close(){for(const client of agents.keys())disposeAgent(client);const connecting=pendingClient;if(connecting&&connecting!==connection)connecting.destroy();connection?.end();connection=null;pending=null;pendingClient=null;}};
 }
 let singleton;
 const relay=(name,req,res)=>(singleton||(singleton=createRelay())).relay(name,req,res);

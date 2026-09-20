@@ -202,3 +202,39 @@ test('paired low-score overlap supports teaching groups rather than an ability c
  assert(codes({findings:[{interpretation:'朗讀與辨音同時低於60分的有3人，顯示朗讀和辨音的關聯稍高。'}]},pairedPayload()).includes('UNSUPPORTED_DOMAIN_ASSOCIATION'));
  assert(!codes({findings:[{interpretation:'朗讀與辨音的跟進名單有重疊，可讓這批學生先聽示範再跟讀。'}]},pairedPayload()).includes('UNSUPPORTED_DOMAIN_ASSOCIATION'));
 });
+
+test('the actual v13 paragraph loses its defensive explanation while direct teaching stays natural',()=>{
+ const p={reportStyle:'narrative-teaching-review'};
+ const actual='逐字平均分是全班整體表現的參考，不能直接推論每個人都錯，因此個別聽取是必要的。';
+ const issue=inspectAnalysis({findings:[{interpretation:actual}]},p).find(item=>item.code==='REPORT_DEFENSIVE_LANGUAGE');
+ assert(issue);assert(issue.message.includes('刪除整句「'+actual.slice(0,-1)+'」'));assert.match(issue.message,/不要改寫成另一句/);
+ for(const text of ['平均分只是參考，不能代表全班。','逐字平均不等於人人讀錯。','不能由均分判斷所有學生的字音表現。'])
+  assert(codes({overview:text},p).includes('REPORT_DEFENSIVE_LANGUAGE'),text);
+ for(const text of ['全班跟讀後，教師逐一聽取，讓仍需鞏固的學生再讀一次。','教師依學生重讀的實際表現，調整小組練習。','教師不能忽略尚未留下朗讀紀錄的學生，下一課先聽取其朗讀。'])
+  assert(!codes({overview:text},p).includes('REPORT_DEFENSIVE_LANGUAGE'),text);
+});
+
+function focusedGroupingPayload(){return {reportStyle:'narrative-teaching-review',teachingGroups:[{evidenceId:'F002',domains:['朗讀字音評分','辨音答題準確度'],bothMeasuredStudents:20,groups:[{count:6,focus:['朗讀字音評分']},{count:4,focus:['辨音答題準確度']},{count:3,focus:['朗讀字音評分','辨音答題準確度']}]}],evidence:[
+ {id:'F001',label:'朗讀字音評分與默寫辨識準確度：同一批學生觀察',source:'平台評分',value:{bothMeasuredStudents:20,bothBelow60Students:0,leftBelow60Students:9,rightBelow60Students:3,leftOnlyBelow60Students:9,rightOnlyBelow60Students:3}},
+ {id:'F002',label:'朗讀字音評分與辨音答題準確度：同一批學生觀察',source:'平台評分',value:{bothMeasuredStudents:20,bothBelow60Students:3,leftBelow60Students:9,rightBelow60Students:7,leftOnlyBelow60Students:6,rightOnlyBelow60Students:4}},
+ {id:'F003',label:'默寫辨識準確度：個人平均低於60分的名冊學生',scope:'所選範圍',source:'平台評分',value:4}
+]};}
+
+test('the actual v13 second pair and whole-class-versus-paired split cannot reach the report',()=>{
+ const p=focusedGroupingPayload();
+ const actual='從同一批學生觀察可見，朗讀字音與辨音答題的跟進對象有重疊：兩項皆低於60分的有3人，另有6人僅朗讀低、4人僅辨音低。默寫辨識與朗讀的同一批學生中，兩項皆低者為0，顯示默寫困難與朗讀困難並未重疊，因此默寫跟進可獨立安排。默寫辨識低於60分的4人中，有3人僅默寫低，可針對「街、潤、酥」三字進行書寫練習。';
+ const result=codes({findings:[{evidenceIds:['F001','F002','F003'],interpretation:actual}]},p);
+ assert(result.includes('REPORT_MULTIPLE_GROUPING_PAIRS'));assert(result.includes('REPORT_MIXED_GROUP_DENOMINATORS'));
+ const corrected='在朗讀與辨音都有評分的20人中，兩項皆低於60分的有3人，僅朗讀低的6人，僅辨音低的4人。下一課讓兩項都需跟進的學生先聽原句再讀，另外兩組分別跟讀和聽後作答。默寫低於60分的4人練寫「街、潤、酥」，教師觀察字形。';
+ assert.deepEqual(codes({findings:[{evidenceIds:['F002','F003'],interpretation:corrected}]},p),[]);
+});
+
+test('one grouping pair is followed across findings and advice without treating a third activity as a second pair',()=>{
+ const p=focusedGroupingPayload();
+ const finding={evidenceIds:['F002'],interpretation:'朗讀與聽辨的跟進名單有重疊，下一課先聽原句再讀。'};
+ const valid={findings:[finding],teachingActions:[action('朗讀與聽辨分組',['兩項都有評分的學生，依實際組別先聽後讀。其後安排默寫練習，教師檢查字形。'])]};
+ assert(!codes(valid,p).includes('REPORT_MULTIPLE_GROUPING_PAIRS'));
+ const wrong={...valid,reviewPlan:[action('另外分組',['朗讀與默寫的交集為0，可獨立安排。'])]};
+ assert(codes(wrong,p).includes('REPORT_MULTIPLE_GROUPING_PAIRS'));
+ assert(!codes({findings:[{interpretation:'朗讀與默寫都先由教師示範，學生再練習。'}]},p).includes('REPORT_MULTIPLE_GROUPING_PAIRS'),'ordinary mentions of two activities do not describe a paired cohort');
+});

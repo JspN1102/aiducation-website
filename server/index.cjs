@@ -144,7 +144,7 @@ function createApiServer({ handlers, requestTimeoutMs } = {}) {
   });
   server.headersTimeout = 15000;
   server.requestTimeout = 30000;
-  server.keepAliveTimeout = 5000;
+  server.keepAliveTimeout = 35000;
   server.maxRequestsPerSocket = 100;
   return server;
 }

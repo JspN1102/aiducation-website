@@ -1,4 +1,4 @@
-import {readModel} from './exploration.mjs?v=20260921-school3';
+import {readModel} from './exploration.mjs?v=20260921-school4';
 import {modelPixelRatio} from './model-quality.mjs?v=20260921-ar1';
 
 // Source meshes own GPU resources; plant clones only borrow them. Rendering is

@@ -2,23 +2,27 @@
 const test=require('node:test'),assert=require('node:assert/strict'),http=require('node:http'),net=require('node:net');
 const {EventEmitter}=require('node:events');
 const {gzipSync,gunzipSync}=require('node:zlib');
+const {generateKeyPairSync,createHash}=require('node:crypto');
+const {Client:SSHClient,Server:SSHServer,utils:sshUtils}=require('ssh2');
 const {createApiServer}=require('./index.cjs');
 const routes=require('./routes.cjs');
 const {createRelay,configuration,createGateway}=require('../api/_lib/guangzhou-relay.cjs');
 const env={GUANGZHOU_RELAY_HOST:'134.175.149.14',GUANGZHOU_RELAY_USERNAME:'maanshan-relay',GUANGZHOU_RELAY_HOST_SHA256:'a'.repeat(64),GUANGZHOU_RELAY_PRIVATE_KEY:'-----BEGIN OPENSSH PRIVATE KEY-----\nSYNTHETIC-ONLY\n-----END OPENSSH PRIVATE KEY-----'};
 const listen=server=>new Promise(resolve=>server.listen(0,'127.0.0.1',()=>resolve(server.address().port)));
 async function fixture(fn,options={}){
- const origin=options.origin||http.createServer(fn),originPort=await listen(origin),clients=[],requests=[];
+ const origin=options.origin||http.createServer(fn);
+ if(!options.origin)origin.keepAliveTimeout=35000;
+ const originPort=await listen(origin),clients=[],requests=[],channels=[];
  class SSH extends EventEmitter{
   constructor(){super();this.closed=false;this.once('close',()=>{this.closed=true;});}
   connect(config){this.config=config;if(options.onConnect){options.onConnect(this,clients);return this;}queueMicrotask(()=>{if(options.failFirstHandshake&&clients.length===1)return this.emit('error',new Error('synthetic transport timeout'));config.hostVerifier(options.hostHash||'a'.repeat(64))?this.emit('ready'):this.emit('error',new Error('synthetic key mismatch'));});return this;}
-  forwardOut(from,port,to,target,cb){requests.push({from,port,to,target});const socket=net.connect(originPort,'127.0.0.1');socket.once('connect',()=>cb(null,socket));socket.once('error',cb);}
+  forwardOut(from,port,to,target,cb){requests.push({from,port,to,target});const socket=net.connect(originPort,'127.0.0.1');channels.push(socket);socket.once('connect',()=>options.forwardDelayMs?setTimeout(()=>cb(null,socket),options.forwardDelayMs):cb(null,socket));socket.once('error',cb);}
   end(){this.emit('close');}destroy(){if(options.onDestroy)return options.onDestroy(this);this.end();}
  }
  const relay=createRelay({env,clientFactory:()=>{const client=new SSH();clients.push(client);return client;},timeoutMs:options.timeoutMs||1500,...options.now?{now:options.now}:{}});
  const frontend=http.createServer(async(req,res)=>{const chunks=[];for await(const chunk of req)chunks.push(chunk);if(chunks.length){try{req.body=JSON.parse(Buffer.concat(chunks));}catch{req.body=Buffer.concat(chunks);}}options.onRequest?.(req);await relay.relay(options.name||'school-auth',req,res);});
  const port=await listen(frontend);
- return {clients,requests,call:(url='/api/school-auth',init={})=>fetch('http://127.0.0.1:'+port+url,init),raw:(url,init)=>raw('http://127.0.0.1:'+port+url,init),close:async()=>{relay.close();frontend.closeAllConnections();origin.closeAllConnections();await Promise.all([new Promise(r=>frontend.close(r)),new Promise(r=>origin.close(r))]);}};
+ return {clients,requests,channels,call:(url='/api/school-auth',init={})=>fetch('http://127.0.0.1:'+port+url,init),raw:(url,init)=>raw('http://127.0.0.1:'+port+url,init),close:async()=>{relay.close();frontend.closeAllConnections();origin.closeAllConnections();await Promise.all([new Promise(r=>frontend.close(r)),new Promise(r=>origin.close(r))]);}};
 }
 function raw(url,options={}){return new Promise((resolve,reject)=>{const req=http.request(url,options,res=>{const chunks=[];res.on('error',reject);res.on('data',chunk=>chunks.push(chunk));res.on('end',()=>resolve({status:res.statusCode,headers:res.headers,body:Buffer.concat(chunks)}));});req.on('error',reject);req.end();});}
 test('fixed host and pinned key are mandatory; environment cannot create an arbitrary destination',()=>{
@@ -40,6 +44,7 @@ test('encrypted channel destination is fixed, auth headers and query survive; sa
   const headers={'Content-Type':'application/json',Origin:'https://mandarin.aiducation.asia',Cookie:'__Host-maanshan_session=synthetic','X-CSRF-Token':'synthetic-csrf','X-Real-IP':'203.0.113.99','X-Vercel-Forwarded-For':'192.0.2.8'};
   const r=await f.call('/api/school-auth/?action=roster',{method:'POST',headers,body:JSON.stringify({action:'session'})});assert.equal(r.status,200);assert.deepEqual(await r.json(),{ok:true});assert.match(r.headers.get('set-cookie'),/HttpOnly/);
   await (await f.call()).text();assert.equal(f.clients.length,1);
+  assert.equal(f.requests.length,1,'complete HTTP responses reuse one forwarded channel');
   assert.equal(received[0].url,'/api/school-auth?action=roster');assert.equal(received[0].headers.origin,headers.Origin);assert.equal(received[0].headers.cookie,headers.Cookie);assert.equal(received[0].headers['x-csrf-token'],'synthetic-csrf');assert.equal(received[0].headers['x-real-ip'],'192.0.2.8');assert.equal(received[0].headers['accept-encoding'],'identity');assert.deepEqual(JSON.parse(received[0].body),{action:'session'});
   assert(f.requests.every(r=>r.to==='127.0.0.1'&&r.target===3100));
   assert.equal(f.clients[0].config.hostHash,'sha256');assert.equal(f.clients[0].config.hostVerifier('b'.repeat(64)),false);
@@ -116,8 +121,125 @@ test('a reading pause reuses the SSH connection and closed transports reconnect 
  try{
   await (await f.call()).text();clock+=60000;
   await (await f.call()).text();assert.equal(f.clients.length,1);
+  assert.equal(f.requests.length,2,'a long reading pause opens a fresh HTTP channel');
   f.clients[0].emit('close');clock+=10;
   await (await f.call()).text();assert.equal(f.clients.length,2);assert.equal(f.requests.length,3);
+ }finally{await f.close();}
+});
+
+test('HTTP keep-alive preserves per-request identities, CSRF, bodies and origin authentication',async()=>{
+ const sockets=new Set(),received=[];
+ const f=await fixture(async(req,res)=>{
+  sockets.add(req.socket);let body='';for await(const chunk of req)body+=chunk;
+  received.push({cookie:req.headers.cookie,csrf:req.headers['x-csrf-token'],body});
+  const identity=req.headers.cookie==='session=alice'?'alice':req.headers.cookie==='session=bob'?'bob':null;
+  res.statusCode=identity&&req.headers['x-csrf-token']===identity+'-csrf'?200:401;
+  res.end(JSON.stringify({identity}));
+ });
+ try{
+  for(const identity of ['alice','bob']){
+   const response=await f.call('/api/school-auth',{method:'POST',headers:{cookie:'session='+identity,'x-csrf-token':identity+'-csrf','content-type':'application/json'},body:JSON.stringify({action:identity})});
+   assert.equal(response.status,200);assert.equal((await response.json()).identity,identity);
+  }
+  const unauthenticated=await f.call();assert.equal(unauthenticated.status,401);await unauthenticated.text();
+  assert.equal(f.requests.length,1);assert.equal(sockets.size,1);
+  assert.deepEqual(received,[{cookie:'session=alice',csrf:'alice-csrf',body:'{"action":"alice"}'},{cookie:'session=bob',csrf:'bob-csrf',body:'{"action":"bob"}'},{cookie:undefined,csrf:undefined,body:''}]);
+ }finally{await f.close();}
+});
+
+test('real ssh2 channels carry successive HTTP requests without requiring net.Socket methods', {timeout:5000},async()=>{
+ const origin=http.createServer((req,res)=>res.end(req.headers.cookie||'anonymous')),originPort=await listen(origin);
+ const key=generateKeyPairSync('rsa',{modulusLength:2048}).privateKey.export({type:'pkcs1',format:'pem'});
+ const hash=createHash('sha256').update(sshUtils.parseKey(key).getPublicSSH()).digest('hex');
+ let channelCount=0;const connections=[],targets=[];
+ const ssh=new SSHServer({hostKeys:[key]},client=>{
+  connections.push(client);client.on('error',()=>{});
+  client.on('authentication',ctx=>ctx.accept()).on('ready',()=>client.on('tcpip',(accept,reject,info)=>{
+   assert.equal(info.destIP,'127.0.0.1');assert.equal(info.destPort,3100);channelCount++;
+   const channel=accept(),target=net.connect(originPort,'127.0.0.1');targets.push(target);
+   target.on('error',()=>channel.destroy());channel.on('error',()=>target.destroy());channel.on('close',()=>target.destroy());
+   channel.pipe(target).pipe(channel);
+  }));
+ });
+ const sshPort=await listen(ssh);
+ class LocalClient extends SSHClient{connect(config){return super.connect({...config,host:'127.0.0.1',port:sshPort,privateKey:undefined});}}
+ const relay=createRelay({env:{...env,GUANGZHOU_RELAY_HOST_SHA256:hash},clientFactory:()=>new LocalClient(),timeoutMs:1500});
+ const front=http.createServer((req,res)=>relay.relay('school-auth',req,res)),port=await listen(front);
+ try{
+  for(const identity of ['alice','bob','']){
+   const response=await fetch('http://127.0.0.1:'+port+'/api/school-auth',{headers:identity?{cookie:identity}:{}});
+   assert.equal(response.status,200);assert.equal(await response.text(),identity||'anonymous');
+  }
+  assert.equal(channelCount,1);assert.equal(connections.length,1);
+ }finally{
+  relay.close();for(const client of connections)client.end();for(const target of targets)target.destroy();
+  front.closeAllConnections();origin.closeAllConnections();
+  await Promise.all([front,origin,ssh].map(server=>new Promise(resolve=>server.close(resolve))));
+ }
+});
+
+test('expired HTTP channels reconnect on the same SSH session even after a suspended clock',async()=>{
+ let clock=1000;const f=await fixture((req,res)=>res.end('ok'),{now:()=>clock});
+ try{
+  await (await f.call()).text();clock+=20000;
+  await (await f.call()).text();assert.equal(f.requests.length,1,'a 20 second reading pause reuses the HTTP channel');
+  clock+=26000;
+  await (await f.call()).text();assert.equal(f.clients.length,1);assert.equal(f.requests.length,2);
+  assert(f.channels[0].destroyed,'expired channel is destroyed before reuse');
+  const previous=f.channels[1],closed=new Promise(resolve=>previous.once('close',resolve));
+  f.clients[0].emit('close');await closed;
+  await (await f.call()).text();assert.equal(f.clients.length,2);assert.equal(f.requests.length,3);
+ }finally{await f.close();}
+});
+
+test('a warm HTTP request skips the measured channel-open delay',async()=>{
+ const f=await fixture((req,res)=>res.end('ok'),{forwardDelayMs:120});
+ try{
+  const timings=[];
+  for(let i=0;i<2;i++){const response=await f.call();await response.text();timings.push(Number(/relay_channel;dur=([\d.]+)/.exec(response.headers.get('server-timing'))[1]));}
+  assert(timings[0]>=100,'cold request includes the injected channel-open network delay');
+  assert(timings[1]<timings[0]/2,'warm request avoids reopening the channel');
+  assert.equal(f.requests.length,1);
+ }finally{await f.close();}
+});
+
+test('idle HTTP channels close before the origin keep-alive deadline', {timeout:6000},async()=>{
+ const f=await fixture((req,res)=>{res.setHeader('Keep-Alive','timeout=2');res.end('ok');});
+ try{
+  await (await f.call()).text();const began=performance.now(),socket=f.channels[0];
+  if(!socket.destroyed)await new Promise(resolve=>socket.once('close',resolve));
+  assert(performance.now()-began<1800,'client honours a shorter advertised timeout before the origin deadline');
+  await (await f.call()).text();assert.equal(f.clients.length,1);assert.equal(f.requests.length,2);
+ }finally{await f.close();}
+});
+
+test('sixteen concurrent requests use bounded separate channels and reuse them after completion',async()=>{
+ let allArrived;const arrived=new Promise(resolve=>allArrived=resolve),held=[],sockets=new Set();let release=false;
+ const f=await fixture((req,res)=>{sockets.add(req.socket);if(release)return res.end('ok');held.push(res);if(held.length===16)allArrived();});
+ try{
+  const pending=Array.from({length:16},()=>f.call());await arrived;
+  const overflow=await f.call();assert.equal(overflow.status,503);assert.equal((await overflow.json()).code,'SERVICE_BUSY');
+  assert.equal(f.requests.length,16);assert.equal(sockets.size,16);
+  release=true;for(const res of held)res.end('ok');
+  for(const response of await Promise.all(pending))assert.equal(await response.text(),'ok');
+  await new Promise(resolve=>setImmediate(resolve));
+  assert(f.channels.filter(socket=>!socket.destroyed).length<=4,'only four idle channels are retained');
+  await (await f.call()).text();assert.equal(f.requests.length,16);
+ }finally{for(const res of held)res.end();await f.close();}
+});
+
+test('aborted browser requests destroy the partial channel before another identity uses the pool',async()=>{
+ let originClosed;const closed=new Promise(resolve=>originClosed=resolve);let calls=0;
+ const f=await fixture((req,res)=>{
+  calls++;if(calls>1){res.end('data: {"type":"done"}\n\n');return;}
+  req.socket.once('close',originClosed);res.setHeader('Content-Type','text/event-stream');res.write('data: {"type":"delta"}\n\n');
+ },{name:'maanshan-chat'});
+ try{
+  const abort=new AbortController(),response=await f.call('/api/maanshan-chat',{method:'POST',headers:{accept:'text/event-stream',cookie:'session=alice','content-type':'application/json'},body:'{}',signal:abort.signal});
+  const reader=response.body.getReader();assert.equal((await reader.read()).done,false);abort.abort();
+  await assert.rejects(reader.read());await closed;
+  const next=await f.call('/api/maanshan-chat',{headers:{cookie:'session=bob'}});assert.equal(next.status,200);await next.text();
+  assert.equal(calls,2,'the interrupted POST is never replayed');assert.equal(f.requests.length,2);assert(f.channels[0].destroyed);
  }finally{await f.close();}
 });
 
@@ -138,12 +260,13 @@ test('chat deltas reach the browser before completion without buffering the prov
 
 test('a broken chat stream stays incomplete and is never replayed',async()=>{
  let calls=0,breakOrigin;const f=await fixture((req,res)=>{
-  calls++;res.setHeader('Content-Type','text/event-stream');res.write('data: {"type":"delta","text":"部分"}\n\n');breakOrigin=()=>res.destroy();
+  calls++;if(calls>1){res.end('recovered');return;}res.setHeader('Content-Type','text/event-stream');res.write('data: {"type":"delta","text":"部分"}\n\n');breakOrigin=()=>res.destroy();
  },{name:'maanshan-chat'});
  try{
   const response=await f.call('/api/maanshan-chat',{method:'POST',headers:{accept:'text/event-stream','content-type':'application/json'},body:'{}'});
   const reader=response.body.getReader();assert.equal((await reader.read()).done,false);breakOrigin();
   await assert.rejects(reader.read());assert.equal(calls,1);
+  assert.equal(await (await f.call('/api/maanshan-chat')).text(),'recovered');assert.equal(f.requests.length,2);assert(f.channels[0].destroyed);
  }finally{breakOrigin?.();await f.close();}
 });
 

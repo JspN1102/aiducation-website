@@ -97,4 +97,18 @@ async function resetChecks(){
   check('another teacher tab reset reloads this tab without restoring its old memory',await page.evaluate(({key,pending})=>Object.values(JSON.parse(localStorage.getItem(key))).every(p=>!(p.reading||[]).some(Boolean))&&JSON.parse(localStorage.getItem(pending)).length===0,{key,pending}));
  }finally{await tabs.close();}
 }
-(async()=>{if(evidence)fs.mkdirSync(evidence,{recursive:true});browser=await chromium.launch({channel:'msedge',headless:true,args:['--no-proxy-server']});await welcomeChecks();await resetChecks();check('no browser exceptions',errors.length===0);})().catch(error=>{checks.push({label:'suite',passed:false,error:error.stack});process.exitCode=1;}).finally(async()=>{await browser?.close();const result={ok:checks.every(item=>item.passed),syntheticOnly:true,noProductionRequests:true,checks,errors};if(evidence)fs.writeFileSync(path.join(evidence,'learning-ui-results.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));});
+async function delayedWelcomeCheck(){
+ const env=await setup({progressDelay:true});try{
+  for(let n=0;!env.state.releases.length&&n<30;n++)await env.page.waitForTimeout(20);
+  check('welcome fixture holds the initial progress request',env.state.releases.length>0);
+  await env.page.locator('.library-shishi').click();
+  await env.page.locator('#library-shishi-guide[open]').waitFor();
+  await env.page.evaluate(()=>window.pendingWelcome=document.querySelector('#library-shishi-guide'));
+  const hydrated=env.page.waitForResponse(response=>new URL(response.url()).searchParams.get('action')==='progress');
+  env.release();await (await hydrated).finished();await env.page.waitForTimeout(100);
+  check('late progress hydration preserves the open guide and its DOM',await env.page.evaluate(()=>pendingWelcome.isConnected&&pendingWelcome.open&&pendingWelcome===document.querySelector('#library-shishi-guide')));
+  await env.page.locator('.library-guide-done').click();
+  check('the preserved guide still closes normally',!await env.page.locator('#library-shishi-guide').isVisible());
+ }finally{await env.close();}
+}
+(async()=>{if(evidence)fs.mkdirSync(evidence,{recursive:true});browser=await chromium.launch({channel:'msedge',headless:true,args:['--no-proxy-server']});await welcomeChecks();await delayedWelcomeCheck();await resetChecks();check('no browser exceptions',errors.length===0);})().catch(error=>{checks.push({label:'suite',passed:false,error:error.stack});process.exitCode=1;}).finally(async()=>{await browser?.close();const result={ok:checks.every(item=>item.passed),syntheticOnly:true,noProductionRequests:true,checks,errors};if(evidence)fs.writeFileSync(path.join(evidence,'learning-ui-results.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));});
