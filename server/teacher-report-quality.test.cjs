@@ -46,6 +46,22 @@ test('whole-school low-grade limits do not attach to explicit middle/high-grade 
   assert.deepEqual(inspectAnalysis(analysis,school),[]);
   assert(codes({teachingActions:[action('低年級書寫',['書寫「鵝」、「舟」兩個字。'])]},school).includes('LOW_GRADE_WRITING_TARGET_G1'));
 });
+
+test('actual whole-school provider revision assigns each writing target to its own grade within one step',()=>{
+  const school={filters:{},teachingConstraints:[{grade:1,writing:{allowedCharacters:['鵝']}},{grade:2,writing:{allowedCharacters:['舟']}}]};
+  const steps=['一年級聽寫「鵝」字，二年級聽寫「舟」字，其餘年級進行一次簡短聽寫，觀察默寫辨識準確度的變化。'];
+  assert.deepEqual(inspectAnalysis({reviewPlan:[action('下次跟進',steps)]},school),[]);
+  assert.deepEqual(inspectAnalysis({reviewPlan:[action('下次跟進',['一年級先看「鵝」字，再聽寫一次；二年級先看「舟」字，再聽寫一次。'])]},school),[]);
+  assert.deepEqual(inspectAnalysis({teachingActions:[action('低年級',['低年級複查時，只安排書寫「鵝」字（一年級）或「舟」字（二年級），其餘用聽選或跟讀。'])]},school),[]);
+  assert.deepEqual(inspectAnalysis({teachingActions:[action('低年級：以聽選和短句跟讀強化字音',['一年級：老師示範《詠鵝》第一句「鵝鵝鵝」，學生聽後跟讀；再播放平台示範音，學生對照後再讀一次。','二年級：老師示範《贈汪倫》第一句「李白乘舟將欲行」，學生聽後跟讀；再播放平台示範音，學生對照後再讀一次。','低年級複查時，只安排書寫「鵝」字（一年級）或「舟」字（二年級），其餘用聽選或跟讀。'])]},school),[]);
+  assert(codes({teachingActions:[action('低年級',['老師示範《贈汪倫》中的「聞」字筆順。'])]},school).includes('LOW_GRADE_WRITING_TARGET_G2'));
+  assert(codes({teachingActions:[action('低年級',['只安排書寫「舟」字（一年級）或「鵝」字（二年級）。'])]},school).includes('LOW_GRADE_WRITING_TARGET_G1'));
+  const excessive={reviewPlan:[action('下次跟進',['一年級聽寫「鵝」字，二年級聽寫「舟」「聞」兩字，其餘年級聽寫三字。'])]};
+  assert(!codes(excessive,school).some(code=>code.endsWith('_G1')));
+  assert(codes(excessive,school).includes('LOW_GRADE_WRITING_TARGET_G2'));
+  assert(codes({reviewPlan:[action('跟進',['一年級聽寫「舟」字，二年級聽寫「鵝」字。'])]},school).includes('LOW_GRADE_WRITING_TARGET_G1'));
+  assert(codes({reviewPlan:[action('跟進',['一年級朗讀原句，其餘年級聽寫「潤」字。'])]},school).includes('LOW_GRADE_WRITING_TARGET_G2'));
+});
 test('bounded, deterministic issues ignore malformed optional fields and do not invent judgments',()=>{
   assert.deepEqual(inspectAnalysis(null,{}),[]);assert.deepEqual(inspectAnalysis({findings:'invalid',teachingActions:null}),[]);
   const a={findings:Array.from({length:100},()=>({title:'中等'}))};assert.equal(inspectAnalysis(a,{}).length,1);assert.deepEqual(inspectAnalysis(a,{}),inspectAnalysis(a,{}));

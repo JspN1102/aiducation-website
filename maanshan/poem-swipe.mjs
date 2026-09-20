@@ -1,4 +1,4 @@
-// A horizontal gesture selects a line without marking it read or revealing it.
+// A horizontal gesture selects the verse and painting without marking it read.
 // Vertical gestures remain available to the page; arrows support keyboards.
 export function mountPoemSwipe(holder,{onStep,isLocked=()=>false}={}){
   const events=new AbortController();let start=null;

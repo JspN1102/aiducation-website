@@ -1,3 +1,4 @@
+import {imageAsset} from './media-images.mjs?v=20260920-art2';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260919d';
 import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20260919d';
 import {mountChallengeWriting} from './challenge-writing.mjs?v=20260920-school1';
@@ -72,7 +73,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const locked = !!answer;
     const active = () => !dead && epoch === gameEpoch && generation === renderGeneration;
     try {
-      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20260920a');
+      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20260920-art2');
       if (!active()) return;
       let completionReceived = false;
       const mounted = mountPoemGame(holder, {slug: poem.slug, initialState: state, readOnly: locked,
@@ -102,7 +103,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     return `<header class="challenge-header"><div><span class="challenge-eyebrow">${attempt.mode==='review'?'錯題重做':attempt.mode==='advanced'?'高階挑戰':KIND[item.type]}</span><span class="challenge-count">${screen+1}<small> / ${items.length}</small></span></div><div class="challenge-steps" aria-label="第 ${screen+1} 題，共 ${items.length} 題">${items.map((_,i)=>`<i class="${i<screen?'done':i===screen?'current':''}"></i>`).join('')}</div></header>`;
   }
   function soundBody(item) {
-    return `<div class="challenge-sound-layout"><div class="challenge-sound-stage"><button class="challenge-sound-token" data-ch="listen" aria-label="播放題目聲音">${soundIcon}<span>聽聲音</span></button><p class="challenge-stage-note">點一下，可以再聽。</p></div><div class="challenge-sound-work"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><p class="challenge-instruction">先聽聲音，再選一個小站。</p><div class="challenge-shelves">${ordered(item).map(option=>`<button class="challenge-shelf" data-ch="choose" data-option="${option.id}" aria-pressed="false" disabled>${tone(option.contour)}<span>${esc(option.label)}</span><i aria-hidden="true"></i></button>`).join('')}</div><p class="challenge-audio-status" role="status">聽完後，也可以把聲音按鈕拖到小站。</p></div></div>`;
+    return `<div class="challenge-sound-layout"><div class="challenge-sound-stage is-walnut-market"><img class="challenge-market" src="${esc(imageAsset('media/challenges/sound-market-v1.webp'))}" alt="" draggable="false"><button class="challenge-sound-token is-walnut" data-ch="listen" aria-label="點核桃，聽題目聲音"><img src="${esc(imageAsset('media/challenges/sound-pod-v1.webp'))}" alt="" draggable="false">${soundIcon}</button><p class="challenge-stage-note">點核桃，聽一聽</p></div><div class="challenge-sound-work"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><p class="challenge-instruction">先聽聲音，再選一個小站。</p><div class="challenge-shelves">${ordered(item).map(option=>`<button class="challenge-shelf" data-ch="choose" data-option="${option.id}" aria-pressed="false" disabled>${tone(option.contour)}<span>${esc(option.label)}</span><i aria-hidden="true"></i></button>`).join('')}</div><p class="challenge-audio-status" role="status">聽完後，也可以把核桃拖到小站。</p></div></div>`;
   }
   function writingBody(item) {
     return `<div class="challenge-writing-layout"><div class="challenge-writing-heading"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><button class="challenge-listen" data-ch="listen">${soundIcon}<span>聽詞語</span></button><p class="challenge-audio-status" role="status">先聽詞語，再動筆。</p></div><div class="challenge-writing-holder" inert></div></div>`;

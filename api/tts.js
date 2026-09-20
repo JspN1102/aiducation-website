@@ -67,9 +67,22 @@ const PHONETIC_SYNTHESIS_SUBSTITUTIONS = Object.freeze({
 });
 
 function stablePhoneticSynthesis(value) {
-  return String(value).replace(/<phoneme alphabet="py" ph="([a-z0-9]+)">([^<>]+)<\/phoneme>/g, (tag, phoneme, content) => {
-    const replacement = PHONETIC_SYNTHESIS_SUBSTITUTIONS[`${content}|${phoneme}`];
-    return replacement ? `<phoneme alphabet="py" ph="${phoneme}">${replacement}</phoneme>` : tag;
+  return String(value).replace(/<phoneme alphabet="py" ph="([a-z0-9]+(?:\s+[a-z0-9]+)*)">([^<>]+)<\/phoneme>/g, (tag, phoneme, content) => {
+    const readings = phoneme.trim().split(/\s+/), characters = Array.from(content);
+    if (readings.length !== characters.length) return tag;
+    const replacement = characters.map((char, index) => PHONETIC_SYNTHESIS_SUBSTITUTIONS[`${char}|${readings[index]}`] || char).join('');
+    return `<phoneme alphabet="py" ph="${readings.join(' ')}">${replacement}</phoneme>`;
+  });
+}
+
+function connectedPhonemeSynthesis(value) {
+  // Yun Xiaohe treats separate phoneme tags as separate prosodic segments.
+  // Tencent supports one space-separated pinyin string for a complete phrase:
+  // retain every curriculum tone while avoiding a pause after a single character.
+  return String(value).replace(/(?:<phoneme alphabet="py" ph="[a-z0-9]+(?:\s+[a-z0-9]+)*">[^<>]+<\/phoneme>\s*){2,}/g, run => {
+    const parts = [...run.matchAll(/<phoneme alphabet="py" ph="([a-z0-9]+(?:\s+[a-z0-9]+)*)">([^<>]+)<\/phoneme>/g)];
+    if (parts.some(([, reading, content]) => reading.trim().split(/\s+/).length !== Array.from(content).length)) return run;
+    return `<phoneme alphabet="py" ph="${parts.map(part => part[1].trim()).join(' ')}">${parts.map(part => part[2]).join('')}</phoneme>`;
   });
 }
 
@@ -129,7 +142,7 @@ function synthesisText(text, allowSSML = false) {
       ? '<speak>请写出，还乡的<phoneme alphabet="py" ph="huan2">环</phoneme>。</speak>'
       : '请写出，环乡的环。';
   }
-  return allowSSML ? withLeadingPause(stablePhoneticSynthesis(value)) : plainSynthesisText(value);
+  return allowSSML ? withLeadingPause(connectedPhonemeSynthesis(stablePhoneticSynthesis(value))) : plainSynthesisText(value);
 }
 
 function number(value, fallback) {
@@ -273,7 +286,7 @@ module.exports = async function handler(req, res) {
   if (req.method === 'GET' || req.method === 'HEAD') return serveCachedAudio(req, res);
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if(schoolAuth.enabled()){
-    try{await schoolAuth.requireActor(req,{roles:['student'],csrf:true});}
+    try{await schoolAuth.requireActor(req,{roles:['student','teacher'],csrf:true});}
     catch(error){return schoolAuth.sendError(res,error);}
   }
 
@@ -284,7 +297,9 @@ module.exports = async function handler(req, res) {
   const speed = Math.max(-2, Math.min(6, number(req.body?.speed, Number(process.env.MAANSHAN_TTS_SPEED || DEFAULT_SPEED))));
   const pronunciationVersion = String(req.body?.pronunciationVersion || process.env.MAANSHAN_PRONUNCIATION_VERSION || 'edb-20260919d-yunxiaohe');
   const allowSSML = req.body?.allowSSML === true;
-  const profile = `pcm-silence-180-80-v1-${allowSSML ? 'ssml' : 'plain'}`;
+  // Isolate old segmented speech without deleting cached files or invalidating
+  // unaffected plain-text audio. Browsers receive a new signed audio URL.
+  const profile = `pcm-silence-180-80-v1-${allowSSML ? 'ssml-flow-v2' : 'plain'}`;
   const key = cacheKey({text: text.normalize('NFC').trim(), voice, speed, pronunciationVersion, profile});
   const wantsURL = req.body?.delivery === 'url' && !!audioSignature(key);
   const cached = wantsURL ? await hasAudio(key) : await readAudio(key);

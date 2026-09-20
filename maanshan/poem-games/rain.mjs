@@ -1,7 +1,8 @@
+import {imageAsset} from '../media-images.mjs?v=20260920-art2';
 import {RAIN_GLYPHS} from './rain-glyphs.mjs?v=20260919a';
 import {createProcessResearch} from './research.mjs?v=20260920a';
 
-const media = name => new URL(`../media/poem-games/rain-catcher/${name}`, import.meta.url).href;
+const media = name => new URL(imageAsset(`media/poem-games/rain-catcher/${name}`), import.meta.url).href;
 const ROUNDS = [
   {char:'小',pinyin:'xiǎo',initial:'x',phrase:'天街小雨潤如酥',options:[['小','xiǎo'],['少','shǎo'],['掃','sǎo']]},
   {char:'酥',pinyin:'sū',initial:'s',phrase:'天街小雨潤如酥',options:[['酥','sū'],['書','shū'],['需','xū']]},

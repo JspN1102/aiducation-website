@@ -1,4 +1,7 @@
-import {initializeSchoolSession, schoolState, onSchoolSessionInvalid} from './school-session.mjs?v=20260920-ui1';
+import {initializeSchoolSession, schoolState, onSchoolSessionInvalid} from './school-session.mjs?v=20260920-final4';
+import {installImageRecovery} from './image-loader.mjs?v=20260920-art2';
+
+installImageRecovery();
 
 const app = document.querySelector('#app');
 let invalidated = false;
@@ -30,7 +33,7 @@ schoolSession.then(async school => {
       loadScript('vendor/hanzi-writer.min.js', () => !!window.HanziWriter)
     ]);
     if (invalidated || schoolState() !== school) return;
-    await import('./app.js?v=20260920-login-first1');
+    await import('./app.js?v=20260920-final4');
   } catch {
     if (!invalidated) window.showLoadRecovery?.();
   } finally {

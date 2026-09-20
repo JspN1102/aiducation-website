@@ -68,13 +68,16 @@ function withSchoolLearning(operation, handler) {
     res.setHeader('Cache-Control','private, no-store');
     let actor, reference;
     try {
-      actor=await auth.requireActor(req,{roles:['student'],csrf:true});
+      actor=await auth.requireActor(req,{roles:['student','teacher'],csrf:true});
       if (req.body?.researchContext && req.body.researchContext.actorId !== actor.id) throw new auth.AuthError(409,'ACTOR_CHANGED');
+      const requestedPoem=req.body?.poemId??req.body?.researchContext?.poemId;
+      const poem=auth.assertPoemAccess(actor,requestedPoem);
+      if(operation==='reading'&&!poem.lines.some(line=>line.simplified===req.body?.refText))throw new auth.AuthError(400,'INVALID_LEARNING_CONTEXT');
       reference=await referenceFor(req,operation);
+      if(operation==='chat'&&req.body)req.body.grade=poem.grade;
+      if(operation==='report'&&req.body)req.body.studentGrade=poem.grade;
     } catch(error) { return auth.sendError(res,error); }
-    if (operation==='chat' && req.body) req.body.grade=actor.grade;
-    if (operation==='report' && req.body) req.body.studentGrade=actor.grade;
-    if (!reference) return handler(req,res);
+    if (!reference || !auth.researchEligible(actor)) return handler(req,res);
     const originalJSON=res.json.bind(res), started=performance.now();
     let responseWork=null;
     res.json=body=>{

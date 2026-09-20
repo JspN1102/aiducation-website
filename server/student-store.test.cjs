@@ -151,6 +151,36 @@ test('browser queue removes only acknowledged db/blob records, preserving local-
   }
 });
 
+test('browser progress queue discards only explicit permanent off-grade rejection and drains subsequent/new work',async()=>{
+ const {createSyncQueue}=await import(pathToFileURL(path.join(__dirname,'../maanshan/core.mjs')));
+ let pending=[{syncId:'old-other-grade'},{syncId:'own-grade'}],sent=[];
+ const queue=createSyncQueue({read:()=>pending,write:value=>{pending=value;return true;},send:async item=>{
+  sent.push(item.syncId);
+  if(item.syncId==='old-other-grade'){queue.add({syncId:'enqueued-during-rejection'});return {ok:false,status:422,json:async()=>({code:'POEM_GRADE_FORBIDDEN',retryable:false})};}
+  return {ok:true,status:200,json:async()=>({ok:true,stored:'db'})};
+ }});
+ await queue.flush();assert.deepEqual(sent,['old-other-grade','own-grade','enqueued-during-rejection']);assert.deepEqual(pending,[]);
+});
+
+test('browser progress queue retains ambiguous or unrelated errors including malformed rejection bodies',async()=>{
+ const {createSyncQueue}=await import(pathToFileURL(path.join(__dirname,'../maanshan/core.mjs')));
+ for(const [status,body]of [[422,{code:'POEM_GRADE_FORBIDDEN'}],[422,{code:'POEM_GRADE_FORBIDDEN',retryable:true}],[422,{code:'OTHER',retryable:false}],[403,{code:'POEM_GRADE_FORBIDDEN',retryable:false}],[503,{code:'POEM_GRADE_FORBIDDEN',retryable:false}],[422,null]]){
+  const original=[{syncId:'retain'},{syncId:'later'}];let pending=structuredClone(original),sends=0,writes=0;
+  const queue=createSyncQueue({read:()=>pending,write:value=>{writes++;pending=value;},send:async()=>{sends++;return {ok:false,status,json:async()=>{if(body===null)throw Error('invalid JSON');return body;}};}});
+  await queue.flush();assert.equal(sends,1);assert.equal(writes,0);assert.deepEqual(pending,original);
+ }
+});
+
+test('browser progress queue keeps a permanently rejected item if durable removal fails and can retry later',async()=>{
+ const {createSyncQueue}=await import(pathToFileURL(path.join(__dirname,'../maanshan/core.mjs')));
+ for(const failure of ['false','throw']){
+  let pending=[{syncId:'old-other-grade'},{syncId:'own-grade'}],writable=false;const sent=[];
+  const queue=createSyncQueue({read:()=>pending,write:value=>{if(!writable){if(failure==='throw')throw Error('storage unavailable');return false;}pending=value;return true;},send:async item=>{sent.push(item.syncId);return item.syncId==='old-other-grade'?{ok:false,status:422,json:async()=>({code:'POEM_GRADE_FORBIDDEN',retryable:false})}:{ok:true,status:200,json:async()=>({ok:true,stored:'blob'})};}});
+  await queue.flush();assert.deepEqual(sent,['old-other-grade']);assert.equal(pending.length,2);
+  writable=true;await queue.flush();assert.deepEqual(sent,['old-other-grade','old-other-grade','own-grade']);assert.deepEqual(pending,[]);
+ }
+});
+
 test('export checksum and record identities validate before PostgreSQL migration', () => {
   const records = [studentStore.makeRecord(input(), NOW)];
   const data = { format: transfer.FORMAT, namespace: studentStore.NAMESPACE, records,

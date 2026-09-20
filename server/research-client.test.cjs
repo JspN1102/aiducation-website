@@ -51,6 +51,14 @@ test('account or CSRF failures stop uploads, preserving the original account que
   const {createResearchTracker}=await moduleReady;let calls=0;const f=fixture({fetchImpl:async()=>{calls++;return {ok:false,status:409,json:async()=>({code:'ACTOR_CHANGED'})};}});
   const tracker=createResearchTracker(f.options);await tracker.flush();await tracker.flush();assert.equal(calls,1);assert.equal(tracker.status().stopped,true);assert.equal(tracker.status().pending,1);assert(f.statuses.includes('session_changed'));
 });
+
+test('old cross-grade queued events are discarded permanently while valid own-grade events continue',async()=>{
+ const {createResearchTracker}=await moduleReady,sent=[];
+ const f=fixture({fetchImpl:async(_url,options)=>{const body=JSON.parse(options.body);if(body.events.some(e=>e.poemId===6))return {ok:false,status:422,json:async()=>({error:'POEM_GRADE_FORBIDDEN',retryable:false})};sent.push(...body.events);return {ok:true,status:200,json:async()=>({accepted:true,batchId:body.batchId,eventIds:body.events.map(e=>e.eventId)})};}});
+ const tracker=createResearchTracker(f.options);tracker.emit('item_presented',{poemId:6,itemId:'old-cross-grade'});tracker.emit('item_presented',{poemId:5,itemId:'own-grade'});
+ for(let i=0;i<5&&tracker.status().pending;i++)await tracker.flush({force:true});
+ assert.equal(tracker.status().pending,0);assert.equal(tracker.status().held,0);assert.equal(tracker.status().stopped,false);assert(sent.some(e=>e.itemId==='own-grade'));assert(!sent.some(e=>e.itemId==='old-cross-grade'));assert(!f.statuses.includes('session_changed'));
+});
 test('storage failures are reported without crashing the learning interaction',async()=>{
   const {createResearchTracker}=await moduleReady;const f=fixture({storage:{getItem(){throw Error('denied');},setItem(){throw Error('full');}}});
   const tracker=createResearchTracker(f.options);tracker.emit('item_presented',{itemId:'p1.l0'});assert.equal(tracker.status().pending,2);assert(f.statuses.includes('storage_unavailable'));

@@ -1,0 +1,5 @@
+.header-right{display:flex;align-items:center;gap:12px}
+.teacher-entry{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 13px;border:1px solid #c8d8c5;border-radius:12px;background:#f7faee;color:#315b43;font:600 17px/1.35 var(--sans);text-decoration:none;white-space:nowrap}
+.teacher-entry:focus-visible{outline:3px solid #377460;outline-offset:3px}
+.library-books:has(>.poem-card:only-child){grid-template-columns:minmax(0,560px);justify-content:center}
+@media(max-width:700px){.lesson-tools:has(.teacher-entry){gap:6px}.lesson-tools .teacher-entry{font-size:15px;padding:7px 9px}.lesson-bar:has(.teacher-entry) .lesson-heading h1{font-size:20px}.lesson-bar:has(.teacher-entry) .lesson-portrait{display:none}.header-right{gap:8px}}

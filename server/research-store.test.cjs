@@ -20,6 +20,17 @@ test('identity is bound to cookie actor; raw or impersonated fields never enter 
   for(const forbidden of ['name','ip','audio','strokes','chatText','source','researchId','provider'])
     assert.throws(()=>s.validateBatch(input([event({[forbidden]:'secret'})]),actor,now),forbidden);
 });
+
+test('formal intake rejects cross-grade events and excludes teacher/test sessions before storage',async()=>{
+ assert.throws(()=>s.validateBatch(input([event({poemId:6})]),actor,now),e=>e.code==='POEM_GRADE_FORBIDDEN'&&e.status===422);
+ assert.throws(()=>s.validateBatch(input([event()]),{...actor,isTest:true,learningScope:'all-grades'},now),e=>e.code==='RESEARCH_EXCLUDED'&&e.status===422);
+ const db={query:async()=>assert.fail('excluded event reached database')};
+ for(const person of [{...actor,isTest:true,learningScope:'all-grades'},{...actor,role:'teacher',grade:null}])await assert.rejects(s.ingest(input([event()]),person,{storage:'postgres',db}),e=>e.code==='RESEARCH_EXCLUDED'&&e.status===422);
+ await assert.rejects(s.ingest(input([event({poemId:6})]),actor,{storage:'postgres',db}),e=>e.code==='POEM_GRADE_FORBIDDEN');
+ // Historical records remain readable; access rules apply to new intake only.
+ const stored=s.validateBatch(input([event()]),actor,now);stored.events[0].event.poemId=6;stored.events[0].eventChecksum=s.hash(s.canonical({researchId:actor.researchId,source:'client',event:stored.events[0].event}));
+ const {checksum,...value}=stored;stored.checksum=s.hash(s.canonical(value));assert.doesNotThrow(()=>s.verifyStoredBatch(stored));
+});
 test('schema/ranges reject oversized batches, invalid dates, nonfinite metrics, duplicate events',()=>{
   const e=event();
   assert.throws(()=>s.validateBatch(input([e,e]),actor,now));

@@ -331,6 +331,7 @@ function validateBatch(input, actor, now = Date.now(), source = 'client') {
   if (input.schemaVersion !== 1) fail('SCHEMA_VERSION');
   uuid(input.batchId);
   if (!actor || actor.role !== 'student' || input.actorId !== actor.id) fail('ACTOR_CHANGED',409);
+  if (!require('./school-auth.cjs').researchEligible(actor)) fail('RESEARCH_EXCLUDED',422);
   if (typeof actor.researchId !== 'string' || !/^r_[a-zA-Z0-9_-]{8,80}$/.test(actor.researchId)) fail('IDENTITY_UNAVAILABLE',503);
   integer(actor.grade,1,6);
   if (typeof actor.cls !== 'string' || !/^[A-Z]$/.test(actor.cls)) fail('IDENTITY_UNAVAILABLE',503);
@@ -338,6 +339,7 @@ function validateBatch(input, actor, now = Date.now(), source = 'client') {
   const ids = new Set();
   const events = input.events.map(raw => {
     const event = validateEvent(raw,source === 'server_verified');
+    if(event.poemId!==null&&poems.find(poem=>poem.id===event.poemId)?.grade!==actor.grade)fail('POEM_GRADE_FORBIDDEN',422);
     if (ids.has(event.eventId)) fail('DUPLICATE_EVENT_IN_BATCH'); ids.add(event.eventId);
     const qualityFlags = [];
     if (Date.parse(event.clientAt) > now + 300000 || Date.parse(event.clientAt) < now - 30 * 86400000) qualityFlags.push('client_clock_out_of_range');
@@ -443,6 +445,7 @@ async function appendStableBlob(batch,client=blob,signal=AbortSignal.timeout(100
   return appendBlob(batch,client,signal);
 }
 async function ingest(input,actor,{now=Date.now(),source='client',storage=mode(),db,client=blob,signal,stableRequest=false}={}) {
+  if(actor&&!require('./school-auth.cjs').researchEligible(actor))fail('RESEARCH_EXCLUDED',422);
   if(!storage)fail('RESEARCH_DISABLED',503);
   const batch=validateBatch(input,actor,now,source);
   let received=batch.serverReceivedAt;
@@ -455,8 +458,9 @@ async function recordVerifiedOutcome(req,input) {
   if(!mode())return {recorded:false,reason:'disabled'};
   try {
     const auth=require('./school-auth.cjs');
-    const actor=await auth.requireActor(req,{roles:['student'],csrf:true});
+    const actor=await auth.requireActor(req,{roles:['student','teacher'],csrf:true});
     if(!actor)return {recorded:false,reason:'auth_disabled'};
+    if(!auth.researchEligible(actor))return {recorded:false,reason:'RESEARCH_EXCLUDED',invalidRequest:true};
     const context=req.body?.researchContext;
     if(!context || context.actorId!==actor.id)return {recorded:false,reason:'ACTOR_CHANGED'};
     const {eventId=crypto.randomUUID(),sessionId,attemptId,itemId,poemId,activity,appVersion,contentVersion,
@@ -680,7 +684,7 @@ async function researchExport(f,options){
   const rows=mode()==='postgres'?await readPostgres(f):(await readPublished(f)).rows;
   return exportRows(rows,f,options);
 }
-function sendError(res,error){const safe=error instanceof ResearchError?error:new ResearchError('RESEARCH_STORAGE_UNAVAILABLE',503);return res.status(safe.status).json({error:safe.code,schemaVersion:1,...safe.code==='NARROW_DATE_OR_CLASS_FILTER'?{suggestion:'FILTER_BY_CLASS_OR_SHORTER_DATE_RANGE',maxEvents:MAX_READ_EVENTS,maxSelectedDays:31}:{}});}
+function sendError(res,error){const safe=error instanceof ResearchError?error:new ResearchError('RESEARCH_STORAGE_UNAVAILABLE',503);return res.status(safe.status).json({error:safe.code,schemaVersion:1,...['POEM_GRADE_FORBIDDEN','RESEARCH_EXCLUDED'].includes(safe.code)?{code:safe.code,retryable:false}:{},...safe.code==='NARROW_DATE_OR_CLASS_FILTER'?{suggestion:'FILTER_BY_CLASS_OR_SHORTER_DATE_RANGE',maxEvents:MAX_READ_EVENTS,maxSelectedDays:31}:{}});}
 module.exports={NS,MAX_BATCH_BYTES,MAX_READ_EVENTS,ACTIVITIES,TYPES,ERRORS,STATUS,METRICS,DATA_DICTIONARY,ResearchError,canonical,hash,
   validateEvent,validateBatch,verifyStoredBatch,pgConfig,getPool,mode,outboxPath,readPrivate,appendPostgres,appendBlob,
   ingest,recordVerifiedOutcome,stableOutcomeId,filtersFrom,matches,aggregateEvents,validatePublishedParts,readPostgres,readPublished,analytics,exportRows,researchExport,sendError};

@@ -31,6 +31,12 @@ test('rejected answer is held without blocking a later healthy answer or logging
  const q=createAnswerOutbox({...f.options,fetchImpl:async(_url,options)=>{const body=JSON.parse(options.body);count++;return body.itemId==='bad'?{ok:false,status:409,json:async()=>({code:'EVENT_ID_CONFLICT'})}:{ok:true,status:200,json:async()=>({ok:true,researchRecorded:true})};}});
  q.enqueue({...f.input,itemId:'bad'});q.enqueue(f.input);await q.flush();await q.flush();assert.equal(q.status().held,1);assert.equal(q.status().pending,0);assert.equal(q.status().stopped,false);assert.equal(count,2);assert.equal(f.memory.size,2);
 });
+
+test('old cross-grade answers are removed without stopping valid answers or repeatedly retrying',async()=>{
+ const {createAnswerOutbox}=await ready,f=fixture();let calls=0;
+ const q=createAnswerOutbox({...f.options,fetchImpl:async(_url,options)=>{calls++;const body=JSON.parse(options.body);return body.poemId===6?{ok:false,status:422,json:async()=>({code:'POEM_GRADE_FORBIDDEN',retryable:false})}:{ok:true,status:200,json:async()=>({ok:true,researchRecorded:true})};}});
+ q.enqueue({...f.input,poemId:6});q.enqueue(f.input);await q.flush();await q.flush();await q.flush();assert.equal(calls,2);assert.equal(q.status().pending,0);assert.equal(q.status().held,0);assert.equal(q.status().stopped,false);assert.equal(f.memory.size,0);
+});
 test('simultaneous tabs retain each others pending answers and exact acknowledgements',async()=>{
  const {createAnswerOutbox}=await ready,f=fixture();let finish;
  const a=createAnswerOutbox({...f.options,fetchImpl:async()=>{await new Promise(resolve=>finish=resolve);return {ok:true,status:200,json:async()=>({ok:true,researchRecorded:true})};}});

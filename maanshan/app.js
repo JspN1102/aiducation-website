@@ -1,21 +1,21 @@
-import {imageAsset} from './media-images.mjs?v=20260920-images1';
-import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260920a';
-import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260920-ui1';
+import {imageAsset} from './media-images.mjs?v=20260920-art2';
+import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260920-final4';
+import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260920-final4';
 import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
 import {getWordAudioURL} from './word-audio.mjs?v=20260919c';
-import {getSpeechAudioURL} from './speech-audio.mjs?v=20260919c';
-import {mountShishi} from './shishi.mjs?v=20260920-ui1';
-import {mountPoemSwipe} from './poem-swipe.mjs?v=20260915a';
+import {getSpeechAudioURL} from './speech-audio.mjs?v=20260920flow1';
+import {mountShishi} from './shishi.mjs?v=20260920-final4';
+import {mountPoemSwipe} from './poem-swipe.mjs?v=20260920-final4';
 import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui1';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260919d';
 import {challengeSummary} from './challenge-state.mjs?v=20260919d';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260920-school1';
-import {encodeRecording, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260920-login-first1';
-import {requestJSON} from './network.mjs?v=20260920-login-first1';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260920-ui1';
-import {schoolSession} from './bootstrap.mjs?v=20260920-login-first1';
-import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260920b';
-import {createAnswerOutbox} from './answer-outbox.mjs?v=20260920b';
+import {encodeRecording, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260920-final4';
+import {requestJSON} from './network.mjs?v=20260920-final4';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260920-final4';
+import {schoolSession} from './bootstrap.mjs?v=20260920-final4';
+import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260920-final4';
+import {createAnswerOutbox} from './answer-outbox.mjs?v=20260920-final4';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -25,8 +25,11 @@ const app = $('#app');
 const school = await schoolSession;
 // Login may be invalidated while the learning modules are downloading.
 // Do not restore a previous pupil's storage or queues after that happens.
-if (schoolState() !== school || school.enabled && (!school.authenticated || school.user?.role !== 'student')) throw new Error('School session changed during startup');
+if (schoolState() !== school || school.enabled && (!school.authenticated || !['student','teacher'].includes(school.user?.role))) throw new Error('School session changed during startup');
 const accountSuffix = school.enabled ? ':' + school.user.id : '';
+const isTeacher = school.enabled && school.user?.role === 'teacher';
+const allGrades = school.enabled && (isTeacher || school.user?.learningScope === 'all-grades');
+const collectResearch = school.enabled && !isTeacher && school.user?.researchEnabled !== false;
 const STORE = 'maanshan-learning-v2' + accountSuffix;
 const PROFILE = 'ms_student_info' + accountSuffix;
 const STUDENT_GRADE = 'ms_student_grade' + accountSuffix;
@@ -44,9 +47,9 @@ function recordSyncStatus(kind,status,state){
   if(status==='session_changed')invalidateSchoolSession();
   renderRecordSyncStatus();
 }
-const research=createResearchTracker({enabled:school.enabled,actorId:school.user?.id,csrfToken:school.csrfToken,onStatus:(status,state)=>recordSyncStatus('events',status,state)});
-const answerOutbox=createAnswerOutbox({enabled:school.enabled,actorId:school.user?.id,csrfToken:school.csrfToken,onStatus:(status,state)=>recordSyncStatus('answers',status,state)});
-if(school.enabled)attachResearchLifecycle(research);
+const research=createResearchTracker({enabled:collectResearch,actorId:school.user?.id,csrfToken:school.csrfToken,onStatus:(status,state)=>recordSyncStatus('events',status,state)});
+const answerOutbox=createAnswerOutbox({enabled:collectResearch,actorId:school.user?.id,csrfToken:school.csrfToken,onStatus:(status,state)=>recordSyncStatus('answers',status,state)});
+if(collectResearch)attachResearchLifecycle(research);
 if(school.enabled){
   const answerTimer=setInterval(()=>{void answerOutbox.flush();void sync.flush();},15000);
   window.addEventListener('online',()=>void answerOutbox.flush({force:true}));
@@ -67,7 +70,7 @@ let activityLoad=0;
 let practiceIndex=0, reportTab='advice', reportLine=0, practiceMode='sound';
 const TTS_VOICE=403001;
 const TTS_SPEED=-.75;
-const TTS_PRONUNCIATION='edb-20260919d-yunxiaohe';
+const TTS_PRONUNCIATION='edb-20260920-flow1-yunxiaohe';
 const speechCache=new Map(), speechPending=new Map(), speechFailureUntil=new Map(), staticAudioFailures=new Map();
 const STATIC_AUDIO_RETRY_MS=60000;
 let ttsUnavailableUntil=0,ttsSuccessVersion=0;
@@ -81,6 +84,8 @@ const sync=createSyncQueue({
 });
 const titleOf=p=>p.id===5 ? '歸園田居·其三' : p.title;
 const asset=(name,p=poem)=>imageAsset(`media/${p.slug}/${name}`);
+const teacherEntry = () => isTeacher ? '<a class="teacher-entry" href="teacher.html">教師後台</a>' : '';
+if(isTeacher){$('#profile-open').insertAdjacentHTML('beforebegin',teacherEntry());}
 const poemMotif=(p=poem)=>'media/poetry-motifs/'+['goose','boat','mountain','moon','sprout','swallow'][p.id-1]+'.svg';
 const link=(v='record',p=poem)=>`#${p.slug}/${v}`;
 const state=p=>{
@@ -103,6 +108,7 @@ function practiceSnapshot(p=poem){
 }
 const validGrade=value=>Number.isInteger(Number(value))&&Number(value)>=1&&Number(value)<=6;
 function studentGrade(p=poem){
+  if(allGrades && p)return p.grade;
   const preferred=profile?.grade??readStorage(STUDENT_GRADE,null);
   return validGrade(preferred)?Number(preferred):p.grade;
 }
@@ -120,8 +126,8 @@ function changeStudentGrade(grade){
 }
 function queueSection(section,payload,p=poem) {
   persist();
-  if (!profile?.id || !profile.name || !profile.grade || !profile.cls) return;
-  sync.add({syncId:crypto.randomUUID(),studentId:profile.id,name:profile.name,grade:Number(profile.grade),cls:profile.cls,poemId:p.id,section,payload,queuedAt:Date.now()});
+  if (!profile?.id || !profile.name || (!allGrades && (!profile.grade || !profile.cls))) return;
+  sync.add({syncId:crypto.randomUUID(),studentId:profile.id,name:profile.name,grade:allGrades?p.grade:Number(profile.grade),cls:allGrades?'T':profile.cls,poemId:p.id,section,payload,queuedAt:Date.now()});
   sync.flush();
 }
 function queueReading(p=poem,extra={}) {
@@ -338,7 +344,7 @@ function renderWorkspace() {
   document.title=view==='quiz'?'練習小遊戲 · 馬鞍山靈糧小學':`${titleOf(poem)} · ${name} · AIDUCATION`;
   const activityOrder=['record','animation','explore','quiz','chat','report'];
   const activities=NAV.filter(([id])=>activityOrder.includes(id)&&(id!=='explore'||poem.grade>=4)).sort((a,b)=>activityOrder.indexOf(a[0])-activityOrder.indexOf(b[0]));
-  app.innerHTML='<div class="workspace lesson-shell poem-color-'+poem.id+' view-'+view+'"><div class="lesson-bar"><a class="back-library" href="'+(view==='lesson'?'#':link('lesson'))+'">'+icon('arrow-left')+'<span>'+(view==='lesson'?'選詩':'路線')+'</span></a><div class="lesson-title">'+(view==='quiz'?'':'<img class="lesson-portrait" src="'+asset('avatar.webp')+'" width="48" height="48" alt="'+esc(poem.author)+'">')+'<div class="lesson-heading"><h1>'+(view==='quiz'?'練習小遊戲':esc(titleOf(poem)))+'</h1><p>'+(view==='quiz'?['','一','二','三','四','五','六'][poem.grade]+'年級':(view==='record'?esc(poem.author):esc(poem.dynasty)+' · '+esc(poem.author)))+'</p></div></div><div class="lesson-tools"><details class="lesson-menu"><summary title="切換學習欄目" aria-label="切換學習欄目">'+icon('ellipsis')+'<span>更多</span></summary><nav class="menu-panel" aria-label="切換學習欄目">'+activities.map(([id,symbol,label])=>'<a href="'+link(id)+'" '+(view===id?'aria-current="page"':'')+'>'+icon(symbol)+'<span>'+label+'</span></a>').join('')+'</nav></details></div></div>'+lessonTabs()+'<main class="study-main" id="main"><section id="view" class="view-section '+(showPinyin?'':'hide-pinyin')+'"></section></main></div>';
+  app.innerHTML='<div class="workspace lesson-shell poem-color-'+poem.id+' view-'+view+'"><div class="lesson-bar"><a class="back-library" href="'+(view==='lesson'?'#':link('lesson'))+'">'+icon('arrow-left')+'<span>'+(view==='lesson'?'選詩':'路線')+'</span></a><div class="lesson-title">'+(view==='quiz'?'':'<img class="lesson-portrait" src="'+asset('avatar.webp')+'" width="48" height="48" alt="'+esc(poem.author)+'">')+'<div class="lesson-heading"><h1>'+(view==='quiz'?'練習小遊戲':esc(titleOf(poem)))+'</h1><p>'+(view==='quiz'?['','一','二','三','四','五','六'][poem.grade]+'年級':(view==='record'?esc(poem.author):esc(poem.dynasty)+' · '+esc(poem.author)))+'</p></div></div><div class="lesson-tools">'+teacherEntry()+'<details class="lesson-menu"><summary title="切換學習欄目" aria-label="切換學習欄目">'+icon('ellipsis')+'<span>更多</span></summary><nav class="menu-panel" aria-label="切換學習欄目">'+activities.map(([id,symbol,label])=>'<a href="'+link(id)+'" '+(view===id?'aria-current="page"':'')+'>'+icon(symbol)+'<span>'+label+'</span></a>').join('')+'</nav></details></div></div>'+lessonTabs()+'<main class="study-main" id="main"><section id="view" class="view-section '+(showPinyin?'':'hide-pinyin')+'"></section></main></div>';
   renderView();attachShishi();icons();
 }
 function lessonTabs(){
@@ -460,15 +466,15 @@ function renderRecord() {
   if((!result&&recordStep!=='extension')||(recordStep==='extension'&&poem.id!==2))recordStep='read';
   if(recordStep==='result'&&weak.length)recordStep='words';
   if(recordStep==='words'&&!weak.length)recordStep='result';
-  const latest=s.reading.slice(0,currentLine).reduce((a,r,i)=>r?i:a,-1),displayed=result?currentLine:latest;
-  const sceneNumber=displayed>=0?poem.lines[displayed].scene:0;
+  // Browsing a painting never marks the verse read or changes assessment results.
+  const sceneNumber=line.scene;
   void preloadScene(poem.slug,line.scene);
   if(!$('#record-art')){
     $('#view').innerHTML='<div class="record-layout"><div class="record-landscape"><div class="record-art" id="record-art"></div><div class="record-line-nav"><button class="icon-button" data-action="record-step" data-value="-1" aria-label="上一句">'+icon('chevron-left')+'</button><p class="record-unfold-note" id="record-unfold-note"></p><button class="icon-button" data-action="record-step" data-value="1" aria-label="下一句">'+icon('chevron-right')+'</button></div><div class="record-progress" aria-hidden="true"></div></div><div class="record-practice"><div class="record-tool" id="record-tool"></div></div><div class="record-bottom" id="record-bottom"></div></div>';
     sceneStage=mountStage($('#record-art'),{poemSlug:poem.slug,scene:sceneNumber,alt:sceneNumber?sceneText(sceneNumber):'等待展開的古詩畫卷'});
     poemSwipe=mountPoemSwipe($('#record-art'),{onStep:stepRecordLine,isLocked:()=>recordBusy});
   }else sceneStage?.show(sceneNumber,sceneNumber?sceneText(sceneNumber):'等待展開的古詩畫卷');
-  if($('#record-unfold-note'))$('#record-unfold-note').textContent=sceneNumber?'左右滑動，選擇詩句':'讀完這一句，畫卷就會展開';
+  if($('#record-unfold-note'))$('#record-unfold-note').textContent='左右滑動，看畫讀詩';
   $('.record-progress').innerHTML=poem.lines.map((_,i)=>'<i class="'+(s.reading[i]?'done ':'')+(i===currentLine?'current':'')+'"></i>').join('');
   const next='<button class="button primary" data-action="record-next">'+(currentLine===poem.lines.length-1?'看看成果':'下一句')+icon('arrow-right')+'</button>';
   let content;
@@ -553,7 +559,7 @@ async function assessRecording(blob,p,index,version,generation,context,existing=
     if(!pending.encoded)pending.encoded=await encodeRecording(blob,context);
     if(!isCurrent())return;
     if(context?.state!=='closed')context?.close().catch(()=>{});if(recordContext===context)recordContext=null;
-    const raw=await submitAssessment({audio:pending.encoded,refText:p.lines[index].simplified,...(school.enabled?{researchContext:pending.researchContext}: {})},{signal:controller.signal,onRetry:()=>{research.emit('retry',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,retryCount:1});if(isCurrent())assessmentStatus('正在重新連線，錄音已保留');},onWaiting:()=>{if(isCurrent())assessmentStatus('正在等候評測，錄音已保留');}});
+    const raw=await submitAssessment({audio:pending.encoded,poemId:p.id,refText:p.lines[index].simplified,...(collectResearch?{researchContext:pending.researchContext}: {})},{signal:controller.signal,onRetry:()=>{research.emit('retry',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,retryCount:1});if(isCurrent())assessmentStatus('正在重新連線，錄音已保留');},onWaiting:()=>{if(isCurrent())assessmentStatus('正在等候評測，錄音已保留');}});
     if(raw.researchRecorded===false)research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code:'storage_unavailable',retryable:true}});
     if(!isCurrent())return;
     const result=mapAssessment(raw,p.lines[index]);result.words=result.words.map(w=>({...w,lineIndex:index}));const s=state(p);recordings.set(`${p.id}-${index}`,blob);s.reading[index]=result;s.report='';s.updatedAt=Date.now();
@@ -638,39 +644,35 @@ function quickAdvice(result){
 }
 function renderReport() {
   const s=state(poem),result=poemAssessment();
-  if(!result){$('#view').innerHTML='<div class="report-empty"><img class="empty-motif" src="'+poemMotif()+'" width="90" height="90" alt=""><h2>先讀一句，再看看建議</h2><a class="button primary" href="'+link('record')+'">'+icon('mic')+'開始朗讀</a></div>';return;}
-  const keys=[['phone_score','發音準確度'],['fluency_score','流暢度'],['integrity_score','完整度']],grade=studentGrade(),report=currentReport();
-  $('#view').innerHTML='<div class="report-summary"><div class="score-ring" style="--score:'+result.total_score+'"><div><strong>'+result.total_score+'</strong><span>朗讀得分</span></div></div><div><p class="eyebrow">'+s.reading.filter(Boolean).length+' / '+poem.lines.length+' 句已完成</p><div class="dimension-grid">'+keys.map(([k,label])=>'<div class="dimension"><strong>'+(result.dimensions[k]??'—')+'</strong><span>'+label+'</span></div>').join('')+'</div></div></div>'+
-    '<div class="report-tabs" role="tablist" aria-label="朗讀成果">'+[['advice','小建議'],['practice','練字音'],['scores','逐句成績']].map(([id,label])=>'<button id="tab-'+id+'" role="tab" aria-controls="panel-'+id+'" data-action="report-tab" data-value="'+id+'">'+label+'</button>').join('')+'</div><div class="report-panels"><div id="panel-practice" role="tabpanel" aria-labelledby="tab-practice">'+pronunciationHTML(result)+'</div>'+
-    '<section id="panel-advice" class="ai-advice" data-student-grade="'+grade+'" role="tabpanel" aria-labelledby="tab-advice"><div class="ai-report-header"><div><h2>老師的小建議</h2><label class="report-grade-label">我的年級 <select id="report-grade" aria-label="我的年級">'+['一','二','三','四','五','六'].map((label,i)=>'<option value="'+(i+1)+'" '+(grade===i+1?'selected':'')+'>'+label+'年級</option>').join('')+'</select></label></div><button class="button" data-action="report-generate" id="report-button">'+icon('sparkles')+(report?'重新生成':'生成建議')+'</button></div><div id="advice-details"><div id="report-prose" class="report-prose">'+esc(report||quickAdvice(result))+'</div></div><p class="advice-placeholder" hidden>'+(s.report?'年級建議已更新，按「生成建議」看看吧。':'老師會按你的年級，說說下一次可以怎樣練。')+'</p></section>'+
-    '<section id="panel-scores" class="word-analysis" role="tabpanel" aria-labelledby="tab-scores"><div class="section-heading"><span>點字聽讀音</span><button class="button small" data-action="replay-all" '+(poem.lines.some((_,i)=>recordings.has(poem.id+'-'+i))?'':'disabled')+'>'+icon('headphones')+'全部回聽</button></div><div class="score-line-tabs" aria-label="選擇詩句">'+s.reading.map((r,i)=>r?'<button class="icon-button" data-action="score-line" data-value="'+i+'" aria-label="第'+(i+1)+'句">'+(i+1)+'</button>':'').join('')+'</div>'+
+  if(!result){$('#view').innerHTML='<div class="report-empty"><img class="empty-motif" src="'+poemMotif()+'" width="90" height="90" alt=""><h2>先讀一句，再看成果</h2><a class="button primary" href="'+link('record')+'">'+icon('mic')+'開始朗讀</a></div>';return;}
+  const keys=[['phone_score','發音準確度'],['fluency_score','流暢度'],['integrity_score','完整度']];
+  const scoreLabel=value=>typeof value==='number'&&Number.isFinite(value)?String(Math.round(clamp(value,0,100)*10)/10):'—';
+  $('#view').innerHTML='<div class="report-summary"><div class="score-ring"><div><strong>'+scoreLabel(result.total_score)+'</strong><span>朗讀得分</span></div></div><div class="report-dimensions"><p class="eyebrow">'+s.reading.filter(Boolean).length+' / '+poem.lines.length+' 句已完成</p><div class="dimension-grid">'+keys.map(([k,label])=>'<div class="dimension"><strong>'+scoreLabel(result.dimensions?.[k])+'</strong><span>'+label+'</span></div>').join('')+'</div></div></div>'+
+    '<section id="panel-scores" class="word-analysis" aria-label="詩句字音"><div class="section-heading"><span>點字聽讀音</span><button class="button small" data-action="replay-all" '+(poem.lines.some((_,i)=>recordings.has(poem.id+'-'+i))?'':'disabled')+'>'+icon('headphones')+'全部回聽</button></div><div class="score-line-tabs" aria-label="選擇詩句">'+s.reading.map((r,i)=>r?'<button class="icon-button" data-action="score-line" data-value="'+i+'" aria-label="第'+(i+1)+'句">'+(i+1)+'</button>':'').join('')+'</div>'+
     s.reading.map((lineResult,i)=>{
       if(!lineResult)return '';
       return '<div class="report-line" data-line="'+i+'"><div class="report-line-heading"><h3>第'+(i+1)+'句</h3><span>'+esc(poem.lines[i].text)+'</span><button class="icon-button" data-action="replay" data-value="'+i+'" aria-label="回聽第'+(i+1)+'句錄音" title="回聽第'+(i+1)+'句錄音" '+(recordings.has(poem.id+'-'+i)?'':'disabled')+'>'+icon('headphones')+'</button></div><div class="word-grid">'+lineResult.words.map(w=>'<button class="word-result '+w.status+'" data-action="word-tts" data-value="'+esc(w.c)+'" data-pinyin="'+esc(w.p)+'" title="聽'+esc(w.c)+'的讀音"><ruby>'+esc(w.c)+'<rt>'+esc(w.p)+'</rt></ruby><strong>'+(w.score??'未測')+'</strong>'+icon('volume-2')+'</button>').join('')+'</div><a class="button small" href="'+link('record')+'" data-action="record-target" data-value="'+i+'">'+icon('mic')+'再讀這一句</a></div>';
-    }).join('')+'</section></div><nav class="report-next-activities" aria-label="繼續學習">'+[['record','mic','AI讀古詩'],['quiz','flag','練習小遊戲'],['chat','messages-square','和詩人聊天']].map(([id,symbol,label])=>'<a href="'+link(id)+'">'+icon(symbol)+'<span>'+label+'</span></a>').join('')+'</nav>';
+    }).join('')+'</section><nav class="report-next-activities" aria-label="繼續學習">'+[['record','mic','AI讀古詩'],['quiz','flag','練習小遊戲'],['chat','messages-square','和詩人聊天']].map(([id,symbol,label])=>'<a href="'+link(id)+'">'+icon(symbol)+'<span>'+label+'</span></a>').join('')+'</nav>';
   if(!s.reading[reportLine])reportLine=s.reading.findIndex(Boolean);
-  updateReportTab();updateScoreLine();renderFocusedPractice();icons();
-  if(school.enabled)$('#report-grade').disabled=true;
-  if(!report&&s.reading.every(Boolean))queueMicrotask(()=>{if(view==='report'&&$('#report-button')&&!$('#report-button').disabled)generateReport();});
+  updateScoreLine();icons();
 }
 function updateReportTab(){
-  document.querySelectorAll('[data-action="report-tab"]').forEach(button=>{const active=button.dataset.value===reportTab;button.setAttribute('aria-selected',String(active));button.tabIndex=active?0:-1;$('#panel-'+button.dataset.value).hidden=!active;});
-  $('.report-summary').hidden=reportTab!=='scores';
-  if($('#practice-options'))$('#practice-options').hidden=reportTab!=='practice';
+  // Older navigation state must not hide the single results view.
+  if($('.report-summary'))$('.report-summary').hidden=false;
 }
 function updateScoreLine(){
   document.querySelectorAll('.report-line').forEach(line=>line.hidden=Number(line.dataset.line)!==reportLine);
   document.querySelectorAll('[data-action="score-line"]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.value)===reportLine)));
 }
 async function generateReport() {
-  const button=$('#report-button');if(button.disabled)return;button.disabled=true;const version=routeVersion,p=poem,generation=++reportGeneration,grade=studentGrade(p);const result=poemAssessment(p);
+  const button=$('#report-button');if(!button||button.disabled)return;button.disabled=true;const version=routeVersion,p=poem,generation=++reportGeneration,grade=studentGrade(p);const result=poemAssessment(p);
   const audit=research.context({itemId:'p'+p.id+'.report',activity:'read'}),requestedAt=performance.now();
   research.emit('hint_used',{poemId:p.id,activity:'read',attemptId:audit.attemptId,itemId:audit.itemId,hint:{kind:'explanation',count:1}});
   $('#advice-details').hidden=false;$('#advice-details').open=true;
   $('.advice-placeholder').hidden=true;
   $('#report-prose').textContent=currentReport(p)||quickAdvice(result);button.setAttribute('aria-busy','true');button.innerHTML=icon('sparkles')+'整理中…';icons();
   try{
-    const data=await api('/api/maanshan-report',{poemId:p.id,studentGrade:grade,soeResult:{...result,linesCompleted:state(p).reading.filter(Boolean).length},...(school.enabled?{researchContext:audit}:{})});
+    const data=await api('/api/maanshan-report',{poemId:p.id,studentGrade:grade,soeResult:{...result,linesCompleted:state(p).reading.filter(Boolean).length},...(collectResearch?{researchContext:audit}:{})});
     if(version!==routeVersion||generation!==reportGeneration)return;
     if(!data.report||data.studentGrade!==grade||data.reportVersion!==REPORT_VERSION)throw new Error('建議尚未生成，請稍後再試。');
     Object.assign(state(p),{report:data.report,reportStudentGrade:grade,reportVersion:REPORT_VERSION});
@@ -711,7 +713,7 @@ async function loadActivity(name,load) {
 }
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260920-school1'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260920-final4'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
@@ -720,7 +722,7 @@ async function renderQuiz() {
     onResearch:(type,fields)=>research.emit(type,{...fields,poemId:p.id}),
     onAnswer:answer=>{if(!school.enabled)return;queueMicrotask(()=>queueReading(p));const audit={...research.context({...answer}),poemId:p.id};if(!answerOutbox.enqueue({poemId:p.id,itemId:answer.itemId,status:answer.status,response:answer.response||{},researchContext:audit}))research.emit('error',{poemId:p.id,activity:answer.activity,attemptId:answer.attemptId,itemId:answer.itemId,error:{code:'storage_unavailable',retryable:false}});},
     playAudio:playChallengeAudio,stopAudio:stopMedia,
-    recognize:(ink,context)=>api('/api/handwriting',{ink,...(school.enabled?{researchContext:research.context(context)}:{})},16000)});
+    recognize:(ink,context)=>api('/api/handwriting',{ink,poemId:poem.id,...(collectResearch?{researchContext:research.context(context)}:{})},16000)});
 }
 async function renderExploration(){
   const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260920a'));
@@ -777,7 +779,7 @@ async function sendChat(text,retry=false) {
   $('#chat-error').innerHTML='<span class="spinner"></span><span>正在想一想…</span>';
   const waiting=setTimeout(()=>{if(version===routeVersion&&chatBusy)$('#chat-error').innerHTML='<span class="spinner"></span><span>還在等回覆，你的問題已保留。</span>';},8000);
   try {
-    const data=await api('/api/maanshan-chat/',{poemId:p.id,grade:Math.min(studentGrade(p),p.grade),messages:s.chat.slice(-10),...(school.enabled?{researchContext:audit}:{})},30000,true);
+    const data=await api('/api/maanshan-chat/',{poemId:p.id,grade:Math.min(studentGrade(p),p.grade),messages:s.chat.slice(-10),...(collectResearch?{researchContext:audit}:{})},30000,true);
     if(version!==routeVersion)return;
     if(typeof data.reply!=='string'||!data.reply.trim())throw new Error('暫時未能回答，可以再送一次。');
     s.chat.push({role:'assistant',content:data.reply});persist();renderChat();
@@ -877,8 +879,9 @@ function renderRecordSyncStatus(){
   const pending=states.reduce((n,s)=>n+(s.pending||0),progressPending),held=states.reduce((n,s)=>n+(s.held||0),0),volatile=states.reduce((n,s)=>n+(s.volatile||0),Object.hasOwn(memoryStore,PENDING)?progressPending:0);
   const unavailable=states.some(s=>s.storageAvailable===false);
   const busy=states.some(s=>s.lastStatus==='syncing');
-  target.querySelector('strong').textContent=held?'部分紀錄需要檢查':volatile||unavailable?'請先保留這個頁面':pending?'學習紀錄正在儲存':'學習紀錄已送達';
-  target.querySelector('p').textContent=held?'已保留有問題的紀錄，其餘紀錄會繼續上傳。請老師協助查看。':volatile||unavailable?'暫時無法使用裝置儲存，請保留本頁；連線後請按「再試同步」。':pending?'還有 '+pending+' 筆紀錄等待上傳。連線後會自動補傳。':'老師的資料會在下一次整理後更新，通常約五分鐘。';
+  target.hidden=!pending&&!held&&!volatile&&!unavailable;
+  target.querySelector('strong').textContent=held?'部分紀錄需要檢查':volatile||unavailable?'請先保留這個頁面':pending?'學習紀錄正在儲存':'';
+  target.querySelector('p').textContent=held?'已保留有問題的紀錄，其餘紀錄會繼續上傳。請老師協助查看。':volatile||unavailable?'暫時無法使用裝置儲存，請保留本頁；連線後請按「再試同步」。':pending?'還有 '+pending+' 筆紀錄等待上傳。連線後會自動補傳。':'';
   const button=target.querySelector('button');button.hidden=!pending&&!unavailable;button.disabled=busy;button.textContent=busy?'正在同步…':'再試同步';
 }
 function openProfile(){
@@ -894,7 +897,7 @@ function openProfile(){
     $('#profile-dialog .eyebrow').textContent='學校學習檔案';
     let account=$('#school-account-summary');
     if(!account){account=document.createElement('div');account.id='school-account-summary';account.className='school-account-summary';$('#profile-dialog').append(account);}
-    account.innerHTML='<p>'+esc(school.user.displayName)+' · '+school.user.grade+esc(school.user.cls)+'班 · '+esc(school.user.classNo||'')+'號</p><section id="school-record-sync" role="status" aria-live="polite"><strong></strong><p></p><button class="button small" type="button">再試同步</button></section><button class="button school-account-logout" type="button">登出帳戶</button>';
+    account.innerHTML='<p>'+esc(school.user.displayName)+(isTeacher?' · 教師帳戶':allGrades?' · 測試帳戶':' · '+school.user.grade+esc(school.user.cls)+'班 · '+esc(school.user.classNo||'')+'號')+'</p><section hidden id="school-record-sync" role="status" aria-live="polite"><strong></strong><p></p><button class="button small" type="button">再試同步</button></section><button class="button school-account-logout" type="button">登出帳戶</button>';
     renderRecordSyncStatus();
     account.querySelector('#school-record-sync button').onclick=()=>void Promise.allSettled([research.flush({force:true}),answerOutbox.flush({force:true}),sync.flush()]);
     account.querySelector('.school-account-logout').onclick=async event=>{const button=event.currentTarget;button.disabled=true;try{stopMedia();cancelRecording();await Promise.race([Promise.allSettled([sync.flush(),research.flush({keepalive:true}),answerOutbox.flush({keepalive:true})]),new Promise(resolve=>setTimeout(resolve,2000))]);await logoutSchoolSession();}catch{button.disabled=false;toast('暫時未能登出，請再試一次。');}};
@@ -925,7 +928,9 @@ async function init(){
     if(responses.some(response=>!response.ok))throw new Error('catalog');
     const [data,pronunciation]=await Promise.all(responses.map(response=>response.json()));
     if(sessionLocked)return;
-    poems=data.poems;if(!Array.isArray(poems)||!poems.length)throw new Error('catalog');
+    if(!Array.isArray(data.poems)||!data.poems.length)throw new Error('catalog');
+    poems=school.enabled&&!allGrades ? data.poems.filter(p=>p.grade===Number(school.user.grade)) : data.poems;
+    if(!poems.length)throw new Error('catalog-grade');
     configurePronunciation(pronunciation);route();sync.flush();answerOutbox.flush();icons();
     if(school.enabled)void(async()=>{
       const hydratedRoute=routeVersion;

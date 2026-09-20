@@ -3,17 +3,19 @@ import studentStore from './_lib/student-store.js';
 import { get as getBlob } from '@vercel/blob';
 
 async function progress(req) {
-  const actor = await auth.requireActor(req, { roles: ['student'] });
+  const actor = await auth.requireActor(req, { roles: ['student','teacher'] });
   if (!actor) throw new auth.AuthError(403, 'AUTH_DISABLED');
   const poems = {};
+  const allowedPoems=auth.allowedPoemIds(actor);
   if (studentStore.mode()) {
-    const targets = Array.from({ length: 6 }, (_, i) => i + 1).flatMap(poem_id =>
+    const targets = allowedPoems.flatMap(poem_id =>
       ['reading', 'writing', 'report'].map(section => ({ poem_id, section })));
     let next = 0;
     await Promise.all(Array.from({ length: 4 }, async () => {
       while (next < targets.length) {
         const target = targets[next++];
-        const path = studentStore.recordPath({ student_id: actor.id, grade: actor.grade, cls: actor.cls, ...target });
+        const grade=auth.assertPoemAccess(actor,target.poem_id).grade;
+        const path = studentStore.recordPath({ student_id: actor.id, grade, cls: actor.cls||'T', ...target });
         const result = await getBlob(path, { access: 'private', useCache: false, abortSignal: AbortSignal.timeout(7000) });
         if (!result) continue;
         if (result.statusCode !== 200 || !result.stream || result.blob.size > studentStore.MAX_RECORD_BYTES) {
@@ -33,9 +35,9 @@ async function progress(req) {
     const pool = auth.getStore().pool;
     if (!pool) throw new Error('Progress database unavailable');
     const rows = (await pool.query(`SELECT DISTINCT ON (poem_id,section) poem_id,section,payload
-      FROM student_data WHERE student_id=$1 AND grade=$2 AND cls=$3
-      ORDER BY poem_id,section,updated_at DESC,id DESC`, [actor.id, actor.grade, actor.cls])).rows;
-    for (const row of rows) (poems[row.poem_id] ||= {})[row.section] = row.payload;
+      FROM student_data WHERE student_id=$1 AND ($2::int IS NULL OR grade=$2) AND cls=$3 AND poem_id=ANY($4::int[])
+      ORDER BY poem_id,section,updated_at DESC,id DESC`, [actor.id, auth.allGrades(actor)?null:actor.grade, actor.cls||'T',allowedPoems])).rows;
+    for (const row of rows) if(allowedPoems.includes(row.poem_id))(poems[row.poem_id] ||= {})[row.section] = row.payload;
   }
   return { enabled: true, userId: actor.id, poems };
 }

@@ -172,11 +172,15 @@ test('quality review persists an undisclosed draft, one leased model revision us
  assert.equal((await svc.getReport(initial.reportId)).dataset.students[0].displayName,'PRIVATE_NAME');
 });
 test('a revision still violating content rules never becomes an exportable report',async()=>{
- let calls=0;const svc=service({fetchImpl:async()=>{calls++;return provider({...validOutput(),overview:'整體能力中等。'});}});
+ let calls=0;const store=memoryStore(),svc=service({store,fetchImpl:async()=>{calls++;return provider({...validOutput(),overview:'整體能力中等。'});}});
  const first=await svc.generate({},dataset().filters,teacher);assert.equal(first.nextAction,'continue');
  await assert.rejects(svc.continueReport(first.reportId,teacher),e=>e.code==='AI_REPORT_QUALITY');assert.equal(calls,2);
  await assert.rejects(svc.getReport(first.reportId),e=>e.code==='AI_REPORT_QUALITY');
  await assert.rejects(svc.continueReport(first.reportId,teacher),e=>e.code==='AI_REPORT_QUALITY');assert.equal(calls,2);
+ const failed=store.data.get('report/'+first.reportId.slice(3)).value;
+ assert.equal(failed.promptVersion,analysis.PROMPT_VERSION);
+ assert.deepEqual(failed.qualityIssues,[{code:'UNSUPPORTED_ABILITY_LEVEL',path:'overview'}]);
+ assert.doesNotMatch(JSON.stringify(failed),/整體能力|PRIVATE_|draftReport|evidenceIds/);
 });
 test('continuation is a teacher-CSRF POST and accepts only a report identity',async()=>{
  let continued=0;const handler=createHandler({authModule:{requireActor:async(req,options)=>{assert.equal(options.csrf,true);return teacher;}},analysisModule:{continueReport:async(id,actor)=>{continued++;assert.equal(id,'ta_'+'a'.repeat(64));assert.equal(actor,teacher);return {ok:true,status:'generating',reportId:id,retryAfterSeconds:3};}}});
@@ -206,7 +210,7 @@ test('a completed v7 report cannot satisfy the new teacher-prose generation cach
  const oldId='ta_'+research.hash(research.canonical({dataFingerprint,model:env.TEACHER_AI_MODEL,provider:analysis.modelConfig(env).url,promptVersion:'teacher-analysis-v7-reviewed-demo'}));
  store.data.set('report/'+oldId.slice(3),{version:'1',value:{status:'completed',report:{reportId:oldId,analysis:{overview:'Old technical report'}}}});
  let calls=0;const svc=service({store,fetchImpl:async()=>{calls++;return provider({...validOutput(),limitations:[]});}}),result=await svc.generate({},input.filters,teacher);
- assert.notEqual(result.reportId,oldId);assert.equal(result.cached,false);assert.equal(calls,1);assert.equal(result.report.promptVersion,'teacher-analysis-v8-teacher-voice');
+ assert.notEqual(result.reportId,oldId);assert.equal(result.cached,false);assert.equal(calls,1);assert.equal(result.report.promptVersion,analysis.PROMPT_VERSION);
 });
 
 test('technical or repetitive demo prose is revised without releasing the draft as a report',async()=>{

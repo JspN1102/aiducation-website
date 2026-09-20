@@ -1,4 +1,5 @@
-import {imageAsset} from './media-images.mjs?v=20260920-images1';
+import {imageAsset} from './media-images.mjs?v=20260920-art2';
+import {loadTeachingImage} from './image-loader.mjs?v=20260920-art2';
 const mountedStages = new WeakMap();
 const decodedSources = new Map();
 const MAX_CACHED_SOURCES = 8;
@@ -22,30 +23,7 @@ function checkScene(scene) {
 function decodeSource(url, reload = false) {
   if (reload) decodedSources.delete(url);
   if (decodedSources.has(url)) return decodedSources.get(url);
-  const image = new Image();
-  image.decoding = 'async';
-  image.fetchPriority = 'high';
-  const target = new URL(url);
-  if (reload) target.searchParams.set('scene-retry', String(Date.now()));
-  let timer;
-  const loaded = new Promise((resolve, reject) => {
-    image.onload = resolve;
-    image.onerror = () => reject(new Error('Scene image could not be loaded.'));
-    timer = setTimeout(() => reject(new Error('Scene image loading timed out.')), 12000);
-  });
-  image.src = target.href;
-  const decoded = loaded.then(async () => {
-    // WebKit can leave decode() on a detached/cached image pending. The load
-    // event and intrinsic dimensions are enough to safely present this image.
-    if (!image.naturalWidth || !image.naturalHeight) throw new Error('Scene image has no decoded pixels.');
-    image.onload = null;
-    image.onerror = null;
-    clearTimeout(timer);
-    return image;
-  }).catch(error => {
-    image.onload = null;
-    image.onerror = null;
-    clearTimeout(timer);
+  const decoded = loadTeachingImage(url, {reload}).catch(error => {
     if (decodedSources.get(url) === decoded) decodedSources.delete(url);
     throw error;
   });

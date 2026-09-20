@@ -40,6 +40,7 @@ export function createAnswerOutbox({actorId,csrfToken,enabled=true,storage,fetch
           const response=await fetchImpl('/api/challenge-result/',{method:'POST',credentials:'same-origin',keepalive,
             headers:{'Content-Type':'application/json','X-CSRF-Token':csrfToken},body:JSON.stringify(record),signal:controller.signal});
           const result=await response.json().catch(()=>null),code=result?.code||result?.error;
+          if(response.status===422&&['POEM_GRADE_FORBIDDEN','RESEARCH_EXCLUDED'].includes(code)){queue.acknowledge([record.researchContext.requestId]);continue;}
           if([401,403].includes(response.status)||(response.status===409&&code==='ACTOR_CHANGED')){stopped=true;notify('session_changed');return;}
           if([400,409,413].includes(response.status)){queue.hold(record.researchContext.requestId,'answer_rejected');continue;}
           if(!response.ok||result?.ok!==true||result.researchRecorded!==true)throw Error('unconfirmed');

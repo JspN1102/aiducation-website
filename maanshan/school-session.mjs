@@ -1,4 +1,4 @@
-import {mountShishiSprite} from './shishi-sprite.mjs?v=20260920-ui1';
+import {mountShishiSprite} from './shishi-sprite.mjs?v=20260920-final4';
 // The cookie is HttpOnly. Only the current user's display profile and CSRF
 // token live in memory; passwords and bearer credentials are never persisted.
 let current = {enabled: false, authenticated: false, user: null, csrfToken: ''};
@@ -46,7 +46,7 @@ export async function schoolFetch(url, options = {}) {
   return response;
 }
 export async function loadSchoolProgress() {
-  if (!current.enabled || current.user?.role !== 'student') return null;
+  if (!current.enabled || !['student','teacher'].includes(current.user?.role)) return null;
   const actorId = current.user.id;
   const response = await schoolFetch('/api/school-auth/?action=progress', {signal:AbortSignal.timeout(20000)});
   if (!response.ok) throw new Error('學習進度暫時未能同步。');
@@ -197,8 +197,7 @@ export async function initializeSchoolSession(host) {
     if (blocked) return new Promise(() => {});
     current = signedIn;
   }
-  if (current.user?.role === 'teacher') { location.replace('teacher.html'); return new Promise(() => {}); }
-  if (current.user?.role !== 'student' || !current.csrfToken) throw new Error('Invalid school session');
+  if (!['student','teacher'].includes(current.user?.role) || !current.csrfToken) throw new Error('Invalid school session');
   document.querySelector('#profile-open')?.removeAttribute('hidden');
   let checking = false;
   document.addEventListener('visibilitychange', async () => {

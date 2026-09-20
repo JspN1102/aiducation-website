@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const WebSocket = require('ws');
+const {gunzipSync} = require('node:zlib');
 const { assessmentReference } = require('./_lib/soe-reference');
 const {withSchoolLearning} = require('./_lib/school-learning.cjs');
 
@@ -37,6 +38,16 @@ module.exports = withSchoolLearning('reading', async function handler(req, res) 
 
   const { audio, refText } = req.body || {};
   if (!audio || !refText) return res.status(400).json({ error: 'Missing audio or refText' });
+  const started = performance.now();
+  let audioBuf;
+  try {
+    if (typeof audio !== 'string' || audio.length > 4 * 1024 * 1024 || !/^[A-Za-z0-9+/]+={0,2}$/.test(audio)) throw new Error('Invalid audio');
+    audioBuf = Buffer.from(audio, 'base64');
+    if (req.body.audioCompression === 'gzip') audioBuf = gunzipSync(audioBuf, {maxOutputLength: 3 * 1024 * 1024});
+    else if (req.body.audioCompression != null) throw new Error('Unsupported audio compression');
+    if (!audioBuf.length || audioBuf.length > 3 * 1024 * 1024) throw new Error('Invalid audio');
+  } catch { return res.status(400).json({error: 'Invalid audio encoding'}); }
+  const prepared = performance.now();
 
   const secretId = process.env.TENCENT_SECRET_ID;
   const secretKey = process.env.TENCENT_SECRET_KEY;
@@ -67,21 +78,36 @@ module.exports = withSchoolLearning('reading', async function handler(req, res) 
   const { url } = buildWsUrl(params, secretKey);
 
   return new Promise((resolve) => {
-    let result = null;
+    let result = null, connected = null;
     let settled = false;
     const timeout = setTimeout(() => {
       if (!settled) {
         settled = true;
-        try { ws.close(); } catch (_) {}
+        try { ws.terminate(); } catch (_) {}
         res.status(504).json({ error: 'Evaluation timeout' });
         resolve();
       }
     }, 20000);
 
-    const ws = new WebSocket(url);
+    const ws = new WebSocket(url, {handshakeTimeout: 8000, perMessageDeflate: false});
+
+    function finishResult() {
+      if (settled) return;
+      settled = true;clearTimeout(timeout);
+      const completed = performance.now();
+      res.setHeader('Server-Timing', `audio_prepare;dur=${(prepared-started).toFixed(1)}, soe_connect;dur=${((connected||completed)-prepared).toFixed(1)}, soe_score;dur=${(completed-(connected||prepared)).toFixed(1)}, soe_total;dur=${(completed-started).toFixed(1)}`);
+      if (result?.result) res.status(200).json(mapResult(result.result));
+      else res.status(502).json({error: 'No final result received'});
+      // The final scores are already complete. A slow peer close must not keep
+      // the learner waiting or make the final response time out.
+      ws.close();
+      const closing = setTimeout(() => { try { ws.terminate(); } catch (_) {} }, 1000);
+      closing.unref?.();ws.once('close', () => clearTimeout(closing));
+      resolve();
+    }
 
     ws.on('open', () => {
-      const audioBuf = Buffer.from(audio, 'base64');
+      connected = performance.now();
       ws.send(audioBuf);
       ws.send(JSON.stringify({ type: 'end' }));
     });
@@ -100,8 +126,8 @@ module.exports = withSchoolLearning('reading', async function handler(req, res) 
           return;
         }
         if (msg.final === 1) {
-          result = msg;
-          ws.close();
+          if (msg.result) result = msg;
+          finishResult();
         } else if (msg.result) {
           result = msg;
         }
@@ -112,13 +138,7 @@ module.exports = withSchoolLearning('reading', async function handler(req, res) 
       if (!settled) {
         settled = true;
         clearTimeout(timeout);
-        if (result && result.result) {
-          res.status(200).json(mapResult(result.result));
-        } else if (result) {
-          res.status(200).json(result);
-        } else {
-          res.status(502).json({ error: 'No result received' });
-        }
+        res.status(502).json({ error: 'No final result received' });
         resolve();
       }
     });

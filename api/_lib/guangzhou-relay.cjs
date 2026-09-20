@@ -49,6 +49,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
   if(active>=16)return fail(res,503,'SERVICE_BUSY');
   active++;
   let upstream,channel,timer,done=false;
+  const startedAt=now();let connectedAt=startedAt,channelAt=startedAt;
   const close=()=>{upstream?.destroy();channel?.destroy();};
   const disconnected=()=>{if(!res.writableEnded){done=true;close();}};
   res.once('close',disconnected);
@@ -63,6 +64,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
      // Never retry once a channel/request has been opened.
      let client;try{client=await tunnel();}catch{if(done||res.destroyed){finish();return;}client=await tunnel(true);}
      if(done||res.destroyed){finish();return;}
+     connectedAt=now();
      const headers={host:'mandarin.aiducation.asia','accept-encoding':'identity','x-forwarded-proto':'https',connection:'close'};
      for(const key of ['origin','cookie','content-type','x-csrf-token','sec-fetch-site','accept','user-agent','if-none-match','range'])if(typeof req.headers?.[key]==='string')headers[key]=req.headers[key];
      // Vercel supplies this client address; never trust caller-provided X-Real-IP.
@@ -72,7 +74,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
      client.forwardOut('127.0.0.1',0,'127.0.0.1',3100,(failure,stream)=>{
       if(failure)return error(503,'ORIGIN_UNAVAILABLE');
       if(done||res.destroyed){stream.destroy();finish();return;}
-      channel=stream;
+      channel=stream;channelAt=now();
       upstream=request({host:'127.0.0.1',port:3100,method:req.method,path:'/api/'+name+url.search,headers,createConnection:()=>stream},response=>{
        if(done){response.destroy();return;}
        const chunks=[];let size=0;
@@ -86,6 +88,9 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
          const hop=new Set([...HOP,...String(response.headers.connection||'').toLowerCase().split(',').map(x=>x.trim())]);
          for(const [key,value]of Object.entries(response.headers))if(value!==undefined&&!hop.has(key)&&key!=='content-length')res.setHeader(key,value);
          res.setHeader('Cache-Control','private, no-store');res.setHeader('X-Content-Type-Options','nosniff');
+         const duration=(from,to)=>Math.max(0,to-from).toFixed(1);
+         const originTiming=typeof response.headers['server-timing']==='string'?response.headers['server-timing']+', ':'';
+         res.setHeader('Server-Timing',originTiming+'relay_connect;dur='+duration(startedAt,connectedAt)+', relay_channel;dur='+duration(connectedAt,channelAt)+', relay_origin;dur='+duration(channelAt,now()));
          const result=Buffer.concat(chunks);
          if(req.method!=='HEAD')res.setHeader('Content-Length',result.length);
          res.end(req.method==='HEAD'?undefined:result);

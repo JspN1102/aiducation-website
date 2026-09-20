@@ -51,6 +51,9 @@ function validAccount(a) {
     typeof a.displayName === 'string' && a.displayName.length > 0 && a.displayName.length <= 128 &&
     typeof a.active === 'boolean' && /^[a-f0-9]{32}$/.test(a.authVersion) && validPassword(a.password) &&
     (a.authGeneration === undefined || (Number.isSafeInteger(a.authGeneration) && a.authGeneration >= 0)) &&
+    (a.isTest === undefined || typeof a.isTest === 'boolean') &&
+    (a.learningScope === undefined || ['own-grade','all-grades'].includes(a.learningScope)) &&
+    (a.learningScope !== 'all-grades' || a.role === 'teacher' || a.isTest === true) &&
     (a.role === 'teacher' ? a.grade === null && a.cls === null && a.classNo === null :
       Number.isInteger(a.grade) && a.grade >= 1 && a.grade <= 6 && /^[A-Z]$/.test(a.cls) &&
       Number.isInteger(a.classNo) && a.classNo >= 1 && a.classNo <= 99);
@@ -63,7 +66,18 @@ function validateDirectory(data) {
   return data;
 }
 function publicActor(account) {
-  return Object.fromEntries(['id', 'researchId', 'role', 'login', 'displayName', 'grade', 'cls', 'classNo'].map(key => [key, account[key]]));
+  return {...Object.fromEntries(['id', 'researchId', 'role', 'login', 'displayName', 'grade', 'cls', 'classNo'].map(key => [key, account[key]])),
+    isTest: account.isTest === true, learningScope: allGrades(account) ? 'all-grades' : 'own-grade', researchEnabled: researchEligible(account)};
+}
+function allGrades(actor) { return actor?.role === 'teacher' || actor?.role === 'student' && actor.isTest === true && actor.learningScope === 'all-grades'; }
+function researchEligible(actor) { return actor?.role === 'student' && actor.isTest !== true; }
+function allowedPoemIds(actor) { return require('../../maanshan/poems.json').poems.filter(poem => allGrades(actor) || actor?.role === 'student' && poem.grade === actor.grade).map(poem => poem.id); }
+function assertPoemAccess(actor, poemId) {
+  const poem = require('./poems.js').getPoem(poemId, null);
+  if (!poem) fail(400, 'INVALID_LEARNING_CONTEXT');
+  if (!['student','teacher'].includes(actor?.role)) fail(403, 'ROLE_FORBIDDEN');
+  if (!allGrades(actor) && poem.grade !== actor.grade) fail(422, 'POEM_GRADE_FORBIDDEN');
+  return poem;
 }
 
 function createBlobStore(client = blob) {
@@ -216,7 +230,7 @@ function createAuth({ env = process.env, store: suppliedStore, now = Date.now, r
     const account = (await store().get('account/' + record.actorId))?.value;
     if (!account?.active || !same(account.authVersion, record.authVersion) || account.user?.id !== record.actorId ||
         !RESEARCH_ID.test(account.user?.researchId) || !['student', 'teacher'].includes(account.user?.role)) return null;
-    return { actor: Object.freeze({ ...account.user }), csrfToken: record.csrf };
+    return { actor: Object.freeze(publicActor(account.user)), csrfToken: record.csrf };
   }
   function session(req) {
     // Reuse only within one incoming HTTP request. Provider wrappers and event
@@ -304,7 +318,7 @@ function createAuth({ env = process.env, store: suppliedStore, now = Date.now, r
     if (!actor) fail(403, 'AUTH_DISABLED');
     const data = await directory();
     await audit('roster_read', actor);
-    const accounts = data.accounts.filter(a => a.active).map(publicActor);
+    const accounts = data.accounts.filter(a => a.active && a.isTest !== true).map(publicActor);
     return { enabled: true, students: accounts.filter(a => a.role === 'student'), teachers: accounts.filter(a => a.role === 'teacher'), updatedAt: data.generatedAt };
   }
   async function listAccounts(req, filters = {}) {
@@ -371,13 +385,14 @@ function sendError(res, error) {
   const code = error instanceof AuthError ? error.code : 'AUTH_UNAVAILABLE';
   const messages = { INVALID_CREDENTIALS: '登入名稱或密碼不正確', AUTH_REQUIRED: '請先登入', LOGIN_THROTTLED: '嘗試次數較多，請稍後再試',
     ROLE_FORBIDDEN: '此帳戶沒有權限', AUTH_UNAVAILABLE: '登入服務暫時未能使用，請稍後再試', CSRF_REJECTED: '帳戶已變更，請重新整理後再試', ORIGIN_REJECTED: '請從學校平台登入',
-    PASSWORD_REQUIREMENTS: '新密碼請使用至少 8 個字元', CURRENT_PASSWORD_INVALID: '目前密碼不正確，請再核對一次', ACCOUNT_CHANGED: '帳戶已更新，請重新登入' };
+    PASSWORD_REQUIREMENTS: '新密碼請使用至少 8 個字元', CURRENT_PASSWORD_INVALID: '目前密碼不正確，請再核對一次', ACCOUNT_CHANGED: '帳戶已更新，請重新登入',
+    POEM_GRADE_FORBIDDEN: '請練習自己年級的古詩', INVALID_LEARNING_CONTEXT: '請重新選擇古詩練習' };
   const retryAfter = status === 429 ? Math.min(900, Math.max(1, Math.ceil(Number(error.retryAfter) || 900))) : undefined;
   if (retryAfter) res.setHeader('Retry-After', String(retryAfter));
   res.setHeader('Cache-Control', 'private, no-store');
-  return res.status(status).json({ ok: false, error: messages[code] || '未能完成操作', code, ...(retryAfter ? { retryAfter } : {}) });
+  return res.status(status).json({ ok: false, error: messages[code] || '未能完成操作', code, ...(retryAfter ? { retryAfter } : {}), ...(code==='POEM_GRADE_FORBIDDEN'?{retryable:false}:{}) });
 }
 const singleton = createAuth();
 module.exports = { NAMESPACE, COOKIE, SESSION_MS, FORMAT, SCHEMA, AuthError, Conflict, MAX_OBJECT,
-  hashPassword, verifyPassword, normalizeLogin, validateDirectory, directoryHash, validAccount, publicActor,
+  hashPassword, verifyPassword, normalizeLogin, validateDirectory, directoryHash, validAccount, publicActor, allGrades, researchEligible, allowedPoemIds, assertPoemAccess,
   createBlobStore, createPostgresStore, getStore, createAuth, sendError, ...singleton };

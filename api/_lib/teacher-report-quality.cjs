@@ -3,7 +3,7 @@
 // It reports actionable issues; it never rewrites claims or creates evidence.
 const MAX_ISSUES=8;
 const WRITE=/(?:默[寫写]|聽寫|听写|書寫|书写|抄[寫写]|練[寫写]|练写|[寫写]字|書空|书空|描紅|描红|筆順|笔顺|[寫写](?:出|好|上)|[寫写](?=[「『“"：:])|[寫写].{0,4}(?:字|詞|词))/u;
-const READ=/(?:朗[讀读]|跟[讀读]|聆[聽听]|[聽听][選选辨]|[讀读]音)/u;
+const READ=/(?:朗[讀读]|跟[讀读]|聆[聽听]|[聽听][選选辨]|[讀读]音|(?:示範|示范).{0,20}(?:《|原句|首句|第[一二三四五六]句))/u;
 const NEGATION=/(?:不能|不可|不應|不应|不要|不宜|不得|不必|毋須|毋须|無須|无需|無法|无法|未能|未必|並非|并非|不是|不代表|不等於|不等于|沒有依據|没有依据|尚無依據|尚无依据|沒有證據|没有证据|未有證據|未有证据|避免|禁止|不安排|不要求)/u;
 function clauses(value){return String(value||'').split(/[。！？!?；;\n，,]/u).filter(Boolean);}
 function negated(clause,index){
@@ -45,6 +45,25 @@ function appliesToGrade(text,grade,fallback=true){
   if(/低[小年]|一二年/u.test(text))return grade<=2;
   if(/中高年|中[小年]|高[小年]/u.test(text))return false;
   return fallback;
+}
+function scopedClauses(text,grade,fallback){
+  let applies=fallback;const mentioned=new Set(),result=[];
+  // Providers also write targets followed by grade labels, e.g.
+  // 「鵝」（一年級）或「舟」（二年級）. These are distinct scoped choices.
+  for(const group of clauses(text)){
+    let inheritedWriting=false;
+    for(const clause of group.split(/(?<=[）)])(?:或|及|和|與|与|、)/u)){
+      const writes=asserted(clause,WRITE);
+      if(writes)inheritedWriting=true;else if(READ.test(clause))inheritedWriting=false;
+      const explicit=gradeNumbers(clause);
+      if(explicit.size){for(const value of explicit)mentioned.add(value);applies=explicit.has(grade);}
+      else if(/其[餘余]年[級级]|其他年[級级]/u.test(clause)&&mentioned.size)applies=!mentioned.has(grade);
+      else if(/各年[級级]|所有年[級级]/u.test(clause))applies=true;
+      else applies=appliesToGrade(clause,grade,applies);
+      if(applies)result.push({text:clause,writing:writes||inheritedWriting});
+    }
+  }
+  return result;
 }
 function quotedCharacters(text){
   const chars=[];
@@ -106,11 +125,14 @@ function inspectAnalysis(analysis,payload={}){
       const titleScope=appliesToGrade(title,grade,true);if(!titleScope)continue;
       const steps=(Array.isArray(item?.steps)?item.steps:[]).filter(value=>typeof value==='string');
       const writingTitle=asserted(title,WRITE);
-      const applicable=steps.filter(value=>appliesToGrade(value,grade,titleScope));
-      if(!writingTitle&&!applicable.some(value=>asserted(value,WRITE)))continue;
+      // One provider step can contain separate instructions for different
+      // grades. Keep each clause's targets within its stated grade, including
+      // an ensuing "other grades" instruction, instead of unioning all quotes.
+      const applicable=steps.flatMap(value=>scopedClauses(value,grade,titleScope));
+      if(!writingTitle&&!applicable.some(value=>value.writing))continue;
       hadWriting=true;firstPath ||= path;
-      for(const step of applicable){
-        if(READ.test(step)&&!asserted(step,WRITE))continue;
+      for(const {text:step,writing} of applicable){
+        if(READ.test(step)&&!writing)continue;
         const relevant=clauses(step).filter(clause=>!negated(clause,clause.length)).join('，');
         for(const char of quotedCharacters(relevant))seen.add(char);
         if(asserted(relevant,/(?:[2-9]\d*|[二兩两三四五六七八九十])\s*(?:個|个)?\s*(?:字|詞|词)|(?:一|1)\s*(?:個|个)?\s*(?:詞語|词语)|(?:各|每字|每個字|每个字).{0,4}(?:[寫写]|抄)|(?:[這这]些|上述|多[個个]|若干|[幾几數数][個个])(?:字|詞|词)/u))

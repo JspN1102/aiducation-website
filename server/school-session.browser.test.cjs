@@ -39,6 +39,15 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
   async function open(page, handler) { await page.route('**/api/school-auth/**', handler); await page.goto(origin + '/maanshan/fixture'); }
   async function enter(page) { await page.locator('input[name=login]').fill('test-pupil'); await page.locator('input[name=password]').fill('synthetic-password'); }
   try {
+    await run('teacher uses the common login and can load private study progress without automatic dashboard redirect',async page=>{
+      const teacher={...signedIn,user:{...signedIn.user,id:'t_'+'2'.repeat(24),role:'teacher',grade:null,cls:null,learningScope:'all-grades',researchEnabled:false}};let progressReads=0;
+      await open(page,route=>{
+        if(route.request().url().includes('action=progress')){progressReads++;return reply(route,{enabled:true,userId:teacher.user.id,poems:{6:{reading:{learningState:{reading:[]}}}}});}
+        return reply(route,route.request().method()==='POST'?teacher:signedOut);
+      });
+      await enter(page);await page.locator('[type=submit]').click();await page.waitForFunction(()=>window.ready);assert(page.url().endsWith('/maanshan/fixture'));
+      const progress=await page.evaluate(()=>window.session.loadSchoolProgress());assert(progress[6]);assert.equal(progressReads,1);assert.equal(await page.evaluate(()=>session.schoolState().user.role),'teacher');
+    });
     await run('one failing cleanup cannot leave the old pupil screen visible', async page => {
       await open(page, route => reply(route, signedIn));
       await page.waitForFunction(() => window.ready);

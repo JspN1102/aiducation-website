@@ -4,12 +4,12 @@ const https = require('node:https');
 
 const key = 'a'.repeat(64), storage = new Map();
 let synthesisCalls = 0;
-let lastSynthesisText, lastSynthesisVoice, lastCacheText;
+let lastSynthesisText, lastSynthesisVoice, lastCacheText, lastCacheProfile;
 const cachePath = require.resolve('../api/_lib/tts-cache');
 require.cache[cachePath] = {
   exports: {
     CACHE_VERSION: 'test',
-    cacheKey: ({text}) => { lastCacheText = text; return key; },
+    cacheKey: ({text,profile}) => { lastCacheText = text; lastCacheProfile=profile; return key; },
     hasAudio: async value => storage.has(value) ? {status: 'hit'} : {status: 'miss'},
     readAudio: async value => storage.has(value) ? {status: 'hit', audio: storage.get(value)} : {status: 'miss'},
     writeAudio: async (value, audio) => { storage.set(value, audio); return true; }
@@ -99,7 +99,18 @@ async function run() {
   storage.clear();
   const poemLine = '<speak><phoneme alphabet="py" ph="he4">荷</phoneme><phoneme alphabet="py" ph="chang2">長</phoneme><phoneme alphabet="py" ph="chong2">重</phoneme><phoneme alphabet="py" ph="zhong4">種</phoneme></speak>';
   await request('POST', {body: {...body, text: poemLine}});
-  assert.equal(lastSynthesisText, '<speak><break time="160ms"/><phoneme alphabet="py" ph="he4">贺</phoneme><phoneme alphabet="py" ph="chang2">常</phoneme><phoneme alphabet="py" ph="chong2">崇</phoneme><phoneme alphabet="py" ph="zhong4">仲</phoneme></speak>');
+  assert.equal(lastSynthesisText, '<speak><break time="160ms"/><phoneme alphabet="py" ph="he4 chang2 chong2 zhong4">贺常崇仲</phoneme></speak>');
+  assert.equal(lastCacheProfile, 'pcm-silence-180-80-v1-ssml-flow-v2');
+  storage.clear();
+  const connectedPoem = '<speak><phoneme alphabet="py" ph="qu1">曲</phoneme><phoneme alphabet="py" ph="xiang4">項</phoneme><phoneme alphabet="py" ph="xiang4">向</phoneme><phoneme alphabet="py" ph="tian1">天</phoneme><phoneme alphabet="py" ph="ge1">歌</phoneme>，<phoneme alphabet="py" ph="bai2">白</phoneme><phoneme alphabet="py" ph="mao2">毛</phoneme>。</speak>';
+  await request('POST', {body: {...body, text: connectedPoem}});
+  assert.equal(lastSynthesisText, '<speak><break time="160ms"/><phoneme alphabet="py" ph="qu1 xiang4 xiang4 tian1 ge1">区項向天歌</phoneme>，<phoneme alphabet="py" ph="bai2 mao2">白毛</phoneme>。</speak>');
+  storage.clear();
+  await request('POST', {body: {...body, text: '<speak><phoneme alphabet="py" ph="dai4 yue4 he4 chu2 gui1">帶月荷鋤歸</phoneme></speak>'}});
+  assert.equal(lastSynthesisText, '<speak><break time="160ms"/><phoneme alphabet="py" ph="dai4 yue4 he4 chu2 gui1">帶月贺鋤歸</phoneme></speak>');
+  storage.clear();
+  await request('POST', {body: {...body, text: '<speak><phoneme alphabet="py" ph="dao4 xia2 cao3 mu4 chang2">道狹草木長</phoneme></speak>'}});
+  assert.equal(lastSynthesisText, '<speak><break time="160ms"/><phoneme alphabet="py" ph="dao4 xia2 cao3 mu4 chang2">道狹草木常</phoneme></speak>');
   storage.clear();
   await request('POST', {body: {...body, text: '還有'}});
   assert.equal(lastSynthesisText, '<speak><break time="160ms"/>還有</speak>');

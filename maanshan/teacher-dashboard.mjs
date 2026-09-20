@@ -150,7 +150,7 @@ function overview(){
  const measured=students.map(readingScore),groups=[['80–100 分',measured.filter(v=>v!==null&&v>=80).length,'green'],['60–79 分',measured.filter(v=>v!==null&&v>=60&&v<80).length,'blue'],['低於 60 分',measured.filter(v=>v!==null&&v<60).length,'gold'],['未測',measured.filter(v=>v===null).length,'muted']];
  const max=Math.max(1,...groups.map(([,count])=>count));
  const chart=`<section class="class-chart performance-panel" aria-labelledby="reading-chart-title"><h2 id="reading-chart-title">朗讀分布</h2><div class="score-distribution">${groups.map(([label,count,tone])=>`<div class="distribution-row"><span>${label}</span><div class="distribution-track"><span class="distribution-fill ${tone}" style="width:${ready?count/max*100:0}%"></span></div><strong>${ready?count:'—'}<small>人</small></strong></div>`).join('')}</div><p class="chart-note">未測不計入平均分</p></section>`;
- return `<div class="kpi-grid">${cards}</div><div class="class-charts">${chart}<section class="class-chart participation-panel" aria-labelledby="participation-chart-title"><h2 id="participation-chart-title">每日參與</h2>${participationChart()}</section></div>${studentList()}`;
+ return `<div class="kpi-grid">${cards}</div><div class="class-charts">${chart}<section class="class-chart participation-panel" aria-labelledby="participation-chart-title"><h2 id="participation-chart-title">每日參與</h2>${participationChart()}</section></div>${classWordIssues()}${studentList()}`;
 }
 function participationChart(){
  const known=new Map((state.data?.trend||[]).filter(row=>/^\d{4}-\d{2}-\d{2}$/.test(row.date)).map(row=>[row.date,number(row.nStudents)])),points=[];
@@ -163,9 +163,45 @@ function participationChart(){
  return `<div class="participation-chart" role="img" aria-label="${esc(scopeLabel()+'每日參與人數；'+descriptions.join('；'))}"><div class="participation-axis"><span>${top}</span><span>${top/2}</span><span>0</span></div><div class="participation-plot">${points.map((point,index)=>`<div class="participation-day" title="${esc(descriptions[index])}"><span class="participation-bar${point.value===null?' unknown':''}" style="height:${point.value===null?0:point.value/top*100}%"></span></div>`).join('')}</div><div class="participation-dates"><span>${esc(points[0].date.slice(5).replace('-','/'))}</span><span>${esc(points[Math.floor((points.length-1)/2)].date.slice(5).replace('-','/'))}</span><span>${esc(points.at(-1).date.slice(5).replace('-','/'))}</span></div></div><p class="chart-note">人／日 · 同一天只計一次</p>`;
 }
 
+function wordIssues(data){
+ if(data?.readingWordSummary?.source!=='server_verified'||!Array.isArray(data.readingWords))return [];
+ const seen=new Set();return data.readingWords.filter(word=>{const key=JSON.stringify([word.poemId,word.itemId,word.contentVersion,word.index,word.char]);if(seen.has(key)||typeof word.char!=='string'||!word.char.trim()||score(word.meanScore)===null||!Number.isInteger(word.count)||word.count<1||!Number.isInteger(word.below60Count)||word.below60Count<1||word.below60Count>word.count||!Number.isInteger(word.index)||word.index<0)return false;seen.add(key);return true;}).sort((a,b)=>b.below60Count-a.below60Count||a.meanScore-b.meanScore||b.count-a.count);
+}
+function wordContext(word){
+ const poem=state.poems.find(p=>Number(p.id)===Number(word.poemId)),match=/^p([1-6])\.l(\d+)$/.exec(String(word.itemId)),lineIndex=match&&Number(match[1])===Number(word.poemId)?Number(match[2]):null,line=lineIndex===null?null:poem?.lines?.[lineIndex]?.text;
+ const title=poem?.title||'古詩',position=lineIndex===null?'':'第 '+(lineIndex+1)+' 句';
+ const chars=line?[...line]:[];const aligned=chars[word.index]===word.char;
+ return{label:title+(position?' · '+position:''),text:aligned?chars.map((char,index)=>index===word.index?`<mark>${esc(char)}</mark>`:esc(char)).join(''):'',position};
+}
+function classWordIssues(){
+ const words=wordIssues(state.data),visible=words.slice(0,6),max=Math.max(1,...visible.map(word=>word.below60Count));
+ const body=visible.length?`<div class="word-frequency-grid">${visible.map(word=>{const context=wordContext(word),repeated=visible.some(other=>other!==word&&other.char===word.char&&other.poemId===word.poemId&&other.itemId===word.itemId);return `<article class="word-frequency" aria-label="${esc(word.char+'，'+context.label+'，第 '+(word.index+1)+' 字，'+word.below60Count+' 次字音低於60分，共 '+word.count+' 次有效字音評測')}"><div class="word-frequency-main"><strong class="word-glyph">${esc(word.char)}</strong><span class="word-frequency-count">${word.below60Count}<small>次</small></span></div><div class="word-frequency-track"><span style="width:${word.below60Count/max*100}%"></span></div><p class="word-context-label">${esc(context.label)}${repeated?' · 第 '+(word.index+1)+' 字':''}</p></article>`;}).join('')}</div><p class="chart-note">字音低於 60 分的次數 · 每項練習取最近一次${words.length>visible.length||state.data?.readingWordSummary?.truncated?' · 顯示前 '+visible.length+' 項':''}</p>`:empty(state.data?.readingWordSummary?.source==='server_verified'&&state.data?.readingWordSummary?.totalGroups>0?'暫時沒有需要重練的字音':'尚未有逐字朗讀紀錄');
+ return `<section class="class-word-issues" aria-labelledby="class-words-title"><h2 id="class-words-title">重點字音</h2>${body}</section>`;
+}
+function studentWordBody(data,expanded=false){
+ const words=wordIssues(data),visible=expanded?words:words.slice(0,12);
+ if(!words.length)return empty(data?.readingWordSummary?.source==='server_verified'&&data?.readingWordSummary?.totalGroups>0?'最近的字音評測沒有低於 60 分的字':'尚未有逐字朗讀紀錄');
+ return `<div class="student-word-grid">${visible.map(word=>{const context=wordContext(word);return `<article class="student-word-card"><div class="student-word-top"><strong class="word-glyph">${esc(word.char)}</strong><span class="word-score" title="字音平均分">${shown(word.meanScore,1)}<small>分</small></span></div><p class="word-context-label">${esc(context.label)}</p>${context.text?`<p class="word-original-line">${context.text}</p>`:''}</article>`;}).join('')}</div><p class="chart-note">最近字音平均分 · 只列有低於 60 分紀錄的字${data?.readingWordSummary?.truncated?' · 顯示最需練習的前 50 項':''}</p>${words.length>visible.length?'<button type="button" class="button" data-action="more-student-words">查看其餘字音</button>':''}`;
+}
+function studentWordDialog(student,body){
+ return `<header class="dialog-header"><div><h2 id="student-dialog-title">${esc(student.person.displayName)}</h2><p class="helper">${esc(student.grade+student.cls)} 班 · 需要多練的字</p></div><button type="button" class="button icon-only" data-action="close-dialog" aria-label="關閉學生字音">×</button></header><div class="dialog-body student-words-body">${body}</div>`;
+}
+async function openStudentWords(researchId){
+ const student=joinedStudents().find(row=>row.researchId===researchId);if(!student)return;
+ state.detailRequest?.abort();const controller=new AbortController(),scope=filterKey(state.filters);state.detailRequest=controller;state.detailStudent=student;state.detailData=null;
+ const content=document.querySelector('#student-dialog-content');content.innerHTML=studentWordDialog(student,'<div class="empty" role="status"><span class="loader" aria-hidden="true"></span><p>正在讀取字音紀錄</p></div>');if(!dialog.open)dialog.showModal();dialog.scrollTop=0;
+ const current=()=>!controller.signal.aborted&&state.detailStudent===student&&filterKey(state.filters)===scope&&dialog.open;
+ if(state.legacy){content.innerHTML=studentWordDialog(student,empty('尚未有逐字朗讀紀錄'));return;}
+ try{
+  const data=await requestJSON(analyticsQuery(selectionQuery({student:researchId,grade:student.grade,cls:student.cls})),{signal:controller.signal});if(!current())return;
+  if(data.filters?.student!==researchId||String(data.filters?.grade)!==String(student.grade)||data.filters?.cls!==student.cls||!Array.isArray(data.students)||data.students.some(row=>row.researchId!==researchId))throw new Error('Student scope mismatch');
+  state.detailData=data;content.innerHTML=studentWordDialog(student,studentWordBody(data));
+ }catch(error){if(!current())return;if(error.status===401||error.status===403){clearPrivate();renderLogin('登入已失效，請重新登入。');return;}content.innerHTML=studentWordDialog(student,empty('暫時未能讀取字音紀錄')+'<button type="button" class="button" data-action="retry-student-words">再試一次</button>');}
+}
+
 function studentList(){
  const filtered=selectedStudents(),size=8,pages=Math.max(1,Math.ceil(filtered.length/size));state.page=Math.min(state.page,pages-1);const page=filtered.slice(state.page*size,(state.page+1)*size);
- const rows=page.map(row=>{const needsPractice=supportSignals(row).length>0,status=!recordsReady()?'等待同步':!isActive(row)?absenceReliable()?'未有紀錄':'待同步':needsPractice?'可再練習':'已練習',tone=needsPractice?'warm':isActive(row)?'green':'';const attempts=isActive(row)?number(row.nAttempts):absenceReliable()?0:null;return `<tr><td><span class="student-name">${esc(row.person.displayName)}</span><p class="student-meta">${esc(row.grade+row.cls)}${row.person.classNo?' · '+esc(row.person.classNo)+' 號':''}</p></td><td class="reading-cell">${scoreMarkup(readingScore(row))}</td><td class="attempt-cell">${shown(attempts)}</td><td class="status-cell"><span class="tag ${tone}">${esc(status)}</span></td></tr>`;}).join('');
+ const rows=page.map(row=>{const needsPractice=supportSignals(row).length>0,status=!recordsReady()?'等待同步':!isActive(row)?absenceReliable()?'未有紀錄':'待同步':needsPractice?'可再練習':'已練習',tone=needsPractice?'warm':isActive(row)?'green':'';const attempts=isActive(row)?number(row.nAttempts):absenceReliable()?0:null;return `<tr><td><button type="button" class="student-name student-word-link" data-student-words="${esc(row.researchId)}" aria-label="查看${esc(row.person.displayName)}需要練習的字音">${esc(row.person.displayName)}</button><p class="student-meta">${esc(row.grade+row.cls)}${row.person.classNo?' · '+esc(row.person.classNo)+' 號':''}</p></td><td class="reading-cell">${scoreMarkup(readingScore(row))}</td><td class="attempt-cell">${shown(attempts)}</td><td class="status-cell"><span class="tag ${tone}">${esc(status)}</span></td></tr>`;}).join('');
  return `<details class="student-overview" id="student-list" ${state.studentsOpen?'open':''}><summary><span>學生概況 <small>${joinedStudents().length} 人</small></span><span class="details-chevron" aria-hidden="true">⌄</span></summary><div class="student-overview-content"><div class="list-toolbar"><label class="search-field"><span class="sr-only">搜尋學生</span><input type="search" id="student-search" value="${esc(state.search)}" placeholder="搜尋學生" autocomplete="off"></label><span class="list-result">${filtered.length} 人</span></div>${rows?`<div class="table-area"><table class="student-table"><thead><tr><th scope="col">學生</th><th scope="col">朗讀</th><th scope="col" class="attempt-cell">練習次數</th><th scope="col" class="status-cell">狀態</th></tr></thead><tbody>${rows}</tbody></table></div>${pages>1?`<div class="pagination"><button class="button small" data-page="${state.page-1}" ${state.page===0?'disabled':''}>上一頁</button><span>${state.page+1} / ${pages}</span><button class="button small" data-page="${state.page+1}" ${state.page+1>=pages?'disabled':''}>下一頁</button></div>`:''}`:empty('暫時沒有符合的學生')}</div></details>`;
 }
 function updateStudentList(){const previous=document.querySelector('#student-list');if(previous){state.studentsOpen=previous.open;previous.outerHTML=studentList();}}
@@ -283,6 +319,9 @@ root.addEventListener('input',event=>{
 });
 root.addEventListener('compositionend',event=>{if(event.target.id==='student-search')event.target.dispatchEvent(new Event('input',{bubbles:true}));});
 function click(event){const button=event.target.closest('button');if(!button||button.disabled)return;
+ if(button.dataset.studentWords){void openStudentWords(button.dataset.studentWords);return;}
+ if(button.dataset.action==='retry-student-words'&&state.detailStudent){void openStudentWords(state.detailStudent.researchId);return;}
+ if(button.dataset.action==='more-student-words'&&state.detailStudent&&state.detailData){document.querySelector('#student-dialog-content').innerHTML=studentWordDialog(state.detailStudent,studentWordBody(state.detailData,true));return;}
  if(button.dataset.teacherTool){const tool=button.dataset.teacherTool;if(tool==='docx')void generateAnalysis();else if(tool==='cancel-analysis')cancelAnalysis();else if(tool==='cancel-document')cancelDocument();else void exportDocument(tool);return;}
  if(button.dataset.action==='refresh'||button.dataset.action==='retry-roster'){if(state.rosterError||button.dataset.action==='retry-roster')void enterDashboard();else void loadData();}
  if(button.dataset.action==='boot')void boot();if(button.dataset.action==='logout')void logout();

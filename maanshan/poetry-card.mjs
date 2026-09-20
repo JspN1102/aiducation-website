@@ -1,3 +1,4 @@
+import {imageAsset} from './media-images.mjs?v=20260920-art2';
 const FONT_NAME = 'PoetryCardSerif';
 const fontLoads = new WeakMap();
 let nextCardId = 0;
@@ -149,7 +150,7 @@ export function mountPoetryCard(container, {poem, onClose = () => {}} = {}) {
     });
     try {
       const artwork = (async () => {
-        const imageSource = new URL(`./media/${poem.slug}/cover-final.webp`, import.meta.url);
+        const imageSource = new URL(imageAsset(`media/${poem.slug}/cover-final.webp`), import.meta.url);
         const [response] = await Promise.all([
           view.fetch(imageSource, {signal: request.signal}),
           loadFont(doc)

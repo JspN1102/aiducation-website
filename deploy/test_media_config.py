@@ -58,10 +58,28 @@ class MediaConfigTests(unittest.TestCase):
         manifest, _ = fixture(image=True)
         module = media_config.build_image_module(manifest)
         self.assertIn(manifest['assets'][0]['destination'], module)
-        self.assertIn('return IMAGE_ASSETS[path] || source;', module)
+        self.assertIn('return COMPAT_IMAGES[path] || IMAGE_ASSETS[path] || source;', module)
         nginx = media_config.build_nginx_config(manifest)
         self.assertIn('location = ' + manifest['assets'][0]['source'], nginx)
         self.assertIn('add_header Cache-Control "no-cache"; return 307 ', nginx)
+
+    def test_all_poem_images_have_full_resolution_independent_compatible_copies(self):
+        from PIL import Image
+        root = Path(__file__).parent.parent
+        source = (root / 'maanshan/image-compat.mjs').read_text('utf-8')
+        compatible = json.loads(source.split('Object.freeze(', 1)[1].rsplit(');', 1)[0])
+        manifest = json.loads((root / 'deploy/media-manifest.json').read_text('utf-8'))
+        excluded = set(media_config.build_media_config(manifest)['excludedFiles'])
+        for asset in manifest['assets']:
+            if asset['contentType'] != 'image/webp':
+                continue
+            path = compatible[asset['source']]
+            self.assertTrue(path.startswith('/maanshan/media/compatible/'))
+            self.assertNotIn(path.lstrip('/'), excluded)
+            with Image.open(root / path.lstrip('/')) as image, Image.open(root / asset['source'].lstrip('/')) as original:
+                image.load()
+                self.assertIn(image.format, ['JPEG', 'PNG'])
+                self.assertEqual(image.size, original.size)
 
     def test_modified_video_same_size_is_rejected(self):
         manifest, data = fixture()

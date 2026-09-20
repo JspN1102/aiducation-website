@@ -87,9 +87,11 @@ export function createResearchTracker({actorId, csrfToken, storage,
             headers:{'Content-Type':'application/json','X-CSRF-Token':csrfToken},body:JSON.stringify({schemaVersion:1,batchId,actorId,events}),signal:controller.signal});
           const data=await response.json().catch(()=>null),code=data?.error||data?.code;
           if([401,403].includes(response.status)||(response.status===409&&!['EVENT_ID_CONFLICT','BATCH_ID_CONFLICT'].includes(code))){stopped=true;notify('session_changed');return;}
-          if([400,413].includes(response.status)||(response.status===409&&['EVENT_ID_CONFLICT','BATCH_ID_CONFLICT'].includes(code))){
+          if([400,413].includes(response.status)||(response.status===422&&['POEM_GRADE_FORBIDDEN','RESEARCH_EXCLUDED'].includes(code))||(response.status===409&&['EVENT_ID_CONFLICT','BATCH_ID_CONFLICT'].includes(code))){
             if(events.length>1){batchCeiling=ceiling=Math.max(1,Math.floor(events.length/2));continue;}
-            queue.hold(events[0].eventId,response.status===409?'record_conflict':'schema_rejected');remaining=remaining.slice(1);batchCeiling=ceiling=BATCH_SIZE;
+            if(response.status===422)queue.acknowledge([events[0].eventId]);
+            else queue.hold(events[0].eventId,response.status===409?'record_conflict':'schema_rejected');
+            remaining=remaining.slice(1);batchCeiling=ceiling=BATCH_SIZE;
             continue;
           }
           if(!response.ok||data?.accepted!==true||data.batchId!==batchId||!Array.isArray(data.eventIds)||data.eventIds.length!==ids.size||!data.eventIds.every(id=>ids.has(id))||new Set(data.eventIds).size!==ids.size)throw Error('unconfirmed');

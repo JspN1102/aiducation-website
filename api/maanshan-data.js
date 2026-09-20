@@ -124,8 +124,10 @@ export default async function handler(req, res) {
 
     // 按学生聚合（每个 section 只取最新一条）
     const studentMap = Object.create(null);
+    const rosterIds=schoolAuth.enabled()?new Set((await schoolAuth.listAccounts(req,{grade,cls})).map(person=>person.id)):null;
     for (const row of rows) {
       const sid = row.student_id;
+      if(rosterIds&&!rosterIds.has(sid))continue;
       if (!studentMap[sid]) studentMap[sid] = { id: sid, name: row.name, sectionTimes: Object.create(null) };
       // 每个 section 只保留第一条（已按 updated_at DESC 排序）
       if (!studentMap[sid][row.section]) {

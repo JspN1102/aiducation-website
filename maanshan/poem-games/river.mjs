@@ -1,5 +1,6 @@
+import {imageAsset} from '../media-images.mjs?v=20260920-art2';
 import {createProcessResearch} from './research.mjs?v=20260920a';
-const media = path => new URL(`../media/${path}`, import.meta.url).href;
+const media = path => new URL(imageAsset(`media/${path}`), import.meta.url).href;
 
 const ART = media('exploration/bo-chuan-gua-zhou/scene.webp');
 const PIECES = Object.freeze([0, 1, 2, 3, 4, 5]);

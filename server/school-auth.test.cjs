@@ -55,6 +55,20 @@ test('scrypt uses independent salts, verifies exact secrets and never returns cr
   assert.match(result.res.headers['Set-Cookie'], /Path=\/.*Max-Age=43200/);
 });
 
+test('learning capability comes only from stored identity, with teacher/test access separated from research and roster',async()=>{
+ const f=fixture(),directory=f.records.get('directory/current').value;
+ Object.assign(directory.accounts[1],{isTest:true,learningScope:'all-grades'});directory.sha256=auth.directoryHash(directory.accounts);
+ const forged=request();Object.assign(forged.body,{isTest:true,learningScope:'all-grades',researchEnabled:false,grade:6});
+ const pupil=await f.service.login(forged,response());assert.equal(pupil.user.learningScope,'own-grade');assert.equal(pupil.user.isTest,false);assert.equal(pupil.user.researchEnabled,true);
+ assert.deepEqual(auth.allowedPoemIds(pupil.user),[2]);assert.throws(()=>auth.assertPoemAccess(pupil.user,6),e=>e.status===422&&e.code==='POEM_GRADE_FORBIDDEN');
+ const demo=await login(f,{login:'test1',password:'test-password-1'});assert.equal(demo.state.user.learningScope,'all-grades');assert.equal(demo.state.user.researchEnabled,false);assert.deepEqual(auth.allowedPoemIds(demo.state.user),[1,2,3,4,5,6]);
+ assert.equal((await f.service.state(request({method:'GET',cookie:demo.cookie}))).user.isTest,true);
+ const teacher=await login(f,{login:'test2',password:'test-password-2'});assert.equal(teacher.state.user.learningScope,'all-grades');assert.equal(teacher.state.user.researchEnabled,false);assert.equal(auth.assertPoemAccess(teacher.state.user,6).grade,6);
+ const roster=await f.service.roster(request({method:'GET',cookie:teacher.cookie}));assert.deepEqual(roster.students.map(p=>p.id),[accounts[0].id]);assert.equal(roster.teachers.length,1);
+ assert.equal(auth.validAccount({...accounts[0],learningScope:'all-grades'}),false);assert.equal(auth.validAccount({...accounts[0],isTest:'true'}),false);
+ assert.equal(auth.publicActor({...accounts[0],researchEnabled:false}).researchEnabled,true);
+});
+
 test('unknown and wrong passwords fail identically, including disabled accounts', async () => {
   const f = fixture();
   for (const options of [{ login: 'absent' }, { password: 'wrong' }]) {

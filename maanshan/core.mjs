@@ -82,10 +82,14 @@ export function createSyncQueue({read,write,send}) {
           const item=read()[0];
           if (!item) {drained=true;return;}
           const response=await send(item);
-          if (!response.ok) return;
+          if (!response.ok && response.status !== 422) return;
           const result=await response.json();
-          if (result.ok !== true || !['db', 'blob'].includes(result.stored)) return;
-          // Read again after acknowledgement to retain records added during upload.
+          // Old off-grade work can no longer be accepted by the school API.
+          // Only its exact permanent rejection may unblock later valid work.
+          const excluded = response.status === 422 && result.code === 'POEM_GRADE_FORBIDDEN' && result.retryable === false;
+          if (!excluded && (!response.ok || result.ok !== true || !['db', 'blob'].includes(result.stored))) return;
+          // Re-read after acknowledgement/rejection to retain new enqueues;
+          // a failed durable removal leaves the original item for next time.
           if (write(read().filter(p => p.syncId !== item.syncId)) === false) return;
         } catch { return; }
       }

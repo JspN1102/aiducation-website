@@ -1,4 +1,4 @@
-import {schoolFetch} from './school-session.mjs?v=20260920-ui1';
+import {schoolFetch} from './school-session.mjs?v=20260920-final4';
 function audioError(code, message, canRetry = false) {
   return Object.assign(new Error(message), {code, canRetry});
 }
@@ -51,11 +51,27 @@ export async function encodeRecording(blob, context, scope = globalThis) {
   return btoa(binary);
 }
 
-// Assessment has no learning-state write; only one quick transport failure is retried.
+export async function prepareAssessmentPayload(payload, scope = globalThis) {
+  if (typeof payload?.audio !== 'string' || payload.audioCompression != null || typeof scope.CompressionStream !== 'function') return payload;
+  try {
+    const binary = atob(payload.audio), bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+    if (bytes.length < 8192) return payload;
+    // This changes only transport size: the server restores the exact WAV bytes
+    // before evaluation. Keep full sample rate and every recorded sample.
+    const stream = new Blob([bytes]).stream().pipeThrough(new scope.CompressionStream('gzip'));
+    const compressed = new Uint8Array(await within(new Response(stream).arrayBuffer(), 1500, new Error('Compression timeout')));
+    if (compressed.length >= bytes.length * .95) return payload;
+    let encoded = '';
+    for (let i = 0; i < compressed.length; i += 8192) encoded += String.fromCharCode(...compressed.subarray(i, i + 8192));
+    return {...payload, audio: btoa(encoded), audioCompression: 'gzip'};
+  } catch { return payload; }
+}
+
+// Only one quick transport failure is retried, with the same request context.
 // A slow request, HTTP error, or explicit cancellation always returns control to the learner.
 export async function submitAssessment(payload, {signal, onRetry, onWaiting, fetchImpl = schoolFetch, timeout = 30000} = {}) {
   if (globalThis.navigator?.onLine === false) throw audioError('OFFLINE', '網絡未連上，連線後可以再送一次。', true);
-  const body = JSON.stringify(payload);
+  const body = JSON.stringify(await prepareAssessmentPayload(payload));
   for (let attempt = 0; attempt < 2; attempt++) {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
     const controller = new AbortController(), started = Date.now();let expired = false;

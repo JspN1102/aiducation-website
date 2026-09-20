@@ -1,5 +1,6 @@
+import {imageAsset} from '../media-images.mjs?v=20260920-art2';
 import {createProcessResearch} from './research.mjs?v=20260920a';
-const asset = name => new URL(`../media/poem-games/yong-e/${name}.webp`, import.meta.url).href;
+const asset = name => new URL(imageAsset(`media/poem-games/yong-e/${name}.webp`), import.meta.url).href;
 const parts = [
   {id:'feather',color:'white',name:'羽毛',label:'鵝的羽毛',x:48,y:48,feedback:'白毛，像一朵浮在水上的雲。',hint:'詩裏說「白毛」，再選一種顏色吧。'},
   {id:'palm',color:'red',name:'腳掌',label:'鵝的腳掌',x:48,y:78,feedback:'紅掌，輕輕撥開清波。',hint:'詩裏說「紅掌」，再選一種顏色吧。'},

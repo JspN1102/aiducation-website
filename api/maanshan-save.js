@@ -29,9 +29,10 @@ export default async function handler(req, res) {
 
   if(schoolAuth.enabled()){
     try{
-      const actor=await schoolAuth.requireActor(req,{roles:['student'],csrf:true});
+      const actor=await schoolAuth.requireActor(req,{roles:['student','teacher'],csrf:true});
       if(req.body?.studentId!==actor.id)return res.status(409).json({ok:false,code:'ACTOR_CHANGED',error:'Account changed'});
-      req.body={...req.body,studentId:actor.id,name:actor.displayName,grade:actor.grade,cls:actor.cls};
+      const poem=schoolAuth.assertPoemAccess(actor,req.body?.poemId);
+      req.body={...req.body,studentId:actor.id,name:actor.displayName,grade:poem.grade,cls:actor.cls||'T'};
     }catch(error){return schoolAuth.sendError(res,error);}
   }
 

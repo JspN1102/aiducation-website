@@ -11,8 +11,8 @@ const { pathToFileURL } = require('node:url');
 const root = path.resolve(__dirname, '..');
 const work = path.resolve(process.env.MAANSHAN_AUDIO_WORK || path.join(os.tmpdir(), 'maanshan-audio'));
 const endpoint = process.env.MAANSHAN_TTS_ENDPOINT || 'https://aiducation.asia/api/tts/';
-const voice = 403001, speed = -0.75, pronunciationVersion = 'edb-20260919d-yunxiaohe';
-const assetVersion = '20260919c';
+const voice = 403001, speed = -0.75, pronunciationVersion = 'edb-20260920-flow1-yunxiaohe';
+const assetVersion = '20260920flow1';
 const directories = { words: path.join(root, 'media/words'), speech: path.join(root, 'media/speech') };
 const exportsByKind = { words: 'WORD_AUDIO_FILES', speech: 'SPEECH_AUDIO_FILES' };
 const reportPath = path.join(work, 'static-speech-generation.json');
@@ -58,7 +58,14 @@ function addSpeech(text, pinyin, source) {
   const chars = Array.from(text), readings = (Array.isArray(pinyin) ? pinyin : pinyin.split(/\s+/)).map(value => normalize(value).toLowerCase());
   assert.equal(chars.filter(char => /\p{Script=Han}/u.test(char)).length, readings.length, 'Pinyin alignment: ' + text);
   let index = 0;
-  const ssml = '<speak>' + chars.map(char => /\p{Script=Han}/u.test(char) ? phoneme(char, readings[index++]) : escapeXML(char)).join('') + '</speak>';
+  // Keep each phrase in one pronunciation span. Separate single-character tags
+  // can introduce an audible pause inside words with the Yun Xiaohe voice.
+  const ssml = '<speak>' + text.replace(/\p{Script=Han}+|[^\p{Script=Han}]+/gu, phrase => {
+    if (!/^\p{Script=Han}/u.test(phrase)) return escapeXML(phrase);
+    const count = Array.from(phrase).length, pinyin = readings.slice(index, index + count).map(numberedPinyin).join(' ');
+    index += count;
+    return '<phoneme alphabet="py" ph="' + pinyin + '">' + escapeXML(simplified(phrase)) + '</phoneme>';
+  }) + '</speak>';
   if (speechEntries.has(text)) {
     assert.equal(speechEntries.get(text).ssml, ssml, 'Conflicting reading for ' + text);
     speechEntries.get(text).sources.push(source); return;

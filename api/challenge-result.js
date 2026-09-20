@@ -8,7 +8,7 @@ module.exports = async function handler(req,res){
   if(req.method!=='POST')return res.status(405).json({error:'POST only'});
   if(!auth.enabled())return res.status(404).json({error:'Not found'});
   try{
-    const actor=await auth.requireActor(req,{roles:['student'],csrf:true});
+    const actor=await auth.requireActor(req,{roles:['student','teacher'],csrf:true});
     const body=req.body,context=body?.researchContext;
     if(!body||typeof body!=='object'||Buffer.byteLength(JSON.stringify(body))>16000)return res.status(400).json({error:'Invalid answer'});
     if(context?.actorId!==actor.id)return res.status(409).json({code:'ACTOR_CHANGED',error:'Account changed'});
@@ -21,6 +21,7 @@ module.exports = async function handler(req,res){
     }
     const poem=getPoem(body.poemId,null);
     if(!poem||context.poemId!==poem.id||context.itemId!==body.itemId)return res.status(400).json({error:'Invalid item'});
+    auth.assertPoemAccess(actor,poem.id);
     const {CHALLENGE_SETS,CHALLENGE_VERSION}=await loader.load(),set=CHALLENGE_SETS[poem.slug];
     const item=(set.bank||set.items).find(item=>item.id===body.itemId);
     if(!item||!['correct','incorrect','skipped'].includes(body.status))return res.status(400).json({error:'Invalid answer'});
@@ -45,6 +46,7 @@ module.exports = async function handler(req,res){
     // directly from the recognizer, not trusted from this browser summary.
     context.context={...(context.context||{}),itemType:item.type};
     context.activity=item.type==='dictation'?'writing':'challenge';
+    if(!auth.researchEligible(actor))return res.status(200).json({ok:true,researchRecorded:false,researchExcluded:true,result:{status,score:correct===null?null:correct?100:0,correct}});
     const saved=await research.recordVerifiedOutcome(req,{...stable,provider:'aiducation',model:'curriculum-answer-key',operation:'challenge',providerVersion:'challenge-v'+CHALLENGE_VERSION+'-20260919d',
       result:{status,score:correct===null?null:correct?100:0,correct},...(verifiedResponse?{response:verifiedResponse}:{})});
     if(!saved.recorded){

@@ -1,7 +1,7 @@
 'use strict';
 const crypto=require('node:crypto'),blob=require('@vercel/blob');
 const research=require('./research-store.cjs');
-const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v8-teacher-voice';
+const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v9-grade-scopes';
 const MAX_RECORD_BYTES=12*1024*1024,MAX_PROVIDER_BYTES=160*1024,MAX_RESPONSE_BYTES=128*1024;
 const LEASE_MS=120000,PROVIDER_TIMEOUT_MS=42000;
 const SCHEMA=`CREATE TABLE IF NOT EXISTS teacher_analysis_records (
@@ -111,7 +111,7 @@ demo為true時亦按正常教師報告寫作。文件頁首由系統加一次「
 1.所有數字及觀察來自evidence。每項引用有效evidenceIds；正文不寫F001等代碼。準確寫有紀錄/名冊人數，不加「大多數/少數」印象判斷。事件筆數不是學生人數，沒有某種事件不能推論沒有完成或全是嘗試。
 2.朗讀、默寫、辨音分開寫，每個項目只選一組分數：有「平台評分」的有效平均值就優先使用；完全沒有該項有效平台評分才用「練習回報」。兩種數字不混合、不重複列出。正文直接稱「朗讀字音評分」「辨音答題」等學習項目，不把平台評分與練習回報的差异寫成教學發現。朗讀、默寫、辨音不能混成總分；不同來源沒有配對資料，不能推論偏高、可信度或比較能力。只報實際分數和樣本數，不發明能力等級或及格界線。不因70分稱有基礎或薄弱。
 3.字分數只提示值得再聽讀的字，不推斷聲母、韻母、聲調哪裏錯，不能要求糾正一個未觀察到的特定錯誤。不推論學生懶惰、病症或統計顯著進步。
-4.原詩及讀音依curriculum，不改詩、不加不存在的字。教學建議嚴格按teachingConstraints：一二年級整份報告連同復查最多安排一個allowedCharacters中的字，不能默寫詞語、字表、每字抄多次；聽選與短句跟讀為主。中高年級按提供上限安排。未提供題庫的臨時活動不能聲稱平台有該题或能保存教師自編紙筆測驗。
+4.原詩及讀音依curriculum，不改詩、不加不存在的字。低年級指一二年級，中年級指三四年級，高年級指五六年級。教學建議嚴格按teachingConstraints：一二年級整份報告連同復查最多安排一個allowedCharacters中的字，不能默寫詞語、字表、每字抄多次；聽選與短句跟讀為主。中高年級按提供上限安排。若同一項建議涵蓋不同年級，各年級另列一個step並寫明年級；複查亦沿用同一安排。未提供題庫的臨時活動不能聲稱平台有該题或能保存教師自編紙筆測驗。
 5.聽選不用同音字互相充當正誤選項，不生成「李／里／理」等混淆題。只說跟聽原詩一句、對照示範、同一句再讀等可直接操作的安排。低分個別跟進由教師私下安排。
 6.未測不等於零分；未見紀錄的學生寫「先了解練習情況」，不要判定未參與。建議是下一步安排，不能寫成已做過或已提高。保持數據來源各自獨立，只在確有必要區分時用「平台評分」「練習回報」簡稱。
 請輸出一個JSON，無markdown。findings建議2至3項，teachingActions單年級2項/全校3項，reviewPlan 1項，limitations通常為空陣列。schema:
@@ -214,7 +214,7 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
   }catch(error){
    const safe=error instanceof AnalysisError?error:new AnalysisError('REPORT_STORAGE_UNAVAILABLE');
    const current=await read(key).catch(()=>null);
-   if(current?.value?.leaseId===leaseId)await save(key,{schemaVersion:1,status:'failed',code:safe.code,httpStatus:safe.status,retryable:safe.retryable,retryAt:now()+1000*(safe.retryAfterSeconds||30),failedAt:new Date(now()).toISOString()},current.version).catch(()=>{});
+   if(current?.value?.leaseId===leaseId)await save(key,{schemaVersion:1,status:'failed',promptVersion:PROMPT_VERSION,code:safe.code,httpStatus:safe.status,retryable:safe.retryable,retryAt:now()+1000*(safe.retryAfterSeconds||30),failedAt:new Date(now()).toISOString()},current.version).catch(()=>{});
    throw safe;
   }
  }
@@ -228,7 +228,8 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
   if(!await save(key,{schemaVersion:1,status:'pending',stage:'revising',leaseId,leaseUntil:now()+LEASE_MS},prior.version))return status(await read(key),reportId);
   try{
    const payload=aggregateEvidence(report.dataset),generated=await requestAnalysis(payload,config,{fetchImpl,signal,revision:{analysis:report.analysis,issues:prior.value.issues}});
-   if(require('./teacher-report-quality.cjs').inspectAnalysis(generated.analysis,payload).length)fail('AI_REPORT_QUALITY',502,true,30);
+   const issues=require('./teacher-report-quality.cjs').inspectAnalysis(generated.analysis,payload);
+   if(issues.length){const error=new AnalysisError('AI_REPORT_QUALITY',502,true,30);error.qualityIssues=issues.map(({code,path})=>({code,path}));throw error;}
    generated.analysis.title=report.analysis.title;
    report.analysis=generated.analysis;report.createdAt=new Date(now()).toISOString();report.responseModel=generated.responseModel;report.syntaxRepaired=report.syntaxRepaired||generated.syntaxRepaired;
    report.usage={inputTokens:report.usage.inputTokens+generated.usage.inputTokens,outputTokens:report.usage.outputTokens+generated.usage.outputTokens};report.qualityReview={passed:true,revisions:1};
@@ -237,7 +238,7 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
    return {ok:true,reportId,cached:false,report:publicReport(report)};
   }catch(error){
    const safe=error instanceof AnalysisError?error:new AnalysisError('REPORT_STORAGE_UNAVAILABLE'),current=await read(key).catch(()=>null);
-   if(current?.value?.leaseId===leaseId)await save(key,{schemaVersion:1,status:'failed',code:safe.code,httpStatus:safe.status,retryable:safe.retryable,retryAt:now()+1000*(safe.retryAfterSeconds||30),failedAt:new Date(now()).toISOString()},current.version).catch(()=>{});
+   if(current?.value?.leaseId===leaseId)await save(key,{schemaVersion:1,status:'failed',promptVersion:PROMPT_VERSION,code:safe.code,httpStatus:safe.status,retryable:safe.retryable,retryAt:now()+1000*(safe.retryAfterSeconds||30),failedAt:new Date(now()).toISOString(),...(safe.qualityIssues?{qualityIssues:safe.qualityIssues}:{})},current.version).catch(()=>{});
    throw safe;
   }
  }

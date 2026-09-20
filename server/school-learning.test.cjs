@@ -30,6 +30,40 @@ test('reading reference must match the canonical poem and exact line',async()=>{
  assert.equal((await referenceFor(req,'reading')).line,p.lines[0]);assert.equal(req.body.researchContext.activity,'read');
  req.body.refText='unrelated';await assert.rejects(referenceFor(req,'reading'),e=>e.status===400);
 });
+
+test('every learning provider rejects another grade before a paid call, even without research context or with forged capabilities',async t=>{
+ t.mock.method(auth,'enabled',()=>true);t.mock.method(auth,'requireActor',async()=>actor);let calls=0;
+ for(const operation of ['reading','handwriting','chat','report']){
+  const handler=withSchoolLearning(operation,async()=>calls++);
+  for(const includeContext of [false,true]){
+   const res=response(),body={poemId:6,refText:getPoem(6).lines[0].simplified,isTest:true,learningScope:'all-grades',grade:6,...includeContext?{researchContext:{actorId:actor.id,poemId:6,itemId:'p6.l0'}}:{}};
+   await handler({method:'POST',body},res);assert.equal(res.statusCode,422);assert.equal(res.body.code,'POEM_GRADE_FORBIDDEN');assert.equal(res.body.retryable,false);
+  }
+ }
+ assert.equal(calls,0);
+ const res=response();await withSchoolLearning('reading',async()=>calls++)({method:'POST',body:{poemId:2,refText:getPoem(6).lines[0].simplified}},res);assert.equal(res.statusCode,400);assert.equal(calls,0);
+});
+
+test('teacher and explicitly stored all-grade test accounts can study all poems without research calls',async t=>{
+ t.mock.method(auth,'enabled',()=>true);let learner;
+ t.mock.method(auth,'requireActor',async()=>learner);t.mock.method(research,'recordVerifiedOutcome',async()=>assert.fail('practice-only identity reached research'));
+ for(const person of [{...actor,isTest:true,learningScope:'all-grades'},{...actor,role:'teacher',grade:null,cls:null}]){
+  learner=person;
+  for(let poemId=1;poemId<=6;poemId++){
+   const res=response();await withSchoolLearning('chat',async(req,res)=>{assert.equal(req.body.grade,poemId);return res.json({reply:'practice'});})({method:'POST',body:{poemId,grade:1,researchContext:{actorId:person.id,poemId}}},res);
+   assert.equal(res.statusCode,200);assert.equal(res.body.reply,'practice');
+  }
+ }
+});
+
+test('challenge submission denies cross-grade students and grades teacher/test answers without research storage',async t=>{
+ t.mock.method(auth,'enabled',()=>true);let learner=actor;
+ t.mock.method(auth,'requireActor',async()=>learner);t.mock.method(research,'recordVerifiedOutcome',async()=>assert.fail('wrong-grade or practice-only result reached research'));
+ const {CHALLENGE_SETS}=await loader.load(),item=CHALLENGE_SETS[getPoem(6).slug].bank.find(i=>i.type==='sound');
+ const body={poemId:6,itemId:item.id,status:'correct',response:{choiceId:item.answerId},researchContext:{actorId:actor.id,poemId:6,itemId:item.id}};
+ const denied=response();await challenge({method:'POST',body:structuredClone(body)},denied);assert.equal(denied.statusCode,422);
+ for(const person of [{...actor,isTest:true,learningScope:'all-grades'},{...actor,role:'teacher',grade:null}]){learner=person;const res=response();await challenge({method:'POST',body:structuredClone(body)},res);assert.equal(res.statusCode,200);assert.equal(res.body.researchExcluded,true);assert.equal(res.body.researchRecorded,false);assert.equal(res.body.result.correct,true);}
+});
 test('provider response awaits durable recording, enforces school grade and binds actor',async t=>{
  t.mock.method(auth,'enabled',()=>true);t.mock.method(auth,'requireActor',async()=>actor);
  let recorded=false;

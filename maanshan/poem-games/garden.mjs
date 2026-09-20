@@ -1,5 +1,6 @@
+import {imageAsset} from '../media-images.mjs?v=20260920-art2';
 import {createProcessResearch} from './research.mjs?v=20260920a';
-const file = path => new URL(`../media/${path}`, import.meta.url).href;
+const file = path => new URL(imageAsset(`media/${path}`), import.meta.url).href;
 const plants = [
   {id:'bean-a',kind:'bean',x:22,y:72,size:25,turn:-8},
   {id:'bean-b',kind:'bean',x:52,y:88,size:29,turn:5},
