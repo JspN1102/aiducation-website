@@ -12,6 +12,7 @@ import schoolAuth from '../api/school-auth.js';
 import researchEvents from '../api/research-events.js';
 import teacherAnalytics from '../api/teacher-analytics.js';
 import challengeResult from '../api/challenge-result.js';
+import teacherTools from '../api/teacher-tools.js';
 
 export default Object.freeze({
   soe, tts, chat, report, handwriting,
@@ -23,5 +24,6 @@ export default Object.freeze({
   'school-auth':schoolAuth,
   'research-events':researchEvents,
   'teacher-analytics':teacherAnalytics,
-  'challenge-result':challengeResult
+  'challenge-result':challengeResult,
+  'teacher-tools':teacherTools
 });

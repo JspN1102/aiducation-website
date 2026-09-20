@@ -208,6 +208,32 @@ test('private Blob adapter enforces CAS and never publishes sessions or account 
   await assert.rejects(store.get('../public/other'));
 });
 
+test('private Blob compressed GET tags allow account updates while stale revisions still conflict', async () => {
+  for (const weak of [false, true]) {
+    let current, revision = 0;
+    const writes = [], client = {
+      async get() {
+        if (!current) return null;
+        return { statusCode: 200, blob: { size: current.bytes.length, etag: (weak ? 'W/' : '') + current.tag },
+          stream: new ReadableStream({ start(controller) { controller.enqueue(current.bytes); controller.close(); } }) };
+      },
+      async put(key, value, options) {
+        writes.push(options);
+        if (current && (!options.allowOverwrite || options.ifMatch !== current.tag)) throw new vercelBlob.BlobPreconditionFailedError();
+        current = { bytes: Buffer.from(value), tag: `"revision-${++revision}"` };
+      }
+    };
+    const store = auth.createBlobStore(client), key = 'account/s_' + 'a'.repeat(24);
+    await store.cas(key, { generation: 1, authVersion: 'old' });
+    const original = await store.get(key);
+    assert.equal(original.version, '"revision-1"');
+    await store.cas(key, { generation: 2, authVersion: 'new' }, original.version);
+    assert.equal(writes[1].ifMatch, '"revision-1"');
+    await assert.rejects(store.cas(key, { generation: 1, authVersion: 'stale' }, original.version), error => error instanceof auth.Conflict);
+    assert.deepEqual((await store.get(key)).value, { generation: 2, authVersion: 'new' });
+  }
+});
+
 test('durable CAS rate counter cannot be bypassed by simultaneous login attempts', async () => {
   const f = fixture();
   const key = 'limit/' + crypto.createHmac('sha256', f.env.SCHOOL_AUTH_SECRET).update('account:test0').digest('hex');

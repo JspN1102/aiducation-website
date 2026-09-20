@@ -29,6 +29,11 @@ for audit_day in "$audit_yesterday" "$audit_today"; do
     --export-output "$backup_root/$backup_stamp/security-audit-$audit_day.json"
 done
 
+# Keep the exact private dataset used for each completed teacher AI report.
+/usr/bin/node --env-file=/home/ubuntu/maanshan-shared/bridge-backup.env \
+  /srv/maanshan/current/deploy/teacher-reports-backup.cjs \
+  --export-output "$backup_root/$backup_stamp/teacher-reports.index.json"
+
 # Publish completion only after every export succeeded. Existing records.json
 # stays byte-for-byte in its original schema; partial directories are retained
 # for inspection and are never reported as completed account backups.
@@ -36,14 +41,14 @@ done
 const fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto');
 const [directory, yesterday, today] = process.argv.slice(2);
 const filenames = ['records.json', 'school-accounts.snapshot.json',
-  `security-audit-${yesterday}.json`, `security-audit-${today}.json`];
+  `security-audit-${yesterday}.json`, `security-audit-${today}.json`, 'teacher-reports.index.json'];
 const files = filenames.map(name => {
   const filename = path.join(directory, name), info = fs.lstatSync(filename);
   if (!info.isFile() || (info.mode & 0o077)) throw new Error('Private backup validation failed');
   return { name, bytes: info.size, sha256: crypto.createHash('sha256').update(fs.readFileSync(filename)).digest('hex') };
 });
 fs.writeFileSync(path.join(directory, 'complete.json'), JSON.stringify({
-  format: 'maanshan-private-daily-backup-v2', completedAt: new Date().toISOString(), files
+  format: 'maanshan-private-daily-backup-v3', completedAt: new Date().toISOString(), files
 }), { flag: 'wx', mode: 0o600 });
 console.log(JSON.stringify({ ok: true, operation: 'complete-private-daily-backup', files: files.length }));
 NODE

@@ -15,5 +15,6 @@ module.exports = Object.freeze({
   'school-auth': { bodyLimit: 16 * 1024, timeoutMs: 30000 },
   'research-events': { bodyLimit: 128 * 1024, timeoutMs: 15000 },
   'teacher-analytics': { bodyLimit: 1024, timeoutMs: 55000 },
-  'challenge-result': { bodyLimit: 16 * 1024, timeoutMs: 15000 }
+  'challenge-result': { bodyLimit: 16 * 1024, timeoutMs: 15000 },
+  'teacher-tools': { bodyLimit: 16 * 1024, timeoutMs: 60000 }
 });

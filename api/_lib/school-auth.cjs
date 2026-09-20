@@ -85,7 +85,9 @@ function createBlobStore(client = blob) {
           size += part.value.byteLength; if (size > MAX_OBJECT) throw new Error('Auth object too large'); chunks.push(Buffer.from(part.value));
         }
       } catch (error) { await reader.cancel().catch(() => {}); throw error; }
-      return { value: JSON.parse(Buffer.concat(chunks).toString('utf8')), version: response.blob.etag };
+      // Private GET may weaken the same object ETag when serving compressed JSON;
+      // Blob's conditional PUT expects its original, still-quoted object tag.
+      return { value: JSON.parse(Buffer.concat(chunks).toString('utf8')), version: response.blob.etag.replace(/^W\//, '') };
     },
     async cas(key, value, version) {
       const bytes = JSON.stringify(value); if (Buffer.byteLength(bytes) > MAX_OBJECT) throw new Error('Auth object too large');

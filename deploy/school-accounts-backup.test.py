@@ -44,8 +44,8 @@ with os.fdopen(fd,'w') as stream:json.dump(data,stream)
             else:
                 self.assertEqual(result.returncode, 0)
                 complete = json.loads((target / 'complete.json').read_text())
-                self.assertEqual(len(complete['files']), 4)
-                self.assertEqual(complete['format'], 'maanshan-private-daily-backup-v2')
+                self.assertEqual(len(complete['files']), 5)
+                self.assertEqual(complete['format'], 'maanshan-private-daily-backup-v3')
             for file in target.iterdir():
                 self.assertEqual(file.stat().st_mode & 0o777, 0o600)
 
@@ -54,6 +54,9 @@ with os.fdopen(fd,'w') as stream:json.dump(data,stream)
 
     def test_failed_account_export_keeps_original_records_without_completion_marker(self):
         self.scenario('school-accounts.snapshot.json')
+
+    def test_failed_teacher_report_export_never_publishes_completion_marker(self):
+        self.scenario('teacher-reports.index.json')
 
 
 if __name__ == '__main__':

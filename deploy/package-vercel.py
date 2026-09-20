@@ -11,7 +11,7 @@ from media_config import build_media_config, verify_local_assets, obsolete_audio
 ROOT = Path(__file__).resolve().parent.parent
 API_FILES = {'soe.js', 'tts.js', 'maanshan-chat.js', 'maanshan-report.js',
              'maanshan-save.js', 'maanshan-data.js', 'handwriting.js',
-             'school-auth.js', 'research-events.js', 'teacher-analytics.js', 'challenge-result.js'}
+             'school-auth.js', 'research-events.js', 'teacher-analytics.js', 'challenge-result.js', 'teacher-tools.js'}
 
 
 def main():
@@ -79,6 +79,7 @@ def main():
             'api/school-auth.js': {'maxDuration': 30},
             'api/research-events.js': {'maxDuration': 20},
             'api/teacher-analytics.js': {'maxDuration': 60},
+            'api/teacher-tools.js': {'maxDuration': 60, 'includeFiles': 'maanshan/poems.json'},
             'api/challenge-result.js': {'maxDuration': 20, 'includeFiles': 'maanshan/challenge*.mjs'},
         },
         'redirects': [{'source': '/', 'destination': '/maanshan/', 'statusCode': 307},
