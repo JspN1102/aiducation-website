@@ -20,6 +20,8 @@ BLOB_ROOT = Path('/home/ubuntu/maanshan-backups/blob')
 RESTORE_STATE = Path('/var/lib/maanshan-restore')
 DEPLOY = Path('/srv/maanshan/current/deploy')
 PG_BIN = Path('/usr/lib/postgresql/14/bin')
+DIRECT_POSTGRES = Path('/etc/maanshan/direct-postgres.enabled')
+STANDBY_ENABLE = Path('/etc/maanshan/standby.enabled')
 MAX_AGE = 30 * 3600
 
 
@@ -122,7 +124,11 @@ def backup_check(kind, previous):
 
 
 def collect():
+    # Explicit operations marker: the school API now writes directly to the
+    # local database. Retired Blob exports/imports are not part of its health.
+    direct_postgres = DIRECT_POSTGRES.exists()
     report = {'at': dt.datetime.now(dt.timezone.utc).isoformat(), 'ok': True, 'checks': {},
+              'storageMode': 'direct-postgres' if direct_postgres else 'blob-with-postgres-standby',
               'notifications': 'none-local-report-only'}
     previous = read_report(STATE / 'health-latest.json')
 
@@ -182,14 +188,20 @@ def collect():
     check('api', api_check)
     for unit in ('maanshan.service', 'nginx.service', 'postgresql@14-main.service'):
         check(unit, lambda unit=unit: unit_check(unit))
-    for unit in ('maanshan-backup.timer', 'maanshan-bridge-backup.timer', 'maanshan-health-restore.timer'):
+    backup_timers = ['maanshan-backup.timer', 'maanshan-health-restore.timer']
+    backup_services = ['maanshan-backup.service']
+    if not direct_postgres:
+        backup_timers.append('maanshan-bridge-backup.timer')
+        backup_services.append('maanshan-bridge-backup.service')
+    for unit in backup_timers:
         check(unit, lambda unit=unit: unit_check(unit, True))
-    for unit in ('maanshan-backup.service', 'maanshan-bridge-backup.service'):
+    for unit in backup_services:
         check(unit, lambda unit=unit: backup_service_check(unit))
     check('postgres_backup', lambda: backup_check('postgres', previous))
-    check('blob_backup', lambda: backup_check('blob', previous))
+    if not direct_postgres:
+        check('blob_backup', lambda: backup_check('blob', previous))
     check('postgres_restore', restore_check)
-    if Path('/etc/maanshan/standby.enabled').exists():
+    if not direct_postgres and STANDBY_ENABLE.exists():
         check('maanshan-standby-import.timer', lambda: unit_check('maanshan-standby-import.timer', True))
         def standby_check():
             data = read_report(Path('/var/lib/maanshan-standby/standby-latest.json'))

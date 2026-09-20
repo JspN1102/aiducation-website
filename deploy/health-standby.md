@@ -43,6 +43,74 @@ discarded by their units; systemd lifecycle messages retain the host's existing
 journal policy. No global journal settings are changed. Business backups are
 not pruned; the monitor reports low disk rather than deleting data.
 
+## Direct PostgreSQL production mode
+
+After the school API has been verified to write directly to Guangzhou
+PostgreSQL, operations can create the explicit root-owned marker
+`/etc/maanshan/direct-postgres.enabled`. The health report then records
+`storageMode: direct-postgres` and checks local resources/API/services, the
+PostgreSQL backup timer/service and dump, and the isolated restore timer/result.
+It does not read old Blob exports or require their timer/service, and ignores
+the legacy standby marker. Without the new marker, the previous checks remain
+in effect, including Blob backup failures and optional standby freshness.
+
+The marker changes monitoring only: it does **not** disable any writer. Stop
+the former Blob export/sync/import chain as a separate cutover step. Disabling
+a timer alone does not stop a service it already started. Preserve the old
+configuration and backups; do not import an older Blob snapshot into the new
+production database.
+
+The following is a minimal reviewed installation sequence, run as root only
+after the new application release and direct database writes are verified. It
+uses the existing health service path and keeps local monitoring/recovery
+timers active. Stopping a running import may cancel its transaction; inspect
+its result and retain any before/after dumps. No old backups are deleted.
+
+```sh
+set -eu
+umask 077
+test "$(id -u)" = 0
+source_file=/srv/maanshan/current/deploy/health-check.py
+installed_file=/usr/local/lib/maanshan-maintenance/health-check.py
+test -f "$source_file"
+test -f "$installed_file"
+cutover_backup="/root/maanshan-direct-postgres-$(date -u +%Y%m%dT%H%M%SZ)"
+mkdir -m 700 "$cutover_backup"
+cp -a "$installed_file" "$cutover_backup/health-check.py"
+for unit in research-sync maanshan-bridge-backup maanshan-standby-import; do
+    cp -a "/etc/systemd/system/$unit.service" "$cutover_backup/"
+    cp -a "/etc/systemd/system/$unit.timer" "$cutover_backup/"
+    systemctl show "$unit.service" "$unit.timer" > "$cutover_backup/$unit-state.txt"
+done
+if test -f /etc/maanshan/standby.enabled; then
+    cp -a /etc/maanshan/standby.enabled "$cutover_backup/standby.enabled"
+fi
+systemctl disable --now research-sync.timer maanshan-bridge-backup.timer maanshan-standby-import.timer
+systemctl stop research-sync.service maanshan-bridge-backup.service maanshan-standby-import.service
+for unit in research-sync maanshan-bridge-backup maanshan-standby-import; do
+    state=$(systemctl show "$unit.service" --property=ActiveState --value)
+    case "$state" in inactive|failed) ;; *) exit 1 ;; esac
+done
+if test -f /etc/maanshan/standby.enabled; then
+    mv /etc/maanshan/standby.enabled "$cutover_backup/standby.enabled.removed"
+fi
+install -m 644 -o root -g root "$source_file" "$installed_file.next"
+mv "$installed_file.next" "$installed_file"
+install -d -m 700 -o root -g root /etc/maanshan
+install -m 600 -o root -g root /dev/null /etc/maanshan/direct-postgres.enabled
+systemctl enable --now maanshan-backup.timer maanshan-health-restore.timer maanshan-health-check.timer
+systemctl start maanshan-backup.service
+systemctl start maanshan-health-restore.service
+systemctl start maanshan-health-check.service
+cat /var/lib/maanshan-health/health-latest.json
+```
+
+No daemon reload is needed for this sequence because unit definitions and the
+health service command remain unchanged. Include the new mode marker in private
+recovery configuration snapshots. A rollback needs an explicit source-of-truth
+and data reconciliation review; removing the marker or re-enabling an old
+import timer alone is not a safe data rollback.
+
 ## Optional standby reconciliation
 
 `standby-run.py` is disabled until explicitly enabled. Its 04:00 daily timer
