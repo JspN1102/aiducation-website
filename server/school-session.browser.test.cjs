@@ -48,7 +48,12 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
       await checkbox.uncheck();
       const popupEvent = context.waitForEvent('page');
       await page.locator('.platform-terms-confirmation a').click();
-      const agreement = await popupEvent; await agreement.waitForLoadState('domcontentloaded');
+      const agreement = await popupEvent;
+      // A newly opened target=_blank page is initially about:blank. Waiting
+      // only for domcontentloaded can return before its relative agreement
+      // URL has started navigating, making the URL assertion race the browser.
+      await agreement.waitForURL('**/maanshan/agreement.html');
+      await agreement.waitForLoadState('domcontentloaded');
       assert.equal(new URL(agreement.url()).pathname, '/maanshan/agreement.html');
       assert.equal(await agreement.locator('h1').innerText(), '使用協議及私隱說明');
       assert.match(await agreement.locator('.version').innerText(), /2026-09-21-v2/);
