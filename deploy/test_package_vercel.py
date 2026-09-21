@@ -98,6 +98,8 @@ for(const [name,source] of Object.entries(entries)){
             self.assertIn("fetch('/api/school-auth/')", app)
             redirects=json.loads((destination/'vercel.json').read_text())['redirects']
             self.assertIn({'source':'/', 'destination':'/school/', 'statusCode':307}, redirects)
+            self.assertIn({'source':'/maanshan/', 'destination':'/school/', 'statusCode':307}, redirects)
+            self.assertIn({'source':'/maanshan', 'destination':'/school/', 'statusCode':307}, redirects)
             self.assertIn({'source':'/maanshan/:path*', 'destination':'/school/:path*', 'statusCode':307}, redirects)
             self.assertFalse((destination/'.env').exists())
             for name in packager.API_FILES:self.assertFalse((destination/'api'/name).exists())

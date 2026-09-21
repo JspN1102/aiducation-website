@@ -108,6 +108,8 @@ def main():
         'functions': functions_config(),
         'rewrites': [{'source':'/api/'+Path(name).stem+'/', 'destination':'/api/school-gateway/?__school_route='+Path(name).stem} for name in sorted(API_FILES)],
         'redirects': [{'source': '/', 'destination': '/school/', 'statusCode': 307},
+                      {'source': '/maanshan', 'destination': '/school/', 'statusCode': 307},
+                      {'source': '/maanshan/', 'destination': '/school/', 'statusCode': 307},
                       {'source': '/maanshan/:path*', 'destination': '/school/:path*', 'statusCode': 307},
                       {'source': '/favicon.ico', 'destination': '/favicon.png', 'statusCode': 307},
                       *public_routes(media_config['redirects'])],
