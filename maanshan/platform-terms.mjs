@@ -7,7 +7,7 @@ export function termsConfirmationMarkup(id = 'school-terms') {
 export function bindTermsConfirmation(form) {
   if (!document.querySelector('link[data-platform-terms]')) {
     const style = document.createElement('link');
-    style.rel = 'stylesheet'; style.href = 'platform-terms.css?v=20260921-school8';
+    style.rel = 'stylesheet'; style.href = 'platform-terms.css?v=20260921-school9';
     style.dataset.platformTerms = 'true'; document.head.append(style);
   }
   const input = form.elements.termsAccepted;

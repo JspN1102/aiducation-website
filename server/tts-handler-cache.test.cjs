@@ -13,6 +13,15 @@ async function fixture(t){
 }
 const body={text:'來說說今天看到的風景。',delivery:'url',pronunciationVersion:'fixture-recording-v1'};
 
+test('single-character demonstrations complete the utterance without changing its prescribed tone',async t=>{
+ const processRequest=await fixture(t),plain={...body,text:'目'},ssml={...body,text:'<speak><phoneme alphabet="py" ph="mu4">目</phoneme></speak>',allowSSML:true};
+ const first=await processRequest({batches:[[plain,ssml],[plain,ssml]]});
+ assert.equal(first.synthesisCalls,2);
+ assert.deepEqual([...first.texts].sort(),['目。','<speak><phoneme alphabet="py" ph="mu4">目</phoneme>。</speak>'].sort());
+ assert.deepEqual(first.results.map(r=>r.cache),['MISS-STORED','MISS-STORED','HIT','HIT']);
+ const next=await processRequest({batches:[[plain,ssml]]});assert.equal(next.synthesisCalls,0);
+});
+
 test('generated speech is reused on the next request and after a fresh server process',async t=>{
  const processRequest=await fixture(t);
  const first=await processRequest({batches:[[body],[body]]});

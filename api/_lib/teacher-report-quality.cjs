@@ -110,6 +110,30 @@ function namedDomainPairs(value){
   return matches.map(match=>mentionedDomains(match[0])).filter(domains=>domains.length===2);
 }
 function namedDomainPair(value){return namedDomainPairs(value).at(-1)||[];}
+function supportedReadingComparison(clause,payload){
+  // Character means use the same reading measure. Comparing them is not a
+  // comparison between dictation, listening and reading scores. Require every
+  // named character to have a concrete reading observation before accepting it.
+  if(mentionedDomains(clause).some(domain=>domain!=='reading'))return false;
+  const chars=[...new Set(quotedCharacters(clause))];
+  if(chars.length<2||!/(?:平均分|均分|逐字平均).{0,5}(?:相近|接近)/u.test(clause))return false;
+  const facts=Array.isArray(payload.evidence)?payload.evidence:[];
+  const means=chars.map(char=>facts.filter(fact=>fact.label===`「${char}」逐字平均`).map(fact=>fact.value?.meanScore));
+  // Repeated occurrences can mean different observations. Leave an ambiguous
+  // match to the writer rather than picking whichever score passes.
+  if(means.some(values=>values.length!==1||!Number.isFinite(values[0])))return false;
+  const values=means.map(scores=>scores[0]);
+  return Math.max(...values)-Math.min(...values)<=0.1;
+}
+function supportedTeachingGroup(clause,path,payload){
+  if(!/^(?:teachingActions|reviewPlan)\[/u.test(path))return false;
+  // "對朗讀分數較低的學生再示範" is an instruction for an observed
+  // group, not a ranking of reading against another kind of assessment.
+  const match=clause.match(/(?:對[於于]?|讓|让|請|请|邀[請请])[^，,。；;]{0,12}?(朗[讀读]|默[寫写]|辨音|[聽听]辨)(?:字音)?(?:[評评]分|分[數数]|成[績绩]|表[現现])(?:仍|依然)?[較较]低的(?:[學学]生|同[學学])/u);
+  if(!match||mentionedDomains(clause).length!==1)return false;
+  const domain=mentionedDomains(match[1])[0];
+  return (payload.evidence||[]).some(fact=>fact.scope==='所選範圍'&&fact.source==='平台評分'&&fact.label?.endsWith('：個人平均低於60分的名冊學生')&&mentionedDomains(fact.label)[0]===domain&&Number.isSafeInteger(fact.value)&&fact.value>0);
+}
 function wrongMissingScoreSplit(sentence,facts){
   const missing=/(\d+)\s*(?:名|位)?(?:人|學生|学生)(?:未|尚未|尚無|尚无|沒有|没有|無|无)(?:同時|同时)?(?:留下|有|取得)?(朗[讀读]|默[寫写]|辨音|[聽听]辨).{0,12}(?:[評评]分|分[數数]|成[績绩]|結果|结果|[紀記记]錄|记录)/gu;
   for(const claim of sentence.matchAll(missing)){
@@ -170,7 +194,7 @@ function inspectAnalysis(analysis,payload={}){
       for(const sentence of value.split(/[。！？!?\n]/u)){
         const wrongSplit=wrongMissingScoreSplit(sentence,facts);
         if(wrongSplit)add('REPORT_OVERLAP_AS_MISSING',`刪除整句「${sentence}」。全體該項低分${wrongSplit.total}人，其中${wrongSplit.paired}人已同時有另一項評分，未留下另一項評分的是${wrongSplit.actual}人，不是${wrongSplit.claimed}人。兩項皆低者已有兩項評分，不能改稱缺測者。保留前文正確的三組及教法，不再補算其他學生或添加資料局限解說。`,path);
-        if(/(?:不能|不可|不宜|不應|不应|無法|无法|未能|不[將将把]).{0,12}(?:推論|推论|推斷|推断|判斷|判断|代表).{0,25}(?:每[個个]|人人|全班|所有[學学]生|普遍)|(?:平均分|均分|逐字平均|[評评]分|分[數数]).{0,12}(?:只是|僅[供为為]?|仅[供为為]?|只供|僅僅|仅仅).{0,20}(?:[參参]考|[線线]索|之用|[選选][擇择]|用[於于])|(?:平均分|均分|逐字平均).{0,18}不(?:等[於于]|代表).{0,15}(?:每[個个]|人人|全班)/u.test(sentence))
+        if(/(?:不能|不可|不宜|不應|不应|無法|无法|未能|不[將将把]|避免[以將将把]?).{0,12}(?:推論|推论|推斷|推断|判斷|判断|代表).{0,25}(?:每[個个]|人人|全班|所有[學学]生|普遍)|(?:平均分|均分|逐字平均|[評评]分|分[數数]).{0,12}(?:只是|僅[供为為]?|仅[供为為]?|只供|僅僅|仅仅).{0,20}(?:[參参]考|[線线]索|之用|[選选][擇择]|用[於于]|(?:反映|表示|描述).{0,8}(?:[趨趋][勢势]|整[體体]))|(?:平均分|均分|逐字平均).{0,18}不(?:等[於于]|代表).{0,15}(?:每[個个]|人人|全班)/u.test(sentence))
           add('REPORT_DEFENSIVE_LANGUAGE',`刪除整句「${sentence}」。這是解說數據局限的防禦文字，不要改寫成另一句「不能推論」「只是參考」。保留前後的教學安排；若缺少做法，直接寫全班跟讀後逐一聽取，讓仍需鞏固的學生再讀。`,path);
         if(/同一批|交集|重[疊叠]|兩項|两项|低[於于]\s*60|分[組组層层]/u.test(sentence)){
           for(const domains of namedDomainPairs(sentence)){
@@ -267,8 +291,14 @@ function inspectAnalysis(analysis,payload={}){
       add('DEMO_LABEL_IN_BODY','頁首會統一標示「模擬數據」。刪除正文及標題的模擬、虛構或研究證據說明，按正常班級教學報告寫數據和建議；不要描述學生姓名的真假。',path);
     if(asserted(value,/(?:中等|尚可|(?:未達|未达)?高水[準准平]|基[礎础]薄弱|已有(?:一定)?基[礎础]|能力(?:薄弱|良好|較弱|较弱)|不?及格)/u))
       add('UNSUPPORTED_ABILITY_LEVEL','未提供能力等級或及格界線。刪除「中等、尚可、高水準、基礎薄弱」等定級，只寫實際分數、測量筆數和可觀察的練習線索；不能用均分推斷能力高低。',path);
-    if(/朗[讀读]|默[寫写]|辨音|[聽听]辨|字音/u.test(value)&&!/(?:同一|相同).{0,8}(?:原句|題目|题目)|上次|前[後后]兩次|前[後后]两次/u.test(value)&&asserted(value,/(?:平均分|均分|分[數数]|[準准]確度|准确度|成[績绩]|表[現现]).{0,5}(?:相近|接近|[較较更]高|[較较更]低|[優优]於|[優优]于|[遜逊]於|[遜逊]于)/u))
-      add('UNSUPPORTED_SCORE_COMPARISON','不同學習分項不能以均分高低推論能力。改為連結各項有評分的人數、明確提供的同一批學生觀察、具體字音和題目結果，解釋教學先後次序；不要另造高低或能力標準。',path);
+    for(const sentence of value.split(/[。！？!?\n]/u)){
+      if(!/朗[讀读]|默[寫写]|辨音|[聽听]辨|字音/u.test(value)||/(?:同一|相同).{0,8}(?:原句|題目|题目)|上次|前[後后]兩次|前[後后]两次/u.test(sentence))continue;
+      for(const clause of clauses(sentence)){
+        if(!asserted(clause,/(?:平均分|均分|分[數数]|[準准]確度|准确度|成[績绩]|表[現现]).{0,5}(?:相近|接近|[較较更]高|[較较更]低|[優优]於|[優优]于|[遜逊]於|[遜逊]于)/u))continue;
+        if(supportedReadingComparison(clause,payload)||supportedTeachingGroup(clause,path,payload))continue;
+        add('UNSUPPORTED_SCORE_COMPARISON',`請定點修改「${clause}」。若比較不同學習分項，刪除高低排名；若沒有明確比較依據，刪除「相近、較高、較低」等比較詞，保留準確數字。教學建議可直接寫「讓仍需鞏固的學生再讀一次」。保留相鄰正確原句、數據及教法，不刪掉整段，不補免責說明。`,path);
+      }
+    }
     if(payload.reportStyle==='narrative-teaching-review'&&asserted(value,/(?:各[項项]|所有[項项]).{0,6}(?:最低|最高)|(?:均|都).{0,6}(?:高[於于]|低[於于]).{0,12}(?:朗[讀读]|默[寫写]|[聽听]辨)|(?:朗[讀读]|默[寫写]|[聽听]辨|辨音).{0,18}(?:明[顯显]偏低|相[對对]穩定|表[現现]穩定)/u))
       add('UNSUPPORTED_SCORE_COMPARISON','刪除「各項最低」「均高於朗讀」「聽辨穩定」等沒有同量尺或縱向證據的判斷。用實際覆蓋人數、配對學生的跟進線索和原句字音，說明教學重心，而非以不同題型分數排名。',path);
     if(payload.reportStyle==='narrative-teaching-review'&&/(?:這不是|这不是|並非|并非).{0,24}(?:[聽听]力|辨[識识]能力|理解能力).{0,10}問題|(?:沒有|没有|並非|并非).{0,10}集中.{0,15}(?:[聲声]母|[韻韵]母|[聲声]韻)|(?:不是|並非|并非).{0,5}少數[學学]生.{0,25}全班/u.test(value))

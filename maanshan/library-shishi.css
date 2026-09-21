@@ -1,5 +1,5 @@
 /* Independent full-body welcome, aligned with the library title. */
-.library-heading.library-with-shishi{display:block;position:relative;padding-bottom:var(--library-guide-space,0px)}
+.library-heading.library-with-shishi{display:block;position:relative;padding-bottom:0;z-index:3}
 .library-with-shishi>div{min-width:0}
 .library-heading.library-with-shishi h1{display:block;white-space:nowrap;text-wrap:nowrap;line-height:1.3}
 .library-title-start{white-space:nowrap}
@@ -13,7 +13,7 @@
 .library-guide-bubble[hidden]{display:none}
 .library-guide-bubble::before{content:"";position:absolute;left:var(--guide-tail);top:-7px;width:12px;height:12px;background:#fffdf6;border-top:1px solid #c4d9c6;border-left:1px solid #c4d9c6;transform:translateX(-50%) rotate(45deg)}
 .library-guide-bubble[data-placement=beside]::before{left:-7px;top:var(--guide-tail);transform:translateY(-50%) rotate(-45deg)}
-.library-guide-bubble p{font:400 20px/1.6 var(--sans);margin:0;text-wrap:pretty}
+.library-guide-bubble p{font:400 clamp(17px,2vw,20px)/1.5 var(--sans);margin:0;white-space:nowrap;text-wrap:nowrap}
 .library-guide-bubble .library-guide-close{position:absolute;right:2px;top:2px;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:#476457;font:400 28px/1 var(--sans);cursor:pointer;touch-action:manipulation}
 .library-guide-bubble button:focus-visible{outline:3px solid #277e76;outline-offset:1px}
 .account-dialog .teacher-reset-open{margin-top:12px;width:100%;white-space:normal}

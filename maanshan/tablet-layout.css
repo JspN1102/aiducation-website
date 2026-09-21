@@ -1,5 +1,19 @@
 /* Give landscape tablets the space below a compact lesson bar. The game
    layouts that follow this file keep their own scene/control proportions. */
+/* Book covers retain their complete composition even when browser toolbars
+   reduce the viewport height. The page can grow instead of cropping artwork. */
+.library:not(.credits-page){height:auto;min-height:calc(100dvh - 64px);padding-bottom:calc(32px + env(safe-area-inset-bottom))}
+.library .library-books{flex:none;grid-template-rows:none;grid-auto-rows:auto;align-items:start;padding-bottom:18px}
+.library .poem-entry{height:100%;min-height:0}
+.library .poem-art{flex:none;height:auto;min-height:0;aspect-ratio:16/9;background-size:contain;background-repeat:no-repeat}
+.library .poem-art>img{display:block;width:100%;height:100%;object-fit:contain;object-position:center;transform:none}
+.library .poem-card-body{flex:none}
+.library .library-footer{margin-top:8px;padding-bottom:8px}
+.chat-response{display:flex;flex-direction:column;align-items:flex-start;max-width:90%;min-width:0}
+.chat-response .chat-bubble{max-width:100%;width:auto}
+.chat-message.user .chat-response{align-items:flex-end}
+.chat-response .chat-reply-audio{display:inline-flex;align-items:center;justify-content:center;align-self:flex-start;width:44px;min-width:44px;height:36px;min-height:36px;margin:3px 0 0;padding:6px 10px;border:0;background:transparent;box-shadow:none;color:#537969}
+.chat-response .chat-reply-audio svg{width:19px;height:19px}
 @media (min-width:701px) and (max-width:1400px) and (min-height:560px) and (orientation:landscape){
  .workspace.lesson-shell:not(.view-quiz){padding-inline:max(16px,env(safe-area-inset-left)) max(16px,env(safe-area-inset-right));padding-bottom:max(12px,env(safe-area-inset-bottom))}
  .workspace.lesson-shell:not(.view-quiz) .lesson-bar:has(.shishi-touch-slot){grid-template-columns:auto minmax(0,1fr) 100px auto;min-height:86px;padding-block:3px;margin-bottom:8px;gap:14px}

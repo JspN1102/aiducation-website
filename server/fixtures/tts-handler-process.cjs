@@ -8,7 +8,7 @@ const cachePath=require.resolve('../../api/_lib/tts-cache.js');
 const realCache=require(cachePath);
 const options=JSON.parse(process.argv[2]);
 let synthesisCalls=0,lookups=0;
-const voices=[];
+const voices=[],texts=[];
 require.cache[require.resolve('../../api/_lib/school-auth.cjs')]={exports:{enabled:()=>false}};
 if(options.delayedMiss)require.cache[cachePath]={exports:{...realCache,async hasAudio(key){
   const sequence=++lookups,result=await realCache.hasAudio(key);
@@ -18,7 +18,7 @@ if(options.delayedMiss)require.cache[cachePath]={exports:{...realCache,async has
 https.request=(_request,callback)=>{
   const request=new EventEmitter();request.setTimeout=()=>{};request.destroy=()=>{};
   request.end=body=>{
-    const parsed=JSON.parse(body);synthesisCalls++;voices.push(parsed.VoiceType);
+    const parsed=JSON.parse(body);synthesisCalls++;voices.push(parsed.VoiceType);texts.push(parsed.Text);
     setTimeout(()=>{
       const response=new EventEmitter();callback(response);
       // Distinct waveform bytes prove different voices cannot share a file.
@@ -46,5 +46,5 @@ async function invoke(body){
       deliveries.push({range:range||'full',status:response.statusCode,bytes:response.body?.length,contentRange:response.headers['content-range'],wav:Buffer.isBuffer(response.body)&&response.body.toString('ascii',0,4)==='RIFF'});
     }
   }
-  console.log(JSON.stringify({synthesisCalls,voices,results,deliveries}));
+  console.log(JSON.stringify({synthesisCalls,voices,texts,results,deliveries}));
 })().catch(error=>{console.error(error.message);process.exitCode=1;}).finally(()=>{https.request=realRequest;});

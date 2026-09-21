@@ -1,4 +1,4 @@
-import {createHandwritingPad} from './handwriting-pad.mjs?v=20260919c';
+import {createHandwritingPad} from './handwriting-pad.mjs?v=20260921-school9';
 
 // First submitted recognition is the assessment. Later stroke demonstrations
 // and free practice never change that result. Only the top candidate counts.
@@ -141,7 +141,7 @@ export function mountChallengeWriting(holder, {
       actions.append(button);
     }
     review.append(answer, actions);
-    status.textContent = result.status === 'skipped' ? '這題記作學習，先看看怎樣寫。'
+    status.textContent = result.status === 'skipped' ? '看看字形，直接在田字格練一遍。'
       : result.correct ? '寫對了！也可以看看這個字的筆順。'
         : result.recognized ? `這次辨認為「${result.recognized}」。看看下面的字，一起學一學。`
           : '看看下面的字，一起學一學。';
@@ -253,7 +253,7 @@ export function mountChallengeWriting(holder, {
       status.textContent = '看一看每一筆從哪裏開始。';
       await writer.animateCharacter();
       if (!destroyed && request === strokeOperation) {
-        status.textContent = '看完了，可以自己練一遍。這次練習不會改動答題結果。';
+        status.textContent = '看完了，直接在田字格練一遍。';
       }
     } catch {
       if (!destroyed && request === strokeOperation) {
@@ -270,11 +270,19 @@ export function mountChallengeWriting(holder, {
     practising = true;
     pad.clear();
     $('.cw-tools').hidden = false;
-    status.textContent = '照着正確的字練一遍，這次練習不會改動答題結果。';
+    status.textContent = '照着正確的字，在田字格練一遍。';
     updateControls();
     revealBoard();
   }
 
+  // A shown answer or completed stroke demonstration is still a writing
+  // surface. The first touch enters free practice, preserving the assessment.
+  // Capture runs before the pad sees that same gesture, so its first stroke
+  // is not swallowed by the character/animation overlay.
+  const beginPractice = event => {
+    if (!destroyed && result && !practising && !busy && event.button !== 2) practise();
+  };
+  for (const type of ['pointerdown','touchstart']) $('.cw-board').addEventListener(type,beginPractice,{capture:true,signal:controller.signal,passive:true});
   pad = createHandwritingPad(canvas, {isLocked: locked, onChange: strokes=>{if(strokes.length>lastStrokeCount)auditWriting('item_interacted',{interaction:'stroke_finished',metrics:{strokeCount:strokes.length,eraseCount}});lastStrokeCount=strokes.length;updateControls();}, interactionSurface: $('.cw-board')});
   root.addEventListener('click', event => {
     const button = event.target.closest?.('[data-cw]');

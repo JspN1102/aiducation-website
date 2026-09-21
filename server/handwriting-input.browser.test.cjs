@@ -25,6 +25,20 @@ async function draw(page,context,engine,{pointer='touch',cancel=false}={}){
  if(pointer==='touch'&&engine==='chromium'){
   const cdp=await context.newCDPSession(page);const send=(type,touchPoints)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints});await send('touchStart',[{x,y,id:1,force:1}]);
   for(let i=1;i<=8;i++)await send('touchMove',[{x:x+b.width*.055*i,y:y+b.height*.025*i,id:1,force:1}]);await send(cancel?'touchCancel':'touchEnd',[]);await cdp.detach();
+ }else if(pointer==='touch-only'){
+  await canvas.evaluate((el,{x,y,width,height,cancel})=>{
+   const board=el.closest('.cw-board');
+   const emit=(type,px,py)=>{
+    const touch={identifier:91,target:el,clientX:px,clientY:py,pageX:px+scrollX,pageY:py+scrollY,radiusX:2,radiusY:2,force:1};
+    const ended=type==='touchend'||type==='touchcancel';
+    const event=new Event(type,{bubbles:true,cancelable:true});
+    Object.defineProperties(event,{changedTouches:{value:[touch]},touches:{value:ended?[]:[touch]},targetTouches:{value:ended?[]:[touch]}});
+    board.dispatchEvent(event);
+   };
+   emit('touchstart',x,y);
+   for(let i=1;i<=8;i++)emit('touchmove',x+width*.055*i,y+height*.025*i);
+   emit(cancel?'touchcancel':'touchend',x+width*.44,y+height*.2);
+  },{x,y,width:b.width,height:b.height,cancel});
  }else if(pointer==='pen'){
   // WebKit's public automation API has no Apple Pencil transport. Exercise the
   // actual pen handlers while keeping physical Pencil testing explicitly open.
@@ -52,8 +66,10 @@ async function audit(engine,width,height){
   const bounds=await page.locator('.cw-animation svg').evaluate(el=>{const a=el.getBoundingClientRect(),b=el.closest('.cw-board').getBoundingClientRect();return a.left>=b.left&&a.top>=b.top&&a.right<=b.right+1&&a.bottom<=b.bottom+1;});check(label+' stroke demonstration fits board',bounds);
   await page.locator('[data-cw=practise]').tap();check(label+' practise removes animation overlay',await page.locator('.cw-animation').isHidden());check(label+' practise accepts finger input',(await draw(page,context,engine)).ink);check(label+' free practice leaves original assessment',await page.evaluate(()=>inkRequests.length===1&&saved.answers.length===3));
   await page.locator('[data-cw=clear]').tap();check(label+' pen event path draws',(await draw(page,context,engine,{pointer:'pen'})).ink);
+  await page.locator('[data-cw=clear]').tap();const touchOnly=await draw(page,context,engine,{pointer:'touch-only'});check(label+' Touch Events without Pointer Events draw',touchOnly.ink);check(label+' Touch Events keep page still',touchOnly.scrollStable);
   await page.setViewportSize({width:height,height:width});await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await page.locator('[data-cw=clear]').tap();check(label+' after orientation change mouse writes',(await draw(page,context,engine,{pointer:'mouse'})).ink);
-  await mount(page);await page.locator('[data-ch=skip]').tap();await page.locator('[data-cw=practise]').tap();check(label+' learn-first then free write works',(await draw(page,context,engine)).ink);check(label+' learning skip stays ungraded',await page.evaluate(()=>saved.answers.at(-1).status==='skipped'&&inkRequests.length===0));
+  await mount(page);await page.locator('[data-ch=skip]').tap();check(label+' learn-first board accepts the very first touch without another button',(await draw(page,context,engine)).ink);check(label+' learning skip stays ungraded',await page.evaluate(()=>saved.answers.at(-1).status==='skipped'&&inkRequests.length===0));
+  await page.locator('[data-cw=clear]').click();await page.locator('[data-cw=strokes]').click();await page.locator('.cw-animation svg').waitFor();check(label+' drawing directly on demonstration begins free practice',(await draw(page,context,engine)).ink);check(label+' touching demonstration removes blocking overlay',await page.locator('.cw-animation').isHidden());
  }catch(error){const evidence=process.env.HANDWRITING_EVIDENCE_DIR;if(evidence){fs.mkdirSync(evidence,{recursive:true});await page.screenshot({path:path.join(evidence,label.replace(/ /g,'-')+'-failure.png'),fullPage:true});}throw error;}finally{await context.close();await browser.close();}
 }
 (async()=>{await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));for(const engine of ['chromium','webkit'])for(const [width,height]of [[390,844],[768,1024],[1180,820]])await audit(engine,width,height);check('no browser errors',errors.length===0);console.log(JSON.stringify({ok:true,checks,errors},null,2));})().catch(e=>{console.error(e);console.log(JSON.stringify({ok:false,checks,errors},null,2));process.exitCode=1;}).finally(()=>server.close());

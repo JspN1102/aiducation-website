@@ -133,8 +133,17 @@ function plainSynthesisText(text) {
   return stableKnownPoemPhrases(value);
 }
 
+function completeSingleCharacter(text) {
+  const value=String(text).trim();
+  const plain=value.replace(/<[^>]+>/g,'').trim();
+  // Yun Xiaohe can return only the onset of a lone phoneme without sentence
+  // punctuation (e.g. mu4 became a 77 ms nasal). Finish the utterance explicitly.
+  if(!/^\p{Script=Han}$/u.test(plain))return value;
+  return /<\/speak>$/i.test(value)?value.replace(/<\/speak>$/i,'。</speak>'):value+'。';
+}
+
 function synthesisText(text, allowSSML = false) {
-  const value = String(text).trim();
+  const value = completeSingleCharacter(text);
   const wrapped = /^<speak>(?:<break time="160ms"\s*\/>)?([\s\S]*)<\/speak>$/.exec(value);
   const plain = (wrapped ? wrapped[1] : value)
     .replace(/<phoneme alphabet="py" ph="[a-z0-9]+">([^<>]+)<\/phoneme>/g, '$1')
@@ -301,7 +310,7 @@ module.exports = async function handler(req, res) {
   const allowSSML = req.body?.allowSSML === true;
   // Isolate old segmented speech without deleting cached files or invalidating
   // unaffected plain-text audio. Browsers receive a new signed audio URL.
-  const profile = `pcm-silence-180-80-v1-${allowSSML ? 'ssml-flow-v3-natural' : 'plain'}`;
+  const profile = `pcm-silence-180-80-v1-${allowSSML ? 'ssml-flow-v3-natural' : 'plain'}${completeSingleCharacter(text)!==text.trim()?'-complete-character-v1':''}`;
   const key = cacheKey({text: text.normalize('NFC').trim(), voice, speed, pronunciationVersion, profile});
   const wantsURL = req.body?.delivery === 'url' && !!audioSignature(key);
   const cached = wantsURL ? await hasAudio(key) : await readAudio(key);

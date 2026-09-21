@@ -72,6 +72,21 @@ async function inspectAR(page){return page.locator('#view').evaluate(el=>{
      for(const n of [0,1,0,1])await page.locator(`[data-fs-foot="${n}"]`).tap();
      await page.locator('[data-fs-next]').tap();state=await inspect(page,selectors[i]);check(`${width}x${height} farewell word tickets fit ${JSON.stringify(state)}`,state.outside.length===0&&(width<900||state.scroll<=2&&state.vertical.length===0));
     }
+    if(i===2){
+     await page.locator('[data-vg-capture]').tap();
+     await page.locator('[data-vg-angle]').fill('100');await page.locator('[data-vg-capture]').tap();
+     check(`${width}x${height} mountain photographs show above angle, listen and feedback controls`,await page.locator('.mountain-game').evaluate(el=>{const tray=el.querySelector('.pvg-photo-tray').getBoundingClientRect(),slider=el.querySelector('.pvg-camera-control').getBoundingClientRect(),actions=el.querySelector('.pvg-actions').getBoundingClientRect(),status=el.querySelector('.pvg-status').getBoundingClientRect();return tray.bottom<=slider.top+1&&slider.bottom<=actions.top+1&&actions.bottom<=status.top+1;}));
+     if(width>=900)check(`${width}x${height} mountain photos fill their frames`,await page.locator('.pvg-photo-tray').evaluate(el=>[...el.querySelectorAll('figure')].every(f=>{const frame=f.getBoundingClientRect(),img=f.querySelector('img').getBoundingClientRect();return img.width>=frame.width-20&&img.height>=frame.height-72;})));
+     state=await inspect(page,selectors[i]);check(`${width}x${height} mountain completion controls fit ${JSON.stringify(state)}`,state.outside.length===0&&(width<900||state.scroll<=2&&state.vertical.length===0));
+    }
+    if(i===3){
+     const trayBox=await page.locator('.river-puzzle-tray').boundingBox();
+     for(const piece of [4,1,5,0,3,2]){
+      await page.locator(`.river-puzzle-tray [data-piece="${piece}"]`).tap();await page.locator(`[data-river-slot="${piece}"]`).tap();
+      if(piece!==2)check(`${width}x${height} river remaining pieces stay inside six-position tray after piece ${piece}`,await page.locator('.river-puzzle-tray').evaluate((el,before)=>{const b=el.getBoundingClientRect();return Math.abs(b.width-before.width)<1&&[...el.children].every(n=>{const p=n.getBoundingClientRect();return p.left>=b.left&&p.right<=b.right+.5&&p.top>=b.top&&p.bottom<=b.bottom+.5;});},trayBox));
+     }
+     check(`${width}x${height} river audio action does not overlap completed picture`,await page.locator('.river-puzzle-game').evaluate(el=>{const a=el.querySelector('.river-puzzle-board').getBoundingClientRect(),b=el.querySelector('[data-river-audio]').getBoundingClientRect();return a.right<=b.left||b.right<=a.left||a.bottom<=b.top||b.bottom<=a.top;}));
+    }
     if(i===4){
      await page.locator('[data-plant="bean-a"]').press('Enter');state=await inspect(page,selectors[i]);
      check(`${width}x${height} garden bean reminder fits ${JSON.stringify(state)}`,state.outside.length===0&&(width<900||state.scroll<=2&&state.vertical.length===0&&state.textOutside.length===0));

@@ -1,5 +1,5 @@
 import { SPEECH_AUDIO_FILES } from './media/speech/index.mjs?v=20260921natural1';
-import { getRecitationTextURL } from './recitation-audio.mjs?v=20260921-school8';
+import { getRecitationTextURL } from './recitation-audio.mjs?v=20260921-school9';
 
 export function getSpeechAudioURL(text) {
   if (typeof text !== 'string') return null;

@@ -1,26 +1,26 @@
 import {imageAsset} from './media-images.mjs?v=20260920-art2';
-import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260921-school8';
-import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260921-school8';
+import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260921-school9';
+import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260921-school9';
 import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
-import {getWordAudioURL} from './word-audio.mjs?v=20260921natural1';
-import {getSpeechAudioURL} from './speech-audio.mjs?v=20260921-school8';
-import {getRecitationAudioURL,getRecitationTextURL} from './recitation-audio.mjs?v=20260921-school8';
+import {getWordAudioURL} from './word-audio.mjs?v=20260921complete1';
+import {getSpeechAudioURL} from './speech-audio.mjs?v=20260921-school9';
+import {getRecitationAudioURL,getRecitationSequence} from './recitation-audio.mjs?v=20260921-school9';
 import {schoolTtsURL} from './school-audio-url.mjs?v=20260921-network1';
-import {mountShishi} from './shishi.mjs?v=20260921-school8';
-import {mountLibraryShishi} from './library-shishi.mjs?v=20260921-school8';
-import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school8';
-import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school8';
+import {mountShishi} from './shishi.mjs?v=20260921-school9';
+import {mountLibraryShishi} from './library-shishi.mjs?v=20260921-school9';
+import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school9';
+import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school9';
 import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
-import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school8';
+import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school9';
 import {challengeSummary} from './challenge-state.mjs?v=20260919d';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260920-school1';
-import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260921-school8';
-import {createRecordingLibrary} from './recording-library.mjs?v=20260921-school8';
-import {requestJSON, requestChat} from './network.mjs?v=20260921-school8';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260921-school8';
-import {schoolSession} from './bootstrap.mjs?v=20260921-school8';
-import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school8';
-import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school8';
+import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260921-school9';
+import {createRecordingLibrary} from './recording-library.mjs?v=20260921-school9';
+import {requestJSON, requestChat} from './network.mjs?v=20260921-school9';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260921-school9';
+import {schoolSession} from './bootstrap.mjs?v=20260921-school9';
+import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school9';
+import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school9';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -305,8 +305,14 @@ function rememberStaticAudioFailure(url){
 async function playDemonstration(url,text,markup,isCurrent,onPhase=()=>{}){
   const requestText=markup||String(text),key=speechKey(requestText,markup);
   try{
-    const official=getRecitationTextURL(text);
-    if(official){onPhase('playing');return await playSource(official);}
+    const official=getRecitationSequence(text);
+    if(official){
+      for(const source of official){
+        if(!isCurrent())return false;
+        onPhase('playing');if(!await playSource(source))return false;
+      }
+      return true;
+    }
     if(url&&shouldTryStaticAudio(url)){
       onPhase('playing');
       const finished=await playSource(url);
@@ -779,7 +785,7 @@ async function loadActivity(name,load) {
 }
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260921-school8'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260921-school9'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
@@ -791,7 +797,7 @@ async function renderQuiz() {
     recognize:(ink,context)=>api('/api/handwriting',{ink,poemId:poem.id,...(collectResearch?{researchContext:research.context(context)}:{})},16000)});
 }
 async function renderExploration(){
-  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260921-school8'));
+  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260921-school9'));
   if(!module)return;
   const holder=$('#view');
   if(!holder||!poem)return;
@@ -829,7 +835,7 @@ function renderChat() {
   const holder=$('#chat-messages');holder.scrollTop=holder.scrollHeight;
   if(messages.at(-1)?.role==='user'&&!chatBusy)showChatRetry('上一句還未收到回覆，可以再送一次。');
 }
-function chatMessage(message,index) {return `<div class="chat-message ${message.role==='user'?'user':''}">${message.role==='assistant'?`<img src="${asset('avatar.webp')}" width="32" height="32" alt="${esc(poem.author)}">`:''}<div class="chat-bubble">${esc(message.content)}${message.role==='assistant'?`<button class="icon-button" data-action="chat-speak" data-value="${index}" aria-label="朗讀回答" title="朗讀回答">${icon('volume-2')}</button>`:''}</div></div>`;}
+function chatMessage(message,index) {return `<div class="chat-message ${message.role==='user'?'user':''}">${message.role==='assistant'?`<img src="${asset('avatar.webp')}" width="32" height="32" alt="${esc(poem.author)}">`:''}<div class="chat-response"><div class="chat-bubble">${esc(message.content)}</div>${message.role==='assistant'?`<button class="icon-button chat-reply-audio" data-action="chat-speak" data-value="${index}" aria-label="朗讀回答" title="朗讀回答">${icon('volume-2')}</button>`:''}</div></div>`;}
 function showChatRetry(message) {
   const holder=$('#chat-error');if(!holder)return;
   holder.innerHTML=`<span>${esc(message)}</span><button type="button" class="button chat-retry" data-action="chat-retry">再送一次</button>`;

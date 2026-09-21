@@ -144,7 +144,7 @@ export function mountRiver(holder, {
       return `<button type="button" class="river-puzzle-slot${occupied ? ' has-piece' : ''}" data-river-slot="${slot}" ${occupied ? `data-piece="${piece}"` : ''} aria-label="${label}" ${interactive() ? '' : 'disabled'}>${occupied ? pieceHTML(piece, 'slot') : `<span class="river-slot-number" aria-hidden="true">${slot + 1}</span>`}</button>`;
     }).join('');
     trayHolder.innerHTML = tray.length
-      ? tray.map(piece => pieceHTML(piece, 'tray')).join('')
+      ? START_ORDER.map(piece => tray.includes(piece) ? pieceHTML(piece, 'tray') : '<span class="river-tray-space" aria-hidden="true"></span>').join('')
       : `<span class="river-tray-empty">${done ? '六片都回到畫裏了' : '畫片都放進去了，再看看位置。'}</span>`;
     updateAudioState();
   }

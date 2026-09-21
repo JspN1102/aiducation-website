@@ -1,7 +1,7 @@
 'use strict';
 const crypto=require('node:crypto'),blob=require('@vercel/blob');
 const research=require('./research-store.cjs');
-const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v18-direct-teaching';
+const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v19-precise-review';
 const MAX_RECORD_BYTES=12*1024*1024,MAX_PROVIDER_BYTES=160*1024,MAX_RESPONSE_BYTES=128*1024;
 const LEASE_MS=120000,PROVIDER_TIMEOUT_MS=42000;
 const BACKGROUND_TIMEOUT_MS=180000,BACKGROUND_LEASE_MS=BACKGROUND_TIMEOUT_MS+30000;
@@ -375,7 +375,10 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
      if(!await save(key,{schemaVersion:1,status:'pending',stage:'revision_ready',leaseUntil:0,background:true,attempts:0,revisions:revisions+1,draftReport:report,draftChecksum:hash(canonical(report)),issues},current.version))fail('REPORT_STORAGE_UNAVAILABLE');
      wakeBackgroundWorker();return {ok:true,status:'generating',reportId,retryAfterSeconds:3};
     }
-    const error=new AnalysisError('AI_REPORT_QUALITY',502,true,30);error.qualityIssues=issues.map(({code,path})=>({code,path}));throw error;
+    const error=new AnalysisError('AI_REPORT_QUALITY',502,true,30);error.qualityIssues=issues.map(({code,path})=>({code,path}));
+    // Retain the final aggregate-only draft privately for diagnosis. It never
+    // becomes a completed report, a public response, or a downloadable file.
+    error.qualityDiagnostics={analysis:generated.analysis,evidence:payload.evidence,issues};throw error;
    }
    report.qualityReview={passed:true,revisions:revisions+1};
    if(!await save(key,{schemaVersion:1,status:'completed',report,reportChecksum:hash(canonical(report))},current.version))fail('REPORT_STORAGE_UNAVAILABLE');
@@ -388,7 +391,7 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
   const safe=error instanceof AnalysisError?error:new AnalysisError('REPORT_STORAGE_UNAVAILABLE'),current=await read(key).catch(()=>null);
   if(current?.value?.leaseId===leaseId){
    const retry=background&&['AI_TIMEOUT','AI_UNAVAILABLE','AI_RATE_LIMITED','REPORT_STORAGE_UNAVAILABLE'].includes(safe.code)&&safeCount(current.value.attempts)<2;
-   const value=retry?{...current.value,stage:retryStage,leaseId:null,leaseUntil:0,retryAt:now()+1000*(safe.retryAfterSeconds||10)}:{schemaVersion:1,status:'failed',promptVersion:PROMPT_VERSION,code:safe.code,httpStatus:safe.status,retryable:safe.retryable,retryAt:now()+1000*(safe.retryAfterSeconds||30),failedAt:new Date(now()).toISOString(),...(safe.qualityIssues?{qualityIssues:safe.qualityIssues}:{})};
+   const value=retry?{...current.value,stage:retryStage,leaseId:null,leaseUntil:0,retryAt:now()+1000*(safe.retryAfterSeconds||10)}:{schemaVersion:1,status:'failed',promptVersion:PROMPT_VERSION,code:safe.code,httpStatus:safe.status,retryable:safe.retryable,retryAt:now()+1000*(safe.retryAfterSeconds||30),failedAt:new Date(now()).toISOString(),...(safe.qualityIssues?{qualityIssues:safe.qualityIssues}:{}),...(safe.qualityDiagnostics?{qualityDiagnostics:safe.qualityDiagnostics}:{})};
    await save(key,value,current.version).catch(()=>{});
    if(retry)return {ok:true,status:'generating',reportId:'ta_'+key.slice(7),retryAfterSeconds:3};
   }

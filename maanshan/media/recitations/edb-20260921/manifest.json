@@ -83,6 +83,16 @@
           "encodedDurationSeconds": 3.27,
           "bytes": 66918,
           "sha256": "9a39d433afd1a6111500f33fbee4aa276b5fb66be24ed4770e3797cc5c902dfd"
+        },
+        "poem": {
+          "text": "鵝鵝鵝，曲項向天歌，白毛浮綠水，紅掌撥清波",
+          "src": "media/recitations/edb-20260921/grade1-poem.mp3",
+          "sourceStartSeconds": 8.0,
+          "sourceEndSeconds": 21.55,
+          "contentDurationSeconds": 13.55,
+          "encodedDurationSeconds": 13.55,
+          "bytes": 272241,
+          "sha256": "fa3f5795f404e25bc6503f9206968d4dc5fbdb4962dbb7c1611d7e7e59c125b5"
         }
       }
     },
@@ -155,6 +165,16 @@
           "encodedDurationSeconds": 3.58,
           "bytes": 73187,
           "sha256": "b450ca8833777f6e059e4674bc5dc17e634c5b05b083664c9932baa067ea4102"
+        },
+        "poem": {
+          "text": "李白乘舟將欲行，忽聞岸上踏歌聲，桃花潭水深千尺，不及汪倫送我情",
+          "src": "media/recitations/edb-20260921/grade2-poem.mp3",
+          "sourceStartSeconds": 11.42,
+          "sourceEndSeconds": 26.0,
+          "contentDurationSeconds": 14.58,
+          "encodedDurationSeconds": 14.58,
+          "bytes": 293138,
+          "sha256": "6c94c8e7f30ec7aeef2026cd2641239a64041aee82d0fb1da6e6ada3f555e32d"
         }
       }
     },
@@ -227,6 +247,16 @@
           "encodedDurationSeconds": 3.74,
           "bytes": 76322,
           "sha256": "05c4b8b3f11cc81ad1324132cbef6687b971d93c17be82378cc45afa97a9cca1"
+        },
+        "poem": {
+          "text": "橫看成嶺側成峯，遠近高低各不同，不識廬山真面目，只緣身在此山中",
+          "src": "media/recitations/edb-20260921/grade3-poem.mp3",
+          "sourceStartSeconds": 10.9,
+          "sourceEndSeconds": 26.46,
+          "contentDurationSeconds": 15.56,
+          "encodedDurationSeconds": 15.56,
+          "bytes": 312469,
+          "sha256": "1a395c804b44bd6d81a15a8dd43530508a8b3fdce5d755ea4c6873769e6cb8ab"
         }
       }
     },
@@ -299,6 +329,16 @@
           "encodedDurationSeconds": 3.99,
           "bytes": 81024,
           "sha256": "cd4302350a47e2d9f6b51f75277400740fdac741bfcb6dd4c6ac97b3eab2df79"
+        },
+        "poem": {
+          "text": "京口瓜洲一水間，鍾山祇隔數重山，春風又綠江南岸，明月何時照我還",
+          "src": "media/recitations/edb-20260921/grade4-poem.mp3",
+          "sourceStartSeconds": 11.0,
+          "sourceEndSeconds": 27.1,
+          "contentDurationSeconds": 16.1,
+          "encodedDurationSeconds": 16.1,
+          "bytes": 323441,
+          "sha256": "7008b8c62dd7846918b63a7193adf65cbf99908b2fea1c87706e41675fb1fd81"
         }
       }
     },
@@ -451,6 +491,16 @@
           "encodedDurationSeconds": 3.06,
           "bytes": 62738,
           "sha256": "dd3c6da984a837d20396b769c5f5baf7be77c29beeae8662594ba7347fc8c3f7"
+        },
+        "poem": {
+          "text": "種豆南山下，草盛豆苗稀，晨興理荒穢，帶月荷鋤歸，道狹草木長，夕露霑我衣，衣霑不足惜，但使願無違",
+          "src": "media/recitations/edb-20260921/grade5-poem.mp3",
+          "sourceStartSeconds": 10.26,
+          "sourceEndSeconds": 36.3,
+          "contentDurationSeconds": 26.04,
+          "encodedDurationSeconds": 26.04,
+          "bytes": 521971,
+          "sha256": "97807e032bca818369c690f80673df152f749f0bd04ebf2aac4c75b9d72d80a4"
         }
       }
     },
@@ -523,6 +573,16 @@
           "encodedDurationSeconds": 3.7,
           "bytes": 75277,
           "sha256": "d00b42f8684713e71872f71cac1a1a155746c01571214e11c2be5a8873c9e0db"
+        },
+        "poem": {
+          "text": "天街小雨潤如酥，草色遙看近卻無，最是一年春好處，絕勝煙柳滿皇都",
+          "src": "media/recitations/edb-20260921/grade6-poem.mp3",
+          "sourceStartSeconds": 9.04,
+          "sourceEndSeconds": 25.02,
+          "contentDurationSeconds": 15.98,
+          "encodedDurationSeconds": 15.98,
+          "bytes": 320828,
+          "sha256": "ee697bb3b0c1916b8289cd9ede9719374c6534d5e7f2c17a5d4b5756fea892ec"
         }
       }
     }

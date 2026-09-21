@@ -305,9 +305,44 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
     if (!destroyed && event.cancelable) event.preventDefault();
   }
 
+  function touchPoint(touch, event) {
+    return {clientX:touch.clientX, clientY:touch.clientY, timeStamp:event.timeStamp};
+  }
+
+  function startTouch(event) {
+    preventBoardGesture(event);
+    // Some tablet/WebView configurations deliver Touch Events without the
+    // corresponding Pointer Events. Use whichever actually starts first;
+    // never create a second stroke when both event families are delivered.
+    if (destroyed || isLocked() || active) return;
+    const touch = event.changedTouches?.[0];
+    if (!touch) return;
+    resize();
+    if (!rectangle || rectangle.width <= 0 || rectangle.height <= 0) return;
+    active = {points:[], touchId:touch.identifier, pointerType:'touch', anchor:null, tipBounds:null};
+    appendPoint(touchPoint(touch, event));
+    renderActive();
+    notifyChange();
+  }
+
+  function moveTouch(event) {
+    preventBoardGesture(event);
+    if (!active || active.touchId === undefined) return;
+    if (isLocked()) {commitActive();return;}
+    const touch = Array.from(event.changedTouches || []).find(point => point.identifier === active.touchId);
+    if (!touch) return;
+    appendPoint(touchPoint(touch, event));
+    renderActive();
+  }
+
   function finishTouch(event) {
     if (!active || active.pointerType !== 'touch') return;
-    if (event.type === 'touchcancel' || event.touches.length === 0) commitActive();
+    if (active.touchId !== undefined) {
+      const touch = Array.from(event.changedTouches || []).find(point => point.identifier === active.touchId);
+      if (!touch) return;
+      if (event.type !== 'touchcancel') appendPoint(touchPoint(touch, event));
+      commitActive();
+    } else if (event.type === 'touchcancel' || event.touches.length === 0) commitActive();
   }
 
   function addListener(target, type, listener, options) {
@@ -315,9 +350,9 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
     listeners.push(() => target.removeEventListener(type, listener, options));
   }
 
-  addListener(canvas, 'pointerdown', pointerDown, { passive: false });
-  addListener(interactionSurface, 'touchstart', preventBoardGesture, { passive: false });
-  addListener(interactionSurface, 'touchmove', preventBoardGesture, { passive: false });
+  addListener(interactionSurface, 'pointerdown', pointerDown, { passive: false });
+  addListener(interactionSurface, 'touchstart', startTouch, { passive: false });
+  addListener(interactionSurface, 'touchmove', moveTouch, { passive: false });
   addListener(interactionSurface, 'touchend', finishTouch, { passive: true });
   addListener(interactionSurface, 'touchcancel', finishTouch, { passive: true });
   for (const type of ['contextmenu', 'selectstart', 'dragstart']) addListener(interactionSurface, type, preventBoardGesture);

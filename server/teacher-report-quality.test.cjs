@@ -70,6 +70,24 @@ test('flags actual cross-construct comparison headings, preserves numeric thresh
   assert(codes({findings:[{title:'朗讀與默寫平均分接近'},{title:'辨音答題準確度較高'}]}).includes('UNSUPPORTED_SCORE_COMPARISON'));
   assert.deepEqual(inspectAnalysis({overview:'字音分數低於60分。不能說辨音答題準確度較高。',findings:[{interpretation:'同一原句的朗讀平均分比上次較高，只作描述。'}]},payload),[]);
 });
+
+test('same-measure character observations are not rejected as cross-construct score comparisons',()=>{
+ const p={...payload,evidence:['隔','月','我'].map((char,index)=>({id:'F00'+index,label:`「${char}」逐字平均`,value:{meanScore:68.95,measuredStudents:20}}))};
+ const interpretation='教師先帶全班朗讀第一、第三句。第二句的「隔」與第四句的「月、我」平均分相近，可接著共同跟讀。';
+ assert(!codes({findings:[{interpretation}]},p).includes('UNSUPPORTED_SCORE_COMPARISON'));
+ assert(codes({findings:[{interpretation}]},{...p,evidence:p.evidence.slice(0,2)}).includes('UNSUPPORTED_SCORE_COMPARISON'),'unobserved characters do not gain an exemption');
+ assert(codes({findings:[{interpretation}]},{...p,evidence:p.evidence.map((fact,index)=>({...fact,value:{meanScore:index?90:20}}))}).includes('UNSUPPORTED_SCORE_COMPARISON'),'different same-measure results must not be called close');
+ assert(codes({findings:[{interpretation:'同一原句的朗讀平均分比上次較高。辨音答題準確度較高。'}]},p).includes('UNSUPPORTED_SCORE_COMPARISON'),'a separate follow-up sentence must not exempt the whole paragraph');
+});
+
+test('an evidenced teaching subgroup is not a ranking of different assessment types',()=>{
+ const p={...payload,evidence:[{label:'朗讀字音評分：個人平均低於60分的名冊學生',value:7,source:'平台評分',scope:'所選範圍'}]};
+ const a={teachingActions:[action('原句跟讀',['對於朗讀分數較低的學生再示範一次，讓他們重讀原句。'])]};
+ assert(!codes(a,p).includes('UNSUPPORTED_SCORE_COMPARISON'));
+ assert(codes(a,{...p,evidence:[]}).includes('UNSUPPORTED_SCORE_COMPARISON'));
+ const issue=inspectAnalysis({teachingActions:[action('跟讀',['朗讀平均分較低，默寫準確度較高。'])]},p).find(issue=>issue.code==='UNSUPPORTED_SCORE_COMPARISON');
+ assert(issue);assert(issue.message.includes('朗讀平均分較低'),'revision identifies the actual clause');
+});
 test('flags listening choices that are all present in the specified first line, not an unambiguous or explicit multi-choice task',()=>{
   const p={...payload,curriculum:[{title:'題西林壁',lines:[{text:'橫看成嶺側成峯'}]},{title:'初春小雨',lines:[{text:'天街小雨潤如酥'}]}]};
   for(const step of ['教師朗讀《題西林壁》首句，學生從「橫」「嶺」中選出聽到的字。','教師朗讀《初春小雨》第一句，學生從「街」「潤」「酥」中選出聽到的字。','教師朗讀「橫看成嶺側成峯」，學生從「橫」「嶺」中選出聽到的字。'])assert(codes({teachingActions:[action('聽選',[step])]},p).includes('AMBIGUOUS_LISTENING_CHOICES'),step);
@@ -208,8 +226,9 @@ test('the actual v13 paragraph loses its defensive explanation while direct teac
  const actual='逐字平均分是全班整體表現的參考，不能直接推論每個人都錯，因此個別聽取是必要的。';
  const issue=inspectAnalysis({findings:[{interpretation:actual}]},p).find(item=>item.code==='REPORT_DEFENSIVE_LANGUAGE');
  assert(issue);assert(issue.message.includes('刪除整句「'+actual.slice(0,-1)+'」'));assert.match(issue.message,/不要改寫成另一句/);
- for(const text of ['平均分只是參考，不能代表全班。','逐字平均不等於人人讀錯。','不能由均分判斷所有學生的字音表現。','平均分僅供選擇句子之用，實際仍需以個別聽取結果安排後續。','朗讀評分只供選擇原句，實際仍需逐一聽取。','教師應以逐字平均和已有評分人數20人作為選擇句子的依據，不將平均低分推論為全班讀錯，而是透過共同跟讀與個別聽取，找出真正需要再練的學生。','不把均分推断为所有学生读错，教师仍需逐一听取。'])
+ for(const text of ['平均分只是參考，不能代表全班。','逐字平均不等於人人讀錯。','不能由均分判斷所有學生的字音表現。','平均分僅供選擇句子之用，實際仍需以個別聽取結果安排後續。','朗讀評分只供選擇原句，實際仍需逐一聽取。','教師應以逐字平均和已有評分人數20人作為選擇句子的依據，不將平均低分推論為全班讀錯，而是透過共同跟讀與個別聽取，找出真正需要再練的學生。','不把均分推断为所有学生读错，教师仍需逐一听取。','教師應以個別聽取結果安排跟讀，避免以平均分推斷全班皆錯。'])
   assert(codes({overview:text},p).includes('REPORT_DEFENSIVE_LANGUAGE'),text);
+ assert(codes({overview:'由於平均分僅反映整體趨勢，教師在個別聽取時應分辨哪些學生需要全班再練，哪些只需個別提醒。'},p).includes('REPORT_DEFENSIVE_LANGUAGE'));
  for(const text of ['全班跟讀後，教師逐一聽取，讓仍需鞏固的學生再讀一次。','教師依學生重讀的實際表現，調整小組練習。','教師不能忽略尚未留下朗讀紀錄的學生，下一課先聽取其朗讀。'])
   assert(!codes({overview:text},p).includes('REPORT_DEFENSIVE_LANGUAGE'),text);
 });
