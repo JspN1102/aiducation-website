@@ -68,6 +68,52 @@ test('binary files, upstream errors and cookie arrays retain status and headers'
  const f=await fixture((req,res)=>{if(count++===0){res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');res.setHeader('Content-Disposition','attachment; filename="demo.docx"');res.end(bytes);}else{res.statusCode=403;res.setHeader('Content-Type','application/json');res.end('{"code":"ROLE_FORBIDDEN"}');}},{name:'teacher-tools'});
  try{const r=await f.call('/api/teacher-tools?tool=demo-export');assert.equal(r.status,200);assert.match(r.headers.get('content-disposition'),/demo.docx/);assert.deepEqual(Buffer.from(await r.arrayBuffer()),bytes);const denied=await f.call('/api/teacher-tools?tool=demo-data');assert.equal(denied.status,403);assert.equal((await denied.json()).code,'ROLE_FORBIDDEN');}finally{await f.close();}
 });
+test('auth failure diagnostics use only approved labels and field presence, never private values',async t=>{
+ const logs=[];t.mock.method(console,'warn',(...args)=>logs.push(args));
+ const secret='SYNTHETIC-PRIVATE-CONTENT';
+ const cases=[
+  ...['TERMS_REQUIRED','TERMS_VERSION_CHANGED','ORIGIN_REJECTED'].map(code=>({status:400,body:JSON.stringify({code,error:secret,user:secret,password:secret}),expected:code})),
+  {status:400,body:JSON.stringify({code:'INVALID_REQUEST',error:secret}),expected:'INVALID_REQUEST'},
+  {status:400,body:JSON.stringify({error:'Invalid JSON body',detail:secret}),expected:'INVALID_JSON_BODY'},
+  {status:400,body:JSON.stringify({error:'Request interrupted',detail:secret}),expected:'REQUEST_INTERRUPTED'},
+  {status:400,body:'<html>'+secret+'</html>',expected:'NON_JSON_RESPONSE'},
+  {status:400,body:JSON.stringify({code:secret,error:secret}),expected:'UNRECOGNIZED_CODE'},
+  {status:400,body:JSON.stringify({code:{secret},error:'Invalid JSON body '+secret}),expected:'UNRECOGNIZED_CODE'},
+  {status:401,body:JSON.stringify({code:'INVALID_CREDENTIALS',error:secret}),expected:'INVALID_CREDENTIALS'},
+  {status:503,body:JSON.stringify({code:'AUTH_UNAVAILABLE',error:secret}),expected:'AUTH_UNAVAILABLE'}
+ ];
+ let next=0;const f=await fixture((req,res)=>{const item=cases[next++];res.statusCode=item.status;res.setHeader('Set-Cookie','session='+secret);res.end(item.body);});
+ try{
+  for(const item of cases){
+   const response=await f.call('/api/school-auth',{method:'POST',headers:{'content-type':'application/json',cookie:'session='+secret,'x-csrf-token':secret,'x-vercel-forwarded-for':'192.0.2.8'},body:JSON.stringify({action:secret,login:secret,password:secret,termsAccepted:true,termsVersion:secret})});
+   assert.equal(response.status,item.status);assert.equal(await response.text(),item.body,'diagnostics must not rewrite the upstream response');
+   const expected={event:'school_auth_upstream_error',status:item.status,code:item.expected};
+   if(item.expected==='INVALID_REQUEST'){expected.bodyKind='object';expected.fields={action:true,login:true,password:true,termsAccepted:true,termsVersion:true};}
+   assert.deepEqual(logs.at(-1),[JSON.stringify(expected)]);
+  }
+  assert.equal(logs.length,cases.length);assert(!JSON.stringify(logs).includes(secret));assert(!JSON.stringify(logs).includes('192.0.2.8'));
+ }finally{await f.close();}
+});
+
+test('auth diagnostics distinguish missing or string request bodies and stay silent for successful or other APIs',async t=>{
+ const logs=[];t.mock.method(console,'warn',(...args)=>logs.push(args));
+ const inputs=[undefined,'encoded JSON string',Buffer.from('encoded bytes'),[],null,{action:'synthetic'},17];
+ const kinds=['undefined','string','buffer','array','null','object','other'];
+ let index=0;const f=await fixture((req,res)=>{res.statusCode=400;res.end('{"code":"INVALID_REQUEST"}');},{onRequest(req){req.body=inputs[index++];}});
+ try{
+  for(let i=0;i<inputs.length;i++){
+   const response=await f.call('/api/school-auth',{method:'POST'});assert.equal(response.status,400);await response.text();
+   assert.deepEqual(JSON.parse(logs.at(-1)[0]),{event:'school_auth_upstream_error',status:400,code:'INVALID_REQUEST',bodyKind:kinds[i],fields:{action:i===5,login:false,password:false,termsAccepted:false,termsVersion:false}});
+  }
+ }finally{await f.close();}
+ const baseline=logs.length;
+ const success=await fixture((req,res)=>res.end('{"enabled":true,"authenticated":true,"csrfToken":"SYNTHETIC-PRIVATE"}'));
+ try{const response=await success.call();assert.equal(response.status,200);await response.text();}finally{await success.close();}
+ const other=await fixture((req,res)=>{res.statusCode=400;res.end('{"code":"INVALID_REQUEST"}');},{name:'teacher-tools'});
+ try{const response=await other.call('/api/teacher-tools');assert.equal(response.status,400);await response.text();}finally{await other.close();}
+ assert.equal(logs.length,baseline,'success and unrelated APIs must not produce auth diagnostics');
+});
+
 test('disconnects do not retry a POST and timeout returns an honest bounded failure',async()=>{
  let calls=0;const broken=await fixture((req,res)=>{calls++;req.socket.destroy();});
  try{const r=await broken.call('/api/school-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"action":"login"}'});assert.equal(r.status,502);assert.equal(calls,1);}finally{await broken.close();}

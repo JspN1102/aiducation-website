@@ -9,6 +9,25 @@ const {TEACHER_ROUTES,acceptsGzip}=require('./response-encoding.cjs');
 const LIMITS=Object.freeze({soe:4*1024*1024,tts:65536,'maanshan-chat':131072,'maanshan-report':524288,'maanshan-save':393216,'maanshan-data':1024,handwriting:524288,'school-auth':16384,'school-recordings':1400000,'research-events':131072,'teacher-analytics':1024,'challenge-result':16384,'teacher-tools':16384});
 const HOP=new Set(['connection','keep-alive','proxy-authenticate','proxy-authorization','te','trailer','transfer-encoding','upgrade']);
 const RESPONSE_LIMIT=4*1024*1024+65536;
+const AUTH_DIAGNOSTIC_CODES=new Set(['TERMS_REQUIRED','TERMS_VERSION_CHANGED','INVALID_REQUEST','ORIGIN_REJECTED','INVALID_CREDENTIALS','LOGIN_THROTTLED','AUTH_DISABLED','AUTH_UNAVAILABLE','AUTH_REQUIRED','ACCOUNT_CHANGED','CSRF_REJECTED']);
+function logAuthFailure(status,result,input){
+ if(!Number.isInteger(status)||status<400||status>599)return;
+ let code='UNRECOGNIZED_CODE';
+ try{
+  const data=JSON.parse(result.toString('utf8'));
+  if(AUTH_DIAGNOSTIC_CODES.has(data?.code))code=data.code;
+  else if(data?.error==='Invalid JSON body')code='INVALID_JSON_BODY';
+  else if(data?.error==='Request interrupted')code='REQUEST_INTERRUPTED';
+ }catch{code='NON_JSON_RESPONSE';}
+ const entry={event:'school_auth_upstream_error',status,code};
+ if(code==='INVALID_REQUEST'){
+  entry.bodyKind=input===undefined?'undefined':input===null?'null':Buffer.isBuffer(input)?'buffer':Array.isArray(input)?'array':typeof input==='object'?'object':typeof input==='string'?'string':'other';
+  const fields=input!==null&&typeof input==='object'&&!Buffer.isBuffer(input)&&!Array.isArray(input)?input:null;
+  entry.fields=Object.fromEntries(['action','login','password','termsAccepted','termsVersion'].map(key=>[key,!!fields&&Object.hasOwn(fields,key)]));
+ }
+ // Only fixed labels, status, and presence flags reach logs; never payloads or headers.
+ console.warn(JSON.stringify(entry));
+}
 // The loopback HTTP server closes idle sockets after 35 seconds. Expire earlier,
 // including after a suspended serverless instance resumes without firing timers.
 const CHANNEL_IDLE_MS=25000;
@@ -162,6 +181,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
          if(streaming){res.end();finish();return;}
          copyHeaders();
          const result=Buffer.concat(chunks);
+         if(name==='school-auth')logAuthFailure(response.statusCode,result,req.body);
          if(req.method!=='HEAD')res.setHeader('Content-Length',result.length);
          else if(/^\d+$/.test(String(response.headers['content-length']||'')))res.setHeader('Content-Length',response.headers['content-length']);
          res.end(req.method==='HEAD'?undefined:result);
