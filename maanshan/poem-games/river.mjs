@@ -1,4 +1,4 @@
-import {waitForImageElement} from './image-ready.mjs?v=20260920-tablet1';
+import {createGameImageLoader} from './image-ready.mjs?v=20260922-school11';
 import {imageAsset} from '../media-images.mjs?v=20260920-art2';
 import {createProcessResearch} from './research.mjs?v=20260920a';
 const media = path => new URL(imageAsset(`media/${path}`), import.meta.url).href;
@@ -58,6 +58,7 @@ export function mountRiver(holder, {
   const doc = holder.ownerDocument;
   const view = doc.defaultView;
   const abort = new view.AbortController();
+  const loadImages = createGameImageLoader({signal:abort.signal});
   const restored = restoredState(initialState);
   let slots = restored.slots;
   let tray = restored.tray;
@@ -287,6 +288,11 @@ export function mountRiver(holder, {
     q('[data-river-retry]').hidden = true;
     render();
     const image = q('.river-puzzle-preload');
+    const unavailable = () => {
+      if (dead || generation !== loadGeneration) return;
+      research.error('assets');root.dataset.assets = 'error';board.setAttribute('aria-busy', 'false');
+      q('[data-river-retry]').hidden = false;tell('畫卷還在載入，可以再試一次。');
+    };
     if (generation > 1) {
       const retryURL = new URL(ART);
       retryURL.searchParams.set('retry', String(generation));
@@ -294,7 +300,7 @@ export function mountRiver(holder, {
       root.style.setProperty('--river-art', `url("${retryURL.href}")`);
     }
     try {
-      await waitForImageElement(image,{signal:abort.signal});
+      await loadImages([image],{onTimeout:unavailable});
       if (dead || generation !== loadGeneration) return;
       // Pieces and drag previews must use the same copy that actually loaded.
       root.style.setProperty('--river-art', `url("${image.currentSrc || image.src}")`);
@@ -302,6 +308,7 @@ export function mountRiver(holder, {
       if(!readOnly&&!completed&&!solution)PIECES.forEach(slot=>research.present(`slot.${slot}`,{position:slot,total:PIECES.length,optionOrder:tray.map(piece=>`piece.${piece}`)}));
       root.dataset.assets = 'ready';
       board.setAttribute('aria-busy', 'false');
+      q('[data-river-retry]').hidden = true;
       render();
       if (completed || solution) {
         tell(solution ? '完整畫面裏有春風吹綠的江岸、停泊的小舟和照鄉心的明月。' : KNOWLEDGE);
@@ -312,12 +319,7 @@ export function mountRiver(holder, {
         tell('放錯可以再移，不會扣分。');
       }
     } catch {
-      if (dead || generation !== loadGeneration) return;
-      research.error('assets');
-      root.dataset.assets = 'error';
-      board.setAttribute('aria-busy', 'false');
-      q('[data-river-retry]').hidden = false;
-      tell('畫卷暫時未能載入，請再試一次。');
+      unavailable();
     } finally {
       view.clearTimeout(loadTimer);
       loadTimer = null;

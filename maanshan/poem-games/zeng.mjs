@@ -1,4 +1,4 @@
-import {waitForImageElement} from './image-ready.mjs?v=20260920-tablet1';
+import {createGameImageLoader} from './image-ready.mjs?v=20260922-school11';
 import {createProcessResearch} from './research.mjs?v=20260920a';
 const asset=name=>new URL(`../media/poem-games/farewell/${name}`,import.meta.url).href;
 const chapters=[
@@ -13,6 +13,7 @@ const voice='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-w
  * migrate to a finished illustration without awarding another result. */
 export function mountFarewell(holder,{initialState,readOnly=false,playAudio,onState,onComplete,onResearch,reducedMotion=false}={}){
  const doc=holder.ownerDocument,view=doc.defaultView,abort=new view.AbortController(),timers=new Set();
+ const loadImages=createGameImageLoader({signal:abort.signal});
  const modern=initialState?.version===2,legacyDone=initialState?.gameCompleted===true||(!modern&&initialState?.completed===true&&initialState?.round===2&&initialState?.taps===3);
  const count=(v,max)=>Number.isInteger(v)?Math.max(0,Math.min(max,v)):0;
  let stage=legacyDone?2:modern?count(initialState.stage,2):0,placed=legacyDone||modern&&initialState.placed===true;
@@ -68,7 +69,16 @@ export function mountFarewell(holder,{initialState,readOnly=false,playAudio,onSt
  boat.addEventListener('pointerup',e=>{if(!drag||drag.id!==e.pointerId)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*100,y=(e.clientY-r.top)/r.height*100,moved=drag.moved;drag=null;boat.style.removeProperty('--boat-x');boat.style.removeProperty('--boat-y');if(moved&&x>40&&x<88&&y>43&&y<76)boatArrive();else if(moved){research.answer('boat','outside-water',false);research.hint('boat');tell('小舟要在水面上，划向發亮的位置吧。');}},{signal:abort.signal});
  boat.addEventListener('pointercancel',()=>{drag=null;boat.style.removeProperty('--boat-x');boat.style.removeProperty('--boat-y');},{signal:abort.signal});
  root.addEventListener('click',e=>{const t=e.target;if(t.closest('[data-fs-listen]'))void listen();if(t.closest('[data-fs-next]'))next();if(t.closest('[data-fs-dock]'))boatArrive();if(t.closest('[data-fs-boat]')&&available()){selected=true;update();tell('再點亮着的水面，小舟就會過去。');}const foot=t.closest('[data-fs-foot]');if(foot)tapFoot(+foot.dataset.fsFoot);const tile=t.closest('[data-fs-ticket]');if(tile)ticket(+tile.dataset.fsTicket);if(t.closest('[data-fs-retry]'))void load();},{signal:abort.signal});
- async function load(){if(loadGeneration)research.retry('assets');const token=++loadGeneration;ready=false;update();const loading=q('.fs-loading');loading.hidden=false;q('[data-fs-retry]').hidden=true;let timeout;try{if(token>1)root.querySelectorAll('img').forEach(img=>{const u=new URL(img.src);u.searchParams.set('retry',String(token));img.src=u.href;});await Promise.all([...root.querySelectorAll('img')].map(img=>waitForImageElement(img,{signal:abort.signal})));if(dead||token!==loadGeneration)return;ready=true;loading.hidden=true;canvas.setAttribute('aria-busy','false');update();}catch{if(dead||token!==loadGeneration)return;research.error('assets');loading.querySelector('span').textContent='畫面未能載入，再試一次吧。';q('[data-fs-retry]').hidden=false;}finally{view.clearTimeout(timeout);timers.delete(timeout);}}
+ async function load(){
+  if(loadGeneration)research.retry('assets');const token=++loadGeneration;ready=false;update();
+  const loading=q('.fs-loading');loading.hidden=false;loading.querySelector('span').textContent='桃花潭正在展開…';q('[data-fs-retry]').hidden=true;canvas.setAttribute('aria-busy','true');
+  const unavailable=()=>{if(dead||token!==loadGeneration)return;research.error('assets');loading.querySelector('span').textContent='畫面還在載入，可以再試一次。';q('[data-fs-retry]').hidden=false;canvas.setAttribute('aria-busy','false');};
+  try{
+   if(token>1)root.querySelectorAll('img').forEach(img=>{const u=new URL(img.src);u.searchParams.set('retry',String(token));img.src=u.href;});
+   await loadImages(root.querySelectorAll('img'),{onTimeout:unavailable});
+   if(dead||token!==loadGeneration)return;ready=true;loading.hidden=true;canvas.setAttribute('aria-busy','false');update();
+  }catch{unavailable();}
+ }
  if(reducedMotion)root.classList.add('is-reduced-motion');update();tell(done?'這份友情已經送到了。':'');void load();
  return {showSolution(){if(dead||solved)return;research.hint('game','reveal');generation++;busy=false;solved=true;stage=2;update();tell('李白乘舟將欲行；汪倫在岸上踏歌送別。李白說：「不及汪倫送我情。」');},destroy(){if(dead)return;dead=true;generation++;loadGeneration++;abort.abort();timers.forEach(id=>view.clearTimeout(id));timers.clear();try{void audioContext?.close().catch(()=>{});}catch{}root.remove();}};
 }

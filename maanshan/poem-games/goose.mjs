@@ -1,5 +1,6 @@
 import {imageAsset} from '../media-images.mjs?v=20260920-art2';
 import {createProcessResearch} from './research.mjs?v=20260920a';
+import {createGameImageLoader} from './image-ready.mjs?v=20260922-school11';
 const asset = name => new URL(imageAsset(`media/poem-games/yong-e/${name}.webp`), import.meta.url).href;
 const parts = [
   {id:'feather',color:'white',name:'羽毛',label:'鵝的羽毛',x:48,y:48,feedback:'白毛，像一朵浮在水上的雲。',hint:'詩裏說「白毛」，再選一種顏色吧。'},
@@ -16,6 +17,7 @@ export function mountGoose(holder, {initialState, readOnly=false, onState, onCom
   const savedFilled=Array.isArray(initialState?.filled)?initialState.filled:Array.isArray(initialState?.completed)?initialState.completed:[];
   const restored=savedFilled.filter(id=>parts.some(part=>part.id===id));
   const abort = new AbortController(), found = new Set(restored), masks = new Map(), timers = new Set();
+  const loadImages=createGameImageLoader({signal:abort.signal,timeout:15000});
   let dead=false, ready=false, complete=found.size===3, solution=false, selected=null, loadGeneration=0, drag=null, suppressClick=false;
   const research=createProcessResearch(onResearch,{prefix:'game.goose',alive:()=>!dead});
   const presentParts=()=>{if(!readOnly&&!complete&&!solution)parts.forEach((part,position)=>{if(!found.has(part.id))research.present(part.id,{position,total:3,optionOrder:colors.map(c=>c.id)});});};
@@ -124,14 +126,11 @@ export function mountGoose(holder, {initialState, readOnly=false, onState, onCom
     if(loadGeneration)research.retry('assets');
     const generation=++loadGeneration;ready=false;masks.clear();update();
     const notice=q('.goose-loading');notice.hidden=false;notice.querySelector('span').textContent='畫卷正在展開…';notice.querySelector('button').hidden=true;
+    const unavailable=()=>{if(dead||generation!==loadGeneration)return;research.error('assets');notice.querySelector('span').textContent='畫卷還在載入，可以再試一次。';notice.querySelector('button').hidden=false;tell('畫卷打開後，就可以替小白鵝上色了。');};
     try {
       const names=['unpainted',...parts.map(p=>p.id)];
-      const loaded=await Promise.all(names.map(name=>new Promise((resolve,reject)=>{
-        const img=new Image();let timeout;
-        const finish=(error)=>{clearTimeout(timeout);timers.delete(timeout);img.onload=null;img.onerror=null;error?reject(error):resolve([name,img]);};
-        img.onload=()=>finish();img.onerror=()=>finish(new Error('goose-image-unavailable'));
-        timeout=setTimeout(()=>finish(new Error('goose-image-timeout')),15000);timers.add(timeout);img.src=asset(name);
-      })));
+      const loaded=names.map(name=>{const img=new Image();img.src=asset(name);return[name,img];});
+      await loadImages(loaded.map(([,image])=>image),{onTimeout:unavailable});
       if(dead||generation!==loadGeneration)return;
       const canvas=document.createElement('canvas');canvas.width=384;canvas.height=256;
       const ctx=canvas.getContext('2d',{willReadFrequently:true});
@@ -140,12 +139,9 @@ export function mountGoose(holder, {initialState, readOnly=false, onState, onCom
         if(name==='unpainted'){q('.goose-base').src=img.src;continue;}
         q(`[data-goose-layer="${name}"]`).src=img.src;ctx.clearRect(0,0,384,256);ctx.drawImage(img,0,0,384,256);masks.set(name,ctx.getImageData(0,0,384,256).data);
       }
-      ready=true;notice.hidden=true;update();presentParts();if(complete)tell('三種顏色都回來了！白毛浮綠水，紅掌撥清波。');onProgress?.({completed:found.size,total:3});
+      ready=true;notice.hidden=true;update();presentParts();if(complete)tell('三種顏色都回來了！白毛浮綠水，紅掌撥清波。');else if(!solution)tell('先選顏色，再點畫面上的圓點填色。');onProgress?.({completed:found.size,total:3});
     } catch {
-      if(dead||generation!==loadGeneration)return;
-      research.error('assets');
-      notice.querySelector('span').textContent='畫卷還沒打開，再試一次吧。';notice.querySelector('button').hidden=false;
-      tell('畫卷打開後，就可以替小白鵝上色了。');
+      unavailable();
     }
   }
   root.addEventListener('click',click,{signal:abort.signal});

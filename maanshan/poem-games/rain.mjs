@@ -1,4 +1,4 @@
-import {waitForImageElement} from './image-ready.mjs?v=20260920-tablet1';
+import {createGameImageLoader} from './image-ready.mjs?v=20260922-school11';
 import {imageAsset} from '../media-images.mjs?v=20260920-art2';
 import {RAIN_GLYPHS} from './rain-glyphs.mjs?v=20260919a';
 import {createProcessResearch} from './research.mjs?v=20260920a';
@@ -23,6 +23,7 @@ function glyph(char) {
 
 export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,onComplete,onResearch,reducedMotion=false}={}) {
   const doc=holder.ownerDocument,view=doc.defaultView,events=new view.AbortController(),old=initialState||{};
+  const loadImages=createGameImageLoader({signal:events.signal,timeout:15000});
   let caught=ROUNDS.map(()=>0);
   if(old.version===6&&Array.isArray(old.caught))caught=ROUNDS.map((_,i)=>old.caught[i]===1?1:0);
   // v5 stored two catches per word in the order 小 / 酥 / 勝. Map by word.
@@ -224,16 +225,17 @@ export function mountRain(holder,{initialState,readOnly=false,playAudio,onState,
   root.querySelectorAll('[data-rc-word]').forEach(button=>button.addEventListener('click',()=>void listen(Number(button.dataset.rcWord)),{signal:events.signal}));
   async function load(){
     if(loading)research.retry('assets');
-    const generation=++loading;ready=false;refresh();q('.rc-loading').hidden=false;q('[data-rc-retry]').hidden=true;
+    const generation=++loading;ready=false;refresh();q('.rc-loading').hidden=false;q('.rc-loading span').textContent='春日畫面正在展開…';q('[data-rc-retry]').hidden=true;field.setAttribute('aria-busy','true');
+    const unavailable=()=>{if(dead||generation!==loading)return;research.error('assets');q('.rc-loading span').textContent='春日畫面還在載入，可以再試一次。';q('[data-rc-retry]').hidden=false;field.setAttribute('aria-busy','false');};
     const images=[q('.rc-scene'),q('.rc-boat img')];
     if(generation>1)images.forEach(img=>{const url=new URL(img.src);url.searchParams.set('retry',String(generation));img.src=url.href;});
     try{
-      await Promise.all(images.map(img=>waitForImageElement(img,{signal:events.signal,timeout:15000})));
+      await loadImages(images,{onTimeout:unavailable});
       if(dead||generation!==loading)return;
       ready=true;q('.rc-loading').hidden=true;field.setAttribute('aria-busy','false');refresh();
       // Recover a fully caught but not yet submitted v6 draft after a refresh.
       if(done)finish();
-    }catch{if(dead||generation!==loading)return;research.error('assets');q('.rc-loading span').textContent='春日畫面未能載入。';q('[data-rc-retry]').hidden=false;field.setAttribute('aria-busy','false');}
+    }catch{unavailable();}
     finally{view.clearTimeout(loadTimer);}
   }
   q('[data-rc-retry]').addEventListener('click',()=>void load(),{signal:events.signal});

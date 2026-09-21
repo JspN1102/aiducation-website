@@ -1,4 +1,4 @@
-import {waitForImageElement} from './image-ready.mjs?v=20260920-tablet1';
+import {createGameImageLoader} from './image-ready.mjs?v=20260922-school11';
 import {imageAsset} from '../media-images.mjs?v=20260920-art2';
 import {createProcessResearch} from './research.mjs?v=20260920a';
 const file = path => new URL(imageAsset(`media/${path}`), import.meta.url).href;
@@ -21,6 +21,7 @@ const facts = '詩裏是「草盛豆苗稀」：野草多，豆苗少。我們�
 /** A close-up tending activity; clearing this game bed does not rewrite the poem. */
 export function mountGarden(holder, {initialState, readOnly=false, playAudio, onState, onComplete, onResearch}={}) {
   const doc=holder.ownerDocument,view=doc.defaultView,abort=new view.AbortController();
+  const loadImages=createGameImageLoader({signal:abort.signal});
   const removed=new Set(Array.isArray(initialState?.removed)?initialState.removed.filter(id=>weedIds.includes(id)):[]);
   let dead=false,ready=false,done=removed.size===weedIds.length,reported=done,drag=null,dragFrame=0,loadId=0,suppressClickUntil=0;
   const research=createProcessResearch(onResearch,{prefix:'game.garden',alive:()=>!dead});
@@ -108,17 +109,14 @@ export function mountGarden(holder, {initialState, readOnly=false, playAudio, on
   }
   async function load(){
     if(loadId)research.retry('assets');
-    const request=++loadId;ready=false;q('.gr-loading').hidden=false;q('[data-garden-retry]').hidden=true;render();
-    let timeout;
+    const request=++loadId;ready=false;q('.gr-loading').hidden=false;q('.gr-loading span').textContent='田園正在展開…';q('[data-garden-retry]').hidden=true;q('.gr-picture').setAttribute('aria-busy','true');render();
+    const unavailable=()=>{if(dead||request!==loadId)return;research.error('assets');q('.gr-loading span').textContent='圖片還在載入，可以再試一次。';q('[data-garden-retry]').hidden=false;q('.gr-picture').setAttribute('aria-busy','false');};
     try{
       if(request>1)for(const image of root.querySelectorAll('img')){const url=new URL(image.src);url.searchParams.set('retry',String(request));image.src=url.href;}
-      await Promise.all([...root.querySelectorAll('img')].map(img=>waitForImageElement(img,{signal:abort.signal})));
+      await loadImages(root.querySelectorAll('img'),{onTimeout:unavailable});
       if(dead||request!==loadId)return;ready=true;q('.gr-loading').hidden=true;q('.gr-picture').setAttribute('aria-busy','false');render();
       if(!readOnly&&!done)plants.forEach((p,position)=>{if(!removed.has(p.id))research.present(p.id,{position,total:plants.length});});
-    }catch{
-      if(dead||request!==loadId)return;q('.gr-loading span').textContent='圖片暫時未載入。';q('[data-garden-retry]').hidden=false;q('.gr-picture').setAttribute('aria-busy','false');
-      research.error('assets');
-    }finally{view.clearTimeout(timeout);timers.delete(timeout);}
+    }catch{unavailable();}
   }
   root.addEventListener('pointerdown',down,{signal:abort.signal});
   root.addEventListener('pointermove',move,{signal:abort.signal,passive:false});

@@ -18,7 +18,7 @@ import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingEr
 import {createRecordingLibrary} from './recording-library.mjs?v=20260921-school9';
 import {requestJSON, requestChat} from './network.mjs?v=20260921-school9';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260921-school9';
-import {schoolSession} from './bootstrap.mjs?v=20260921-school10';
+import {schoolSession} from './bootstrap.mjs?v=20260922-school11';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school9';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school9';
 
@@ -782,9 +782,27 @@ async function loadActivity(name,load) {
     clearTimeout(timer);
   }
 }
+let activityModuleHints;
+function preloadActivityModules(activity,slug) {
+  // Fetch hints only: evaluation and authentication keep their existing order.
+  // The generated URLs preserve every import query and work under /school/ too.
+  try {
+    activityModuleHints??=JSON.parse(document.getElementById('school-module-preloads')?.textContent||'{}');
+    const group=activityModuleHints[activity];
+    const urls=activity==='quiz'?[...(group?.common||[]),...(group?.games?.[slug]||[])]:group||[];
+    const existing=new Set([...document.querySelectorAll('link[rel="modulepreload"]')].map(link=>link.href));
+    for(const value of urls){
+      const url=new URL(value,new URL('.',import.meta.url));
+      if(url.origin!==location.origin||existing.has(url.href))continue;
+      const link=document.createElement('link');link.rel='modulepreload';link.href=url.href;
+      document.head.append(link);existing.add(url.href);
+    }
+  } catch { /* Missing dev metadata must never block an activity. */ }
+}
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260921-school10'));
+  preloadActivityModules('quiz',poem?.slug);
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260922-school11'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
@@ -796,6 +814,7 @@ async function renderQuiz() {
     recognize:(ink,context)=>api('/api/handwriting',{ink,poemId:poem.id,...(collectResearch?{researchContext:research.context(context)}:{})},16000)});
 }
 async function renderExploration(){
+  preloadActivityModules('explore');
   const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260921-school9'));
   if(!module)return;
   const holder=$('#view');

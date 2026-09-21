@@ -8,6 +8,7 @@ import subprocess
 
 from media_config import build_media_config, verify_local_assets, obsolete_audio_files
 from public_school import TEXT_SUFFIXES, public_path, public_source, public_routes, is_authoring_file
+from module_preloads import render_index
 
 ROOT = Path(__file__).resolve().parent.parent
 API_FILES = {'soe.js', 'tts.js', 'maanshan-chat.js', 'maanshan-report.js',
@@ -85,7 +86,10 @@ def main():
         if relative in {'api/' + name for name in API_FILES}:
             target.write_text(relay_entry(Path(relative).name), encoding='utf-8')
         elif relative.startswith('maanshan/') and target.suffix in TEXT_SUFFIXES:
-            target.write_text(public_source(source.read_text(encoding='utf-8')), encoding='utf-8', newline='')
+            content = source.read_text(encoding='utf-8')
+            if relative == 'maanshan/index.html' and 'bootstrap.mjs' in content:
+                content = render_index(ROOT / 'maanshan', content)
+            target.write_text(public_source(content), encoding='utf-8', newline='')
         else:
             shutil.copyfile(source, target)
         copied.append({'path': target_relative, 'bytes': target.stat().st_size,
