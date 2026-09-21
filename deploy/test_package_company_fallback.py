@@ -112,6 +112,32 @@ const relative=new URL('./media/a.png',import.meta.url);
             with self.assertRaisesRegex(ValueError, 'differs from its verified manifest'):
                 packager.school_inputs(school, 'a' * 40)
 
+    def test_new_school_paths_preserve_company_pages_and_do_not_redirect_to_themselves(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base=Path(temp); school, archive, original=self.fixtures(base)
+            (school/'maanshan').rename(school/'school')
+            manifest_path=school.with_suffix('.manifest.json')
+            manifest=json.loads(manifest_path.read_text())
+            for row in manifest['files']:
+                if row['path'].startswith('maanshan/'):
+                    row['path']='school/'+row['path'].split('/',1)[1]
+            manifest_path.write_text(json.dumps(manifest))
+            config_path=school/'vercel.json'; config=json.loads(config_path.read_text())
+            for kind in ['headers','redirects']:
+                for row in config[kind]:
+                    row['source']=packager.relocate_path(row['source'])
+                    if 'destination' in row:row['destination']=packager.relocate_path(row['destination'])
+            config['redirects'].append({'source':'/maanshan/:path*','destination':'/school/:path*','statusCode':307})
+            config_path.write_text(json.dumps(config))
+            destination=base/'new-release'
+            with patch.object(packager,'BASE_SHA256',packager.sha256(archive)):
+                packager.build_package(archive,school,destination,'a'*40)
+            deployed=json.loads((destination/'vercel.json').read_text(encoding='utf-8'))
+            self.assertFalse(any(row['source']==row.get('destination') for row in deployed['redirects']))
+            self.assertFalse(any(row['source']=='/maanshan/:path*' for row in deployed['redirects']))
+            self.assertEqual((destination/'maanshan/app.mjs').read_bytes(),original['maanshan/app.mjs'])
+            self.assertIn('/school-api/school-auth/',(destination/'school/app.mjs').read_text())
+
     def test_unknown_school_files_and_bad_archive_fail_before_output_exists(self):
         with tempfile.TemporaryDirectory() as temp:
             base = Path(temp); school, archive, _ = self.fixtures(base); destination = base / 'release'

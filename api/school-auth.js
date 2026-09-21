@@ -1,6 +1,7 @@
 import auth from './_lib/school-auth.cjs';
 import teacherLearning from './_lib/teacher-learning-reset.cjs';
 import studentStore from './_lib/student-store.js';
+import practiceProgress from './_lib/practice-progress.cjs';
 import { get as getBlob } from '@vercel/blob';
 
 async function progress(req) {
@@ -40,6 +41,7 @@ async function progress(req) {
       FROM student_data WHERE student_id=$1 AND ($2::int IS NULL OR grade=$2) AND cls=$3 AND poem_id=ANY($4::int[])
       ORDER BY poem_id,section,updated_at DESC,id DESC`, [learning.studentId, auth.allGrades(actor)?null:actor.grade, actor.cls||'T',allowedPoems])).rows;
     for (const row of rows) if(allowedPoems.includes(row.poem_id))(poems[row.poem_id] ||= {})[row.section] = row.payload;
+    await practiceProgress.restorePracticeHistory(pool,{studentId:learning.studentId,grade:auth.allGrades(actor)?null:actor.grade,cls:actor.cls||'T',poemIds:allowedPoems},poems);
   }
   return { enabled: true, userId: actor.id, poems, ...(learning.learningEpoch ? { learningEpoch: learning.learningEpoch } : {}) };
 }

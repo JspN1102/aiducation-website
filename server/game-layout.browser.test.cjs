@@ -67,10 +67,18 @@ async function inspectAR(page){return page.locator('#view').evaluate(el=>{
      check('goose next fill requires another colour',await page.locator('[data-goose-part]').evaluateAll(nodes=>nodes.every(n=>n.hidden&&n.disabled)));
     }
     if(i===1){
+     if(process.env.GAME_LAYOUT_EVIDENCE_DIR)await page.screenshot({path:path.join(process.env.GAME_LAYOUT_EVIDENCE_DIR,`farewell-boat-${width}x${height}.png`),fullPage:true});
+     if(width>=900)check(`${width}x${height} farewell instructions form one continuous right-hand panel`,await page.locator('.fs-control-panel').evaluate(el=>{const panel=el.getBoundingClientRect(),activity=el.querySelector('.fs-activity').getBoundingClientRect(),header=el.querySelector('.fs-header').getBoundingClientRect(),actions=el.querySelector('.fs-actions').getBoundingClientRect();return activity.width>=panel.width-2&&activity.top-header.bottom<=20&&actions.top-activity.bottom<=20;}));
      await page.locator('[data-fs-dock]').tap();await page.locator('[data-fs-next]').tap();
      state=await inspect(page,selectors[i]);check(`${width}x${height} farewell rhythm controls fit ${JSON.stringify(state)}`,state.outside.length===0&&(width<900||state.scroll<=2&&state.vertical.length===0));
+     if(process.env.GAME_LAYOUT_EVIDENCE_DIR)await page.screenshot({path:path.join(process.env.GAME_LAYOUT_EVIDENCE_DIR,`farewell-rhythm-${width}x${height}.png`),fullPage:true});
      for(const n of [0,1,0,1])await page.locator(`[data-fs-foot="${n}"]`).tap();
+     state=await inspect(page,selectors[i]);check(`${width}x${height} farewell completed footsteps and next action fit ${JSON.stringify(state)}`,state.outside.length===0&&(width<900||state.scroll<=2&&state.vertical.length===0));
      await page.locator('[data-fs-next]').tap();state=await inspect(page,selectors[i]);check(`${width}x${height} farewell word tickets fit ${JSON.stringify(state)}`,state.outside.length===0&&(width<900||state.scroll<=2&&state.vertical.length===0));
+     if(process.env.GAME_LAYOUT_EVIDENCE_DIR)await page.screenshot({path:path.join(process.env.GAME_LAYOUT_EVIDENCE_DIR,`farewell-compose-${width}x${height}.png`),fullPage:true});
+     for(const n of [0,1,2])await page.locator(`[data-fs-ticket="${n}"]`).tap();
+     state=await inspect(page,selectors[i]);check(`${width}x${height} farewell final feedback fits ${JSON.stringify(state)}`,state.outside.length===0&&(width<900||state.scroll<=2&&state.vertical.length===0));
+     if(process.env.GAME_LAYOUT_EVIDENCE_DIR)await page.screenshot({path:path.join(process.env.GAME_LAYOUT_EVIDENCE_DIR,`farewell-complete-${width}x${height}.png`),fullPage:true});
     }
     if(i===2){
      await page.locator('[data-vg-capture]').tap();
@@ -90,6 +98,8 @@ async function inspectAR(page){return page.locator('#view').evaluate(el=>{
      state=await inspect(page,selectors[i]);check(`${width}x${height} mountain completion controls fit ${JSON.stringify(state)}`,state.outside.length===0&&(width<900||state.scroll<=2&&state.vertical.length===0));
     }
     if(i===3){
+     check(`${width}x${height} river starts with blank cells and no translucent picture hint`,await page.locator('.river-puzzle-board').evaluate(el=>getComputedStyle(el).backgroundImage==='none'&&[...el.querySelectorAll('.river-puzzle-slot')].every(slot=>getComputedStyle(slot).backgroundImage==='none'&&!slot.querySelector('img'))));
+     if(process.env.GAME_LAYOUT_EVIDENCE_DIR)await page.screenshot({path:path.join(process.env.GAME_LAYOUT_EVIDENCE_DIR,`river-blank-${width}x${height}.png`),fullPage:true});
      const trayBox=await page.locator('.river-puzzle-tray').boundingBox();
      for(const piece of [4,1,5,0,3,2]){
       await page.locator(`.river-puzzle-tray [data-piece="${piece}"]`).tap();await page.locator(`[data-river-slot="${piece}"]`).tap();

@@ -53,8 +53,11 @@ for(const [name,source] of Object.entries(entries)){
             base=Path(temp);root=base/'source';root.mkdir();destination=base/'school'
             fixture={
                 'maanshan/index.html':'school-only',
+                'maanshan/app.mjs':"const image='/maanshan/media/one.webp';const remote='https://cos.example/maanshan/media/one.webp';fetch('/api/school-auth/');",
                 'maanshan/poems.json':json.dumps({'poems':[{'animation':{'src':'media/example/animation.mp4'}}]}),
                 'maanshan/media/example/animation.mp4':'omit-media',
+                'maanshan/media/example/ASSET-SOURCES.md':'private authoring notes',
+                'maanshan/vendor/licenses/example.txt':'required third-party notice',
                 'deploy/media-manifest.json':json.dumps({'assets':[]}),
                 'api/_lib/guangzhou-relay.cjs':(packager.ROOT/'api/_lib/guangzhou-relay.cjs').read_text(encoding='utf-8'),
                 'api/_lib/response-encoding.cjs':(packager.ROOT/'api/_lib/response-encoding.cjs').read_text(encoding='utf-8'),
@@ -85,6 +88,17 @@ for(const [name,source] of Object.entries(entries)){
             self.assertFalse((destination/'server').exists())
             for name,original in originals.items():self.assertEqual((root/name).read_bytes(),original)
             self.assertFalse((destination/'index.html').exists())
+            self.assertFalse((destination/'maanshan').exists())
+            self.assertFalse((destination/'school/media/example/ASSET-SOURCES.md').exists())
+            self.assertTrue((destination/'school/vendor/licenses/example.txt').exists())
+            self.assertEqual((destination/'school/index.html').read_text(), 'school-only')
+            app=(destination/'school/app.mjs').read_text()
+            self.assertIn("image='/school/media/one.webp'", app)
+            self.assertIn("https://cos.example/maanshan/media/one.webp", app)
+            self.assertIn("fetch('/api/school-auth/')", app)
+            redirects=json.loads((destination/'vercel.json').read_text())['redirects']
+            self.assertIn({'source':'/', 'destination':'/school/', 'statusCode':307}, redirects)
+            self.assertIn({'source':'/maanshan/:path*', 'destination':'/school/:path*', 'statusCode':307}, redirects)
             self.assertFalse((destination/'.env').exists())
             for name in packager.API_FILES:self.assertFalse((destination/'api'/name).exists())
             self.assertIn('.gateway',(destination/'api/school-gateway.js').read_text())

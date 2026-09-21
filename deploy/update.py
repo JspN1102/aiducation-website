@@ -6,6 +6,7 @@ keeps previous releases; failed health checks automatically restore the prior on
 from pathlib import Path
 import argparse, datetime, hashlib, json, shlex, subprocess, sys, uuid
 import paramiko
+from public_school import is_authoring_file
 
 ROOT=Path(__file__).resolve().parent.parent
 PUBLIC={'maanshan','mandarin-assessment','assets','poetry','wenhuacun','awards'}
@@ -84,7 +85,7 @@ def main():
     paths=subprocess.check_output(['git','ls-files','-z'],cwd=ROOT).decode('utf-8').split('\0')
     manifest=[]
     for rel in paths:
-        if not rel or any(p.startswith('.') for p in Path(rel).parts):continue
+        if not rel or any(p.startswith('.') for p in Path(rel).parts) or is_authoring_file(rel):continue
         top=rel.split('/')[0]
         if top in PUBLIC or rel in ['index.html','favicon.png']:dest='public/'+rel
         elif top in RUNTIME or rel in ['package.json','package-lock.json']:dest=rel
@@ -116,6 +117,7 @@ for item in data['manifest']:
   shutil.copyfile(old,dest)
  else:missing.append(item['path'])
 (release/'maanshan').symlink_to('public/maanshan',target_is_directory=True)
+(release/'public/school').symlink_to('maanshan',target_is_directory=True)
 (release/'release-manifest.json').write_text(json.dumps(data),encoding='utf-8')
 print(json.dumps(missing))
 """.replace('DATA',repr(data))

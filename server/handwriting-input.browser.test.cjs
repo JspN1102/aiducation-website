@@ -50,11 +50,52 @@ async function draw(page,context,engine,{pointer='touch',cancel=false}={}){
  const after=await canvas.evaluate(el=>el.toDataURL()),endScroll=await canvas.evaluate(el=>{const values=[];for(let node=el;node;node=node.parentElement)values.push([node.scrollLeft,node.scrollTop]);return JSON.stringify(values);});
  return{ink:before!==after,scrollStable:scroll===endScroll,canvas:b};
 }
+async function renderedInk(page,label){
+ // Inspect the composited screenshot before reading the writing canvas. A
+ // toDataURL/getImageData call can synchronize a delayed GPU canvas and hide
+ // a real presentation bug while still proving that the backing bitmap changed.
+ const board=page.locator('.cw-board'),png=await board.screenshot(),evidence=process.env.HANDWRITING_EVIDENCE_DIR;
+ if(evidence){fs.mkdirSync(evidence,{recursive:true});fs.writeFileSync(path.join(evidence,label.replace(/[^a-z0-9_-]/gi,'-')+'.png'),png);}
+ return page.evaluate(async base64=>{
+  const image=new Image();image.src='data:image/png;base64,'+base64;await image.decode();
+  const copy=document.createElement('canvas');copy.width=image.naturalWidth;copy.height=image.naturalHeight;
+  const context=copy.getContext('2d');context.drawImage(image,0,0);const rgba=context.getImageData(0,0,copy.width,copy.height).data;
+  let pixels=0,left=copy.width,right=0,top=copy.height,bottom=0;
+  for(let y=2;y<copy.height-2;y++)for(let x=2;x<copy.width-2;x++){const i=(y*copy.width+x)*4;if(rgba[i]<100&&rgba[i+1]<130&&rgba[i+2]<110){pixels++;left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}}
+  return{pixels,width:copy.width,height:copy.height,inkWidth:Math.max(0,right-left),inkHeight:Math.max(0,bottom-top)};
+ },png.toString('base64'));
+}
+async function drawMixedEvents(page,{dual=false,cancel=false}={}){
+ const canvas=page.locator('.cw-board canvas');await canvas.scrollIntoViewIfNeeded();
+ await canvas.evaluate((el,{dual,cancel})=>{
+  const board=el.closest('.cw-board'),b=el.getBoundingClientRect(),x=b.left+b.width*.2,y=b.top+b.height*.25;
+  const pointer=(type,px,py,pressure)=>board.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,pointerType:'touch',pointerId:83,isPrimary:true,button:type==='pointermove'?-1:0,buttons:type==='pointerup'?0:1,pressure,clientX:px,clientY:py}));
+  const touch=(type,px,py,force)=>{
+   const point={identifier:31,target:el,clientX:px,clientY:py,pageX:px+scrollX,pageY:py+scrollY,radiusX:3,radiusY:3,force},ended=type==='touchend'||type==='touchcancel',event=new Event(type,{bubbles:true,cancelable:true});
+   Object.defineProperties(event,{changedTouches:{value:[point]},touches:{value:ended?[]:[point]},targetTouches:{value:ended?[]:[point]}});board.dispatchEvent(event);
+  };
+  // Hybrid Android/WebView sequence: a pointer-down is delivered, then only
+  // the Touch Events stream carries movement after preventDefault/capture.
+  pointer('pointerdown',x,y,.2);touch('touchstart',x,y,.2);
+  for(let i=1;i<=8;i++){const px=x+b.width*.055*i,py=y+b.height*.025*i,force=.2+i*.08;if(dual)pointer('pointermove',px,py,force);touch('touchmove',px,py,force);}
+  touch(cancel?'touchcancel':'touchend',x+b.width*.44,y+b.height*.2,0);
+  pointer(cancel?'pointercancel':'pointerup',x+b.width*.44,y+b.height*.2,0);
+ },{dual,cancel});
+}
 async function audit(engine,width,height){
  const browser=await(engine==='chromium'?chromium.launch({channel:'msedge',headless:true}):webkit.launch({headless:true}));const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:true}),page=await context.newPage();page.on('pageerror',e=>errors.push(engine+' '+e.message));
  const label=engine+' '+width+'x'+height;
  try{
-  await page.goto(`http://127.0.0.1:${server.address().port}/fixture`);await mount(page);
+  await page.goto(`http://127.0.0.1:${server.address().port}/fixture`);
+  for(const [name,options]of [['pointer-start-touch-moves',{}],['both-event-families',{dual:true}],['mixed-touch-cancel',{cancel:true}]]){
+   await mount(page);const before=await renderedInk(page,label+'-'+name+'-before');
+   await drawMixedEvents(page,options);const visible=await renderedInk(page,label+'-'+name+'-drawn');
+   check(label+' '+name+' visible stroke spans board (not just an invisible dot)',visible.pixels-before.pixels>80&&visible.inkWidth>visible.width*.3&&visible.inkHeight>visible.height*.12);
+   await page.locator('[data-cw=submit]').tap();await page.locator('.cw-review:not([hidden])').waitFor();
+   const ink=await page.evaluate(()=>inkRequests);
+   check(label+' '+name+' recognition gets one complete stroke without duplicated pressure samples',ink.length===1&&ink[0].length===1&&ink[0][0][0].length>=9&&ink[0][0][0].length<=11);
+  }
+  await mount(page);
   const initial=await draw(page,context,engine);check(label+' can write before playing audio',initial.ink);check(label+' touch writing keeps page still',initial.scrollStable);check(label+' local ink enables submit',await page.locator('[data-cw=submit]').isEnabled());
   await page.locator('[data-ch=listen]').tap();await page.waitForFunction(()=>!document.querySelector('[data-ch=listen]').hasAttribute('aria-busy'));await page.locator('[data-cw=clear]').tap();
   check(label+' failed audio leaves writing available',(await draw(page,context,engine)).ink);

@@ -134,6 +134,11 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 /* Pinyin needs its own space: a syllable wider than the character must not touch
    the next syllable. Keep the whole sentence's existing read action. */
 .workspace.view-record .record-tool>.verse ruby{flex:0 0 auto;min-width:0;padding-inline:3px}
+/* Paired five-character verses share equal columns. Intrinsic pinyin widths
+   must not shift each row's characters independently. */
+.workspace.view-record .record-tool>.verse.verse-compound>.verse-clause:has(>ruby:nth-of-type(5)):not(:has(>ruby:nth-of-type(6))){display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) 18px;align-items:end;width:100%;max-width:360px}
+.workspace.view-record .record-tool>.verse.verse-compound>.verse-clause:has(>ruby:nth-of-type(5)):not(:has(>ruby:nth-of-type(6)))>ruby{width:100%;min-width:0;box-sizing:border-box;text-align:center}
+.workspace.view-record .record-tool>.verse.verse-compound>.verse-clause:has(>ruby:nth-of-type(5)):not(:has(>ruby:nth-of-type(6)))>.punct{width:18px;text-align:center}
 @media(max-width:360px){
  .workspace.view-record .record-counter:has([data-action="record-feedback"]):has(.extension-entry){grid-template-columns:minmax(0,1fr) auto;gap:0 8px}
  .workspace.view-record .record-counter:has([data-action="record-feedback"])>.extension-entry{grid-column:2;grid-row:1}

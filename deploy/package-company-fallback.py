@@ -85,7 +85,11 @@ def merge_config(company, school):
     for kind in ('redirects', 'headers'):
         rows = []
         for original in school.get(kind, []):
-            if not original['source'].startswith(('/maanshan/', '/api/')):
+            if not original['source'].startswith(('/maanshan/', '/school/', '/api/')):
+                continue
+            # Main-domain bookmark redirects must not redirect the company's
+            # separately retained legacy demo, or become a /school/ self-loop.
+            if original.get('destination', '').startswith('/school/') and original['source'].startswith('/maanshan/'):
                 continue
             row = copy.deepcopy(original)
             row['source'] = relocate_path(row['source'])
@@ -120,8 +124,9 @@ def school_inputs(directory, source_commit):
         if not path.is_file() or path.stat().st_size != row['bytes'] or sha256(path) != row['sha256']:
             raise ValueError('School input differs from its verified manifest: ' + name)
         records[name] = row
-    actual = {p.relative_to(directory).as_posix() for p in (directory / 'maanshan').rglob('*') if p.is_file()}
-    if actual != {name for name in records if name.startswith('maanshan/')}:
+    actual = {p.relative_to(directory).as_posix() for prefix in ['school', 'maanshan']
+              for p in (directory / prefix).rglob('*') if p.is_file()}
+    if actual != {name for name in records if name.startswith(('maanshan/', 'school/'))}:
         raise ValueError('Unmanifested school assets must not enter the company deployment.')
     return records
 
@@ -162,9 +167,9 @@ def build_package(base_archive, school_directory, destination, source_commit):
             original_hashes[info.filename] = hashlib.sha256(data).hexdigest()
     added = []
     for name in sorted(inputs):
-        if not name.startswith('maanshan/'):
+        if not name.startswith(('maanshan/', 'school/')):
             continue
-        target_name = 'school/' + name[len('maanshan/'):]
+        target_name = 'school/' + name.split('/', 1)[1]
         target = destination / target_name
         target.parent.mkdir(parents=True, exist_ok=True)
         data = (school_directory / name).read_bytes()

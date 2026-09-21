@@ -9,12 +9,10 @@ const GUIDE = '#dce4d9';
  */
 export function createHandwritingPad(canvas, { isLocked = () => false, onChange = () => {}, interactionSurface = canvas } = {}) {
   const view = canvas.ownerDocument.defaultView;
-  // Browsers that support it can present ink without waiting for the page's
-  // normal compositor cycle. Others use the same standard 2D canvas path.
-  // Paint the paper into the bitmap itself. A transparent low-latency canvas
-  // can be composited against black on mobile GPUs, including after resizing
-  // into the answer review. CSS on its parent cannot reliably fix that surface.
-  const context = canvas.getContext('2d', { alpha: false, desynchronized: true });
+  // Keep ink on the normal page compositor: low-latency canvas presentation
+  // is not consistent across tablet GPUs. Paint opaque white paper into the
+  // bitmap too, so a restored/resized canvas never exposes a black surface.
+  const context = canvas.getContext('2d', { alpha: false });
   const inkCanvas = canvas.ownerDocument.createElement('canvas');
   const inkContext = inkCanvas.getContext('2d', { alpha: false });
   if (!context || !inkContext) throw new Error('Canvas drawing is unavailable.');
@@ -273,6 +271,10 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
 
   function pointerMove(event) {
     if (!active || event.pointerId !== active.pointerId) return;
+    // Once the finger's Touch Events arrive, that stream owns the stroke.
+    // Some tablet WebViews send pointerdown but no later pointermove; others
+    // send both streams. Using one owner avoids missing moves or doubled ink.
+    if (active.touchId !== undefined) return;
     if (event.cancelable && event.type !== 'pointerrawupdate') event.preventDefault();
     if (isLocked()) {
       commitActive();
@@ -287,6 +289,7 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
 
   function pointerUp(event) {
     if (!active || event.pointerId !== active.pointerId) return;
+    if (active.touchId !== undefined) return;
     event.preventDefault();
     appendEvent(event);
     commitActive();
@@ -294,6 +297,7 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
 
   function pointerCancelled(event) {
     if (!active || event.pointerId !== active.pointerId) return;
+    if (active.touchId !== undefined) return;
     // Cancellation coordinates can be zero; keep the last genuine sample.
     commitActive();
   }
@@ -311,12 +315,16 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
 
   function startTouch(event) {
     preventBoardGesture(event);
-    // Some tablet/WebView configurations deliver Touch Events without the
-    // corresponding Pointer Events. Use whichever actually starts first;
-    // never create a second stroke when both event families are delivered.
-    if (destroyed || isLocked() || active) return;
+    if (destroyed || isLocked()) return;
     const touch = event.changedTouches?.[0];
     if (!touch) return;
+    if (active) {
+      // Reuse the point recorded by pointerdown and accept subsequent native
+      // touch moves. Previously this returned without assigning touchId,
+      // leaving a dot and an enabled submit button when pointer moves stopped.
+      if (active.pointerType === 'touch' && active.touchId === undefined) active.touchId = touch.identifier;
+      return;
+    }
     resize();
     if (!rectangle || rectangle.width <= 0 || rectangle.height <= 0) return;
     active = {points:[], touchId:touch.identifier, pointerType:'touch', anchor:null, tipBounds:null};
@@ -361,6 +369,14 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
   addListener(view, 'pointerup', pointerUp, { passive: false });
   addListener(view, 'pointercancel', pointerCancelled);
   addListener(canvas, 'lostpointercapture', pointerCancelled);
+  for (const surface of [canvas, inkCanvas]) {
+    addListener(surface, 'contextlost', event => {
+      // Keep the sampled handwriting and allow the browser to restore both
+      // surfaces after GPU pressure, orientation or backgrounding.
+      event.preventDefault();
+    });
+    addListener(surface, 'contextrestored', () => { if (!destroyed) rebuild(); });
+  }
   addListener(view, 'blur', () => commitActive());
   addListener(view, 'resize', resize);
   addListener(view, 'scroll', () => { if (active) resize(); }, true);

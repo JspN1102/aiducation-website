@@ -2252,6 +2252,15 @@ dialog h2{font-size:26px;line-height:1.4}
 /* poem-games/zeng.css */
 .farewell-story{width:100%;max-width:760px;margin:auto;display:grid;gap:12px;color:#355346;min-width:0;font-family:inherit}.farewell-story *{box-sizing:border-box}.farewell-story button{font-family:inherit;touch-action:manipulation;cursor:pointer}.farewell-story [hidden]{display:none!important}.fs-header{display:flex;align-items:center;justify-content:space-between;gap:10px}.fs-eyebrow{font-size:15px;letter-spacing:.13em;color:#708474}.fs-header h3{margin:2px 0 0;font-size:clamp(22px,3vw,29px);font-weight:650;line-height:1.4}.fs-progress{font-size:19px;white-space:nowrap;color:#69816b;font-variant-numeric:tabular-nums}.fs-stage{position:relative;isolation:isolate;aspect-ratio:3/2;border-radius:20px;overflow:hidden;background:#ecebd6;border:1px solid #c7d0b8}.fs-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}.fs-boat{--boat-x:67%;--boat-y:83%;position:absolute;left:var(--boat-x);top:var(--boat-y);width:38%;padding:0;border:0;background:none!important;transform:translate(-50%,-50%);z-index:3;transition:left .7s ease,top .7s ease;touch-action:none!important;box-shadow:none!important;opacity:1!important}.fs-boat:active{transition:none}.fs-boat img{display:block;width:100%;height:auto;pointer-events:none;user-select:none}.farewell-story[data-placed=true] .fs-boat{--boat-x:62%;--boat-y:63%;cursor:default}.farewell-story[data-complete=true] .fs-boat{--boat-x:76%;--boat-y:59%}.farewell-story[data-selected=true] .fs-boat{filter:drop-shadow(0 0 5px #fffbce)}.fs-dock{position:absolute;left:62%;top:67%;transform:translate(-50%,-50%);width:27%;height:16%;min-height:44px;border-radius:50%;border:2px dashed #fff9d7;background:#ffffe648;color:#38614f;z-index:2;box-shadow:0 0 22px #fffbdc8c;display:grid;place-items:center}.fs-dock span{white-space:nowrap;background:#fff9e9ed;border-radius:18px;padding:4px 10px;font-size:17px}.fs-dock:disabled{opacity:.65}.fs-waterlight{position:absolute;left:46%;top:60%;width:43%;height:25%;border-radius:50%;background:radial-gradient(ellipse,#fff3c465,transparent 70%);opacity:0;transition:opacity 1s;pointer-events:none}.farewell-story[data-complete=true] .fs-waterlight{opacity:1}.fs-friend{position:absolute;left:27%;top:70%;transform:translateX(-50%);padding:2px 8px;background:#fffbe7da;border-radius:12px;font-size:14px;color:#436249}.fs-note{position:absolute;right:4%;top:6%;background:#fff9e8ef;border:1px solid #d9d0af77;border-radius:17px;padding:10px 14px;font:600 clamp(22px,3vw,29px)/1.5 var(--serif,serif);text-align:center}.fs-note span{font-size:.66em;letter-spacing:.08em}.fs-loading{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:14px;background:#f4f0dfeb;z-index:8;font-size:20px;text-align:center;padding:20px}.fs-loading button{min-height:48px;background:#fffdf2;border:1px solid #bbc9b5;color:#36543e;border-radius:15px;padding:8px 20px;font-size:20px}.fs-verse{margin:0;text-align:center;font-size:clamp(25px,4vw,33px);font-weight:600;line-height:1.4;letter-spacing:.09em}.fs-task{margin:0;text-align:center;font-size:19px;line-height:1.45;color:#60755f;text-wrap:pretty}.fs-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}.fs-actions button{min-height:52px;border:1px solid #bfcdb9;border-radius:16px;padding:10px 18px;font-size:21px;font-weight:600;background:#fffdf4;color:#355943;display:inline-flex;align-items:center;justify-content:center;gap:9px}.fs-actions button svg{width:23px;height:23px;flex:none}.fs-actions .fs-next{background:#446d50;color:#fffdf1;border-color:#446d50}.fs-actions button:disabled{opacity:.62}.fs-feedback{margin:0;min-height:2.8em;font-size:18px;line-height:1.45;text-align:center;text-wrap:pretty;color:#55715a}.fs-rhythm{display:grid;gap:10px}.fs-beats{display:flex;gap:13px;justify-content:center}.fs-beats i{width:12px;height:12px;border:2px solid #b8c6ac;border-radius:50%;background:#f5f4e5}.fs-beats i.is-done{background:#548468;border-color:#548468}.fs-feet{display:flex;justify-content:center;gap:14px}.fs-feet button{display:flex;align-items:center;justify-content:center;gap:12px;width:40%;max-width:210px;min-height:64px;border:1px solid #c2cfb9;border-radius:19px;background:#eff4e7;color:#355942;font-size:24px;font-weight:600;transition:background .12s,transform .12s;opacity:1!important}.fs-feet button:last-child{background:#fbefe1;color:#805b43;border-color:#dec9af}.fs-feet button span{font-size:32px;line-height:1}.fs-feet button.is-sounding{background:#476f50!important;color:#fff!important;transform:translateY(3px);box-shadow:0 0 0 4px #c5d9b89e}.fs-feet button:disabled{cursor:default}.fs-compose{display:grid;gap:12px}.fs-line{display:flex;gap:7px;justify-content:center;align-items:center;font-size:24px}.fs-line b{font-weight:500}.fs-slot{min-width:58px;min-height:48px;padding:6px;border:1px dashed #becdb9;border-radius:10px;display:grid;place-items:center;color:#91a28e;background:#f4f5e9}.fs-slot.is-next{border-color:#5d8764;background:#eef5e7}.fs-slot.is-filled{color:#355b40;background:#e7f0df;border-style:solid}.fs-tickets{display:flex;justify-content:center;gap:11px}.fs-tickets button{border:1px solid #d7c9ac;border-radius:13px 13px 18px 18px;padding:9px 16px;min-width:66px;min-height:52px;background:#fff5dd;color:#74573e;font-size:24px;font-weight:600;box-shadow:0 3px 0 #e1d7bd;opacity:1}.fs-tickets .is-used{visibility:hidden}.farewell-story button:focus-visible{outline:3px solid #bf924d;outline-offset:3px}.farewell-story.is-reduced-motion *{transition:none!important;animation:none!important}@media(max-width:420px){.farewell-story{gap:10px}.fs-stage{border-radius:16px}.fs-header h3{font-size:22px}.fs-eyebrow{font-size:14px}.fs-verse{font-size:24px;letter-spacing:.04em}.fs-task{font-size:18px}.fs-feedback{font-size:17px}.fs-actions{gap:9px}.fs-actions button{font-size:20px;min-height:50px;padding:9px 15px}.fs-friend{font-size:12px}.fs-dock span{font-size:15px}.fs-note{padding:7px 10px}.fs-slot{min-width:51px;font-size:22px}.fs-tickets button{font-size:22px;padding:8px 14px}.fs-feet button{min-height:60px;font-size:23px}}@media(prefers-reduced-motion:reduce){.farewell-story *{transition:none!important;animation:none!important}}
 .challenge-freeplay .fs-eyebrow{display:none}.farewell-story .fs-feedback:empty{display:none}
+.fs-control-panel{display:flex;flex-direction:column;min-width:0;gap:12px}
+.fs-activity{display:flex;flex-direction:column;gap:14px;min-width:0;padding:16px;border:1px solid #dce5ce;border-radius:20px;background:#f3f6e9}
+.fs-activity .fs-verse{font-size:28px;line-height:1.5;letter-spacing:0;color:#305c49}
+.fs-activity .fs-task{font-size:20px;line-height:1.45}
+.fs-control-panel .fs-rhythm,.fs-control-panel .fs-compose{display:flex;flex-direction:column;gap:16px}
+.fs-control-panel .fs-beats i{display:grid;place-items:center;width:36px;height:36px;font:500 20px/1 var(--sans);font-style:normal;color:#64826a}
+.fs-control-panel .fs-beats i.is-done{color:white}
+.fs-control-panel .fs-feedback:empty{display:none}
+@media(max-width:700px){.farewell-story .fs-stage{grid-row:1}.fs-control-panel{grid-row:2}.fs-control-panel .fs-eyebrow{display:none}.fs-control-panel .fs-activity{gap:12px;padding:14px}.fs-control-panel .fs-header h3{font-size:24px}.fs-control-panel .fs-activity .fs-verse{font-size:27px}.fs-control-panel .fs-task{font-size:20px}.fs-control-panel .fs-feedback{font-size:19px}.fs-control-panel .fs-feet button{min-height:76px;font-size:27px}.fs-control-panel .fs-tickets button{font-size:28px;min-height:64px;padding-inline:12px}.fs-control-panel .fs-slot{font-size:25px;min-height:54px;min-width:50px}.fs-control-panel .fs-actions button{flex:1;min-height:54px;font-size:21px}}
 
 /* poem-games/views.css */
 .poem-view-game{width:100%;max-width:860px;margin:0 auto;color:#284e42;font-family:var(--sans);display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -2309,7 +2318,7 @@ dialog h2{font-size:26px;line-height:1.4}
 /* poem-games/river-puzzle.css */
 .river-puzzle-game{width:100%;max-width:900px;margin-inline:auto;color:#294d43;font-family:var(--sans);display:flex;flex-direction:column;gap:12px;min-width:0}
 .river-puzzle-heading{display:flex;align-items:end;justify-content:space-between;gap:14px}.river-puzzle-heading span{display:block;color:#7b765f;font-size:17px;line-height:1.35}.river-puzzle-heading h3{margin:2px 0 0;font:650 clamp(23px,3vw,30px)/1.35 var(--sans);letter-spacing:0}.river-puzzle-heading b{flex:none;min-width:72px;padding:6px 12px;border-radius:18px;background:#edf3e7;color:#41654e;text-align:center;font-size:18px;font-variant-numeric:tabular-nums}
-.river-puzzle-work{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(220px,.72fr);align-items:center;gap:18px;min-width:0}.river-puzzle-board{position:relative;isolation:isolate;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:4px;width:100%;aspect-ratio:3/2;overflow:hidden;border:1px solid #bccbb8;border-radius:16px;background-color:#e5ece3;background-image:linear-gradient(#f7f8f0d5,#f7f8f0d5),var(--river-art);background-position:center;background-size:cover;box-shadow:0 5px 18px #34513e14}.river-puzzle-board::after{content:'';position:absolute;inset:0;z-index:4;pointer-events:none;border-radius:inherit;box-shadow:inset 0 0 0 1px #fff9}
+.river-puzzle-work{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(220px,.72fr);align-items:center;gap:18px;min-width:0}.river-puzzle-board{position:relative;isolation:isolate;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:4px;width:100%;aspect-ratio:3/2;overflow:hidden;border:1px solid #bccbb8;border-radius:16px;background-color:#e5ece3;background-image:none;background-position:center;background-size:cover;box-shadow:0 5px 18px #34513e14}.river-puzzle-board::after{content:'';position:absolute;inset:0;z-index:4;pointer-events:none;border-radius:inherit;box-shadow:inset 0 0 0 1px #fff9}
 .river-puzzle-slot{position:relative;z-index:1;min-width:44px;min-height:44px;overflow:hidden;padding:0;border:1px dashed #66816d78;background:#fffdf159;color:#506d5c;cursor:pointer;touch-action:manipulation}.river-puzzle-slot.has-piece{touch-action:none}.river-puzzle-slot:first-child{border-top-left-radius:14px}.river-puzzle-slot:nth-child(3){border-top-right-radius:14px}.river-puzzle-slot:nth-child(4){border-bottom-left-radius:14px}.river-puzzle-slot:nth-child(6){border-bottom-right-radius:14px}.river-puzzle-slot:hover:not(:disabled),.river-puzzle-slot.is-drop-target{z-index:3;border-color:#d39a49;background:#fff7d88a;box-shadow:inset 0 0 0 3px #f4c86c}.river-puzzle-slot:focus-visible,.river-puzzle-piece:focus-visible,.river-puzzle-actions button:focus-visible{z-index:5;outline:3px solid #176b50;outline-offset:-4px}.river-puzzle-slot:disabled{cursor:default}.river-slot-number{display:grid;place-items:center;width:100%;height:100%;font:600 clamp(20px,3vw,28px)/1 var(--sans);color:#61786670}
 .river-puzzle-piece{--piece-position:0 0;display:block;background-image:var(--river-art);background-repeat:no-repeat;background-size:300% 200%;background-position:var(--piece-position);-webkit-tap-highlight-color:transparent}.river-puzzle-slot>.river-puzzle-piece{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.river-puzzle-slot>.river-puzzle-piece>span{display:block;width:100%;height:100%}.river-puzzle-piece.is-selected{box-shadow:inset 0 0 0 4px #f3bc57,0 0 0 2px #fff;filter:saturate(1.08)}.river-puzzle-piece.is-drag-source{opacity:.28}
 .river-puzzle-side{display:flex;flex-direction:column;gap:10px;min-width:0}.river-puzzle-instruction{margin:0;font-size:18px;line-height:1.55;color:#526c5d}.river-puzzle-tray{display:grid;grid-template-columns:repeat(3,minmax(44px,1fr));gap:8px;min-height:104px;padding:9px;border:1px solid #d3ddcd;border-radius:14px;background:#f4f6eeee}.river-puzzle-tray>.river-puzzle-piece{width:100%;aspect-ratio:1;padding:0;border:1px solid #fff;border-radius:8px;box-shadow:0 3px 8px #334b3730;cursor:grab;touch-action:none}.river-puzzle-tray>.river-puzzle-piece:active{cursor:grabbing}.river-tray-empty{grid-column:1/-1;align-self:center;text-align:center;font-size:17px;line-height:1.5;color:#66806d}
@@ -2685,6 +2694,11 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 /* Pinyin needs its own space: a syllable wider than the character must not touch
    the next syllable. Keep the whole sentence's existing read action. */
 .workspace.view-record .record-tool>.verse ruby{flex:0 0 auto;min-width:0;padding-inline:3px}
+/* Paired five-character verses share equal columns. Intrinsic pinyin widths
+   must not shift each row's characters independently. */
+.workspace.view-record .record-tool>.verse.verse-compound>.verse-clause:has(>ruby:nth-of-type(5)):not(:has(>ruby:nth-of-type(6))){display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) 18px;align-items:end;width:100%;max-width:360px}
+.workspace.view-record .record-tool>.verse.verse-compound>.verse-clause:has(>ruby:nth-of-type(5)):not(:has(>ruby:nth-of-type(6)))>ruby{width:100%;min-width:0;box-sizing:border-box;text-align:center}
+.workspace.view-record .record-tool>.verse.verse-compound>.verse-clause:has(>ruby:nth-of-type(5)):not(:has(>ruby:nth-of-type(6)))>.punct{width:18px;text-align:center}
 @media(max-width:360px){
  .workspace.view-record .record-counter:has([data-action="record-feedback"]):has(.extension-entry){grid-template-columns:minmax(0,1fr) auto;gap:0 8px}
  .workspace.view-record .record-counter:has([data-action="record-feedback"])>.extension-entry{grid-column:2;grid-row:1}
@@ -2730,6 +2744,19 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace .shishi-touch-slot .shishi-guide-button{flex-direction:row;justify-content:flex-start;gap:4px}
  .workspace .shishi-touch-slot .shishi-guide-art{order:0}
  .workspace .shishi-touch-slot .shishi-poet-label{order:1}
+ /* The reading task needs room for its microphone on a narrow phone. Keep
+    pupil navigation, title and mascot in one compact header row. */
+ .workspace.view-record .lesson-bar:has(.shishi-touch-slot):not(:has(.teacher-entry)){grid-template-columns:40px minmax(0,1fr) 46px 44px;grid-template-rows:auto;gap:4px;padding-block:4px;margin-bottom:6px}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry))>.lesson-title{grid-column:2;grid-row:1}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry))>.shishi-touch-slot{grid-column:3;grid-row:1;justify-self:center;--shishi-width:44px;--shishi-height:60px;width:46px;height:80px}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry))>.lesson-tools{grid-column:4;grid-row:1}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry)) .lesson-title h1{font-size:22px;line-height:1.25}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry)) .poem-heading-audio{gap:3px;padding-right:0}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry)) h1 .poem-heading-audio>span:first-child{text-wrap:balance}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry)) .shishi-guide-button{flex-direction:column;justify-content:center;gap:0}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry)) .shishi-poet-label{font-size:14px;line-height:20px}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry)) .lesson-menu>summary{width:44px;height:48px}
+ .workspace.view-record #view{padding-bottom:8px;scroll-padding-bottom:8px}
 }
 
 /* tablet-layout.css */
@@ -3264,4 +3291,52 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace.view-quiz .river-puzzle-game.is-complete .river-puzzle-board{grid-row:1/4}
  .workspace.view-quiz .river-puzzle-game.is-complete .river-puzzle-status{grid-row:2;align-self:center;font-size:clamp(27px,4vh,38px);line-height:1.6;text-wrap:balance}
  .workspace.view-quiz .river-puzzle-game.is-complete .river-puzzle-actions{grid-row:3;align-self:end}
+}
+
+/* Each farewell chapter owns the same complete right-hand activity area.
+   Hidden controls no longer leave their old rows empty between instructions. */
+@media(min-width:701px) and (orientation:landscape){
+ .workspace.view-quiz .farewell-story{grid-template-columns:minmax(0,1.35fr) minmax(310px,1fr);grid-template-rows:minmax(0,1fr);align-items:stretch}
+ .workspace.view-quiz .farewell-story .fs-stage{grid-column:1;grid-row:1;width:min(100%,calc(100cqh * 1.5));align-self:center}
+ .workspace.view-quiz .farewell-story .fs-control-panel{grid-column:2;grid-row:1;height:100%;min-height:0;gap:clamp(10px,1.6vh,18px)}
+ .workspace.view-quiz .farewell-story .fs-header{flex:none;align-items:center}
+ .workspace.view-quiz .farewell-story .fs-header h3{font-size:clamp(27px,4vh,37px);line-height:1.3}
+ .workspace.view-quiz .farewell-story .fs-progress{font-size:clamp(21px,3vh,28px)}
+ .workspace.view-quiz .farewell-story .fs-activity{flex:1;min-height:0;justify-content:center;padding:clamp(14px,2vh,24px);gap:clamp(16px,2.8vh,30px)}
+ .workspace.view-quiz .farewell-story .fs-verse{font-size:clamp(30px,4.6vh,47px);line-height:1.45;letter-spacing:0;flex:none}
+ .workspace.view-quiz .farewell-story .fs-task{font-size:clamp(23px,3.5vh,33px);line-height:1.45;flex:none}
+ .workspace.view-quiz .farewell-story .fs-rhythm,.workspace.view-quiz .farewell-story .fs-compose{flex:1;min-height:0;justify-content:center;gap:clamp(14px,2.5vh,28px)}
+ .workspace.view-quiz .farewell-story .fs-beats{gap:clamp(14px,2vw,24px)}
+ .workspace.view-quiz .farewell-story .fs-beats i{width:clamp(36px,5.5vh,56px);height:clamp(36px,5.5vh,56px);font-size:clamp(23px,3.3vh,32px)}
+ .workspace.view-quiz .farewell-story .fs-feet{flex:1;max-height:180px;gap:14px}
+ .workspace.view-quiz .farewell-story .fs-feet button{flex:1;width:100%;max-width:none;height:100%;min-height:76px;font-size:clamp(30px,4.7vh,46px);gap:8px;border-radius:20px}
+ .workspace.view-quiz .farewell-story .fs-feet button span{font-size:1.2em}
+ .workspace.view-quiz .farewell-story .fs-compose{gap:clamp(18px,3vh,32px)}
+ .workspace.view-quiz .farewell-story .fs-line{font-size:clamp(27px,4.3vh,41px);gap:8px;flex:1;max-height:118px}
+ .workspace.view-quiz .farewell-story .fs-slot{flex:1;min-width:0;min-height:58px;height:100%;padding:6px 2px}
+ .workspace.view-quiz .farewell-story .fs-tickets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;flex:1;max-height:118px}
+ .workspace.view-quiz .farewell-story .fs-tickets button{width:100%;min-width:0;min-height:62px;height:100%;font-size:clamp(28px,4.5vh,44px);padding:8px 4px}
+ .workspace.view-quiz .farewell-story .fs-actions{flex:none;display:flex;flex-wrap:nowrap;gap:12px}
+ .workspace.view-quiz .farewell-story .fs-actions button{flex:1;width:auto;min-height:clamp(56px,8vh,78px);font-size:clamp(24px,3.6vh,34px);padding:9px 8px}
+ .workspace.view-quiz .farewell-story .fs-feedback{flex:none;font-size:clamp(22px,3.2vh,30px);line-height:1.4;min-height:0}
+ .workspace.view-quiz .farewell-story[data-stage="0"] .fs-activity{gap:clamp(24px,5vh,48px)}
+ .workspace.view-quiz .farewell-story[data-complete="true"] .fs-verse{font-size:clamp(33px,5vh,49px)}
+ .workspace.view-quiz .farewell-story[data-stage="0"] .fs-control-panel,
+ .workspace.view-quiz .farewell-story[data-complete="true"] .fs-control-panel{height:auto;align-self:center}
+ .workspace.view-quiz .farewell-story[data-stage="0"] .fs-activity,
+ .workspace.view-quiz .farewell-story[data-complete="true"] .fs-activity{flex:none;padding-block:clamp(24px,5vh,54px)}
+ .workspace.view-quiz .farewell-story[data-stage="0"] .fs-task{font-size:clamp(26px,4vh,37px)}
+}
+@media(min-width:701px) and (max-height:740px) and (orientation:landscape){
+ .workspace.view-quiz .farewell-story .fs-control-panel{gap:8px}
+ .workspace.view-quiz .farewell-story .fs-activity{padding:12px;gap:10px}
+ .workspace.view-quiz .farewell-story .fs-verse{font-size:29px}
+ .workspace.view-quiz .farewell-story .fs-task{font-size:23px;line-height:1.35}
+ .workspace.view-quiz .farewell-story .fs-rhythm,.workspace.view-quiz .farewell-story .fs-compose{gap:12px}
+ .workspace.view-quiz .farewell-story .fs-feedback{font-size:21px}
+ .workspace.view-quiz .farewell-story .fs-header h3{font-size:27px}
+ .workspace.view-quiz .farewell-story .fs-beats i{width:34px;height:34px;font-size:22px}
+ .workspace.view-quiz .farewell-story .fs-feet button{min-height:66px;font-size:30px}
+ .workspace.view-quiz .farewell-story .fs-slot{min-height:52px;font-size:27px}
+ .workspace.view-quiz .farewell-story .fs-tickets button{min-height:58px;font-size:28px}
 }

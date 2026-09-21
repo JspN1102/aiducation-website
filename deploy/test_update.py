@@ -7,8 +7,10 @@ import io
 import json
 import tempfile
 import unittest
+import sys
 from unittest.mock import MagicMock, patch
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 spec = importlib.util.spec_from_file_location('maanshan_update', Path(__file__).with_name('update.py'))
 update = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(update)

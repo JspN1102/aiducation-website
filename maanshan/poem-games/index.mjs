@@ -4,7 +4,7 @@
 import {createProcessResearch} from './research.mjs?v=20260920a';
 const loaders={
  'yong-e':()=>import('./goose.mjs?v=20260921-games1').then(m=>m.mountGoose),
- 'zeng-wang-lun':()=>import('./zeng.mjs?v=20260921-school9').then(m=>m.mountFarewell),
+ 'zeng-wang-lun':()=>import('./zeng.mjs?v=20260921-school10').then(m=>m.mountFarewell),
  'ti-xi-lin-bi':()=>import('./views.mjs?v=20260921-school9').then(m=>m.mountMountain),
  'bo-chuan-gua-zhou':()=>import('./river.mjs?v=20260921-school9').then(m=>m.mountRiver),
  'gui-yuan-tian-ju':()=>import('./garden.mjs?v=20260921-school9').then(m=>m.mountGarden),

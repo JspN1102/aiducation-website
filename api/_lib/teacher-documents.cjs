@@ -65,7 +65,7 @@ function learningRows(dataset){
 }
 function hongKongTime(value){const time=new Date(value);return Number.isFinite(time.getTime())?new Intl.DateTimeFormat('zh-HK',{timeZone:'Asia/Hong_Kong',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(time)+'（香港時間）':'未提供';}
 async function buildDocx(report){const dataset=report?.dataset;assertDataset(dataset);if(!report.analysis||!report.reportId||report.snapshotId&&report.snapshotId!==dataset.snapshotId)throw new TeacherDataError('REPORT_SNAPSHOT_INVALID',409);
-  const a=report.analysis,children=[...(dataset.demo?[para('模擬數據',{spacing:{after:70}})]:[]),para('馬鞍山靈糧小學',{spacing:{after:70}}),para(a.title||'普通話教研報告',{heading:HeadingLevel.TITLE,spacing:{after:200}}),para(rangeLabel(dataset)),para(`報告日期：${hongKongTime(report.createdAt)}`),heading('整體評價'),para(a.overview)];
+  const a=report.analysis,children=[...(dataset.demo?[para('模擬數據',{spacing:{after:70}})]:[]),para('AI普通話學習平台',{spacing:{after:70}}),para(a.title||'普通話教研報告',{heading:HeadingLevel.TITLE,spacing:{after:200}}),para(rangeLabel(dataset)),para(`報告日期：${hongKongTime(report.createdAt)}`),heading('整體評價'),para(a.overview)];
   children.push(heading('主要發現'));
   if(!a.findings?.length)children.push(para('目前沒有足夠資料形成分項發現。'));
   for(const item of a.findings||[])children.push(para(item.title,{heading:HeadingLevel.HEADING_2,keepNext:true}),para(item.interpretation));

@@ -7,6 +7,7 @@ import shutil
 import subprocess
 
 from media_config import build_media_config, verify_local_assets, obsolete_audio_files
+from public_school import TEXT_SUFFIXES, public_path, public_source, public_routes, is_authoring_file
 
 ROOT = Path(__file__).resolve().parent.parent
 API_FILES = {'soe.js', 'tts.js', 'maanshan-chat.js', 'maanshan-report.js',
@@ -75,16 +76,19 @@ def main():
         source = ROOT / relative
         if source.is_symlink():
             raise RuntimeError('Unexpected symlink in deployment input.')
-        if relative in omit or relative in unused or relative.endswith('/recital.mp4'):
+        if relative in omit or relative in unused or relative.endswith('/recital.mp4') or is_authoring_file(relative):
             skipped.append({'path': relative, 'bytes': source.stat().st_size})
             continue
-        target = destination / relative
+        target_relative = public_path(relative)
+        target = destination / target_relative
         target.parent.mkdir(parents=True, exist_ok=True)
         if relative in {'api/' + name for name in API_FILES}:
             target.write_text(relay_entry(Path(relative).name), encoding='utf-8')
+        elif relative.startswith('maanshan/') and target.suffix in TEXT_SUFFIXES:
+            target.write_text(public_source(source.read_text(encoding='utf-8')), encoding='utf-8', newline='')
         else:
             shutil.copyfile(source, target)
-        copied.append({'path': relative, 'bytes': target.stat().st_size,
+        copied.append({'path': target_relative, 'bytes': target.stat().st_size,
                        'sha256': hashlib.sha256(target.read_bytes()).hexdigest()})
     gateway=destination/'api/school-gateway.js'
     gateway.write_text("'use strict';\nmodule.exports=require('./_lib/guangzhou-relay.cjs').gateway;\n",encoding='utf-8')
@@ -103,18 +107,19 @@ def main():
         'regions': ['iad1'],
         'functions': functions_config(),
         'rewrites': [{'source':'/api/'+Path(name).stem+'/', 'destination':'/api/school-gateway/?__school_route='+Path(name).stem} for name in sorted(API_FILES)],
-        'redirects': [{'source': '/', 'destination': '/maanshan/', 'statusCode': 307},
+        'redirects': [{'source': '/', 'destination': '/school/', 'statusCode': 307},
+                      {'source': '/maanshan/:path*', 'destination': '/school/:path*', 'statusCode': 307},
                       {'source': '/favicon.ico', 'destination': '/favicon.png', 'statusCode': 307},
-                      *media_config['redirects']],
+                      *public_routes(media_config['redirects'])],
         'headers': [
             {'source': '/(.*)', 'headers': [
                 {'key': 'X-Content-Type-Options', 'value': 'nosniff'},
                 {'key': 'Referrer-Policy', 'value': 'strict-origin-when-cross-origin'}]},
-            {'source': '/maanshan/:path*', 'headers': [{'key': 'Cache-Control', 'value': 'public, max-age=0, must-revalidate'}]},
-            {'source': '/maanshan/media/:path*', 'headers': [{'key': 'Cache-Control', 'value': 'public, max-age=2592000'}]},
-            {'source': '/maanshan/vendor/:path*', 'headers': [{'key': 'Cache-Control', 'value': 'public, max-age=2592000'}]},
+            {'source': '/school/:path*', 'headers': [{'key': 'Cache-Control', 'value': 'public, max-age=0, must-revalidate'}]},
+            {'source': '/school/media/:path*', 'headers': [{'key': 'Cache-Control', 'value': 'public, max-age=2592000'}]},
+            {'source': '/school/vendor/:path*', 'headers': [{'key': 'Cache-Control', 'value': 'public, max-age=2592000'}]},
             {'source': '/api/:path*', 'headers': [{'key': 'Cache-Control', 'value': 'private, no-store'}]},
-            *media_config['headers'],
+            *public_routes(media_config['headers']),
         ],
     }
     (destination / 'vercel.json').write_text(json.dumps(config, indent=2), encoding='utf-8')

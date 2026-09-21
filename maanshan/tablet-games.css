@@ -385,3 +385,51 @@
  .workspace.view-quiz .river-puzzle-game.is-complete .river-puzzle-status{grid-row:2;align-self:center;font-size:clamp(27px,4vh,38px);line-height:1.6;text-wrap:balance}
  .workspace.view-quiz .river-puzzle-game.is-complete .river-puzzle-actions{grid-row:3;align-self:end}
 }
+
+/* Each farewell chapter owns the same complete right-hand activity area.
+   Hidden controls no longer leave their old rows empty between instructions. */
+@media(min-width:701px) and (orientation:landscape){
+ .workspace.view-quiz .farewell-story{grid-template-columns:minmax(0,1.35fr) minmax(310px,1fr);grid-template-rows:minmax(0,1fr);align-items:stretch}
+ .workspace.view-quiz .farewell-story .fs-stage{grid-column:1;grid-row:1;width:min(100%,calc(100cqh * 1.5));align-self:center}
+ .workspace.view-quiz .farewell-story .fs-control-panel{grid-column:2;grid-row:1;height:100%;min-height:0;gap:clamp(10px,1.6vh,18px)}
+ .workspace.view-quiz .farewell-story .fs-header{flex:none;align-items:center}
+ .workspace.view-quiz .farewell-story .fs-header h3{font-size:clamp(27px,4vh,37px);line-height:1.3}
+ .workspace.view-quiz .farewell-story .fs-progress{font-size:clamp(21px,3vh,28px)}
+ .workspace.view-quiz .farewell-story .fs-activity{flex:1;min-height:0;justify-content:center;padding:clamp(14px,2vh,24px);gap:clamp(16px,2.8vh,30px)}
+ .workspace.view-quiz .farewell-story .fs-verse{font-size:clamp(30px,4.6vh,47px);line-height:1.45;letter-spacing:0;flex:none}
+ .workspace.view-quiz .farewell-story .fs-task{font-size:clamp(23px,3.5vh,33px);line-height:1.45;flex:none}
+ .workspace.view-quiz .farewell-story .fs-rhythm,.workspace.view-quiz .farewell-story .fs-compose{flex:1;min-height:0;justify-content:center;gap:clamp(14px,2.5vh,28px)}
+ .workspace.view-quiz .farewell-story .fs-beats{gap:clamp(14px,2vw,24px)}
+ .workspace.view-quiz .farewell-story .fs-beats i{width:clamp(36px,5.5vh,56px);height:clamp(36px,5.5vh,56px);font-size:clamp(23px,3.3vh,32px)}
+ .workspace.view-quiz .farewell-story .fs-feet{flex:1;max-height:180px;gap:14px}
+ .workspace.view-quiz .farewell-story .fs-feet button{flex:1;width:100%;max-width:none;height:100%;min-height:76px;font-size:clamp(30px,4.7vh,46px);gap:8px;border-radius:20px}
+ .workspace.view-quiz .farewell-story .fs-feet button span{font-size:1.2em}
+ .workspace.view-quiz .farewell-story .fs-compose{gap:clamp(18px,3vh,32px)}
+ .workspace.view-quiz .farewell-story .fs-line{font-size:clamp(27px,4.3vh,41px);gap:8px;flex:1;max-height:118px}
+ .workspace.view-quiz .farewell-story .fs-slot{flex:1;min-width:0;min-height:58px;height:100%;padding:6px 2px}
+ .workspace.view-quiz .farewell-story .fs-tickets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;flex:1;max-height:118px}
+ .workspace.view-quiz .farewell-story .fs-tickets button{width:100%;min-width:0;min-height:62px;height:100%;font-size:clamp(28px,4.5vh,44px);padding:8px 4px}
+ .workspace.view-quiz .farewell-story .fs-actions{flex:none;display:flex;flex-wrap:nowrap;gap:12px}
+ .workspace.view-quiz .farewell-story .fs-actions button{flex:1;width:auto;min-height:clamp(56px,8vh,78px);font-size:clamp(24px,3.6vh,34px);padding:9px 8px}
+ .workspace.view-quiz .farewell-story .fs-feedback{flex:none;font-size:clamp(22px,3.2vh,30px);line-height:1.4;min-height:0}
+ .workspace.view-quiz .farewell-story[data-stage="0"] .fs-activity{gap:clamp(24px,5vh,48px)}
+ .workspace.view-quiz .farewell-story[data-complete="true"] .fs-verse{font-size:clamp(33px,5vh,49px)}
+ .workspace.view-quiz .farewell-story[data-stage="0"] .fs-control-panel,
+ .workspace.view-quiz .farewell-story[data-complete="true"] .fs-control-panel{height:auto;align-self:center}
+ .workspace.view-quiz .farewell-story[data-stage="0"] .fs-activity,
+ .workspace.view-quiz .farewell-story[data-complete="true"] .fs-activity{flex:none;padding-block:clamp(24px,5vh,54px)}
+ .workspace.view-quiz .farewell-story[data-stage="0"] .fs-task{font-size:clamp(26px,4vh,37px)}
+}
+@media(min-width:701px) and (max-height:740px) and (orientation:landscape){
+ .workspace.view-quiz .farewell-story .fs-control-panel{gap:8px}
+ .workspace.view-quiz .farewell-story .fs-activity{padding:12px;gap:10px}
+ .workspace.view-quiz .farewell-story .fs-verse{font-size:29px}
+ .workspace.view-quiz .farewell-story .fs-task{font-size:23px;line-height:1.35}
+ .workspace.view-quiz .farewell-story .fs-rhythm,.workspace.view-quiz .farewell-story .fs-compose{gap:12px}
+ .workspace.view-quiz .farewell-story .fs-feedback{font-size:21px}
+ .workspace.view-quiz .farewell-story .fs-header h3{font-size:27px}
+ .workspace.view-quiz .farewell-story .fs-beats i{width:34px;height:34px;font-size:22px}
+ .workspace.view-quiz .farewell-story .fs-feet button{min-height:66px;font-size:30px}
+ .workspace.view-quiz .farewell-story .fs-slot{min-height:52px;font-size:27px}
+ .workspace.view-quiz .farewell-story .fs-tickets button{min-height:58px;font-size:28px}
+}

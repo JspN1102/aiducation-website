@@ -80,8 +80,47 @@ function gameDrafts(value, set) {
 }
 function archivedResult(attempt) {
   if (!attempt || attempt.answers.length !== attempt.itemIds.length) return null;
-  const {resultArchive, freePlayDrafts, gameDrafts, legacyArchive, ...result} = attempt;
+  const {resultArchive, freePlayDrafts, gameDrafts, legacyArchive, itemRecords, ...result} = attempt;
   return result;
+}
+
+// A round controls the next question. Learning records belong to the actual
+// item answered, so opening a fresh round cannot erase earlier results.
+function mergeItemRecords(set,...sources) {
+  const bank=new Map(bankOf(set).map(item=>[item.id,item])), records={};
+  const accept=value=>{
+    const item=bank.get(value?.itemId);
+    if(!item||!['correct','incorrect','skipped'].includes(value.status)||!Number.isFinite(value.submittedAt)||typeof value.attemptId!=='string'||value.attemptId.length>128||['review','free'].includes(value.mode))return;
+    const entry={itemId:item.id,type:item.type,focus:item.focus||null,status:value.status,correct:value.status==='correct',submittedAt:value.submittedAt,attemptId:value.attemptId,mode:value.mode||'standard'};
+    const previous=records[item.id]||{};
+    // A skipped prompt is not a new answer. Retain the last actual answer if
+    // the learner opens or skips that prompt in a later round.
+    const rank=result=>result?.status==='correct'?2:result?.status==='incorrect'?1:0;
+    const later=(a,b)=>!b||a.submittedAt>b.submittedAt||a.submittedAt===b.submittedAt&&a.attemptId>b.attemptId;
+    if(!previous.latest||rank(entry)>0&&(rank(previous.latest)===0||later(entry,previous.latest))||rank(entry)===0&&rank(previous.latest)===0&&later(entry,previous.latest))previous.latest=entry;
+    if(!previous.best||rank(entry)>rank(previous.best)||rank(entry)===rank(previous.best)&&later(entry,previous.best))previous.best=entry;
+    records[item.id]=previous;
+  };
+  const visit=(source,depth=0)=>{
+    if(!source||typeof source!=='object'||depth>1)return;
+    for(const [id,value]of Object.entries(source.itemRecords||{}).slice(0,bank.size))if(bank.has(id))for(const kind of ['latest','best'])if(value?.[kind]?.itemId===id)accept(value[kind]);
+    if(source.mode==='review'){visit(source.sourceAttempt,depth+1);return;}
+    for(const [index,answer]of (Array.isArray(source.answers)?source.answers:[]).slice(0,TOTAL).entries())if(answer?.itemId===(source.itemIds||set.items.map(item=>item.id))[index])accept({...answer,attemptId:source.attemptId,mode:source.mode});
+    if(depth===0)for(const record of (Array.isArray(source.resultArchive)?source.resultArchive:[]).slice(-24))visit(record,1);
+  };
+  sources.forEach(source=>visit(source));
+  return records;
+}
+
+export function mergeChallengeRecords(incoming,previous,set) {
+  if(!incoming||typeof incoming!=='object')return previous;
+  return {...incoming,itemRecords:mergeItemRecords(set,previous,incoming)};
+}
+
+export function practiceRecordSummary(saved,set,{which='latest'}={}) {
+  const records=mergeItemRecords(set,saved),kind=which==='best'?'best':'latest';
+  const answers=Object.values(records).map(record=>record[kind]).filter(answer=>answer&&answer.status!=='skipped').sort((a,b)=>a.submittedAt-b.submittedAt||a.itemId.localeCompare(b.itemId));
+  return {version:CHALLENGE_VERSION,scope:'per-item',mode:'standard',completed:answers.length>=TOTAL,answered:answers.length,total:Math.max(TOTAL,answers.length),correct:answers.filter(answer=>answer.correct).length,answers,completedAt:answers.length?Math.max(...answers.map(answer=>answer.submittedAt)):null};
 }
 
 export function newAttempt(set, {previous = null, seed = crypto.randomUUID(), mode = 'standard'} = {}) {
@@ -105,6 +144,7 @@ export function newAttempt(set, {previous = null, seed = crypto.randomUUID(), mo
   return {version: CHALLENGE_VERSION, attemptId: crypto.randomUUID(), seed: String(seed), startedAt: Date.now(),
     selection: 'grade-bank', schedule: CHALLENGE_SCHEDULE, mode, variant, cursor: 0, itemIds: items.map(item => item.id), history, answers: [], gameDrafts: {},
     freePlayDrafts: gameDrafts(previous?.freePlayDrafts, set),
+    itemRecords:mergeItemRecords(set,previous),
     resultArchive: [...(previous?.resultArchive || []), archivedResult(previous?.mode === 'review' ? previous.sourceAttempt : previous)].filter(Boolean).slice(-24),
     ...(legacyArchive ? {legacyArchive: structuredClone(legacyArchive)} : {}),
     orders: Object.fromEntries(items.map(item => [item.id, shuffled((item.options || item.cards || []).map(option => option.id), random)]))};
@@ -146,7 +186,7 @@ export function newReviewAttempt(set, saved, {seed = crypto.randomUUID()} = {}) 
     reviewPending: wrongIds.filter(id => !ids.includes(id)),
     ...(previous.legacyArchive ? {legacyArchive: structuredClone(previous.legacyArchive)} : {}),
     reviewOf: previous.attemptId, cursor: 0, itemIds: ids, history: structuredClone(previous.history), answers: [],
-    gameDrafts: {}, freePlayDrafts: gameDrafts(previous.freePlayDrafts, set), resultArchive: structuredClone(previous.resultArchive || []),
+    gameDrafts: {}, freePlayDrafts: gameDrafts(previous.freePlayDrafts, set), resultArchive: structuredClone(previous.resultArchive || []),itemRecords:mergeItemRecords(set,previous),
     orders: Object.fromEntries(items.map(item => [item.id, shuffled((item.options || item.cards || []).map(option => option.id), random)]))};
 }
 
@@ -205,6 +245,7 @@ export function readAttempt(saved, set) {
   }
   attempt.cursor = Math.max(0, Math.min(Number.isInteger(saved.cursor) ? saved.cursor : attempt.answers.length, attempt.answers.length, total));
   if (attempt.answers.length !== total) delete attempt.completedAt;
+  attempt.itemRecords=mergeItemRecords(set,attempt);
   return attempt;
 }
 
@@ -214,6 +255,7 @@ export function recordAnswer(attempt, set, index, result) {
       !['correct', 'incorrect', 'skipped'].includes(result.status)) return false;
   if (items[index].type === 'microgame' && result.status === 'correct' && safeGameState(result.response)?.gameCompleted !== true) return false;
   attempt.answers.push({...result, itemId: items[index].id, correct: result.status === 'correct', submittedAt: Date.now()});
+  attempt.itemRecords=mergeItemRecords(set,attempt);
   if (attempt.answers.length === items.length) attempt.completedAt = Date.now();
   return true;
 }

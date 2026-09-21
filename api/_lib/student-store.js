@@ -81,13 +81,22 @@ function createStudentStore({ client = blob, now = Date.now } = {}) {
   }
 
   async function save(input) {
-    const record = makeRecord(input, now());
+    const submitted = makeRecord(input, now());
+    let record = submitted;
     const pathname = recordPath(record);
     const signal = AbortSignal.timeout(7500);
     for (let attempt = 0; attempt < 4; attempt++) {
       signal.throwIfAborted();
       const existing = await read(pathname, signal);
-      if (existing && (existing.record.sync_id === record.sync_id || !newerThan(record, existing.record))) return;
+      if (existing?.record.sync_id === submitted.sync_id) return;
+      const stale = existing && !newerThan(submitted, existing.record);
+      if (stale && submitted.section !== 'reading') return;
+      record = stale ? {...existing.record} : {...submitted};
+      if (existing && record.section === 'reading') {
+        record.payload = await require('./practice-progress.cjs').mergePracticePayload(record.payload, stale ? submitted.payload : existing.record.payload, record.poem_id);
+        if (stale && JSON.stringify(record.payload) === JSON.stringify(existing.record.payload)) return;
+      }
+      if (!validRecord(record)) throw new Error('Invalid merged student record');
       try {
         await client.put(pathname, JSON.stringify(record), {
           access: 'private', addRandomSuffix: false, allowOverwrite: !!existing,

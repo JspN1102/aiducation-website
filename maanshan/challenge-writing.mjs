@@ -1,4 +1,4 @@
-import {createHandwritingPad} from './handwriting-pad.mjs?v=20260921-school9';
+import {createHandwritingPad} from './handwriting-pad.mjs?v=20260921-school10';
 
 // First submitted recognition is the assessment. Later stroke demonstrations
 // and free practice never change that result. Only the top candidate counts.

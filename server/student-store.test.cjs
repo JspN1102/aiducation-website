@@ -71,6 +71,35 @@ test('older retry cannot overwrite newer work and CAS races preserve the newest 
   assert.ok(fake.calls.filter(call => call.method === 'put').some(call => call.options.ifMatch));
 });
 
+test('Blob practice merge preserves unredone items and older-device answers without rolling back newer reading progress',async()=>{
+ const [state,data]=await Promise.all([import('../maanshan/challenge-state.mjs'),import('../maanshan/challenge-data.mjs')]),set=data.CHALLENGE_SETS['zao-chun'];
+ const first=state.newAttempt(set,{seed:'blob-full'});
+ for(let i=0;i<5;i++)state.recordAnswer(first,set,i,{status:'correct',...i===0?{response:{gameCompleted:true}}:{}});
+ first.answers.forEach((answer,i)=>answer.submittedAt=NOW-3000+i);delete first.itemRecords;
+ const partial=state.newAttempt(set,{previous:first,seed:'blob-partial'});partial.itemIds=[...first.itemIds];partial.orders=structuredClone(first.orders);
+ for(let i=0;i<2;i++)state.recordAnswer(partial,set,i,{status:i?'incorrect':'correct',...i===0?{response:{gameCompleted:true}}:{}});
+ partial.answers.forEach((answer,i)=>answer.submittedAt=NOW-2000+i);delete partial.itemRecords;
+ const opened=state.newAttempt(set,{previous:first,seed:'blob-opened'}),fake=fakeBlob();
+ await fake.store.save(input({syncId:'latest-reading',queuedAt:NOW,payload:{totalScore:95,learningState:{challenge:opened}}}));
+ await fake.store.save(input({syncId:'older-device-practice',queuedAt:NOW-1000,payload:{totalScore:60,learningState:{challenge:partial}}}));
+ const row=(await fake.store.readClass(6,'A',6))[0];
+ assert.equal(row.payload.totalScore,95);assert.equal(row.source_at,new Date(NOW).toISOString());
+ assert.equal(row.payload.learningState.challenge.attemptId,opened.attemptId);assert.equal(row.payload.learningState.challenge.answers.length,0);
+ assert.equal(row.payload.challenge.answered,5);assert.equal(row.payload.challenge.correct,4);
+ assert.equal(state.practiceRecordSummary(row.payload.learningState.challenge,set,{which:'best'}).correct,5);
+});
+
+test('combined practice records still obey the Blob record byte bound before writing',async()=>{
+ const [state,data]=await Promise.all([import('../maanshan/challenge-state.mjs'),import('../maanshan/challenge-data.mjs')]),set=data.CHALLENGE_SETS['zao-chun'];
+ const first=state.newAttempt(set,{seed:'size-bound'});state.recordAnswer(first,set,0,{status:'correct',response:{gameCompleted:true}});
+ const fake=fakeBlob();await fake.store.save(input({payload:{learningState:{challenge:first}}}));
+ const next=input({syncId:'large-next',queuedAt:NOW,payload:{padding:''}}),size=Buffer.byteLength(JSON.stringify(studentStore.makeRecord(next,NOW)));
+ next.payload.padding='x'.repeat(studentStore.MAX_RECORD_BYTES-size-1);
+ assert(studentStore.makeRecord(next,NOW));
+ await assert.rejects(fake.store.save(next),/Invalid merged student record/);
+ assert.equal(fake.calls.filter(call=>call.method==='put').length,1);
+});
+
 test('teacher reads only the selected class and poem, with separate sections', async () => {
   const fake = fakeBlob();
   await fake.store.save(input());

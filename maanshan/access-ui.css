@@ -28,4 +28,17 @@
  .workspace .shishi-touch-slot .shishi-guide-button{flex-direction:row;justify-content:flex-start;gap:4px}
  .workspace .shishi-touch-slot .shishi-guide-art{order:0}
  .workspace .shishi-touch-slot .shishi-poet-label{order:1}
+ /* The reading task needs room for its microphone on a narrow phone. Keep
+    pupil navigation, title and mascot in one compact header row. */
+ .workspace.view-record .lesson-bar:has(.shishi-touch-slot):not(:has(.teacher-entry)){grid-template-columns:40px minmax(0,1fr) 46px 44px;grid-template-rows:auto;gap:4px;padding-block:4px;margin-bottom:6px}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry))>.lesson-title{grid-column:2;grid-row:1}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry))>.shishi-touch-slot{grid-column:3;grid-row:1;justify-self:center;--shishi-width:44px;--shishi-height:60px;width:46px;height:80px}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry))>.lesson-tools{grid-column:4;grid-row:1}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry)) .lesson-title h1{font-size:22px;line-height:1.25}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry)) .poem-heading-audio{gap:3px;padding-right:0}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry)) h1 .poem-heading-audio>span:first-child{text-wrap:balance}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry)) .shishi-guide-button{flex-direction:column;justify-content:center;gap:0}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry)) .shishi-poet-label{font-size:14px;line-height:20px}
+ .workspace.view-record .lesson-bar:not(:has(.teacher-entry)) .lesson-menu>summary{width:44px;height:48px}
+ .workspace.view-record #view{padding-bottom:8px;scroll-padding-bottom:8px}
 }
