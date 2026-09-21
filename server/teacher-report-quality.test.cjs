@@ -208,7 +208,7 @@ test('the actual v13 paragraph loses its defensive explanation while direct teac
  const actual='逐字平均分是全班整體表現的參考，不能直接推論每個人都錯，因此個別聽取是必要的。';
  const issue=inspectAnalysis({findings:[{interpretation:actual}]},p).find(item=>item.code==='REPORT_DEFENSIVE_LANGUAGE');
  assert(issue);assert(issue.message.includes('刪除整句「'+actual.slice(0,-1)+'」'));assert.match(issue.message,/不要改寫成另一句/);
- for(const text of ['平均分只是參考，不能代表全班。','逐字平均不等於人人讀錯。','不能由均分判斷所有學生的字音表現。','平均分僅供選擇句子之用，實際仍需以個別聽取結果安排後續。','朗讀評分只供選擇原句，實際仍需逐一聽取。'])
+ for(const text of ['平均分只是參考，不能代表全班。','逐字平均不等於人人讀錯。','不能由均分判斷所有學生的字音表現。','平均分僅供選擇句子之用，實際仍需以個別聽取結果安排後續。','朗讀評分只供選擇原句，實際仍需逐一聽取。','教師應以逐字平均和已有評分人數20人作為選擇句子的依據，不將平均低分推論為全班讀錯，而是透過共同跟讀與個別聽取，找出真正需要再練的學生。','不把均分推断为所有学生读错，教师仍需逐一听取。'])
   assert(codes({overview:text},p).includes('REPORT_DEFENSIVE_LANGUAGE'),text);
  for(const text of ['全班跟讀後，教師逐一聽取，讓仍需鞏固的學生再讀一次。','教師依學生重讀的實際表現，調整小組練習。','教師不能忽略尚未留下朗讀紀錄的學生，下一課先聽取其朗讀。'])
   assert(!codes({overview:text},p).includes('REPORT_DEFENSIVE_LANGUAGE'),text);

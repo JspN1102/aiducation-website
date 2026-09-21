@@ -1,7 +1,7 @@
 'use strict';
 const crypto=require('node:crypto'),blob=require('@vercel/blob');
 const research=require('./research-store.cjs');
-const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v17-group-overlap-safe';
+const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v18-direct-teaching';
 const MAX_RECORD_BYTES=12*1024*1024,MAX_PROVIDER_BYTES=160*1024,MAX_RESPONSE_BYTES=128*1024;
 const LEASE_MS=120000,PROVIDER_TIMEOUT_MS=42000;
 const BACKGROUND_TIMEOUT_MS=180000,BACKGROUND_LEASE_MS=BACKGROUND_TIMEOUT_MS+30000;

@@ -351,12 +351,12 @@ test('empty groups and character prevalence trigger one targeted revision before
  assert.equal((await svc.generate({},input.filters,teacher)).cached,true);assert.equal(calls,2);
 });
 
-test('v17 retains exactly one paired cohort and whole-class follow-up totals',async()=>{
+test('v18 retains exactly one paired cohort and whole-class follow-up totals',async()=>{
  const input=dataset(),metric=value=>({measuredN:value===null?0:1,meanScore:value});
  input.filters={...input.filters,grade:6,poemId:6};
  input.students=[[45,90,40],[45,80,90],[90,40,90],[null,40,90]].map(([reading,writing,sound])=>({rosterMatched:true,stats:{nEvents:3,latest:{byConstruct:{'reading.pronunciation':{serverVerified:metric(reading)},'writing.dictation':{serverVerified:metric(writing)},'sound.recognition':{serverVerified:metric(sound)}}}}}));
  const payload=analysis.aggregateEvidence(input);
- assert.equal(analysis.PROMPT_VERSION,'teacher-analysis-v17-group-overlap-safe');
+ assert.equal(analysis.PROMPT_VERSION,'teacher-analysis-v18-direct-teaching');
  assert.equal(payload.evidence.filter(f=>f.label.endsWith('：同一批學生觀察')).length,3,'keep every paired fact in the stored audit evidence');
  assert.equal(payload.teachingGroups.length,1);assert.deepEqual(payload.teachingGroups[0].domains,['朗讀字音評分','辨音答題準確度']);
  await analysis.requestAnalysis(payload,analysis.modelConfig(env),{fetchImpl:async(_url,options)=>{
@@ -380,7 +380,7 @@ test('the actual defensive sentence triggers a private single revision that dele
  }});
  const pending=await svc.generate({},dataset().filters,teacher);assert.equal(pending.report,undefined);assert.equal(pending.nextAction,'continue');
  await assert.rejects(svc.getReport(pending.reportId),e=>e.code==='REPORT_NOT_READY');
- const done=await svc.continueReport(pending.reportId,teacher);assert.equal(done.report.qualityReview.revisions,1);assert.equal(done.report.promptVersion,'teacher-analysis-v17-group-overlap-safe');
+ const done=await svc.continueReport(pending.reportId,teacher);assert.equal(done.report.qualityReview.revisions,1);assert.equal(done.report.promptVersion,'teacher-analysis-v18-direct-teaching');
  assert.doesNotMatch(done.report.analysis.findings[0].interpretation,/參考|推論|不能|局限/);
  assert.equal((await svc.generate({},dataset().filters,teacher)).cached,true);assert.equal(calls,2);
 });
@@ -421,10 +421,10 @@ test('provider reference completion fixes a uniquely supported count without rew
  assert(require('../api/_lib/teacher-report-quality.cjs').inspectAnalysis(result.analysis,{...p,reportStyle:'narrative-teaching-review'}).some(issue=>issue.code==='UNSUPPORTED_REPORTED_NUMBER'));
 });
 
-test('completed older reports including v16 cannot satisfy the v17 teacher-prose generation cache',async()=>{
+test('completed older reports including v17 cannot satisfy the v18 teacher-prose generation cache',async()=>{
  const research=require('../api/_lib/research-store.cjs'),input=dataset(),payload=analysis.aggregateEvidence(input),store=memoryStore();
  const dataFingerprint=research.hash(research.canonical({snapshotId:input.snapshotId,payload}));
- const oldIds=['teacher-analysis-v7-reviewed-demo','teacher-analysis-v13-observed-groups','teacher-analysis-v14-focused-prose','teacher-analysis-v16-prevalence-safe'].map(promptVersion=>{
+ const oldIds=['teacher-analysis-v7-reviewed-demo','teacher-analysis-v13-observed-groups','teacher-analysis-v14-focused-prose','teacher-analysis-v16-prevalence-safe','teacher-analysis-v17-group-overlap-safe'].map(promptVersion=>{
   const oldId='ta_'+research.hash(research.canonical({dataFingerprint,model:env.TEACHER_AI_MODEL,provider:analysis.modelConfig(env).url,promptVersion}));
   store.data.set('report/'+oldId.slice(3),{version:'1',value:{status:'completed',report:{reportId:oldId,analysis:{overview:'Old technical report'}}}});return oldId;
  });
