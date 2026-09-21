@@ -61,6 +61,11 @@ async function welcomeChecks(){
  for(const [width,height] of [[320,740],[360,780],[390,844],[768,1024],[1024,768],[1440,900]]){const env=await setup({width,height});try{
   const {page,state}=env;
   await page.evaluate(()=>document.fonts.ready);
+  check(width+'px complete platform title shares one baseline and fits beside Shishi',await page.locator('.library-heading').evaluate(el=>{
+   const texts=['.library-title-start','.library-title-end'].map(selector=>{const text=el.querySelector(selector).firstChild,range=document.createRange();range.selectNodeContents(text);return range.getBoundingClientRect();});
+   const mascot=el.querySelector('.library-shishi').getBoundingClientRect(),heading=el.getBoundingClientRect();
+   return Math.abs(texts[0].top-texts[1].top)<1&&Math.abs(texts[0].bottom-texts[1].bottom)<1&&texts[0].left>=heading.left&&mascot.right<=heading.right+1;
+  }));
   check(width+'px full-body welcome sits directly after the final title character',await page.locator('.library-heading').evaluate(el=>{const text=el.querySelector('.library-title-end').firstChild,range=document.createRange();range.setStart(text,text.textContent.length-1);range.setEnd(text,text.textContent.length);const a=range.getBoundingClientRect(),b=el.querySelector('.library-shishi').getBoundingClientRect(),image=el.querySelector('img'),style=getComputedStyle(image);return b.left-a.right>=0&&b.left-a.right<=8&&a.top>=b.top&&a.bottom<=b.bottom&&b.height>=90&&b.height<=115&&b.width>=60&&b.width<90&&style.objectFit==='contain'&&document.documentElement.scrollWidth<=innerWidth+1;}));
   if(evidence)await page.screenshot({path:path.join(evidence,'library-'+width+'x'+height+'.png')});
   if(width===390){await page.waitForFunction(()=>document.querySelector('.library-shishi-art')?.dataset.gesture==='wave',{},{timeout:9500});check('homepage automatically waves without audio/provider calls',state.tts.length===0);}
