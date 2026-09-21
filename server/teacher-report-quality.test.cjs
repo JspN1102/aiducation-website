@@ -276,6 +276,7 @@ test('one grouping pair is followed across findings and advice without treating 
  const wrong={...valid,reviewPlan:[action('另外分組',['朗讀與默寫的交集為0，可獨立安排。'])]};
  assert(codes(wrong,p).includes('REPORT_MULTIPLE_GROUPING_PAIRS'));
  assert(!codes({findings:[{interpretation:'朗讀與默寫都先由教師示範，學生再練習。'}]},p).includes('REPORT_MULTIPLE_GROUPING_PAIRS'),'ordinary mentions of two activities do not describe a paired cohort');
+ assert(!codes({findings:[{interpretation:'整體而言，課堂應先處理朗讀缺測，再進行全班共同跟讀，最後分組練習默寫與聽辨。'}]},p).includes('REPORT_MULTIPLE_GROUPING_PAIRS'),'the actual live lesson order does not claim a second observed intersection');
 });
 
 test('actual first-and-third-line teaching cannot be ambiguously renamed the first two poem lines',()=>{

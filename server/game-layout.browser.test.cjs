@@ -77,6 +77,16 @@ async function inspectAR(page){return page.locator('#view').evaluate(el=>{
      await page.locator('[data-vg-angle]').fill('100');await page.locator('[data-vg-capture]').tap();
      check(`${width}x${height} mountain photographs show above angle, listen and feedback controls`,await page.locator('.mountain-game').evaluate(el=>{const tray=el.querySelector('.pvg-photo-tray').getBoundingClientRect(),slider=el.querySelector('.pvg-camera-control').getBoundingClientRect(),actions=el.querySelector('.pvg-actions').getBoundingClientRect(),status=el.querySelector('.pvg-status').getBoundingClientRect();return tray.bottom<=slider.top+1&&slider.bottom<=actions.top+1&&actions.bottom<=status.top+1;}));
      if(width>=900)check(`${width}x${height} mountain photos fill their frames`,await page.locator('.pvg-photo-tray').evaluate(el=>[...el.querySelectorAll('figure')].every(f=>{const frame=f.getBoundingClientRect(),img=f.querySelector('img').getBoundingClientRect();return img.width>=frame.width-20&&img.height>=frame.height-72;})));
+     check(`${width}x${height} captured mountain itself fills each photo without cutting off its edges`,await page.locator('.pvg-photo-tray').evaluate(async el=>{
+      for(const image of el.querySelectorAll('img')){
+       await image.decode();const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
+       const context=canvas.getContext('2d');context.drawImage(image,0,0);const pixels=context.getImageData(0,0,canvas.width,canvas.height).data;
+       let left=canvas.width,top=canvas.height,right=-1,bottom=-1;
+       for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++)if(pixels[(y*canvas.width+x)*4+3]>8){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
+       if(canvas.width<640||Math.abs(canvas.width/canvas.height-1.5)>.01||Math.max((right-left+1)/canvas.width,(bottom-top+1)/canvas.height)<.87||left<canvas.width*.03||right>canvas.width*.97||top<canvas.height*.03||bottom>canvas.height*.97)return false;
+      }
+      return el.querySelectorAll('img').length===2;
+     }));
      state=await inspect(page,selectors[i]);check(`${width}x${height} mountain completion controls fit ${JSON.stringify(state)}`,state.outside.length===0&&(width<900||state.scroll<=2&&state.vertical.length===0));
     }
     if(i===3){

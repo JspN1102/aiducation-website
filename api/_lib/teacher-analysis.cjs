@@ -1,7 +1,7 @@
 'use strict';
 const crypto=require('node:crypto'),blob=require('@vercel/blob');
 const research=require('./research-store.cjs');
-const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v19-precise-review';
+const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v20-paired-observations';
 const MAX_RECORD_BYTES=12*1024*1024,MAX_PROVIDER_BYTES=160*1024,MAX_RESPONSE_BYTES=128*1024;
 const LEASE_MS=120000,PROVIDER_TIMEOUT_MS=42000;
 const BACKGROUND_TIMEOUT_MS=180000,BACKGROUND_LEASE_MS=BACKGROUND_TIMEOUT_MS+30000;
@@ -190,6 +190,10 @@ teachingActions單年級1至2項、全校2至3項。每項steps放1段100至180�
 「尚無評分的名冊學生」是整份名冊中的總缺測人數，包含完全無活動紀錄的學生。表述為「全班朗讀尚有X人未留下評分」，不能放進「已有活動紀錄的學生中」的子集，也不能與無活動紀錄人數相加。無活動紀錄只表示尚未留下平台紀錄，直接建議先了解練習情況並補齊觀察；不將其說成缺席、未參與或沒有練習。
 同一批學生觀察：bothMeasuredStudents為兩項都有結果的人數，bothBelow60Students為兩項個人均分皆低於60的人數，leftBelow60Students/rightBelow60Students是這批學生各項低於60的總人數，已包含兩項皆低者；leftOnlyBelow60Students/rightOnlyBelow60Students是只有一項低於60的人數，neitherBelow60Students是兩項均不低於60的人數，這三類與兩項皆低者互不重複。teachingGroups的每個groups只列非空組，focus就是該組需要跟進的分項；同一批學生未涵蓋的缺測者先補齊觀察。分組只按這些實際人數，不將不同兩項組合相加，也不為空組安排任務。簡潔寫需要跟進的名單重疊多少人，據此安排聽讀或寫字練習，不把多組交集數字全部抄入報告，不把交集大小說成能力相關程度。各分項優先用平台評分，不混合練習回報平均。只寫事實和可觀察的教學選擇，不指認未測的聲調/韻母錯誤、粵語干擾、字詞熟悉度、注意力或技術故障成因。
 所有建議集中聽、讀、字音、聽辨和寫字，不教詩意、作文或擴展默寫。選teachingFocus的原句和觀察字，複查同樣內容；需要其他句才從curriculum選並核對字確實在句內。聽辨只建議使用本詩現有遊戲的實際題目，學生聽後作答、再重讀所聽內容；沒有提供完整題庫，不聲稱遊戲已有指定四個字、指定短句或某一讀音的題目，也不自編選項。教師可親自示範原句和指定字，但要寫清是教師帶讀。低小整份報告連同複查只寫同一個teachingConstraints允許字，其餘用聽選跟讀；中高年級按各自指定字與上限。多個年級的建議寫清適用年級。
+【本課安排的具體依據】
+選哪一句先練，依據是該句包含的觀察字及課堂安排，不能自行補上「句子較短」「更簡單」「學生更熟悉」等理由。curriculum若各句同為七字，就不能把第一、第三句說成比其餘句短；無需在正文解說句長，只寫哪些字連在同一句、老師怎樣示範和聽取。
+均分用清楚的約數表達，例如68.9或68.95都可寫「約69分」，不逐個抄小數。0.05分這類細微差異不能作為「略高、可以少練、不需全班重複」的教學理由。共同跟讀先照顧低於80分的觀察字所在原句；第一、第三句先練後，第二、第四句的低於80分字也安排聽取或跟讀，不因細微均分差便跳過。全班再讀還是個別再聽，根據下一次課堂實際表現調整，不另設70分等新門檻。
+個人平均低於60分的學生已經有評分，直接安排跟讀、示範或指定字練寫，下一次再看進步。只有「尚無評分」的學生才補齊觀察或補測；不能要求已有低分的7人或8人先補測再決定是否練習。不要把補測、低分跟進寫成同一批人的前後步驟。具體教學建議用原句帶讀和字形觀察，不從總分指定聲調或韻母為弱點。
 只輸出完整JSON，不加markdown，schema：
 {"title":"範圍普通話教研報告","overview":"連貫整體評價","findings":[{"title":"具體教學判斷","evidenceIds":["F001","F002"],"interpretation":"完整分析段落"}],"teachingActions":[{"priority":"high|medium|low","title":"教學方向","evidenceIds":["F001"],"steps":["完整建議段落"]}],"reviewPlan":[{"title":"下一課觀察","evidenceIds":["F001"],"steps":["完整複查段落"]}],"limitations":[]}。`;
 function repairPunctuation(content){

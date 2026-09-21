@@ -54,7 +54,30 @@ export async function createMountainViewer(holder,{signal,angle=0,onContextLost}
  holder.replaceChildren(canvas);resize();draw();
  return {
   setAngle(value){current=Math.max(0,Math.min(100,Number(value)||0));schedule();},
-  capture(value=current){if(dead)return '';position(value);renderer.render(scene,camera);const data=canvas.toDataURL('image/webp',.92);position(current);renderer.render(scene,camera);return data;},
+  capture(value=current){
+   if(dead)return '';
+   position(value);renderer.render(scene,camera);
+   try{
+    // The live orbit deliberately leaves room around the mountain. A collected
+    // photograph crops that transparent room, keeping every visible rock.
+    const source=document.createElement('canvas');source.width=canvas.width;source.height=canvas.height;
+    const context=source.getContext('2d',{willReadFrequently:true});context.drawImage(canvas,0,0);
+    const pixels=context.getImageData(0,0,source.width,source.height).data;
+    let left=source.width,top=source.height,right=-1,bottom=-1;
+    for(let y=0;y<source.height;y++)for(let x=0;x<source.width;x++){
+     if(pixels[(y*source.width+x)*4+3]===0)continue;
+     left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
+    }
+    if(right<left)return source.toDataURL('image/webp',.94);
+    const width=right-left+1,height=bottom-top+1,photo=document.createElement('canvas');
+    photo.width=960;photo.height=640;
+    const output=photo.getContext('2d'),scale=Math.min(photo.width*.9/width,photo.height*.9/height);
+    const drawnWidth=width*scale,drawnHeight=height*scale;
+    output.imageSmoothingEnabled=true;output.imageSmoothingQuality='high';
+    output.drawImage(source,left,top,width,height,(photo.width-drawnWidth)/2,(photo.height-drawnHeight)/2,drawnWidth,drawnHeight);
+    return photo.toDataURL('image/webp',.94);
+   }finally{position(current);renderer.render(scene,camera);}
+  },
   destroy(){if(dead)return;dead=true;cancelAnimationFrame(frame);observer.disconnect();visibility.disconnect();document.removeEventListener('visibilitychange',resume);canvas.removeEventListener('webglcontextlost',lost);disposeModel(scene);renderer.renderLists?.dispose();renderer.dispose();renderer.forceContextLoss();canvas.remove();scene.clear();}
  };
 }
