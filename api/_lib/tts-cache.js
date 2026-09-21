@@ -4,6 +4,9 @@ const path = require('node:path');
 const { BlobNotFoundError, get, head, put } = require('@vercel/blob');
 
 const MAX_AUDIO_BYTES = 2 * 1024 * 1024;
+// Longer poet stories can exceed 65 seconds of PCM. Keep them on the server
+// without increasing Blob transfers or the in-memory audio budget.
+const MAX_DISK_AUDIO_BYTES = 16 * 1024 * 1024;
 const CACHE_VERSION = '20260919b3';
 const blobPath = key => `speech/${CACHE_VERSION}/${key}.wav`;
 // Repeated taps should not issue another overseas HEAD + GET in a warm
@@ -51,10 +54,10 @@ function diskPath(key) {
   if (!/^[0-9a-f]{64}$/.test(key)) throw new Error('Invalid speech cache key');
   return path.join(process.env.TTS_CACHE_DIR, CACHE_VERSION, `${key}.wav`);
 }
-function validDiskAudio(audio) {
+function validDiskAudio(audio, maxBytes = MAX_AUDIO_BYTES) {
   // synthesize() produces this fixed mono PCM header. Check lengths and format,
   // not only the RIFF marker, so truncated/corrupt files trigger regeneration.
-  return Buffer.isBuffer(audio) && audio.length > 44 && audio.length <= MAX_AUDIO_BYTES &&
+  return Buffer.isBuffer(audio) && audio.length > 44 && audio.length <= maxBytes &&
     audio.toString('ascii', 0, 4) === 'RIFF' && audio.readUInt32LE(4) === audio.length - 8 &&
     audio.toString('ascii', 8, 16) === 'WAVEfmt ' && audio.readUInt32LE(16) === 16 &&
     audio.readUInt16LE(20) === 1 && audio.readUInt16LE(22) === 1 &&
@@ -66,9 +69,9 @@ function validDiskAudio(audio) {
 async function readDisk(key) {
   try {
     const filename = diskPath(key), info = await fs.stat(filename);
-    if (!info.isFile() || info.size < 44 || info.size > MAX_AUDIO_BYTES) return { status: 'unavailable', audio: null };
+    if (!info.isFile() || info.size < 44 || info.size > MAX_DISK_AUDIO_BYTES) return { status: 'unavailable', audio: null };
     const audio = await fs.readFile(filename);
-    return validDiskAudio(audio)
+    return validDiskAudio(audio, MAX_DISK_AUDIO_BYTES)
       ? { status: 'hit', audio } : { status: 'unavailable', audio: null };
   } catch (error) { return { status: error.code === 'ENOENT' ? 'miss' : 'unavailable', audio: null }; }
 }
@@ -134,7 +137,7 @@ async function writeAudio(key, audio) {
   if (process.env.TTS_CACHE_DIR) {
     let temporary;
     try {
-      if (!validDiskAudio(audio)) return false;
+      if (!validDiskAudio(audio, MAX_DISK_AUDIO_BYTES)) return false;
       const filename = diskPath(key);
       await fs.mkdir(path.dirname(filename), { recursive: true, mode: 0o700 });
       temporary = `${filename}.${crypto.randomUUID()}.tmp`;
@@ -152,4 +155,4 @@ async function writeAudio(key, audio) {
     return true;
   } catch { return false; }
 }
-module.exports = { CACHE_VERSION, MAX_AUDIO_BYTES, cacheKey, hasAudio, readAudio, writeAudio };
+module.exports = { CACHE_VERSION, MAX_AUDIO_BYTES, MAX_DISK_AUDIO_BYTES, cacheKey, hasAudio, readAudio, writeAudio };

@@ -1,7 +1,7 @@
 'use strict';
 const crypto=require('node:crypto'),blob=require('@vercel/blob');
 const research=require('./research-store.cjs');
-const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v16-prevalence-safe';
+const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v17-group-overlap-safe';
 const MAX_RECORD_BYTES=12*1024*1024,MAX_PROVIDER_BYTES=160*1024,MAX_RESPONSE_BYTES=128*1024;
 const LEASE_MS=120000,PROVIDER_TIMEOUT_MS=42000;
 const BACKGROUND_TIMEOUT_MS=180000,BACKGROUND_LEASE_MS=BACKGROUND_TIMEOUT_MS+30000;
@@ -180,11 +180,11 @@ const SYSTEM_PROMPT=`你是香港小學普通話科的資深教師，向同科�
 overview約100字，說清下一課的重心及其主要依據。findings寫3個互不重複的完整段落，每段約220至280字，合計至少650字且佔正文一半以上。有數據時依次分析：
 第一段：參與及不同活動的覆蓋。連起名冊、有紀錄、有完成紀錄及各分項有評分的學生人數，說明課堂應先補齊哪一環的觀察，並照顧已有評分學生的練習延續。「有評分的名冊學生」只寫「已有評分」「已留下朗讀/聽辨/默寫評分」，不能寫成「有X人完成」「已完成的X人」，標題也沿用「已有評分」。只有明確的完成事件人數才寫「有活動完成紀錄」，而非完成整課。這是內部用詞要求，正文直接提出教學決策。
 第二段：具體字音在原句中的分布。以全詩逐字平均及有評分學生數支持判斷，挑teachingFocus中的少量字和所在原句，解釋為何先從這些句子練起，以及教師應如何分辨需要全班再練還是個別再聽。readingLines的lineNumber就是原詩實際句號；若選的是第一、第三句，就明寫「第一、第三句」或「上述兩句」，不能改稱「前兩句」，後者只指原詩第一、第二句。正文、教學建議及複查沿用同一批句號和原句。不重列整個字表，不猜學生錯誤原因，不把全班平均說成人人都錯。不可把平均低分改寫成「多數學生、普遍、大部分、很多學生、全班、人人讀不準／讀錯」；沒有逐人低分計數時，只寫平均分、已有評分人數和下一步的共同跟讀及逐一聽取。
-第三段：學生分布及分層跟進。teachingGroups只提供一對已選定的學習分項，整篇報告的交集、僅一項低分及分組敘述都只沿用這同一對。先自然交代這兩項都有評分的學生人數，再說明實際存在的各組如何練習、以甚麼表現調整；交集為0時分別安排，不補空組或假設組。第三個分項只引用「個人平均低於60分的名冊學生」全體跟進人數並寫具體教法，例如交代默寫需跟進的實際人數後，直接安排練寫本課指定字及觀察字形。不再談第三項與其他項的重疊、不寫「全體X人中有Y人僅默寫低」，不把未納入同一對觀察的學生推成另一組。沒有兩項都有結果的觀察時，用各分項覆蓋和具體題目決定先後，避免重複第二段的字音清單。
+第三段：學生分布及分層跟進。teachingGroups只提供一對已選定的學習分項，整篇報告的交集、僅一項低分及分組敘述都只沿用這同一對。先自然交代這兩項都有評分的學生人數，再說明實際存在的各組如何練習、以甚麼表現調整；交集為0時分別安排，不補空組或假設組。每一組均已有兩項評分，「只有默寫低」表示另一項有評分且不低，不是未測；「兩項皆低」也不是缺測者。若默寫低分共8人、僅默寫低5人、兩項皆低3人，8人就是這5人加3人，不能另稱其餘3人沒有朗讀評分；照三個現有組別寫教法即可。第三個分項只引用「個人平均低於60分的名冊學生」全體跟進人數並寫具體教法，例如交代默寫需跟進的實際人數後，直接安排練寫本課指定字及觀察字形。不再談第三項與其他項的重疊、不寫「全體X人中有Y人僅默寫低」，不把未納入同一對觀察的學生推成另一組。沒有兩項都有結果的觀察時，用各分項覆蓋和具體題目決定先後，避免重複第二段的字音清單。
 每個發現的標題精簡，正文充分連結事實、教學含義和取捨；至少兩種相關證據共同支持一段，不能只有均分播報或把清單串起來。單班全文約1100至1500字，全校約1500至1900字，資料少則如實簡短。
 teachingActions單年級1至2項、全校2至3項。每項steps放1段100至180字的完整中文建議，連貫交代理由、具體課文、師生活動和觀察目標。reviewPlan只放1項、1段80至120字，沿用前述同一句和同一觀察字，寫清如何根據下一次實際表現調整。不使用1)/2)、一二三操作清單，也不附教案或課時表。
 【教師自然語氣】
-正文只談教學，不解說系統規則或資料處理：例如自然寫「聽寫集中練好『舟』，讓其餘時間用於原句跟讀」，不要寫「唯一允許字」「二年級只准」「不得增加」；自然寫「下課先聽取尚未留下朗讀結果的學生」，不要說「不能判定未參與」。內部的閾值、來源名稱、校驗要求不充當論述主題。選有實際用處的數字，不重複列兩套字音資料。不作能力分級、病因推斷或防禦性免責。「平均分只是參考」「不能直接推論每個人都錯」「不能代表全班」「因此個別聽取是必要的」這類解釋數據局限的句子整句省略；直接寫「全班跟讀後，教師逐一聽取，讓仍需鞏固的學生再讀一次」，不先辯解為甚麼不能推論。標題正文不提demo、模擬、虛構、伺服器、瀏覽器、evidenceIds、模型或技術流程。demo為true時，文件頁首由系統加一次「模擬數據」，正文照常寫教研報告。
+正文只談教學，不解說系統規則或資料處理：例如自然寫「聽寫集中練好『舟』，讓其餘時間用於原句跟讀」，不要寫「唯一允許字」「二年級只准」「不得增加」；自然寫「下課先聽取尚未留下朗讀結果的學生」，不要說「不能判定未參與」。內部的閾值、來源名稱、校驗要求不充當論述主題。選有實際用處的數字，不重複列兩套字音資料。不作能力分級、病因推斷或防禦性免責。「平均分只是參考」「平均分僅供選擇句子之用，實際仍需個別聽取」「不能直接推論每個人都錯」「不能代表全班」「因此個別聽取是必要的」這類解釋數據局限的句子整句省略；直接寫「全班跟讀後，教師逐一聽取，讓仍需鞏固的學生再讀一次」，不先辯解為甚麼不能推論。標題正文不提demo、模擬、虛構、伺服器、瀏覽器、evidenceIds、模型或技術流程。demo為true時，文件頁首由系統加一次「模擬數據」，正文照常寫教研報告。
 【可靠教學內容，內部遵守即可】
 每個觀察數字準確引用evidence並在evidenceIds列出依據；不自行相減推算未提供人數。未測不是0。數字可有明確約數，但不能變換人數/筆數/字位單位。「逐字平均」的meanBelow80Positions是平均低於80的字位數，measuredStudents是該字有分數的學生數，不是讀錯或低分的學生數；舊字音觀察below60是評分次數。逐字均分用來選擇共同跟讀的原句，不能與受測人數相乘或結合成「字音問題普遍」「多數學生讀不準」的結論。自然寫「可先共同跟讀這些字所在原句，再逐一聽取，安排仍需鞏固的學生再讀」，不把這條內部規則或免責說明寫進報告。優先使用逐字平均，不再單獨分析舊字音觀察。兩個閾值都是跟進線索，不是及格線。
 「尚無評分的名冊學生」是整份名冊中的總缺測人數，包含完全無活動紀錄的學生。表述為「全班朗讀尚有X人未留下評分」，不能放進「已有活動紀錄的學生中」的子集，也不能與無活動紀錄人數相加。無活動紀錄只表示尚未留下平台紀錄，直接建議先了解練習情況並補齊觀察；不將其說成缺席、未參與或沒有練習。
@@ -254,7 +254,7 @@ async function requestAnalysis(payload,config,{fetchImpl=globalThis.fetch,signal
  providerPayload.evidence=facts;
  providerPayload.teachingConstraints=(payload.teachingConstraints||[]).map(({grade,poem,writing})=>({grade,poem,writing:{maxCharactersAcrossWholeReport:writing.maxCharactersAcrossWholeReport,allowedCharacters:writing.allowedCharacters}}));
  const messages=[{role:'system',content:SYSTEM_PROMPT},{role:'user',content:canonical(providerPayload)}];
- if(revision)messages.push({role:'assistant',content:canonical(revision.analysis)},{role:'user',content:'請對上一份報告作最小必要修正，保留正確的分析、結構、篇幅與段落，不從零重寫。逐項糾正以下實際問題，相關句子也一併改正；不增加免責段落或解說內部規則。每項問題的path指出確切欄位；若指向title，必須修改該小標題，不能只改正文。標題也不可把不同題型均分排名，改成具體教學重心，例如「先跟讀原句，再鞏固聽辨」。覆核若要求刪除某整句，直接刪除，不再改寫或補算，保留相鄰的正確敘述。分組敘事只沿用teachingGroups這一對；第三項只寫全班實際跟進人數及教法，刪除第二對的交集與「全體X人中僅Y人」敘述。總缺測人數以全班為範圍，不能放入「已有紀錄的X人中」的子集。無紀錄不寫成缺席或未參與；現有遊戲只按實際題目練習，不宣稱題庫含指定字音。輸出修正後的完整JSON，evidenceIds沿用真實依據。覆核問題：'+canonical(revision.issues)});
+ if(revision)messages.push({role:'assistant',content:canonical(revision.analysis)},{role:'user',content:'請對上一份報告作最小必要修正，保留正確的分析、結構、篇幅與段落，不從零重寫。逐項糾正以下實際問題，相關句子也一併改正；不增加免責段落或解說內部規則。每項問題的path指出確切欄位；若指向title，必須修改該小標題，不能只改正文。標題也不可把不同題型均分排名，改成具體教學重心，例如「先跟讀原句，再鞏固聽辨」。覆核若要求刪除某整句，直接刪除，不再改寫或補算，保留相鄰的正確敘述。分組敘事只沿用teachingGroups這一對；第三項只寫全班實際跟進人數及教法，刪除第二對的交集與「全體X人中僅Y人」敘述。若指出REPORT_OVERLAP_AS_MISSING，直接刪除把兩項皆低者改稱缺另一項評分的整句，保留正確的三組與教法；不要用全體低分減去僅一項低分來算缺測者。若指出REPORT_DEFENSIVE_LANGUAGE，刪除「平均分僅供選擇句子之用」等限制用途的句子，保留直接教法。總缺測人數以全班為範圍，不能放入「已有紀錄的X人中」的子集。無紀錄不寫成缺席或未參與；現有遊戲只按實際題目練習，不宣稱題庫含指定字音。輸出修正後的完整JSON，evidenceIds沿用真實依據。覆核問題：'+canonical(revision.issues)});
  let response;
  try{response=await fetchImpl(config.url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+config.key},body:JSON.stringify({model:config.model,messages,temperature:0.3,max_tokens:6500,thinking:{type:'disabled'},response_format:{type:'json_object'} }),signal:combined});}
  catch(error){if(signal?.aborted)fail('ANALYSIS_INTERRUPTED',499,true,5);if(timeout.aborted||['TimeoutError','AbortError'].includes(error?.name))fail('AI_TIMEOUT',504,true,30);fail('AI_UNAVAILABLE',502,true,30);}

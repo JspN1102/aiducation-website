@@ -110,6 +110,24 @@ function namedDomainPairs(value){
   return matches.map(match=>mentionedDomains(match[0])).filter(domains=>domains.length===2);
 }
 function namedDomainPair(value){return namedDomainPairs(value).at(-1)||[];}
+function wrongMissingScoreSplit(sentence,facts){
+  const missing=/(\d+)\s*(?:名|位)?(?:人|學生|学生)(?:未|尚未|尚無|尚无|沒有|没有|無|无)(?:同時|同时)?(?:留下|有|取得)?(朗[讀读]|默[寫写]|辨音|[聽听]辨).{0,12}(?:[評评]分|分[數数]|成[績绩]|結果|结果|[紀記记]錄|记录)/gu;
+  for(const claim of sentence.matchAll(missing)){
+    const clause=sentence.slice(0,claim.index).split(/[，,；;]/u).at(-1);
+    if(negated(clause,clause.length)||/(?:若|如果|假如|如有)/u.test(clause))continue;
+    const missingDomain=mentionedDomains(claim[2])[0],prefix=sentence.slice(0,claim.index);
+    const lows=[...prefix.matchAll(/(朗[讀读]|默[寫写]|辨音|[聽听]辨)[^，,。；;]{0,20}?(?:低[於于]|不足|未[達达])\s*60/gu)];
+    const lowDomain=mentionedDomains(lows.at(-1)?.[1])[0];
+    if(!lowDomain||lowDomain===missingDomain)continue;
+    const total=facts.find(fact=>fact.source==='平台評分'&&fact.scope==='所選範圍'&&fact.label?.endsWith('：個人平均低於60分的名冊學生')&&mentionedDomains(fact.label)[0]===lowDomain&&Number.isSafeInteger(fact.value));
+    const pair=facts.find(fact=>fact.label?.endsWith('：同一批學生觀察')&&mentionedDomains(fact.label).length===2&&[lowDomain,missingDomain].every(domain=>mentionedDomains(fact.label).includes(domain)));
+    if(!total||!pair)continue;
+    const domains=mentionedDomains(pair.label),side=domains.indexOf(lowDomain)===0?'left':'right',measured=pair.value?.[side+'Below60Students'];
+    if(!Number.isSafeInteger(measured)||measured<0||measured>total.value)continue;
+    if(Number(claim[1])!==total.value-measured)return {claimed:Number(claim[1]),actual:total.value-measured,total:total.value,paired:measured,both:pair.value?.bothBelow60Students};
+  }
+  return null;
+}
 function emptyObservedGroup(value,context,pairs){
   const dualLow=/(?:兩項|两项|兩者|两者|二者)(?:個人平均|平均|分數|分数)?(?:皆|均|都|同時|同时)?(?:低於|低于|不足|未達|未达)\s*60\s*分|(?:皆|均|同時|同时)(?:低於|低于|不足|未達|未达)\s*60\s*分/gu;
   for(const match of String(value).matchAll(dualLow)){
@@ -150,7 +168,9 @@ function inspectAnalysis(analysis,payload={}){
       const emptyGroup=emptyObservedGroup(value,item?.title,citedPairs.length?citedPairs:pairs);
       if(emptyGroup)add('EMPTY_LEARNING_GROUP',`「${emptyGroup.label}」兩項皆低於60分的學生為0人。刪除針對這個空組的練習安排及湊成三組的表述；沿用teachingGroups中實際存在的組別，分別說清原句聽讀或寫字的做法。保留其餘正確分析，不另補假設組或免責文字。`,path);
       for(const sentence of value.split(/[。！？!?\n]/u)){
-        if(/(?:不能|不可|不宜|不應|不应|無法|无法|未能).{0,12}(?:推論|推论|推斷|推断|判斷|判断|代表).{0,25}(?:每[個个]|人人|全班|所有[學学]生|普遍)|(?:平均分|均分|逐字平均|[評评]分|分[數数]).{0,12}(?:只是|僅[供为為]?|仅[供为為]?|只供|僅僅|仅仅).{0,12}(?:[參参]考|[線线]索)|(?:平均分|均分|逐字平均).{0,18}不(?:等[於于]|代表).{0,15}(?:每[個个]|人人|全班)/u.test(sentence))
+        const wrongSplit=wrongMissingScoreSplit(sentence,facts);
+        if(wrongSplit)add('REPORT_OVERLAP_AS_MISSING',`刪除整句「${sentence}」。全體該項低分${wrongSplit.total}人，其中${wrongSplit.paired}人已同時有另一項評分，未留下另一項評分的是${wrongSplit.actual}人，不是${wrongSplit.claimed}人。兩項皆低者已有兩項評分，不能改稱缺測者。保留前文正確的三組及教法，不再補算其他學生或添加資料局限解說。`,path);
+        if(/(?:不能|不可|不宜|不應|不应|無法|无法|未能).{0,12}(?:推論|推论|推斷|推断|判斷|判断|代表).{0,25}(?:每[個个]|人人|全班|所有[學学]生|普遍)|(?:平均分|均分|逐字平均|[評评]分|分[數数]).{0,12}(?:只是|僅[供为為]?|仅[供为為]?|只供|僅僅|仅仅).{0,20}(?:[參参]考|[線线]索|之用|[選选][擇择]|用[於于])|(?:平均分|均分|逐字平均).{0,18}不(?:等[於于]|代表).{0,15}(?:每[個个]|人人|全班)/u.test(sentence))
           add('REPORT_DEFENSIVE_LANGUAGE',`刪除整句「${sentence}」。這是解說數據局限的防禦文字，不要改寫成另一句「不能推論」「只是參考」。保留前後的教學安排；若缺少做法，直接寫全班跟讀後逐一聽取，讓仍需鞏固的學生再讀。`,path);
         if(/同一批|交集|重[疊叠]|兩項|两项|低[於于]\s*60|分[組组層层]/u.test(sentence)){
           for(const domains of namedDomainPairs(sentence)){

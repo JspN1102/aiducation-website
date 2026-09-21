@@ -89,6 +89,7 @@ test('corrupted stored waveforms and invalid keys never enter the hot cache', as
   assert.equal((await f.cache.readAudio(id)).status, 'hit');
   assert.equal(f.calls.get, 2);
   assert.equal(await f.cache.writeAudio(id, Buffer.alloc(100)), false);
+  assert.equal(await f.cache.writeAudio(id, wav(3 * 1024 * 1024)), false,'long server recordings must not expand the Blob upload limit');
   for (const key of ['../escape', '', 'A'.repeat(64)]) {
     assert.equal((await f.cache.readAudio(key)).status, 'unavailable');
     assert.equal((await f.cache.hasAudio(key)).status, 'unavailable');

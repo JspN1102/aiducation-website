@@ -208,10 +208,30 @@ test('the actual v13 paragraph loses its defensive explanation while direct teac
  const actual='逐字平均分是全班整體表現的參考，不能直接推論每個人都錯，因此個別聽取是必要的。';
  const issue=inspectAnalysis({findings:[{interpretation:actual}]},p).find(item=>item.code==='REPORT_DEFENSIVE_LANGUAGE');
  assert(issue);assert(issue.message.includes('刪除整句「'+actual.slice(0,-1)+'」'));assert.match(issue.message,/不要改寫成另一句/);
- for(const text of ['平均分只是參考，不能代表全班。','逐字平均不等於人人讀錯。','不能由均分判斷所有學生的字音表現。'])
+ for(const text of ['平均分只是參考，不能代表全班。','逐字平均不等於人人讀錯。','不能由均分判斷所有學生的字音表現。','平均分僅供選擇句子之用，實際仍需以個別聽取結果安排後續。','朗讀評分只供選擇原句，實際仍需逐一聽取。'])
   assert(codes({overview:text},p).includes('REPORT_DEFENSIVE_LANGUAGE'),text);
  for(const text of ['全班跟讀後，教師逐一聽取，讓仍需鞏固的學生再讀一次。','教師依學生重讀的實際表現，調整小組練習。','教師不能忽略尚未留下朗讀紀錄的學生，下一課先聽取其朗讀。'])
   assert(!codes({overview:text},p).includes('REPORT_DEFENSIVE_LANGUAGE'),text);
+});
+
+test('paired low-score overlap cannot be misreported as missing another score',()=>{
+ const p={reportStyle:'narrative-teaching-review',evidence:[
+  {id:'F001',label:'朗讀字音評分與默寫辨識準確度：同一批學生觀察',source:'平台評分',value:{bothMeasuredStudents:20,bothBelow60Students:3,leftBelow60Students:7,rightBelow60Students:8,leftOnlyBelow60Students:4,rightOnlyBelow60Students:5}},
+  {id:'F002',label:'默寫辨識準確度：個人平均低於60分的名冊學生',scope:'所選範圍',source:'平台評分',value:8},
+  {id:'F003',label:'朗讀字音評分：個人平均低於60分的名冊學生',scope:'所選範圍',source:'平台評分',value:7}
+ ]};
+ const actual='朗讀字音評分與默寫辨識準確度兩項都有評分的學生共20人。其中僅朗讀低於60分者4人，僅默寫低於60分者5人，兩項皆低者3人。另外，默寫辨識個人平均低於60分的名冊學生共8人，除上述5人外，尚有3人未同時留下朗讀評分。';
+ const inspect=(text,source=p)=>inspectAnalysis({findings:[{evidenceIds:source.evidence.map(f=>f.id),interpretation:text}]},source);
+ const issue=inspect(actual).find(item=>item.code==='REPORT_OVERLAP_AS_MISSING');
+ assert(issue);assert.match(issue.message,/全體該項低分8人/);assert.match(issue.message,/未留下另一項評分的是0人，不是3人/);assert.match(issue.message,/刪除整句/);
+ for(const text of ['默寫平均低於60分的8人中，有3名學生沒有朗讀評分。','朗讀個人平均低於60分的有7人，其中3人未同時留下默寫評分。'])assert(inspect(text).some(item=>item.code==='REPORT_OVERLAP_AS_MISSING'),text);
+ for(const text of ['默寫個人平均低於60分的共8人，其中僅默寫低5人，兩項皆低3人。','朗讀與默寫都有評分的20人，僅朗讀低4人，僅默寫低5人，兩項皆低3人。','全班有3人未留下朗讀評分。'])assert(!inspect(text).some(item=>item.code==='REPORT_OVERLAP_AS_MISSING'),text);
+ const missing=structuredClone(p);missing.evidence[1].value=11;
+ const validMissing='默寫個人平均低於60分的共11人，其中3人未同時留下朗讀評分。';
+ assert(!inspect(validMissing,missing).some(item=>item.code==='REPORT_OVERLAP_AS_MISSING'),'actual missing scores use all paired low students, including the overlap');
+ const reversed=structuredClone(p);reversed.evidence[0].label='默寫辨識準確度與朗讀字音評分：同一批學生觀察';
+ Object.assign(reversed.evidence[0].value,{leftBelow60Students:8,rightBelow60Students:7,leftOnlyBelow60Students:5,rightOnlyBelow60Students:4});
+ assert(inspect(actual,reversed).some(item=>item.code==='REPORT_OVERLAP_AS_MISSING'),'pair ordering cannot change which group is missing');
 });
 
 function focusedGroupingPayload(){return {reportStyle:'narrative-teaching-review',teachingGroups:[{evidenceId:'F002',domains:['朗讀字音評分','辨音答題準確度'],bothMeasuredStudents:20,groups:[{count:6,focus:['朗讀字音評分']},{count:4,focus:['辨音答題準確度']},{count:3,focus:['朗讀字音評分','辨音答題準確度']}]}],evidence:[

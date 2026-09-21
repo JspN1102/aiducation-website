@@ -1,5 +1,16 @@
 /* Keep ordinary Chinese text in the same complete, variable-weight family. */
 body{font-synthesis:none;text-rendering:optimizeLegibility}
+.lesson-heading .poem-heading-audio{display:inline-flex;align-items:center;justify-content:flex-start;gap:7px;max-width:100%;min-height:40px;margin:0;padding:2px 4px 2px 0;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;text-align:left;vertical-align:middle;cursor:pointer;touch-action:manipulation;box-shadow:none}
+.lesson-heading p .poem-heading-audio{min-height:36px}
+.poem-heading-audio>span:first-child{min-width:0;overflow-wrap:anywhere}
+.poem-heading-audio .heading-audio-symbol{position:relative;display:inline-flex;flex:0 0 18px;width:18px;height:18px;align-items:center;justify-content:center;color:#4f7c66}
+.poem-heading-audio .heading-audio-symbol svg{width:18px;height:18px}
+.poem-heading-audio[data-audio-state=loading] .heading-audio-symbol svg{visibility:hidden}
+.poem-heading-audio[data-audio-state=loading] .heading-audio-symbol::after{content:"";position:absolute;inset:1px;border:2px solid #c6d8ca;border-top-color:#39745d;border-radius:50%;animation:heading-audio-spin .8s linear infinite}
+.lesson-heading .poem-heading-audio[data-audio-state=playing]{background:#edf5e6;outline:2px solid #75a985;outline-offset:1px;box-shadow:none}
+.lesson-heading .poem-heading-audio:focus-visible{outline:3px solid #277e76;outline-offset:2px}
+.poem-heading-audio:disabled{cursor:default;opacity:.55}
+@keyframes heading-audio-spin{to{transform:rotate(360deg)}}
 .library-heading h1{font-family:var(--sans);font-size:clamp(32px,4.2vw,52px);font-weight:700;line-height:1.3;letter-spacing:0;text-wrap:balance}
 .workspace .lesson-map-step h3{font-weight:600;line-height:1.45}
 .workspace .lesson-map-status{color:#476450;font-weight:400}
@@ -47,6 +58,9 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 .workspace.view-report .word-analysis .word-result strong{font:600 clamp(23px,2.5vw,32px)/1.4 var(--sans);text-align:center;margin:0}
 .workspace.view-report .word-analysis .word-result.warn,.workspace.view-report .word-analysis .word-result.fair{background:linear-gradient(#fffaf0,#faf0d5);border-color:#e6d7ac;border-bottom-color:#bb9b41}
 .workspace.view-report .word-analysis .word-result.error,.workspace.view-report .word-analysis .word-result.poor{background:linear-gradient(#fff6ef,#fae9e2);border-color:#ebd1c5;border-bottom-color:#bc7765}
+.workspace.view-report .word-analysis button.word-result{cursor:pointer;appearance:none;color:inherit;font:inherit;text-align:center;touch-action:manipulation}
+.workspace.view-report .word-analysis button.word-result:focus-visible{outline:3px solid #397962;outline-offset:3px}
+.workspace.view-report .word-analysis button.word-result[aria-pressed="true"]{box-shadow:inset 0 0 0 3px #397962;background:#e5f0e1}
 .workspace.view-report .report-line-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;justify-content:center;gap:12px;flex:none;margin:0}
 .workspace.view-report .report-line-actions .button{margin:0;min-height:62px;padding:12px 10px;font-size:clamp(19px,2vw,25px);justify-content:center;border-radius:16px;white-space:nowrap}
 .workspace.view-report .report-line-actions .button svg{width:25px;height:25px}

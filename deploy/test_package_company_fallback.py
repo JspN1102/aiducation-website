@@ -86,7 +86,7 @@ const relative=new URL('./media/a.png',import.meta.url);
             self.assertFalse((destination / 'api/school-gateway.js').exists())
             self.assertFalse((destination / '.env').exists())
             self.assertIn('/school-api/school-auth/', (destination / 'school/app.mjs').read_text())
-            config = json.loads((destination / 'vercel.json').read_text())
+            config = json.loads((destination / 'vercel.json').read_text(encoding='utf-8'))
             self.assertEqual(config['functions'], {'api/tts.js': {'maxDuration': 20}})
             self.assertNotIn('regions', config)
             self.assertEqual(len(config['rewrites']), 13)

@@ -232,7 +232,7 @@
 
 /* The instruction and controls fill the right side of the play board. Explicit
    rows keep the last useful action near its bottom without adding filler. */
-@media (min-width:1000px) and (min-height:700px) and (orientation:landscape){
+@media (min-width:900px) and (min-height:620px) and (orientation:landscape){
  .workspace.view-quiz .challenge-game-holder>section{height:100%;align-content:stretch;column-gap:28px;row-gap:14px;grid-template-columns:minmax(0,1.35fr) minmax(310px,1fr)}
  .workspace.view-quiz .poem-goose-game{grid-template-rows:auto minmax(0,1fr) auto}
  .workspace.view-quiz .poem-goose-game .goose-instruction{align-self:start}
@@ -286,4 +286,66 @@
  .workspace.view-quiz .rain-catcher .rc-controls>button{min-height:76px;font-size:26px}
  .workspace.view-quiz .rain-catcher .rc-slow-catch{grid-row:5;align-self:end;font-size:25px;min-height:66px}
  .workspace.view-quiz .rain-catcher .rc-replay{grid-row:4;font-size:25px;min-height:70px}
+}
+
+@media (min-width:900px) and (min-height:620px) and (orientation:landscape){
+ .workspace.view-quiz .challenge-game-holder>section{column-gap:24px;row-gap:12px}
+ .workspace.view-quiz .poem-goose-game .goose-instruction p,
+ .workspace.view-quiz .poem-garden .gr-instruction p,
+ .workspace.view-quiz .farewell-story .fs-header h3,
+ .workspace.view-quiz .poem-view-game .pvg-heading h3,
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-heading h3{font-size:clamp(28px,4.1vh,38px);line-height:1.4}
+ .workspace.view-quiz .poem-goose-game .goose-paint{min-height:clamp(70px,11vh,108px);font-size:clamp(30px,4.1vh,39px)}
+ .workspace.view-quiz .farewell-story .fs-task,
+ .workspace.view-quiz .farewell-story .fs-feedback,
+ .workspace.view-quiz .poem-garden .gr-method,
+ .workspace.view-quiz .poem-garden .gr-feedback,
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-instruction,
+ .workspace.view-quiz .poem-view-game .pvg-camera-control,
+ .workspace.view-quiz .poem-view-game .pvg-photo-tray figcaption,
+ .workspace.view-quiz .rain-catcher .rc-mission{font-size:clamp(25px,3.5vh,33px);line-height:1.4}
+ .workspace.view-quiz .poem-goose-game .goose-feedback,
+ .workspace.view-quiz .poem-view-game .pvg-status,
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-status{font-size:clamp(23px,3.2vh,30px);line-height:1.4}
+ .workspace.view-quiz .poem-garden .gr-count{font-size:clamp(35px,5.3vh,52px);min-width:140px;padding:15px 24px}
+ .workspace.view-quiz .poem-garden .gr-audio,
+ .workspace.view-quiz .farewell-story .fs-actions button,
+ .workspace.view-quiz .poem-view-game .pvg-actions button,
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-actions button{font-size:clamp(25px,3.6vh,34px);min-height:clamp(64px,9.5vh,96px)}
+ .workspace.view-quiz .rain-catcher .rc-collection>span{height:clamp(70px,10vh,100px)}
+ .workspace.view-quiz .rain-catcher .rc-mission strong{font-size:clamp(40px,5.7vh,54px)}
+ .workspace.view-quiz .rain-catcher .rc-controls>button{font-size:clamp(26px,3.6vh,33px);min-height:clamp(66px,9vh,90px)}
+}
+
+/* The garden's two existing instructions become readable working areas, with
+   the real weed counter and listening action filling the right column. */
+@media (min-width:900px) and (min-height:620px) and (orientation:landscape){
+ .workspace.view-quiz .poem-garden{grid-template-rows:minmax(0,1.05fr) minmax(0,1fr) auto}
+ .workspace.view-quiz .poem-garden .gr-instruction{height:100%;width:100%;align-self:stretch;justify-items:center;align-content:center;gap:clamp(12px,2.5vh,28px);padding:clamp(12px,2vh,22px);border:1px solid #dae3cc;border-radius:24px;background:#f2f6e9}
+ .workspace.view-quiz .poem-garden .gr-instruction p{font-size:clamp(28px,4.3vh,42px);text-align:center;line-height:1.4}
+ .workspace.view-quiz .poem-garden .gr-count{display:grid;place-items:center;min-width:clamp(148px,19vw,244px);min-height:clamp(70px,12vh,130px);font-size:clamp(42px,7.4vh,76px);line-height:1.15;padding:8px 20px;border:1px solid #d1dfc5;border-radius:24px;background:#fffef6;font-weight:600}
+ .workspace.view-quiz .poem-garden .gr-actionline{height:100%;align-self:stretch;grid-template-rows:auto minmax(60px,1fr);gap:clamp(10px,2vh,22px);padding:clamp(10px,1.8vh,20px);border:1px solid #dce4d0;border-radius:24px;background:#fffdf4}
+ .workspace.view-quiz .poem-garden .gr-method{font-size:clamp(25px,3.8vh,36px);line-height:1.4;text-wrap:balance}
+ .workspace.view-quiz .poem-garden .gr-audio{height:100%;font-size:clamp(28px,4.3vh,40px);min-height:60px;border-radius:20px;background:#eaf3e0}
+ .workspace.view-quiz .poem-garden .gr-audio::before{font-size:1.2em}
+ .workspace.view-quiz .poem-garden .gr-feedback:empty{display:none}
+}
+@media (min-width:900px) and (min-height:620px) and (max-height:820px) and (orientation:landscape){
+ .workspace.view-quiz .poem-garden{grid-template-rows:minmax(132px,1.05fr) minmax(112px,1fr) auto;row-gap:10px}
+ .workspace.view-quiz .poem-garden .gr-instruction{grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px}
+ .workspace.view-quiz .poem-garden .gr-instruction p{font-size:26px;line-height:1.35;text-wrap:pretty}
+ .workspace.view-quiz .poem-garden .gr-count{min-width:90px;min-height:70px;padding:7px;font-size:36px;border-radius:20px}
+ .workspace.view-quiz .poem-garden .gr-actionline{padding:10px;gap:8px}
+ .workspace.view-quiz .poem-garden .gr-method{font-size:25px;line-height:1.35}
+ .workspace.view-quiz .poem-garden .gr-feedback{font-size:23px;line-height:1.4}
+}
+@media (min-width:900px) and (min-height:620px) and (max-height:740px) and (orientation:landscape){
+ .workspace.view-quiz .poem-view-game .pvg-camera-control{gap:5px}
+ .workspace.view-quiz .poem-view-game .pvg-camera-control input{height:44px}
+ .workspace.view-quiz .poem-view-game .pvg-photo-tray{gap:8px}
+ .workspace.view-quiz .poem-view-game .pvg-photo-tray figure{flex-direction:row;gap:7px;padding:8px 6px;min-height:80px}
+ .workspace.view-quiz .poem-view-game .pvg-photo-image{width:64px;max-width:64px;min-height:48px}
+ .workspace.view-quiz .poem-view-game .pvg-photo-tray figcaption{font-size:23px}
+ .workspace.view-quiz .poem-view-game .pvg-status{font-size:23px;line-height:1.35}
+ .workspace.view-quiz .poem-view-game .pvg-actions button{font-size:23px;min-height:56px}
 }

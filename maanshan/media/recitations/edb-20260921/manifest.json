@@ -1,0 +1,530 @@
+{
+  "schemaVersion": 1,
+  "id": "edb-20260921",
+  "source": "User-supplied official recitations, 1.mp3 through 6.mp3",
+  "processing": {
+    "speed": 1,
+    "pitchChanged": false,
+    "denoising": false,
+    "sampleRate": 44100,
+    "channels": 1,
+    "codec": "mp3",
+    "bitrate": 160000,
+    "edgeFadeSeconds": 0.008,
+    "notes": "Only quiet leading/trailing sections trimmed; sentence-internal pauses preserved. 8 ms fades affect the quiet clip edges only."
+  },
+  "grades": [
+    {
+      "grade": 1,
+      "poemId": 1,
+      "slug": "yong-e",
+      "title": "詠鵝",
+      "author": "駱賓王",
+      "sourceFile": "1.mp3",
+      "sourceSHA256": "2f8c0e424d0a0ce4c03b7931425a06b26929b3d76972fd9db606f9be79e69367",
+      "sourceDurationSeconds": 22.857125,
+      "segments": {
+        "title": {
+          "text": "詠鵝",
+          "src": "media/recitations/edb-20260921/grade1-title.mp3",
+          "sourceStartSeconds": 3.36,
+          "sourceEndSeconds": 4.75,
+          "contentDurationSeconds": 1.39,
+          "encodedDurationSeconds": 1.39,
+          "bytes": 29302,
+          "sha256": "396c1558570da32ccfc2b404d8120ac5897c2ca9bdd4b1512046ebea2ca40d47"
+        },
+        "author": {
+          "text": "駱賓王",
+          "src": "media/recitations/edb-20260921/grade1-author.mp3",
+          "sourceStartSeconds": 5.36,
+          "sourceEndSeconds": 6.96,
+          "contentDurationSeconds": 1.6,
+          "encodedDurationSeconds": 1.6,
+          "bytes": 33481,
+          "sha256": "17ee215143ed1e208585b689056fa7b10476fc17ba5d1a440c65452985c9926f"
+        },
+        "line1": {
+          "text": "鵝鵝鵝",
+          "src": "media/recitations/edb-20260921/grade1-line1.mp3",
+          "sourceStartSeconds": 8.0,
+          "sourceEndSeconds": 10.48,
+          "contentDurationSeconds": 2.48,
+          "encodedDurationSeconds": 2.48,
+          "bytes": 50722,
+          "sha256": "0e0adab6f1cf7376401ce233aaf5b38157dfc269e1f4d8f351f80f74b8e50354"
+        },
+        "line2": {
+          "text": "曲項向天歌",
+          "src": "media/recitations/edb-20260921/grade1-line2.mp3",
+          "sourceStartSeconds": 11.2,
+          "sourceEndSeconds": 14.14,
+          "contentDurationSeconds": 2.94,
+          "encodedDurationSeconds": 2.94,
+          "bytes": 60126,
+          "sha256": "39b1cba118c3322462ad8dc743e0bd4151d0c9b1754a0e555644de2c28bcee1d"
+        },
+        "line3": {
+          "text": "白毛浮綠水",
+          "src": "media/recitations/edb-20260921/grade1-line3.mp3",
+          "sourceStartSeconds": 15.0,
+          "sourceEndSeconds": 17.9,
+          "contentDurationSeconds": 2.9,
+          "encodedDurationSeconds": 2.900658,
+          "bytes": 59604,
+          "sha256": "ce228f2b56ca8a2519e10da69d2e2fb47e2ca39f7537c5587c6857b970167bb1"
+        },
+        "line4": {
+          "text": "紅掌撥清波",
+          "src": "media/recitations/edb-20260921/grade1-line4.mp3",
+          "sourceStartSeconds": 18.28,
+          "sourceEndSeconds": 21.55,
+          "contentDurationSeconds": 3.27,
+          "encodedDurationSeconds": 3.27,
+          "bytes": 66918,
+          "sha256": "9a39d433afd1a6111500f33fbee4aa276b5fb66be24ed4770e3797cc5c902dfd"
+        }
+      }
+    },
+    {
+      "grade": 2,
+      "poemId": 2,
+      "slug": "zeng-wang-lun",
+      "title": "贈汪倫",
+      "author": "李白",
+      "sourceFile": "2.mp3",
+      "sourceSHA256": "0172117d89de637ea576ef0e63ac5eef04693a583bedaaf5e4cc31d55619cf3a",
+      "sourceDurationSeconds": 27.6898125,
+      "segments": {
+        "title": {
+          "text": "贈汪倫",
+          "src": "media/recitations/edb-20260921/grade2-title.mp3",
+          "sourceStartSeconds": 6.1,
+          "sourceEndSeconds": 7.75,
+          "contentDurationSeconds": 1.65,
+          "encodedDurationSeconds": 1.65,
+          "bytes": 34526,
+          "sha256": "7bab02166d27f8fb920d05ba0636e3b409a957207597ca859f51fef5c5d46d0d"
+        },
+        "author": {
+          "text": "李白",
+          "src": "media/recitations/edb-20260921/grade2-author.mp3",
+          "sourceStartSeconds": 8.3,
+          "sourceEndSeconds": 9.55,
+          "contentDurationSeconds": 1.25,
+          "encodedDurationSeconds": 1.25,
+          "bytes": 26167,
+          "sha256": "cabcb47d9407aa8820982bf6c35057d82c528c49f4f8b4491a930ed092269638"
+        },
+        "line1": {
+          "text": "李白乘舟將欲行",
+          "src": "media/recitations/edb-20260921/grade2-line1.mp3",
+          "sourceStartSeconds": 11.42,
+          "sourceEndSeconds": 14.52,
+          "contentDurationSeconds": 3.1,
+          "encodedDurationSeconds": 3.1,
+          "bytes": 63261,
+          "sha256": "bf925678bb03f5a0fa0f7cc6ec842a54df624ac6097b70c5a7c064f56eadb66c"
+        },
+        "line2": {
+          "text": "忽聞岸上踏歌聲",
+          "src": "media/recitations/edb-20260921/grade2-line2.mp3",
+          "sourceStartSeconds": 14.95,
+          "sourceEndSeconds": 18.02,
+          "contentDurationSeconds": 3.07,
+          "encodedDurationSeconds": 3.07,
+          "bytes": 62738,
+          "sha256": "de123404418438881efa96e3fab6a7f4a94cb5e49e69ff0aa48a6e316658ee91"
+        },
+        "line3": {
+          "text": "桃花潭水深千尺",
+          "src": "media/recitations/edb-20260921/grade2-line3.mp3",
+          "sourceStartSeconds": 18.99,
+          "sourceEndSeconds": 22.2,
+          "contentDurationSeconds": 3.21,
+          "encodedDurationSeconds": 3.21,
+          "bytes": 65351,
+          "sha256": "bf1cc9b2288120e2758bf2b12c919f570fdc317a5680e54b048b4bbaed39c9d9"
+        },
+        "line4": {
+          "text": "不及汪倫送我情",
+          "src": "media/recitations/edb-20260921/grade2-line4.mp3",
+          "sourceStartSeconds": 22.42,
+          "sourceEndSeconds": 26.0,
+          "contentDurationSeconds": 3.58,
+          "encodedDurationSeconds": 3.58,
+          "bytes": 73187,
+          "sha256": "b450ca8833777f6e059e4674bc5dc17e634c5b05b083664c9932baa067ea4102"
+        }
+      }
+    },
+    {
+      "grade": 3,
+      "poemId": 3,
+      "slug": "ti-xi-lin-bi",
+      "title": "題西林壁",
+      "author": "蘇軾",
+      "sourceFile": "3.mp3",
+      "sourceSHA256": "7d8638286adaeec45b36c29b0badce6b9baa6b6214cd7f6a614e3fa344164bb0",
+      "sourceDurationSeconds": 27.8204375,
+      "segments": {
+        "title": {
+          "text": "題西林壁",
+          "src": "media/recitations/edb-20260921/grade3-title.mp3",
+          "sourceStartSeconds": 4.58,
+          "sourceEndSeconds": 6.72,
+          "contentDurationSeconds": 2.14,
+          "encodedDurationSeconds": 2.14,
+          "bytes": 43930,
+          "sha256": "7cb60861e3df437a425148f32180ecb519cc3f9ba47e20500d9532de39834e47"
+        },
+        "author": {
+          "text": "蘇軾",
+          "src": "media/recitations/edb-20260921/grade3-author.mp3",
+          "sourceStartSeconds": 7.61,
+          "sourceEndSeconds": 8.89,
+          "contentDurationSeconds": 1.28,
+          "encodedDurationSeconds": 1.28,
+          "bytes": 26689,
+          "sha256": "f6479562b6bd82bd9479734b390054de5deb821a6e350478f024ecbfa84d3aba"
+        },
+        "line1": {
+          "text": "橫看成嶺側成峯",
+          "src": "media/recitations/edb-20260921/grade3-line1.mp3",
+          "sourceStartSeconds": 10.9,
+          "sourceEndSeconds": 14.32,
+          "contentDurationSeconds": 3.42,
+          "encodedDurationSeconds": 3.42,
+          "bytes": 69530,
+          "sha256": "4cf8c0beac9abb3065fe3eea369e76c5ab3fe3055b499142c26fa6c16194e05e"
+        },
+        "line2": {
+          "text": "遠近高低各不同",
+          "src": "media/recitations/edb-20260921/grade3-line2.mp3",
+          "sourceStartSeconds": 14.99,
+          "sourceEndSeconds": 18.67,
+          "contentDurationSeconds": 3.68,
+          "encodedDurationSeconds": 3.68,
+          "bytes": 74755,
+          "sha256": "47d74a2c9af6f987e89be1bc83d20bf32fff01809ca91a2991a7fd60be91287c"
+        },
+        "line3": {
+          "text": "不識廬山真面目",
+          "src": "media/recitations/edb-20260921/grade3-line3.mp3",
+          "sourceStartSeconds": 19.42,
+          "sourceEndSeconds": 22.38,
+          "contentDurationSeconds": 2.96,
+          "encodedDurationSeconds": 2.96,
+          "bytes": 60649,
+          "sha256": "7e91f09089d480bc4dfffe23a651df0d3255415ffc738f107668cab1d7b6d37b"
+        },
+        "line4": {
+          "text": "只緣身在此山中",
+          "src": "media/recitations/edb-20260921/grade3-line4.mp3",
+          "sourceStartSeconds": 22.72,
+          "sourceEndSeconds": 26.46,
+          "contentDurationSeconds": 3.74,
+          "encodedDurationSeconds": 3.74,
+          "bytes": 76322,
+          "sha256": "05c4b8b3f11cc81ad1324132cbef6687b971d93c17be82378cc45afa97a9cca1"
+        }
+      }
+    },
+    {
+      "grade": 4,
+      "poemId": 4,
+      "slug": "bo-chuan-gua-zhou",
+      "title": "泊船瓜洲",
+      "author": "王安石",
+      "sourceFile": "4.mp3",
+      "sourceSHA256": "3f18a8881bb926013cfe0ef6681675b07861f3daa95628c6ba5331234a2556e1",
+      "sourceDurationSeconds": 29.0220625,
+      "segments": {
+        "title": {
+          "text": "泊船瓜洲",
+          "src": "media/recitations/edb-20260921/grade4-title.mp3",
+          "sourceStartSeconds": 4.88,
+          "sourceEndSeconds": 6.74,
+          "contentDurationSeconds": 1.86,
+          "encodedDurationSeconds": 1.86,
+          "bytes": 38706,
+          "sha256": "0126bd7192e859d13cc45d54a863464188a4efc0dbe987b9b91e6d1cf490a5c3"
+        },
+        "author": {
+          "text": "王安石",
+          "src": "media/recitations/edb-20260921/grade4-author.mp3",
+          "sourceStartSeconds": 7.29,
+          "sourceEndSeconds": 8.98,
+          "contentDurationSeconds": 1.69,
+          "encodedDurationSeconds": 1.69,
+          "bytes": 35049,
+          "sha256": "e1067442be6fe052965f385d90dadb91dd89ab71340551bff8a0cfba9ed276bd"
+        },
+        "line1": {
+          "text": "京口瓜洲一水間",
+          "src": "media/recitations/edb-20260921/grade4-line1.mp3",
+          "sourceStartSeconds": 11.0,
+          "sourceEndSeconds": 14.58,
+          "contentDurationSeconds": 3.58,
+          "encodedDurationSeconds": 3.58,
+          "bytes": 73187,
+          "sha256": "52db47a4f8106b3c5716568cac0ba96a7d19f65e382ff3822c049f5b74456252"
+        },
+        "line2": {
+          "text": "鍾山祇隔數重山",
+          "src": "media/recitations/edb-20260921/grade4-line2.mp3",
+          "sourceStartSeconds": 15.24,
+          "sourceEndSeconds": 18.72,
+          "contentDurationSeconds": 3.48,
+          "encodedDurationSeconds": 3.48,
+          "bytes": 71098,
+          "sha256": "655ff293790b73e4f5bdde24197ddbb7cd89cd27b7753ba1ecf9b53b15e8c969"
+        },
+        "line3": {
+          "text": "春風又綠江南岸",
+          "src": "media/recitations/edb-20260921/grade4-line3.mp3",
+          "sourceStartSeconds": 19.48,
+          "sourceEndSeconds": 22.87,
+          "contentDurationSeconds": 3.39,
+          "encodedDurationSeconds": 3.39,
+          "bytes": 69008,
+          "sha256": "9c6dfad5d36949e49bd28211b5528a116581a8dc7e2bb437148703a6c9c93b39"
+        },
+        "line4": {
+          "text": "明月何時照我還",
+          "src": "media/recitations/edb-20260921/grade4-line4.mp3",
+          "sourceStartSeconds": 23.11,
+          "sourceEndSeconds": 27.1,
+          "contentDurationSeconds": 3.99,
+          "encodedDurationSeconds": 3.99,
+          "bytes": 81024,
+          "sha256": "cd4302350a47e2d9f6b51f75277400740fdac741bfcb6dd4c6ac97b3eab2df79"
+        }
+      }
+    },
+    {
+      "grade": 5,
+      "poemId": 5,
+      "slug": "gui-yuan-tian-ju",
+      "title": "歸園田居",
+      "author": "陶潛",
+      "sourceFile": "5.mp3",
+      "sourceSHA256": "75feaedda5da5e1a594ccb99d9342a06220648a0fe177cff5b774b116600e7a3",
+      "sourceDurationSeconds": 37.9820625,
+      "segments": {
+        "title": {
+          "text": "歸園田居（其三）",
+          "src": "media/recitations/edb-20260921/grade5-title.mp3",
+          "sourceStartSeconds": 3.76,
+          "sourceEndSeconds": 7.23,
+          "contentDurationSeconds": 3.47,
+          "encodedDurationSeconds": 3.47,
+          "bytes": 70575,
+          "sha256": "2ad61068030b0a30a596ff4a681dd51c2483eeee1236982ddcbb28cf527caae1"
+        },
+        "author": {
+          "text": "陶潛",
+          "src": "media/recitations/edb-20260921/grade5-author.mp3",
+          "sourceStartSeconds": 7.75,
+          "sourceEndSeconds": 9.15,
+          "contentDurationSeconds": 1.4,
+          "encodedDurationSeconds": 1.4,
+          "bytes": 29302,
+          "sha256": "df6fe591c629edc930d45c4bbd6585e186bff9b0bbe41a6071052ed38a4b5653"
+        },
+        "line1": {
+          "text": "種豆南山下，草盛豆苗稀",
+          "src": "media/recitations/edb-20260921/grade5-line1.mp3",
+          "sourceStartSeconds": 10.26,
+          "sourceEndSeconds": 16.3,
+          "contentDurationSeconds": 6.04,
+          "encodedDurationSeconds": 6.04,
+          "bytes": 122298,
+          "sha256": "55bc511e4c83ce874c11a7303b14b1500cc0cf976894f35f6cb52af3b4652094"
+        },
+        "line2": {
+          "text": "晨興理荒穢，帶月荷鋤歸",
+          "src": "media/recitations/edb-20260921/grade5-line2.mp3",
+          "sourceStartSeconds": 16.77,
+          "sourceEndSeconds": 22.8,
+          "contentDurationSeconds": 6.03,
+          "encodedDurationSeconds": 6.03,
+          "bytes": 121775,
+          "sha256": "29ff176fec534f3a4573693fd041a275d11afb8ca649116cd2d0d865d6af3cd8"
+        },
+        "line3": {
+          "text": "道狹草木長，夕露霑我衣",
+          "src": "media/recitations/edb-20260921/grade5-line3.mp3",
+          "sourceStartSeconds": 23.8,
+          "sourceEndSeconds": 29.62,
+          "contentDurationSeconds": 5.82,
+          "encodedDurationSeconds": 5.82,
+          "bytes": 117596,
+          "sha256": "674f0f56e94e5a39eddee5c7d9c603a3232523a5cc739a7fb70b630cced9fa6d"
+        },
+        "line4": {
+          "text": "衣霑不足惜，但使願無違",
+          "src": "media/recitations/edb-20260921/grade5-line4.mp3",
+          "sourceStartSeconds": 30.4,
+          "sourceEndSeconds": 36.3,
+          "contentDurationSeconds": 5.9,
+          "encodedDurationSeconds": 5.9,
+          "bytes": 119163,
+          "sha256": "7a831f201c252c968e00771856152ad63db7aa90f16a281bac4971aa302e875c"
+        },
+        "verse1": {
+          "text": "種豆南山下",
+          "src": "media/recitations/edb-20260921/grade5-verse1.mp3",
+          "sourceStartSeconds": 10.26,
+          "sourceEndSeconds": 12.88,
+          "contentDurationSeconds": 2.62,
+          "encodedDurationSeconds": 2.62,
+          "bytes": 53857,
+          "sha256": "92d83ee493b5ea1bf7b83b3bad0ed7a1f4eb362ebb5d2a677a3405815b876d5d"
+        },
+        "verse2": {
+          "text": "草盛豆苗稀",
+          "src": "media/recitations/edb-20260921/grade5-verse2.mp3",
+          "sourceStartSeconds": 13.2,
+          "sourceEndSeconds": 16.3,
+          "contentDurationSeconds": 3.1,
+          "encodedDurationSeconds": 3.1,
+          "bytes": 63261,
+          "sha256": "a07b4544dcae25cbbbc6b5fcd0959e5f51ebe2ae78551465246ac0efa4c40a59"
+        },
+        "verse3": {
+          "text": "晨興理荒穢",
+          "src": "media/recitations/edb-20260921/grade5-verse3.mp3",
+          "sourceStartSeconds": 16.77,
+          "sourceEndSeconds": 19.48,
+          "contentDurationSeconds": 2.71,
+          "encodedDurationSeconds": 2.71,
+          "bytes": 55424,
+          "sha256": "3b9b554a18448c742f0ba68a8bb318f55ea499e3f8f7190cba92204602099ec6"
+        },
+        "verse4": {
+          "text": "帶月荷鋤歸",
+          "src": "media/recitations/edb-20260921/grade5-verse4.mp3",
+          "sourceStartSeconds": 20.11,
+          "sourceEndSeconds": 22.8,
+          "contentDurationSeconds": 2.69,
+          "encodedDurationSeconds": 2.69,
+          "bytes": 54902,
+          "sha256": "b48d4ede2ffd7fb40a30c171853006f6fe89a1a1f02b4ca637c69ecf459d4cd5"
+        },
+        "verse5": {
+          "text": "道狹草木長",
+          "src": "media/recitations/edb-20260921/grade5-verse5.mp3",
+          "sourceStartSeconds": 23.8,
+          "sourceEndSeconds": 26.42,
+          "contentDurationSeconds": 2.62,
+          "encodedDurationSeconds": 2.62,
+          "bytes": 53857,
+          "sha256": "2f3ffa2f42d3aaf66dbab8541dba1bf7a25a25ab2987c90f9f61766ea64c04d1"
+        },
+        "verse6": {
+          "text": "夕露霑我衣",
+          "src": "media/recitations/edb-20260921/grade5-verse6.mp3",
+          "sourceStartSeconds": 26.63,
+          "sourceEndSeconds": 29.62,
+          "contentDurationSeconds": 2.99,
+          "encodedDurationSeconds": 2.99,
+          "bytes": 61171,
+          "sha256": "c0b90cce041274417fc0ea3f82049c7ada197e1f6360a4d546ee66f71ba751e7"
+        },
+        "verse7": {
+          "text": "衣霑不足惜",
+          "src": "media/recitations/edb-20260921/grade5-verse7.mp3",
+          "sourceStartSeconds": 30.4,
+          "sourceEndSeconds": 32.87,
+          "contentDurationSeconds": 2.47,
+          "encodedDurationSeconds": 2.47,
+          "bytes": 50722,
+          "sha256": "b79117f8633474ba1eb3fb8ce029108498b19fc49fd50575f6ed4d5bf13e5e5e"
+        },
+        "verse8": {
+          "text": "但使願無違",
+          "src": "media/recitations/edb-20260921/grade5-verse8.mp3",
+          "sourceStartSeconds": 33.24,
+          "sourceEndSeconds": 36.3,
+          "contentDurationSeconds": 3.06,
+          "encodedDurationSeconds": 3.06,
+          "bytes": 62738,
+          "sha256": "dd3c6da984a837d20396b769c5f5baf7be77c29beeae8662594ba7347fc8c3f7"
+        }
+      }
+    },
+    {
+      "grade": 6,
+      "poemId": 6,
+      "slug": "zao-chun",
+      "title": "初春小雨",
+      "author": "韓愈",
+      "sourceFile": "6.mp3",
+      "sourceSHA256": "385edc39a9c0304e9e5700a2fc2ecc59b5079669cb4c6aaf40fecf9cc9140211",
+      "sourceDurationSeconds": 26.5143125,
+      "segments": {
+        "title": {
+          "text": "初春小雨",
+          "src": "media/recitations/edb-20260921/grade6-title.mp3",
+          "sourceStartSeconds": 4.48,
+          "sourceEndSeconds": 6.42,
+          "contentDurationSeconds": 1.94,
+          "encodedDurationSeconds": 1.94,
+          "bytes": 40273,
+          "sha256": "a13d11d902f5dcabcbdd1f0c9677a5d5e3fcf29e15df6b2d357812d7f23d4e1c"
+        },
+        "author": {
+          "text": "韓愈",
+          "src": "media/recitations/edb-20260921/grade6-author.mp3",
+          "sourceStartSeconds": 6.68,
+          "sourceEndSeconds": 7.92,
+          "contentDurationSeconds": 1.24,
+          "encodedDurationSeconds": 1.24,
+          "bytes": 26167,
+          "sha256": "d8d873b5925f57bfbdc45c3953417bf53a34a397599e418d05eec3a571342c9b"
+        },
+        "line1": {
+          "text": "天街小雨潤如酥",
+          "src": "media/recitations/edb-20260921/grade6-line1.mp3",
+          "sourceStartSeconds": 9.04,
+          "sourceEndSeconds": 12.72,
+          "contentDurationSeconds": 3.68,
+          "encodedDurationSeconds": 3.68,
+          "bytes": 74755,
+          "sha256": "d71a1791f3f37a81e46ff8024839a610a8aa38a843c7a8d6c3cf1d0ae87fa612"
+        },
+        "line2": {
+          "text": "草色遙看近卻無",
+          "src": "media/recitations/edb-20260921/grade6-line2.mp3",
+          "sourceStartSeconds": 13.64,
+          "sourceEndSeconds": 17.61,
+          "contentDurationSeconds": 3.97,
+          "encodedDurationSeconds": 3.97,
+          "bytes": 80502,
+          "sha256": "3d3e91015f63220d4911d43dcf5ad355272a908851e859abf6f5d3795c75dde6"
+        },
+        "line3": {
+          "text": "最是一年春好處",
+          "src": "media/recitations/edb-20260921/grade6-line3.mp3",
+          "sourceStartSeconds": 18.25,
+          "sourceEndSeconds": 21.28,
+          "contentDurationSeconds": 3.03,
+          "encodedDurationSeconds": 3.03,
+          "bytes": 61694,
+          "sha256": "00f684f6db57207b6548a46c0b05f46272dd7d86065c2d51ba50924ab7e90755"
+        },
+        "line4": {
+          "text": "絕勝煙柳滿皇都",
+          "src": "media/recitations/edb-20260921/grade6-line4.mp3",
+          "sourceStartSeconds": 21.32,
+          "sourceEndSeconds": 25.02,
+          "contentDurationSeconds": 3.7,
+          "encodedDurationSeconds": 3.7,
+          "bytes": 75277,
+          "sha256": "d00b42f8684713e71872f71cac1a1a155746c01571214e11c2be5a8873c9e0db"
+        }
+      }
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 /* Independent full-body welcome, aligned with the library title. */
-.library-heading.library-with-shishi{display:block}
+.library-heading.library-with-shishi{display:block;position:relative;padding-bottom:var(--library-guide-space,0px)}
 .library-with-shishi>div{min-width:0}
 .library-heading.library-with-shishi h1{display:block;white-space:nowrap;text-wrap:nowrap;line-height:1.3}
 .library-title-start{white-space:nowrap}
@@ -9,13 +9,13 @@
 .library-shishi:focus-visible{outline:3px solid #277e76;outline-offset:3px}
 .library-shishi-art{position:relative;display:block;width:100%;height:100%;pointer-events:none}
 .library-shishi-art img{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;object-fit:contain}
-.library-guide-dialog{box-sizing:border-box;width:min(440px,calc(100vw - 28px));max-height:calc(100dvh - 32px);overflow:auto;margin:auto;padding:30px 26px 26px;border:1px solid #d5dfd0;border-radius:24px;background:#fffdf6;color:#294f44;box-shadow:0 16px 55px #193d332e}
-.library-guide-dialog::backdrop{background:#173d354a}
-.library-guide-dialog h2{font:600 25px/1.5 var(--sans);margin:8px 25px 16px 0}
-.library-guide-dialog p{font:400 20px/1.8 var(--sans);margin:0 0 22px}
-.library-guide-dialog .library-guide-close{position:absolute;right:10px;top:8px;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:#476457;font:400 32px/1 var(--sans);cursor:pointer;touch-action:manipulation}
-.library-guide-dialog .library-guide-done{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;font-size:20px}
-.library-guide-dialog button:focus-visible{outline:3px solid #277e76;outline-offset:3px}
+.library-guide-bubble{position:absolute;box-sizing:border-box;width:min(360px,100%);padding:17px 46px 17px 20px;border:1px solid #c4d9c6;border-radius:20px;background:#fffdf6;color:#294f44;box-shadow:0 4px 16px #193d3312;z-index:2}
+.library-guide-bubble[hidden]{display:none}
+.library-guide-bubble::before{content:"";position:absolute;left:var(--guide-tail);top:-7px;width:12px;height:12px;background:#fffdf6;border-top:1px solid #c4d9c6;border-left:1px solid #c4d9c6;transform:translateX(-50%) rotate(45deg)}
+.library-guide-bubble[data-placement=beside]::before{left:-7px;top:var(--guide-tail);transform:translateY(-50%) rotate(-45deg)}
+.library-guide-bubble p{font:400 20px/1.6 var(--sans);margin:0;text-wrap:pretty}
+.library-guide-bubble .library-guide-close{position:absolute;right:2px;top:2px;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:#476457;font:400 28px/1 var(--sans);cursor:pointer;touch-action:manipulation}
+.library-guide-bubble button:focus-visible{outline:3px solid #277e76;outline-offset:1px}
 .account-dialog .teacher-reset-open{margin-top:12px;width:100%;white-space:normal}
 .teacher-reset-dialog{width:min(440px,calc(100vw - 32px));padding:24px;border:0;border-radius:24px;color:#243c37;box-sizing:border-box}
 .teacher-reset-dialog::backdrop{background:rgb(18 35 31 / .38)}
@@ -24,4 +24,4 @@
 .teacher-reset-actions{display:flex;gap:12px;flex-wrap:wrap}
 .teacher-reset-actions .button{flex:1;min-width:128px;justify-content:center}
 .teacher-reset-dialog [role=alert]{margin-top:14px;font-size:16px;color:#a43630}
-@media(max-width:480px){.library-heading.library-with-shishi h1{font-size:clamp(25px,7.4vw,32px)}.library-heading .library-shishi{flex-basis:60px;width:60px;height:90px}.library-title-end{gap:4px}.teacher-reset-dialog{padding:22px}.library-guide-dialog{padding:25px 22px 22px}.library-guide-dialog h2{font-size:23px}}
+@media(max-width:480px){.library-heading.library-with-shishi h1{font-size:clamp(25px,7.4vw,32px)}.library-heading .library-shishi{flex-basis:60px;width:60px;height:90px}.library-title-end{gap:4px}.teacher-reset-dialog{padding:22px}.library-guide-bubble{padding-left:16px}}

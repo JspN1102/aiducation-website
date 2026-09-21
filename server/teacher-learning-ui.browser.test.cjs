@@ -4,6 +4,8 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const repo=path.resolve(__dirname,'..'),origin='https://learning-ui-audit.invalid',evidence=process.env.TEACHER_LEARNING_EVIDENCE_DIR;
 const teacher='t_'+'a'.repeat(24),student='s_'+'b'.repeat(24),other='t_'+'c'.repeat(24),epoch='d'.repeat(32),checks=[],errors=[];
 const poems=JSON.parse(fs.readFileSync(path.join(repo,'maanshan/poems.json'),'utf8')).poems;
+const cssSource=fs.readFileSync(path.join(repo,'scripts/build-maanshan-css.cjs'),'utf8');
+const css=[...cssSource.match(/const files = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map(m=>fs.readFileSync(path.join(repo,'maanshan',m[1]),'utf8')).join('\n');
 let browser;
 function check(label,value){assert(value,label);checks.push({label,passed:true});}
 function wave(){const rate=8000,samples=2400,buf=Buffer.alloc(44+samples*2);buf.write('RIFF');buf.writeUInt32LE(buf.length-8,4);buf.write('WAVEfmt ',8);buf.writeUInt32LE(16,16);buf.writeUInt16LE(1,20);buf.writeUInt16LE(1,22);buf.writeUInt32LE(rate,24);buf.writeUInt32LE(rate*2,28);buf.writeUInt16LE(2,32);buf.writeUInt16LE(16,34);buf.write('data',36);buf.writeUInt32LE(samples*2,40);return buf;}
@@ -47,6 +49,7 @@ async function setup({role='teacher',width=390,height=844,progressDelay=false,fa
    if(endpoint==='/api/maanshan-save')return send({ok:false,error:'Synthetic pending queue'},503);
    return send({error:'Unexpected provider or research request'},500);
   }
+  if(url.pathname==='/maanshan/app.bundle.css')return route.fulfill({contentType:'text/css',body:css});
   let relative=url.pathname;if(relative==='/maanshan/')relative+='index.html';
   if(relative.includes('/published/')&&relative.includes('/maanshan/media/'))relative=relative.slice(relative.indexOf('/maanshan/media/'));
   const file=path.resolve(repo,'.'+decodeURIComponent(relative));
@@ -70,11 +73,12 @@ async function welcomeChecks(){
   if(evidence)await page.screenshot({path:path.join(evidence,'library-'+width+'x'+height+'.png')});
   if(width===390){await page.waitForFunction(()=>document.querySelector('.library-shishi-art')?.dataset.gesture==='wave',{},{timeout:9500});check('homepage automatically waves without audio/provider calls',state.tts.length===0);}
   await page.locator('.library-shishi').click();await page.waitForFunction(()=>document.querySelector('.library-shishi-art')?.dataset.gesture==='book');
-  check(width+'px click shows a readable guide and never requests speech',state.tts.length===0&&await page.locator('#library-shishi-guide').evaluate(el=>{const b=el.getBoundingClientRect();return el.open&&b.left>=0&&b.right<=innerWidth&&b.top>=0&&b.bottom<=innerHeight;}));
+  check(width+'px click shows a readable nonmodal bubble beside Shishi without speech',state.tts.length===0&&await page.locator('#library-shishi-guide').evaluate(el=>{const b=el.getBoundingClientRect(),mascot=document.querySelector('.library-shishi').getBoundingClientRect(),grid=document.querySelector('#poem-grid').getBoundingClientRect();return !el.hidden&&!document.querySelector(':modal')&&b.left>=0&&b.right<=innerWidth&&b.top>=0&&b.bottom<=innerHeight&&b.bottom<=grid.top&&Math.min(Math.abs(b.left-mascot.right),Math.abs(b.top-mascot.bottom))<=14&&document.querySelector('.library-shishi').getAttribute('aria-expanded')==='true';}));
   if(evidence)await page.screenshot({path:path.join(evidence,'library-guide-'+width+'x'+height+'.png')});
-  await page.locator('.library-guide-done').click();check(width+'px guide closes and returns focus to Shishi',await page.evaluate(()=>!document.querySelector('#library-shishi-guide').open&&document.activeElement===document.querySelector('.library-shishi')));
+  await page.locator('.library-guide-close').click();check(width+'px guide closes and returns focus to Shishi',await page.evaluate(()=>document.querySelector('#library-shishi-guide').hidden&&document.activeElement===document.querySelector('.library-shishi')));
+  await page.locator('.library-shishi').click();await page.locator('.library-title-start').click();check(width+'px outside click dismisses the bubble',!await page.locator('#library-shishi-guide').isVisible());
   await page.locator('.library-shishi').click();await page.keyboard.press('Escape');check(width+'px Escape also closes the guide',!await page.locator('#library-shishi-guide').isVisible());
-  await page.locator('.poem-entry').first().click();await page.locator('.lesson-shell').waitFor();check(width+'px routing removes the welcome and guide while keeping the poem guide',await page.locator('.library-shishi,#library-shishi-guide').count()===0&&await page.locator('#shishi-guide-host').count()===1);
+  await page.locator('.library-shishi').click();await page.locator('.poem-entry').first().click();await page.locator('.lesson-shell').waitFor();check(width+'px one click on a poem works while the bubble is open and preserves the poem guide',await page.locator('.library-shishi,#library-shishi-guide').count()===0&&await page.locator('#shishi-guide-host').count()===1);
   check(width+'px homepage does not open chat or emit student research data',state.requests.every(url=>['/api/school-auth','/api/maanshan-save','/api/school-recordings'].includes(url)));
  }finally{await env.close();}}
 }
@@ -107,12 +111,12 @@ async function delayedWelcomeCheck(){
   for(let n=0;!env.state.releases.length&&n<30;n++)await env.page.waitForTimeout(20);
   check('welcome fixture holds the initial progress request',env.state.releases.length>0);
   await env.page.locator('.library-shishi').click();
-  await env.page.locator('#library-shishi-guide[open]').waitFor();
+  await env.page.locator('#library-shishi-guide:not([hidden])').waitFor();
   await env.page.evaluate(()=>window.pendingWelcome=document.querySelector('#library-shishi-guide'));
   const hydrated=env.page.waitForResponse(response=>new URL(response.url()).searchParams.get('action')==='progress');
   env.release();await (await hydrated).finished();await env.page.waitForTimeout(100);
-  check('late progress hydration preserves the open guide and its DOM',await env.page.evaluate(()=>pendingWelcome.isConnected&&pendingWelcome.open&&pendingWelcome===document.querySelector('#library-shishi-guide')));
-  await env.page.locator('.library-guide-done').click();
+  check('late progress hydration preserves the open guide and its DOM',await env.page.evaluate(()=>pendingWelcome.isConnected&&!pendingWelcome.hidden&&pendingWelcome===document.querySelector('#library-shishi-guide')));
+  await env.page.locator('.library-guide-close').click();
   check('the preserved guide still closes normally',!await env.page.locator('#library-shishi-guide').isVisible());
  }finally{await env.close();}
 }

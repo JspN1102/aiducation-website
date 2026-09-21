@@ -1,9 +1,9 @@
 import {imageAsset} from './media-images.mjs?v=20260920-art2';
-import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school7';
+import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school8';
 import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20260919d';
-import {mountChallengeWriting} from './challenge-writing.mjs?v=20260921-school7';
-import {mountChallengeModel} from './challenge-model.mjs?v=20260921-school7';
-import {mountLivingField} from './living-field.mjs?v=20260921-school7';
+import {mountChallengeWriting} from './challenge-writing.mjs?v=20260921-school8';
+import {mountChallengeModel} from './challenge-model.mjs?v=20260921-school8';
+import {mountLivingField} from './living-field.mjs?v=20260921-school8';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const COMPACT_PROMPTS = {
@@ -73,7 +73,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const locked = !!answer;
     const active = () => !dead && epoch === gameEpoch && generation === renderGeneration;
     try {
-      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20260921-school7');
+      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20260921-school8');
       if (!active()) return;
       let completionReceived = false;
       const mounted = mountPoemGame(holder, {slug: poem.slug, initialState: state, readOnly: locked,
@@ -106,7 +106,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     return `<div class="challenge-sound-layout"><div class="challenge-sound-stage is-walnut-market"><img class="challenge-market" src="${esc(imageAsset('media/challenges/sound-market-v1.webp'))}" alt="" draggable="false"><button class="challenge-sound-token is-walnut" data-ch="listen" aria-label="點核桃，聽題目聲音"><img src="${esc(imageAsset('media/challenges/sound-pod-v1.webp'))}" alt="" draggable="false">${soundIcon}</button><p class="challenge-stage-note">點核桃，聽一聽</p></div><div class="challenge-sound-work"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><p class="challenge-instruction">先聽聲音，再選一個小站。</p><div class="challenge-shelves">${ordered(item).map(option=>`<button class="challenge-shelf" data-ch="choose" data-option="${option.id}" aria-pressed="false" disabled>${tone(option.contour)}<span>${esc(option.label)}</span><i aria-hidden="true"></i></button>`).join('')}</div><p class="challenge-audio-status" role="status">聽完後，也可以把核桃拖到小站。</p></div></div>`;
   }
   function writingBody(item) {
-    return `<div class="challenge-writing-layout"><div class="challenge-writing-heading"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><button class="challenge-listen" data-ch="listen">${soundIcon}<span>聽詞語</span></button><p class="challenge-audio-status" role="status">先聽詞語，再動筆。</p></div><div class="challenge-writing-holder" inert></div></div>`;
+    return `<div class="challenge-writing-layout"><div class="challenge-writing-heading"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><button class="challenge-listen" data-ch="listen">${soundIcon}<span>聽詞語</span></button><p class="challenge-audio-status" role="status">可以聽詞語，也可以直接寫。</p></div><div class="challenge-writing-holder"></div></div>`;
   }
   function cardHTML(card) {
     return `${card.image ? `<img src="${esc(makeURL(card.image))}" alt="${esc(card.label)}" decoding="async">` : card.color ? `<i class="challenge-color" style="--card-color:${esc(card.color)}" aria-hidden="true"></i>` : ''}<span>${esc(card.label)}</span>`;
@@ -142,7 +142,8 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     if (item.type === 'microgame') loadGame();
     else if (item.type === 'dictation') {
       const holder = q('.challenge-writing-holder');
-      holder.inert = !answer;
+      // Writing is local input. A slow, interrupted or unavailable audio
+      // demonstration must not disable the pad or its learning controls.
       writing = mountChallengeWriting(holder, {target: item.target, recognize:recognizeItem, onResearch:audit, initialResult: answer || null,
         onSubmit: result => submit(result)});
     } else if (item.type === 'sound') {
@@ -202,9 +203,8 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     if (dead || generation !== renderGeneration || playback !== audioGeneration) return;
     playing = false;button?.classList.remove('is-playing');button?.removeAttribute('aria-busy');
     if (success) heard = true;
-    if (status) status.textContent = success ? item.type==='sound'?'聽到了嗎？選一個小站，也可以拖過去。':'現在可以寫了，也可以再聽一次。' : '剛才沒有播完，再點一次聽聲音。';
+    if (status) status.textContent = success ? item.type==='sound'?'聽到了嗎？選一個小站，也可以拖過去。':'聽到了，可以寫字，也可以再聽一次。' : item.type==='dictation'?'聲音暫時未能播放，可以先寫字，稍後再聽。':'剛才沒有播完，再點一次聽聲音。';
     if (item.type === 'sound') updateSound();
-    if (item.type === 'dictation') q('.challenge-writing-holder').inert = !heard && !currentAnswer();
   }
   function chooseSound(id) {
     if (!heard || currentAnswer()) return;

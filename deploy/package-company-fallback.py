@@ -93,6 +93,12 @@ def merge_config(company, school):
                 row['destination'] = relocate_path(row['destination'])
             rows.append(row)
         result.setdefault(kind, []).extend(rows)
+    # Chat clients can include a Chinese question mark in a pasted link. Keep
+    # this exact punctuation typo from turning the school entrance into a 404.
+    result.setdefault('redirects', []).extend([
+        {'source': source, 'destination': '/school/', 'statusCode': 307}
+        for source in ['/school/？', '/school/？/', '/school/%EF%BC%9F', '/school/%EF%BC%9F/']
+    ])
     return result
 
 

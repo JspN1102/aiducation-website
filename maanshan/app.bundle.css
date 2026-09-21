@@ -656,7 +656,7 @@ body{background:radial-gradient(ellipse at 6% 0%,#fff9e7 0,transparent 48%),radi
 
 /* library-shishi.css */
 /* Independent full-body welcome, aligned with the library title. */
-.library-heading.library-with-shishi{display:block}
+.library-heading.library-with-shishi{display:block;position:relative;padding-bottom:var(--library-guide-space,0px)}
 .library-with-shishi>div{min-width:0}
 .library-heading.library-with-shishi h1{display:block;white-space:nowrap;text-wrap:nowrap;line-height:1.3}
 .library-title-start{white-space:nowrap}
@@ -666,13 +666,13 @@ body{background:radial-gradient(ellipse at 6% 0%,#fff9e7 0,transparent 48%),radi
 .library-shishi:focus-visible{outline:3px solid #277e76;outline-offset:3px}
 .library-shishi-art{position:relative;display:block;width:100%;height:100%;pointer-events:none}
 .library-shishi-art img{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;object-fit:contain}
-.library-guide-dialog{box-sizing:border-box;width:min(440px,calc(100vw - 28px));max-height:calc(100dvh - 32px);overflow:auto;margin:auto;padding:30px 26px 26px;border:1px solid #d5dfd0;border-radius:24px;background:#fffdf6;color:#294f44;box-shadow:0 16px 55px #193d332e}
-.library-guide-dialog::backdrop{background:#173d354a}
-.library-guide-dialog h2{font:600 25px/1.5 var(--sans);margin:8px 25px 16px 0}
-.library-guide-dialog p{font:400 20px/1.8 var(--sans);margin:0 0 22px}
-.library-guide-dialog .library-guide-close{position:absolute;right:10px;top:8px;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:#476457;font:400 32px/1 var(--sans);cursor:pointer;touch-action:manipulation}
-.library-guide-dialog .library-guide-done{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;font-size:20px}
-.library-guide-dialog button:focus-visible{outline:3px solid #277e76;outline-offset:3px}
+.library-guide-bubble{position:absolute;box-sizing:border-box;width:min(360px,100%);padding:17px 46px 17px 20px;border:1px solid #c4d9c6;border-radius:20px;background:#fffdf6;color:#294f44;box-shadow:0 4px 16px #193d3312;z-index:2}
+.library-guide-bubble[hidden]{display:none}
+.library-guide-bubble::before{content:"";position:absolute;left:var(--guide-tail);top:-7px;width:12px;height:12px;background:#fffdf6;border-top:1px solid #c4d9c6;border-left:1px solid #c4d9c6;transform:translateX(-50%) rotate(45deg)}
+.library-guide-bubble[data-placement=beside]::before{left:-7px;top:var(--guide-tail);transform:translateY(-50%) rotate(-45deg)}
+.library-guide-bubble p{font:400 20px/1.6 var(--sans);margin:0;text-wrap:pretty}
+.library-guide-bubble .library-guide-close{position:absolute;right:2px;top:2px;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:#476457;font:400 28px/1 var(--sans);cursor:pointer;touch-action:manipulation}
+.library-guide-bubble button:focus-visible{outline:3px solid #277e76;outline-offset:1px}
 .account-dialog .teacher-reset-open{margin-top:12px;width:100%;white-space:normal}
 .teacher-reset-dialog{width:min(440px,calc(100vw - 32px));padding:24px;border:0;border-radius:24px;color:#243c37;box-sizing:border-box}
 .teacher-reset-dialog::backdrop{background:rgb(18 35 31 / .38)}
@@ -681,7 +681,7 @@ body{background:radial-gradient(ellipse at 6% 0%,#fff9e7 0,transparent 48%),radi
 .teacher-reset-actions{display:flex;gap:12px;flex-wrap:wrap}
 .teacher-reset-actions .button{flex:1;min-width:128px;justify-content:center}
 .teacher-reset-dialog [role=alert]{margin-top:14px;font-size:16px;color:#a43630}
-@media(max-width:480px){.library-heading.library-with-shishi h1{font-size:clamp(25px,7.4vw,32px)}.library-heading .library-shishi{flex-basis:60px;width:60px;height:90px}.library-title-end{gap:4px}.teacher-reset-dialog{padding:22px}.library-guide-dialog{padding:25px 22px 22px}.library-guide-dialog h2{font-size:23px}}
+@media(max-width:480px){.library-heading.library-with-shishi h1{font-size:clamp(25px,7.4vw,32px)}.library-heading .library-shishi{flex-basis:60px;width:60px;height:90px}.library-title-end{gap:4px}.teacher-reset-dialog{padding:22px}.library-guide-bubble{padding-left:16px}}
 
 /* refresh.css */
 /* Keep the catalogue focused on its six poems; illustrations support activities. */
@@ -2544,6 +2544,17 @@ dialog h2{font-size:26px;line-height:1.4}
 /* student-ui.css */
 /* Keep ordinary Chinese text in the same complete, variable-weight family. */
 body{font-synthesis:none;text-rendering:optimizeLegibility}
+.lesson-heading .poem-heading-audio{display:inline-flex;align-items:center;justify-content:flex-start;gap:7px;max-width:100%;min-height:40px;margin:0;padding:2px 4px 2px 0;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;text-align:left;vertical-align:middle;cursor:pointer;touch-action:manipulation;box-shadow:none}
+.lesson-heading p .poem-heading-audio{min-height:36px}
+.poem-heading-audio>span:first-child{min-width:0;overflow-wrap:anywhere}
+.poem-heading-audio .heading-audio-symbol{position:relative;display:inline-flex;flex:0 0 18px;width:18px;height:18px;align-items:center;justify-content:center;color:#4f7c66}
+.poem-heading-audio .heading-audio-symbol svg{width:18px;height:18px}
+.poem-heading-audio[data-audio-state=loading] .heading-audio-symbol svg{visibility:hidden}
+.poem-heading-audio[data-audio-state=loading] .heading-audio-symbol::after{content:"";position:absolute;inset:1px;border:2px solid #c6d8ca;border-top-color:#39745d;border-radius:50%;animation:heading-audio-spin .8s linear infinite}
+.lesson-heading .poem-heading-audio[data-audio-state=playing]{background:#edf5e6;outline:2px solid #75a985;outline-offset:1px;box-shadow:none}
+.lesson-heading .poem-heading-audio:focus-visible{outline:3px solid #277e76;outline-offset:2px}
+.poem-heading-audio:disabled{cursor:default;opacity:.55}
+@keyframes heading-audio-spin{to{transform:rotate(360deg)}}
 .library-heading h1{font-family:var(--sans);font-size:clamp(32px,4.2vw,52px);font-weight:700;line-height:1.3;letter-spacing:0;text-wrap:balance}
 .workspace .lesson-map-step h3{font-weight:600;line-height:1.45}
 .workspace .lesson-map-status{color:#476450;font-weight:400}
@@ -2591,6 +2602,9 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 .workspace.view-report .word-analysis .word-result strong{font:600 clamp(23px,2.5vw,32px)/1.4 var(--sans);text-align:center;margin:0}
 .workspace.view-report .word-analysis .word-result.warn,.workspace.view-report .word-analysis .word-result.fair{background:linear-gradient(#fffaf0,#faf0d5);border-color:#e6d7ac;border-bottom-color:#bb9b41}
 .workspace.view-report .word-analysis .word-result.error,.workspace.view-report .word-analysis .word-result.poor{background:linear-gradient(#fff6ef,#fae9e2);border-color:#ebd1c5;border-bottom-color:#bc7765}
+.workspace.view-report .word-analysis button.word-result{cursor:pointer;appearance:none;color:inherit;font:inherit;text-align:center;touch-action:manipulation}
+.workspace.view-report .word-analysis button.word-result:focus-visible{outline:3px solid #397962;outline-offset:3px}
+.workspace.view-report .word-analysis button.word-result[aria-pressed="true"]{box-shadow:inset 0 0 0 3px #397962;background:#e5f0e1}
 .workspace.view-report .report-line-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;justify-content:center;gap:12px;flex:none;margin:0}
 .workspace.view-report .report-line-actions .button{margin:0;min-height:62px;padding:12px 10px;font-size:clamp(19px,2vw,25px);justify-content:center;border-radius:16px;white-space:nowrap}
 .workspace.view-report .report-line-actions .button svg{width:25px;height:25px}
@@ -2738,7 +2752,7 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 }
 /* The observation card uses the same generous type and touch targets as the
    landscape games, while feedback can still flow if text is enlarged. */
-@media (min-width:1000px) and (min-height:740px) and (orientation:landscape){
+@media (min-width:900px) and (min-height:620px) and (orientation:landscape){
  .workspace.view-explore #view .explore-card{padding:22px 26px;justify-content:center}
  .workspace.view-explore #view .explore-card-top{margin-bottom:12px}
  .workspace.view-explore #view .explore-step{font-size:20px}
@@ -2771,7 +2785,7 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace.view-lesson .lesson-map-status{margin-top:5px}
 }
 
-@media (min-width:1000px) and (min-height:700px) and (orientation:landscape){
+@media (min-width:900px) and (min-height:620px) and (orientation:landscape){
  .workspace.view-explore #view .explore-layout{grid-template-columns:minmax(0,1.2fr) minmax(340px,1fr);align-items:stretch;gap:28px}
  .workspace.view-explore #view .explore-card{justify-content:space-between;padding:24px 28px;gap:12px}
  .workspace.view-explore #view .explore-card-top{margin-bottom:0}
@@ -2784,6 +2798,62 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace.view-explore #view .explore-next{font-size:26px!important;min-height:66px;margin-top:0}
  .workspace.view-explore #view .explore-finish{margin-block:auto}
  .workspace.view-explore #view .explore-finish-actions{margin-top:auto}
+}
+
+/* Browser toolbars leave many tablets less than 700 CSS pixels high. Keep
+   their reading controls large as well; scale type before adding empty gaps. */
+@media (min-width:900px) and (min-height:620px) and (orientation:landscape){
+ .workspace.view-explore #view .explore-card{gap:10px;padding:18px 22px}
+ .workspace.view-explore #view .explore-card h3{font-size:clamp(27px,3.5vh,35px);line-height:1.35;margin-bottom:8px}
+ .workspace.view-explore #view .explore-verse>p{font-size:clamp(29px,3.8vh,38px);line-height:1.4}
+ .workspace.view-explore #view .explore-word>span{font-size:clamp(30px,4vh,38px)}
+ .workspace.view-explore #view .explore-question legend{font-size:clamp(26px,3.4vh,33px);line-height:1.4;margin-bottom:10px}
+ .workspace.view-explore #view .explore-answers{gap:10px}
+ .workspace.view-explore #view .explore-answers button{font-size:clamp(25px,3.3vh,32px);min-height:clamp(60px,9vh,90px);padding:10px 14px;line-height:1.35}
+ .workspace.view-explore #view .explore-feedback{font-size:clamp(23px,3.1vh,30px);line-height:1.45}
+ .workspace.view-explore #view .explore-next{font-size:clamp(25px,3.3vh,31px)!important;min-height:clamp(60px,8.5vh,84px)}
+}
+
+/* Carry the available activity height through the flex/grid chain. The older
+   image layout used flex:none, leaving the bottom third of tall tablets empty. */
+@media (min-width:900px) and (min-height:620px) and (orientation:landscape){
+ .workspace.view-explore #view .explore{height:100%;min-height:0;padding-bottom:0;gap:0}
+ .workspace.view-explore #view .explore-layout{flex:1;min-height:0;grid-template-rows:minmax(0,1fr);padding-bottom:0;gap:20px}
+ .workspace.view-explore #view .explore-visual{height:100%;min-height:0}
+ .workspace.view-explore #view .explore-stage{height:auto;min-height:0;flex:1}
+ .workspace.view-explore #view .explore-card{height:100%;min-height:0;justify-content:flex-start;gap:clamp(10px,1.7vh,18px);padding:clamp(14px,2.2vh,24px);container:explore-card / size}
+ .workspace.view-explore #view .explore-card-top{flex:none}
+ .workspace.view-explore #view .explore-verse{flex:none;padding-block:clamp(6px,1.5vh,16px)}
+ .workspace.view-explore #view .explore-question{flex:1;min-height:0;display:flex;flex-direction:column;margin:0}
+ .workspace.view-explore #view .explore-question legend{margin-bottom:clamp(10px,2vh,20px)}
+ .workspace.view-explore #view .explore-answers{flex:1;grid-template-rows:repeat(2,minmax(58px,1fr));gap:clamp(10px,2vh,22px)}
+ .workspace.view-explore #view .explore-answers button{height:100%;min-height:58px;font-size:clamp(25px,3.8vh,38px);padding:12px 18px}
+ .workspace.view-explore #view .explore-answer-dot{width:clamp(26px,3.3vh,34px);height:clamp(26px,3.3vh,34px);flex:none}
+ .workspace.view-explore #view .explore-feedback{flex:none;font-size:clamp(22px,3.1vh,30px);line-height:1.45}
+ .workspace.view-explore #view .explore-next{flex:none}
+ .workspace.view-explore #view .explore-finish{flex:1;display:flex;flex-direction:column;justify-content:center;margin:0}
+ .workspace.view-explore #view .explore-finish p{font-size:clamp(25px,3.4vh,34px);line-height:1.6}
+ .workspace.view-explore #view .explore-finish-mark{width:clamp(76px,12vh,124px);height:clamp(76px,12vh,124px)}
+ .workspace.view-explore #view .explore-finish-actions{margin:0;gap:12px}
+ .workspace.view-explore #view .explore-finish-actions button,.workspace.view-explore #view .explore-finish-actions a{font-size:clamp(24px,3.3vh,32px);min-height:clamp(58px,9vh,88px)}
+ .workspace.view-explore #view .explore.is-expanded .explore-layout{display:flex}
+ .workspace.view-explore #view .explore.is-expanded .explore-stage{height:auto;min-height:0;flex:1}
+}
+@media (min-width:900px) and (min-height:620px) and (max-height:740px) and (orientation:landscape){
+ .workspace.view-explore #view .explore-card{padding:12px 16px;gap:8px}
+ .workspace.view-explore #view .explore-verse{padding-block:4px;min-height:62px}
+ .workspace.view-explore #view .explore-verse>p{font-size:27px;line-height:1.4}
+ .workspace.view-explore #view .explore-question legend{font-size:25px;line-height:1.35;margin-bottom:8px}
+ .workspace.view-explore #view .explore-word{min-width:66px;min-height:62px;padding:4px 7px}
+ .workspace.view-explore #view .explore-word>span{font-size:29px}
+ .workspace.view-explore #view .explore-feedback{font-size:22px;line-height:1.4}
+ .workspace.view-explore #view .explore-next{min-height:54px;font-size:25px!important;padding-block:8px}
+ .workspace.view-explore #view .explore-card:has(.explore-next:not(:disabled)) .explore-question{flex:none}
+ .workspace.view-explore #view .explore-card:has(.explore-next:not(:disabled)) .explore-question legend,
+ .workspace.view-explore #view .explore-card:has(.explore-next:not(:disabled)) .explore-answers button:not(.is-correct){display:none}
+ .workspace.view-explore #view .explore-card:has(.explore-next:not(:disabled)) .explore-answers{grid-template-rows:auto}
+ .workspace.view-explore #view .explore-card:has(.explore-next:not(:disabled)) .explore-answers button{min-height:54px;padding-block:8px;font-size:25px}
+ .workspace.view-explore #view .explore-card:has(.explore-next:not(:disabled)) .explore-feedback{flex:1;display:flex;align-items:center}
 }
 
 /* tablet-games.css */
@@ -3021,7 +3091,7 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 
 /* The instruction and controls fill the right side of the play board. Explicit
    rows keep the last useful action near its bottom without adding filler. */
-@media (min-width:1000px) and (min-height:700px) and (orientation:landscape){
+@media (min-width:900px) and (min-height:620px) and (orientation:landscape){
  .workspace.view-quiz .challenge-game-holder>section{height:100%;align-content:stretch;column-gap:28px;row-gap:14px;grid-template-columns:minmax(0,1.35fr) minmax(310px,1fr)}
  .workspace.view-quiz .poem-goose-game{grid-template-rows:auto minmax(0,1fr) auto}
  .workspace.view-quiz .poem-goose-game .goose-instruction{align-self:start}
@@ -3075,4 +3145,66 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace.view-quiz .rain-catcher .rc-controls>button{min-height:76px;font-size:26px}
  .workspace.view-quiz .rain-catcher .rc-slow-catch{grid-row:5;align-self:end;font-size:25px;min-height:66px}
  .workspace.view-quiz .rain-catcher .rc-replay{grid-row:4;font-size:25px;min-height:70px}
+}
+
+@media (min-width:900px) and (min-height:620px) and (orientation:landscape){
+ .workspace.view-quiz .challenge-game-holder>section{column-gap:24px;row-gap:12px}
+ .workspace.view-quiz .poem-goose-game .goose-instruction p,
+ .workspace.view-quiz .poem-garden .gr-instruction p,
+ .workspace.view-quiz .farewell-story .fs-header h3,
+ .workspace.view-quiz .poem-view-game .pvg-heading h3,
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-heading h3{font-size:clamp(28px,4.1vh,38px);line-height:1.4}
+ .workspace.view-quiz .poem-goose-game .goose-paint{min-height:clamp(70px,11vh,108px);font-size:clamp(30px,4.1vh,39px)}
+ .workspace.view-quiz .farewell-story .fs-task,
+ .workspace.view-quiz .farewell-story .fs-feedback,
+ .workspace.view-quiz .poem-garden .gr-method,
+ .workspace.view-quiz .poem-garden .gr-feedback,
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-instruction,
+ .workspace.view-quiz .poem-view-game .pvg-camera-control,
+ .workspace.view-quiz .poem-view-game .pvg-photo-tray figcaption,
+ .workspace.view-quiz .rain-catcher .rc-mission{font-size:clamp(25px,3.5vh,33px);line-height:1.4}
+ .workspace.view-quiz .poem-goose-game .goose-feedback,
+ .workspace.view-quiz .poem-view-game .pvg-status,
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-status{font-size:clamp(23px,3.2vh,30px);line-height:1.4}
+ .workspace.view-quiz .poem-garden .gr-count{font-size:clamp(35px,5.3vh,52px);min-width:140px;padding:15px 24px}
+ .workspace.view-quiz .poem-garden .gr-audio,
+ .workspace.view-quiz .farewell-story .fs-actions button,
+ .workspace.view-quiz .poem-view-game .pvg-actions button,
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-actions button{font-size:clamp(25px,3.6vh,34px);min-height:clamp(64px,9.5vh,96px)}
+ .workspace.view-quiz .rain-catcher .rc-collection>span{height:clamp(70px,10vh,100px)}
+ .workspace.view-quiz .rain-catcher .rc-mission strong{font-size:clamp(40px,5.7vh,54px)}
+ .workspace.view-quiz .rain-catcher .rc-controls>button{font-size:clamp(26px,3.6vh,33px);min-height:clamp(66px,9vh,90px)}
+}
+
+/* The garden's two existing instructions become readable working areas, with
+   the real weed counter and listening action filling the right column. */
+@media (min-width:900px) and (min-height:620px) and (orientation:landscape){
+ .workspace.view-quiz .poem-garden{grid-template-rows:minmax(0,1.05fr) minmax(0,1fr) auto}
+ .workspace.view-quiz .poem-garden .gr-instruction{height:100%;width:100%;align-self:stretch;justify-items:center;align-content:center;gap:clamp(12px,2.5vh,28px);padding:clamp(12px,2vh,22px);border:1px solid #dae3cc;border-radius:24px;background:#f2f6e9}
+ .workspace.view-quiz .poem-garden .gr-instruction p{font-size:clamp(28px,4.3vh,42px);text-align:center;line-height:1.4}
+ .workspace.view-quiz .poem-garden .gr-count{display:grid;place-items:center;min-width:clamp(148px,19vw,244px);min-height:clamp(70px,12vh,130px);font-size:clamp(42px,7.4vh,76px);line-height:1.15;padding:8px 20px;border:1px solid #d1dfc5;border-radius:24px;background:#fffef6;font-weight:600}
+ .workspace.view-quiz .poem-garden .gr-actionline{height:100%;align-self:stretch;grid-template-rows:auto minmax(60px,1fr);gap:clamp(10px,2vh,22px);padding:clamp(10px,1.8vh,20px);border:1px solid #dce4d0;border-radius:24px;background:#fffdf4}
+ .workspace.view-quiz .poem-garden .gr-method{font-size:clamp(25px,3.8vh,36px);line-height:1.4;text-wrap:balance}
+ .workspace.view-quiz .poem-garden .gr-audio{height:100%;font-size:clamp(28px,4.3vh,40px);min-height:60px;border-radius:20px;background:#eaf3e0}
+ .workspace.view-quiz .poem-garden .gr-audio::before{font-size:1.2em}
+ .workspace.view-quiz .poem-garden .gr-feedback:empty{display:none}
+}
+@media (min-width:900px) and (min-height:620px) and (max-height:820px) and (orientation:landscape){
+ .workspace.view-quiz .poem-garden{grid-template-rows:minmax(132px,1.05fr) minmax(112px,1fr) auto;row-gap:10px}
+ .workspace.view-quiz .poem-garden .gr-instruction{grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px}
+ .workspace.view-quiz .poem-garden .gr-instruction p{font-size:26px;line-height:1.35;text-wrap:pretty}
+ .workspace.view-quiz .poem-garden .gr-count{min-width:90px;min-height:70px;padding:7px;font-size:36px;border-radius:20px}
+ .workspace.view-quiz .poem-garden .gr-actionline{padding:10px;gap:8px}
+ .workspace.view-quiz .poem-garden .gr-method{font-size:25px;line-height:1.35}
+ .workspace.view-quiz .poem-garden .gr-feedback{font-size:23px;line-height:1.4}
+}
+@media (min-width:900px) and (min-height:620px) and (max-height:740px) and (orientation:landscape){
+ .workspace.view-quiz .poem-view-game .pvg-camera-control{gap:5px}
+ .workspace.view-quiz .poem-view-game .pvg-camera-control input{height:44px}
+ .workspace.view-quiz .poem-view-game .pvg-photo-tray{gap:8px}
+ .workspace.view-quiz .poem-view-game .pvg-photo-tray figure{flex-direction:row;gap:7px;padding:8px 6px;min-height:80px}
+ .workspace.view-quiz .poem-view-game .pvg-photo-image{width:64px;max-width:64px;min-height:48px}
+ .workspace.view-quiz .poem-view-game .pvg-photo-tray figcaption{font-size:23px}
+ .workspace.view-quiz .poem-view-game .pvg-status{font-size:23px;line-height:1.35}
+ .workspace.view-quiz .poem-view-game .pvg-actions button{font-size:23px;min-height:56px}
 }

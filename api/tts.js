@@ -3,11 +3,12 @@ const https = require('https');
 const schoolAuth = require('./_lib/school-auth.cjs');
 const {cacheKey, hasAudio, readAudio, writeAudio, CACHE_VERSION} = require('./_lib/tts-cache');
 
-// Keep one request per phrase in each warm function instance. The Blob cache
-// handles later instances; this map prevents a burst of first taps from
+// Keep one request per phrase in each warm function instance. Persistent disk
+// (Guangzhou) or Blob handles later instances; this map prevents first taps from
 // creating the same paid synthesis several times.
 const inflight = new Map();
 const DEFAULT_VOICE = 403001; // 超自然大模型：云小和，亲和女声
+const POET_VOICE = 101021; // 智瑞：only a poet conversation uses this voice.
 const DEFAULT_SPEED = -0.25; // Natural speech, slightly slower; no extra playback slowdown.
 const SAMPLE_RATE = 16000;
 const LEADING_SAMPLES = Math.round(SAMPLE_RATE * .18);
@@ -294,7 +295,7 @@ module.exports = async function handler(req, res) {
   const {text} = req.body || {};
   if (typeof text !== 'string' || !text.trim()) return res.status(400).json({error: 'Missing text'});
   if (text.length > 6000) return res.status(413).json({error: 'Text too long'});
-  const voice = Math.trunc(number(req.body?.voice, Number(process.env.MAANSHAN_TTS_VOICE || DEFAULT_VOICE)));
+  const voice = req.body?.purpose === 'poet-chat' ? POET_VOICE : Math.trunc(number(req.body?.voice, Number(process.env.MAANSHAN_TTS_VOICE || DEFAULT_VOICE)));
   const speed = Math.max(-2, Math.min(6, number(req.body?.speed, Number(process.env.MAANSHAN_TTS_SPEED || DEFAULT_SPEED))));
   const pronunciationVersion = String(req.body?.pronunciationVersion || process.env.MAANSHAN_PRONUNCIATION_VERSION || 'edb-20260921-natural1-yunxiaohe');
   const allowSSML = req.body?.allowSSML === true;
@@ -312,6 +313,12 @@ module.exports = async function handler(req, res) {
   let pending = inflight.get(key);
   if (!pending) {
     pending = (async () => {
+      // A slow first lookup may finish after another request has synthesized
+      // and removed its in-flight entry. Recheck local disk before paying again.
+      if (process.env.TTS_CACHE_DIR) {
+        const latest = await readAudio(key);
+        if (latest.status === 'hit') return {audio: latest.audio, stored: true, cacheHit: true};
+      }
       const audio = await synthesize({text, voice, speed, allowSSML});
       const stored = await writeAudio(key, audio);
       return {audio, stored};
@@ -322,10 +329,10 @@ module.exports = async function handler(req, res) {
     const result = await pending;
     res.setHeader('X-TTS-Voice', String(voice));res.setHeader('X-TTS-Cache-Version', CACHE_VERSION);
     if (wantsURL && result.stored) {
-      res.setHeader('X-TTS-Cache', 'MISS-STORED');
+      res.setHeader('X-TTS-Cache', result.cacheHit ? 'HIT' : 'MISS-STORED');
       return res.status(200).json({url: audioURL(key)});
     }
-    return serveAudio(req, res, result.audio, result.stored ? 'MISS-STORED' : 'MISS');
+    return serveAudio(req, res, result.audio, result.cacheHit ? 'HIT' : result.stored ? 'MISS-STORED' : 'MISS');
   } catch (error) {
     const status = Number.isInteger(error.statusCode) ? error.statusCode : 502;
     console.error(JSON.stringify({event: 'tts-failure', status, code: error.code || error.upstreamCode || null, message: error.message || null, upstreamMessage: error.upstreamMessage || null}));

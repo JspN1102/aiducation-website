@@ -58,12 +58,12 @@ test('disk cache rejects traversal keys, corrupted and oversized audio without u
   }
   const key = cache.cacheKey({ text: '雨', voice: 403001, speed: -.75 });
   assert.equal(await cache.writeAudio(key, Buffer.alloc(50)), false);
-  assert.equal(await cache.writeAudio(key, wav(cache.MAX_AUDIO_BYTES)), false);
+  assert.equal(await cache.writeAudio(key, wav(cache.MAX_DISK_AUDIO_BYTES)), false);
   assert.equal(await cache.writeAudio(key, wav()), true);
   const filename = path.join(root, cache.CACHE_VERSION, `${key}.wav`);
   await fs.writeFile(filename, Buffer.alloc(50));
   assert.equal((await cache.hasAudio(key)).status, 'unavailable');
-  await fs.writeFile(filename, Buffer.alloc(cache.MAX_AUDIO_BYTES + 1));
+  await fs.writeFile(filename, Buffer.alloc(cache.MAX_DISK_AUDIO_BYTES + 1));
   assert.equal((await cache.readAudio(key)).status, 'unavailable');
   const corrupt = wav(); corrupt.writeUInt32LE(99, 40);
   await fs.writeFile(filename, corrupt);

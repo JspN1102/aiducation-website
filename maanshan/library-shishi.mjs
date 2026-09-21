@@ -1,27 +1,43 @@
-import {mountShishiSprite} from './shishi-sprite.mjs?v=20260921-school7';
+import {mountShishiSprite} from './shishi-sprite.mjs?v=20260921-school8';
 
 // This welcome has its own sprite and guide; it never opens the poet chat.
 export function mountLibraryShishi(host,{canPlay=()=>true}={}){
   const button=document.createElement('button');button.type='button';button.className='library-shishi';
   button.setAttribute('aria-label','詩詩的學習小提示');
-  button.setAttribute('aria-haspopup','dialog');
+  button.setAttribute('aria-expanded','false');
   button.setAttribute('aria-controls','library-shishi-guide');
   const art=document.createElement('span');art.className='library-shishi-art';art.setAttribute('aria-hidden','true');
   button.append(art);(host.querySelector('.library-title-end')||host).append(button);
-  const guide=document.createElement('dialog');guide.id='library-shishi-guide';guide.className='library-guide-dialog';
-  guide.setAttribute('aria-labelledby','library-guide-title');
-  guide.setAttribute('aria-describedby','library-guide-text');
-  guide.innerHTML='<button type="button" class="library-guide-close" aria-label="關閉小提示">×</button><h2 id="library-guide-title">跟詩詩一起學古詩</h2><p id="library-guide-text">先選一首古詩，跟着示範讀一讀。<br>讀完再玩小遊戲，一起聽清楚、說準確！</p><button type="button" class="button primary library-guide-done">我知道了</button>';
+  const guide=document.createElement('aside');guide.id='library-shishi-guide';guide.className='library-guide-bubble';guide.hidden=true;
+  guide.setAttribute('aria-label','詩詩的小提示');
+  guide.innerHTML='<button type="button" class="library-guide-close" aria-label="關閉小提示">×</button><p>先選一首古詩，跟着示範讀一讀。<br>讀完再玩小遊戲，一起聽清楚、說準確！</p>';
   host.append(guide);
-  let dead=false;
+  let dead=false,layoutFrame=0;
   const sprite=mountShishiSprite(art,{canPlay:()=>!dead&&canPlay(),interval:6500});
-  const close=()=>{guide.close();if(!dead&&button.isConnected)button.focus({preventScroll:true});};
-  const click=()=>{if(dead||!canPlay())return;void sprite.play('book');if(!guide.open)guide.showModal();};
-  const backdrop=event=>{if(event.target!==guide)return;const rect=guide.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)close();};
+  function position(){
+    if(dead||guide.hidden)return;
+    const heading=host.getBoundingClientRect(),mascot=button.getBoundingClientRect(),width=Math.min(360,heading.width);
+    const baseHeight=heading.height-(parseFloat(getComputedStyle(host).paddingBottom)||0);
+    guide.style.width=width+'px';
+    const height=guide.offsetHeight,beside=heading.right-mascot.right>=width+12;
+    const left=beside?mascot.right-heading.left+12:Math.max(0,Math.min(heading.width-width,mascot.right-heading.left-width+16));
+    const top=beside?Math.max(0,mascot.top-heading.top+(mascot.height-height)/2):mascot.bottom-heading.top+10;
+    guide.dataset.placement=beside?'beside':'below';
+    guide.style.left=left+'px';guide.style.top=top+'px';
+    guide.style.setProperty('--guide-tail',Math.max(22,Math.min((beside?height:width)-22,beside?mascot.top-heading.top+mascot.height/2-top:mascot.left-heading.left+mascot.width/2-left))+'px');
+    // The message belongs to the heading, so it never sits over a poem card.
+    host.style.setProperty('--library-guide-space',Math.max(0,top+height-baseHeight+4)+'px');
+  }
+  const schedulePosition=()=>{cancelAnimationFrame(layoutFrame);layoutFrame=requestAnimationFrame(position);};
+  const close=(restoreFocus=false)=>{guide.hidden=true;button.setAttribute('aria-expanded','false');host.style.removeProperty('--library-guide-space');if(restoreFocus&&!dead&&button.isConnected)button.focus({preventScroll:true});};
+  const click=()=>{if(dead||!canPlay())return;if(!guide.hidden){close();return;}void sprite.play('book');guide.hidden=false;button.setAttribute('aria-expanded','true');position();};
+  const outside=event=>{if(!guide.hidden&&!guide.contains(event.target)&&!button.contains(event.target))close();};
   const controller=new AbortController(),options={signal:controller.signal};
-  guide.querySelector('.library-guide-close').addEventListener('click',close,options);
-  guide.querySelector('.library-guide-done').addEventListener('click',close,options);
-  guide.addEventListener('click',backdrop,options);
-  button.addEventListener('click',click);
-  return{destroy(){if(dead)return;dead=true;controller.abort();guide.close();sprite.destroy();button.removeEventListener('click',click);button.remove();guide.remove();}};
+  guide.querySelector('.library-guide-close').addEventListener('click',()=>close(true),options);
+  document.addEventListener('click',outside,options);
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!guide.hidden){event.preventDefault();close(true);}},options);
+  window.addEventListener('resize',schedulePosition,options);
+  const resize=new ResizeObserver(schedulePosition);resize.observe(host.querySelector('h1')||button);
+  button.addEventListener('click',click,options);
+  return{destroy(){if(dead)return;dead=true;controller.abort();cancelAnimationFrame(layoutFrame);resize.disconnect();close();sprite.destroy();button.remove();guide.remove();}};
 }

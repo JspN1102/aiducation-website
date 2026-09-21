@@ -34,19 +34,31 @@ async function setup(width,height){
 async function inspect(page,selector){return page.locator(selector).evaluate(el=>{
  const b=el.getBoundingClientRect(),body=document.querySelector('.challenge-body'),v=body.getBoundingClientRect();
  const visible=e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden';
- const outside=[...el.querySelectorAll('button,input')].filter(visible).filter(e=>{const x=e.getBoundingClientRect();return x.left<-.5||x.right>innerWidth+.5;}).map(e=>e.textContent||e.getAttribute('aria-label'));
- return {outside,scroll:body.scrollHeight-body.clientHeight,box:{x:b.x,y:b.y,w:b.width,h:b.height},viewport:{x:v.x,y:v.y,w:v.width,h:v.height},documentOverflow:document.documentElement.scrollWidth-innerWidth};
+ const buttons=[...el.querySelectorAll('button,input')].filter(visible);
+ const outside=buttons.filter(e=>{const x=e.getBoundingClientRect();return x.left<-.5||x.right>innerWidth+.5;}).map(e=>e.textContent||e.getAttribute('aria-label'));
+ const vertical=buttons.filter(e=>!e.closest('.gr-picture,.fs-stage,.goose-picture,.pvg-stage,.rc-field,.river-puzzle-board')).filter(e=>{const x=e.getBoundingClientRect();return x.top<v.top-.5||x.bottom>v.bottom+.5||x.top<0||x.bottom>innerHeight;}).map(e=>e.textContent||e.getAttribute('aria-label'));
+ const textOutside=[...el.querySelectorAll('.gr-instruction p,.gr-count,.gr-method,.gr-feedback')].filter(visible).filter(e=>{
+  const x=e.getBoundingClientRect(),panel=e.closest('.gr-instruction,.gr-actionline'),p=panel?.getBoundingClientRect();
+  return x.top<v.top-.5||x.bottom>v.bottom+.5||(p&&(x.top<p.top-.5||x.bottom>p.bottom+.5));
+ }).map(e=>e.className);
+ return {outside,vertical,textOutside,scroll:body.scrollHeight-body.clientHeight,box:{x:b.x,y:b.y,w:b.width,h:b.height},viewport:{x:v.x,y:v.y,w:v.width,h:v.height},documentOverflow:document.documentElement.scrollWidth-innerWidth};
+});}
+async function inspectAR(page){return page.locator('#view').evaluate(el=>{
+ const box=el.getBoundingClientRect(),card=el.querySelector('.explore-card').getBoundingClientRect();
+ const outside=[...el.querySelectorAll('button,a')].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden').filter(e=>{const b=e.getBoundingClientRect();return b.left<0||b.right>innerWidth||b.top<box.top-.5||b.bottom>box.bottom+.5;}).map(e=>e.textContent||e.getAttribute('aria-label'));
+ return {scroll:el.scrollHeight-el.clientHeight,cardBottom:card.bottom,viewBottom:box.bottom,bottomGap:box.bottom-card.bottom,outside,viewport:innerHeight};
 });}
 (async()=>{
  try{
   browser=await chromium.launch({channel:'msedge',headless:true});
-  for(const [width,height] of [[390,844],[768,1024],[1024,768],[1180,820],[1366,1024]]){
+  if(process.env.GAME_LAYOUT_EVIDENCE_DIR)fs.mkdirSync(process.env.GAME_LAYOUT_EVIDENCE_DIR,{recursive:true});
+  for(const [width,height] of [[390,844],[768,1024],[900,620],[1024,650],[1024,768],[1180,720],[1180,820],[1366,1024]]){
    const {context,page}=await setup(width,height);
    try{for(let i=0;i<poems.length;i++){
     const poem=poems[i];await page.evaluate(slug=>location.hash='#'+slug+'/quiz',poem.slug);await page.locator(selectors[i]).waitFor();await page.locator(ready[i]).first().waitFor({timeout:25000});
     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     let state=await inspect(page,selectors[i]);check(`${width}x${height} ${poem.slug} no horizontal overflow ${JSON.stringify(state)}`,state.outside.length===0&&state.documentOverflow<=1);
-    if(width>=1000)check(`${width}x${height} ${poem.slug} controls fit without inner scrolling ${JSON.stringify(state)}`,state.scroll<=2);
+    if(width>=900)check(`${width}x${height} ${poem.slug} controls fit without inner scrolling ${JSON.stringify(state)}`,state.scroll<=2&&state.vertical.length===0);
     if(i===0){
      check('goose markers hidden and disabled before colour selection',await page.locator('[data-goose-part]').evaluateAll(nodes=>nodes.every(n=>n.hidden&&n.disabled)));
      await page.locator('[data-goose-color=white]').tap();
@@ -56,21 +68,51 @@ async function inspect(page,selector){return page.locator(selector).evaluate(el=
     }
     if(i===1){
      await page.locator('[data-fs-dock]').tap();await page.locator('[data-fs-next]').tap();
-     state=await inspect(page,selectors[i]);check(`${width} farewell rhythm controls fit`,state.outside.length===0&&(width<1000||state.scroll<=2));
+     state=await inspect(page,selectors[i]);check(`${width}x${height} farewell rhythm controls fit ${JSON.stringify(state)}`,state.outside.length===0&&(width<900||state.scroll<=2&&state.vertical.length===0));
      for(const n of [0,1,0,1])await page.locator(`[data-fs-foot="${n}"]`).tap();
-     await page.locator('[data-fs-next]').tap();state=await inspect(page,selectors[i]);check(`${width} farewell word tickets fit`,state.outside.length===0&&(width<1000||state.scroll<=2));
+     await page.locator('[data-fs-next]').tap();state=await inspect(page,selectors[i]);check(`${width}x${height} farewell word tickets fit ${JSON.stringify(state)}`,state.outside.length===0&&(width<900||state.scroll<=2&&state.vertical.length===0));
     }
-    if(i===5){await page.locator('[data-rc-start]').tap();state=await inspect(page,selectors[i]);check(`${width} rain active controls fit`,state.outside.length===0&&(width<1000||state.scroll<=2));}
-    if(process.env.GAME_LAYOUT_EVIDENCE_DIR&&width>=1000)await page.screenshot({path:path.join(process.env.GAME_LAYOUT_EVIDENCE_DIR,`${poem.slug}-${width}.png`),fullPage:true});
+    if(i===4){
+     await page.locator('[data-plant="bean-a"]').press('Enter');state=await inspect(page,selectors[i]);
+     check(`${width}x${height} garden bean reminder fits ${JSON.stringify(state)}`,state.outside.length===0&&(width<900||state.scroll<=2&&state.vertical.length===0&&state.textOutside.length===0));
+     check(`${width}x${height} garden preserves beans after wrong choice`,await page.locator('.gr-count').innerText()==='0 / 8'&&(await page.locator('.gr-feedback').innerText()).includes('這是豆苗'));
+     for(const letter of 'abcdefgh')await page.locator(`[data-plant="weed-${letter}"]`).press('Enter');
+     await page.locator('.poem-garden.is-done').waitFor();state=await inspect(page,selectors[i]);
+     check(`${width}x${height} garden completion feedback fits ${JSON.stringify(state)}`,state.outside.length===0&&(width<900||state.scroll<=2&&state.vertical.length===0&&state.textOutside.length===0));
+     check(`${width}x${height} garden completes all eight weeds`,await page.locator('.gr-count').innerText()==='8 / 8');
+    }
+    if(i===5){await page.locator('[data-rc-start]').tap();state=await inspect(page,selectors[i]);check(`${width}x${height} rain active controls fit ${JSON.stringify(state)}`,state.outside.length===0&&(width<900||state.scroll<=2&&state.vertical.length===0));}
+    if(process.env.GAME_LAYOUT_EVIDENCE_DIR&&width>=900)await page.screenshot({path:path.join(process.env.GAME_LAYOUT_EVIDENCE_DIR,`${poem.slug}-${width}x${height}.png`),fullPage:true});
    }
-   if(width>=1000)for(const poem of poems.filter(p=>p.grade>=4)){
+   if(width>=900)for(const poem of poems.filter(p=>p.grade>=4)){
     await page.evaluate(slug=>location.hash='#'+slug+'/explore',poem.slug);await page.locator('.explore-card').waitFor();
-    const before=await page.locator('#view').evaluate(el=>({scroll:el.scrollHeight-el.clientHeight,cardBottom:el.querySelector('.explore-card').getBoundingClientRect().bottom,viewport:innerHeight}));
-    check(`${width} ${poem.slug} AR card stays within view ${JSON.stringify(before)}`,before.scroll<=2&&before.cardBottom<=before.viewport);
-    await page.evaluate(async slug=>{
-     const {EXPLORATION_CONTENT}=await import('/maanshan/exploration-data.mjs');
-     for(const item of EXPLORATION_CONTENT[slug].observations){document.querySelector(`[data-explore=answer][data-answer="${item.answer}"]`).click();document.querySelector('[data-explore=next]').click();}
-    },poem.slug);
+    await page.waitForFunction(()=>{const image=document.querySelector('.explore-scene');return image?.complete&&image.naturalWidth>0;});
+    const before=await inspectAR(page);
+    check(`${width}x${height} ${poem.slug} AR card fills available height without overflow ${JSON.stringify(before)}`,before.scroll<=2&&before.cardBottom<=before.viewport&&before.bottomGap<=8&&before.outside.length===0);
+    if(process.env.GAME_LAYOUT_EVIDENCE_DIR)await page.screenshot({path:path.join(process.env.GAME_LAYOUT_EVIDENCE_DIR,`ar-${poem.slug}-${width}x${height}.png`)});
+    if(poem.grade===4&&[900,1366].includes(width)){
+     await page.locator('[data-explore=ar]').tap();await page.locator('.explore.is-model').waitFor({timeout:30000});
+     const model=await inspectAR(page);check(`${width}x${height} AR model controls fit ${JSON.stringify(model)}`,model.scroll<=2&&model.outside.length===0);
+     await page.locator('[data-explore=expand]').tap();
+     const expanded=await page.locator('#view').evaluate(el=>{
+      const v=el.getBoundingClientRect(),s=el.querySelector('.explore-stage').getBoundingClientRect();
+      const outside=[...el.querySelectorAll('button')].filter(e=>e.getClientRects().length).some(e=>{const b=e.getBoundingClientRect();return b.top<v.top-.5||b.bottom>v.bottom+.5||b.left<0||b.right>innerWidth;});
+      return {scroll:el.scrollHeight-el.clientHeight,stageHeight:s.height,stageFits:s.top>=v.top&&s.bottom<=v.bottom,outside};
+     });
+     check(`${width}x${height} expanded AR model fits ${JSON.stringify(expanded)}`,expanded.scroll<=2&&expanded.stageHeight>150&&expanded.stageFits&&!expanded.outside);
+     if(process.env.GAME_LAYOUT_EVIDENCE_DIR)await page.screenshot({path:path.join(process.env.GAME_LAYOUT_EVIDENCE_DIR,`ar-model-expanded-${width}x${height}.png`)});
+     await page.locator('[data-explore=expand]').tap();const returned=await inspectAR(page);
+     check(`${width}x${height} AR returns to full-height observation card`,returned.bottomGap<=8&&returned.scroll<=2&&returned.outside.length===0);
+    }
+    const answers=await page.evaluate(async slug=>(await import('/maanshan/exploration-data.mjs')).EXPLORATION_CONTENT[slug].observations.map(item=>item.answer),poem.slug);
+    for(const answer of answers){
+     await page.locator(`[data-explore=answer][data-answer="${1-answer}"]`).tap();let state=await inspectAR(page);
+     check(`${width}x${height} ${poem.slug} AR retry feedback fits ${JSON.stringify(state)}`,state.scroll<=2&&state.outside.length===0);
+     await page.locator(`[data-explore=answer][data-answer="${answer}"]`).tap();state=await inspectAR(page);
+     check(`${width}x${height} ${poem.slug} AR correct feedback and next action fit ${JSON.stringify(state)}`,state.scroll<=2&&state.outside.length===0);
+     if(process.env.GAME_LAYOUT_EVIDENCE_DIR)await page.screenshot({path:path.join(process.env.GAME_LAYOUT_EVIDENCE_DIR,`ar-answer-${poem.slug}-${width}x${height}.png`)});
+     await page.locator('[data-explore=next]').tap();
+    }
     const target=page.locator('.explore-finish-actions a');
     check(`${width} ${poem.slug} AR completion leads to practice`,await target.getAttribute('href')==='#'+poem.slug+'/quiz'&&(await target.innerText()).includes('進入練一練'));
     const fits=await target.evaluate(el=>{const b=el.getBoundingClientRect();return b.left>=0&&b.right<=innerWidth&&b.height>=44&&b.bottom<=innerHeight;});
@@ -78,6 +120,6 @@ async function inspect(page,selector){return page.locator(selector).evaluate(el=
    }
    }finally{await context.close();}
   }
-  check('no browser exceptions',errors.length===0);console.log(JSON.stringify({ok:true,checks,pageErrors:errors},null,2));
+  check('no browser exceptions',errors.length===0);const result={ok:true,checks,pageErrors:errors};if(process.env.GAME_LAYOUT_EVIDENCE_DIR)fs.writeFileSync(path.join(process.env.GAME_LAYOUT_EVIDENCE_DIR,'results.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));
  }catch(error){console.error(error);process.exitCode=1;}finally{await browser?.close();}
 })();
