@@ -16,11 +16,11 @@ function createHandler({authModule=auth,analysisModule=analysis}={}){return asyn
    result=await analysisModule.check(req.query.reportId);
   }else{
    const body=req.body;if(!body||typeof body!=='object'||Array.isArray(body)||Buffer.byteLength(JSON.stringify(body))>4096)throw new analysis.AnalysisError('INVALID_REPORT_REQUEST',400,false);
-   if(Object.keys(body).length===1&&typeof body.reportId==='string')result=await analysisModule.continueReport(body.reportId,actor,{signal:controller.signal});
+   if(Object.keys(body).length===1&&typeof body.reportId==='string')result=await analysisModule.continueReport(body.reportId,actor,{signal:controller.signal,background:true});
    else{
     if(Object.keys(body).some(key=>key!=='filters')||!body.filters||typeof body.filters!=='object'||Array.isArray(body.filters))throw new analysis.AnalysisError('INVALID_REPORT_REQUEST',400,false);
     if(Object.keys(body.filters).some(key=>!['grade','poemId','cls','from','to','activity','attempt'].includes(key)))throw new analysis.AnalysisError('INVALID_REPORT_FILTERS',400,false);
-    result=await analysisModule.generate(req,requireTeacherScope(normalizeFilters(body.filters)),actor,{signal:controller.signal});
+    result=await analysisModule.generate(req,requireTeacherScope(normalizeFilters(body.filters)),actor,{signal:controller.signal,background:true});
    }
   }
   if(result.status==='generating'){res.setHeader('Retry-After',String(result.retryAfterSeconds));return res.status(202).json(result);}

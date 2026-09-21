@@ -57,7 +57,7 @@ export function mountMountain(holder,options={}){
   const aborted=new Promise((_,reject)=>{stopWaiting=()=>reject(new DOMException('Aborted','AbortError'));request.signal.addEventListener('abort',stopWaiting,{once:true});});
   try{
    const loading=(async()=>{
-    const {createMountainViewer}=await import('./mountain-viewer.mjs?v=20260921-school6');
+    const {createMountainViewer}=await import('./mountain-viewer.mjs?v=20260921-school7');
     if(dead||version!==loadGeneration||request.signal.aborted)throw new DOMException('Aborted','AbortError');
     const viewer=await createMountainViewer(f.q('[data-mountain-model]'),{signal:request.signal,angle,onContextLost:()=>{if(dead)return;research.error('model','unsupported');model?.destroy();model=null;modelReady=false;f.root.dataset.model='error';f.q('[data-mountain-loading]').hidden=false;f.q('[data-mountain-loading]').textContent='山景暫時停住了，重新打開就能繼續。';f.q('[data-vg-retry]').hidden=false;update();}});
     if(dead||version!==loadGeneration||request.signal.aborted){viewer.destroy();throw new DOMException('Aborted','AbortError');}

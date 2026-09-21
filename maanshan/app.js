@@ -1,24 +1,25 @@
 import {imageAsset} from './media-images.mjs?v=20260920-art2';
-import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260921-school6';
-import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260921-school6';
+import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260921-school7';
+import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260921-school7';
 import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
 import {getWordAudioURL} from './word-audio.mjs?v=20260921natural1';
 import {getSpeechAudioURL} from './speech-audio.mjs?v=20260921natural1';
-import {mountShishi} from './shishi.mjs?v=20260921-school6';
-import {mountLibraryShishi} from './library-shishi.mjs?v=20260921-school6';
-import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school6';
-import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school6';
+import {schoolTtsURL} from './school-audio-url.mjs?v=20260921-network1';
+import {mountShishi} from './shishi.mjs?v=20260921-school7';
+import {mountLibraryShishi} from './library-shishi.mjs?v=20260921-school7';
+import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school7';
+import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school7';
 import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
-import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school6';
+import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school7';
 import {challengeSummary} from './challenge-state.mjs?v=20260919d';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260920-school1';
-import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260921-school6';
-import {createRecordingLibrary} from './recording-library.mjs?v=20260921-school6';
-import {requestJSON, requestChat} from './network.mjs?v=20260921-school6';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260921-school6';
-import {schoolSession} from './bootstrap.mjs?v=20260921-school6';
-import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school6';
-import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school6';
+import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260921-school7';
+import {createRecordingLibrary} from './recording-library.mjs?v=20260921-school7';
+import {requestJSON, requestChat} from './network.mjs?v=20260921-school7';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260921-school7';
+import {schoolSession} from './bootstrap.mjs?v=20260921-school7';
+import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school7';
+import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school7';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -218,8 +219,7 @@ async function speechSource(text,{markup=null}={}) {
       const type=response.headers.get('content-type')||'';
       if(type.startsWith('application/json')){
         const result=await response.json();
-        if(typeof result.url!=='string'||!result.url.startsWith('/api/tts/?'))throw new Error('TTS URL');
-        source=result.url;
+        source=schoolTtsURL(result.url);
       }else if(type.startsWith('audio/')){
         source=await response.blob();
         if(!source.size)throw new Error('empty audio');
@@ -371,7 +371,7 @@ function renderWorkspace() {
   document.title=view==='quiz'?'練習小遊戲 · 馬鞍山靈糧小學':`${titleOf(poem)} · ${name} · AIDUCATION`;
   const activityOrder=['record','animation','explore','quiz','chat','report'];
   const activities=NAV.filter(([id])=>activityOrder.includes(id)&&(id!=='explore'||poem.grade>=4)).sort((a,b)=>activityOrder.indexOf(a[0])-activityOrder.indexOf(b[0]));
-  app.innerHTML='<div class="workspace lesson-shell poem-color-'+poem.id+' view-'+view+'"><div class="lesson-bar"><a class="back-library" href="'+(view==='lesson'?'#':link('lesson'))+'">'+icon('arrow-left')+'<span>'+(view==='lesson'?'選詩':'路線')+'</span></a><div class="lesson-title">'+(view==='quiz'?'':'<img class="lesson-portrait" src="'+asset('avatar.webp')+'" width="48" height="48" alt="'+esc(poem.author)+'">')+'<div class="lesson-heading"><h1>'+(view==='quiz'?'練習小遊戲':esc(titleOf(poem)))+'</h1><p>'+(view==='quiz'?['','一','二','三','四','五','六'][poem.grade]+'年級':(view==='record'?esc(poem.author):esc(poem.dynasty)+' · '+esc(poem.author)))+'</p></div></div><div class="lesson-tools">'+teacherEntry()+'<details class="lesson-menu"><summary title="切換學習欄目" aria-label="切換學習欄目">'+icon('ellipsis')+'<span>更多</span></summary><nav class="menu-panel" aria-label="切換學習欄目">'+activities.map(([id,symbol,label])=>'<a href="'+link(id)+'" '+(view===id?'aria-current="page"':'')+'>'+icon(symbol)+'<span>'+label+'</span></a>').join('')+'</nav></details></div></div>'+lessonTabs()+'<main class="study-main" id="main"><section id="view" class="view-section '+(showPinyin?'':'hide-pinyin')+'"></section></main></div>';
+  app.innerHTML='<div class="workspace lesson-shell poem-color-'+poem.id+' view-'+view+'"><div class="lesson-bar"><a class="back-library" href="'+(view==='lesson'?'#':link('lesson'))+'">'+icon('arrow-left')+'<span>'+(view==='lesson'?'選詩':'返回')+'</span></a><div class="lesson-title">'+(view==='quiz'?'':'<img class="lesson-portrait" src="'+asset('avatar.webp')+'" width="48" height="48" alt="'+esc(poem.author)+'">')+'<div class="lesson-heading"><h1>'+(view==='quiz'?'練習小遊戲':esc(titleOf(poem)))+'</h1><p>'+(view==='quiz'?['','一','二','三','四','五','六'][poem.grade]+'年級':(view==='record'?esc(poem.author):esc(poem.dynasty)+' · '+esc(poem.author)))+'</p></div></div><div class="lesson-tools">'+teacherEntry()+'<details class="lesson-menu"><summary title="切換學習欄目" aria-label="切換學習欄目">'+icon('ellipsis')+'<span>更多</span></summary><nav class="menu-panel" aria-label="切換學習欄目">'+activities.map(([id,symbol,label])=>'<a href="'+link(id)+'" '+(view===id?'aria-current="page"':'')+'>'+icon(symbol)+'<span>'+label+'</span></a>').join('')+'</nav></details></div></div>'+lessonTabs()+'<main class="study-main" id="main"><section id="view" class="view-section '+(showPinyin?'':'hide-pinyin')+'"></section></main></div>';
   renderView();attachShishi();icons();
 }
 function lessonTabs(){
@@ -687,7 +687,7 @@ function renderReport() {
       if(!lineResult)return '';
       const columns=Math.min(7,lineResult.words.length>7?Math.ceil(lineResult.words.length/2):lineResult.words.length||1);
       return '<div class="report-line" data-line="'+i+'"><div class="report-sentence" role="group" aria-label="'+esc(poem.lines[i].text)+'"><span class="word-grid" data-columns="'+columns+'" style="--report-columns:'+columns+'">'+lineResult.words.map(w=>'<span class="word-result '+esc(w.status)+'"><ruby>'+esc(w.c)+'<rt>'+esc(w.p)+'</rt></ruby><strong>'+(w.score??'未測')+'</strong></span>').join('')+'</span></div><div class="report-line-actions"><button type="button" class="button" data-action="report-line-tts" data-value="'+i+'" aria-pressed="false">'+icon('volume-2')+'聽原句</button><button type="button" class="button" data-action="replay" data-value="'+i+'" '+(recordings.has(poem.id+'-'+i)?'':'disabled title="這次重新朗讀後，就可以回聽錄音。"')+'>'+icon('headphones')+'聽自己讀</button><a class="button report-reread" href="'+link('record')+'" data-action="record-target" data-value="'+i+'">'+icon('mic')+'再讀這一句</a></div></div>';
-    }).join('')+'</section>';
+    }).join('')+'</section><div class="report-next"><a class="button primary report-animation-next" href="'+link('animation')+'">'+icon('clapperboard')+'<span>去看動畫</span>'+icon('arrow-right')+'</a></div>';
   if(!s.reading[reportLine])reportLine=s.reading.findIndex(Boolean);
   updateScoreLine();icons();
 }
@@ -748,7 +748,7 @@ async function loadActivity(name,load) {
 }
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260921-school6'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260921-school7'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
@@ -760,7 +760,7 @@ async function renderQuiz() {
     recognize:(ink,context)=>api('/api/handwriting',{ink,poemId:poem.id,...(collectResearch?{researchContext:research.context(context)}:{})},16000)});
 }
 async function renderExploration(){
-  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260921-school6'));
+  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260921-school7'));
   if(!module)return;
   const holder=$('#view');
   if(!holder||!poem)return;

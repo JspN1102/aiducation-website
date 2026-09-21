@@ -161,15 +161,28 @@ function createAuth({ env = process.env, store: suppliedStore, now = Date.now, r
   const store = () => suppliedStore || getStore(env);
   const config = () => {
     if (typeof env.SCHOOL_AUTH_SECRET !== 'string' || env.SCHOOL_AUTH_SECRET.length < 32) fail(503, 'AUTH_UNAVAILABLE');
-    let origin; try { origin = new URL(env.SCHOOL_AUTH_ORIGIN); } catch { fail(503, 'AUTH_UNAVAILABLE'); }
-    if (origin.protocol !== 'https:' || origin.origin !== env.SCHOOL_AUTH_ORIGIN) fail(503, 'AUTH_UNAVAILABLE');
-    return origin.origin;
+    const exactOrigin = value => {
+      if (typeof value !== 'string' || value.includes('*')) fail(503, 'AUTH_UNAVAILABLE');
+      let url; try { url = new URL(value); } catch { fail(503, 'AUTH_UNAVAILABLE'); }
+      if (url.protocol !== 'https:' || url.origin !== value || url.username || url.password) fail(503, 'AUTH_UNAVAILABLE');
+      return url.origin;
+    };
+    const primary = exactOrigin(env.SCHOOL_AUTH_ORIGIN);
+    // Explicit JSON origins only. A typo must not silently widen or partly enable access.
+    const raw = env.SCHOOL_AUTH_ADDITIONAL_ORIGINS;
+    let additional = [];
+    if (raw !== undefined && raw !== '') {
+      if (typeof raw !== 'string' || raw.length > 2048) fail(503, 'AUTH_UNAVAILABLE');
+      try { additional = JSON.parse(raw); } catch { fail(503, 'AUTH_UNAVAILABLE'); }
+      if (!Array.isArray(additional) || additional.length > 8) fail(503, 'AUTH_UNAVAILABLE');
+    }
+    return new Set([primary, ...additional.map(exactOrigin)]);
   };
   const digest = value => crypto.createHmac('sha256', env.SCHOOL_AUTH_SECRET).update(value).digest('hex');
   const token = () => randomBytes(32).toString('base64url');
   const checkOrigin = req => {
     const expected = config();
-    if (req.headers?.origin !== expected || req.headers?.['sec-fetch-site'] === 'cross-site') fail(403, 'ORIGIN_REJECTED');
+    if (!expected.has(req.headers?.origin) || req.headers?.['sec-fetch-site'] === 'cross-site') fail(403, 'ORIGIN_REJECTED');
   };
   async function directory(fresh = false) {
     config();

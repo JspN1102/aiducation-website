@@ -4,6 +4,24 @@ const research=require('./research-store.cjs');
 const NS='maanshan-teacher-analysis-v1',PROMPT_VERSION='teacher-analysis-v16-prevalence-safe';
 const MAX_RECORD_BYTES=12*1024*1024,MAX_PROVIDER_BYTES=160*1024,MAX_RESPONSE_BYTES=128*1024;
 const LEASE_MS=120000,PROVIDER_TIMEOUT_MS=42000;
+const BACKGROUND_TIMEOUT_MS=180000,BACKGROUND_LEASE_MS=BACKGROUND_TIMEOUT_MS+30000;
+const backgroundServices=new Set();let backgroundActive=0,backgroundScanning=false,backgroundTimer=null;
+function wakeBackgroundWorker(){
+ if(!backgroundTimer||backgroundScanning||backgroundActive>=2)return;
+ backgroundScanning=true;
+ void (async()=>{try{for(const service of backgroundServices){
+  if(backgroundActive>=2)break;
+  const task=await service.claimPending().catch(()=>null);if(!task)continue;
+  backgroundActive++;
+  void task().catch(()=>{}).finally(()=>{backgroundActive--;wakeBackgroundWorker();});
+ }}finally{backgroundScanning=false;}})();
+}
+function startBackgroundWorker(){
+ if(backgroundTimer)return()=>{};
+ service(); // Register the formal namespace; demo registers its own service.
+ backgroundTimer=setInterval(wakeBackgroundWorker,3000);backgroundTimer.unref?.();wakeBackgroundWorker();
+ return()=>{clearInterval(backgroundTimer);backgroundTimer=null;};
+}
 const SCHEMA=`CREATE TABLE IF NOT EXISTS teacher_analysis_records (
  key text PRIMARY KEY, value jsonb NOT NULL, version bigint NOT NULL DEFAULT 1,
  updated_at timestamptz NOT NULL DEFAULT clock_timestamp()
@@ -37,6 +55,7 @@ function createBlobStore(client=blob,namespace=NS){if(![NS,NS+'-demo'].includes(
  }
 };}
 function createPostgresStore(db,prefix=''){if(!['','demo/'].includes(prefix))throw new Error('Invalid report prefix');return {
+ async pending(at){return (await db.query("SELECT key,value,version::text FROM teacher_analysis_records WHERE key LIKE $1 AND value->>'status'='pending' AND value->>'background'='true' AND COALESCE((value->>'leaseUntil')::bigint,0)<=$2 AND COALESCE((value->>'retryAt')::bigint,0)<=$2 ORDER BY updated_at ASC LIMIT 1",[prefix+'report/%',at])).rows.map(row=>({...row,key:row.key.slice(prefix.length)}));},
  async get(key){if(!keyValid(key))fail('INVALID_REPORT_KEY',400,false);const row=(await db.query('SELECT value,version::text FROM teacher_analysis_records WHERE key=$1',[prefix+key])).rows[0];return row?{value:row.value,version:row.version}:null;},
  async cas(key,value,version){if(!keyValid(key))fail('INVALID_REPORT_KEY',400,false);const body=bytes(value);
   const result=version===null||version===undefined?await db.query('INSERT INTO teacher_analysis_records(key,value) VALUES($1,$2::jsonb) ON CONFLICT(key) DO NOTHING RETURNING version',[prefix+key,body]):await db.query('UPDATE teacher_analysis_records SET value=$2::jsonb,version=version+1,updated_at=clock_timestamp() WHERE key=$1 AND version=$3 RETURNING version',[prefix+key,body,version]);
@@ -229,13 +248,13 @@ function completeEvidenceReferences(analysis,facts){
  }
  return analysis;
 }
-async function requestAnalysis(payload,config,{fetchImpl=globalThis.fetch,signal,revision}={}){
- const timeout=AbortSignal.timeout(PROVIDER_TIMEOUT_MS),combined=signal?AbortSignal.any([signal,timeout]):timeout;
+async function requestAnalysis(payload,config,{fetchImpl=globalThis.fetch,signal,revision,timeoutMs=PROVIDER_TIMEOUT_MS}={}){
+ const timeout=AbortSignal.timeout(timeoutMs),combined=signal?AbortSignal.any([signal,timeout]):timeout;
  const facts=reportEvidence(payload),{interpretationRules,sync,...providerPayload}=payload;
  providerPayload.evidence=facts;
  providerPayload.teachingConstraints=(payload.teachingConstraints||[]).map(({grade,poem,writing})=>({grade,poem,writing:{maxCharactersAcrossWholeReport:writing.maxCharactersAcrossWholeReport,allowedCharacters:writing.allowedCharacters}}));
  const messages=[{role:'system',content:SYSTEM_PROMPT},{role:'user',content:canonical(providerPayload)}];
- if(revision)messages.push({role:'assistant',content:canonical(revision.analysis)},{role:'user',content:'請對上一份報告作最小必要修正，保留正確的分析、結構、篇幅與段落，不從零重寫。逐項糾正以下實際問題，相關句子也一併改正；不增加免責段落或解說內部規則。覆核若要求刪除某整句，直接刪除，不再改寫或補算，保留相鄰的正確敘述。分組敘事只沿用teachingGroups這一對；第三項只寫全班實際跟進人數及教法，刪除第二對的交集與「全體X人中僅Y人」敘述。總缺測人數以全班為範圍，不能放入「已有紀錄的X人中」的子集。無紀錄不寫成缺席或未參與；現有遊戲只按實際題目練習，不宣稱題庫含指定字音。輸出修正後的完整JSON，evidenceIds沿用真實依據。覆核問題：'+canonical(revision.issues)});
+ if(revision)messages.push({role:'assistant',content:canonical(revision.analysis)},{role:'user',content:'請對上一份報告作最小必要修正，保留正確的分析、結構、篇幅與段落，不從零重寫。逐項糾正以下實際問題，相關句子也一併改正；不增加免責段落或解說內部規則。每項問題的path指出確切欄位；若指向title，必須修改該小標題，不能只改正文。標題也不可把不同題型均分排名，改成具體教學重心，例如「先跟讀原句，再鞏固聽辨」。覆核若要求刪除某整句，直接刪除，不再改寫或補算，保留相鄰的正確敘述。分組敘事只沿用teachingGroups這一對；第三項只寫全班實際跟進人數及教法，刪除第二對的交集與「全體X人中僅Y人」敘述。總缺測人數以全班為範圍，不能放入「已有紀錄的X人中」的子集。無紀錄不寫成缺席或未參與；現有遊戲只按實際題目練習，不宣稱題庫含指定字音。輸出修正後的完整JSON，evidenceIds沿用真實依據。覆核問題：'+canonical(revision.issues)});
  let response;
  try{response=await fetchImpl(config.url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+config.key},body:JSON.stringify({model:config.model,messages,temperature:0.3,max_tokens:6500,thinking:{type:'disabled'},response_format:{type:'json_object'} }),signal:combined});}
  catch(error){if(signal?.aborted)fail('ANALYSIS_INTERRUPTED',499,true,5);if(timeout.aborted||['TimeoutError','AbortError'].includes(error?.name))fail('AI_TIMEOUT',504,true,30);fail('AI_UNAVAILABLE',502,true,30);}
@@ -268,6 +287,7 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
  async function save(key,value,version){try{return await storage().cas(key,value,version);}catch(error){if(error instanceof AnalysisError)throw error;fail('REPORT_STORAGE_UNAVAILABLE');}}
  function status(record,reportId){
   if(record?.value?.status==='completed'){const report=record.value.report;if(report?.reportId!==reportId||report.schemaVersion!==1||hash(canonical(report))!==record.value.reportChecksum)fail('REPORT_STORAGE_UNAVAILABLE');return {ok:true,reportId,cached:true,report:publicReport(report)};}
+  if(record?.value?.status==='pending'&&record.value.background){wakeBackgroundWorker();return {ok:true,status:'generating',reportId,retryAfterSeconds:3};}
   if(record?.value?.status==='pending'&&record.value.stage==='revision_ready')return {ok:true,status:'generating',reportId,nextAction:'continue',retryAfterSeconds:1};
   if(record?.value?.status==='pending'&&record.value.leaseUntil>now())return {ok:true,status:'generating',reportId,retryAfterSeconds:3};
   if(record?.value?.status==='failed'&&record.value.retryAt>now())throw new AnalysisError(record.value.code,record.value.httpStatus,record.value.retryable,Math.max(1,Math.ceil((record.value.retryAt-now())/1000)));
@@ -281,24 +301,33 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
    if(await save(key,{windowStart,count:count+1},prior?.version))return;
   }fail('ANALYSIS_BUSY',429,true,5);
  }
- async function generate(req,filters,actor,{signal}={}){
+ async function generate(req,filters,actor,{signal,background=false}={}){
   if(actor?.role!=='teacher'||typeof actor.id!=='string')fail('TEACHER_REQUIRED',403,false);
   const config=modelConfig(env),dataset=await load(req,filters),payload=aggregateEvidence(dataset);
   if(!safeCount(dataset.analytics?.coverage?.nEvents??dataset.analytics?.summary?.nEvents))fail('NO_LEARNING_DATA',422,false);
   if(typeof dataset.snapshotId!=='string'||!dataset.snapshotId.length)fail('REPORT_STORAGE_UNAVAILABLE');
   const dataFingerprint=hash(canonical({snapshotId:dataset.snapshotId,payload})),reportId='ta_'+hash(canonical({dataFingerprint,model:config.model,provider:config.url,promptVersion:PROMPT_VERSION})),key=reportKey(reportId);
   let record=await read(key);
-  if(record?.value?.status==='completed'||record?.value?.status==='pending'&&(record.value.leaseUntil>now()||record.value.stage==='revision_ready')||record?.value?.status==='failed'&&record.value.retryAt>now())return status(record,reportId);
+  if(record?.value?.status==='completed'||record?.value?.status==='pending'&&(record.value.background||record.value.leaseUntil>now()||record.value.stage==='revision_ready')||record?.value?.status==='failed'&&record.value.retryAt>now())return status(record,reportId);
   const leaseId=uuid(),startedAt=new Date(now()).toISOString(),lease={schemaVersion:1,status:'pending',leaseId,leaseUntil:now()+LEASE_MS,startedAt};
   // Prepare and bound the complete document snapshot before any paid request.
   bytes({dataset,payload});const followUp=follow(dataset);
+  if(background&&supportsBackground()){
+   const task={dataset,payload,followUp,dataFingerprint,actorId:actor.id,promptVersion:PROMPT_VERSION,model:config.model,provider:config.url};
+   if(!await save(key,{schemaVersion:1,status:'pending',stage:'queued',background:true,leaseUntil:0,task,taskChecksum:hash(canonical(task)),attempts:0},record?.version))return status(await read(key),reportId);
+   wakeBackgroundWorker();return {ok:true,status:'generating',reportId,retryAfterSeconds:3};
+  }
   if(!await save(key,lease,record?.version)){
    record=await read(key);if(!record)fail('REPORT_STORAGE_UNAVAILABLE');return status(record,reportId);
   }
   record=await read(key);if(record?.value?.leaseId!==leaseId)return status(record,reportId);
+  return runInitial({dataset,payload,followUp,dataFingerprint,actorId:actor.id},config,reportId,leaseId,{signal});
+ }
+ async function runInitial(task,config,reportId,leaseId,{signal,background=false}={}){
+  const {dataset,payload,followUp,dataFingerprint,actorId}=task,key=reportKey(reportId);
   try{
-   await quota(actor.id);
-   const generated=await requestAnalysis(payload,config,{fetchImpl,signal});
+   await quota(actorId);
+   const generated=await requestAnalysis(payload,config,{fetchImpl,signal,timeoutMs:background?BACKGROUND_TIMEOUT_MS:PROVIDER_TIMEOUT_MS});
    const f=dataset.filters;
    generated.analysis.title=`${f.grade?f.grade+'年級'+(f.cls?f.cls+'班':''):f.cls?'全校'+f.cls+'班':'全校'}普通話教研報告`;
    const report={schemaVersion:1,reportId,createdAt:new Date(now()).toISOString(),model:config.model,responseModel:generated.responseModel,syntaxRepaired:generated.syntaxRepaired,promptVersion:PROMPT_VERSION,filters:dataset.filters,dataFingerprint,snapshotId:dataset.snapshotId,
@@ -306,46 +335,96 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
    const current=await read(key);if(current?.value?.leaseId!==leaseId)fail('ANALYSIS_RETRY_REQUIRED',409,true);
    const issues=require('./teacher-report-quality.cjs').inspectAnalysis(report.analysis,payload);
    if(issues.length){
-    if(!await save(key,{schemaVersion:1,status:'pending',stage:'revision_ready',leaseUntil:0,draftReport:report,draftChecksum:hash(canonical(report)),issues},current.version))fail('REPORT_STORAGE_UNAVAILABLE');
-    return {ok:true,status:'generating',reportId,nextAction:'continue',retryAfterSeconds:1};
+    if(!await save(key,{schemaVersion:1,status:'pending',stage:'revision_ready',leaseUntil:0,draftReport:report,draftChecksum:hash(canonical(report)),issues,...background?{background:true,attempts:0,revisions:0}:{}},current.version))fail('REPORT_STORAGE_UNAVAILABLE');
+    if(background)wakeBackgroundWorker();
+    return {ok:true,status:'generating',reportId,...background?{}:{nextAction:'continue'},retryAfterSeconds:1};
    }
    report.qualityReview={passed:true,revisions:0};
    if(!await save(key,{schemaVersion:1,status:'completed',report,reportChecksum:hash(canonical(report))},current.version))fail('REPORT_STORAGE_UNAVAILABLE');
    return {ok:true,reportId,cached:false,report:publicReport(report)};
   }catch(error){
-   const safe=error instanceof AnalysisError?error:new AnalysisError('REPORT_STORAGE_UNAVAILABLE');
-   const current=await read(key).catch(()=>null);
-   if(current?.value?.leaseId===leaseId)await save(key,{schemaVersion:1,status:'failed',promptVersion:PROMPT_VERSION,code:safe.code,httpStatus:safe.status,retryable:safe.retryable,retryAt:now()+1000*(safe.retryAfterSeconds||30),failedAt:new Date(now()).toISOString()},current.version).catch(()=>{});
-   throw safe;
+   return recordFailure(error,key,leaseId,{background,retryStage:'queued'});
   }
  }
- async function continueReport(reportId,actor,{signal}={}){
+ async function continueReport(reportId,actor,{signal,background=false}={}){
   if(actor?.role!=='teacher'||typeof actor.id!=='string')fail('TEACHER_REQUIRED',403,false);
   const key=reportKey(reportId),prior=await read(key);if(!prior)fail('REPORT_NOT_FOUND',404,false);
+  if(prior.value.background)return status(prior,reportId);
   if(prior.value.status!=='pending'||prior.value.stage!=='revision_ready')return status(prior,reportId);
   const report=prior.value.draftReport,config=modelConfig(env);
   if(!report||report.reportId!==reportId||hash(canonical(report))!==prior.value.draftChecksum||report.model!==config.model||report.promptVersion!==PROMPT_VERSION)fail('REPORT_STORAGE_UNAVAILABLE');
+  if(background&&supportsBackground()){
+   if(!await save(key,{...prior.value,background:true,attempts:0,revisions:0},prior.version))return status(await read(key),reportId);
+   wakeBackgroundWorker();return {ok:true,status:'generating',reportId,retryAfterSeconds:3};
+  }
   const leaseId=uuid();
   if(!await save(key,{schemaVersion:1,status:'pending',stage:'revising',leaseId,leaseUntil:now()+LEASE_MS},prior.version))return status(await read(key),reportId);
+  return runRevision(report,prior.value.issues,config,reportId,leaseId,{signal});
+ }
+ async function runRevision(report,issuesToFix,config,reportId,leaseId,{signal,background=false,revisions=0}={}){
+  const key=reportKey(reportId);
   try{
-   const payload=aggregateEvidence(report.dataset),generated=await requestAnalysis(payload,config,{fetchImpl,signal,revision:{analysis:report.analysis,issues:prior.value.issues}});
+   const payload=aggregateEvidence(report.dataset),generated=await requestAnalysis(payload,config,{fetchImpl,signal,timeoutMs:background?BACKGROUND_TIMEOUT_MS:PROVIDER_TIMEOUT_MS,revision:{analysis:report.analysis,issues:issuesToFix}});
    const issues=require('./teacher-report-quality.cjs').inspectAnalysis(generated.analysis,payload);
-   if(issues.length){const error=new AnalysisError('AI_REPORT_QUALITY',502,true,30);error.qualityIssues=issues.map(({code,path})=>({code,path}));throw error;}
    generated.analysis.title=report.analysis.title;
    report.analysis=generated.analysis;report.createdAt=new Date(now()).toISOString();report.responseModel=generated.responseModel;report.syntaxRepaired=report.syntaxRepaired||generated.syntaxRepaired;
-   report.usage={inputTokens:report.usage.inputTokens+generated.usage.inputTokens,outputTokens:report.usage.outputTokens+generated.usage.outputTokens};report.qualityReview={passed:true,revisions:1};
+   report.usage={inputTokens:report.usage.inputTokens+generated.usage.inputTokens,outputTokens:report.usage.outputTokens+generated.usage.outputTokens};
    const current=await read(key);if(current?.value?.leaseId!==leaseId)fail('ANALYSIS_RETRY_REQUIRED',409,true);
+   if(issues.length){
+    if(background&&revisions<1){
+     if(!await save(key,{schemaVersion:1,status:'pending',stage:'revision_ready',leaseUntil:0,background:true,attempts:0,revisions:revisions+1,draftReport:report,draftChecksum:hash(canonical(report)),issues},current.version))fail('REPORT_STORAGE_UNAVAILABLE');
+     wakeBackgroundWorker();return {ok:true,status:'generating',reportId,retryAfterSeconds:3};
+    }
+    const error=new AnalysisError('AI_REPORT_QUALITY',502,true,30);error.qualityIssues=issues.map(({code,path})=>({code,path}));throw error;
+   }
+   report.qualityReview={passed:true,revisions:revisions+1};
    if(!await save(key,{schemaVersion:1,status:'completed',report,reportChecksum:hash(canonical(report))},current.version))fail('REPORT_STORAGE_UNAVAILABLE');
    return {ok:true,reportId,cached:false,report:publicReport(report)};
   }catch(error){
-   const safe=error instanceof AnalysisError?error:new AnalysisError('REPORT_STORAGE_UNAVAILABLE'),current=await read(key).catch(()=>null);
-   if(current?.value?.leaseId===leaseId)await save(key,{schemaVersion:1,status:'failed',promptVersion:PROMPT_VERSION,code:safe.code,httpStatus:safe.status,retryable:safe.retryable,retryAt:now()+1000*(safe.retryAfterSeconds||30),failedAt:new Date(now()).toISOString(),...(safe.qualityIssues?{qualityIssues:safe.qualityIssues}:{})},current.version).catch(()=>{});
-   throw safe;
+   return recordFailure(error,key,leaseId,{background,retryStage:'revision_ready'});
   }
  }
- return {generate,continueReport,check,getReport};
+ async function recordFailure(error,key,leaseId,{background,retryStage}={}){
+  const safe=error instanceof AnalysisError?error:new AnalysisError('REPORT_STORAGE_UNAVAILABLE'),current=await read(key).catch(()=>null);
+  if(current?.value?.leaseId===leaseId){
+   const retry=background&&['AI_TIMEOUT','AI_UNAVAILABLE','AI_RATE_LIMITED','REPORT_STORAGE_UNAVAILABLE'].includes(safe.code)&&safeCount(current.value.attempts)<2;
+   const value=retry?{...current.value,stage:retryStage,leaseId:null,leaseUntil:0,retryAt:now()+1000*(safe.retryAfterSeconds||10)}:{schemaVersion:1,status:'failed',promptVersion:PROMPT_VERSION,code:safe.code,httpStatus:safe.status,retryable:safe.retryable,retryAt:now()+1000*(safe.retryAfterSeconds||30),failedAt:new Date(now()).toISOString(),...(safe.qualityIssues?{qualityIssues:safe.qualityIssues}:{})};
+   await save(key,value,current.version).catch(()=>{});
+   if(retry)return {ok:true,status:'generating',reportId:'ta_'+key.slice(7),retryAfterSeconds:3};
+  }
+  throw safe;
+ }
+ function supportsBackground(){
+  if(store)return typeof store.pending==='function';
+  // Guangzhou selects PostgreSQL through DB_DRIVER; STUDENT_STORE is optional.
+  // An explicit Blob selection still wins, as it does in configuredStore().
+  return env.STUDENT_STORE!=='blob'&&(env.STUDENT_STORE==='postgres'||env.DB_DRIVER==='postgres');
+ }
+ async function claimPending(){
+  if(!supportsBackground())return null;
+  const records=await storage().pending(now()),prior=records?.[0];if(!prior)return null;
+  const {key}=prior,reportId='ta_'+key.slice(7),config=modelConfig(env),leaseId=uuid(),revision=['revision_ready','revising'].includes(prior.value.stage);
+  if(!keyValid(key)||!key.startsWith('report/')||prior.value.status!=='pending'||!prior.value.background||prior.value.leaseUntil>now()||prior.value.retryAt>now())return null;
+  const next={...prior.value,stage:revision?'revising':'generating',leaseId,leaseUntil:now()+BACKGROUND_LEASE_MS,retryAt:0,attempts:safeCount(prior.value.attempts)+1};
+  if(!await save(key,next,prior.version))return null;
+  return async()=>{
+   try{
+    if(revision){
+     const report=next.draftReport;
+     if(!report||report.reportId!==reportId||hash(canonical(report))!==next.draftChecksum||report.model!==config.model||report.promptVersion!==PROMPT_VERSION)fail('REPORT_STORAGE_UNAVAILABLE');
+     return await runRevision(report,next.issues,config,reportId,leaseId,{background:true,revisions:safeCount(next.revisions)});
+    }
+    const task=next.task;
+    if(!task||hash(canonical(task))!==next.taskChecksum||task.promptVersion!==PROMPT_VERSION||task.model!==config.model||task.provider!==config.url)fail('REPORT_STORAGE_UNAVAILABLE');
+    return await runInitial(task,config,reportId,leaseId,{background:true});
+   }catch(error){return recordFailure(error,key,leaseId,{background:true,retryStage:revision?'revision_ready':'queued'});}
+  };
+ }
+ const api={generate,continueReport,check,getReport,claimPending,supportsBackground};
+ if(supportsBackground())backgroundServices.add(api);
+ return api;
 
 }
 let instance;const service=()=>instance||(instance=createService());
-module.exports={NS,SCHEMA,PROMPT_VERSION,LEASE_MS,AnalysisError,createBlobStore,createPostgresStore,modelConfig,aggregateEvidence,validateAnalysis,requestAnalysis,createService,publicReport,
+module.exports={NS,SCHEMA,PROMPT_VERSION,LEASE_MS,BACKGROUND_TIMEOUT_MS,BACKGROUND_LEASE_MS,AnalysisError,createBlobStore,createPostgresStore,modelConfig,aggregateEvidence,validateAnalysis,requestAnalysis,createService,publicReport,startBackgroundWorker,
  generate:(...args)=>service().generate(...args),continueReport:(...args)=>service().continueReport(...args),check:(...args)=>service().check(...args),getReport:(...args)=>service().getReport(...args)};

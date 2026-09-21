@@ -1,4 +1,4 @@
-import {TERMS_VERSION,termsConfirmationMarkup,bindTermsConfirmation} from './platform-terms.mjs?v=20260921-school6';
+import {TERMS_VERSION,termsConfirmationMarkup,bindTermsConfirmation} from './platform-terms.mjs?v=20260921-school7';
 const DEMO=location.pathname.endsWith('/teacher-demo.html');
 const AUTH='/api/school-auth',ANALYTICS=DEMO?'/api/teacher-tools?tool=demo-data&kind=analytics':'/api/teacher-analytics';
 const analyticsQuery=params=>ANALYTICS+(DEMO?'&':'?')+params;
@@ -9,7 +9,8 @@ Object.assign(state,{assistantJob:null,assistantReport:null,documentJob:null,too
 const ASSISTANT='/api/teacher-tools?tool='+(DEMO?'demo-analysis':'analysis'),DOCUMENTS='/api/teacher-tools?tool='+(DEMO?'demo-export':'export');
 const CONSTRUCTS={'reading.pronunciation':'朗讀發音','writing.dictation':'聽寫辨字','sound.recognition':'字音辨認'};
 const pendingRequests=new Set();let sessionEpoch=0,sessionCheck=null;
-const legacyHost=['aiducation.asia','www.aiducation.asia'].includes(location.hostname)||/^aiducation-website(?:-[a-z0-9-]+)?\.vercel\.app$/.test(location.hostname);
+const requiresSchoolAuth=location.hostname==='mandarin.aiducation.asia'||/^\/school(?:\/|$)/.test(location.pathname);
+const legacyHost=!requiresSchoolAuth&&(['aiducation.asia','www.aiducation.asia'].includes(location.hostname)||/^aiducation-website(?:-[a-z0-9-]+)?\.vercel\.app$/.test(location.hostname));
 const sessionChannel=globalThis.BroadcastChannel?new BroadcastChannel('maanshan-school-session'):null;
 function broadcastSession(kind){sessionChannel?.postMessage({kind});}
 const ICONS={overview:'<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',students:'<circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m1-16a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v2"/>',quality:'<path d="M6 3h12v18H6zM9 7h6M9 11h6m-6 4h3"/>',refresh:'<path d="M20 7a8 8 0 1 0 0 10M20 3v5h-5"/>',download:'<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>',empty:'<path d="M4 6h16v14H4zM8 3v6m8-6v6M8 13h8m-8 3h4"/>'};
@@ -37,7 +38,7 @@ async function requestJSON(url,{signal,headers={},timeoutMs=25000,...options}={}
 }
 function clearPrivate(){state.scopeCache.clear();clearTeacherTools();state.exportJob?.controller.abort();state.exportJob=null;state.detailData=null;state.studentsOpen=false;state.studentFilter='all';state.constructFilter='';sessionEpoch++;for(const controller of pendingRequests)controller.abort();pendingRequests.clear();sessionCheck=null;state.request?.abort();state.detailRequest?.abort();state.generation++;state.data=null;state.roster=null;state.rosterError=false;state.auth=null;state.legacyCode='';state.search='';state.page=0;state.detailStudent=null;if(dialog.open)dialog.close();document.querySelector('#student-dialog-content').replaceChildren();const identity=document.querySelector('#teacher-identity');identity.textContent='';identity.hidden=true;document.querySelector('#teacher-logout').hidden=true;document.querySelector('#teacher-change-password')?.remove();}
 function lockSession(){clearPrivate();state.legacy=false;renderLogin('帳戶已登出或在另一個分頁切換，請重新登入。');}
-function validateAuth(auth){if(typeof auth.enabled!=='boolean'||location.hostname==='mandarin.aiducation.asia'&&!auth.enabled||auth.authenticated&&(!auth.user?.id||!['student','teacher'].includes(auth.user.role)||typeof auth.csrfToken!=='string'||!auth.csrfToken))throw new Error('帳戶服務回覆不完整');return auth;}
+function validateAuth(auth){if(typeof auth.enabled!=='boolean'||requiresSchoolAuth&&!auth.enabled||auth.authenticated&&(!auth.user?.id||!['student','teacher'].includes(auth.user.role)||typeof auth.csrfToken!=='string'||!auth.csrfToken))throw new Error('帳戶服務回覆不完整');return auth;}
 async function checkSession(){
  if(state.legacy||!state.auth||sessionCheck)return sessionCheck;
  const epoch=sessionEpoch,previous=state.auth;
@@ -276,10 +277,11 @@ function renderDocumentStatus(){
 function renderAssistant(){
  const host=document.querySelector('#teacher-analysis');if(!host)return;const job=state.assistantJob;
  if(job?.status==='running'){host.innerHTML=`<section class="analysis-loading" role="status"><span class="loader" aria-hidden="true"></span><div><h2>正在撰寫 Word 報告</h2><p>${esc(job.scope)}</p><p>${job.polling?'報告仍在處理，完成後會自動下載。':'正在整理學習紀錄與教學建議，請稍候。'}</p></div><button class="button" data-teacher-tool="cancel-analysis">停止等候</button></section>`;return;}
- if(job&&['error','empty','cancelled'].includes(job.status)){host.innerHTML=`<section class="analysis-message" role="status"><h2>${job.status==='empty'?'這個範圍還沒有可分析的學習紀錄':job.status==='cancelled'?'已停止等候':'Word 報告暫未完成'}</h2><p>${esc(job.message)}</p><p class="helper">${esc(job.scope)}</p><button class="button primary" data-teacher-tool="docx">${job.status==='empty'?'重新檢查資料':'再試一次'}</button></section>`;return;}
+ if(job&&['error','empty','cancelled','waiting'].includes(job.status)){host.innerHTML=`<section class="analysis-message" role="status"><h2>${job.status==='empty'?'這個範圍還沒有可分析的學習紀錄':job.status==='cancelled'?'已停止等候':job.status==='waiting'?'報告仍在背景整理':'Word 報告暫未完成'}</h2><p>${esc(job.message)}</p><p class="helper">${esc(job.scope)}</p><button class="button primary" data-teacher-tool="docx">${job.status==='empty'?'重新檢查資料':job.status==='waiting'?'取回報告':'再試一次'}</button></section>`;return;}
  host.replaceChildren();
 }
 function toolErrorMessage(error,kind='analysis'){
+ if(error.code==='REPORT_STILL_PROCESSING')return '報告仍在背景整理，稍後再次按下按鈕即可取回。';
  const messages={AI_REPORT_QUALITY:'報告內容仍需修訂，尚未產生下載檔案。請稍後再試。',ANALYSIS_RETRY_REQUIRED:'上一個分析請求未完成，請按再試一次繼續處理。',NO_LEARNING_DATA:'可以調整班級或日期，或等學生完成練習並同步後再分析。',AI_RATE_LIMITED:'剛才的分析請求較多，請稍候再試。',AI_TIMEOUT:'分析需要較長時間，請再試一次；已完成的結果會直接取回。',AI_NOT_CONFIGURED:'教學分析服務尚未設定，請聯絡平台管理員。',REPORT_STORAGE_UNAVAILABLE:'報告儲存暫時未能連線，請稍後重試。',AI_INVALID_RESPONSE:'分析回覆未通過檢查，請重新分析。',AI_UNAVAILABLE:'分析服務暫時未能連線，請稍後再試。',REPORT_NOT_FOUND:'這份報告未能取回，請按再試一次重新產生。',REPORT_SNAPSHOT_INVALID:'這份報告資料未能核對，請按再試一次重新產生。',EXPORT_TOO_LARGE:'資料較多，請選一個班別或縮短日期範圍再匯出。',NARROW_DATE_OR_CLASS_FILTER:'資料較多，請選一個班別或縮短日期範圍。',EXPORT_TIMEOUT:'檔案準備需要較長時間，請縮短日期範圍或稍後重試。',INVALID_FILTER:'請核對年級、班別與日期；每次最多 31 天。',ANALYTICS_PENDING_SYNC:'學習資料尚在準備首次同步，請稍後再試。',RESEARCH_DISABLED:'學習紀錄服務尚未啟用，請聯絡平台管理員。'};
  return messages[error.code]||(error.name==='AbortError'?'連線等候時間較長，請稍後再試。':kind==='analysis'?'暫時未能取得完整分析，請再試一次。':'檔案未完整取得，沒有下載部分檔案。請再試一次。');
 }
@@ -295,20 +297,28 @@ function sleepForAnalysis(milliseconds,signal){return new Promise((resolve,rejec
 function cancelAnalysis(){const job=state.assistantJob;if(!job||job.status!=='running')return;job.controller.abort();job.status='cancelled';job.message='已停止這個畫面的等候。伺服器可能仍在完成分析，稍後再試會取回已保存的結果。';state.assistantReport=null;renderTeacherTools();}
 async function generateAnalysis(){
  if(state.assistantJob?.status==='running'||state.documentJob?.status==='running')return;const filters=await prepareToolScope();if(!filters)return;
- const epoch=sessionEpoch,key=filterKey(filters),job={status:'running',controller:new AbortController(),scope:filterDescription(filters),polling:false,cached:false};state.assistantJob=job;state.assistantReport=null;state.documentJob=null;renderTeacherTools();
+ const epoch=sessionEpoch,key=filterKey(filters),previous=state.assistantJob,resumeReportId=previous?.status==='waiting'&&previous.filterKey===key?previous.reportId:null;
+ const job={status:'running',controller:new AbortController(),scope:filterDescription(filters),filterKey:key,reportId:resumeReportId,polling:false,cached:false};state.assistantJob=job;state.assistantReport=null;state.documentJob=null;renderTeacherTools();
  const current=()=>epoch===sessionEpoch&&state.assistantJob===job&&job.status==='running'&&filterKey(state.filters)===key&&filterKey(draftFilters())===key&&!job.controller.signal.aborted;
  try{
-  let payload=await requestJSON(ASSISTANT,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':state.auth.csrfToken},body:JSON.stringify({filters:toolPayloadFilters(filters)}),signal:job.controller.signal,timeoutMs:65000});
-  const deadline=Date.now()+120000;
+  let payload=resumeReportId?await requestJSON(ASSISTANT+'&'+new URLSearchParams({reportId:resumeReportId}),{signal:job.controller.signal,timeoutMs:25000}):await requestJSON(ASSISTANT,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':state.auth.csrfToken},body:JSON.stringify({filters:toolPayloadFilters(filters)}),signal:job.controller.signal,timeoutMs:65000});
+  const deadline=Date.now()+900000;let transientPollFailures=0;
   while(payload?.status==='generating'){
-   if(!current())return;if(!/^ta_[a-f0-9]{64}$/.test(payload.reportId))throw new Error('Invalid report');if(Date.now()>deadline)throw Object.assign(new Error('Analysis timeout'),{code:'AI_TIMEOUT'});
+   if(!current())return;if(!/^ta_[a-f0-9]{64}$/.test(payload.reportId))throw new Error('Invalid report');job.reportId=payload.reportId;if(Date.now()>deadline)throw Object.assign(new Error('Analysis still processing'),{code:'REPORT_STILL_PROCESSING'});
    job.polling=true;renderAssistant();await sleepForAnalysis(Math.max(1000,Math.min(10000,(Number(payload.retryAfterSeconds)||3)*1000)),job.controller.signal);
-   payload=payload.nextAction==='continue'?await requestJSON(ASSISTANT,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':state.auth.csrfToken},body:JSON.stringify({reportId:payload.reportId}),signal:job.controller.signal,timeoutMs:65000}):await requestJSON(ASSISTANT+'&'+new URLSearchParams({reportId:payload.reportId}),{headers:{'X-CSRF-Token':state.auth.csrfToken},signal:job.controller.signal,timeoutMs:25000});
+   try{
+    payload=payload.nextAction==='continue'?await requestJSON(ASSISTANT,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':state.auth.csrfToken},body:JSON.stringify({reportId:payload.reportId}),signal:job.controller.signal,timeoutMs:65000}):await requestJSON(ASSISTANT+'&'+new URLSearchParams({reportId:payload.reportId}),{headers:{'X-CSRF-Token':state.auth.csrfToken},signal:job.controller.signal,timeoutMs:25000});
+    transientPollFailures=0;
+   }catch(error){
+    // A dropped polling connection does not cancel the persisted report job.
+    const transient=error.name==='TypeError'||error.name==='AbortError'||[502,503,504].includes(error.status)&&!['AI_REPORT_QUALITY','AI_INVALID_RESPONSE','AI_MODEL_MISMATCH','AI_TIMEOUT','AI_UNAVAILABLE'].includes(error.code);
+    if(!current()||!transient||++transientPollFailures>3)throw error;
+   }
   }
   if(!current())return;const report=payload?.report;
   if(payload.ok!==true||!report||!/^ta_[a-f0-9]{64}$/.test(payload.reportId)||report.reportId!==payload.reportId||filterKey(report.filters)!==key||!report.analysis||typeof report.analysis.overview!=='string')throw new Error('Invalid report');
   state.assistantReport=report;job.status='complete';job.cached=payload.cached===true;renderTeacherTools();await exportDocument('docx');
- }catch(error){if(!current())return;if(error.status===401||error.status===403){lockSession();return;}job.status=error.code==='NO_LEARNING_DATA'?'empty':'error';job.message=toolErrorMessage(error);renderTeacherTools();}
+ }catch(error){if(!current())return;if(error.status===401||error.status===403){lockSession();return;}job.status=error.code==='REPORT_STILL_PROCESSING'?'waiting':error.code==='NO_LEARNING_DATA'?'empty':'error';job.message=toolErrorMessage(error);renderTeacherTools();}
 }
 function cancelDocument(){const job=state.documentJob;if(!job||job.status!=='running')return;job.controller.abort();job.status='cancelled';job.message='沒有下載部分檔案，可以稍後再試。';renderTeacherTools();}
 async function exportDocument(action){

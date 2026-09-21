@@ -146,6 +146,8 @@ function createApiServer({ handlers, requestTimeoutMs } = {}) {
   server.requestTimeout = 30000;
   server.keepAliveTimeout = 35000;
   server.maxRequestsPerSocket = 100;
+  const stopReportWorker=loadedHandlers['teacher-tools'].startBackgroundWorker?.();
+  if(stopReportWorker)server.once('close',stopReportWorker);
   return server;
 }
 

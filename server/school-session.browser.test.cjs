@@ -39,6 +39,33 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
   async function open(page, handler) { await page.route('**/api/school-auth/**', handler); await page.goto(origin + '/maanshan/fixture'); }
   async function enter(page) { await page.locator('input[name=login]').fill('test-pupil'); await page.locator('input[name=password]').fill('synthetic-password'); await page.locator('input[name=termsAccepted]').check(); }
   try {
+    // Serve the real modules under the company host without production calls.
+    // Its school fallback must fail closed while its old demo stays accessible.
+    for (const routePrefix of ['/school/', '/maanshan/']) for (const teacher of [false, true]) for (const status of [200, 404]) {
+      await run(`${routePrefix} ${teacher ? 'teacher' : 'student'} handles ${status === 404 ? 'missing' : 'disabled'} account service`, async page => {
+        await page.route('**/*', async route => {
+          const url = new URL(route.request().url());
+          if (url.pathname.startsWith('/api/school-auth')) return reply(route, { enabled: false, authenticated: false }, status);
+          const relative = url.pathname.replace(/^\/school\//, '/maanshan/');
+          if (relative === '/maanshan/fixture') return route.fulfill({ contentType: 'text/html', body: fixture });
+          const file = path.resolve(repo, '.' + decodeURIComponent(relative));
+          if (!file.startsWith(repo + path.sep) || !fs.existsSync(file) || !mime[path.extname(file)]) return route.fulfill({ status: 404, body: '' });
+          return route.fulfill({ contentType: mime[path.extname(file)], body: fs.readFileSync(file) });
+        });
+        await page.goto('https://aiducation.asia' + routePrefix + (teacher ? 'teacher.html' : 'fixture'));
+        if (routePrefix === '/school/') {
+          await page.getByRole('button', { name: teacher ? '重新連接' : '再試一次', exact: true }).waitFor();
+          assert.equal(await page.locator('input[name=login],input[name=password],.poem-entry,#teacher-filters').count(), 0);
+          if (!teacher) assert.equal(await page.evaluate(() => window.ready), false);
+        } else if (teacher) {
+          await page.getByText('教師存取碼', { exact: true }).waitFor();
+          assert.equal(await page.locator('input[name=login]').count(), 0);
+        } else {
+          await page.waitForFunction(() => window.ready);
+          assert.equal(await page.evaluate(() => window.session.schoolState().enabled), false);
+        }
+      });
+    }
     await run('platform terms start checked, can be withdrawn and remain separate from research consent', async (page, context) => {
       let posts = 0;
       await open(page, route => { if (route.request().method() === 'POST') posts++; return reply(route, signedOut); });

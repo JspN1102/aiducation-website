@@ -56,3 +56,18 @@
  .workspace.view-lesson .lesson-map-step-top{margin-bottom:5px}
  .workspace.view-lesson .lesson-map-status{margin-top:5px}
 }
+
+@media (min-width:1000px) and (min-height:700px) and (orientation:landscape){
+ .workspace.view-explore #view .explore-layout{grid-template-columns:minmax(0,1.2fr) minmax(340px,1fr);align-items:stretch;gap:28px}
+ .workspace.view-explore #view .explore-card{justify-content:space-between;padding:24px 28px;gap:12px}
+ .workspace.view-explore #view .explore-card-top{margin-bottom:0}
+ .workspace.view-explore #view .explore-verse{margin:0;padding-block:14px}
+ .workspace.view-explore #view .explore-verse>p{font-size:30px}
+ .workspace.view-explore #view .explore-question{margin-block:auto}
+ .workspace.view-explore #view .explore-question legend{font-size:28px}
+ .workspace.view-explore #view .explore-answers button{font-size:26px;min-height:72px}
+ .workspace.view-explore #view .explore-feedback{font-size:23px;margin-top:0}
+ .workspace.view-explore #view .explore-next{font-size:26px!important;min-height:66px;margin-top:0}
+ .workspace.view-explore #view .explore-finish{margin-block:auto}
+ .workspace.view-explore #view .explore-finish-actions{margin-top:auto}
+}

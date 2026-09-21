@@ -13,6 +13,7 @@ function dataset(){const score={measuredN:1,unmeasuredN:1,meanScore:0,correctN:0
 function validOutput(){return {lessonPlans:[{grades:[2],title:'聽讀練習',durationMinutes:20,objectives:['跟讀一句原詩'],materials:['平台示範聲音'],evidenceIds:['F001'],stages:[{title:'聽讀',minutes:10,teacher:'示範原句',students:'聆聽跟讀',check:'觀察字音'},{title:'練習',minutes:10,teacher:'安排原句朗讀',students:'錄音練習',check:'查看同類評測'}],differentiation:{support:'再聽一次',extension:'自己讀一次'},assessment:'用同一句再讀'}],title:'普通話學習概覽',overview:'現有資料有限，先觀察同類練習。',findings:[{title:'參與資料',evidenceIds:['F001','F002'],interpretation:'這是名冊及已收到記錄的觀察。'}],teachingActions:[{priority:'high',title:'下一課聽讀',evidenceIds:['F002'],steps:['先示範，再短句跟讀。']}],reviewPlan:[{title:'再次觀察',evidenceIds:['F002'],steps:['下一課收集同類朗讀記錄。']}],limitations:['未收到記錄不等於未有練習。']};}
 function provider(output=validOutput()){return new Response(JSON.stringify({choices:[{finish_reason:'stop',message:{content:JSON.stringify(output)}}],usage:{prompt_tokens:200,completion_tokens:150}}),{status:200,headers:{'Content-Type':'application/json'}});}
 function memoryStore(){const data=new Map();return {data,async get(key){return data.has(key)?structuredClone(data.get(key)):null;},async cas(key,value,version){const old=data.get(key);if((old?.version??undefined)!==(version??undefined))return false;data.set(key,{value:structuredClone(value),version:String(Number(old?.version||0)+1)});return true;}};}
+function jobStore(){const store=memoryStore();store.pending=async at=>[...store.data].filter(([key,r])=>key.startsWith('report/')&&r.value.status==='pending'&&r.value.background&&!(r.value.leaseUntil>at)&&!(r.value.retryAt>at)).slice(0,1).map(([key,row])=>({key,...structuredClone(row)}));return store;}
 const followUp=()=>({students:[{researchId:'r_private-id',displayName:'PRIVATE_NAME',reasons:[{construct:'reading.pronunciation',score:0,source:'serverVerified'}]}],unstartedIds:[],absenceReliable:true,criteria:'same snapshot'});
 function service(options={}){return analysis.createService({store:memoryStore(),env,now:()=>now,loadDataset:async()=>dataset(),buildFollowUp:followUp,fetchImpl:async()=>provider(),...options});}
 function response(){return {statusCode:200,headers:{},setHeader(key,value){this.headers[key]=value;},status(code){this.statusCode=code;return this;},json(value){this.body=value;return this;}};}
@@ -42,6 +43,101 @@ test('complete immutable report retains its exact private dataset while public r
  const cached=await s.generate({},snapshot.filters,teacher);assert.equal(cached.cached,true);assert.equal(cached.reportId,first.reportId);assert.equal(calls,1);
  const full=await s.getReport(first.reportId);assert.equal(full.dataset.generatedAt,new Date(now).toISOString());assert.equal(full.dataset.students[0].displayName,'PRIVATE_NAME');
  assert.equal((await s.check(first.reportId)).report.dataset,undefined);
+});
+
+test('background POST persists its snapshot and returns 202 before a provider starts; disconnected request still completes to a real DOCX',async()=>{
+ const store=jobStore(),input=dataset();input.snapshotId='a'.repeat(64);
+ let calls=0,finish,started;const begun=new Promise(resolve=>started=resolve);
+ const svc=service({store,loadDataset:async()=>input,fetchImpl:async(_url,options)=>{calls++;started(options.signal);await new Promise(resolve=>finish=resolve);return provider();}});
+ const handler=createHandler({authModule:{requireActor:async()=>teacher},analysisModule:svc}),res=response();
+ const req=Object.assign(new (require('node:events').EventEmitter)(),{method:'POST',body:{filters:input.filters}});
+ await handler(req,res);
+ assert.equal(res.statusCode,202);assert.equal(res.body.status,'generating');assert.equal(calls,0);
+ const id=res.body.reportId,stored=store.data.get('report/'+id.slice(3));assert.equal(stored.value.stage,'queued');assert.equal(stored.value.task.dataset.snapshotId,input.snapshotId);
+ assert.doesNotMatch(JSON.stringify(res.body),/PRIVATE_|dataset|task|draftReport/);
+ const claim=await svc.claimPending(),work=claim();const providerSignal=await begun;
+ req.emit('aborted');assert.equal(providerSignal.aborted,false);assert.equal((await svc.check(id)).status,'generating');
+ finish();await work;assert.equal(calls,1);
+ const report=await svc.getReport(id),docx=await require('../api/_lib/teacher-documents.cjs').buildDocx(report);
+ assert.equal(docx.subarray(0,4).toString('hex'),'504b0304');assert(docx.length>5000);
+ assert.equal((await svc.generate({},input.filters,teacher,{background:true})).cached,true);assert.equal(calls,1);
+});
+
+test('Guangzhou DB_DRIVER postgres enables persisted jobs without STUDENT_STORE and explicit stores remain authoritative',async()=>{
+ const research=require('../api/_lib/research-store.cjs'),previous=research.getPool,store=jobStore(),productionEnv={...env,DB_DRIVER:'postgres',SCHOOL_AUTH_STORE:'postgres'};
+ const queries=[];research.getPool=()=>({async query(sql,args){
+  queries.push(sql);
+  if(sql.startsWith('SELECT key,value'))return {rows:await store.pending(args[1])};
+  if(sql.startsWith('SELECT value,version')){const row=await store.get(args[0]);return {rows:row?[row]:[]};}
+  const ok=await store.cas(args[0],JSON.parse(args[1]),args[2]);return {rowCount:ok?1:0};
+ }});
+ try{
+  const svc=service({store:undefined,env:productionEnv});assert.equal(svc.supportsBackground(),true);
+  const handler=createHandler({authModule:{requireActor:async()=>teacher},analysisModule:svc}),res=response();
+  await handler({method:'POST',body:{filters:dataset().filters}},res);assert.equal(res.statusCode,202);
+  assert.equal(store.data.get('report/'+res.body.reportId.slice(3)).value.stage,'queued');
+  await(await svc.claimPending())();assert.equal((await svc.getReport(res.body.reportId)).qualityReview.passed,true);
+  assert(queries.some(sql=>sql.startsWith('SELECT key,value')));assert(queries.every(sql=>sql.includes('teacher_analysis_records')));
+  assert.equal(service({store:undefined,env:{...productionEnv,STUDENT_STORE:'blob'}}).supportsBackground(),false);
+  assert.equal(service({store:undefined,env}).supportsBackground(),false,'unconfigured tests never start PostgreSQL work');
+  assert.equal(service({store:memoryStore(),env:productionEnv}).supportsBackground(),false,'a supplied non-queue store stays synchronous');
+  assert.equal(service({store:jobStore(),env:{...env,STUDENT_STORE:'blob'}}).supportsBackground(),true,'an injected durable queue determines its own capabilities');
+ }finally{productionEnv.DB_DRIVER='';research.getPool=previous;}
+});
+
+test('queued jobs and expired generation leases are recovered by a new service without loading a different dataset',async()=>{
+ let clock=now,calls=0;const store=jobStore(),first=service({store,now:()=>clock});
+ const queued=await first.generate({},dataset().filters,teacher,{background:true});
+ const abandoned=await first.claimPending();assert.equal(typeof abandoned,'function');
+ const restarted=service({store,now:()=>clock,loadDataset:async()=>{throw new Error('SNAPSHOT_MUST_BE_REUSED');},fetchImpl:async()=>{calls++;return provider();}});
+ assert.equal(await restarted.claimPending(),null,'valid lease belongs to existing worker');
+ clock+=analysis.BACKGROUND_LEASE_MS+1;
+ const claim=await restarted.claimPending();assert.equal(typeof claim,'function');await claim();
+ assert.equal((await restarted.getReport(queued.reportId)).snapshotId,'synthetic-snapshot');assert.equal(calls,1);
+});
+
+test('concurrent workers claim a persistent job only once and transient provider failure preserves it for one automatic retry',async()=>{
+ let clock=now,calls=0;const store=jobStore(),options={store,now:()=>clock,fetchImpl:async()=>{calls++;if(calls===1){const e=new Error('private timeout');e.name='TimeoutError';throw e;}return provider();}};
+ const a=service(options),b=service(options),queued=await a.generate({},dataset().filters,teacher,{background:true});
+ const claimed=await Promise.all([a.claimPending(),b.claimPending()]);assert.equal(claimed.filter(Boolean).length,1);await claimed.find(Boolean)();
+ assert.equal((await b.check(queued.reportId)).status,'generating');assert.equal(await b.claimPending(),null);
+ clock+=31000;await(await b.claimPending())();assert.equal((await b.getReport(queued.reportId)).reportId,queued.reportId);assert.equal(calls,2);
+});
+
+test('background revisions survive a restart and target titles for up to two quality repairs without releasing a draft',async()=>{
+ const store=jobStore();let calls=0;const flawed={...validOutput(),findings:[{...validOutput().findings[0],title:'朗讀表現較低'}]};
+ const options={store,fetchImpl:async(_url,opts)=>{calls++;const body=JSON.parse(opts.body);if(calls>1){assert.match(body.messages[3].content,/必須修改該小標題/);assert.match(body.messages[3].content,/findings\[0\]\.title/);}return provider(calls<3?flawed:validOutput());}};
+ const first=service(options),queued=await first.generate({},dataset().filters,teacher,{background:true});await(await first.claimPending())();
+ await assert.rejects(first.getReport(queued.reportId),error=>error.code==='REPORT_NOT_READY');
+ const restarted=service({...options,loadDataset:async()=>{throw new Error('SNAPSHOT_MUST_BE_REUSED');}});
+ await(await restarted.claimPending())();assert.equal((await restarted.check(queued.reportId)).status,'generating');
+ await assert.rejects(restarted.getReport(queued.reportId),error=>error.code==='REPORT_NOT_READY');
+ await(await restarted.claimPending())();const done=await restarted.getReport(queued.reportId);
+ assert.equal(done.qualityReview.revisions,2);assert.equal(done.qualityReview.passed,true);assert.equal(calls,3);
+});
+
+test('persistent jobs still reject a report after two unsuccessful quality repairs',async()=>{
+ const store=jobStore();let calls=0;const svc=service({store,fetchImpl:async()=>{calls++;return provider({...validOutput(),overview:'整體能力中等。'});}});
+ const queued=await svc.generate({},dataset().filters,teacher,{background:true});await(await svc.claimPending())();await(await svc.claimPending())();
+ await assert.rejects((await svc.claimPending())(),error=>error.code==='AI_REPORT_QUALITY');
+ await assert.rejects(svc.getReport(queued.reportId),error=>error.code==='AI_REPORT_QUALITY');assert.equal(calls,3);
+});
+
+test('the persistent worker bounds paid generation globally while draining more than two queued reports',async()=>{
+ const store=jobStore(),input=dataset();let active=0,maxActive=0,calls=0;const releases=[];
+ const svc=service({store,loadDataset:async()=>input,fetchImpl:async()=>{calls++;active++;maxActive=Math.max(maxActive,active);await new Promise(resolve=>releases.push(()=>{active--;resolve();}));return provider();}});
+ const ids=[];for(let n=0;n<3;n++){input.snapshotId='worker-snapshot-'+n;ids.push((await svc.generate({},input.filters,teacher,{background:true})).reportId);}
+ const stop=analysis.startBackgroundWorker();
+ try{
+  for(let n=0;n<100&&calls<2;n++)await new Promise(resolve=>setTimeout(resolve,40));
+  assert.equal(calls,2);assert.equal(active,2);
+  releases.shift()();
+  for(let n=0;n<100&&calls<3;n++)await new Promise(resolve=>setTimeout(resolve,20));
+  assert.equal(calls,3);assert.equal(maxActive,2);
+  releases.splice(0).forEach(release=>release());
+  for(let n=0;n<100;n++){if([...store.data].filter(([key,row])=>key.startsWith('report/')&&row.value.status==='completed').length===3)break;await new Promise(resolve=>setTimeout(resolve,20));}
+  for(const id of ids)assert.equal((await svc.getReport(id)).qualityReview.passed,true);
+ }finally{releases.splice(0).forEach(release=>release());stop();}
 });
 
 test('new selected-data snapshot creates a new report and completed-report corruption fails closed',async()=>{

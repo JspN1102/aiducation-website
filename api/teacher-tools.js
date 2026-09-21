@@ -20,3 +20,10 @@ module.exports = async function handler(req, res) {
   }
   return (tool === 'analysis' ? analysis : documentExport)(req, res);
 };
+
+// Only the persistent Guangzhou API starts this worker. Public Vercel entry
+// points relay requests and never own the lifetime of report generation.
+module.exports.startBackgroundWorker = function () {
+  require('./_lib/teacher-demo-handler.cjs');
+  return require('./_lib/teacher-analysis.cjs').startBackgroundWorker();
+};

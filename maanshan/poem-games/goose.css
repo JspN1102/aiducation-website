@@ -34,6 +34,8 @@
 @keyframes goose-colour-ripple{from{transform:translate(-50%,-50%) scale(.5);opacity:.95}to{transform:translate(-50%,-50%) scale(3);opacity:0}}
 .poem-goose-game.is-reduced-motion .goose-layer{transition:none}
 .poem-goose-game.is-reduced-motion .goose-ripple{display:none}
-@media(max-width:420px){.poem-goose-game{gap:12px}.poem-goose-game .goose-instruction{gap:8px}.poem-goose-game .goose-instruction p{font-size:19px}.poem-goose-game .goose-progress{font-size:16px}.poem-goose-game .goose-palette{gap:8px}.poem-goose-game .goose-paint{font-size:21px;min-height:57px;padding:9px 8px;gap:6px;border-radius:16px}.poem-goose-game .goose-paint i{width:25px;height:25px}.poem-goose-game .goose-feedback{font-size:19px}.poem-goose-game .goose-picture{border-radius:16px}.poem-goose-game .goose-caption{bottom:8px;right:8px;padding:8px 10px}}
+.poem-goose-game .goose-paint{min-height:68px;font-size:25px;padding:12px 16px}
+.poem-goose-game .goose-paint i{width:35px;height:35px}
+@media(max-width:420px){.poem-goose-game{gap:12px}.poem-goose-game .goose-instruction{gap:8px}.poem-goose-game .goose-instruction p{font-size:19px}.poem-goose-game .goose-progress{font-size:16px}.poem-goose-game .goose-palette{gap:8px}.poem-goose-game .goose-paint{font-size:23px;min-height:66px;padding:10px 8px;gap:6px;border-radius:16px}.poem-goose-game .goose-paint i{width:28px;height:28px}.poem-goose-game .goose-feedback{font-size:19px}.poem-goose-game .goose-picture{border-radius:16px}.poem-goose-game .goose-caption{bottom:8px;right:8px;padding:8px 10px}}
 @media(max-width:370px){.poem-goose-game .goose-paint{flex-direction:column;gap:5px;padding:8px 5px;font-size:21px;min-height:72px}}
 @media(prefers-reduced-motion:reduce){.poem-goose-game .goose-layer,.poem-goose-game .goose-part span,.poem-goose-game .goose-paint{transition:none}.poem-goose-game .goose-ripple{display:none}}

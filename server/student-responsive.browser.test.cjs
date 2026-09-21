@@ -9,9 +9,10 @@ function seed(){return Object.fromEntries(poems.map(p=>[p.id,{reading:p.lines.ma
 async function setup(width,height){
  const context=await browser.newContext({viewport:{width,height},hasTouch:width<1400,isMobile:width<700,reducedMotion:'reduce',serviceWorkers:'block'}),page=await context.newPage();
  page.on('pageerror',error=>errors.push(error.message));
- await context.addInitScript(({key,progress})=>localStorage.setItem(key,JSON.stringify(progress)),{key,progress:seed()});
+ await context.addInitScript(({key,progress})=>{if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(progress));},{key,progress:seed()});
  await context.route('**/*',async route=>{
   const url=new URL(route.request().url()),endpoint=url.pathname.replace(/\/$/,''),send=data=>route.fulfill({contentType:'application/json',body:JSON.stringify(data)});
+  if(endpoint==='/fixture-reset')return route.fulfill({contentType:'text/html',body:'<!doctype html><title>Synthetic fixture reset</title>'});
   if(endpoint.startsWith('/api/')){
    if(endpoint==='/api/school-auth')return send(url.searchParams.get('action')==='progress'?{enabled:true,userId:'synthetic-responsive',poems:{}}:{enabled:true,authenticated:true,user:{id:'synthetic-responsive',role:'student',displayName:'示範同學',grade:1,cls:'A',classNo:1,isTest:true,learningScope:'all-grades',researchEnabled:false},csrfToken:'synthetic-csrf'});
    if(endpoint==='/api/school-recordings')return send({ok:true,userId:'synthetic-responsive',recordings:[]});
@@ -35,16 +36,36 @@ async function reports(width,height){const {page,context}=await setup(width,heig
    const state=await page.locator('.report-line:visible').evaluate(el=>{
     const grid=el.querySelector('.word-grid'),cards=[...grid.querySelectorAll('.word-result')],rows=[];
     for(const card of cards){const b=card.getBoundingClientRect(),row=rows.find(r=>Math.abs(r.y-b.y)<2);if(row)row.count++;else rows.push({y:b.y,count:1});}
+    const view=document.querySelector('#view'),next=document.querySelector('.report-animation-next'),nextBox=next.getBoundingClientRect(),sentence=el.querySelector('.report-sentence').getBoundingClientRect();
     return {columns:Number(grid.dataset.columns),rows:rows.map(r=>r.count),count:cards.length,noOverflow:document.documentElement.scrollWidth<=innerWidth+1,
+     tabletFits:view.scrollHeight<=view.clientHeight+2&&document.documentElement.scrollHeight<=innerHeight+2&&nextBox.bottom<=innerHeight&&sentence.height>=innerHeight*.28,
+     nextLabel:next.textContent,nextHeight:nextBox.height,nextHref:next.getAttribute('href'),backLabel:document.querySelector('.back-library').textContent,
+     ownReading:el.querySelectorAll('[data-action="replay"]').length,originalReading:el.querySelectorAll('[data-action="report-line-tts"]').length,
      pinyin:cards.map(card=>{const b=card.getBoundingClientRect(),rt=card.querySelector('rt'),r=rt.getBoundingClientRect();return {size:parseFloat(getComputedStyle(rt).fontSize),fits:r.left>=b.left-1&&r.right<=b.right+1,text:rt.textContent,scoreCentred:getComputedStyle(card.querySelector('strong')).textAlign==='center'};}),
      actions:[...el.querySelectorAll('.report-line-actions .button')].map(button=>{const s=getComputedStyle(button),b=button.getBoundingClientRect();return{centred:s.justifyContent==='center',height:b.height,inside:b.left>=0&&b.right<=innerWidth};})};
    });
    const groups=state.count/state.columns,perGroup=state.columns===7&&width<=520?[4,3]:state.columns===5&&width<=360?[3,2]:[state.columns],expected=Array.from({length:groups},()=>perGroup).flat();
    assert.deepEqual(state.rows,expected,width+'px '+poem.slug+' sentence '+n+' balanced groups');
    check(width+'px '+poem.slug+' sentence '+n+' readable pinyin and centred buttons',state.noOverflow&&state.pinyin.every(p=>p.size>=16&&p.fits&&p.scoreCentred)&&state.actions.every(a=>a.centred&&a.height>=44&&a.inside));
+   check(width+'px '+poem.slug+' sentence '+n+' keeps distinct audio actions and the animation continuation',state.ownReading===1&&state.originalReading===1&&state.nextLabel==='去看動畫'&&state.nextHeight>=44&&state.nextHref==='#'+poem.slug+'/animation'&&state.backLabel==='返回');
+   if(width>=701&&height>=560)check(width+'px '+poem.slug+' sentence '+n+' uses tablet height without scrolling',state.tabletFits);
   }
   if(evidence&&[2,5].includes(poem.id))await page.screenshot({path:path.join(evidence,'report-'+width+'x'+height+'-'+poem.slug+'.png'),fullPage:true});
  }
+ // Sparse progress preserves original sentence labels; an empty result never creates a score.
+ const partial=seed(),last=poems.at(-1);partial[last.id].reading[2]=null;
+ await page.goto(origin+'/fixture-reset');
+ await page.evaluate(({key,partial})=>localStorage.setItem(key,JSON.stringify(partial)),{key,partial});await page.goto(origin+'/maanshan/#'+last.slug+'/report');
+ await page.locator('.report-line:visible').waitFor();
+ const partialLabels=await page.locator('[data-action="score-line"]').allTextContents();
+ check(width+'px incomplete reading keeps only first second and fourth sentence '+JSON.stringify(partialLabels),JSON.stringify(partialLabels)===JSON.stringify(['第一句','第二句','第四句']));
+ await page.locator('.report-animation-next').click();await page.locator('.animation-lesson,.animation-pending').waitFor();
+ check(width+'px continuation opens this poem animation',await page.evaluate(slug=>location.hash==='#'+slug+'/animation',last.slug));
+ partial[last.id].reading=last.lines.map(()=>null);
+ await page.goto(origin+'/fixture-reset');
+ await page.evaluate(({key,partial})=>localStorage.setItem(key,JSON.stringify(partial)),{key,partial});await page.goto(origin+'/maanshan/#'+last.slug+'/report');
+ await page.locator('.report-empty').waitFor();
+ check(width+'px no reading does not invent a score or expose result controls',await page.locator('.score-ring,.report-line,.report-animation-next').count()===0);
  // Use the real writing component under the existing quiz layout to verify
  // the enlarged help text and real browser touch without recognition calls.
  await page.evaluate(async()=>{

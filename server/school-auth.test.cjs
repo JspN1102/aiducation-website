@@ -211,6 +211,73 @@ test('login origin checking precedes mutation, and durable limits span independe
   f.advance(75001); assert.equal((await login(f)).state.authenticated, true);
 });
 
+test('additional HTTPS origins are opt-in and canonical origin remains enabled', async () => {
+  for (const empty of [undefined, '', '[]']) {
+    const f = fixture();
+    if (empty !== undefined) f.env.SCHOOL_AUTH_ADDITIONAL_ORIGINS = empty;
+    await assert.rejects(login(f, { origin: 'https://aiducation.asia' }), e => e.status === 403 && e.code === 'ORIGIN_REJECTED');
+    assert.equal(f.records.size, 1);
+    assert.equal((await login(f)).state.authenticated, true);
+  }
+  const f = fixture();
+  f.env.SCHOOL_AUTH_ADDITIONAL_ORIGINS = '["https://aiducation.asia"]';
+  assert.equal((await login(f)).state.authenticated, true);
+  const signedIn = await login(f, { origin: 'https://aiducation.asia', login: 'test2', password: 'test-password-2' });
+  assert.equal(signedIn.state.user.role, 'teacher');
+  assert.match(signedIn.res.headers['Set-Cookie'], /^__Host-maanshan_session=.*Path=\/; HttpOnly; Secure; SameSite=Lax/);
+  assert(!signedIn.res.headers['Set-Cookie'].includes('Domain='), 'extra origins must not turn the host-only cookie into a shared domain cookie');
+  const actor = await f.service.requireActor(request({ origin: 'https://aiducation.asia', cookie: signedIn.cookie, csrf: signedIn.state.csrfToken }));
+  assert.equal(actor.id, accounts[2].id);
+  await assert.rejects(f.service.requireActor(request({ origin: 'https://aiducation.asia', cookie: signedIn.cookie, csrf: 'wrong' })), e => e.code === 'CSRF_REJECTED');
+  await f.service.logout(request({ origin: 'https://aiducation.asia', cookie: signedIn.cookie, csrf: signedIn.state.csrfToken }), response());
+  assert.equal((await f.service.state(request({ method: 'GET', cookie: signedIn.cookie }))).authenticated, false);
+});
+
+test('additional origins never accept missing, similar, wildcard or automatic deployment origins', async () => {
+  const f = fixture(); f.env.SCHOOL_AUTH_ADDITIONAL_ORIGINS = '["https://aiducation.asia"]';
+  const signedIn = await login(f), before = structuredClone([...f.records]);
+  for (const origin of [undefined, null, '', 'null', 'http://aiducation.asia', 'https://aiducation.asia.evil.test',
+    'https://www.aiducation.asia', 'https://aiducation.asia:8443', 'https://aiducation.asia/', 'https://aiducation.asia/school/',
+    'https://evil.test@aiducation.asia', 'https://aiducation.asia@evil.test', 'https://*.aiducation.asia',
+    'https://aiducation-mandarin-temporary-fresh.vercel.app', ['https://aiducation.asia']]) {
+    const denied = request({ cookie: signedIn.cookie, csrf: signedIn.state.csrfToken });
+    if (origin === undefined) delete denied.headers.origin; else denied.headers.origin = origin;
+    const res = response();
+    await assert.rejects(f.service.login(denied, res), e => e.status === 403 && e.code === 'ORIGIN_REJECTED');
+    assert.equal(res.headers['Set-Cookie'], undefined, 'rejected origin cannot revoke the current identity');
+    await assert.rejects(f.service.requireActor(denied), e => e.status === 403 && e.code === 'ORIGIN_REJECTED');
+  }
+  assert.deepEqual([...f.records], before);
+});
+
+test('cross-site requests remain forbidden even when the origin is explicitly allowed', async () => {
+  const f = fixture(); f.env.SCHOOL_AUTH_ADDITIONAL_ORIGINS = '["https://aiducation.asia"]';
+  const signedIn = await login(f), before = structuredClone([...f.records]);
+  for (const origin of [f.env.SCHOOL_AUTH_ORIGIN, 'https://aiducation.asia']) {
+    const denied = request({ origin, cookie: signedIn.cookie, csrf: signedIn.state.csrfToken });
+    denied.headers['sec-fetch-site'] = 'cross-site';
+    await assert.rejects(f.service.login(denied, response()), e => e.status === 403 && e.code === 'ORIGIN_REJECTED');
+    await assert.rejects(f.service.requireActor(denied), e => e.status === 403 && e.code === 'ORIGIN_REJECTED');
+    await assert.rejects(f.service.logout(denied, response()), e => e.status === 403 && e.code === 'ORIGIN_REJECTED');
+  }
+  assert.deepEqual([...f.records], before);
+});
+
+test('invalid additional-origin configuration fails closed without account or session writes', async () => {
+  const invalid = [null, 1, [], '{}', 'null', '"https://aiducation.asia"', 'https://aiducation.asia',
+    'https://aiducation.asia,https://other.test', '[', ' '.repeat(2049), JSON.stringify(Array(9).fill('https://aiducation.asia')),
+    ...[null, 1, {}, [], '', '*', 'https://*.aiducation.asia', 'http://aiducation.asia',
+      'https://aiducation.asia/', 'https://aiducation.asia/school', 'https://aiducation.asia?query', 'https://aiducation.asia#fragment',
+      'https://name:secret@aiducation.asia', 'https://aiducation.asia:443', ' https://aiducation.asia'].map(value => JSON.stringify(['https://allowed.test', value]))];
+  for (const value of invalid) {
+    const f = fixture(); f.env.SCHOOL_AUTH_ADDITIONAL_ORIGINS = value;
+    const res = response();
+    await assert.rejects(f.service.login(request(), res), e => e.status === 503 && e.code === 'AUTH_UNAVAILABLE');
+    await assert.rejects(f.service.state(request({ method: 'GET' })), e => e.status === 503 && e.code === 'AUTH_UNAVAILABLE');
+    assert.equal(f.records.size, 1); assert.equal(res.headers['Set-Cookie'], undefined);
+  }
+});
+
 test('teacher roster is whole-school and individually audited without hashes or passwords', async () => {
   const f = fixture(), student = await login(f);
   await assert.rejects(f.service.roster(request({ method: 'GET', cookie: student.cookie })), e => e.status === 403);

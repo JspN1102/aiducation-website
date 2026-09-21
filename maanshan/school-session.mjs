@@ -1,11 +1,16 @@
-import {TERMS_VERSION, termsConfirmationMarkup, bindTermsConfirmation} from './platform-terms.mjs?v=20260921-school6';
-import {mountShishiSprite} from './shishi-sprite.mjs?v=20260921-school6';
+import {TERMS_VERSION, termsConfirmationMarkup, bindTermsConfirmation} from './platform-terms.mjs?v=20260921-school7';
+import {mountShishiSprite} from './shishi-sprite.mjs?v=20260921-school7';
 // The cookie is HttpOnly. Only the current user's display profile and CSRF
 // token live in memory; passwords and bearer credentials are never persisted.
 let current = {enabled: false, authenticated: false, user: null, csrfToken: ''};
 let blocked = false;
 let loginRequest;
 const listeners = new Set();
+// The company site's /school/ entry is the authenticated school platform,
+// even though /maanshan/ on the same host intentionally remains a demo.
+const requiresSchoolAuth = location.hostname === 'mandarin.aiducation.asia' || /^\/school(?:\/|$)/.test(location.pathname);
+const fallbackEntrance = () => location.hostname === 'mandarin.aiducation.asia'
+  ? '<a class="school-fallback-link" href="https://aiducation.asia/school/">連線不穩？使用備用入口</a>' : '';
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 
 export const schoolState = () => current;
@@ -84,12 +89,12 @@ function validSignedIn(data) {
 async function readSession() {
   const response = await fetch('/api/school-auth/', {credentials:'same-origin', cache:'no-store', signal:AbortSignal.timeout(15000)});
   // Only the intentionally separate legacy site may lack this new endpoint.
-  const legacyHost=['aiducation.asia','www.aiducation.asia'].includes(location.hostname)||/^aiducation-website(?:-[a-z0-9-]+)?\.vercel\.app$/.test(location.hostname);
+  const legacyHost=!requiresSchoolAuth&&(['aiducation.asia','www.aiducation.asia'].includes(location.hostname)||/^aiducation-website(?:-[a-z0-9-]+)?\.vercel\.app$/.test(location.hostname));
   if (response.status === 404 && legacyHost) return {enabled:false, authenticated:false, user:null, csrfToken:''};
   if (!response.ok) throw new Error('帳戶服務暫時未能連線。');
   const data = await response.json();
   if (typeof data.enabled !== 'boolean') throw new Error('帳戶服務回覆不完整。');
-  if (location.hostname==='mandarin.aiducation.asia'&&!data.enabled) throw new Error('學校帳戶服務尚未就緒。');
+  if (requiresSchoolAuth&&!data.enabled) throw new Error('學校帳戶服務尚未就緒。');
   if ((data.enabled && typeof data.authenticated !== 'boolean') || (data.authenticated && !validSignedIn(data))) throw new Error('帳戶服務回覆不完整。');
   return data.authenticated ? data : {enabled:data.enabled,authenticated:false,user:null,csrfToken:''};
 }
@@ -188,7 +193,7 @@ export async function initializeSchoolSession(host) {
       // A service failure never opens the school site as a demo. Retry just
       // the session check, retaining already-loaded code and media assets.
       document.body.dataset.screen = 'school-login';
-      host.innerHTML = '<main class="school-login" id="main"><section class="school-login-card school-login-recovery"><h1>正在等候帳戶服務</h1><p role="status">暫時未能連線，學習資料會保留。</p><button class="button primary" type="button">再試一次</button></section></main>';
+      host.innerHTML = '<main class="school-login" id="main"><section class="school-login-card school-login-recovery"><h1>正在等候帳戶服務</h1><p role="status">暫時未能連線，學習資料會保留。</p><button class="button primary" type="button">再試一次</button>' + fallbackEntrance() + '</section></main>';
       const button = host.querySelector('button');
       await new Promise(resolve => button.addEventListener('click', resolve, {once:true}));
       button.disabled = true; button.textContent = '正在連線…';

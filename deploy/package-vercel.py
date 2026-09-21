@@ -15,8 +15,8 @@ API_FILES = {'soe.js', 'tts.js', 'maanshan-chat.js', 'maanshan-report.js',
 RELAY_FILE = 'api/_lib/guangzhou-relay.cjs'
 RELAY_RUNTIME = {RELAY_FILE, 'api/_lib/response-encoding.cjs'}
 # One shared function serves the thirteen fixed school endpoints.
-# The 65-second Guangzhou report route is capped by Vercel's 60-second limit;
-# the relay enforces its own shorter upstream deadline before that limit.
+# Guangzhou persists long report jobs and returns 202 for polling. Individual
+# relay requests still finish before Vercel's 60-second function deadline.
 FUNCTION_SECONDS = {name: 60 for name in API_FILES}
 
 

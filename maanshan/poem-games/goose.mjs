@@ -22,11 +22,11 @@ export function mountGoose(holder, {initialState, readOnly=false, onState, onCom
   const root=document.createElement('section');
   root.className=`poem-goose-game${reducedMotion?' is-reduced-motion':''}`;
   root.setAttribute('aria-label','白鵝的春水圖填色遊戲');
-  root.innerHTML=`<div class="goose-instruction"><p>選顏色，再點畫裏的位置。</p><span class="goose-progress" aria-label="已完成 0 處，共 3 處">0 / 3</span></div>
+  root.innerHTML=`<div class="goose-instruction"><p>先選顏色，再點畫面上的圓點填色。</p><span class="goose-progress" aria-label="已完成 0 處，共 3 處">0 / 3</span></div>
     <div class="goose-picture" aria-label="替羽毛、腳掌和水面填色" aria-busy="true">
       <img class="goose-base" alt="一隻白鵝浮在池塘上，羽毛、腳掌和水面正等着你上色。" width="1536" height="1024" draggable="false">
       ${parts.map(part=>`<img class="goose-layer" data-goose-layer="${part.id}" alt="" aria-hidden="true" width="1536" height="1024" draggable="false">`).join('')}
-      ${parts.map(part=>`<button type="button" class="goose-part" data-goose-part="${part.id}" style="--x:${part.x}%;--y:${part.y}%" aria-label="${part.label}，未上色" aria-pressed="false" disabled><span aria-hidden="true">+</span></button>`).join('')}
+      ${parts.map(part=>`<button type="button" class="goose-part" data-goose-part="${part.id}" style="--x:${part.x}%;--y:${part.y}%" aria-label="${part.label}，未上色" aria-pressed="false" hidden disabled><span aria-hidden="true">+</span></button>`).join('')}
       <div class="goose-loading" role="status"><span>畫卷正在展開…</span><button type="button" data-goose-retry hidden>再試一次</button></div>
       <div class="goose-caption" hidden aria-hidden="true"><span>白毛浮綠水</span><span>紅掌撥清波</span></div>
     </div>
@@ -49,7 +49,8 @@ export function mountGoose(holder, {initialState, readOnly=false, onState, onCom
     for(const part of parts) {
       const done=found.has(part.id), button=q(`[data-goose-part="${part.id}"]`);
       q(`[data-goose-layer="${part.id}"]`).classList.toggle('is-filled',done||solution);
-      button.classList.toggle('is-filled',done);button.disabled=!ready||complete||readOnly||solution;
+      button.classList.toggle('is-filled',done);button.disabled=!ready||!selected||done||complete||readOnly||solution;
+      button.hidden=!selected||done||complete||readOnly||solution;
       button.setAttribute('aria-pressed',String(done));
       button.setAttribute('aria-label',`${part.label}，${done?'已上色':'未上色'}`);
       button.firstElementChild.textContent=done?'✓':'+';
@@ -72,7 +73,7 @@ export function mountGoose(holder, {initialState, readOnly=false, onState, onCom
   function paint(part, point) {
     if(!part||!ready||complete||dead||readOnly||solution)return;
     if(found.has(part.id)){tell('這裏塗好啦，再看看其他地方。');return;}
-    if(!selected){research.hint(part.id);tell('先在下面選一種顏色吧。');return;}
+    if(!selected){tell('先選一種顏色，畫面上的圓點就會出現。');return;}
     research.answer(part.id,selected,selected===part.color);
     if(selected!==part.color){research.hint(part.id);tell(part.hint);return;}
     found.add(part.id);selected=null;

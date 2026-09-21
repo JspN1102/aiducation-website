@@ -167,7 +167,7 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
     if (completed) {
       card.innerHTML = `<div class="explore-card-top"><span class="explore-step">${icon('check')}兩個發現，都找到了</span></div>
         <div class="explore-finish"><div class="explore-finish-mark" aria-hidden="true">${icon('check')}</div><h3 tabindex="-1">小發現，收好啦！</h3><p>${escapeHTML(content.finish)}</p></div>
-        <div class="explore-finish-actions"><button class="explore-again" type="button" data-explore="again">再玩一次</button></div>`;
+        <div class="explore-finish-actions"><button class="explore-again" type="button" data-explore="again">再玩一次</button><a class="explore-next" href="#${escapeHTML(poem.slug)}/quiz">進入練一練${icon('arrow')}</a></div>`;
     } else {
       const item = content.observations[observation];
       research.present(researchStep(),{position:observation,total:content.observations.length,optionOrder:item.choices.map((_,i)=>`choice.${i}`)});

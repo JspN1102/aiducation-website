@@ -2,7 +2,8 @@
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const demo=require('../api/_lib/teacher-demo-data.cjs');
-const repo=path.resolve(__dirname,'..'),requests=[],delays=new Map();let authenticated=true;
+const repo=path.resolve(__dirname,'..'),requests=[],delays=new Map();let authenticated=true,reportFilters,reportPolls=0,reportStarts=0;
+const reportId='ta_'+'a'.repeat(64);
 const mime={'.html':'text/html','.mjs':'text/javascript','.js':'text/javascript','.json':'application/json','.css':'text/css','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2','.svg':'image/svg+xml'};
 const auth=()=>({enabled:true,authenticated,user:authenticated?{id:'t_synthetic_browser',role:'teacher',displayName:'測試教師'}:null,csrfToken:authenticated?'synthetic-csrf':undefined});
 const server=http.createServer(async(req,res)=>{
@@ -12,6 +13,17 @@ const server=http.createServer(async(req,res)=>{
    return json(auth());
  }
  if(url.pathname==='/api/teacher-tools'){
+   const tool=url.searchParams.get('tool');
+   if(tool==='demo-analysis'){
+    if(req.method==='POST'){const chunks=[];for await(const chunk of req)chunks.push(chunk);reportFilters=JSON.parse(Buffer.concat(chunks)).filters;reportStarts++;res.statusCode=202;return json({ok:true,status:'generating',reportId,retryAfterSeconds:1});}
+    reportPolls++;
+    if(reportPolls===1){res.statusCode=503;return json({ok:false,code:'ORIGIN_UNAVAILABLE'});}
+    return json({ok:true,reportId,report:{reportId,filters:reportFilters,analysis:{overview:'下一課先安排原句跟讀。'}}});
+   }
+   if(tool==='demo-export'){
+    const {Document,Packer,Paragraph}=require('docx'),bytes=await Packer.toBuffer(new Document({sections:[{children:[new Paragraph('普通話教研報告：下一課先安排原句跟讀。')]}]}));
+    res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');res.setHeader('Content-Disposition','attachment; filename="synthetic-report.docx"');return res.end(bytes);
+   }
    if(url.searchParams.get('kind')==='roster')return json({students:demo.demoRoster(),teachers:[],demo:true});
    const filters=Object.fromEntries([...url.searchParams].filter(([key])=>!['kind','tool'].includes(key))),key=[filters.grade,filters.poemId,filters.cls||''].join('/');
    requests.push({...filters,key});
@@ -54,6 +66,11 @@ const server=http.createServer(async(req,res)=>{
    await page.locator('#teacher-logout').click();await page.locator('#teacher-login-form').waitFor();
    await page.fill('#teacher-login','synthetic-teacher');await page.fill('#teacher-password','synthetic-browser-password');await page.locator('input[name=termsAccepted]').check();await page.locator('#teacher-login-form button[type=submit]').click();await loaded('A 班');
    assert.equal(count('2/2/A'),beforeLogout+1);checks.push('logout discards private cached data before another login');
+   const downloadEvent=page.waitForEvent('download');
+   await page.locator('[data-teacher-tool=docx]').click();const file=await downloadEvent;
+   assert.equal(await file.failure(),null);assert.equal(file.suggestedFilename(),'synthetic-report.docx');
+   assert.equal(reportStarts,1);assert.equal(reportPolls,2);assert.equal(String(reportFilters.grade),'2');assert.equal(String(reportFilters.poemId),'2');
+   await page.getByText('Word 報告 已下載',{exact:true}).waitFor();checks.push('a transient report polling failure resumes the same job and downloads Word automatically');
    assert.deepEqual(errors,[]);console.log(JSON.stringify({ok:true,checks,requests:requests.length,pageErrors:errors},null,2));
  }finally{await browser.close();await new Promise(resolve=>{server.close(resolve);server.closeAllConnections();});}
 })().catch(error=>{console.error(error);process.exitCode=1;server.closeAllConnections();server.close();});
