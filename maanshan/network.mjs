@@ -1,4 +1,4 @@
-import {schoolFetch} from './school-session.mjs?v=20260922-school12';
+import {schoolFetch} from './school-session.mjs?v=20260922-school12b';
 
 // Only a final, verified completion enters chat history. Partial tokens are
 // shown immediately but an interrupted stream is never saved as an answer.

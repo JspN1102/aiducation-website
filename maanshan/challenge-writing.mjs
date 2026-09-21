@@ -1,5 +1,5 @@
 import {createHandwritingPad} from './handwriting-pad.mjs?v=20260921-school10';
-import {loadHanziWriter} from './hanzi-library.mjs?v=20260922-school12';
+import {loadHanziWriter} from './hanzi-library.mjs?v=20260922-school12b';
 
 // First submitted recognition is the assessment. Later stroke demonstrations
 // and free practice never change that result. Only the top candidate counts.

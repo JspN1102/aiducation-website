@@ -14,14 +14,14 @@ import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school9';
 import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20260921-school10';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260921-school10';
-import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260921-school9';
+import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260922-school12b';
 import {createRecordingLibrary} from './recording-library.mjs?v=20260921-school9';
-import {requestJSON, requestChat} from './network.mjs?v=20260921-school9';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260922-school12';
-import {schoolSession} from './bootstrap.mjs?v=20260922-school12';
+import {requestJSON, requestChat} from './network.mjs?v=20260922-school12b';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260922-school12b';
+import {schoolSession} from './bootstrap.mjs?v=20260922-school12b';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school9';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school9';
-import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12';
+import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -803,7 +803,7 @@ function preloadActivityModules(activity,slug) {
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
   preloadActivityModules('quiz',poem?.slug);
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260922-school11'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260922-school12b'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
