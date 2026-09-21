@@ -1,5 +1,6 @@
-import {initializeSchoolSession, schoolState, onSchoolSessionInvalid} from './school-session.mjs?v=20260921-school9';
+import {initializeSchoolSession, schoolState, onSchoolSessionInvalid} from './school-session.mjs?v=20260922-school12';
 import {installImageRecovery} from './image-loader.mjs?v=20260920-art2';
+import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12';
 
 installImageRecovery();
 
@@ -11,11 +12,13 @@ onSchoolSessionInvalid(() => { invalidated = true; });
 // the dynamic app import starts only after login. There is no top-level cycle.
 export const schoolSession = initializeSchoolSession(app);
 
-// These are public classroom libraries. Fetch them while the account check is
-// in flight instead of adding two more network waits after a successful login.
+// Public content starts alongside the account check. The app consumes these
+// same promises; transient errors can retry without rejecting the login.
+void loadCurriculum().catch(() => {});
+// Only icons are needed to open the platform. Stroke demonstrations load their
+// own optional library when requested, so they cannot delay reading or login.
 const classroomResources = Promise.allSettled([
-  loadScript('vendor/lucide-maanshan.js?v=20260918c', () => !!window.lucide),
-  loadScript('vendor/hanzi-writer.min.js', () => !!window.HanziWriter)
+  loadScript('vendor/lucide-maanshan.js?v=20260918c', () => !!window.lucide)
 ]);
 
 function loadScript(src, available) {
@@ -38,7 +41,7 @@ schoolSession.then(async school => {
     const resources=await classroomResources;
     if(resources.some(result=>result.status==='rejected'))throw new Error('Learning resource unavailable');
     if (invalidated || schoolState() !== school) return;
-    await import('./app.js?v=20260922-school11');
+    await import('./app.js?v=20260922-school12');
   } catch {
     if (!invalidated) window.showLoadRecovery?.();
   } finally {

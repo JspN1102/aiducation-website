@@ -53,6 +53,7 @@ for(const [name,source] of Object.entries(entries)){
             base=Path(temp);root=base/'source';root.mkdir();destination=base/'school'
             fixture={
                 'maanshan/index.html':'school-only',
+                'maanshan/recovery-sw.js':(packager.ROOT/'maanshan/recovery-sw.js').read_text(encoding='utf-8'),
                 'maanshan/app.mjs':"const image='/maanshan/media/one.webp';const remote='https://cos.example/maanshan/media/one.webp';fetch('/api/school-auth/');",
                 'maanshan/poems.json':json.dumps({'poems':[{'animation':{'src':'media/example/animation.mp4'}}]}),
                 'maanshan/media/example/animation.mp4':'omit-media',
@@ -92,11 +93,17 @@ for(const [name,source] of Object.entries(entries)){
             self.assertFalse((destination/'school/media/example/ASSET-SOURCES.md').exists())
             self.assertTrue((destination/'school/vendor/licenses/example.txt').exists())
             self.assertEqual((destination/'school/index.html').read_text(), 'school-only')
+            worker=(destination/'school/recovery-sw.js').read_text(encoding='utf-8')
+            self.assertEqual(worker,fixture['maanshan/recovery-sw.js'])
             app=(destination/'school/app.mjs').read_text()
             self.assertIn("image='/school/media/one.webp'", app)
             self.assertIn("https://cos.example/maanshan/media/one.webp", app)
             self.assertIn("fetch('/api/school-auth/')", app)
             redirects=json.loads((destination/'vercel.json').read_text())['redirects']
+            headers=json.loads((destination/'vercel.json').read_text())['headers']
+            worker_headers=next(row['headers'] for row in headers if row['source']=='/school/recovery-sw.js')
+            self.assertIn({'key':'Service-Worker-Allowed','value':'/'},worker_headers)
+            self.assertIn({'key':'Cache-Control','value':'no-cache'},worker_headers)
             self.assertIn({'source':'/', 'destination':'/school/', 'statusCode':307}, redirects)
             self.assertIn({'source':'/maanshan/', 'destination':'/school/', 'statusCode':307}, redirects)
             self.assertIn({'source':'/maanshan', 'destination':'/school/', 'statusCode':307}, redirects)

@@ -17,10 +17,11 @@ import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260921-school
 import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260921-school9';
 import {createRecordingLibrary} from './recording-library.mjs?v=20260921-school9';
 import {requestJSON, requestChat} from './network.mjs?v=20260921-school9';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260921-school9';
-import {schoolSession} from './bootstrap.mjs?v=20260922-school11';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260922-school12';
+import {schoolSession} from './bootstrap.mjs?v=20260922-school12';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school9';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school9';
+import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -1081,9 +1082,7 @@ window.addEventListener('pagehide',()=>{if(sessionLocked)return;stopMedia();canc
 onSchoolSessionInvalid(()=>{sessionLocked=true;routeVersion++;activityLoad++;reportGeneration++;stopMedia();cancelRecording();requests.forEach(controller=>controller.abort());libraryShishi?.destroy();libraryShishi=null;teacherReset?.destroy();teacherReset=null;challenge?.destroy();challenge=null;exploration?.destroy();exploration=null;disposeAnimation?.();disposeAnimation=null;research.stop();});
 async function init(){
   try{
-    const responses=await Promise.all([fetch('poems.json?v=20260919b',{signal:AbortSignal.timeout(15000)}),fetch('pronunciation.json?v=20260919a',{signal:AbortSignal.timeout(15000)})]);
-    if(responses.some(response=>!response.ok))throw new Error('catalog');
-    const [data,pronunciation]=await Promise.all(responses.map(response=>response.json()));
+    const [data,pronunciation]=await loadCurriculum();
     if(sessionLocked)return;
     if(!Array.isArray(data.poems)||!data.poems.length)throw new Error('catalog');
     poems=school.enabled&&!allGrades ? data.poems.filter(p=>p.grade===Number(school.user.grade)) : data.poems;

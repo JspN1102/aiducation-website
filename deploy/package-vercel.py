@@ -122,6 +122,9 @@ def main():
                 {'key': 'X-Content-Type-Options', 'value': 'nosniff'},
                 {'key': 'Referrer-Policy', 'value': 'strict-origin-when-cross-origin'}]},
             {'source': '/school/:path*', 'headers': [{'key': 'Cache-Control', 'value': 'public, max-age=0, must-revalidate'}]},
+            {'source': '/school/recovery-sw.js', 'headers': [
+                {'key': 'Cache-Control', 'value': 'no-cache'},
+                {'key': 'Service-Worker-Allowed', 'value': '/'}]},
             {'source': '/school/media/:path*', 'headers': [{'key': 'Cache-Control', 'value': 'public, max-age=2592000'}]},
             {'source': '/school/vendor/:path*', 'headers': [{'key': 'Cache-Control', 'value': 'public, max-age=2592000'}]},
             {'source': '/api/:path*', 'headers': [{'key': 'Cache-Control', 'value': 'private, no-store'}]},

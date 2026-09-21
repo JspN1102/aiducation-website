@@ -93,6 +93,12 @@ def merge_config(company, school):
                 continue
             row = copy.deepcopy(original)
             row['source'] = relocate_path(row['source'])
+            if kind == 'headers' and row['source'] == '/school/recovery-sw.js':
+                # The main entrance protects its root bookmark; the company
+                # backup must never grant a school worker access to its root.
+                for header in row.get('headers', []):
+                    if header['key'].lower() == 'service-worker-allowed':
+                        header['value'] = '/school/'
             if 'destination' in row:
                 row['destination'] = relocate_path(row['destination'])
             rows.append(row)

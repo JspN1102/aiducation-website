@@ -39,6 +39,7 @@ const relative=new URL('./media/a.png',import.meta.url);
         school = base / 'school-input'; school.mkdir()
         files = {
             'maanshan/index.html': '<script type="module" src="app.mjs"></script>',
+            'maanshan/recovery-sw.js': (HERE.parent / 'maanshan/recovery-sw.js').read_text(encoding='utf-8'),
             'maanshan/app.mjs': "fetch('/api/school-auth/');const image='/maanshan/media/scene.webp';",
             'maanshan/media/scene.webp': 'binary-image-fixture',
             'maanshan/media-images.mjs': 'const map={"/maanshan/media/scene.webp":"https://cos.example/maanshan/media/scene.webp"};',
@@ -59,6 +60,7 @@ const relative=new URL('./media/a.png',import.meta.url);
                                 {'source': '/maanshan/media/model.glb', 'destination': 'https://cos.example/maanshan/media/model.glb', 'statusCode': 307}],
                   'headers': [{'source': '/(.*)', 'headers': [{'key': 'School-Global', 'value': 'do-not-copy'}]},
                               {'source': '/maanshan/:path*', 'headers': [{'key': 'Cache-Control', 'value': 'public, max-age=0, must-revalidate'}]},
+                              {'source': '/school/recovery-sw.js', 'headers': [{'key': 'Cache-Control', 'value': 'no-cache'}, {'key': 'Service-Worker-Allowed', 'value': '/'}]},
                               {'source': '/api/:path*', 'headers': [{'key': 'Cache-Control', 'value': 'private, no-store'}]}]}
         (school / 'vercel.json').write_text(json.dumps(config), encoding='utf-8')
         original_config = {'trailingSlash': True, 'functions': {'api/tts.js': {'maxDuration': 20}},
@@ -97,6 +99,11 @@ const relative=new URL('./media/a.png',import.meta.url);
             self.assertFalse(any(row['source'] == '/' for row in config['redirects']))
             self.assertIn({'source': '/school/media/model.glb', 'destination': 'https://cos.example/maanshan/media/model.glb', 'statusCode': 307}, config['redirects'])
             self.assertFalse(any(row['source'] == '/(.*)' for row in config['headers']))
+            worker_headers=next(row['headers'] for row in config['headers'] if row['source']=='/school/recovery-sw.js')
+            self.assertIn({'key':'Service-Worker-Allowed','value':'/school/'},worker_headers)
+            self.assertIn({'key':'Cache-Control','value':'no-cache'},worker_headers)
+            self.assertEqual((destination/'school/recovery-sw.js').read_text(encoding='utf-8'),
+                             (HERE.parent/'maanshan/recovery-sw.js').read_text(encoding='utf-8'))
             self.assertEqual(result['apiRouteCount'], 13)
             manifest = json.loads(destination.with_suffix('.manifest.json').read_text())
             for row in manifest['addedFiles']:

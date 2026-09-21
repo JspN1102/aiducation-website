@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 const assert = require('node:assert/strict');
-const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const engines = require(process.env.PLAYWRIGHT_MODULE || 'playwright'), engine = process.env.BROWSER_ENGINE || 'chromium';
 const repo = path.resolve(__dirname, '..');
 const evidence = process.env.SCHOOL_AUTH_EVIDENCE_DIR;
 const signedOut = { enabled: true, authenticated: false };
@@ -25,7 +25,7 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
 
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  const browser = await chromium.launch({ channel: 'msedge', headless: true });
+  const browser = await engines[engine].launch({ ...(engine === 'chromium' ? {channel:'msedge'} : {}), headless:true });
   const results = [], origin = `http://127.0.0.1:${server.address().port}`;
   async function run(name, work) {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -210,13 +210,32 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
       assert.equal(await page.locator('input[name=termsAccepted]').isEnabled(), true);
       assert.equal(await page.evaluate(() => window.ready || !!window.initError), false);
     });
-    await run('initial service failure retries in place', async page => {
+    await run('one initial service failure recovers automatically without replacing the page', async page => {
       let gets = 0, navigations = 0;
       page.on('framenavigated', frame => { if (frame === page.mainFrame()) navigations++; });
       await open(page, route => { gets++; return reply(route, gets === 1 ? { code: 'AUTH_UNAVAILABLE' } : signedOut, gets === 1 ? 503 : 200); });
-      await page.getByRole('button', { name: '再試一次', exact: true }).click();
       await page.waitForSelector('input[name=login]');
       assert.equal(gets, 2); assert.equal(navigations, 1);
+    });
+    await run('exhausted read retries stay closed and the existing manual retry still works',async page=>{
+      let gets=0;
+      await open(page,route=>{gets++;return reply(route,gets<=2?{code:'AUTH_UNAVAILABLE'}:signedOut,gets<=2?503:200);});
+      await page.getByRole('button',{name:'再試一次',exact:true}).waitFor();assert.equal(gets,2);assert.equal(await page.locator('input[name=login]').count(),0);
+      await page.getByRole('button',{name:'再試一次',exact:true}).click();await page.waitForSelector('input[name=login]');assert.equal(gets,3);
+    });
+    await run('malformed successful account response is not retried or treated as an authenticated session',async page=>{
+      let gets=0;await open(page,route=>{gets++;return reply(route,{unexpected:true});});
+      await page.getByRole('button',{name:'再試一次',exact:true}).waitFor();assert.equal(gets,1);assert.equal(await page.evaluate(()=>window.ready),false);
+    });
+    await run('progress gateway failure retries once with the same authenticated identity',async page=>{
+      let progressReads=0;
+      await open(page,route=>{if(!route.request().url().includes('action=progress'))return reply(route,signedIn);progressReads++;return reply(route,progressReads===1?{code:'ORIGIN_INTERRUPTED'}:{userId:signedIn.user.id,poems:{2:{reading:{linesCompleted:1}}}},progressReads===1?502:200);});
+      await page.waitForFunction(()=>window.ready);
+      const progress=await page.evaluate(()=>session.loadSchoolProgress());assert.equal(progress[2].reading.linesCompleted,1);assert.equal(progressReads,2);assert.equal(await page.evaluate(()=>session.schoolState().user.id),signedIn.user.id);
+    });
+    await run('login POST unavailability is never automatically replayed',async page=>{
+      let posts=0;await open(page,route=>{if(route.request().method()==='GET')return reply(route,signedOut);posts++;return reply(route,{code:'AUTH_UNAVAILABLE'},503);});
+      await enter(page);await page.locator('[type=submit]').click();await page.waitForFunction(()=>document.querySelector('#school-login-error').textContent.length>0);assert.equal(posts,1);
     });
     await run('expired progress cannot apply to a cleared identity', async page => {
       const sent = deferred(), finish = deferred();
@@ -245,7 +264,7 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
       }
     });
   } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }
-  const output = { ok: results.every(result => result.pass), syntheticOnly: true, results };
+  const output = { ok: results.every(result => result.pass), engine, syntheticOnly: true, results };
   if (evidence) { fs.mkdirSync(evidence, { recursive: true }); fs.writeFileSync(path.join(evidence, 'auth-browser-results.json'), JSON.stringify(output, null, 2)); }
   console.log(JSON.stringify(output, null, 2));
   if (!output.ok) process.exitCode = 1;

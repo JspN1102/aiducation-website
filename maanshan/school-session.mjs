@@ -1,5 +1,6 @@
 import {TERMS_VERSION, termsConfirmationMarkup, bindTermsConfirmation} from './platform-terms.mjs?v=20260921-school9';
 import {mountShishiSprite} from './shishi-sprite.mjs?v=20260921-school9';
+import {readOnlyJSON} from './read-only-json.mjs?v=20260922-school12';
 // The cookie is HttpOnly. Only the current user's display profile and CSRF
 // token live in memory; passwords and bearer credentials are never persisted.
 let current = {enabled: false, authenticated: false, user: null, csrfToken: ''};
@@ -51,12 +52,11 @@ export async function schoolFetch(url, options = {}) {
   }
   return response;
 }
-export async function loadSchoolProgress() {
+export async function loadSchoolProgress({signal} = {}) {
   if (!current.enabled || !['student','teacher'].includes(current.user?.role)) return null;
   const actorId = current.user.id;
-  const response = await schoolFetch('/api/school-auth/?action=progress', {signal:AbortSignal.timeout(20000)});
+  const {response, data} = await readOnlyJSON('/api/school-auth/?action=progress', {timeout:20000, signal, fetchImpl:schoolFetch});
   if (!response.ok) throw new Error('學習進度暫時未能同步。');
-  const data = await response.json();
   if (blocked || current.user?.id !== actorId) throw Object.assign(new Error('請重新登入。'), {code:'AUTH_REQUIRED'});
   if (data.userId !== actorId || !data.poems) throw new Error('學習進度未能核對。');
   if (current.user.role === 'teacher' && (data.learningEpoch || 'initial') !== (current.learningEpoch || 'initial')) throw Object.assign(new Error('試用進度已重設，正在重新載入。'), {code:'LEARNING_RESET'});
@@ -87,12 +87,11 @@ function validSignedIn(data) {
     typeof data.csrfToken === 'string' && !!data.csrfToken;
 }
 async function readSession() {
-  const response = await fetch('/api/school-auth/', {credentials:'same-origin', cache:'no-store', signal:AbortSignal.timeout(15000)});
+  const {response, data} = await readOnlyJSON('/api/school-auth/', {credentials:'same-origin', cache:'no-store', timeout:15000});
   // Only the intentionally separate legacy site may lack this new endpoint.
   const legacyHost=!requiresSchoolAuth&&(['aiducation.asia','www.aiducation.asia'].includes(location.hostname)||/^aiducation-website(?:-[a-z0-9-]+)?\.vercel\.app$/.test(location.hostname));
   if (response.status === 404 && legacyHost) return {enabled:false, authenticated:false, user:null, csrfToken:''};
   if (!response.ok) throw new Error('帳戶服務暫時未能連線。');
-  const data = await response.json();
   if (typeof data.enabled !== 'boolean') throw new Error('帳戶服務回覆不完整。');
   if (requiresSchoolAuth&&!data.enabled) throw new Error('學校帳戶服務尚未就緒。');
   if ((data.enabled && typeof data.authenticated !== 'boolean') || (data.authenticated && !validSignedIn(data))) throw new Error('帳戶服務回覆不完整。');

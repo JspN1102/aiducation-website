@@ -1,4 +1,5 @@
 import {createHandwritingPad} from './handwriting-pad.mjs?v=20260921-school10';
+import {loadHanziWriter} from './hanzi-library.mjs?v=20260922-school12';
 
 // First submitted recognition is the assessment. Later stroke demonstrations
 // and free practice never change that result. Only the top candidate counts.
@@ -233,14 +234,18 @@ export function mountChallengeWriting(holder, {
     revealBoard();
     animationRequest = new view.AbortController();
     try {
-      if (!view.HanziWriter) throw new Error('Stroke animation is unavailable.');
       const resource = new URL(`./vendor/hanzi-data/${character.codePointAt(0).toString(16)}.json`, import.meta.url);
-      const response = await view.fetch(resource, {signal: animationRequest.signal});
-      if (!response.ok) throw new Error('Stroke data is unavailable.');
-      const data = await response.json();
+      const signal = animationRequest.signal;
+      const [HanziWriter, data] = await Promise.all([
+        loadHanziWriter(view, {signal}),
+        view.fetch(resource, {signal}).then(response => {
+          if (!response.ok) throw new Error('Stroke data is unavailable.');
+          return response.json();
+        })
+      ]);
       if (destroyed || request !== strokeOperation) return;
       animation.replaceChildren();
-      writer = view.HanziWriter.create(animation, character, {
+      writer = HanziWriter.create(animation, character, {
         width: 560, height: 560, padding: 45,
         showCharacter: false, showOutline: true,
         strokeColor: '#286650', outlineColor: '#e1eae4',

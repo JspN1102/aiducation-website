@@ -7,16 +7,18 @@
 <title>AI普通話學習平台</title>
 <link rel="preload" href="vendor/fonts/noto-serif-tc.woff2?v=20260921-full1" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="app.bundle.css?v=20260921-school10">
-<link rel="modulepreload" href="app.js?v=20260922-school11">
-<script type="module" src="bootstrap.mjs?v=20260922-school11" onerror="window.showLoadRecovery?.()"></script>
+<link rel="modulepreload" href="app.js?v=20260922-school12">
+<script type="module" src="bootstrap.mjs?v=20260922-school12" onerror="window.showLoadRecovery?.()"></script>
 <!-- school-module-preloads:start -->
-<link rel="modulepreload" href="bootstrap.mjs?v=20260922-school11">
-<link rel="modulepreload" href="school-session.mjs?v=20260921-school9">
+<link rel="modulepreload" href="bootstrap.mjs?v=20260922-school12">
+<link rel="modulepreload" href="school-session.mjs?v=20260922-school12">
 <link rel="modulepreload" href="platform-terms.mjs?v=20260921-school9">
 <link rel="modulepreload" href="shishi-sprite.mjs?v=20260921-school9">
 <link rel="modulepreload" href="media-images.mjs?v=20260920-art2">
 <link rel="modulepreload" href="image-compat.mjs?v=20260920-art2">
+<link rel="modulepreload" href="read-only-json.mjs?v=20260922-school12">
 <link rel="modulepreload" href="image-loader.mjs?v=20260920-art2">
+<link rel="modulepreload" href="curriculum-data.mjs?v=20260922-school12">
 <link rel="modulepreload" href="core.mjs?v=20260921-school9">
 <link rel="modulepreload" href="scene-stage.mjs?v=20260921-school9">
 <link rel="modulepreload" href="pronunciation.mjs?v=20260909a">
@@ -43,7 +45,7 @@
 <link rel="modulepreload" href="research-client.mjs?v=20260921-school9">
 <link rel="modulepreload" href="persistent-queue.mjs?v=20260920b">
 <link rel="modulepreload" href="answer-outbox.mjs?v=20260921-school9">
-<script id="school-module-preloads" type="application/json">{"quiz":{"common":["challenge.mjs?v=20260922-school11","media-images.mjs?v=20260920-art2","image-compat.mjs?v=20260920-art2","challenge-data.mjs?v=20260921-school9","challenge-dictation-bank.mjs?v=20260918c","challenge-state.mjs?v=20260921-school10","challenge-writing.mjs?v=20260921-school10","handwriting-pad.mjs?v=20260921-school10","challenge-model.mjs?v=20260921-school9","exploration.mjs?v=20260921-school9","exploration-data.mjs?v=20260920a","poem-games/research.mjs?v=20260920a","model-quality.mjs?v=20260921-ar1","living-field.mjs?v=20260921-school9","poem-games/index.mjs?v=20260922-school11"],"games":{"yong-e":["poem-games/goose.mjs?v=20260922-school11","media-images.mjs?v=20260920-art2","image-compat.mjs?v=20260920-art2","poem-games/research.mjs?v=20260920a","poem-games/image-ready.mjs?v=20260922-school11"],"zeng-wang-lun":["poem-games/zeng.mjs?v=20260922-school11","poem-games/image-ready.mjs?v=20260922-school11","poem-games/research.mjs?v=20260920a"],"ti-xi-lin-bi":["poem-games/views.mjs?v=20260921-school9","poem-games/research.mjs?v=20260920a"],"bo-chuan-gua-zhou":["poem-games/river.mjs?v=20260922-school11","poem-games/image-ready.mjs?v=20260922-school11","media-images.mjs?v=20260920-art2","image-compat.mjs?v=20260920-art2","poem-games/research.mjs?v=20260920a"],"gui-yuan-tian-ju":["poem-games/garden.mjs?v=20260922-school11","poem-games/image-ready.mjs?v=20260922-school11","media-images.mjs?v=20260920-art2","image-compat.mjs?v=20260920-art2","poem-games/research.mjs?v=20260920a"],"zao-chun":["poem-games/rain.mjs?v=20260922-school11","poem-games/image-ready.mjs?v=20260922-school11","media-images.mjs?v=20260920-art2","image-compat.mjs?v=20260920-art2","poem-games/rain-glyphs.mjs?v=20260919a","poem-games/research.mjs?v=20260920a"]}},"explore":["exploration.mjs?v=20260921-school9","exploration-data.mjs?v=20260920a","poem-games/research.mjs?v=20260920a","model-quality.mjs?v=20260921-ar1"]}</script>
+<script id="school-module-preloads" type="application/json">{"quiz":{"common":["challenge.mjs?v=20260922-school11","media-images.mjs?v=20260920-art2","image-compat.mjs?v=20260920-art2","challenge-data.mjs?v=20260921-school9","challenge-dictation-bank.mjs?v=20260918c","challenge-state.mjs?v=20260921-school10","challenge-writing.mjs?v=20260921-school10","handwriting-pad.mjs?v=20260921-school10","hanzi-library.mjs?v=20260922-school12","challenge-model.mjs?v=20260921-school9","exploration.mjs?v=20260921-school9","exploration-data.mjs?v=20260920a","poem-games/research.mjs?v=20260920a","model-quality.mjs?v=20260921-ar1","living-field.mjs?v=20260921-school9","poem-games/index.mjs?v=20260922-school11"],"games":{"yong-e":["poem-games/goose.mjs?v=20260922-school11","media-images.mjs?v=20260920-art2","image-compat.mjs?v=20260920-art2","poem-games/research.mjs?v=20260920a","poem-games/image-ready.mjs?v=20260922-school11"],"zeng-wang-lun":["poem-games/zeng.mjs?v=20260922-school11","poem-games/image-ready.mjs?v=20260922-school11","media-images.mjs?v=20260920-art2","image-compat.mjs?v=20260920-art2","poem-games/research.mjs?v=20260920a"],"ti-xi-lin-bi":["poem-games/views.mjs?v=20260921-school9","poem-games/research.mjs?v=20260920a"],"bo-chuan-gua-zhou":["poem-games/river.mjs?v=20260922-school11","poem-games/image-ready.mjs?v=20260922-school11","media-images.mjs?v=20260920-art2","image-compat.mjs?v=20260920-art2","poem-games/research.mjs?v=20260920a"],"gui-yuan-tian-ju":["poem-games/garden.mjs?v=20260922-school11","poem-games/image-ready.mjs?v=20260922-school11","media-images.mjs?v=20260920-art2","image-compat.mjs?v=20260920-art2","poem-games/research.mjs?v=20260920a"],"zao-chun":["poem-games/rain.mjs?v=20260922-school11","poem-games/image-ready.mjs?v=20260922-school11","media-images.mjs?v=20260920-art2","image-compat.mjs?v=20260920-art2","poem-games/rain-glyphs.mjs?v=20260919a","poem-games/research.mjs?v=20260920a"]}},"explore":["exploration.mjs?v=20260921-school9","exploration-data.mjs?v=20260920a","poem-games/research.mjs?v=20260920a","model-quality.mjs?v=20260921-ar1"]}</script>
 <!-- school-module-preloads:end -->
 </head>
 <body>
@@ -56,6 +58,15 @@ window.showLoadRecovery=function(){
   if(loading)loading.innerHTML='<p>剛才未能連線，請再試一次。</p><button class="button primary" onclick="location.reload()">重新載入</button>'+(location.hostname==='mandarin.aiducation.asia'?'<a class="button" href="https://aiducation.asia/school/">使用備用入口</a>':'');
 };
 setTimeout(window.showLoadRecovery,20000);
+</script>
+<script id="school-navigation-recovery">
+(() => {
+  const main = location.hostname === 'mandarin.aiducation.asia';
+  if ((!main && location.hostname !== 'aiducation.asia') || !('serviceWorker' in navigator)) return;
+  try {
+    navigator.serviceWorker.register('/school/recovery-sw.js', {scope: main ? '/' : '/school/', updateViaCache: 'none'}).catch(() => {});
+  } catch {}
+})();
 </script>
 <div id="shishi-guide-host"></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>

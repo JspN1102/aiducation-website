@@ -1,6 +1,7 @@
 import {createGameImageLoader} from './image-ready.mjs?v=20260922-school11';
+import {imageAsset} from '../media-images.mjs?v=20260920-art2';
 import {createProcessResearch} from './research.mjs?v=20260920a';
-const asset=name=>new URL(`../media/poem-games/farewell/${name}`,import.meta.url).href;
+const asset=name=>new URL(imageAsset(`media/poem-games/farewell/${name}`),import.meta.url).href;
 const chapters=[
  {title:'幫小舟準備出發',verse:'李白乘舟將欲行',action:'把小舟划到亮着的水面。想聽詩句，也可以按「聽這句」。'},
  {title:'我也來踏歌',verse:'忽聞岸上踏歌聲',action:'左、右、左、右，踏四步。快慢都由你！'},
