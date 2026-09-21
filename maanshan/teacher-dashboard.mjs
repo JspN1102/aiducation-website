@@ -277,7 +277,7 @@ function renderDocumentStatus(){
 function renderAssistant(){
  const host=document.querySelector('#teacher-analysis');if(!host)return;const job=state.assistantJob;
  if(job?.status==='running'){host.innerHTML=`<section class="analysis-loading" role="status"><span class="loader" aria-hidden="true"></span><div><h2>正在撰寫 Word 報告</h2><p>${esc(job.scope)}</p><p>${job.polling?'報告仍在處理，完成後會自動下載。':'正在整理學習紀錄與教學建議，請稍候。'}</p></div><button class="button" data-teacher-tool="cancel-analysis">停止等候</button></section>`;return;}
- if(job&&['error','empty','cancelled','waiting'].includes(job.status)){host.innerHTML=`<section class="analysis-message" role="status"><h2>${job.status==='empty'?'這個範圍還沒有可分析的學習紀錄':job.status==='cancelled'?'已停止等候':job.status==='waiting'?'報告仍在背景整理':'Word 報告暫未完成'}</h2><p>${esc(job.message)}</p><p class="helper">${esc(job.scope)}</p><button class="button primary" data-teacher-tool="docx">${job.status==='empty'?'重新檢查資料':job.status==='waiting'?'取回報告':'再試一次'}</button></section>`;return;}
+ if(job&&['error','empty','cancelled','waiting'].includes(job.status)){host.innerHTML=`<section class="analysis-message" role="status"><h2>${job.status==='empty'?'這個範圍還沒有可分析的學習紀錄':job.status==='cancelled'?'已停止等候':job.status==='waiting'?'報告仍在背景整理':'Word 報告暫未完成'}</h2><p>${esc(job.message)}</p><p class="helper">${esc(job.scope)}</p><button class="button primary" data-teacher-tool="docx">${job.status==='empty'?'重新檢查資料':resumableReportId(job,filterKey(state.filters))?'取回報告':'再試一次'}</button></section>`;return;}
  host.replaceChildren();
 }
 function toolErrorMessage(error,kind='analysis'){
@@ -295,9 +295,10 @@ async function prepareToolScope(){
 }
 function sleepForAnalysis(milliseconds,signal){return new Promise((resolve,reject)=>{if(signal.aborted){reject(new DOMException('Cancelled','AbortError'));return;}const timer=setTimeout(done,milliseconds);function done(){signal.removeEventListener('abort',abort);resolve();}function abort(){clearTimeout(timer);signal.removeEventListener('abort',abort);reject(new DOMException('Cancelled','AbortError'));}signal.addEventListener('abort',abort,{once:true});});}
 function cancelAnalysis(){const job=state.assistantJob;if(!job||job.status!=='running')return;job.controller.abort();job.status='cancelled';job.message='已停止這個畫面的等候。伺服器可能仍在完成分析，稍後再試會取回已保存的結果。';state.assistantReport=null;renderTeacherTools();}
+function resumableReportId(job,key){return job?.filterKey===key&&['waiting','cancelled','error'].includes(job.status)&&job.resume!==false&&/^ta_[a-f0-9]{64}$/.test(job.reportId||'')?job.reportId:null;}
 async function generateAnalysis(){
  if(state.assistantJob?.status==='running'||state.documentJob?.status==='running')return;const filters=await prepareToolScope();if(!filters)return;
- const epoch=sessionEpoch,key=filterKey(filters),previous=state.assistantJob,resumeReportId=previous?.status==='waiting'&&previous.filterKey===key?previous.reportId:null;
+ const epoch=sessionEpoch,key=filterKey(filters),resumeReportId=resumableReportId(state.assistantJob,key);
  const job={status:'running',controller:new AbortController(),scope:filterDescription(filters),filterKey:key,reportId:resumeReportId,polling:false,cached:false};state.assistantJob=job;state.assistantReport=null;state.documentJob=null;renderTeacherTools();
  const current=()=>epoch===sessionEpoch&&state.assistantJob===job&&job.status==='running'&&filterKey(state.filters)===key&&filterKey(draftFilters())===key&&!job.controller.signal.aborted;
  try{
@@ -318,7 +319,13 @@ async function generateAnalysis(){
   if(!current())return;const report=payload?.report;
   if(payload.ok!==true||!report||!/^ta_[a-f0-9]{64}$/.test(payload.reportId)||report.reportId!==payload.reportId||filterKey(report.filters)!==key||!report.analysis||typeof report.analysis.overview!=='string')throw new Error('Invalid report');
   state.assistantReport=report;job.status='complete';job.cached=payload.cached===true;renderTeacherTools();await exportDocument('docx');
- }catch(error){if(!current())return;if(error.status===401||error.status===403){lockSession();return;}job.status=error.code==='REPORT_STILL_PROCESSING'?'waiting':error.code==='NO_LEARNING_DATA'?'empty':'error';job.message=toolErrorMessage(error);renderTeacherTools();}
+ }catch(error){
+  if(!current())return;if(error.status===401||error.status===403){lockSession();return;}
+  // Keep an accepted job across network failures or cancellation, even if new
+  // pupil records arrive. Only an explicit terminal result permits a new POST.
+  job.resume=!['REPORT_NOT_FOUND','ANALYSIS_RETRY_REQUIRED','AI_REPORT_QUALITY','AI_INVALID_RESPONSE','AI_MODEL_MISMATCH','AI_TIMEOUT','AI_UNAVAILABLE','AI_RATE_LIMITED','AI_NOT_CONFIGURED','INVALID_REPORT_ID'].includes(error.code);
+  job.status=error.code==='REPORT_STILL_PROCESSING'?'waiting':error.code==='NO_LEARNING_DATA'?'empty':'error';job.message=toolErrorMessage(error);renderTeacherTools();
+ }
 }
 function cancelDocument(){const job=state.documentJob;if(!job||job.status!=='running')return;job.controller.abort();job.status='cancelled';job.message='沒有下載部分檔案，可以稍後再試。';renderTeacherTools();}
 async function exportDocument(action){
