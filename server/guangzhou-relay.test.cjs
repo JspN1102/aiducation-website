@@ -11,7 +11,7 @@ const env={GUANGZHOU_RELAY_HOST:'134.175.149.14',GUANGZHOU_RELAY_USERNAME:'maans
 const listen=server=>new Promise(resolve=>server.listen(0,'127.0.0.1',()=>resolve(server.address().port)));
 async function fixture(fn,options={}){
  const origin=options.origin||http.createServer(fn);
- if(!options.origin)origin.keepAliveTimeout=35000;
+ if(!options.origin)origin.keepAliveTimeout=65000;
  const originPort=await listen(origin),clients=[],requests=[],channels=[];
  class SSH extends EventEmitter{
   constructor(){super();this.closed=false;this.once('close',()=>{this.closed=true;});}
@@ -285,9 +285,9 @@ test('a dead replacement session is not retried again: the POST is reported unav
 test('expired HTTP channels reconnect on the same SSH session even after a suspended clock',async()=>{
  let clock=1000;const f=await fixture((req,res)=>res.end('ok'),{now:()=>clock});
  try{
-  await (await f.call()).text();clock+=20000;
-  await (await f.call()).text();assert.equal(f.requests.length,1,'a 20 second reading pause reuses the HTTP channel');
-  clock+=26000;
+  await (await f.call()).text();clock+=45000;
+  await (await f.call()).text();assert.equal(f.requests.length,1,'a 45 second reading pause reuses the HTTP channel');
+  clock+=56000;
   await (await f.call()).text();assert.equal(f.clients.length,1);assert.equal(f.requests.length,2);
   assert(f.channels[0].destroyed,'expired channel is destroyed before reuse');
   const previous=f.channels[1],closed=new Promise(resolve=>previous.once('close',resolve));

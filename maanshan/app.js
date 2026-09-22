@@ -14,11 +14,11 @@ import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school9';
 import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20260922-school13';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school13';
-import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20260922-school14';
-import {createRecordingLibrary} from './recording-library.mjs?v=20260921-school9';
-import {requestJSON, requestChat} from './network.mjs?v=20260922-school14';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260922-school14';
-import {schoolSession} from './bootstrap.mjs?v=20260922-school14';
+import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20260922-school15';
+import {createRecordingLibrary} from './recording-library.mjs?v=20260922-school15';
+import {requestJSON, requestChat} from './network.mjs?v=20260922-school15';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260922-school15';
+import {schoolSession} from './bootstrap.mjs?v=20260922-school15';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school9';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school9';
 import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
@@ -624,20 +624,40 @@ async function startRecording() {
 function stopRecording(){if(recorder?.state==='recording'){recorder.stop();$('#record-controls').innerHTML='<p class="record-status"><span class="spinner"></span> 正在聆聽你的朗讀</p>';}}
 async function assessRecording(blob,p,index,version,generation,context,existing=null) {
   const isCurrent=()=>version===routeVersion&&generation===recordingVersion;
-  const key=`${p.id}-${index}`,pending=existing||{blob,encoded:null,recordingId:crypto.randomUUID(),recordedAt:Date.now(),canRetry:true,message:'錄音已保留，可以再送一次。',researchContext:recordResearch};
+  const key=`${p.id}-${index}`,pending=existing||{blob,encoded:null,compact:undefined,recordingId:crypto.randomUUID(),recordedAt:Date.now(),canRetry:true,message:'錄音已保留，可以再送一次。',researchContext:recordResearch};
   const controller=new AbortController();requests.add(controller);
+  const closeContext=()=>{if(context?.state!=='closed')context?.close().catch(()=>{});if(recordContext===context)recordContext=null;context=null;};
   try {
     if(blob.size>=100)pendingRecordings.set(key,pending);
-    if(!pending.encoded)pending.encoded=await encodeRecording(blob,context);
+    // The recorder's own compact Opus/AAC bytes go first: several times smaller
+    // on the slow inbound leg, decoded on the origin to the same 16 kHz PCM.
+    // Only a definite refusal before scoring falls back to browser PCM, once.
+    if(pending.compact===undefined&&!pending.encoded)pending.compact=await compactRecording(blob);
+    if(!pending.compact&&!pending.encoded)pending.encoded=await encodeRecording(blob,context);
     if(!isCurrent())return;
-    if(context?.state!=='closed')context?.close().catch(()=>{});if(recordContext===context)recordContext=null;
-    const raw=await submitAssessment({audio:pending.encoded,poemId:p.id,refText:p.lines[index].simplified,...(collectResearch?{researchContext:pending.researchContext}: {})},{signal:controller.signal,onRetry:()=>{research.emit('retry',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,retryCount:1});if(isCurrent())assessmentStatus('正在重新連線，錄音已保留');},onWaiting:()=>{if(isCurrent())assessmentStatus('正在等候評測，錄音已保留');}});
+    if(pending.encoded)closeContext();
+    const payload=audio=>({...audio,poemId:p.id,refText:p.lines[index].simplified,...(collectResearch?{researchContext:pending.researchContext}: {})});
+    const options={signal:controller.signal,onRetry:()=>{research.emit('retry',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,retryCount:1});if(isCurrent())assessmentStatus('正在重新連線，錄音已保留');},onWaiting:()=>{if(isCurrent())assessmentStatus('正在等候評測，錄音已保留');}};
+    let raw;
+    if(pending.encoded)raw=await submitAssessment(payload({audio:pending.encoded}),options);
+    else {
+      try{raw=await submitAssessment(payload({audio:pending.compact.audio,audioFormat:pending.compact.audioFormat}),options);}
+      catch(error){
+        if(error?.code!=='TRANSCODE')throw error;
+        pending.compact=null;
+        if(!isCurrent())return;
+        if(!context||context.state==='closed'){const Audio=window.AudioContext||window.webkitAudioContext;context=Audio?new Audio():null;}
+        pending.encoded=await encodeRecording(blob,context);closeContext();
+        if(!isCurrent())return;
+        raw=await submitAssessment(payload({audio:pending.encoded}),options);
+      }
+    }
     if(raw.researchRecorded===false)research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code:'storage_unavailable',retryable:true}});
     if(!isCurrent())return;
     const result=mapAssessment(raw,p.lines[index]);result.words=result.words.map(w=>({...w,lineIndex:index}));result.recordingId=pending.recordingId;const s=state(p);s.reading[index]=result;s.report='';s.updatedAt=Date.now();
     // Saving is independent of grading: return the score immediately, then
     // upload privately with a durable retry queue. No second SOE call is needed.
-    void recordings.save({poemId:p.id,lineIndex:index,recordingId:pending.recordingId,recordedAt:pending.recordedAt,audio:pending.encoded,blob});
+    void recordings.save({poemId:p.id,lineIndex:index,recordingId:pending.recordingId,recordedAt:pending.recordedAt,audio:pending.encoded||pending.compact.audio,...(pending.encoded?{}:{audioFormat:pending.compact.audioFormat}),blob});
     research.emit('feedback_shown',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,result:{status:'completed',score:result.total_score,correct:null}});
     if(raw.researchRecorded===false)research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code:'storage_unavailable',retryable:true}});
     pendingRecordings.delete(key);
@@ -646,10 +666,10 @@ async function assessRecording(blob,p,index,version,generation,context,existing=
     queueReading(p,{lineIdx:index,lineScore:result.total_score});
   } catch(error) {
     research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code:researchErrorCode(error),retryable:true}});
-    pending.canRetry=Boolean(error.canRetry||pending.encoded);pending.message=recordingErrorMessage(error);
+    pending.canRetry=Boolean(error.canRetry||pending.encoded||pending.compact);pending.message=recordingErrorMessage(error);
     if(isCurrent()){recordStep='read';if(!pendingRecordings.has(key))toast(pending.message);}
   }
-  finally {requests.delete(controller);if(isCurrent()){cancelRecording();setRecordStep(recordStep);}}
+  finally {closeContext();requests.delete(controller);if(isCurrent()){cancelRecording();setRecordStep(recordStep);}}
 }
 function retryRecording(){
   const pending=pendingRecordings.get(`${poem.id}-${currentLine}`);if(recordBusy||!pending?.canRetry)return;

@@ -13,8 +13,9 @@ function wav(duration=1,seed=1){
  for(let i=44;i<b.length;i+=2)b.writeInt16LE(Math.round(Math.sin(i*seed*.05)*4000),i);return b;
 }
 function response(){return {headers:{},statusCode:200,setHeader(k,v){this.headers[k]=v;},status(n){this.statusCode=n;return this;},json(v){this.body=v;return this;},send(v){this.body=v;return this;}};}
-function fixture(){
- const rows=new Map(),authRows=new Map();let rev=0;
+function fixture({transcode}={}){
+ const rows=new Map(),authRows=new Map(),transcodes=[];let rev=0;
+ const transcoder={FORMATS:{webm:{},mp4:{}},MAX_INPUT_BYTES:1024*1024,isTransient:error=>['FFMPEG_UNAVAILABLE','TIMEOUT','BUSY'].includes(error?.code),async transcodeToWav(input,format){transcodes.push({input,format});if(!transcode)throw new Error('unexpected transcode');return transcode(input,format);}};
  const authStore={async get(k){return authRows.get(k)||null;},async cas(k,value,version){if(authRows.get(k)?.version!==version)throw new auth.Conflict();authRows.set(k,{value,version:String(++rev)});}};
  const service={...auth,async requireActor(req,options){if(!req.actor)throw new auth.AuthError(401,'AUTH_REQUIRED');if(options.csrf&&req.headers?.['x-csrf-token']!=='synthetic')throw new auth.AuthError(403,'CSRF_REJECTED');return req.actor;}};
  const learning=createTeacherLearning({service,store:()=>authStore,now:()=>NOW});
@@ -27,10 +28,10 @@ function fixture(){
    if(!old||old.recording_id!==r.recording_id&&(r.recorded_at>old.recorded_at||r.recorded_at===old.recorded_at&&r.recording_id>old.recording_id))rows.set(k,{...r,actor:a,epoch:e});
    return {row:rows.get(k),saved:rows.get(k).recording_id===r.recording_id};}
  };
- const handler=createHandler({service,learning,store:()=>store,now:()=>NOW});
+ const handler=createHandler({service,learning,store:()=>store,now:()=>NOW,transcoder});
  const input=(patch={})=>({actorId:student.id,poemId:1,lineIndex:0,recordingId:crypto.randomUUID(),recordedAt:NOW,audio:wav().toString('base64'),...patch});
  async function call(method,input,actor=student,headers={'x-csrf-token':'synthetic'}){const res=response();await handler({method,actor,headers,...(method==='POST'?{body:input}:{query:input})},res);return res;}
- return {rows,learning,input,call};
+ return {rows,learning,input,call,transcodes};
 }
 test('stores private audio, restores exact bytes after refresh, and is idempotent',async()=>{
  const f=fixture(),body=f.input(),uploaded=await f.call('POST',body);
@@ -98,6 +99,30 @@ async function libraryFixture({storage,actorId=student.id,epoch,fail=false}={}){
  const build=()=>createRecordingLibrary({enabled:true,actorId,learningEpoch:epoch,fetch,storage:persistence,canUse:()=>allowed});
  return {queue,scope,requests,server,build,fail(v){failure=v;},allow(v){allowed=v;}};
 }
+test('compact uploads are decoded to the stored WAV, transient decoder trouble retries later and bad audio is rejected',async()=>{
+ const decoded=wav(2,3),input=Buffer.concat([Buffer.from([0x1a,0x45,0xdf,0xa3]),Buffer.alloc(6000,2)]);
+ const f=fixture({transcode:async()=>decoded}),body=f.input({audio:input.toString('base64'),audioFormat:'webm'});
+ const saved=await f.call('POST',body);assert.equal(saved.statusCode,200);assert.equal(saved.body.recording.durationMs,2000);assert.equal(saved.body.recording.bytes,decoded.length);
+ assert.equal(f.transcodes.length,1);assert.deepEqual(f.transcodes[0].input,input);assert.equal(f.transcodes[0].format,'webm');
+ const audio=await f.call('GET',{action:'audio',actorId:student.id,poemId:'1',lineIndex:'0',recordingId:body.recordingId});
+ assert.equal(audio.headers['Content-Type'],'audio/wav');assert.deepEqual(audio.body,decoded);
+ for(const patch of [{audioFormat:'flac'},{audioFormat:'webm',audioCompression:'gzip'},{audioFormat:''},{audio:Buffer.alloc(1024*1024+3).toString('base64'),audioFormat:'webm'}]){
+  assert.equal((await f.call('POST',f.input({audio:input.toString('base64'),...patch}))).statusCode,400);
+ }
+ assert.equal(f.transcodes.length,1);
+ const broken=fixture({transcode:async()=>{throw Object.assign(new Error('x'),{code:'DECODE_FAILED'});}});
+ assert.equal((await broken.call('POST',broken.input({audio:input.toString('base64'),audioFormat:'webm'}))).statusCode,422);
+ const unavailable=fixture({transcode:async()=>{throw Object.assign(new Error('x'),{code:'TIMEOUT'});}});
+ const later=await unavailable.call('POST',unavailable.input({audio:input.toString('base64'),audioFormat:'webm'}));
+ assert.equal(later.statusCode,503);assert.equal(later.body.code,'RECORDING_DECODER_UNAVAILABLE');assert.equal(unavailable.rows.size,0);
+ const {createRecordingLibrary}=await import('../maanshan/recording-library.mjs');const posts=[];
+ const library=createRecordingLibrary({enabled:true,actorId:student.id,storage:{async list(){return [{scope:student.id+':student',item:{poemId:2,lineIndex:1,recordingId:crypto.randomUUID(),recordedAt:NOW,audio:input.toString('base64'),audioFormat:'webm'}}];},async put(){},async remove(){}},
+  fetch:async(url,options={})=>{if(options.method==='POST'){const value=JSON.parse(options.body);posts.push(value);return new Response(JSON.stringify({ok:true,userId:student.id,saved:true,recording:{poemId:value.poemId,lineIndex:value.lineIndex,recordingId:value.recordingId,recordedAt:value.recordedAt}}));}return new Response(JSON.stringify({ok:true,userId:student.id,recordings:[]}));}});
+ await library.save({poemId:1,lineIndex:0,recordingId:crypto.randomUUID(),recordedAt:NOW,audio:input.toString('base64'),audioFormat:'webm',blob:new Blob([input],{type:'audio/webm'})});
+ await library.hydrate();await library.flush();
+ assert.equal(posts.length,2);assert(posts.every(value=>value.audioFormat==='webm'&&value.audioCompression===undefined&&value.audio===input.toString('base64')));
+ const local=library.source('2-1');assert.equal(local.type,'audio/webm');assert.deepEqual(Buffer.from(await local.arrayBuffer()),input);library.stop();
+});
 test('failed upload survives a refresh, replays locally then retries without a second assessment',async()=>{
  const f=await libraryFixture({fail:true}),library=f.build(),id=crypto.randomUUID(),item={poemId:1,lineIndex:0,recordingId:id,recordedAt:NOW,audio:wav().toString('base64'),blob:new Blob([wav()],{type:'audio/wav'})};
  await library.save(item);await library.flush();assert.equal(f.queue.size,1);library.stop();

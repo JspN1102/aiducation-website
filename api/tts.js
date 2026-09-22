@@ -1,5 +1,8 @@
 const crypto = require('crypto');
 const https = require('https');
+// Reuse TLS connections to the Tencent TTS endpoint: a cold handshake from
+// Guangzhou costs a noticeable share of a short synthesis.
+const ttsAgent = new https.Agent({keepAlive: true, maxSockets: 4, maxFreeSockets: 2, timeout: 30000});
 const schoolAuth = require('./_lib/school-auth.cjs');
 const {cacheKey, hasAudio, readAudio, writeAudio, CACHE_VERSION} = require('./_lib/tts-cache');
 
@@ -256,7 +259,7 @@ async function synthesize({text, voice, speed, allowSSML}) {
     let settled = false, deadline;
     const finish = (error, value) => { if (settled) return; settled = true; clearTimeout(deadline); error ? reject(error) : resolve(value); };
     const reqOpts = {
-      hostname: 'tts.tencentcloudapi.com', path: '/', method: 'POST',
+      hostname: 'tts.tencentcloudapi.com', path: '/', method: 'POST', agent: ttsAgent,
       headers: {'Content-Type': 'application/json', Host: 'tts.tencentcloudapi.com',
         'X-TC-Action': 'TextToVoice', 'X-TC-Version': '2019-08-23',
         'X-TC-Timestamp': String(timestamp), 'X-TC-Region': 'ap-guangzhou', Authorization: authorization}

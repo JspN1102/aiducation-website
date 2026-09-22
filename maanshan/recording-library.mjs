@@ -6,11 +6,15 @@ const slot = value => `${value.poemId}-${value.lineIndex}`;
 const newer = (a,b) => !b || a.recordedAt>b.recordedAt || a.recordedAt===b.recordedAt&&a.recordingId>b.recordingId;
 const valid = value => value && Number.isInteger(value.poemId)&&value.poemId>=1&&value.poemId<=6&&
   Number.isInteger(value.lineIndex)&&value.lineIndex>=0&&value.lineIndex<8&&
-  typeof value.recordingId==='string'&&/^[a-f0-9-]{36}$/.test(value.recordingId)&&Number.isSafeInteger(value.recordedAt);
-function wavBlob(audio) {
+  typeof value.recordingId==='string'&&/^[a-f0-9-]{36}$/.test(value.recordingId)&&Number.isSafeInteger(value.recordedAt)&&
+  (value.audioFormat===undefined||typeof value.audioFormat==='string'&&/^[a-z0-9]{2,5}$/.test(value.audioFormat));
+// Compact uploads keep the recorder's own container; the server turns them
+// into the same WAV it serves back, so local playback uses the original type.
+const AUDIO_TYPES={webm:'audio/webm',ogg:'audio/ogg',mp4:'audio/mp4',m4a:'audio/mp4',aac:'audio/aac',mp3:'audio/mpeg'};
+function audioBlob(audio,audioFormat) {
   const binary=atob(audio),bytes=new Uint8Array(binary.length);
   for(let i=0;i<bytes.length;i++)bytes[i]=binary.charCodeAt(i);
-  return new Blob([bytes],{type:'audio/wav'});
+  return new Blob([bytes],{type:audioFormat&&AUDIO_TYPES[audioFormat]||'audio/wav'});
 }
 export function createRecordingQueue(indexedDB=globalThis.indexedDB) {
   let opening;
@@ -117,9 +121,9 @@ export function createRecordingLibrary({enabled,actorId,learningEpoch,fetch:requ
     })().finally(()=>{flushing=null;syncing=false;notify();});
     return flushing;
   }
-  async function save({poemId,lineIndex,recordingId,recordedAt,audio,blob}) {
+  async function save({poemId,lineIndex,recordingId,recordedAt,audio,audioFormat,blob}) {
     if(!active())return;
-    const item={poemId,lineIndex,recordingId,recordedAt,audio};
+    const item={poemId,lineIndex,recordingId,recordedAt,audio,...(typeof audioFormat==='string'?{audioFormat}:{})};
     if(!valid(item)||typeof audio!=='string'||audio.length>MAX_AUDIO)return;
     if(!remember(item,blob))return;
     if(!enabled){notify();return;}
@@ -142,7 +146,7 @@ export function createRecordingLibrary({enabled,actorId,learningEpoch,fetch:requ
             const current=pending.get(slot(item));
             if(newer(item,current)){pending.set(slot(item),item);held.delete(slot(item));}
             if(volatile.get(slot(item))===item.recordingId)volatile.delete(slot(item));
-            if(newer(item,records.get(slot(item))))remember(item,wavBlob(item.audio));
+            if(newer(item,records.get(slot(item))))remember(item,audioBlob(item.audio,item.audioFormat));
           }
         }
         notify();

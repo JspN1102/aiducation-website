@@ -28,9 +28,11 @@ function logAuthFailure(status,result,input){
  // Only fixed labels, status, and presence flags reach logs; never payloads or headers.
  console.warn(JSON.stringify(entry));
 }
-// The loopback HTTP server closes idle sockets after 35 seconds. Expire earlier,
+// The loopback HTTP server closes idle sockets after 65 seconds. Expire earlier,
 // including after a suspended serverless instance resumes without firing timers.
-const CHANNEL_IDLE_MS=25000;
+// A pupil's next line usually comes within a minute, so the warm channel is
+// reused instead of paying a fresh SSH channel round trip for every request.
+const CHANNEL_IDLE_MS=55000;
 // Opening a channel normally takes one round trip (well under two seconds even
 // when many open at once). Longer silence means the session is gone.
 const CHANNEL_OPEN_TIMEOUT_MS=5000;
@@ -107,10 +109,12 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
  // (including a concurrent one that shares it) is offered the same dead client.
  const discard=client=>{disposeAgent(client);if(connection===client)connection=null;if(pendingClient===client){pending=null;pendingClient=null;}client.destroy();};
  async function tunnel(alternate=false){
-  // A child can listen or write for much longer than 20 seconds between calls.
-  // Keep the verified SSH session across those pauses; transport errors/close
-  // still invalidate it immediately, and no forwarded POST is ever replayed.
-  if(connection&&now()-lastUsed>120000&&active<=1){disposeAgent(connection);connection.end();connection=null;pending=null;pendingClient=null;}
+  // A child can listen or write for several minutes between calls. Keep the
+  // verified SSH session across those pauses (the relay sshd tolerates about
+  // ten minutes of silence); transport errors/close still invalidate it
+  // immediately, dead sessions are detected on use, and no forwarded POST is
+  // ever replayed.
+  if(connection&&now()-lastUsed>240000&&active<=1){disposeAgent(connection);connection.end();connection=null;pending=null;pendingClient=null;}
   lastUsed=now();
   if(pending)return pending;
   const config=configuration(env),client=clientFactory();

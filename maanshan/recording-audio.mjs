@@ -1,4 +1,4 @@
-import {schoolFetch} from './school-session.mjs?v=20260922-school14';
+import {schoolFetch} from './school-session.mjs?v=20260922-school15';
 function audioError(code, message, canRetry = false) {
   return Object.assign(new Error(message), {code, canRetry});
 }
@@ -51,8 +51,27 @@ export async function encodeRecording(blob, context, scope = globalThis) {
   return btoa(binary);
 }
 
+// The recorder's own Opus/AAC bytes are several times smaller than PCM. The
+// origin decodes them to the identical mono 16 kHz WAV before scoring or
+// storing, so only the upload changes. Unknown containers or large blobs keep
+// the in-browser PCM path.
+const COMPACT_FORMATS = {'audio/webm':'webm', 'audio/ogg':'ogg', 'audio/mp4':'mp4', 'audio/x-m4a':'m4a', 'audio/m4a':'m4a', 'audio/aac':'aac', 'audio/mpeg':'mp3'};
+export const COMPACT_MAX_BYTES = 800 * 1024;
+export function compactFormat(type) {
+  return COMPACT_FORMATS[String(type || '').split(';')[0].trim().toLowerCase()] || null;
+}
+export async function compactRecording(blob, {maxBytes = COMPACT_MAX_BYTES} = {}) {
+  const audioFormat = compactFormat(blob?.type);
+  if (!audioFormat || !(blob.size >= 100) || blob.size > maxBytes) return null;
+  try {
+    const bytes = new Uint8Array(await blob.arrayBuffer());let binary = '';
+    for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    return {audio: btoa(binary), audioFormat};
+  } catch { return null; }
+}
+
 export async function prepareAssessmentPayload(payload, scope = globalThis) {
-  if (typeof payload?.audio !== 'string' || payload.audioCompression != null || typeof scope.CompressionStream !== 'function') return payload;
+  if (typeof payload?.audio !== 'string' || payload.audioCompression != null || typeof payload.audioFormat === 'string' || typeof scope.CompressionStream !== 'function') return payload;
   try {
     const binary = atob(payload.audio), bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
     if (bytes.length < 8192) return payload;
@@ -84,6 +103,8 @@ export async function submitAssessment(payload, {signal, onRetry, onWaiting, fet
       if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
       if (!response.ok || !data || data.error) {
         if (response.status === 429) throw audioError('BUSY', '現在較多人使用，稍後可以再送一次。', true);
+        // Definite, pre-scoring refusal of the compact upload: the caller re-sends PCM once.
+        if (response.status === 422 && data?.code === 'AUDIO_TRANSCODE_FAILED') throw audioError('TRANSCODE', '錄音處理未能完成，請再試一次。', true);
         throw audioError('SERVICE', '評測暫時未能完成，稍後可以再送一次。', true);
       }
       return data;

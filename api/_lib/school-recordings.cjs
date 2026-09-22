@@ -4,6 +4,7 @@ const {promisify} = require('node:util');
 const {gzip, gunzip} = require('node:zlib');
 const auth = require('./school-auth.cjs');
 const teacherLearning = require('./teacher-learning-reset.cjs');
+const transcode = require('./audio-transcode.cjs');
 const zip = promisify(gzip), unzip = promisify(gunzip);
 const MAX_WAV_BYTES = 44 + 32000 * 32;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
@@ -76,7 +77,7 @@ function runtimeStore() {
   if(!stores.has(pool))stores.set(pool,createPostgresRecordings(pool));
   return stores.get(pool);
 }
-function createHandler({service=auth,learning=teacherLearning,store=runtimeStore,now=Date.now}={}) {
+function createHandler({service=auth,learning=teacherLearning,store=runtimeStore,now=Date.now,transcoder=transcode}={}) {
   return async function recordings(req,res) {
     res.setHeader('Cache-Control','private, no-store');res.setHeader('Vary','Cookie');res.setHeader('X-Content-Type-Options','nosniff');
     try {
@@ -109,13 +110,22 @@ function createHandler({service=auth,learning=teacherLearning,store=runtimeStore
         res.setHeader('Content-Disposition','inline; filename="reading.wav"');
         return res.status(200).send(bytes);
       }
-      if(Object.keys(input).some(key=>!['actorId','learningEpoch','poemId','lineIndex','recordingId','recordedAt','audio','audioCompression'].includes(key))||
+      if(Object.keys(input).some(key=>!['actorId','learningEpoch','poemId','lineIndex','recordingId','recordedAt','audio','audioCompression','audioFormat'].includes(key))||
         !Number.isSafeInteger(input.recordedAt)||input.recordedAt<1577836800000||input.recordedAt>now()+300000||
         typeof input.audio!=='string'||input.audio.length>Math.ceil(MAX_WAV_BYTES/3)*4||
         !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(input.audio)||
-        ![undefined,'gzip'].includes(input.audioCompression))fail(400,'INVALID_RECORDING');
+        ![undefined,'gzip'].includes(input.audioCompression)||
+        !(input.audioFormat===undefined||typeof input.audioFormat==='string'&&transcoder.FORMATS[input.audioFormat]&&input.audioCompression===undefined))fail(400,'INVALID_RECORDING');
       let bytes=Buffer.from(input.audio,'base64');
       if(input.audioCompression==='gzip'){try{bytes=await unzip(bytes,{maxOutputLength:MAX_WAV_BYTES});}catch{fail(400,'INVALID_RECORDING');}}
+      if(input.audioFormat!==undefined){
+        // The browser's compact Opus/AAC recording is decoded here into the same
+        // PCM WAV that is stored and played back; a transient decoder problem
+        // is reported as unavailable so the client's outbox retries later.
+        if(bytes.length>transcoder.MAX_INPUT_BYTES)fail(400,'INVALID_RECORDING');
+        try{bytes=await transcoder.transcodeToWav(bytes,input.audioFormat);}
+        catch(error){if(transcoder.isTransient(error))fail(503,'RECORDING_DECODER_UNAVAILABLE');fail(422,'INVALID_RECORDING');}
+      }
       const duration=validateWav(bytes),hash=crypto.createHash('sha256').update(bytes).digest('hex');
       const result=await store().put(actor.id,epoch,{poem_id:poemId,line_index:lineIndex,recording_id:input.recordingId,recorded_at:input.recordedAt,
         audio_gzip:await zip(bytes,{level:3}),audio_sha256:hash,audio_bytes:bytes.length,duration_ms:duration});

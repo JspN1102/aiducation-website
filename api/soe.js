@@ -3,6 +3,7 @@ const WebSocket = require('ws');
 const {gunzipSync} = require('node:zlib');
 const { assessmentReference } = require('./_lib/soe-reference');
 const {withSchoolLearning} = require('./_lib/school-learning.cjs');
+const {FORMATS: AUDIO_FORMATS, MAX_INPUT_BYTES: MAX_COMPACT_BYTES, transcodeToWav} = require('./_lib/audio-transcode.cjs');
 
 function sign(signStr, secretKey) {
   return crypto.createHmac('sha1', secretKey).update(signStr).digest('base64');
@@ -36,17 +37,30 @@ module.exports = withSchoolLearning('reading', async function handler(req, res) 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { audio, refText } = req.body || {};
+  const { audio, refText, audioFormat, audioCompression } = req.body || {};
   if (!audio || !refText) return res.status(400).json({ error: 'Missing audio or refText' });
   const started = performance.now();
   let audioBuf;
   try {
     if (typeof audio !== 'string' || audio.length > 4 * 1024 * 1024 || !/^[A-Za-z0-9+/]+={0,2}$/.test(audio)) throw new Error('Invalid audio');
     audioBuf = Buffer.from(audio, 'base64');
-    if (req.body.audioCompression === 'gzip') audioBuf = gunzipSync(audioBuf, {maxOutputLength: 3 * 1024 * 1024});
-    else if (req.body.audioCompression != null) throw new Error('Unsupported audio compression');
+    if (audioFormat != null) {
+      // The browser's own compact recording; decoded below to the same PCM WAV.
+      if (typeof audioFormat !== 'string' || !AUDIO_FORMATS[audioFormat] || audioCompression != null || audioBuf.length > MAX_COMPACT_BYTES) throw new Error('Invalid audio');
+    } else if (audioCompression === 'gzip') audioBuf = gunzipSync(audioBuf, {maxOutputLength: 3 * 1024 * 1024});
+    else if (audioCompression != null) throw new Error('Unsupported audio compression');
     if (!audioBuf.length || audioBuf.length > 3 * 1024 * 1024) throw new Error('Invalid audio');
   } catch { return res.status(400).json({error: 'Invalid audio encoding'}); }
+  if (audioFormat != null) {
+    try { audioBuf = await transcodeToWav(audioBuf, audioFormat); }
+    catch (error) {
+      // Nothing has been scored yet. The browser keeps the recording and sends
+      // it again as plain PCM, so this is not a learning outcome and is written
+      // directly instead of through the research wrapper.
+      res.status(422);res.setHeader('Content-Type', 'application/json; charset=utf-8');res.setHeader('Cache-Control', 'private, no-store');
+      return res.end(JSON.stringify({error: 'Audio transcode failed', code: 'AUDIO_TRANSCODE_FAILED', reason: error?.code || 'TRANSCODE_FAILED'}));
+    }
+  }
   const prepared = performance.now();
 
   const secretId = process.env.TENCENT_SECRET_ID;
