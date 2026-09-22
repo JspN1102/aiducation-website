@@ -72,6 +72,12 @@ async function draw(page){const canvas=page.locator('.cw-board canvas');await ca
     await mount(page,'dictation','last');check(engine+' saved final wrong answer does not jump to summary',await page.locator('.cw-board').count()===1&&await page.locator('[data-ch=next]').isHidden());
     await page.locator('[data-cw=skip-correction]').click();await page.locator('[data-ch=next]:not([hidden])').waitFor();await page.locator('[data-ch=next]').click();
     check(engine+' explicit correction skip allows summary and preserves wrong result',await page.locator('.challenge-results').count()===1&&await page.evaluate(()=>saved.answers.at(-1).status==='incorrect'&&saved.writingCorrections[currentItems.at(-1).id].status==='skipped'));
+    for(const viewport of [{width:390,height:844},{width:768,height:1024},{width:1180,height:820},{width:844,height:390}]){
+     await page.setViewportSize(viewport);await mount(page,'dictation');await draw(page);await page.locator('[data-cw=submit]').click();await page.locator('.cw-review:not([hidden])').waitFor();await page.locator('[data-cw=strokes]').click();await page.locator('.cw-animation svg path').first().waitFor({state:'attached'});await page.locator('[data-cw=practise]').click();
+     const layout=await page.evaluate(()=>{const b=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return{y:r.y,bottom:r.bottom,right:r.right};};return{status:b('.cw-status'),board:b('.cw-board'),actions:b('.cw-actions'),body:b('.challenge-body'),prompt:b('.challenge-writing-heading')};});
+     if(process.env.WRITING_SCREENSHOTS_DIR){fs.mkdirSync(process.env.WRITING_SCREENSHOTS_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.WRITING_SCREENSHOTS_DIR,`challenge-${engine}-${viewport.width}x${viewport.height}.png`)});}
+     check(`${engine} ${viewport.width} full challenge keeps rewrite message and controls visible`,layout.status.y>=layout.body.y-1&&layout.status.bottom<=layout.board.y+1&&layout.actions.bottom<=layout.body.bottom+1&&layout.board.bottom<=layout.body.bottom+1&&layout.prompt.y>=layout.body.y-1&&layout.prompt.bottom<=layout.body.bottom+1);
+    }
     check(engine+' correction integration has no browser errors',errors.length===0);await context.close();
    }
   }finally{await browser.close();}

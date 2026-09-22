@@ -40,6 +40,7 @@ async function state(page){return page.evaluate(()=>({calls,answers,corrections,
    check(engine+' untouched answer blocks advancement',await page.locator('#next').isDisabled());
    await draw(page);await submit(page);let data=await state(page);
    check(engine+' first wrong answer retained and blocks next',data.answers.length===1&&data.result.status==='incorrect'&&!data.canContinue);
+   check(engine+' wrong answer does not reveal the target glyph',await page.locator('.challenge-writing').evaluate(el=>!el.textContent.includes('岸')&&!el.querySelector('.cw-answer')&&el.querySelector('.cw-animation').hidden));
    const original=JSON.stringify(data.result);
    await page.locator('[data-cw=strokes]').click();await page.locator('.cw-animation svg path').first().waitFor({state:'attached'});
    const sizes=await page.locator('.cw-animation svg').evaluate(el=>({svg:el.getBoundingClientRect().width,board:el.closest('.cw-board').getBoundingClientRect().width}));
@@ -63,8 +64,15 @@ async function state(page){return page.evaluate(()=>({calls,answers,corrections,
    check(engine+' late correction cannot mutate destroyed widget',await page.evaluate(()=>corrections.length===0));
    for(const [width,height,minimum]of [[390,844,275],[768,1024,400],[1180,820,320]]){
     await page.setViewportSize({width,height});await mount(page);const before=await page.locator('.cw-board').boundingBox();
-    await mount(page,{initialResult:{status:'incorrect'}});const after=await page.locator('.cw-board').boundingBox();
+    await mount(page,{initialResult:{status:'incorrect',recognized:'土'}});const after=await page.locator('.cw-board').boundingBox();
     check(`${engine} ${width}x${height} review preserves a large square`,before.width>=minimum&&after.width>=minimum&&Math.abs(before.width-after.width)<2&&Math.abs(after.width-after.height)<2);
+    const feedback=await page.locator('.cw-status').boundingBox();
+    check(`${engine} ${width}x${height} recognized character appears above the square`,feedback.y>=0&&feedback.y+feedback.height<=after.y+1&&await page.locator('.cw-status').textContent().then(value=>value.includes('土')));
+    await page.locator('[data-cw=practise]').click();
+    const layout=await page.evaluate(()=>{const b=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,bottom:r.bottom,right:r.right};};return{board:b('.cw-board'),status:b('.cw-status'),actions:b('.cw-actions'),body:b('.challenge-body'),buttons:[...document.querySelectorAll('.cw-actions button')].filter(el=>el.getClientRects().length).map(el=>({width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height}))};});
+    check(`${engine} ${width}x${height} rewrite instruction stays above the square without scrolling`,layout.status.y>=layout.body.y-1&&layout.status.bottom<=layout.board.y+1&&layout.board.bottom<=height&&layout.actions.bottom<=height);
+    check(`${engine} ${width}x${height} buttons remain comfortable touch targets`,layout.buttons.every(button=>button.width>=44&&button.height>=44));
+    if(process.env.WRITING_SCREENSHOTS_DIR){fs.mkdirSync(process.env.WRITING_SCREENSHOTS_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.WRITING_SCREENSHOTS_DIR,`${engine}-${width}x${height}.png`)});}
     check(`${engine} ${width}x${height} no horizontal page overflow`,await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
    }
    await context.close();

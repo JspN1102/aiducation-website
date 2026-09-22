@@ -24,7 +24,7 @@ export function mountChallengeWriting(holder, {
   const normalize = value => String(value).trim().normalize('NFC');
   const accepted = new Set([target.char, ...(Array.isArray(target.accept) ? target.accept : [])]
     .filter(value => typeof value === 'string' && Array.from(normalize(value)).length === 1).map(normalize));
-  const character = target.char, pinyin = typeof target.pinyin === 'string' ? target.pinyin : '';
+  const character = target.char;
   let destroyed = false, busy = false, pad = null, writer = null, animationRequest = null;
   let operation = 0, strokeOperation = 0, practising = false, result = null;
   let eraseCount = 0, lastStrokeCount = 0, recognitionCount = 0, correctionCount = 0, correction = null, advanceKey = '';
@@ -56,52 +56,67 @@ export function mountChallengeWriting(holder, {
 .challenge-writing .cw-submit{display:contents}
 .challenge-writing .cw-skip{background:transparent;border-color:transparent;font-size:18px;flex-basis:100%;min-height:44px;padding:6px 10px}
 .challenge-writing .cw-status{font-size:18px;line-height:1.6;text-align:center;min-height:29px;margin:10px 0 4px}
-.challenge-writing .cw-review{padding-top:2px;text-align:center}
-.challenge-writing .cw-answer{display:flex;align-items:center;justify-content:center;gap:14px;margin:6px 0 12px}
-.challenge-writing .cw-answer strong{font-family:'Noto Serif TC',serif;font-size:44px;line-height:1.2;font-weight:500}
-.challenge-writing .cw-answer span{font-size:18px;color:#557263}
+.challenge-writing .cw-review{padding:0;text-align:center}
 @media(max-height:700px){.challenge-writing .cw-board{width:min(100%,188px)}.challenge-writing.is-answered .cw-board{width:min(100%,158px)}}
 /* Keep the same usable square for an answer, its model and its correction.
    These selectors override the old phone rules that shrank review to 105px. */
-.challenge-writing.cw-expanded{max-width:520px}
+.challenge-writing.cw-expanded{max-width:520px;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:start}
 .challenge-writing.cw-expanded .cw-board{width:min(100%,360px);max-width:none}
-.challenge-writing.cw-expanded .cw-correction-skip{min-height:44px;background:transparent;border-color:transparent;font-size:17px}
+.challenge-writing.cw-expanded .cw-correction-skip{min-height:44px;background:#f5f6ef;border-color:#d9e3d9;font-size:17px}
 .challenge-writing.cw-expanded .cw-status{overflow-wrap:anywhere}
-.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-board{width:min(100%,360px);max-width:none;margin:6px auto 10px}
-.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-controls{flex-wrap:wrap}
-.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-status{font-size:18px!important;line-height:1.45}
-.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-review-actions{gap:8px}
+.challenge-writing.cw-expanded .cw-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-board{grid-column:1;grid-row:2;width:min(100%,360px);max-width:none;margin:0 auto}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-actions{grid-column:1;grid-row:3}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-controls{grid-area:auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(100px,.65fr);gap:8px;align-items:stretch}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-review{grid-area:auto}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-submit{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded button{min-width:0;min-height:48px;padding:10px 8px;font-size:19px;line-height:1.35;border-radius:13px}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-status{grid-column:1;grid-row:1;margin:0;min-height:29px;font-size:19px!important;line-height:1.45;color:#365846;text-align:center}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-status:empty{display:none}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-review-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 @media(max-width:700px){
- .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-board{width:min(100%,340px);margin-block:6px 10px}
- .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-answer{margin:8px 0}
- .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-controls{gap:8px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-layout{gap:8px;justify-content:center}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-board{width:min(100%,340px);margin:0 auto}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded button{font-size:18px;padding-inline:6px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-status{font-size:18px!important}
 }
 @media(min-width:701px) and (orientation:portrait){
- .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-layout{grid-template-columns:1fr;gap:12px;max-width:600px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-layout{grid-template-columns:1fr;gap:18px;max-width:680px}
  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading{text-align:center;padding:0}
- .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-board{width:min(100%,430px)}
 }
-@media(min-width:900px) and (orientation:landscape){
+@media(min-width:701px){
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded{display:grid;max-width:none;grid-template-columns:minmax(0,430px) 156px;justify-content:center;gap:12px 18px;align-items:start}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-status{grid-column:1/-1;grid-row:1;font-size:20px!important}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-board{grid-column:1;grid-row:2;width:min(100%,430px);margin:0;justify-self:center}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-actions{grid-column:2;grid-row:2;align-self:center;gap:12px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-controls{grid-template-columns:minmax(0,1fr);gap:12px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-review-actions{grid-template-columns:minmax(0,1fr);gap:12px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-review-actions button,.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-primary{min-height:52px;font-size:20px}
+}
+@media(min-width:701px) and (orientation:landscape){
  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-layout{grid-template-columns:minmax(160px,.48fr) minmax(0,1.52fr);gap:20px;max-width:1280px}
- .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded{display:grid;max-width:none;grid-template-columns:minmax(0,1fr) 160px;gap:8px 14px;align-items:center}
- .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-board{grid-column:1;grid-row:1/4;width:min(100%,430px,max(270px,calc(100cqh - 68px)));margin:0;justify-self:center}
- .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-controls{grid-column:2;grid-row:1;flex-direction:column}
- .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-tools,.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-submit{display:flex;flex-direction:column;gap:8px}
- .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-review{grid-column:2;grid-row:2/4}
- .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-status{grid-column:1/-1;grid-row:4;margin:0;min-height:0}
- .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-answer{flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-board{width:min(100%,430px,max(270px,calc(100cqh - 68px)))}
 }
 @media(min-width:701px) and (max-height:560px) and (orientation:landscape){
  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-layout{grid-template-columns:minmax(140px,.5fr) minmax(0,1.5fr);gap:14px;align-items:start}
- .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded{max-width:none;grid-template-columns:minmax(0,1fr) 150px;align-items:start}
- .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-board{width:min(100%,max(150px,calc(100cqh - 16px)));margin:0;align-self:start}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading{padding:0}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading .challenge-prompt{font-size:21px;line-height:1.4;margin:0 0 6px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading .challenge-audio-status{font-size:15px;line-height:1.3;margin-top:6px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded{grid-template-columns:minmax(0,1fr) 230px;gap:8px 12px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-board{width:min(100%,max(150px,calc(100cqh - 54px)));margin:0;align-self:start}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-actions{grid-template-columns:repeat(2,minmax(0,1fr));align-self:start;gap:8px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-tools{grid-template-columns:minmax(0,1fr);gap:6px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-actions,.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-controls,.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-review-actions{gap:6px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded button,.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-review-actions button,.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-primary{min-height:44px;font-size:17px;padding:6px}
 }
 </style>
+<p class="cw-status" role="status" aria-live="polite"></p>
 <div class="cw-board">
   <canvas width="560" height="560" aria-label="手寫答題區"></canvas>
   <div class="cw-animation" role="img" aria-label="筆順示範" hidden></div>
 </div>
-<div class="cw-controls"><div class="cw-tools">
+<div class="cw-actions"><div class="cw-controls"><div class="cw-tools">
   <button type="button" data-cw="undo" aria-label="撤銷上一筆">撤銷</button>
   <button type="button" data-cw="clear">清空</button>
 </div>
@@ -109,8 +124,7 @@ export function mountChallengeWriting(holder, {
   <button type="button" data-cw="submit" class="cw-primary">寫好了</button>
   <button type="button" data-cw="skip" class="cw-skip">不會寫，學一學</button>
 </div></div>
-<p class="cw-status" role="status" aria-live="polite"></p>
-<div class="cw-review" hidden></div>`;
+<div class="cw-review" hidden></div></div>`;
   holder.replaceChildren(root);
   const $ = selector => root.querySelector(selector);
   const canvas = $('canvas'), animation = $('.cw-animation'), status = $('.cw-status');
@@ -129,9 +143,9 @@ export function mountChallengeWriting(holder, {
   }
 
   function revealBoard() {
-    // Short landscape screens scroll the activity body. Bring the square back
-    // after a lower review button is tapped, so it is ready to watch or write.
-    if(!destroyed) $('.cw-board').scrollIntoView({block:'nearest',inline:'nearest'});
+    // Keep the instruction and square together when a review button is tapped.
+    // Scrolling only the square used to hide the feedback immediately above it.
+    if(!destroyed) root.scrollIntoView({block:'nearest',inline:'nearest'});
   }
 
   function updateControls() {
@@ -140,7 +154,7 @@ export function mountChallengeWriting(holder, {
     $('[data-cw="undo"]').disabled = locked() || !hasInk;
     $('[data-cw="clear"]').disabled = locked() || !hasInk;
     $('[data-cw="submit"]').disabled = !canSubmit() || !hasInk;
-    $('[data-cw="submit"]').textContent = result ? '檢查這次練習' : '寫好了';
+    $('[data-cw="submit"]').textContent = result ? '檢查' : '寫好了';
     $('[data-cw="skip"]').disabled = Boolean(result) || !canSubmit();
     $('[data-cw="skip"]').hidden = Boolean(result);
     // Keep the controls in the same layout while a model turns into writing.
@@ -184,15 +198,9 @@ export function mountChallengeWriting(holder, {
     const review = $('.cw-review');
     review.hidden = false;
     review.replaceChildren();
-    const answer = doc.createElement('div');
-    answer.className = 'cw-answer';
-    const glyph = doc.createElement('strong'), pronunciation = doc.createElement('span');
-    glyph.textContent = character;
-    pronunciation.textContent = pinyin;
-    answer.append(glyph, pronunciation);
     const actions = doc.createElement('div');
     actions.className = 'cw-review-actions';
-    for (const [action, label] of [['strokes', '看筆順'], ['practise', '自己練一遍'], ['skip-correction', '這次先跳過']]) {
+    for (const [action, label] of [['strokes', '看筆順'], ['practise', '再寫一次'], ['skip-correction', '先跳過']]) {
       const button = doc.createElement('button');
       button.type = 'button';
       button.dataset.cw = action;
@@ -200,15 +208,11 @@ export function mountChallengeWriting(holder, {
       button.textContent = label;
       actions.append(button);
     }
-    review.append(answer, actions);
-    status.textContent = result.status === 'skipped' ? '看看字形，再寫一次，寫好後按「檢查這次練習」。'
+    review.append(actions);
+    status.textContent = result.status === 'skipped' ? '先看筆順，再在田字格寫一次。'
       : result.correct ? '寫對了！也可以看看這個字的筆順。'
-        : result.recognized ? `這次辨認為「${result.recognized}」。看看正確的字，再寫一次。`
-          : '看看正確的字，再寫一次。';
-    if (result.status === 'skipped') {
-      showCharacter();
-      animation.hidden = false;
-    }
+        : result.recognized ? `辨認為「${result.recognized}」，請再寫一次。`
+          : '請再寫一次，需要時可以看筆順。';
     updateControls();
   }
 
@@ -281,7 +285,7 @@ export function mountChallengeWriting(holder, {
       const correct = accepted.has(candidates[0]);
       const latest = Object.freeze({status:correct?'corrected':'incorrect',correct,independent:false,mode:'review',recognized:candidates[0],candidates:Object.freeze(candidates.slice(0,10)),attemptNo:count,submittedAt:Date.now()});
       if (correct || !['corrected','skipped'].includes(correction?.status)) correction = latest;
-      status.textContent = correct ? '這次寫對了！可以繼續下一題。' : `這次辨認為「${candidates[0]}」。再看一看，清空後重新寫。`;
+      status.textContent = correct ? '這次寫對了！可以繼續下一題。' : `辨認為「${candidates[0]}」，請再寫一次。`;
       auditWriting('feedback_shown',{attemptNo:count,result:{status:correct?'correct':'incorrect',correct,score:null}});
       onCorrection({...latest,candidates:[...latest.candidates]});
       updateControls();
@@ -342,7 +346,7 @@ export function mountChallengeWriting(holder, {
     practising = true;
     pad.clear();
     $('.cw-tools').hidden = false;
-    status.textContent = '在田字格再寫一次，寫好後按「檢查這次練習」。';
+    status.textContent = '在田字格再寫一次，寫好後按「檢查」。';
     updateControls();
     if (reveal) revealBoard();
   }

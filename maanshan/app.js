@@ -18,7 +18,7 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20260922-school15';
 import {requestJSON, requestChat} from './network.mjs?v=20260922-school16';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260922-school16';
-import {schoolSession} from './bootstrap.mjs?v=20260922-school16';
+import {schoolSession} from './bootstrap.mjs?v=20260922-school17';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school9';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school9';
 import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
@@ -826,7 +826,7 @@ function preloadActivityModules(activity,slug) {
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
   preloadActivityModules('quiz',poem?.slug);
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260922-school16'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260922-school17'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
