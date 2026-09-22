@@ -31,24 +31,39 @@ function logAuthFailure(status,result,input){
 // The loopback HTTP server closes idle sockets after 35 seconds. Expire earlier,
 // including after a suspended serverless instance resumes without firing timers.
 const CHANNEL_IDLE_MS=25000;
+// Opening a channel normally takes one round trip (well under two seconds even
+// when many open at once). Longer silence means the session is gone.
+const CHANNEL_OPEN_TIMEOUT_MS=5000;
 class ChannelAgent extends http.Agent{
- constructor(client,now){
+ constructor(client,now,openTimeoutMs=CHANNEL_OPEN_TIMEOUT_MS){
   super({keepAlive:true,maxSockets:16,maxTotalSockets:16,maxFreeSockets:4,scheduling:'lifo'});
-  this.client=client;this.now=now;this.idle=new Map();this.closed=false;
+  this.client=client;this.now=now;this.openTimeoutMs=openTimeoutMs;this.idle=new Map();this.closed=false;
  }
  createConnection(options,callback){
   if(this.closed){queueMicrotask(()=>callback(new Error('RELAY_CLOSED')));return;}
-  this.client.forwardOut('127.0.0.1',0,'127.0.0.1',3100,(error,stream)=>{
-   if(error){callback(error);return;}
-   if(this.closed){stream.destroy();callback(new Error('RELAY_CLOSED'));return;}
-   // ssh2 channels lack Socket ref/unref and synchronous destroyed semantics.
-   // A Duplex wrapper supplies reliable abort/close handling for the HTTP pool.
-   const socket=Duplex.from({readable:stream,writable:stream});
-   socket.ref=socket.unref=()=>socket;
-   socket.on('error',()=>{});
-   socket.once('close',()=>this.clearIdle(socket));
-   callback(null,socket);
-  });
+  // A suspended serverless instance resumes holding an SSH session that the
+  // server may have closed meanwhile, or whose network path silently went
+  // away. Opening the channel is the first round trip on it: a synchronous
+  // throw, an error or a long silence all mean the session is dead. Report
+  // that before any HTTP bytes exist so the relay can reconnect once safely.
+  // An open failure answered by the server (it carries a reason) means the
+  // session is alive but the origin refused; everything else marks it dead.
+  let settled=false;
+  const settle=(error,socket)=>{if(settled){socket?.destroy();return;}settled=true;clearTimeout(timer);if(error&&error.reason===undefined)error.sessionDead=true;callback(error,socket);};
+  const timer=setTimeout(()=>{settle(new Error('CHANNEL_OPEN_TIMEOUT'));this.client.destroy();},this.openTimeoutMs);timer.unref?.();
+  try{
+   this.client.forwardOut('127.0.0.1',0,'127.0.0.1',3100,(error,stream)=>{
+    if(error){settle(error);return;}
+    if(this.closed||settled){stream.destroy();settle(new Error('RELAY_CLOSED'));return;}
+    // ssh2 channels lack Socket ref/unref and synchronous destroyed semantics.
+    // A Duplex wrapper supplies reliable abort/close handling for the HTTP pool.
+    const socket=Duplex.from({readable:stream,writable:stream});
+    socket.ref=socket.unref=()=>socket;
+    socket.on('error',()=>{});
+    socket.once('close',()=>this.clearIdle(socket));
+    settle(null,socket);
+   });
+  }catch(error){settle(error);}
  }
  clearIdle(socket){const idle=this.idle.get(socket);if(idle){clearTimeout(idle.timer);this.idle.delete(socket);}}
  keepSocketAlive(socket){
@@ -83,11 +98,14 @@ function configuration(env){
  if(![22,2222].includes(port))throw new Error('RELAY_NOT_CONFIGURED');
  return {host,port,username,privateKey,hostHash};
 }
-function createRelay({env=process.env,clientFactory=()=>new Client(),request=http.request,now=Date.now,timeoutMs=55000}={}){
+function createRelay({env=process.env,clientFactory=()=>new Client(),request=http.request,now=Date.now,timeoutMs=55000,channelOpenTimeoutMs=CHANNEL_OPEN_TIMEOUT_MS}={}){
  let pending=null,pendingClient=null,connection=null,lastUsed=0,active=0;
  const agents=new Map();
  const disposeAgent=client=>{const agent=agents.get(client);if(agent){agents.delete(client);agent.destroy();}};
- const agentFor=client=>{if(!agents.has(client))agents.set(client,new ChannelAgent(client,now));return agents.get(client);};
+ const agentFor=client=>{if(!agents.has(client))agents.set(client,new ChannelAgent(client,now,channelOpenTimeoutMs));return agents.get(client);};
+ // Forget a session whose first round trip failed, so that no later request
+ // (including a concurrent one that shares it) is offered the same dead client.
+ const discard=client=>{disposeAgent(client);if(connection===client)connection=null;if(pendingClient===client){pending=null;pendingClient=null;}client.destroy();};
  async function tunnel(alternate=false){
   // A child can listen or write for much longer than 20 seconds between calls.
   // Keep the verified SSH session across those pauses; transport errors/close
@@ -104,6 +122,9 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
    client.once('handshake',()=>{handshakeComplete=true;});
    const clear=()=>{disposeAgent(client);if(connection===client)connection=null;if(pendingClient===client){pending=null;pendingClient=null;}};
    client.once('ready',()=>{ready=true;connection=client;resolve(client);});
+   // The peer closing its side ends the writable socket before 'close' fires;
+   // forget the session at once so nothing tries to open a channel on it.
+   client.once('end',()=>{clear();});
    client.on('error',error=>{clear();if(!ready){const code=typeof error?.code==='string'&&/^[A-Z0-9_]+$/.test(error.code)?error.code:'SSH_CONNECT_ERROR';console.error('Guangzhou relay transport:',code,error?.level==='client-timeout'?'HANDSHAKE_TIMEOUT':'CONNECT_FAILED',JSON.stringify({tcpConnected,handshakeComplete}));reject(new Error('RELAY_CONNECT_FAILED'));}});
    client.once('close',()=>{clear();if(!ready)reject(new Error('RELAY_CONNECT_FAILED'));});
    client.connect({host:config.host,port,username:config.username,privateKey:config.privateKey,hostHash:'sha256',hostVerifier:hash=>hash===config.hostHash,readyTimeout:4500,keepaliveInterval:15000,keepaliveCountMax:2,tryKeyboard:false});
@@ -138,8 +159,9 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
     try{
      // A second handshake is safe before any request reaches the origin.
      // Never retry once a channel/request has been opened.
-     let client;try{client=await tunnel();}catch{if(done||res.destroyed){finish();return;}client=await tunnel(true);}
-     if(done||res.destroyed){finish();return;}
+     const connect=async()=>{try{return await tunnel();}catch{if(done||res.destroyed)return null;return tunnel(true);}};
+     const client=await connect();
+     if(client===null||done||res.destroyed){finish();return;}
      connectedAt=now();
      const gzipAllowed=TEACHER_ROUTES.has(name)&&acceptsGzip(req.headers?.['accept-encoding']);
      const headers={host:'mandarin.aiducation.asia','accept-encoding':gzipAllowed?'gzip':'identity','x-forwarded-proto':'https'};
@@ -148,6 +170,8 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
      const raw=String(req.headers?.['x-vercel-forwarded-for']||req.socket?.remoteAddress||'').split(',')[0].trim();
      if(net.isIP(raw))headers['x-real-ip']=raw;
      if(body)headers['content-length']=String(body.length);
+     let retried=false;
+     const send=client=>{
       upstream=request({host:'127.0.0.1',port:3100,method:req.method,path:'/api/'+name+url.search,headers,agent:agentFor(client)},response=>{
        if(done){response.destroy();return;}
        const encoding=String(response.headers['content-encoding']||'identity').toLowerCase().trim();
@@ -190,8 +214,24 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
        });
       });
       upstream.once('socket',socket=>{channel=socket;channelAt=now();if(done||res.destroyed){socket.destroy();finish();}});
-      upstream.on('error',()=>error(502,'ORIGIN_INTERRUPTED'));
+      upstream.on('error',cause=>{
+       // Without a channel nothing was written to the origin: the cached SSH
+       // session died while the instance was idle. Reconnect and send once more.
+       // After a channel exists the request may have arrived, so never retry.
+       if(!done&&channel===undefined&&!retried&&cause?.sessionDead===true){retried=true;discard(client);reconnect();return;}
+       if(channel===undefined)error(503,'ORIGIN_UNAVAILABLE');else error(502,'ORIGIN_INTERRUPTED');
+      });
       if(body)upstream.write(body);upstream.end();
+     };
+     const reconnect=async()=>{
+      try{
+       const next=await connect();
+       if(next===null||done||res.destroyed){finish();return;}
+       connectedAt=now();
+       send(next);
+      }catch{error(503,'ORIGIN_UNAVAILABLE');}
+     };
+     send(client);
     }catch{error(503,'ORIGIN_UNAVAILABLE');}
    });
   }finally{clearTimeout(timer);res.off('close',disconnected);if(!responseComplete)close();active--;}

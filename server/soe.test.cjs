@@ -38,6 +38,7 @@ test('SOE rejects corrupt, oversized or unknown compressed audio before calling 
  }
 });
 test('browser compression preserves all samples and safely falls back without native support',async()=>{
+ globalThis.location??=new URL('https://mandarin.aiducation.asia/school/');
  const {prepareAssessmentPayload}=await import('../maanshan/recording-audio.mjs');
  const original=Buffer.alloc(96000);for(let i=0;i<original.length;i++)original[i]=i%127;
  const payload={audio:original.toString('base64'),refText:'曲项向天歌',researchContext:{attemptId:'synthetic'}};

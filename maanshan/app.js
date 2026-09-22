@@ -14,11 +14,11 @@ import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school9';
 import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20260922-school13';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school13';
-import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260922-school13c';
+import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20260922-school14';
 import {createRecordingLibrary} from './recording-library.mjs?v=20260921-school9';
-import {requestJSON, requestChat} from './network.mjs?v=20260922-school13c';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260922-school13c';
-import {schoolSession} from './bootstrap.mjs?v=20260922-school13c';
+import {requestJSON, requestChat} from './network.mjs?v=20260922-school14';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260922-school14';
+import {schoolSession} from './bootstrap.mjs?v=20260922-school14';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school9';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school9';
 import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
@@ -590,6 +590,8 @@ function recordControlsHTML(){
 function assessmentStatus(message){const controls=$('#record-controls');if(controls)controls.innerHTML='<p class="record-status" role="status"><span class="spinner"></span> '+esc(message)+'</p>';}
 async function startRecording() {
   if(recordBusy)return;stopMedia();cancelRecording();recordBusy=true;
+  // Warm the relay now so a cold connection is not paid for when the score is awaited.
+  prewarmAssessment();
   recordStep='read';renderRecord();
   const version=routeVersion,generation=recordingVersion,p=poem,index=currentLine;
   recordResearch=research.context({activity:'read',itemId:'p'+p.id+'.l'+index});

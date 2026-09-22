@@ -19,7 +19,7 @@ async function fixture(fn,options={}){
   forwardOut(from,port,to,target,cb){requests.push({from,port,to,target});const socket=net.connect(originPort,'127.0.0.1');channels.push(socket);socket.once('connect',()=>options.forwardDelayMs?setTimeout(()=>cb(null,socket),options.forwardDelayMs):cb(null,socket));socket.once('error',cb);}
   end(){this.emit('close');}destroy(){if(options.onDestroy)return options.onDestroy(this);this.end();}
  }
- const relay=createRelay({env,clientFactory:()=>{const client=new SSH();clients.push(client);return client;},timeoutMs:options.timeoutMs||1500,...options.now?{now:options.now}:{}});
+ const relay=createRelay({env,clientFactory:()=>{const client=new SSH();clients.push(client);return client;},timeoutMs:options.timeoutMs||1500,...options.now?{now:options.now}:{},...options.channelOpenTimeoutMs?{channelOpenTimeoutMs:options.channelOpenTimeoutMs}:{}});
  const frontend=http.createServer(async(req,res)=>{const chunks=[];for await(const chunk of req)chunks.push(chunk);if(chunks.length){try{req.body=JSON.parse(Buffer.concat(chunks));}catch{req.body=Buffer.concat(chunks);}}options.onRequest?.(req);await relay.relay(options.name||'school-auth',req,res);});
  const port=await listen(frontend);
  return {clients,requests,channels,call:(url='/api/school-auth',init={})=>fetch('http://127.0.0.1:'+port+url,init),raw:(url,init)=>raw('http://127.0.0.1:'+port+url,init),close:async()=>{relay.close();frontend.closeAllConnections();origin.closeAllConnections();await Promise.all([new Promise(r=>frontend.close(r)),new Promise(r=>origin.close(r))]);}};
@@ -224,6 +224,64 @@ test('real ssh2 channels carry successive HTTP requests without requiring net.So
  }
 });
 
+test('a session that died while the instance was suspended is replaced before a POST is forwarded',async()=>{
+ let calls=0,clock=1000;const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{now:()=>clock});
+ try{
+  await (await f.call()).text();assert.equal(f.clients.length,1);
+  clock+=60000; // still inside the idle window, so the cached session is trusted
+  // The server closed the session meanwhile: ssh2 throws synchronously on the ended socket.
+  f.clients[0].forwardOut=()=>{throw new Error('Not connected');};
+  const r=await f.call('/api/school-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"action":"login"}'});
+  assert.equal(r.status,200);assert.equal(calls,2,'the origin saw the POST exactly once');
+  assert.equal(f.clients.length,2);assert.equal(f.clients[0].closed,true,'the dead session is torn down');
+  assert.equal(f.requests.length,2,'the dead session forwarded nothing');
+ }finally{await f.close();}
+});
+test('a channel open that never answers is a dead session: torn down and retried once',{timeout:5000},async()=>{
+ let calls=0,clock=1000;const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{channelOpenTimeoutMs:150,now:()=>clock});
+ try{
+  await (await f.call()).text();clock+=60000;
+  f.clients[0].forwardOut=()=>{}; // the network path is silently gone
+  const started=Date.now();
+  const r=await f.call('/api/school-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"action":"login"}'});
+  assert.equal(r.status,200);assert.equal(calls,2);assert.equal(f.clients.length,2);assert.equal(f.clients[0].closed,true);
+  assert.ok(Date.now()-started>=140,'waited for the channel-open deadline before replacing the session');
+ }finally{await f.close();}
+});
+test('a half-closed SSH socket is forgotten at once and the next request reconnects',async()=>{
+ let clock=1000;const f=await fixture((req,res)=>res.end('{"ok":true}'),{now:()=>clock});
+ try{
+  await (await f.call()).text();assert.equal(f.clients.length,1);
+  f.clients[0].emit('end');clock+=10;
+  await (await f.call()).text();assert.equal(f.clients.length,2);
+ }finally{await f.close();}
+});
+test('concurrent requests on a dead session share one replacement session',async()=>{
+ let calls=0,clock=1000;const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{now:()=>clock});
+ try{
+  await (await f.call()).text();clock+=60000;
+  f.clients[0].forwardOut=()=>{throw new Error('Not connected');};
+  const results=await Promise.all([f.call(),f.call(),f.call()]);
+  assert.deepEqual(results.map(r=>r.status),[200,200,200]);assert.equal(calls,4);assert.equal(f.clients.length,2);
+ }finally{await f.close();}
+});
+test('an open failure answered by the server keeps the live session and is not retried',async()=>{
+ let calls=0,clock=1000;const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{now:()=>clock});
+ try{
+  await (await f.call()).text();clock+=60000;
+  let refused=0;f.clients[0].forwardOut=(from,port,to,target,cb)=>{refused++;queueMicrotask(()=>cb(Object.assign(new Error('(SSH) Channel open failure: Connection refused'),{reason:'CONNECT_FAILED'})));};
+  const r=await f.call('/api/school-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"action":"login"}'});
+  assert.equal(r.status,503);assert.equal((await r.json()).code,'ORIGIN_UNAVAILABLE');assert.equal(calls,1);assert.equal(refused,1);
+  assert.equal(f.clients.length,1,'the origin refused, so the session itself is kept');assert.equal(f.clients[0].closed,false);
+ }finally{await f.close();}
+});
+test('a dead replacement session is not retried again: the POST is reported unavailable and never forwarded',async()=>{
+ let calls=0;const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{onConnect:client=>{queueMicrotask(()=>{client.forwardOut=()=>{throw new Error('Not connected');};client.emit('ready');});}});
+ try{
+  const r=await f.call('/api/school-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"action":"login"}'});
+  assert.equal(r.status,503);assert.equal((await r.json()).code,'ORIGIN_UNAVAILABLE');assert.equal(calls,0);assert.equal(f.clients.length,2);
+ }finally{await f.close();}
+});
 test('expired HTTP channels reconnect on the same SSH session even after a suspended clock',async()=>{
  let clock=1000;const f=await fixture((req,res)=>res.end('ok'),{now:()=>clock});
  try{

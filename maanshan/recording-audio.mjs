@@ -1,4 +1,4 @@
-import {schoolFetch} from './school-session.mjs?v=20260922-school13c';
+import {schoolFetch} from './school-session.mjs?v=20260922-school14';
 function audioError(code, message, canRetry = false) {
   return Object.assign(new Error(message), {code, canRetry});
 }
@@ -98,4 +98,26 @@ export async function submitAssessment(payload, {signal, onRetry, onWaiting, fet
       clearTimeout(timer);clearTimeout(waiting);signal?.removeEventListener('abort', cancel);
     }
   }
+}
+
+// The relay opens its SSH session and channel lazily; when no request has
+// passed for a while that costs several seconds at the moment a score is
+// awaited. Start it while the microphone prompt and the recording are still in
+// progress instead. The reply is discarded, nothing is retried and no learning
+// data is sent, so this can never replay or duplicate an assessment.
+const PREWARM_INTERVAL_MS = 30000;
+const PREWARM_TIMEOUT_MS = 8000;
+let lastPrewarmAt = 0;
+export function prewarmAssessment({fetchImpl = globalThis.fetch, now = Date.now} = {}) {
+  const at = now();
+  if (typeof fetchImpl !== 'function' || at - lastPrewarmAt < PREWARM_INTERVAL_MS || globalThis.navigator?.onLine === false) return false;
+  lastPrewarmAt = at;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), PREWARM_TIMEOUT_MS);
+  Promise.resolve()
+    .then(() => fetchImpl('/api/school-auth/', {method:'GET', credentials:'same-origin', cache:'no-store', signal:controller.signal}))
+    .then(response => response?.body?.cancel?.())
+    .catch(() => {})
+    .finally(() => clearTimeout(timer));
+  return true;
 }
