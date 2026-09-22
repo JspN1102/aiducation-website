@@ -1,4 +1,5 @@
 import {imageAsset} from './media-images.mjs?v=20260922-school16';
+import {manageAnimationSource} from './animation-source.mjs?v=20260922-school19';
 import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260921-school9';
 import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260922-school16';
 import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
@@ -18,7 +19,7 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20260922-school15';
 import {requestJSON, requestChat} from './network.mjs?v=20260922-school18';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20260922-school18';
-import {schoolSession} from './bootstrap.mjs?v=20260922-school18';
+import {schoolSession} from './bootstrap.mjs?v=20260922-school19';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260922-school18';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school18';
 import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
@@ -439,6 +440,8 @@ function renderAnimation() {
   }
   $('#view').innerHTML=`<section class="animation-lesson" aria-labelledby="animation-heading"><header class="animation-heading"><h2 id="animation-heading">動畫看古詩</h2><p>${esc(media.caption||`跟着${poem.author}看動畫`)}</p></header><div class="animation-stage"><video id="animation-video" controls playsinline preload="metadata" poster="${esc(imageAsset(media.poster))}" aria-label="${esc(titleOf(poem))}動畫"></video></div><p class="animation-status" id="animation-status" role="status" aria-live="polite" hidden></p><div class="animation-actions"><button type="button" class="button primary" id="animation-toggle" aria-controls="animation-video">${icon('play')}<span>播放動畫</span></button><a class="button" href="${link(poem.grade<=3?'quiz':'explore')}"><span>${poem.grade<=3?'練習小遊戲':'AR體驗'}</span>${icon('arrow-right')}</a></div></section>`;
   const player=$('#animation-video'),button=$('#animation-toggle'),label=$('span',button),status=$('#animation-status');
+  // Two routes for the same file (this origin and COS); registered first so a recoverable error never reaches the listeners below.
+  const route=manageAnimationSource(player,media.src);
   const events=new AbortController(),listen=(target,event,callback)=>target.addEventListener(event,callback,{signal:events.signal});
   let started=false,failed=false,dead=false;
   const animationPoemId=poem.id,animationItem='p'+poem.id+'.animation';
@@ -472,11 +475,11 @@ function renderAnimation() {
   }
   async function toggle(){
     if(!player.paused&&!failed){player.pause();return;}
-    if(failed){failed=false;player.load();}
+    if(failed){failed=false;route.retry();}
     if(player.ended)player.currentTime=0;
     message('動畫載入中…');
     try{await player.play();}
-    catch(error){if(!dead&&error.name!=='AbortError'){failed=!!player.error;message(failed?'影片暫時未能播放，按「重新播放」再試一次。':'按畫面上的播放按鈕，再試一次。');updateButton();}}
+    catch(error){if(!dead&&error.name!=='AbortError'&&!route.recovering){failed=!!player.error;message(failed?'影片暫時未能播放，按「重新播放」再試一次。':'按畫面上的播放按鈕，再試一次。');updateButton();}}
   }
   listen(button,'click',toggle);
   listen(player,'play',()=>{video.pause();stopTransient();started=true;failed=false;updateButton();});
@@ -485,8 +488,7 @@ function renderAnimation() {
   listen(player,'ended',()=>{message();updateButton();});
   listen(player,'waiting',()=>{if(!player.paused)message('動畫載入中…');});
   listen(player,'error',()=>{failed=true;message('影片暫時未能播放，按「重新播放」再試一次。');updateButton();});
-  player.src=media.src;
-  disposeAnimation=()=>{closeWatching();dead=true;events.abort();player.pause();player.removeAttribute('src');player.load();if(animationPlayer===player)animationPlayer=null;};
+  disposeAnimation=()=>{closeWatching();dead=true;events.abort();route.dispose();player.pause();player.removeAttribute('src');player.load();if(animationPlayer===player)animationPlayer=null;};
 }
 async function openVideo() {
   if(recordBusy)return;

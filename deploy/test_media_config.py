@@ -25,13 +25,21 @@ class MediaConfigTests(unittest.TestCase):
         manifest = json.loads(Path(__file__).with_name('media-manifest.json').read_text(encoding='utf-8'))
         original = copy.deepcopy(manifest)
         config = media_config.build_media_config(manifest)
-        self.assertEqual(len(config['redirects']), len(manifest['assets']))
+        routed = [a for a in manifest['assets'] if a['contentType'] != 'video/mp4']
+        videos = [a for a in manifest['assets'] if a['contentType'] == 'video/mp4']
+        self.assertEqual(len(config['redirects']), len(routed))
         images = [a for a in manifest['assets'] if a['contentType'] == 'image/webp']
         poems = json.loads((Path(__file__).parent.parent / 'maanshan/poems.json').read_text(encoding='utf-8'))['poems']
         for poem in poems:
             for name in ['cover-final.webp', 'avatar.webp'] + [f'scene-{line["scene"]}.webp' for line in poem['lines']]:
                 self.assertIn('/maanshan/media/' + poem['slug'] + '/' + name, [a['source'] for a in images])
-        self.assertEqual(config['totalExcludedBytes'], sum(a['bytes'] for a in manifest['assets']))
+            # Every current animation has both routes: deployed copy and COS copy.
+            self.assertIn('/maanshan/' + poem['animation']['src'], [v['source'] for v in config['videos']])
+        self.assertEqual([v['source'] for v in config['videos']], [a['source'] for a in videos])
+        self.assertTrue(videos)
+        self.assertFalse(any(p.endswith('.mp4') for p in config['excludedFiles']))
+        self.assertFalse(any(r['source'].endswith('.mp4') for r in config['redirects']))
+        self.assertEqual(config['totalExcludedBytes'], sum(a['bytes'] for a in routed))
         self.assertEqual({r['source'].lstrip('/') for r in config['redirects']}, set(config['excludedFiles']))
         self.assertTrue(all(r['statusCode'] == 307 for r in config['redirects']))
         self.assertTrue(all(h['headers'] == [{'key': 'Cache-Control', 'value': 'no-cache'}] for h in config['headers']))
@@ -63,6 +71,31 @@ class MediaConfigTests(unittest.TestCase):
         nginx = media_config.build_nginx_config(manifest)
         self.assertIn('location = ' + manifest['assets'][0]['source'], nginx)
         self.assertIn('add_header Cache-Control "no-cache"; return 307 ', nginx)
+
+    def test_generated_video_module_maps_only_animations_and_imports_nothing(self):
+        manifest, _ = fixture()
+        module = media_config.build_video_module(manifest)
+        self.assertIn('export const VIDEO_ASSETS = Object.freeze(', module)
+        self.assertIn(json.dumps(manifest['assets'][0]['source']) + ': ' + json.dumps(manifest['assets'][0]['destination']), module)
+        self.assertNotIn('import ', module)
+        config = media_config.build_media_config(manifest)
+        self.assertEqual(config['redirects'], [])
+        self.assertEqual(config['excludedFiles'], [])
+        self.assertEqual(config['videos'], [{'source': manifest['assets'][0]['source'],
+                                            'destination': manifest['assets'][0]['destination'],
+                                            'bytes': manifest['assets'][0]['bytes']}])
+        image_manifest, _ = fixture(image=True)
+        self.assertEqual(media_config.build_video_module(image_manifest).count('https://'), 0)
+        self.assertEqual(media_config.build_media_config(image_manifest)['videos'], [])
+        # The Guangzhou origin still redirects animations: its uplink is shared by the whole class.
+        self.assertIn('location = ' + manifest['assets'][0]['source'], media_config.build_nginx_config(manifest))
+
+    def test_repository_generated_files_are_current(self):
+        root = Path(__file__).parent.parent
+        manifest = json.loads((root / 'deploy/media-manifest.json').read_text(encoding='utf-8'))
+        self.assertEqual((root / 'maanshan/media-videos.mjs').read_text(encoding='utf-8'), media_config.build_video_module(manifest))
+        self.assertEqual((root / 'maanshan/media-images.mjs').read_text(encoding='utf-8'), media_config.build_image_module(manifest))
+        self.assertEqual((root / 'deploy/maanshan-media.conf').read_text(encoding='utf-8'), media_config.build_nginx_config(manifest))
 
     def test_all_poem_images_have_full_resolution_independent_compatible_copies(self):
         from PIL import Image

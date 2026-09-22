@@ -101,10 +101,13 @@ def main():
     packaged_runtime = {row['path'] for row in copied if row['path'].startswith('api/')}
     if packaged_runtime != expected_runtime:
         raise RuntimeError('The school relay runtime is incomplete; commit all reviewed relay files.')
+    # Animations ship on this origin as well: the page falls back between the
+    # deployed copy and the COS copy, so both must exist for every current poem.
     poems = json.loads((ROOT / 'maanshan/poems.json').read_text(encoding='utf-8'))['poems']
+    published = {video['source'].lstrip('/') for video in media_config['videos']}
     for poem in poems:
         video = 'maanshan/' + poem['animation']['src']
-        if video not in omit:
+        if video not in published or video in omit:
             raise RuntimeError('A current animation has no verified COS mapping.')
     config = {
         'trailingSlash': True,
@@ -142,6 +145,7 @@ def main():
                'projectId': args.project_id, 'files': copied, 'excluded': skipped,
                'fileCount': len(copied), 'uploadBytes': sum(row['bytes'] for row in copied),
                'omittedBytes': sum(row['bytes'] for row in skipped),
+               'dualRouteVideos': len(published),
                'companyProjectUnchanged': True,
                'apiRuntime': 'guangzhou-ssh-relay', 'apiFunctions': 1}
     destination.with_suffix('.manifest.json').write_text(json.dumps(summary, indent=2), encoding='utf-8')

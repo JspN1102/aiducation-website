@@ -4,7 +4,8 @@
 
 备案期间：`https://aiducation.asia/maanshan/` 保留原 Vercel 项目；
 `https://mandarin.aiducation.asia/` 使用独立临时 Vercel 项目，并自动进入
-`/maanshan/`。视频和模型继续使用广州 COS，广州轻量服务器保留完整部署。
+`/maanshan/`。模型继续使用广州 COS；六段动画同时随 Vercel 发布并保留 COS 副本，
+浏览器在两条线路之间自动切换（见下文），广州轻量服务器保留完整部署。
 临时入口的发布、存储和切回说明见 `vercel-temporary.md`。两个 Vercel 项目分别更新，
 下面的 `update.py` 仅更新广州服务器，不会发布 Vercel 或改变 DNS。
 
@@ -115,7 +116,16 @@ python deploy/backup-local.py
 `deploy/maanshan-media.conf` 保存当前已验证的精确资源映射；它是 Nginx 配置，
 需要按配置更新流程安装到 `/etc/nginx/maanshan-media.conf`，并检查后 reload。
 如果更换动画文件名，需要先上传并验证新对象，然后更新 Nginx 精确路径映射；
-未映射的新文件仍由本机正常提供。资源包与实际请求、外网流量按腾讯云规则计量。
+未映射的新文件仍由本机正常提供。
+
+动画播放走双线路（2026-09-22 起）：同一 MP4 既随两个 Vercel 项目发布（30 天缓存），
+也保留 COS 副本；`maanshan/media-videos.mjs` 由 `media_config.py --write` 生成，
+`maanshan/animation-source.mjs` 先用会话内图片探测偏好的线路，出错或按下播放后
+8 秒内没有可播放数据就切到另一条，实际播放成功的线路记在 sessionStorage。
+原因：香港网络到广州 COS 经常丢包，大陆网络到 Vercel 又慢，单独一条都不可靠。
+打包器要求每首现用诗的动画都同时具备本地文件和已验证的 COS 映射。
+广州 Nginx 仍把动画 307 到 COS，因为广州出口约 5.8 Mbps 由全班共享。
+浏览器层验证：`node server/animation-route.browser.test.cjs`（headless Edge，本地服务器模拟挂起、404 与正常线路）。资源包与实际请求、外网流量按腾讯云规则计量。
 
 用户从旧域名切换到新域名时，浏览器本地进度不会自动跨域迁移；旧站保留，
 不要将域名切换误称为已完成旧本地记录迁移。
