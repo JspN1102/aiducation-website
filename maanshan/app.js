@@ -19,14 +19,14 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20260922-school15';
 import {requestJSON, requestChat} from './network.mjs?v=20260923-school23';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20260923-school23';
-import {schoolSession} from './bootstrap.mjs?v=20260923-school23';
+import {schoolSession} from './bootstrap.mjs?v=20260923-school24';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260922-school22';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school22';
 import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
 import {getPoetSuggestions, matchPoetPreset} from './poet-presets.mjs?v=20260922-school13';
 import {audioCandidates} from './audio-source.mjs?v=20260923-school23';
 import {rememberRoute} from './media-route.mjs?v=20260923-school23';
-import {packState, onPackChange, resumeResourcePack, requestResourcePack, cancelResourcePack} from './resource-pack.mjs?v=20260923-school23';
+import {packState, onPackChange, resumeResourcePack, requestResourcePack, cancelResourcePack} from './resource-pack.mjs?v=20260923-school24';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -401,15 +401,15 @@ function verseHTML(line,extra='') {
 function renderLibrary() {
   poem=null;document.title='AI普通話學習平台';
   app.innerHTML='<main class="library" id="main">'+
-    '<div class="pack-corner"><button type="button" class="pack-button" data-action="pack" hidden></button></div>'+
     '<div class="library-heading library-with-shishi"><div><h1><span class="library-title-start">AI普通話</span><span class="library-title-end">學習平台</span></h1></div></div>'+
     '<div class="poem-grid library-books" id="poem-grid" aria-label="選擇古詩"></div></main>';
   renderCards();icons();renderPackButton();
   libraryShishi?.destroy();
   libraryShishi=mountLibraryShishi($('.library-heading'),{canPlay:()=>!sessionLocked&&!poem});
 }
-// The one-tap resource pack: its button sits at the top left of the library
-// and follows the download state (resource-pack.mjs). Nothing else waits on it.
+// The one-tap resource pack: its button sits in the header row beside the
+// pupil's name (index.html), shows on the library screen only (pack.css) and
+// follows the download state (resource-pack.mjs). Nothing else waits on it.
 function packMB(bytes){return Math.max(1,Math.round(bytes/1048576));}
 function packButtonView(s){
   const size=s.totalBytes?'（約 '+packMB(s.totalBytes)+' MB）':'';

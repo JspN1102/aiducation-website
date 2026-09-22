@@ -2,9 +2,10 @@
 // and animation is downloaded in the background into the browser's Cache
 // Storage, verified byte for byte against the pack manifest, and served from
 // there by recovery-sw.js from then on. The platform stays fully usable while
-// the pack downloads: at most a few small files (or one big file) are in
-// flight, each requested at low priority from whichever host the session
-// knows to be faster, the other host taking over when one fails. The pack
+// the pack downloads: a few small files and one big file are in flight, each
+// requested at low priority from whichever host the session knows to be
+// faster, the other host taking over when one fails. The count on the button
+// follows the bytes as they arrive, not only whole files. The pack
 // resumes automatically on later visits until it is complete, and refreshes
 // itself when a deployment changes a file. The pack follows the pupil's
 // learning scope: an own-grade account downloads the shared files and its
@@ -21,7 +22,7 @@ export const WANTED_KEY = 'maanshan:pack';
 export const COS_ORIGIN = 'https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com';
 export const PACKED = /^(?:media\/(?:[a-z0-9_-]+\/)*[a-z0-9_-]+\.(?:mp4|glb|webp|mp3|m4a)|vendor\/fonts\/[a-z0-9_-]+\.woff2)$/;
 const TYPES = {mp4: 'video/mp4', glb: 'model/gltf-binary', webp: 'image/webp', mp3: 'audio/mpeg', m4a: 'audio/mp4', woff2: 'font/woff2'};
-const CONCURRENCY = 3;
+const CONCURRENCY = 4;
 const LARGE_BYTES = 4 * 1024 * 1024;
 const MAX_ASSET_BYTES = 64 * 1024 * 1024;
 const MAX_ASSETS = 5000;
@@ -137,7 +138,29 @@ function entryHeaders(asset, version) {
 // One file: skip when the cache already holds these exact bytes; otherwise
 // try the routes in order (a stale browser-cached copy of the deployed file
 // is fetched again bypassing the HTTP cache) and store the verified bytes.
-export async function syncAsset(cache, asset, version, {signal, fetchImpl = (url, init) => fetch(url, init), view = globalThis, memory} = {}) {
+// Reads the body in pieces so the button can count bytes as they arrive; the
+// whole file is still checked against the manifest before it is stored.
+async function readBody(response, bytes, onProgress) {
+  if (typeof response.body?.getReader !== 'function') {
+    const buffer = await response.arrayBuffer();
+    onProgress?.(buffer.byteLength);
+    return buffer;
+  }
+  const reader = response.body.getReader();
+  const buffer = new Uint8Array(bytes);
+  let offset = 0;
+  for (;;) {
+    const {done, value} = await reader.read();
+    if (done) break;
+    if (offset + value.byteLength > bytes) { reader.cancel().catch(() => {}); throw new Error('pack-file-changed'); }
+    buffer.set(value, offset);
+    offset += value.byteLength;
+    onProgress?.(offset);
+  }
+  return offset === bytes ? buffer.buffer : buffer.buffer.slice(0, offset);
+}
+
+export async function syncAsset(cache, asset, version, {signal, fetchImpl = (url, init) => fetch(url, init), view = globalThis, memory, onProgress} = {}) {
   const key = asset.local;
   const existing = await cache.match(key);
   if (existing?.headers.get('X-Pack-Sha256') === asset.sha256) return 'kept';
@@ -151,7 +174,8 @@ export async function syncAsset(cache, asset, version, {signal, fetchImpl = (url
         if (!response.ok) throw new Error('pack-file-unavailable');
         const length = Number(response.headers.get('content-length'));
         if (length && length !== asset.bytes) throw new Error('pack-file-changed');
-        const buffer = await response.arrayBuffer();
+        onProgress?.(0);
+        const buffer = await readBody(response, asset.bytes, onProgress);
         if (buffer.byteLength !== asset.bytes) throw new Error('pack-file-changed');
         if (await digest(buffer, view) !== asset.sha256) throw new Error('pack-file-changed');
         await cache.put(key, new view.Response(buffer, {status: 200, headers: entryHeaders(asset, version)}));
@@ -178,7 +202,8 @@ async function prune(cache, manifest) {
 }
 
 function schedule(assets) {
-  // Small files first so pictures and recordings help soonest; one big file at a time.
+  // Small files first so pictures and recordings help soonest; one big file
+  // streams beside them from the start so the count moves at once.
   return [...assets].sort((a, b) => a.bytes - b.bytes);
 }
 
@@ -201,21 +226,28 @@ async function work(controller, {fetchImpl, view}) {
   if (!rememberedRoute()) await publicImagesReady.catch(() => false);
   update({status: 'downloading'});
   const queue = schedule(wanted);
-  let done = 0, bytesDone = 0, failed = 0, active = 0, largeActive = 0, firstError = null;
+  let done = 0, bytesDone = 0, failed = 0, active = 0, largeActive = 0, firstError = null, timer = null;
+  // Bytes still arriving count toward the figure, a few times a second at most.
+  const inFlight = new Map();
+  const arrived = () => bytesDone + [...inFlight.values()].reduce((sum, bytes) => sum + bytes, 0);
+  const report = () => { timer = null; update({bytesDone: arrived()}); };
+  const progress = (asset, received) => { inFlight.set(asset, received); timer ??= setTimeout(report, 250); };
   await new Promise(resolve => {
     const next = () => {
       if (signal.aborted) { if (!active) resolve(); return; }
       while (active < CONCURRENCY && queue.length) {
-        const index = queue.findIndex(asset => asset.bytes < LARGE_BYTES || !largeActive);
+        let index = largeActive ? -1 : queue.findIndex(asset => asset.bytes >= LARGE_BYTES);
+        if (index < 0) index = queue.findIndex(asset => asset.bytes < LARGE_BYTES);
         if (index < 0) break;
         const [asset] = queue.splice(index, 1);
         const large = asset.bytes >= LARGE_BYTES;
         active++;
         if (large) largeActive++;
-        syncAsset(cache, asset, manifest.version, {signal, fetchImpl, view}).then(() => {
-          done++;bytesDone += asset.bytes;
-          update({done, bytesDone});
+        syncAsset(cache, asset, manifest.version, {signal, fetchImpl, view, onProgress: received => progress(asset, received)}).then(() => {
+          done++;bytesDone += asset.bytes;inFlight.delete(asset);
+          update({done, bytesDone: arrived()});
         }, error => {
+          inFlight.delete(asset);
           if (error?.name !== 'AbortError') { failed++; firstError ??= error; }
         }).finally(() => {
           active--;
@@ -228,6 +260,7 @@ async function work(controller, {fetchImpl, view}) {
     };
     next();
   });
+  clearTimeout(timer);
   if (signal.aborted) return;
   if (failed) { update({status: 'error', error: firstError?.message || 'pack-incomplete'}); return; }
   update({status: 'complete', done, bytesDone});

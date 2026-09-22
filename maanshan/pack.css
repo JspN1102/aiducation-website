@@ -1,6 +1,7 @@
-/* One-tap resource pack: a small pill at the top left of the library (app.js renderPackButton). */
-.pack-corner{display:flex;justify-content:flex-start;align-items:center;margin:-8px 0 8px}
-.pack-button{display:inline-flex;align-items:center;gap:7px;min-height:32px;padding:4px 14px;border:1.5px solid #9dbca8;border-radius:100px;background:#fffdf6;color:#286249;font-family:var(--sans,inherit);font-size:13px;font-weight:600;line-height:1.3;letter-spacing:.3px;cursor:pointer;box-shadow:0 2px 6px #203e2510;transition:background .15s,border-color .15s}
+/* One-tap resource pack: a small pill in the header row, left of the pupil's name (app.js renderPackButton). Library screen only. */
+.pack-corner{display:flex;justify-content:flex-start;align-items:center;min-width:0}
+body:not([data-screen=library]) .pack-corner{display:none}
+.pack-button{display:inline-flex;align-items:center;gap:7px;min-height:32px;padding:4px 14px;white-space:nowrap;border:1.5px solid #9dbca8;border-radius:100px;background:#fffdf6;color:#286249;font-family:var(--sans,inherit);font-size:13px;font-weight:600;line-height:1.3;letter-spacing:.3px;cursor:pointer;box-shadow:0 2px 6px #203e2510;transition:background .15s,border-color .15s}
 .pack-button::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:#c57b13}
 .pack-button:hover:not(:disabled){background:#edf1e6}
 .pack-button:focus-visible{outline:3px solid #c57b13;outline-offset:3px}
@@ -13,5 +14,6 @@
 .pack-button:disabled{opacity:1}
 .pack-button[hidden]{display:none}
 @keyframes pack-pulse{0%,100%{opacity:1}50%{opacity:.35}}
-@media(max-width:820px){.pack-corner{margin:-4px 0 6px}.pack-button{min-height:30px;font-size:12px;padding:3px 12px}}
+@media(max-width:820px){.pack-button{min-height:30px;font-size:12px;padding:3px 12px}}
+@media(max-width:380px){.pack-button{gap:5px;padding:3px 10px;letter-spacing:0}}
 @media(prefers-reduced-motion:reduce){.pack-button[aria-busy=true]::before{animation:none}}

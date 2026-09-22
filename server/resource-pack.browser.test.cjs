@@ -18,6 +18,8 @@ const packed=[
   ['vendor/fonts/noto-sans-tc-variants.woff2','font/woff2',null]
 ];
 const overrides=new Map();
+// Files listed here are sent in pieces with pauses, like a big file on a slow line.
+const slow=new Map();
 let version='a'.repeat(20);
 const records=[];
 const sha=buffer=>crypto.createHash('sha256').update(buffer).digest('hex');
@@ -42,7 +44,12 @@ const server=http.createServer((req,res)=>{
     const relative=url.pathname.slice('/school/'.length),file=path.resolve(repo,'maanshan',relative);
     if(file.startsWith(path.join(repo,'maanshan')+path.sep)&&mime[path.extname(file)]&&fs.existsSync(file)){
       const data=bytesOf(relative);
-      res.setHeader('Content-Type',mime[path.extname(file)]);res.setHeader('Content-Length',data.length);res.end(data);return;
+      res.setHeader('Content-Type',mime[path.extname(file)]);res.setHeader('Content-Length',data.length);
+      const pace=slow.get(relative);
+      if(!pace){res.end(data);return;}
+      let offset=0;const size=Math.ceil(data.length/pace.pieces);
+      const piece=()=>{res.write(data.subarray(offset,offset+size));offset+=size;if(offset<data.length)setTimeout(piece,pace.delay);else res.end();};
+      piece();return;
     }
   }
   res.writeHead(404).end();
@@ -129,12 +136,18 @@ const probe=(page,url,init)=>page.evaluate(async([url,init])=>{
     check('after the new manifest unchanged files serve from the pack',reply.hit==='hit'&&!since(mark).some(row=>row.path==='/school/'+webp.path));
     check('unchanged files were not downloaded again',records.filter(row=>row.path==='/school/'+webp.path).length===3);
 
-    // A changed file is fetched afresh and the old bytes stop being served.
-    overrides.set(mp3.path,Buffer.concat([bytesOf(mp3.path),Buffer.from([0])]));version='c'.repeat(20);
+    // A changed file is fetched afresh and the old bytes stop being served. It
+    // arrives in pieces, and the count follows the bytes rather than whole files.
+    overrides.set(mp3.path,Buffer.concat([bytesOf(mp3.path),Buffer.from([0])]));version='c'.repeat(20);slow.set(mp3.path,{pieces:6,delay:120});
     const changed=manifest().assets[0];
     await page.reload();await ready();
-    await page.evaluate(()=>window.pack.resumeResourcePack());
+    await page.evaluate(()=>{window.progress=[];window.pack.onPackChange(s=>window.progress.push({status:s.status,done:s.done,bytesDone:s.bytesDone}));window.pack.resumeResourcePack();});
     await page.waitForFunction(()=>window.pack.packState().status==='complete',null,{timeout:30000});
+    slow.delete(mp3.path);
+    const progress=await page.evaluate(()=>window.progress),wholeFiles=new Set([0,webp.bytes,font.bytes,changed.bytes,webp.bytes+font.bytes,webp.bytes+changed.bytes,font.bytes+changed.bytes,webp.bytes+font.bytes+changed.bytes]);
+    check('the count moves while a file is still arriving',progress.some(s=>s.status==='downloading'&&!wholeFiles.has(s.bytesDone)));
+    check('the count never runs backwards',progress.every((s,i)=>i===0||s.bytesDone>=progress[i-1].bytesDone));
+    check('the count ends on the whole pack',progress.at(-1).status==='complete'&&progress.at(-1).bytesDone===webp.bytes+font.bytes+changed.bytes);
     reply=await probe(page,'/school/'+mp3.path);
     check('changed recording re-downloaded and served',reply.hit==='hit'&&reply.bytes===changed.bytes);
     reply=await probe(page,mp3.remote);
