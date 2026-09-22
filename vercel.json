@@ -1,4 +1,7 @@
 {
+  "git": {
+    "deploymentEnabled": false
+  },
   "trailingSlash": true,
   "functions": {
     "api/soe.js": {
