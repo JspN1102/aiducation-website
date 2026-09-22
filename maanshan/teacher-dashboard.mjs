@@ -261,6 +261,7 @@ function filterKey(filters){return JSON.stringify(Object.fromEntries(['grade','p
 function filterDescription(filters){return `${filters.grade} 年級 · ${selectedPoem(filters)?.title||'古詩'}${filters.cls?' · '+filters.cls+' 班':''} · ${filters.from} 至 ${filters.to}`;}
 function toolPayloadFilters(filters){return Object.fromEntries(Object.entries(filters).filter(([,value])=>value!==''&&value!==null&&value!==undefined));}
 function clearTeacherTools(){state.assistantJob?.controller.abort();state.documentJob?.controller.abort();state.assistantJob=null;state.assistantReport=null;state.documentJob=null;state.toolsPreparing=false;}
+function clearArchivedReport(){state.assistantReport=null;if(state.assistantJob){state.assistantJob.reportId=null;state.assistantJob.resume=false;}}
 function toolsScopeChanged(){clearTeacherTools();renderTeacherTools();}
 function validReportForScope(){const report=state.assistantReport;return !!report&&filterKey(report.filters)===filterKey(state.filters)&&filterKey(draftFilters())===filterKey(state.filters);}
 function renderTeacherTools(){
@@ -282,6 +283,7 @@ function renderAssistant(){
 }
 function toolErrorMessage(error,kind='analysis'){
  if(error.code==='REPORT_STILL_PROCESSING')return '報告仍在背景整理，稍後再次按下按鈕即可取回。';
+ if(error.code==='REPORT_ARCHIVED')return '學習資料已初始化，請重新分析。';
  const messages={AI_REPORT_QUALITY:'報告內容仍需修訂，尚未產生下載檔案。請稍後再試。',ANALYSIS_RETRY_REQUIRED:'上一個分析請求未完成，請按再試一次繼續處理。',NO_LEARNING_DATA:'可以調整班級或日期，或等學生完成練習並同步後再分析。',AI_RATE_LIMITED:'剛才的分析請求較多，請稍候再試。',AI_TIMEOUT:'分析需要較長時間，請再試一次；已完成的結果會直接取回。',AI_NOT_CONFIGURED:'教學分析服務尚未設定，請聯絡平台管理員。',REPORT_STORAGE_UNAVAILABLE:'報告儲存暫時未能連線，請稍後重試。',AI_INVALID_RESPONSE:'分析回覆未通過檢查，請重新分析。',AI_UNAVAILABLE:'分析服務暫時未能連線，請稍後再試。',REPORT_NOT_FOUND:'這份報告未能取回，請按再試一次重新產生。',REPORT_SNAPSHOT_INVALID:'這份報告資料未能核對，請按再試一次重新產生。',EXPORT_TOO_LARGE:'資料較多，請選一個班別或縮短日期範圍再匯出。',NARROW_DATE_OR_CLASS_FILTER:'資料較多，請選一個班別或縮短日期範圍。',EXPORT_TIMEOUT:'檔案準備需要較長時間，請縮短日期範圍或稍後重試。',INVALID_FILTER:'請核對年級、班別與日期；每次最多 31 天。',ANALYTICS_PENDING_SYNC:'學習資料尚在準備首次同步，請稍後再試。',RESEARCH_DISABLED:'學習紀錄服務尚未啟用，請聯絡平台管理員。'};
  return messages[error.code]||(error.name==='AbortError'?'連線等候時間較長，請稍後再試。':kind==='analysis'?'暫時未能取得完整分析，請再試一次。':'檔案未完整取得，沒有下載部分檔案。請再試一次。');
 }
@@ -323,7 +325,8 @@ async function generateAnalysis(){
   if(!current())return;if(error.status===401||error.status===403){lockSession();return;}
   // Keep an accepted job across network failures or cancellation, even if new
   // pupil records arrive. Only an explicit terminal result permits a new POST.
-  job.resume=!['REPORT_NOT_FOUND','ANALYSIS_RETRY_REQUIRED','AI_REPORT_QUALITY','AI_INVALID_RESPONSE','AI_MODEL_MISMATCH','AI_TIMEOUT','AI_UNAVAILABLE','AI_RATE_LIMITED','AI_NOT_CONFIGURED','INVALID_REPORT_ID'].includes(error.code);
+  job.resume=!['REPORT_ARCHIVED','REPORT_NOT_FOUND','ANALYSIS_RETRY_REQUIRED','AI_REPORT_QUALITY','AI_INVALID_RESPONSE','AI_MODEL_MISMATCH','AI_TIMEOUT','AI_UNAVAILABLE','AI_RATE_LIMITED','AI_NOT_CONFIGURED','INVALID_REPORT_ID'].includes(error.code);
+  if(error.code==='REPORT_ARCHIVED')clearArchivedReport();
   job.status=error.code==='REPORT_STILL_PROCESSING'?'waiting':error.code==='NO_LEARNING_DATA'?'empty':'error';job.message=toolErrorMessage(error);renderTeacherTools();
  }
 }
@@ -342,7 +345,7 @@ async function exportDocument(action){
   const signature=new Uint8Array(await blob.slice(0,4).arrayBuffer());if(signature[0]!==80||signature[1]!==75||signature[2]!==3||signature[3]!==4)throw new Error('Invalid document signature');if(!current()||job.controller.signal.aborted)return;
   let filename=`普通話${action==='xlsx'?'學習紀錄':'教學分析'}_${filters.from}_${filters.to}.${action}`;const disposition=response.headers.get('content-disposition')||'',utf8=/filename\*=UTF-8''([^;]+)/i.exec(disposition),plain=/filename="([^"]+)"/i.exec(disposition);try{const supplied=utf8?decodeURIComponent(utf8[1]):plain?.[1];if(supplied?.endsWith('.'+action)&&!/[\\/\x00-\x1f]/.test(supplied)&&supplied.length<200)filename=supplied;}catch{}
   download(blob,filename);job.status='complete';job.message=action==='xlsx'?'已下載所選範圍的學習紀錄與名冊。':'已下載完整、可編輯的教學報告。';renderTeacherTools();
- }catch(error){if(!current())return;if(error.status===401||error.status===403){lockSession();return;}job.status='error';job.message=toolErrorMessage(error,'document');if(action==='docx'&&['REPORT_NOT_FOUND','REPORT_SNAPSHOT_INVALID'].includes(error.code))state.assistantReport=null;renderTeacherTools();}
+ }catch(error){if(!current())return;if(error.status===401||error.status===403){lockSession();return;}job.status='error';job.message=toolErrorMessage(error,'document');if(action==='docx'&&error.code==='REPORT_ARCHIVED')clearArchivedReport();else if(action==='docx'&&['REPORT_NOT_FOUND','REPORT_SNAPSHOT_INVALID'].includes(error.code))state.assistantReport=null;renderTeacherTools();}
  finally{clearTimeout(timer);pendingRequests.delete(job.controller);}
 }
 

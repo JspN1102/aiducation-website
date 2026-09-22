@@ -2,7 +2,7 @@
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const demo=require('../api/_lib/teacher-demo-data.cjs');
-const repo=path.resolve(__dirname,'..'),requests=[],delays=new Map();let authenticated=true,reportFilters,reportPolls=0,reportStarts=0,reportMode='normal';
+const repo=path.resolve(__dirname,'..'),requests=[],delays=new Map();let authenticated=true,reportFilters,reportPolls=0,reportStarts=0,reportMode='normal',exportArchived=false;
 const reportGetIds=[];
 const reportId='ta_'+'a'.repeat(64);
 const mime={'.html':'text/html','.mjs':'text/javascript','.js':'text/javascript','.json':'application/json','.css':'text/css','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2','.svg':'image/svg+xml'};
@@ -22,10 +22,12 @@ const server=http.createServer(async(req,res)=>{
     if(reportMode==='pending'){res.statusCode=202;return json({ok:true,status:'generating',reportId,retryAfterSeconds:1});}
     if(reportMode==='offline'){res.statusCode=503;return json({ok:false,code:'ORIGIN_UNAVAILABLE'});}
     if(reportMode==='missing'){res.statusCode=404;return json({ok:false,code:'REPORT_NOT_FOUND'});}
+    if(reportMode==='archived'){res.statusCode=409;return json({ok:false,code:'REPORT_ARCHIVED'});}
     if(reportPolls===1){res.statusCode=503;return json({ok:false,code:'ORIGIN_UNAVAILABLE'});}
     return json({ok:true,reportId,report:{reportId,filters:reportFilters,analysis:{overview:'下一課先安排原句跟讀。'}}});
    }
    if(tool==='demo-export'){
+    if(exportArchived){res.statusCode=409;return json({ok:false,code:'REPORT_ARCHIVED'});}
     const {Document,Packer,Paragraph}=require('docx'),bytes=await Packer.toBuffer(new Document({sections:[{children:[new Paragraph('普通話教研報告：下一課先安排原句跟讀。')]}]}));
     res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');res.setHeader('Content-Disposition','attachment; filename="synthetic-report.docx"');return res.end(bytes);
    }
@@ -94,6 +96,16 @@ const server=http.createServer(async(req,res)=>{
    reportMode='missing';await page.locator('#teacher-analysis [data-teacher-tool=docx]').click();await page.getByText('這份報告未能取回，請按再試一次重新產生。',{exact:true}).waitFor();
    assert.equal(reportStarts,missingStarts);await retrieve();assert.equal(reportStarts,missingStarts+1);
    checks.push('an explicit missing report permits a fresh generation on the following retry');
+   await startPending();await page.locator('[data-teacher-tool=cancel-analysis]').click();const archivedStarts=reportStarts;
+   reportMode='archived';await page.locator('#teacher-analysis [data-teacher-tool=docx]').click();await page.getByText('學習資料已初始化，請重新分析。',{exact:true}).waitFor();
+   assert.equal(await page.locator('#teacher-analysis [data-teacher-tool=docx]').innerText(),'再試一次');assert.equal(reportStarts,archivedStarts);
+   await retrieve();assert.equal(reportStarts,archivedStarts+1);
+   checks.push('archived report retrieval clears its resumable identity and the next click creates a fresh analysis');
+   exportArchived=true;await page.locator('.teacher-tools-actions [data-teacher-tool=docx]').click();
+   await page.locator('#document-tool-status').getByText('學習資料已初始化，請重新分析。',{exact:true}).waitFor();const archivedExportStarts=reportStarts;
+   exportArchived=false;const renewedDownload=page.waitForEvent('download');await page.locator('#document-tool-status [data-teacher-tool=docx]').click();
+   assert.equal(await(await renewedDownload).failure(),null);await page.getByText('Word 報告 已下載',{exact:true}).waitFor();assert.equal(reportStarts,archivedExportStarts+1);
+   checks.push('a reset between report completion and Word export clears the old report and retry generates a new one');
    assert(reportGetIds.every(id=>id===reportId));
    assert.deepEqual(errors,[]);console.log(JSON.stringify({ok:true,checks,requests:requests.length,pageErrors:errors},null,2));
  }finally{await browser.close();await new Promise(resolve=>{server.close(resolve);server.closeAllConnections();});}
