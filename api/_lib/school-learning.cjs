@@ -3,6 +3,7 @@ const auth = require('./school-auth.cjs');
 const research = require('./research-store.cjs');
 const {getPoem} = require('./poems.js');
 const challenges = require('./challenge-loader.cjs');
+const grade = require('./writing-grade.cjs');
 const score = value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100 ? value : null;
 
 async function referenceFor(req, operation) {
@@ -24,7 +25,7 @@ async function referenceFor(req, operation) {
     if (!item || item.type !== 'dictation') throw new auth.AuthError(400, 'INVALID_LEARNING_CONTEXT');
     context.activity='writing';
     context.context={...(context.context||{}),itemType:'dictation'};
-    return {poem, item};
+    return {poem, item, strokes: Array.isArray(req.body.ink) ? req.body.ink.length : 0};
   }
   return {poem};
 }
@@ -55,11 +56,13 @@ function outcomeFor(operation, payload, status, reference, elapsedMs, providerMe
     });
     value.metrics.wordCount = value.wordScores.length;
   } else if (operation === 'handwriting') {
-    const first = Array.isArray(payload.candidates) ? payload.candidates.find(value => typeof value==='string'&&value.trim())?.trim().normalize('NFC') : null;
-    const acceptable = [reference.item.target.char,...(reference.item.target.accept||[])].map(value=>value.normalize('NFC'));
-    result.correct = first ? acceptable.includes(first) : null;
-    result.score = first ? result.correct?100:0 : null;
-    result.status = first ? result.correct?'correct':'incorrect' : 'unmeasured';
+    const candidates = (Array.isArray(payload.candidates) ? payload.candidates : []).filter(value => typeof value==='string'&&value.trim()).map(value => value.trim().normalize('NFC'));
+    const acceptable = new Set([reference.item.target.char,...(reference.item.target.accept||[])].map(value=>value.normalize('NFC')));
+    // The verdict the pupil saw (maanshan/writing-grade.mjs), including the component leniency.
+    const verdict = grade.gradeCandidates(candidates, acceptable, {drawn: reference.strokes || 0, strokeOf: grade.strokeCount});
+    result.correct = candidates.length ? verdict.correct : null;
+    result.score = candidates.length ? verdict.correct?100:0 : null;
+    result.status = candidates.length ? verdict.correct?'correct':'incorrect' : 'unmeasured';
   } else if (operation === 'chat') value.metrics.assistantCharacters = Math.min(20000,String(payload.reply||'').length);
   // Report generation is a process event; client-supplied scores never become
   // a new server-verified assessment simply because an LLM produced advice.

@@ -17,7 +17,8 @@ const server=http.createServer((req,res)=>{
    const page=await browser.newPage(),errors=[],held=[];let holding=true;
    page.on('pageerror',error=>errors.push(error.message));
    await page.addInitScript(()=>{const original=setTimeout;window.setTimeout=(callback,delay,...args)=>original(callback,[12000,15000].includes(delay)?40:delay,...args);});
-   await page.route('**/*',route=>{if(holding&&route.request().resourceType()==='image')held.push(route);else void route.continue();});
+   // Only the game's own artwork is held; the session probe image (public host) is answered at once and never reaches the network.
+   await page.route('**/*',route=>{const request=route.request();if(request.resourceType()==='image'&&!request.url().includes('/poem-games/'))return route.fulfill({status:404,body:''});if(holding&&request.resourceType()==='image')held.push(route);else void route.continue();});
    await page.goto(`http://127.0.0.1:${server.address().port}/fixture`);
    await page.evaluate(async({file,mount})=>{const mod=await import(`/maanshan/poem-games/${file}.mjs`);window.events=[];window.game=mod[mount](document.querySelector('#holder'),{onResearch:(type,data)=>events.push({type,...data})});},test);
    await page.waitForFunction(selector=>!document.querySelector(selector).hidden,test.retry);

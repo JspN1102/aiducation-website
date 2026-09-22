@@ -1,4 +1,5 @@
-import {imageAsset} from './media-images.mjs?v=20260922-school16';
+import {imageAsset} from './media-images.mjs?v=20260923-school23';
+import {fetchImage} from './image-loader.mjs?v=20260923-school23';
 const FONT_NAME = 'PoetryCardSerif';
 const fontLoads = new WeakMap();
 let nextCardId = 0;
@@ -151,12 +152,10 @@ export function mountPoetryCard(container, {poem, onClose = () => {}} = {}) {
     try {
       const artwork = (async () => {
         const imageSource = new URL(imageAsset(`media/${poem.slug}/cover-final.webp`), import.meta.url);
-        const [response] = await Promise.all([
-          view.fetch(imageSource, {signal: request.signal}),
+        const [blob] = await Promise.all([
+          fetchImage(imageSource.href, {signal: request.signal, fetchImpl: (url, init) => view.fetch(url, init)}),
           loadFont(doc)
         ]);
-        if (!response.ok) throw new Error('Painting is unavailable.');
-        const blob = await response.blob();
         if (dead || current !== generation || timedOut) throw new Error('Artwork was cancelled.');
         imageURL = view.URL.createObjectURL(blob);
         const decoded = new view.Image();

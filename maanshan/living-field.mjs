@@ -1,5 +1,6 @@
-import {fetchModel, loadBudget} from './model-source.mjs?v=20260922-school22';
+import {fetchModel, loadBudget} from './model-source.mjs?v=20260923-school23';
 import {modelPixelRatio} from './model-quality.mjs?v=20260921-ar1';
+import {fetchImage} from './image-loader.mjs?v=20260923-school23';
 
 // Source meshes own GPU resources; plant clones only borrow them. Rendering is
 // scheduled by interaction, resize or a density change, never by an idle loop.
@@ -117,9 +118,7 @@ export function mountLivingField(holder, {density = {}, onStatus = () => {}} = {
   }
   async function loadSoil(THREE) {
     try {
-      const response = await fetch(asset('challenges/field-soil-v1.webp'), {signal: network.signal, cache: 'no-cache'});
-      if (!response.ok) throw new Error('soil-unavailable');
-      const blob = await response.blob();
+      const blob = await fetchImage(asset('challenges/field-soil-v1.webp'), {signal: network.signal, cache: 'no-cache'});
       if (!alive()) return null;
       let image, bitmap = false;
       if (typeof view.createImageBitmap === 'function') {

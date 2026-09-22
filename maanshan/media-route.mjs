@@ -5,7 +5,7 @@
 // COS download will work too, and the same holds for the deployed copy. Until
 // a route has proven itself, the session image probe decides the order.
 // Nothing about the pupil is sent or stored.
-import {preferPublicImages} from './image-policy.mjs?v=20260922-school16';
+import {preferPublicImages} from './image-policy.mjs?v=20260923-school23';
 
 const STORAGE_KEY = 'maanshan:media-route';
 

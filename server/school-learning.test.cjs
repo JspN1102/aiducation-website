@@ -19,11 +19,24 @@ test('unmeasured and real zero remain different; report generation is never a ve
  assert.equal(outcomeFor('report',{total_score:100,report:'Advice'},200,{poem},10).result.score,null);
  assert.equal(outcomeFor('reading',{},504,reference,10).result.status,'error');
 });
-test('dictation scores only the first nonempty candidate, preserving no-recognition as missing',()=>{
+test('dictation scores the first candidate, preserving no-recognition as missing',()=>{
  const reference={item:{target:{char:'雨',accept:[]}}};
  assert.equal(outcomeFor('handwriting',{candidates:['魚','雨']},200,reference,1).result.correct,false);
  assert.equal(outcomeFor('handwriting',{candidates:[]},200,reference,1).result.score,null);
  assert.equal(outcomeFor('handwriting',{candidates:['雨']},200,reference,1).result.score,100);
+});
+test('a component outranking the whole character counts only when the whole character was drawn',async()=>{
+ const whole={item:{target:{char:'霑',accept:['霑','沾']}},strokes:15};
+ assert.equal(outcomeFor('handwriting',{candidates:['雨','霑']},200,whole,1).result.correct,true);
+ assert.equal(outcomeFor('handwriting',{candidates:['雨','霑']},200,{...whole,strokes:9},1).result.correct,false);
+ assert.equal(outcomeFor('handwriting',{candidates:['雨','霈','露','霑']},200,whole,1).result.correct,false);
+ assert.equal(outcomeFor('handwriting',{candidates:['借','惜']},200,{item:{target:{char:'惜',accept:['惜']}},strokes:11},1).result.correct,false);
+ assert.equal(outcomeFor('handwriting',{candidates:['日','白']},200,{item:{target:{char:'白',accept:['白']}},strokes:5},1).result.correct,false);
+ const {CHALLENGE_SETS}=await loader.load();
+ const poem=[1,2,3,4,5,6].map(id=>getPoem(id)).find(p=>(CHALLENGE_SETS[p.slug]?.bank||CHALLENGE_SETS[p.slug]?.items||[]).some(i=>i.type==='dictation'));
+ const item=(CHALLENGE_SETS[poem.slug].bank||CHALLENGE_SETS[poem.slug].items).find(i=>i.type==='dictation');
+ const req={body:{ink:[[[1,2],[3,4],[0,9]],[[5],[6],[20]]],poemId:poem.id,researchContext:{poemId:poem.id,itemId:item.id}}};
+ assert.equal((await referenceFor(req,'handwriting')).strokes,2);
 });
 test('reading reference must match the canonical poem and exact line',async()=>{
  const p=getPoem(2),req={body:{researchContext:{poemId:2,itemId:'p2.l0'},refText:p.lines[0].simplified}};

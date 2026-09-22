@@ -1,5 +1,6 @@
 import {createHandwritingPad} from './handwriting-pad.mjs?v=20260921-school10';
 import {loadHanziWriter} from './hanzi-library.mjs?v=20260922-school12b';
+import {gradeCandidates,loadStrokeCounts} from './writing-grade.mjs?v=20260923-school23';
 
 // Demonstration and tracing are local learning activities. Only independent
 // handwriting is sent to recognition; later corrections preserve that answer.
@@ -90,11 +91,11 @@ export function mountChallengeWriting(holder, {
       : result.recognized ? `辨認為「${result.recognized}」，清空後再試一次。` : '清空後再寫一次，也可以看筆順。';
     updateControls();
   }
-  function commit(statusValue,candidates = []) {
+  function commit(statusValue,candidates = [],recognized = candidates[0] || null) {
     if (destroyed || result || externalAnswered()) return;
     practising = false;
     result = Object.freeze({status:statusValue,correct:statusValue==='correct',skipped:statusValue==='skipped',independent:statusValue==='correct',char:character,
-      recognized:candidates[0] || null,candidates:Object.freeze([...candidates]),submittedAt:Date.now(),
+      recognized,candidates:Object.freeze([...candidates]),submittedAt:Date.now(),
       ...(traceCompleted?{flow:'trace-dictation-v1',traceCompleted:true,dictationCompleted:statusValue==='correct'}:{})});
     showResult();onSubmit({...result,candidates:[...result.candidates]});
   }
@@ -106,14 +107,23 @@ export function mountChallengeWriting(holder, {
     busy = true;const correcting = Boolean(result), count = correcting?++correctionCount:++recognitionCount;
     auditWriting(count>1?'retry':'attempt_started',{retryCount:count-1,metrics:{strokeCount:strokes.length,eraseCount}});
     const request = ++operation, started = view.performance.now();status.textContent = '正在辨認你的字…';updateControls();
-    let candidates;
+    let candidates, verdict;
     try {
-      const response = await recognize(ink,{mode:correcting?'review':'standard',phase:correcting?'correction':'assessment',attemptNo:count});
-      if (destroyed || request!==operation || (!correcting && (result || externalAnswered()))) return;
-      candidates = Array.isArray(response?.candidates)?response.candidates.filter(v=>typeof v==='string'&&v.trim()).map(normalize):[];
+      const context = {mode:correcting?'review':'standard',phase:correcting?'correction':'assessment',attemptNo:count};
+      const parse = response => Array.isArray(response?.candidates)?response.candidates.filter(v=>typeof v==='string'&&v.trim()).map(normalize):[];
+      const stale = () => destroyed || request!==operation || (!correcting && (result || externalAnswered()));
+      candidates = parse(await recognize(ink,context));if (stale()) return;
+      // The recogniser sometimes returns nothing for ink it reads a moment later: retry the same strokes once.
+      if (!candidates.length) {candidates = parse(await recognize(ink,context));if (stale()) return;}
       if (!candidates.length) {
         auditWriting('error',{error:{code:'invalid_response',retryable:true},metrics:{strokeCount:strokes.length}});
         status.textContent = '這次未能辨認，不計對錯。可以寫大一點，再試一次。';return;
+      }
+      verdict = gradeCandidates(candidates,accepted,{drawn:strokes.length});
+      if (verdict.pending) {
+        // A lower-ranked target may still count (雨 listed above 霑); deciding needs the stroke table.
+        const strokeOf = await loadStrokeCounts(view).catch(()=>null);if (stale()) return;
+        verdict = gradeCandidates(candidates,accepted,{drawn:strokes.length,strokeOf:strokeOf||(()=>0)});
       }
     } catch {
       if (!destroyed && request===operation) {
@@ -122,16 +132,16 @@ export function mountChallengeWriting(holder, {
       }return;
     } finally {if (!destroyed && request===operation) {busy=false;updateControls();}}
     const latencyMs = Math.min(600000,Math.round(view.performance.now()-started));
+    const {correct, recognized} = verdict;
     if (correcting) {
-      const correct = accepted.has(candidates[0]);
-      const latest = Object.freeze({status:correct?'corrected':'incorrect',correct,independent:false,mode:'review',recognized:candidates[0],candidates:Object.freeze(candidates.slice(0,10)),attemptNo:count,submittedAt:Date.now()});
+      const latest = Object.freeze({status:correct?'corrected':'incorrect',correct,independent:false,mode:'review',recognized,candidates:Object.freeze(candidates.slice(0,10)),attemptNo:count,submittedAt:Date.now()});
       if (correct || !['corrected','skipped'].includes(correction?.status)) correction = latest;
-      status.textContent = correct?'這次寫對了！可以繼續下一題。':`辨認為「${candidates[0]}」，清空後再試一次。`;
+      status.textContent = correct?'這次寫對了！可以繼續下一題。':`辨認為「${recognized}」，清空後再試一次。`;
       auditWriting('feedback_shown',{attemptNo:count,result:{status:correct?'correct':'incorrect',correct,score:null},metrics:{latencyMs}});
       onCorrection({...latest,candidates:[...latest.candidates]});updateControls();
     } else {
       auditWriting('item_interacted',{interaction:'game_action',metrics:{latencyMs}});
-      commit(accepted.has(candidates[0])?'correct':'incorrect',candidates.slice(0,10));
+      commit(correct?'correct':'incorrect',candidates.slice(0,10),recognized);
     }
   }
   function startTracing() {

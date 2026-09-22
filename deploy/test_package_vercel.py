@@ -84,7 +84,7 @@ for(const [name,source] of Object.entries(entries)){
             media={'excludedFiles':[],'redirects':[],'headers':[],'videos':[{'source':'/maanshan/media/example/animation.mp4','destination':'https://cos.example/maanshan/media/example/animation.mp4','bytes':14}],
                    'models':[{'source':'/maanshan/media/example/model.glb','destination':'https://cos.example/published/0123456789abcdef0123/maanshan/media/example/model.glb','bytes':14}]}
             arguments=['package-vercel.py','--destination',str(destination),'--project-id','school-test','--team-id','team-test']
-            with patch.object(packager,'ROOT',root),patch.object(packager.subprocess,'check_output',side_effect=git),patch.object(packager,'verify_local_assets'),patch.object(packager,'build_media_config',return_value=media),patch.object(packager,'obsolete_audio_files',return_value=set()),patch.object(sys,'argv',arguments),contextlib.redirect_stdout(io.StringIO()):
+            with patch.object(packager,'ROOT',root),patch.object(packager.subprocess,'check_output',side_effect=git),patch.object(packager,'verify_local_assets'),patch.object(packager,'verify_audio_groups'),patch.object(packager,'build_media_config',return_value=media),patch.object(packager,'obsolete_audio_files',return_value=set()),patch.object(sys,'argv',arguments),contextlib.redirect_stdout(io.StringIO()):
                 packager.main()
             runtime=sorted(p.relative_to(destination).as_posix() for p in (destination/'api').rglob('*') if p.is_file())
             self.assertEqual(runtime,sorted(['api/_lib/guangzhou-relay.cjs','api/_lib/response-encoding.cjs','api/school-gateway.js']))
@@ -143,15 +143,15 @@ assert.equal(encoding.acceptsGzip('gzip'),true);assert.equal(encoding.acceptsGzi
             # must not silently produce a deployable but broken gateway.
             # An animation without a verified COS copy would leave pupils with a single route.
             arguments[2]=str(base/'single-route')
-            with patch.object(packager,'ROOT',root),patch.object(packager.subprocess,'check_output',side_effect=git),patch.object(packager,'verify_local_assets'),patch.object(packager,'build_media_config',return_value={**media,'videos':[]}),patch.object(packager,'obsolete_audio_files',return_value=set()),patch.object(sys,'argv',arguments),contextlib.redirect_stdout(io.StringIO()):
+            with patch.object(packager,'ROOT',root),patch.object(packager.subprocess,'check_output',side_effect=git),patch.object(packager,'verify_local_assets'),patch.object(packager,'verify_audio_groups'),patch.object(packager,'build_media_config',return_value={**media,'videos':[]}),patch.object(packager,'obsolete_audio_files',return_value=set()),patch.object(sys,'argv',arguments),contextlib.redirect_stdout(io.StringIO()):
                 with self.assertRaisesRegex(RuntimeError,'animation has no verified COS mapping'):packager.main()
             # A deployed 3D model without a verified COS copy would have a single route too.
             arguments[2]=str(base/'single-route-model')
-            with patch.object(packager,'ROOT',root),patch.object(packager.subprocess,'check_output',side_effect=git),patch.object(packager,'verify_local_assets'),patch.object(packager,'build_media_config',return_value={**media,'models':[]}),patch.object(packager,'obsolete_audio_files',return_value=set()),patch.object(sys,'argv',arguments),contextlib.redirect_stdout(io.StringIO()):
+            with patch.object(packager,'ROOT',root),patch.object(packager.subprocess,'check_output',side_effect=git),patch.object(packager,'verify_local_assets'),patch.object(packager,'verify_audio_groups'),patch.object(packager,'build_media_config',return_value={**media,'models':[]}),patch.object(packager,'obsolete_audio_files',return_value=set()),patch.object(sys,'argv',arguments),contextlib.redirect_stdout(io.StringIO()):
                 with self.assertRaisesRegex(RuntimeError,'3D model has no verified COS mapping: maanshan/media/example/model.glb'):packager.main()
             fixture.pop('api/_lib/response-encoding.cjs')
             arguments[2]=str(base/'incomplete')
-            with patch.object(packager,'ROOT',root),patch.object(packager.subprocess,'check_output',side_effect=git),patch.object(packager,'verify_local_assets'),patch.object(packager,'build_media_config',return_value=media),patch.object(packager,'obsolete_audio_files',return_value=set()),patch.object(sys,'argv',arguments),contextlib.redirect_stdout(io.StringIO()):
+            with patch.object(packager,'ROOT',root),patch.object(packager.subprocess,'check_output',side_effect=git),patch.object(packager,'verify_local_assets'),patch.object(packager,'verify_audio_groups'),patch.object(packager,'build_media_config',return_value=media),patch.object(packager,'obsolete_audio_files',return_value=set()),patch.object(sys,'argv',arguments),contextlib.redirect_stdout(io.StringIO()):
                 with self.assertRaisesRegex(RuntimeError,'runtime is incomplete'):packager.main()
 
 

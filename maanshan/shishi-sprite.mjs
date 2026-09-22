@@ -1,4 +1,5 @@
-import {imageAsset} from './media-images.mjs?v=20260922-school16';
+import {imageAsset} from './media-images.mjs?v=20260923-school23';
+import {fetchImage} from './image-loader.mjs?v=20260923-school23';
 const stillURL=new URL(imageAsset('media/shishi/guide-still-20260919a.webp'),import.meta.url).href;
 const gestures={wave:{url:new URL('./media/shishi/guide-wave-20260919a.webp',import.meta.url).href,duration:2000},book:{url:new URL('./media/shishi/guide-book-20260919a.webp',import.meta.url).href,duration:4000}};
 const bytes=new Map();
@@ -16,7 +17,7 @@ export function mountShishiSprite(host,{canPlay=()=>true,interval=6000}={}){
   if(!gestures[kind]||!allowed())return;
   stop();const generation=token,gesture=gestures[kind];
   try{
-   if(!bytes.has(kind))bytes.set(kind,fetch(gesture.url).then(response=>{if(!response.ok)throw new Error('Sprite unavailable');return response.blob();}).catch(error=>{bytes.delete(kind);throw error;}));
+   if(!bytes.has(kind))bytes.set(kind,fetchImage(gesture.url).catch(error=>{bytes.delete(kind);throw error;}));
    const blob=await bytes.get(kind);if(generation!==token||!allowed())return;
    objectURL=URL.createObjectURL(blob);const image=new Image(256,376);image.alt='';image.className='shishi-gesture';image.src=objectURL;playing=image;
    await image.decode();if(generation!==token||!allowed()){if(generation===token)stop();return;}

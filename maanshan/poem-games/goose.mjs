@@ -1,4 +1,4 @@
-import {imageAsset} from '../media-images.mjs?v=20260922-school16';
+import {imageAsset} from '../media-images.mjs?v=20260923-school23';
 import {createProcessResearch} from './research.mjs?v=20260920a';
 import {createGameImageLoader} from './image-ready.mjs?v=20260922-school11';
 const asset = name => new URL(imageAsset(`media/poem-games/yong-e/${name}.webp`), import.meta.url).href;
@@ -129,7 +129,8 @@ export function mountGoose(holder, {initialState, readOnly=false, onState, onCom
     const unavailable=()=>{if(dead||generation!==loadGeneration)return;research.error('assets');notice.querySelector('span').textContent='畫卷還在載入，可以再試一次。';notice.querySelector('button').hidden=false;tell('畫卷打開後，就可以替小白鵝上色了。');};
     try {
       const names=['unpainted',...parts.map(p=>p.id)];
-      const loaded=names.map(name=>{const img=new Image();img.src=asset(name);return[name,img];});
+      // The masks are read back through a canvas, so the public COS copy must arrive with CORS approval.
+      const loaded=names.map(name=>{const img=new Image();img.crossOrigin='anonymous';img.src=asset(name);return[name,img];});
       await loadImages(loaded.map(([,image])=>image),{onTimeout:unavailable});
       if(dead||generation!==loadGeneration)return;
       const canvas=document.createElement('canvas');canvas.width=384;canvas.height=256;

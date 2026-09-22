@@ -13,7 +13,7 @@
 // Pages bound a load with loadBudget, a deadline that restarts on progress
 // (onProgress reports every chunk), so a slow but flowing link is never cut.
 import {MODEL_ASSETS} from './media-models.mjs?v=20260922-school20';
-import {orderRoutes, rememberRoute} from './media-route.mjs?v=20260922-school20';
+import {orderRoutes, rememberRoute} from './media-route.mjs?v=20260923-school23';
 
 export const MAX_MODEL_BYTES = 12 * 1024 * 1024;
 export const HEDGE_MS = 3000;

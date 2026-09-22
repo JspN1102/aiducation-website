@@ -1,7 +1,7 @@
 import {EXPLORATION_CONTENT} from './exploration-data.mjs?v=20260920a';
 import {createProcessResearch} from './poem-games/research.mjs?v=20260920a';
 import {modelPixelRatio} from './model-quality.mjs?v=20260921-ar1';
-import {fetchModel, loadBudget, MODEL_LOAD_TIMEOUT_MS} from './model-source.mjs?v=20260922-school22';
+import {fetchModel, loadBudget, MODEL_LOAD_TIMEOUT_MS} from './model-source.mjs?v=20260923-school23';
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ICONS = {

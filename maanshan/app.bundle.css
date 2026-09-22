@@ -2,8 +2,6 @@
 /* styles.css */
 @font-face{font-family:'Noto Sans TC';src:url('vendor/fonts/noto-sans-tc-variants.woff2?v=20260921-full1') format('woff2');font-weight:400 700;font-style:normal;font-display:swap;unicode-range:U+4F26,U+4FA7,U+5C06,U+5E26,U+5E90,U+5F52,U+62E8,U+6570,U+65F6,U+6A2A,U+6DA6,U+6EE1,U+72ED,U+79FD,U+7EA2,U+7EDD,U+7EFF,U+7F18,U+8BC6,U+8FD8,U+8FDC,U+8FDD,U+9065,U+9504,U+95FB,U+9879,U+9E45}
 @font-face{font-family:'Noto Serif TC';src:url('vendor/fonts/noto-serif-tc-variants.woff2?v=20260921-full1') format('woff2');font-weight:400 700;font-style:normal;font-display:swap;unicode-range:U+4F26,U+4FA7,U+5C06,U+5E26,U+5E90,U+5F52,U+62E8,U+6570,U+65F6,U+6A2A,U+6DA6,U+6EE1,U+72ED,U+79FD,U+7EA2,U+7EDD,U+7EFF,U+7F18,U+8BC6,U+8FD8,U+8FDC,U+8FDD,U+9065,U+9504,U+95FB,U+9879,U+9E45}
-@font-face{font-family:'Noto Serif TC';src:url('vendor/fonts/noto-serif-tc.woff2?v=20260921-full1') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
-@font-face{font-family:'Noto Sans TC';src:url('vendor/fonts/noto-sans-tc.woff2?v=20260921-full1') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
 :root{color-scheme:light;--white:#fff;--bg:#fff;--ink:#183f3b;--muted:#5e746b;--line:#dce8df;--green:#147a62;--green-soft:#eaf6ed;--red:#b8493f;--red-soft:#fff0ea;--blue:#24758e;--blue-soft:#ecf6f9;--gold:#8d6514;--gold-soft:#fff6ce;--serif:'Noto Serif TC','Songti TC','PMingLiU',serif;--sans:'Noto Sans TC','Microsoft JhengHei',sans-serif}
 *{box-sizing:border-box;letter-spacing:0}
 html{scroll-padding:20px}
@@ -3548,3 +3546,22 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
   .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing button.cw-primary {min-height:60px;font-size:24px;}
   .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-status {font-size:18px!important;}
 }
+
+/* pack.css */
+/* One-tap resource pack: a small pill at the top left of the library (app.js renderPackButton). */
+.pack-corner{display:flex;justify-content:flex-start;align-items:center;margin:-8px 0 8px}
+.pack-button{display:inline-flex;align-items:center;gap:7px;min-height:32px;padding:4px 14px;border:1.5px solid #9dbca8;border-radius:100px;background:#fffdf6;color:#286249;font-family:var(--sans,inherit);font-size:13px;font-weight:600;line-height:1.3;letter-spacing:.3px;cursor:pointer;box-shadow:0 2px 6px #203e2510;transition:background .15s,border-color .15s}
+.pack-button::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:#c57b13}
+.pack-button:hover:not(:disabled){background:#edf1e6}
+.pack-button:focus-visible{outline:3px solid #c57b13;outline-offset:3px}
+.pack-button[aria-busy=true]::before{background:#286249;animation:pack-pulse 1.2s ease-in-out infinite}
+.pack-button[data-state=paused]::before{background:#8a9a8c}
+.pack-button[data-state=error]{border-color:#d9a08c;color:#a2492f}
+.pack-button[data-state=error]::before{background:#c2533b}
+.pack-button[data-state=complete]{border-color:#7fb08f;background:#eef7ee;color:#3c6b4d;cursor:default;box-shadow:none}
+.pack-button[data-state=complete]::before{background:#3c8f5a}
+.pack-button:disabled{opacity:1}
+.pack-button[hidden]{display:none}
+@keyframes pack-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@media(max-width:820px){.pack-corner{margin:-4px 0 6px}.pack-button{min-height:30px;font-size:12px;padding:3px 12px}}
+@media(prefers-reduced-motion:reduce){.pack-button[aria-busy=true]::before{animation:none}}

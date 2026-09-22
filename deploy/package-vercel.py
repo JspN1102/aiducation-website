@@ -6,7 +6,7 @@ import json
 import shutil
 import subprocess
 
-from media_config import build_media_config, verify_local_assets, obsolete_audio_files
+from media_config import build_media_config, verify_local_assets, verify_audio_groups, obsolete_audio_files
 from public_school import TEXT_SUFFIXES, public_path, public_source, public_routes, is_authoring_file
 from module_preloads import render_index
 
@@ -53,8 +53,9 @@ def main():
     source_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     media = json.loads((ROOT / 'deploy/media-manifest.json').read_text(encoding='utf-8'))
     verify_local_assets(ROOT, media)
+    verify_audio_groups(ROOT, media)
     media_config = build_media_config(media)
-    omit = set(media_config['excludedFiles']) | obsolete_audio_files(ROOT)
+    omit = set(media_config.get('excludedFiles', [])) | obsolete_audio_files(ROOT)
     # The recital buttons, old 3D mascot and lower-grade models (no AR below
     # grade 4) are not used by this platform. The older mountain, river and
     # field models remain the assessment viewer's models.
@@ -65,9 +66,11 @@ def main():
     # Every deployed 3D model also needs its verified COS copy: the page hedges
     # between the two routes, so a model with one route would fail alone.
     published_models = {model['source'].lstrip('/') for model in media_config['models']}
+    # Images, fonts and recordings ship here and on COS too (the page picks the faster route).
+    published_files = {asset['source'].lstrip('/') for key in ['images', 'fonts', 'audio'] for asset in media_config.get(key, [])}
     paths = subprocess.check_output(['git', 'ls-files', '-z'], cwd=ROOT).decode().split('\0')
     destination.mkdir(parents=True)
-    copied, skipped, models = [], [], 0
+    copied, skipped, models, dual = [], [], 0, 0
     for relative in paths:
         if not relative or any(part.startswith('.') for part in Path(relative).parts):
             continue
@@ -87,6 +90,8 @@ def main():
             if relative not in published_models:
                 raise RuntimeError('A deployed 3D model has no verified COS mapping: ' + relative)
             models += 1
+        if relative in published_files:
+            dual += 1
         target_relative = public_path(relative)
         target = destination / target_relative
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -126,7 +131,7 @@ def main():
                       {'source': '/maanshan/', 'destination': '/school/', 'statusCode': 307},
                       {'source': '/maanshan/:path*', 'destination': '/school/:path*', 'statusCode': 307},
                       {'source': '/favicon.ico', 'destination': '/favicon.png', 'statusCode': 307},
-                      *public_routes(media_config['redirects'])],
+                      *public_routes(media_config.get('redirects', []))],
         'headers': [
             {'source': '/(.*)', 'headers': [
                 {'key': 'X-Content-Type-Options', 'value': 'nosniff'},
@@ -138,7 +143,7 @@ def main():
             {'source': '/school/media/:path*', 'headers': [{'key': 'Cache-Control', 'value': 'public, max-age=2592000'}]},
             {'source': '/school/vendor/:path*', 'headers': [{'key': 'Cache-Control', 'value': 'public, max-age=2592000'}]},
             {'source': '/api/:path*', 'headers': [{'key': 'Cache-Control', 'value': 'private, no-store'}]},
-            *public_routes(media_config['headers']),
+            *public_routes(media_config.get('headers', [])),
         ],
     }
     (destination / 'vercel.json').write_text(json.dumps(config, indent=2), encoding='utf-8')
@@ -153,6 +158,7 @@ def main():
                'fileCount': len(copied), 'uploadBytes': sum(row['bytes'] for row in copied),
                'omittedBytes': sum(row['bytes'] for row in skipped),
                'dualRouteVideos': len(published), 'dualRouteModels': models,
+               'dualRouteFiles': dual, 'publishedFiles': len(published_files),
                'companyProjectUnchanged': True,
                'apiRuntime': 'guangzhou-ssh-relay', 'apiFunctions': 1}
     destination.with_suffix('.manifest.json').write_text(json.dumps(summary, indent=2), encoding='utf-8')

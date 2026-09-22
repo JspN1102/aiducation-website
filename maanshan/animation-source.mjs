@@ -7,7 +7,7 @@
 // playback errors or stalls, and the route that actually played is remembered
 // for the session. Nothing about the pupil is sent or stored.
 import {VIDEO_ASSETS} from './media-videos.mjs?v=20260922-school19';
-import {orderRoutes, rememberRoute} from './media-route.mjs?v=20260922-school20';
+import {orderRoutes, rememberRoute} from './media-route.mjs?v=20260923-school23';
 
 export const STALL_MS = 8000;
 const HAVE_FUTURE_DATA = 3;

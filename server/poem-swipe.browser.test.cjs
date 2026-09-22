@@ -35,6 +35,7 @@ async function setup({width=390,height=844,touch=true,slow=false,app=false}={}){
     return send({PronAccuracy:93,PronFluency:.95,PronCompletion:1,SuggestedScore:93,Words:[...body.refText].filter(c=>/\p{Script=Han}/u.test(c)).map(Word=>({Word,PronAccuracy:93,PhoneInfos:[]}))});
    }
    if(endpoint==='/api/maanshan-save')return send({ok:true,stored:'synthetic'});
+   if(endpoint==='/api/school-recordings')return send({ok:true,userId:'synthetic-swipe-student',recordings:[]});
    return route.fulfill({status:500,body:'Unexpected API blocked'});
   }
   let relative=url.pathname;if(relative==='/maanshan/')relative+='index.html';
@@ -115,7 +116,7 @@ async function realAppChecks(width,height,touch){const env=await setup({width,he
   check('after a swipe the real recorder submits only the selected sentence',state.scores.length===1&&state.scores[0].poemId===poem.id&&state.scores[0].refText===poem.lines[1].simplified);
   check('assessment attaches only to the selected verse index',await page.evaluate(({key,id})=>{const r=JSON.parse(localStorage.getItem(key))[id].reading;return !r[0]&&r[1]?.total_score===93&&!r[2]&&!r[3];},{key,id:poem.id}));
  }
- check(width+'px no unexpected provider or research request',state.requests.every(url=>['/api/school-auth','/api/soe','/api/maanshan-save'].includes(url)));
+ check(width+'px no unexpected provider or research request',state.requests.every(url=>['/api/school-auth','/api/soe','/api/maanshan-save','/api/school-recordings'].includes(url)));
  }finally{await env.close();}}
 (async()=>{browser=await chromium.launch({channel:'msedge',headless:true,args:['--no-proxy-server','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});
  await fixtureChecks();await loadingChecks();for(const dimensions of [[390,844,true],[768,1024,true],[1440,1000,false]])await realAppChecks(...dimensions);check('no browser exceptions',errors.length===0);

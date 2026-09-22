@@ -1,8 +1,15 @@
-import {initializeSchoolSession, schoolState, onSchoolSessionInvalid} from './school-session.mjs?v=20260922-school18';
-import {installImageRecovery} from './image-loader.mjs?v=20260922-school16';
+import {initializeSchoolSession, schoolState, onSchoolSessionInvalid} from './school-session.mjs?v=20260923-school23';
+import {installImageRecovery} from './image-loader.mjs?v=20260923-school23';
 import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
+import {installFonts} from './font-source.mjs?v=20260923-school23';
+import {announcePackVersion} from './resource-pack.mjs?v=20260923-school23';
 
 installImageRecovery();
+// The full fonts arrive from the faster host; the page reads in the system font until then.
+void installFonts();
+// The recovery worker learns this deployment's pack version at once; app.js
+// resumes a pack the pupil asked for once the account's grade is known.
+announcePackVersion();
 
 const app = document.querySelector('#app');
 let invalidated = false;
@@ -41,7 +48,7 @@ schoolSession.then(async school => {
     const resources=await classroomResources;
     if(resources.some(result=>result.status==='rejected'))throw new Error('Learning resource unavailable');
     if (invalidated || schoolState() !== school) return;
-    await import('./app.js?v=20260922-school22');
+    await import('./app.js?v=20260923-school23');
   } catch {
     if (!invalidated) window.showLoadRecovery?.();
   } finally {

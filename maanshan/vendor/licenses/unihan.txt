@@ -1,0 +1,8 @@
+stroke-counts.json is derived from the kTotalStrokes field of the Unicode Unihan Database
+(https://www.unicode.org/Public/UCD/latest/ucd/Unihan.zip), rebuilt with scripts/build-stroke-counts.py.
+
+Copyright © 1991-2026 Unicode, Inc. All rights reserved.
+Distributed under the Unicode License v3 (https://www.unicode.org/license.txt):
+permission is granted, free of charge, to use, copy, modify, merge, publish, distribute and/or sell copies
+of the data files, provided that this copyright and permission notice appears with all copies. The data is
+provided "as is", without warranty of any kind.

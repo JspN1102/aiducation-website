@@ -1,0 +1,1630 @@
+{
+ "schemaVersion": 1,
+ "grades": {
+  "media/bo-chuan-gua-zhou/animation-20260917.mp4": [
+   4
+  ],
+  "media/bo-chuan-gua-zhou/animation-poster-20260917.webp": [
+   4
+  ],
+  "media/bo-chuan-gua-zhou/avatar.webp": [
+   4
+  ],
+  "media/bo-chuan-gua-zhou/cover-final.webp": [
+   4
+  ],
+  "media/bo-chuan-gua-zhou/cover.webp": [
+   4
+  ],
+  "media/bo-chuan-gua-zhou/poster.webp": [
+   4
+  ],
+  "media/bo-chuan-gua-zhou/preview-1.webp": [
+   4
+  ],
+  "media/bo-chuan-gua-zhou/preview-2.webp": [
+   4
+  ],
+  "media/bo-chuan-gua-zhou/preview-3.webp": [
+   4
+  ],
+  "media/bo-chuan-gua-zhou/preview-4.webp": [
+   4
+  ],
+  "media/bo-chuan-gua-zhou/scene-1.webp": [
+   4
+  ],
+  "media/bo-chuan-gua-zhou/scene-2.webp": [
+   4
+  ],
+  "media/bo-chuan-gua-zhou/scene-3.webp": [
+   4
+  ],
+  "media/bo-chuan-gua-zhou/scene-4.webp": [
+   4
+  ],
+  "media/challenges/field-soil-v1.webp": [
+   5
+  ],
+  "media/challenges/ti-xi-lin-bi-horizontal.webp": [
+   3
+  ],
+  "media/challenges/ti-xi-lin-bi-side.webp": [
+   3
+  ],
+  "media/challenges/zao-chun-far.webp": [
+   6
+  ],
+  "media/challenges/zao-chun-near.webp": [
+   6
+  ],
+  "media/exploration/bo-chuan-gua-zhou/model-20260919b.glb": [
+   4
+  ],
+  "media/exploration/bo-chuan-gua-zhou/model.glb": [
+   4
+  ],
+  "media/exploration/bo-chuan-gua-zhou/scene.webp": [
+   4
+  ],
+  "media/exploration/gui-yuan-tian-ju/model-20260920a.glb": [
+   5
+  ],
+  "media/exploration/gui-yuan-tian-ju/model.glb": [
+   5
+  ],
+  "media/exploration/gui-yuan-tian-ju/scene.webp": [
+   5
+  ],
+  "media/exploration/ti-xi-lin-bi/model.glb": [
+   3
+  ],
+  "media/exploration/ti-xi-lin-bi/scene.webp": [
+   3
+  ],
+  "media/exploration/yong-e/scene.webp": [
+   1
+  ],
+  "media/exploration/zao-chun/model-20260919b.glb": [
+   6
+  ],
+  "media/exploration/zao-chun/model.glb": [
+   6
+  ],
+  "media/exploration/zao-chun/scene.webp": [
+   6
+  ],
+  "media/exploration/zeng-wang-lun/scene.webp": [
+   2
+  ],
+  "media/gui-yuan-tian-ju/animation-20260919b.mp4": [
+   5
+  ],
+  "media/gui-yuan-tian-ju/animation-poster-20260919b.webp": [
+   5
+  ],
+  "media/gui-yuan-tian-ju/avatar.webp": [
+   5
+  ],
+  "media/gui-yuan-tian-ju/cover-final.webp": [
+   5
+  ],
+  "media/gui-yuan-tian-ju/cover.webp": [
+   5
+  ],
+  "media/gui-yuan-tian-ju/poster.webp": [
+   5
+  ],
+  "media/gui-yuan-tian-ju/preview-1.webp": [
+   5
+  ],
+  "media/gui-yuan-tian-ju/preview-2.webp": [
+   5
+  ],
+  "media/gui-yuan-tian-ju/preview-3.webp": [
+   5
+  ],
+  "media/gui-yuan-tian-ju/preview-4.webp": [
+   5
+  ],
+  "media/gui-yuan-tian-ju/scene-1.webp": [
+   5
+  ],
+  "media/gui-yuan-tian-ju/scene-2.webp": [
+   5
+  ],
+  "media/gui-yuan-tian-ju/scene-3.webp": [
+   5
+  ],
+  "media/gui-yuan-tian-ju/scene-4.webp": [
+   5
+  ],
+  "media/living-scenes/bean-v1.glb": [
+   5
+  ],
+  "media/living-scenes/bean-v1.webp": [
+   5
+  ],
+  "media/living-scenes/grass-v1.glb": [
+   5
+  ],
+  "media/living-scenes/grass-v1.webp": [
+   5
+  ],
+  "media/poem-games/farewell/libai-boat-20260919.webp": [
+   2
+  ],
+  "media/poem-games/farewell/shore-20260919.webp": [
+   2
+  ],
+  "media/poem-games/garden/garden-bed-20260919a.webp": [
+   5
+  ],
+  "media/poem-games/garden/garden-bed.webp": [
+   5
+  ],
+  "media/poem-games/mountain-peak.webp": [
+   3
+  ],
+  "media/poem-games/mountain-ridge.webp": [
+   3
+  ],
+  "media/poem-games/rain-catcher/leaf-boat.webp": [
+   6
+  ],
+  "media/poem-games/rain-catcher/spring-scene.webp": [
+   6
+  ],
+  "media/poem-games/river/far-waiting.webp": [
+   4
+  ],
+  "media/poem-games/river/near-waiting.webp": [
+   4
+  ],
+  "media/poem-games/river/willow-waiting.webp": [
+   4
+  ],
+  "media/poem-games/spring-far.webp": [
+   6
+  ],
+  "media/poem-games/spring-near.webp": [
+   6
+  ],
+  "media/poem-games/yong-e/complete.webp": [
+   1
+  ],
+  "media/poem-games/yong-e/feather.webp": [
+   1
+  ],
+  "media/poem-games/yong-e/palm.webp": [
+   1
+  ],
+  "media/poem-games/yong-e/unpainted.webp": [
+   1
+  ],
+  "media/poem-games/yong-e/water.webp": [
+   1
+  ],
+  "media/recitations/edb-20260921/grade1-author.mp3": [
+   1
+  ],
+  "media/recitations/edb-20260921/grade1-line1.mp3": [
+   1
+  ],
+  "media/recitations/edb-20260921/grade1-line2.mp3": [
+   1
+  ],
+  "media/recitations/edb-20260921/grade1-line3.mp3": [
+   1
+  ],
+  "media/recitations/edb-20260921/grade1-line4.mp3": [
+   1
+  ],
+  "media/recitations/edb-20260921/grade1-poem.mp3": [
+   1
+  ],
+  "media/recitations/edb-20260921/grade1-title.mp3": [
+   1
+  ],
+  "media/recitations/edb-20260921/grade2-author.mp3": [
+   2
+  ],
+  "media/recitations/edb-20260921/grade2-line1.mp3": [
+   2
+  ],
+  "media/recitations/edb-20260921/grade2-line2.mp3": [
+   2
+  ],
+  "media/recitations/edb-20260921/grade2-line3.mp3": [
+   2
+  ],
+  "media/recitations/edb-20260921/grade2-line4.mp3": [
+   2
+  ],
+  "media/recitations/edb-20260921/grade2-poem.mp3": [
+   2
+  ],
+  "media/recitations/edb-20260921/grade2-title.mp3": [
+   2
+  ],
+  "media/recitations/edb-20260921/grade3-author.mp3": [
+   3
+  ],
+  "media/recitations/edb-20260921/grade3-line1.mp3": [
+   3
+  ],
+  "media/recitations/edb-20260921/grade3-line2.mp3": [
+   3
+  ],
+  "media/recitations/edb-20260921/grade3-line3.mp3": [
+   3
+  ],
+  "media/recitations/edb-20260921/grade3-line4.mp3": [
+   3
+  ],
+  "media/recitations/edb-20260921/grade3-poem.mp3": [
+   3
+  ],
+  "media/recitations/edb-20260921/grade3-title.mp3": [
+   3
+  ],
+  "media/recitations/edb-20260921/grade4-author.mp3": [
+   4
+  ],
+  "media/recitations/edb-20260921/grade4-line1.mp3": [
+   4
+  ],
+  "media/recitations/edb-20260921/grade4-line2.mp3": [
+   4
+  ],
+  "media/recitations/edb-20260921/grade4-line3.mp3": [
+   4
+  ],
+  "media/recitations/edb-20260921/grade4-line4.mp3": [
+   4
+  ],
+  "media/recitations/edb-20260921/grade4-poem.mp3": [
+   4
+  ],
+  "media/recitations/edb-20260921/grade4-title.mp3": [
+   4
+  ],
+  "media/recitations/edb-20260921/grade5-author.mp3": [
+   5
+  ],
+  "media/recitations/edb-20260921/grade5-line1.mp3": [
+   5
+  ],
+  "media/recitations/edb-20260921/grade5-line2.mp3": [
+   5
+  ],
+  "media/recitations/edb-20260921/grade5-line3.mp3": [
+   5
+  ],
+  "media/recitations/edb-20260921/grade5-line4.mp3": [
+   5
+  ],
+  "media/recitations/edb-20260921/grade5-poem.mp3": [
+   5
+  ],
+  "media/recitations/edb-20260921/grade5-title.mp3": [
+   5
+  ],
+  "media/recitations/edb-20260921/grade5-verse1.mp3": [
+   5
+  ],
+  "media/recitations/edb-20260921/grade5-verse2.mp3": [
+   5
+  ],
+  "media/recitations/edb-20260921/grade5-verse3.mp3": [
+   5
+  ],
+  "media/recitations/edb-20260921/grade5-verse4.mp3": [
+   5
+  ],
+  "media/recitations/edb-20260921/grade5-verse5.mp3": [
+   5
+  ],
+  "media/recitations/edb-20260921/grade5-verse6.mp3": [
+   5
+  ],
+  "media/recitations/edb-20260921/grade5-verse7.mp3": [
+   5
+  ],
+  "media/recitations/edb-20260921/grade5-verse8.mp3": [
+   5
+  ],
+  "media/recitations/edb-20260921/grade6-author.mp3": [
+   6
+  ],
+  "media/recitations/edb-20260921/grade6-line1.mp3": [
+   6
+  ],
+  "media/recitations/edb-20260921/grade6-line2.mp3": [
+   6
+  ],
+  "media/recitations/edb-20260921/grade6-line3.mp3": [
+   6
+  ],
+  "media/recitations/edb-20260921/grade6-line4.mp3": [
+   6
+  ],
+  "media/recitations/edb-20260921/grade6-poem.mp3": [
+   6
+  ],
+  "media/recitations/edb-20260921/grade6-title.mp3": [
+   6
+  ],
+  "media/speech/026ddbea59930743ae38-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/speech/02c5c084581e408738fc-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/speech/038bd4d7211324f05445-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/08c847c3f949b3ed537b-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/speech/0b07365fe0e63e0b63bc-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/10d0ee4107e73e8f711a-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/speech/112f2c6299e143f4afc7-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/speech/16f5e5b1d4dcc84057c7-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/179c7a1281b8705739d3-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/speech/1942c7a0a154b88de797-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/1c25ed95d1dc317d0ded-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/1c644584f1a5721ff91a-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/1d7d3e8d6a2ecd17ff4c-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/speech/1e295c76e2867e70fe23-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/speech/200e9e95aceba7ec4b50-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/speech/2167cdee9c4cb3e37ac8-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/speech/219acbf57ebba440ee94-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/243f7d3a29eb832ce54e-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/speech/25497f699027f6d9cc03-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/speech/2fa5d63caaeb2530d1ee-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/speech/34fe5d3d18cd826458d6-f403001-20260921natural1.mp3": [
+   1,
+   3,
+   4
+  ],
+  "media/speech/356b8dc2e60b89bc6d4d-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/speech/38ec49c391db422de670-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/3aee339521057dae2b86-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/speech/3c5574e531d177b679ca-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/3c9798b823001853105a-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/speech/3edb4edc7a8320f8eee5-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/speech/3f188df906f7989672b3-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/speech/4042986eb5c34e636064-f403001-20260921natural1.mp3": [
+   1,
+   6
+  ],
+  "media/speech/449d68dab5992547bc7e-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/speech/4539f67ebe6e7f169a88-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/speech/47c4115b844b62645744-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/5087745d546b3c473cec-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/speech/5098192026d2e8074345-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/speech/529cbe0e2e5efb95b3f7-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/speech/5425413943de2464844a-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/speech/55d7d8439182b785ccc7-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/speech/5aa1c6e63e8b3dcd411f-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/5addc99a99b8baa524c3-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/speech/5b97e536191088dfc141-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/5d74fcb181dd170231c5-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/speech/5e0c43dde7f29e99735e-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/6539958723748f8decb3-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/speech/672b9d435ee146d459d0-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/6abba2cd674afa0f07a4-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/speech/71632b5fc7ddb25c217e-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/speech/7167c0cb44a1077f03e3-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/7260a0c5ce9591433d79-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/72de0cb17e36b6050169-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/7550957465199edec27a-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/78e0d697bbd080f3d6d7-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/speech/79a00a52941ccf77c5e1-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/849f67644538d14e82bc-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/speech/85aa0c39d286af615ae6-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/speech/8667d18494c253476065-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/speech/8fae11f6b889d24f66bd-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/speech/9b89fd510eee62f98c53-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/speech/9c822d4071c97633347c-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/speech/a359474d101eb01d6725-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/a386b9d82cb2141b43ef-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/speech/a4fcc0732c6a1954c620-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/ac161be199c6dd7dc352-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/acdbbfbcaa715dd2a42d-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/adf160fd2d47e449008c-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/aecd5278521097913d0d-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/speech/b0bd784c056b51af4cf2-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/b42d298952c2335e0aa7-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/b6ef64f0f417b073aca7-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/speech/b956b7d0e471d14d2f62-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/bb0f691e7123f9fba133-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/bc58e177aa60f78e9989-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/bddaab5b595728655421-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/bde90aa0215923429039-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/speech/bee32dd4b4f3b5ce295b-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/speech/c73294f4b83398814e3f-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/c95b7eee199760548877-f403001-20260921natural1.mp3": [
+   1,
+   4
+  ],
+  "media/speech/cb6a3c308d27c744cc26-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/cb961036ce9d26f20ae1-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/speech/cbf18cfd506b2a454bee-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/speech/cc1a6c5792a4210dfdcb-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/speech/cece82025ab1f313c537-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/speech/cf3a3aff2af5e8e0a5cb-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/speech/cfb32f95272c143d15d6-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/speech/d00033f65a5393778d9f-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/d524a9d398b6c5fab6b7-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/speech/d59a974daf2eb042c25d-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/speech/d88d78018f1809f1f0f5-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/da6a696bc53240f0e02b-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/speech/dc990b4c4d5683978194-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/de21b839b69046b3dbff-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/speech/dec029ce7c1c5443dd91-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/speech/df69769fb5bf9de9b199-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/speech/df9a7f0df4e75295d845-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/speech/dfe2a7f97aa92337d798-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/speech/e7c130ad0e6b0d5107b1-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/speech/e850bd39d0f871b4ba12-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/speech/ec6ae0f6f277064a8cba-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/ee0cde3c8e9029f10a1d-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/speech/f0d707ab615a30b9819d-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/f97453973859a3bc78e0-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/speech/faa70d3fceaa46cbb466-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/speech/fc2fe7463a2858d7fda0-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/speech/fcffd354c8e16acd8933-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/speech/ff549899c1120e61b7ee-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/ti-xi-lin-bi/animation-20260917b.mp4": [
+   3
+  ],
+  "media/ti-xi-lin-bi/animation-poster-20260917.webp": [
+   3
+  ],
+  "media/ti-xi-lin-bi/avatar.webp": [
+   3
+  ],
+  "media/ti-xi-lin-bi/cover-final.webp": [
+   3
+  ],
+  "media/ti-xi-lin-bi/cover.webp": [
+   3
+  ],
+  "media/ti-xi-lin-bi/poster.webp": [
+   3
+  ],
+  "media/ti-xi-lin-bi/preview-1.webp": [
+   3
+  ],
+  "media/ti-xi-lin-bi/preview-2.webp": [
+   3
+  ],
+  "media/ti-xi-lin-bi/preview-3.webp": [
+   3
+  ],
+  "media/ti-xi-lin-bi/preview-4.webp": [
+   3
+  ],
+  "media/ti-xi-lin-bi/scene-1.webp": [
+   3
+  ],
+  "media/ti-xi-lin-bi/scene-2.webp": [
+   3
+  ],
+  "media/ti-xi-lin-bi/scene-3.webp": [
+   3
+  ],
+  "media/ti-xi-lin-bi/scene-4.webp": [
+   3
+  ],
+  "media/words/008daafd1eaef8909f28-f403001-20260921natural1.mp3": [
+   2,
+   4,
+   6
+  ],
+  "media/words/01c31e9483055049ae87-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/words/021b1a14d9308f2ee097-f403001-20260921natural1.mp3": [
+   1,
+   3
+  ],
+  "media/words/03255ce8773bd8aaee03-f403001-20260921natural1.mp3": [
+   4,
+   5,
+   6
+  ],
+  "media/words/0473ba2720fb7b6f480d-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/0970b4c3601f0d648866-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/words/0b19049a63210b43c689-f403001-20260921natural1.mp3": [
+   2,
+   6
+  ],
+  "media/words/0b231264656c246f0ea3-f403001-20260921natural1.mp3": [
+   3,
+   5,
+   6
+  ],
+  "media/words/0b3e3fe7d82c248ff6ce-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/words/100006931d0a6313edf5-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/10ff2dd245adfdb41693-f403001-20260921natural1.mp3": [
+   2,
+   6
+  ],
+  "media/words/114873d6528dc7041e72-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/words/12753106a1d40426300d-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/words/175561c0cdeeb5e2edfc-f403001-20260921natural1.mp3": [
+   3,
+   4
+  ],
+  "media/words/1b7c4c98af507427e039-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/1d5caffae796183f5ea0-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   4,
+   5,
+   6
+  ],
+  "media/words/1e87aab717d25a81acd0-f403001-20260921natural1.mp3": [
+   3,
+   5
+  ],
+  "media/words/1e9644cc60415b438a6c-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/204ea6d567e0db41956d-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/20cb341cda4057dd3138-f403001-20260921natural1.mp3": [
+   1,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/2249d6cf2ba17a1527e1-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/224e75a057eef983eefe-f403001-20260921natural1.mp3": [
+   2,
+   4
+  ],
+  "media/words/2921f5be74ba89ce548e-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/words/2bb8249b126911af4061-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/words/2d913ce97149621f9a83-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/2dd1bce08d51fd964361-f403001-20260921natural1.mp3": [
+   3,
+   4,
+   5
+  ],
+  "media/words/2f63766c78ef94f60fbe-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/2fdab0f90e77a86363e8-f403001-20260921natural1.mp3": [
+   3,
+   5,
+   6
+  ],
+  "media/words/2fdd744e4a20ef6158b3-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/2fff02d6de45e1087c70-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/words/30a14a927a77f9f1a008-f403001-20260921natural1.mp3": [
+   2,
+   3,
+   4,
+   5
+  ],
+  "media/words/312d6a5f235e0f08e4b0-f403001-20260921natural1.mp3": [
+   2,
+   4,
+   5
+  ],
+  "media/words/312e3537508200128b21-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/words/31971bfc5e04b0017894-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/words/36d23230873cfb96752f-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/words/3795db34f4d8991240e4-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/words/389028326edcc1d7f51f-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/words/3d7d3b0c760d7da1aed0-f403001-20260921natural1.mp3": [
+   2,
+   6
+  ],
+  "media/words/3e42b08edfd3e7063a96-f403001-20260921natural1.mp3": [
+   3,
+   5
+  ],
+  "media/words/3f5f448508f9ff0de4e4-f403001-20260921natural1.mp3": [
+   1,
+   4,
+   6
+  ],
+  "media/words/41df48f4418f7c70310f-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/43ce970f8d4d8cead9cf-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/words/44dab315c0ad008c5503-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/words/47b16e70e6d10193f9cf-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/48336fdc8f7c44f48466-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/494d713f5c51487a19a5-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/49583f22c82794f7b488-f403001-20260921natural1.mp3": [
+   1,
+   4
+  ],
+  "media/words/49a51924404207f10598-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/words/4c44920f12eda3be1c1d-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/words/4d048b7e345fd46b2e0a-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/4f1c82893744787d69a7-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   5
+  ],
+  "media/words/50fc7a98f74cf215d408-f403001-20260921natural1.mp3": [
+   2,
+   4,
+   6
+  ],
+  "media/words/510dd1d15e1551cf980d-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/5316354d00c3c9dac3a5-f403001-20260921natural1.mp3": [
+   1,
+   3
+  ],
+  "media/words/53b4d70d767ca1da0066-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/5506898e707f43f002d5-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/words/5534725912ec455b3cce-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/5616d57e8116946e2d45-f403001-20260921natural1.mp3": [
+   4,
+   5,
+   6
+  ],
+  "media/words/563f7d1b7026904c9f27-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/5646ad9ad52134f2e9d0-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/57eaa0a9e12fe986c95c-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/584fd9107a2606380261-f403001-20260921natural1.mp3": [
+   3,
+   6
+  ],
+  "media/words/5a1f4e7a5d477b8d918c-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/words/5c5fb6a5332fd9d52ca6-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   6
+  ],
+  "media/words/5cba594620a7efbbb3f4-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/words/5cf5f5260ade2fbc0968-f403001-20260921natural1.mp3": [
+   1,
+   4,
+   6
+  ],
+  "media/words/5d005fc60155bbfe1580-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/5d0b41b29f9bc6dfafff-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/words/5fed690eea2327e688c5-f403001-20260921natural1.mp3": [
+   1,
+   4,
+   6
+  ],
+  "media/words/61189ebe39b3fd72113b-f403001-20260921natural1.mp3": [
+   2,
+   3,
+   4,
+   5
+  ],
+  "media/words/61580015906351d19d21-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/6529fd735911be7ec671-f403001-20260921complete1.mp3": [
+   4,
+   5
+  ],
+  "media/words/674aeb3ff51e471f1bcb-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/words/69b67f73ff7b3082712e-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/6b27c7f673ca1badbab5-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/6be0c65eaa03a9db2eb6-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "media/words/6e7698dc8af8a05a2ab5-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "media/words/6eb3aa3e90119a6439e7-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/words/6ee62637ec17fc896161-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/6efa06e8fd43410463b9-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/words/6f4fe90031207eba3822-f403001-20260921complete1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/739ddfd9490c1e212fb2-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/741d311c8b976a80681c-f403001-20260921natural1.mp3": [
+   4,
+   6
+  ],
+  "media/words/74c9ea1d5dc998aab70e-f403001-20260921natural1.mp3": [
+   1,
+   6
+  ],
+  "media/words/759725e994265fece1df-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/75c0f23471df7813153c-f403001-20260921natural1.mp3": [
+   3,
+   4
+  ],
+  "media/words/76fa2f5e5787d0fddf84-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/words/777a2228440bac2e985e-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/7a9ece5aa96885fdb62c-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/7acff04573e965633a0f-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/7b15123311dc0c6b4446-f403001-20260921natural1.mp3": [
+   4,
+   5
+  ],
+  "media/words/7b7dbd278744bacc5cda-f403001-20260921natural1.mp3": [
+   3,
+   6
+  ],
+  "media/words/805893a8e4948a9dac0a-f403001-20260921natural1.mp3": [
+   2,
+   4
+  ],
+  "media/words/883cb375a02b34646dbf-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/8a0233397f80a9d9655a-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/8aa9743e58ae6ca9bc36-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/words/8ac712d5d048039d81c5-f403001-20260921natural1.mp3": [
+   2,
+   4
+  ],
+  "media/words/8adb877e4ca4f58961d1-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/words/8b2b2087ff33d58e8e2f-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/words/8cf72bc27227660e4477-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/8cf82c291af3f6220564-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/8ee53186f388cc8a41dc-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/words/902aacdf3b1146c5d383-f403001-20260921natural1.mp3": [
+   2,
+   5
+  ],
+  "media/words/939a2f1141bd9e9f93b0-f403001-20260921natural1.mp3": [
+   2,
+   5
+  ],
+  "media/words/94c91f1e8db8900ea368-f403001-20260921natural1.mp3": [
+   4,
+   5
+  ],
+  "media/words/951e421575854b42bc75-f403001-20260921natural1.mp3": [
+   4,
+   5
+  ],
+  "media/words/9654b72a9198f3ef06e5-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/966a27d607c3e751b087-f403001-20260921natural1.mp3": [
+   5,
+   6
+  ],
+  "media/words/96fdcfa452b8c1746d6d-f403001-20260921natural1.mp3": [
+   5,
+   6
+  ],
+  "media/words/9720ed84396be7b741b6-f403001-20260921natural1.mp3": [
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/988fe9bdab2bb0e4aa63-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/98d74ba08710686c697b-f403001-20260921complete1.mp3": [
+   3,
+   4
+  ],
+  "media/words/996b26c3c2ac098a17e3-f403001-20260921natural1.mp3": [
+   1,
+   3
+  ],
+  "media/words/9a0d5fadaf425dfacbe1-f403001-20260921natural1.mp3": [
+   4,
+   5
+  ],
+  "media/words/9cf0cf3d37014ce805c5-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/9d70f237efa34551480f-f403001-20260921natural1.mp3": [
+   5,
+   6
+  ],
+  "media/words/9e5967d22a7a827b0fa7-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/words/9ef887799f839ea3b795-f403001-20260921natural1.mp3": [
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/9fcc91b0dd49d8d7283c-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/a11dde0c4af2b7210031-f403001-20260921natural1.mp3": [
+   3,
+   6
+  ],
+  "media/words/a2f7be34c7b16fc0bc23-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/words/a2f9e04f5fdfe7998bc9-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/a3fd14f332c20642cd3e-f403001-20260921natural1.mp3": [
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/a5fec6a0154c68f965f6-f403001-20260921natural1.mp3": [
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/a8bd8d4d2256e290d283-f403001-20260921natural1.mp3": [
+   1,
+   5
+  ],
+  "media/words/aa17f7c04f7c35b4c9b7-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/words/aa5ec75353f66af1945b-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/abb89379ec15358f42ba-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/aedb76a1b3740949d338-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/af62337bbc5055d36172-f403001-20260921natural1.mp3": [
+   3,
+   6
+  ],
+  "media/words/b0c958f399f52ef31cd4-f403001-20260921natural1.mp3": [
+   4,
+   5
+  ],
+  "media/words/b343cea9f512dc4fdd78-f403001-20260921natural1.mp3": [
+   1,
+   3,
+   4,
+   6
+  ],
+  "media/words/b4e33477da9143f6cedc-f403001-20260921natural1.mp3": [
+   5,
+   6
+  ],
+  "media/words/b5acaad3de9f702e81db-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/words/b8b793e0fc013b78183b-f403001-20260921complete1.mp3": [
+   1,
+   2,
+   6
+  ],
+  "media/words/b90fde0d90acdb71e52b-f403001-20260921natural1.mp3": [
+   3,
+   5
+  ],
+  "media/words/ba2d89757ebe4225ad49-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/bb862a3d922607c8ccec-f403001-20260921natural1.mp3": [
+   1,
+   4,
+   5
+  ],
+  "media/words/bfc24f55e280704f5ab5-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/words/c304f3ea0468b76b800b-f403001-20260921complete1.mp3": [
+   5,
+   6
+  ],
+  "media/words/c323924ca4c5dbce39f6-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/c35ee9220b1a96f233b9-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/c4ab24906804ecbbcbe0-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/c533894dfa4c03e4972d-f403001-20260921natural1.mp3": [
+   2,
+   6
+  ],
+  "media/words/c656f89221245a73c48a-f403001-20260921natural1.mp3": [
+   3,
+   4
+  ],
+  "media/words/c711c8ac251ec1df5dbd-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/words/c7e5e5a5d6703f6a0e2d-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/words/c85099e21e5c4003bf36-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/c8f33a0b4e8fec04103c-f403001-20260921natural1.mp3": [
+   2,
+   3,
+   4
+  ],
+  "media/words/c9e74c018c14a1af7290-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/words/c9e76ed94c903cf073c3-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/ca8aac3ef3045cf0568e-f403001-20260921natural1.mp3": [
+   1,
+   6
+  ],
+  "media/words/cac9a7aa057fb746f65c-f403001-20260921natural1.mp3": [
+   2,
+   5
+  ],
+  "media/words/ccb8139d9f339bada6cb-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/ccd5d2bdaf334d9a7fc0-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/words/ce2b8f4abebfaf301676-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   4,
+   5,
+   6
+  ],
+  "media/words/cf0ff888db259f771191-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/cf40bc8404b5fdc1db56-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/d0d4b2f76793095a8df9-f403001-20260921natural1.mp3": [
+   2,
+   3
+  ],
+  "media/words/d2f85ee17923acb69bea-f403001-20260921natural1.mp3": [
+   3,
+   4
+  ],
+  "media/words/d4ca42ba514c51d8048f-f403001-20260921natural1.mp3": [
+   2,
+   6
+  ],
+  "media/words/dcfc7e390095dd98734e-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/e082fba70456bf4076f9-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/e102db273637e662a5b4-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/words/e165b6967dd8eec440f1-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/e44e449e8b764a58cebd-f403001-20260921natural1.mp3": [
+   1
+  ],
+  "media/words/e46b17930aa9472a4e6e-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/e4afa40977e6010c6e25-f403001-20260921natural1.mp3": [
+   4,
+   6
+  ],
+  "media/words/e95b6101f8753f32f70f-f403001-20260921natural1.mp3": [
+   4,
+   6
+  ],
+  "media/words/ea8dad7bb9963f076afc-f403001-20260921natural1.mp3": [
+   4
+  ],
+  "media/words/eb52ebfdf221cc699a94-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/ebe95198650bd0811fbc-f403001-20260921natural1.mp3": [
+   1,
+   3
+  ],
+  "media/words/ec78c76bc798e8c2c42f-f403001-20260921natural1.mp3": [
+   5
+  ],
+  "media/words/f3aeb2dfd636701483b4-f403001-20260921natural1.mp3": [
+   2,
+   4
+  ],
+  "media/words/f4709d861173ffdff818-f403001-20260921natural1.mp3": [
+   2
+  ],
+  "media/words/f698af82019e60b1a5a3-f403001-20260921natural1.mp3": [
+   2,
+   4,
+   6
+  ],
+  "media/words/f80d0f20c651db68a6e8-f403001-20260921natural1.mp3": [
+   4,
+   5
+  ],
+  "media/words/f857947c979ca1252610-f403001-20260921natural1.mp3": [
+   3
+  ],
+  "media/words/f8886fe785da56673c75-f403001-20260921natural1.mp3": [
+   1,
+   3,
+   4,
+   5
+  ],
+  "media/words/f8f64bec546e1a50346d-f403001-20260921natural1.mp3": [
+   3,
+   5
+  ],
+  "media/words/fcbe7c53007594c9ba77-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "media/words/ff9bb06fe904bbe6edc6-f403001-20260921natural1.mp3": [
+   6
+  ],
+  "media/yong-e/animation-20260918c.mp4": [
+   1
+  ],
+  "media/yong-e/animation-poster-20260918c.webp": [
+   1
+  ],
+  "media/yong-e/avatar.webp": [
+   1
+  ],
+  "media/yong-e/cover-final.webp": [
+   1
+  ],
+  "media/yong-e/cover.webp": [
+   1
+  ],
+  "media/yong-e/poster.webp": [
+   1
+  ],
+  "media/yong-e/preview-1.webp": [
+   1
+  ],
+  "media/yong-e/preview-2.webp": [
+   1
+  ],
+  "media/yong-e/preview-3.webp": [
+   1
+  ],
+  "media/yong-e/preview-4.webp": [
+   1
+  ],
+  "media/yong-e/scene-1.webp": [
+   1
+  ],
+  "media/yong-e/scene-2.webp": [
+   1
+  ],
+  "media/yong-e/scene-3.webp": [
+   1
+  ],
+  "media/yong-e/scene-4.webp": [
+   1
+  ],
+  "media/zao-chun/animation-20260917.mp4": [
+   6
+  ],
+  "media/zao-chun/animation-poster-20260917.webp": [
+   6
+  ],
+  "media/zao-chun/avatar.webp": [
+   6
+  ],
+  "media/zao-chun/cover-final.webp": [
+   6
+  ],
+  "media/zao-chun/cover.webp": [
+   6
+  ],
+  "media/zao-chun/poster.webp": [
+   6
+  ],
+  "media/zao-chun/preview-1.webp": [
+   6
+  ],
+  "media/zao-chun/preview-2.webp": [
+   6
+  ],
+  "media/zao-chun/preview-3.webp": [
+   6
+  ],
+  "media/zao-chun/preview-4.webp": [
+   6
+  ],
+  "media/zao-chun/scene-1.webp": [
+   6
+  ],
+  "media/zao-chun/scene-2.webp": [
+   6
+  ],
+  "media/zao-chun/scene-3.webp": [
+   6
+  ],
+  "media/zao-chun/scene-4.webp": [
+   6
+  ],
+  "media/zeng-wang-lun/animation-20260917.mp4": [
+   2
+  ],
+  "media/zeng-wang-lun/animation-poster-20260917.webp": [
+   2
+  ],
+  "media/zeng-wang-lun/avatar.webp": [
+   2
+  ],
+  "media/zeng-wang-lun/cover-final.webp": [
+   2
+  ],
+  "media/zeng-wang-lun/cover.webp": [
+   2
+  ],
+  "media/zeng-wang-lun/poster.webp": [
+   2
+  ],
+  "media/zeng-wang-lun/preview-1.webp": [
+   2
+  ],
+  "media/zeng-wang-lun/preview-2.webp": [
+   2
+  ],
+  "media/zeng-wang-lun/preview-3.webp": [
+   2
+  ],
+  "media/zeng-wang-lun/preview-4.webp": [
+   2
+  ],
+  "media/zeng-wang-lun/scene-1.webp": [
+   2
+  ],
+  "media/zeng-wang-lun/scene-2.webp": [
+   2
+  ],
+  "media/zeng-wang-lun/scene-3.webp": [
+   2
+  ],
+  "media/zeng-wang-lun/scene-4.webp": [
+   2
+  ]
+ }
+}

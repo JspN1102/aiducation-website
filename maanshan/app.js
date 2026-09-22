@@ -1,29 +1,32 @@
-import {imageAsset} from './media-images.mjs?v=20260922-school16';
-import {manageAnimationSource} from './animation-source.mjs?v=20260922-school20';
+import {imageAsset} from './media-images.mjs?v=20260923-school23';
+import {manageAnimationSource} from './animation-source.mjs?v=20260923-school23';
 import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260921-school9';
-import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260922-school16';
+import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260923-school23';
 import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
-import {getWordAudioURL} from './word-audio.mjs?v=20260921complete1';
-import {getSpeechAudioURL} from './speech-audio.mjs?v=20260921-school9';
+import {getWordAudioURL} from './word-audio.mjs?v=20260923-school23';
+import {getSpeechAudioURL} from './speech-audio.mjs?v=20260923-school23';
 import {getRecitationAudioURL,getRecitationSequence} from './recitation-audio.mjs?v=20260921-school9';
 import {schoolTtsURL} from './school-audio-url.mjs?v=20260922-school18';
-import {mountShishi} from './shishi.mjs?v=20260922-school16';
-import {mountLibraryShishi} from './library-shishi.mjs?v=20260922-school16';
+import {mountShishi} from './shishi.mjs?v=20260923-school23';
+import {mountLibraryShishi} from './library-shishi.mjs?v=20260923-school23';
 import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school9';
 import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school9';
 import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school9';
 import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20260922-school22';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school22';
-import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20260922-school18';
+import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20260923-school23';
 import {createRecordingLibrary} from './recording-library.mjs?v=20260922-school15';
-import {requestJSON, requestChat} from './network.mjs?v=20260922-school22';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20260922-school18';
-import {schoolSession} from './bootstrap.mjs?v=20260922-school22';
+import {requestJSON, requestChat} from './network.mjs?v=20260923-school23';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20260923-school23';
+import {schoolSession} from './bootstrap.mjs?v=20260923-school23';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260922-school22';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school22';
 import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
 import {getPoetSuggestions, matchPoetPreset} from './poet-presets.mjs?v=20260922-school13';
+import {audioCandidates} from './audio-source.mjs?v=20260923-school23';
+import {rememberRoute} from './media-route.mjs?v=20260923-school23';
+import {packState, onPackChange, resumeResourcePack, requestResourcePack, cancelResourcePack} from './resource-pack.mjs?v=20260923-school23';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -38,6 +41,8 @@ const accountSuffix = school.enabled ? ':' + school.user.id : '';
 const isTeacher = school.enabled && school.user?.role === 'teacher';
 const allGrades = school.enabled && (isTeacher || school.user?.learningScope === 'all-grades');
 const collectResearch = school.enabled && !isTeacher && school.user?.researchEnabled !== false;
+// The resource pack follows the library: an own-grade pupil downloads that grade's poem and the shared files only.
+resumeResourcePack({scope: school.enabled && !allGrades ? {grades: [Number(school.user?.grade)]} : null});
 const learningEpoch = isTeacher ? (school.learningEpoch || 'initial') : school.enabled && /^[a-f0-9]{32}$/.test(school.learningEpoch || '') ? school.learningEpoch : null;
 // Student resets select a fresh namespace. Keep all old progress and unsent
 // queues on the device, rather than erasing or replaying them into this batch.
@@ -273,7 +278,10 @@ async function speakPoemHeading(kind,button) {
 }
 function playSource(url,revoke=false,playbackRate=1) {
   return new Promise(resolve=>{
-    const player=new Audio(url);player.preload='auto';player.defaultPlaybackRate=playbackRate;
+    // A published recording has two copies (deployed and COS); a recording made on the spot has one.
+    const routes=revoke?[{route:'local',url}]:audioCandidates(url);
+    let attempt=0;
+    const player=new Audio(routes[0].url);player.preload='auto';player.defaultPlaybackRate=playbackRate;
     let settled=false,watchdog,started=false;
     const audit=speechResearchContext||research.context({activity:'listen',itemId:speechResearchItem||(poem?'p'+poem.id+'.l'+currentLine:'demonstration')});
     let audibleAt=null,playedMs=0,playbackReported=false;
@@ -288,11 +296,18 @@ function playSource(url,revoke=false,playbackRate=1) {
       if(transientAudio===player){transientAudio=null;transientUrl=null;finishTransient=null;}
       resolve(ok);
     };
-    const waitForAudio=()=>{countAudio();clearTimeout(watchdog);watchdog=setTimeout(()=>finish(false,'error'),15000);};
+    // Before anything was heard, a failing or silent route hands the same element the other copy of the
+    // recording (the original tap's playback permission carries over); afterwards a stall ends playback as before.
+    const nextRoute=()=>!playbackReported&&attempt+1<routes.length;
+    const fail=()=>{if(settled)return;if(!nextRoute()){finish(false,'error');return;}attempt++;started=false;player.src=routes[attempt].url;player.load();waitForAudio();start();};
+    const waitForAudio=()=>{countAudio();clearTimeout(watchdog);watchdog=setTimeout(fail,nextRoute()?8000:15000);};
     finishTransient=finish;player.onended=()=>finish(true);
-    player.onerror=()=>{finish(false,'error');};
-    player.onplaying=()=>{clearTimeout(watchdog);audibleAt=performance.now();research.touch();if(!playbackReported){playbackReported=true;research.emit('playback_started',{activity:audit.activity,poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,...(audit.context?{context:audit.context}:{}),metrics:{playbackRate}});}};player.onwaiting=waitForAudio;waitForAudio();
-    const start=()=>{if(started||settled)return;started=true;player.playbackRate=playbackRate;player.play().catch(()=>finish(false));};
+    // A copy's error may arrive after play() already rejected for it and the element moved on to the other
+    // copy; load() cleared player.error then, so a stale event must not count against the new copy.
+    player.onerror=()=>{if(player.error)fail();};
+    player.onplaying=()=>{clearTimeout(watchdog);if(attempt>0)rememberRoute(routes[attempt].route);audibleAt=performance.now();research.touch();if(!playbackReported){playbackReported=true;research.emit('playback_started',{activity:audit.activity,poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,...(audit.context?{context:audit.context}:{}),metrics:{playbackRate}});}};player.onwaiting=waitForAudio;waitForAudio();
+    // Safari rejects play() instead of firing error when a copy cannot be fetched; that too hands over to the other copy.
+    const start=()=>{if(started||settled)return;started=true;const mine=attempt;player.playbackRate=playbackRate;player.play().catch(error=>{if(attempt!==mine||settled)return;if(error?.name!=='NotAllowedError'&&nextRoute())fail();else finish(false);});};
     // Queue playback during the original tap. Waiting for canplay before
     // calling play() loses Safari's user gesture on slower mobile networks.
     player.load();start();
@@ -386,11 +401,40 @@ function verseHTML(line,extra='') {
 function renderLibrary() {
   poem=null;document.title='AI普通話學習平台';
   app.innerHTML='<main class="library" id="main">'+
+    '<div class="pack-corner"><button type="button" class="pack-button" data-action="pack" hidden></button></div>'+
     '<div class="library-heading library-with-shishi"><div><h1><span class="library-title-start">AI普通話</span><span class="library-title-end">學習平台</span></h1></div></div>'+
     '<div class="poem-grid library-books" id="poem-grid" aria-label="選擇古詩"></div></main>';
-  renderCards();icons();
+  renderCards();icons();renderPackButton();
   libraryShishi?.destroy();
   libraryShishi=mountLibraryShishi($('.library-heading'),{canPlay:()=>!sessionLocked&&!poem});
+}
+// The one-tap resource pack: its button sits at the top left of the library
+// and follows the download state (resource-pack.mjs). Nothing else waits on it.
+function packMB(bytes){return Math.max(1,Math.round(bytes/1048576));}
+function packButtonView(s){
+  const size=s.totalBytes?'（約 '+packMB(s.totalBytes)+' MB）':'';
+  switch(s.status){
+    case 'unsupported':return null;
+    case 'checking':return {text:'正在準備資源包…',label:'正在準備資源包',busy:true,disabled:true};
+    case 'downloading':{const pct=s.totalBytes?Math.min(99,Math.floor(s.bytesDone/s.totalBytes*100)):0;return {text:'下載中 '+pct+'%　點擊暫停',label:'資源包下載中，已完成 '+pct+'%，點擊暫停',busy:true};}
+    case 'paused':return {text:'已暫停　點擊繼續下載',label:'資源包下載已暫停，點擊繼續下載'};
+    case 'error':return {text:'下載失敗　點擊重試',label:'資源包下載失敗，點擊重試'};
+    case 'complete':return {text:'資源包已下載',label:'資源包已下載到本機，圖片、錄音、動畫和模型不用再等候',disabled:true};
+    default:{const what=s.scope==='all'?'資源包':'本年級資源包';return {text:'一鍵下載'+what+size,label:'一鍵下載'+what+'的圖片、錄音、動畫和模型到本機'+size+'，下載期間可照常使用'};}
+  }
+}
+function renderPackButton(s=packState()){
+  const button=$('.pack-button');if(!button)return;
+  const view=packButtonView(s);
+  if(!view){button.hidden=true;return;}
+  button.hidden=false;button.textContent=view.text;button.setAttribute('aria-label',view.label);button.disabled=!!view.disabled;button.dataset.state=s.status;
+  if(view.busy)button.setAttribute('aria-busy','true');else button.removeAttribute('aria-busy');
+}
+onPackChange(renderPackButton);
+function togglePack(){
+  const s=packState();
+  if(s.status==='downloading')cancelResourcePack();
+  else if(s.status!=='complete'&&s.status!=='unsupported'&&s.status!=='checking')void requestResourcePack();
 }
 function renderCards() {
   $('#poem-grid').innerHTML=poems.map(p=>'<article class="poem-card poem-color-'+p.id+'"><a class="poem-entry" href="'+link('lesson',p)+'" aria-label="學習'+esc(titleOf(p))+'"><div class="poem-art" style="background-image:url('+getScenePreview(p.slug,p.lines.at(-1).scene)+')"><img src="'+asset('cover-final.webp',p)+'" width="800" height="450" alt="'+esc(p.lines.at(-1).text)+'" '+(p.id>3?'loading="lazy"':'fetchpriority="high"')+'><span class="poem-grade">'+['','一','二','三','四','五','六'][p.grade]+'年級</span></div><div class="poem-card-body"><img class="poem-emblem" src="'+poemMotif(p)+'" width="56" height="56" alt="" aria-hidden="true"><div class="poem-card-title"><h2>'+esc(p.title)+(p.id===5?'<small>其三</small>':'')+'</h2></div><p class="poem-author">'+esc(p.dynasty)+' · '+esc(p.author)+'</p><span class="poem-open">'+icon('book-open')+'<span>一起讀</span>'+icon('arrow-right')+'</span></div></a></article>').join('');icons();
@@ -832,7 +876,7 @@ function preloadActivityModules(activity,slug) {
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
   preloadActivityModules('quiz',poem?.slug);
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260922-school22'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260923-school23'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
@@ -846,7 +890,7 @@ async function renderQuiz() {
 }
 async function renderExploration(){
   preloadActivityModules('explore');
-  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260922-school22'));
+  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260923-school23'));
   if(!module)return;
   const holder=$('#view');
   if(!holder||!poem)return;
@@ -961,6 +1005,7 @@ document.addEventListener('click',event=>{
   const button=event.target.closest('[data-action]');if(!button||button.disabled)return;const action=button.dataset.action,value=button.dataset.value;
   if(button.closest('.menu-panel')&&menu)menu.open=false;
   if(action==='profile'){if(menu)menu.open=false;openProfile();return;}
+  if(action==='pack'){togglePack();return;}
   if(!poem)return;
   if(action==='poem-heading-audio')void speakPoemHeading(value,button);
   if(action==='activity-retry')location.reload();

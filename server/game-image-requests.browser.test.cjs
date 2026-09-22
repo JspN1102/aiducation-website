@@ -2,7 +2,8 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const repo=path.resolve(__dirname,'..');
-const artwork=['/media/compatible/9518ba9e71e4700d3ceb.jpg','/media/compatible/d51a188501a466d5c216.png'];
+// Every current browser decodes WebP, so the deployed WebP copies are requested (the COS probe is unreachable here); the JPEG/PNG copies stay for browsers without WebP.
+const artwork=['/media/poem-games/farewell/libai-boat-20260919.webp','/media/poem-games/farewell/shore-20260919.webp'];
 (async()=>{
  for(const engine of ['chromium','webkit']){
   const browser=await(engine==='chromium'?chromium.launch({channel:'msedge',headless:true}):webkit.launch({headless:true}));
@@ -27,10 +28,10 @@ const artwork=['/media/compatible/9518ba9e71e4700d3ceb.jpg','/media/compatible/d
     window.game=mountFarewell(document.querySelector('#game'),{});
    },prefix);
    await page.locator('[data-fs-dock]:not([disabled])').waitFor();
-   assert.deepEqual(images.slice().sort(),artwork.map(url=>prefix+url).sort(),engine+prefix+' should request only the two compatible images');
+   assert.deepEqual(images.slice().sort(),artwork.map(url=>prefix+url).sort(),engine+prefix+' should request only the two deployed WebP images');
    assert.equal(await page.locator('.fs-stage img').evaluateAll(nodes=>nodes.every(img=>img.complete&&img.naturalWidth>0)),true);
    await page.evaluate(()=>window.game.destroy());await context.close();
   }}finally{await browser.close();}
  }
- console.log('Farewell image requests passed in Chromium and WebKit, source and relocated entry: exactly two complete images, no raw duplicate requests.');
+ console.log('Farewell image requests passed in Chromium and WebKit, source and relocated entry: exactly two complete WebP images, no duplicate or compatible-copy requests.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

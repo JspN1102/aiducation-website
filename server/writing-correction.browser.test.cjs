@@ -16,7 +16,7 @@ async function mount(page,options={}){
   window.widget?.destroy();window.calls=[];window.answers=[];window.corrections=[];window.states=[];window.audit=[];window.nextCandidates=['土'];window.recognizeMode='ready';
   const {mountChallengeWriting}=await import('/maanshan/challenge-writing.mjs');
   window.widget=mountChallengeWriting(document.querySelector('.challenge-writing-holder'),{target:{char:'岸',pinyin:'àn'},...options,
-   recognize:async(ink,context)=>{calls.push({ink,context});if(recognizeMode==='fail')throw Error('Offline');if(recognizeMode==='pending')await new Promise(resolve=>window.releaseRecognition=resolve);return{candidates:nextCandidates};},
+   recognize:async(ink,context)=>{calls.push({ink,context});if(recognizeMode==='fail')throw Error('Offline');if(recognizeMode==='pending')await new Promise(resolve=>window.releaseRecognition=resolve);return{candidates:Array.isArray(nextCandidates[0])?nextCandidates.shift():nextCandidates};},
    onSubmit:r=>answers.push(r),onCorrection:r=>corrections.push(r),onResearch:(type,fields)=>audit.push({type,...fields}),
    onAdvanceStateChange:state=>{states.push(state);document.querySelector('#next').disabled=!state.canContinue;}
   });
@@ -30,6 +30,10 @@ async function draw(page){
  const hit=await page.evaluate(({x,y})=>{const el=document.elementFromPoint(x,y);return{insideBoard:Boolean(el?.closest('.cw-board')),tag:el?.tagName,parents:[...document.querySelectorAll('.challenge-body,.challenge-shell,.study-main,#view')].map(el=>({name:el.className||el.id,height:el.getBoundingClientRect().height,overflow:getComputedStyle(el).overflow}))};},{x:b.x+b.width*.2,y:b.y+b.height*.35});
  assert(hit.insideBoard,'writing square must receive pointer '+JSON.stringify({b,hit}));
  await page.mouse.move(b.x+b.width*.2,b.y+b.height*.35);await page.mouse.down();await page.mouse.move(b.x+b.width*.75,b.y+b.height*.55,{steps:9});await page.mouse.up();
+}
+async function drawStrokes(page,count){
+ await page.locator('canvas').scrollIntoViewIfNeeded();const b=await page.locator('canvas').boundingBox();
+ for(let i=0;i<count;i++){const y=b.y+b.height*(0.2+0.6*i/count);await page.mouse.move(b.x+b.width*.25,y);await page.mouse.down();await page.mouse.move(b.x+b.width*.7,y+b.height*.03,{steps:6});await page.mouse.up();}
 }
 async function submit(page){await page.locator('[data-cw=submit]').click();await page.waitForFunction(()=>document.querySelector('.cw-expanded').getAttribute('aria-busy')==='false');}
 async function state(page){return page.evaluate(()=>({calls,answers,corrections,audit,result:widget.getResult(),correction:widget.getCorrection(),canContinue:widget.canContinue()}));}
@@ -87,6 +91,17 @@ async function state(page){return page.evaluate(()=>({calls,answers,corrections,
    await mount(page,{initialResult:{status:'skipped'}});await draw(page);check(engine+' learning first touch writes but cannot bypass correction',await page.locator('[data-cw=submit]').isEnabled()&&!await page.evaluate(()=>widget.canContinue()));
    await page.evaluate(()=>{nextCandidates=['岸'];recognizeMode='pending';});await page.locator('[data-cw=submit]').click();await page.waitForFunction(()=>calls.length===1);await page.evaluate(()=>widget.destroy());await page.evaluate(()=>releaseRecognition());
    check(engine+' late correction cannot mutate destroyed widget',await page.evaluate(()=>corrections.length===0));
+   // Live recogniser quirks: an empty list for ink it reads a moment later, and a component (山) ranked above the whole character (岸).
+   await mount(page);await draw(page);await page.evaluate(()=>{nextCandidates=[[],['岸']];});await submit(page);data=await state(page);
+   check(engine+' an empty recognition is retried once before grading',data.calls.length===2&&data.result.status==='correct'&&data.audit.every(e=>e.error?.code!=='invalid_response'));
+   await mount(page);await draw(page);await page.evaluate(()=>{nextCandidates=[[],[]];});await submit(page);data=await state(page);
+   check(engine+' two empty recognitions leave the answer ungraded',data.calls.length===2&&data.result===null&&await page.locator('.cw-status').textContent().then(value=>value.includes('未能辨認')));
+   await mount(page);await drawStrokes(page,6);await page.evaluate(()=>{nextCandidates=['山','岸'];});await submit(page);data=await state(page);
+   check(engine+' a component ranked above the fully drawn character counts as the character',data.result.status==='correct'&&data.result.recognized==='岸'&&data.result.candidates[0]==='山');
+   await mount(page);await draw(page);await page.evaluate(()=>{nextCandidates=['山','岸'];});await submit(page);data=await state(page);
+   check(engine+' the same ranking with too few strokes stays wrong',data.result.status==='incorrect'&&data.result.recognized==='山');
+   await mount(page);await drawStrokes(page,8);await page.evaluate(()=>{nextCandidates=['崖','岸'];});await submit(page);data=await state(page);
+   check(engine+' a different full-size character ranked first stays wrong',data.result.status==='incorrect'&&data.result.recognized==='崖');
    for(const [width,height,minimum]of [[390,844,275],[768,1024,400],[1180,820,320]]){
     await page.setViewportSize({width,height});await mount(page);const before=await page.locator('.cw-board').boundingBox();
     await mount(page,{initialResult:{status:'incorrect',recognized:'土'}});const after=await page.locator('.cw-board').boundingBox();
