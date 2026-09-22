@@ -1,5 +1,5 @@
-import {createViewer, disposeObject} from './exploration.mjs?v=20260922-school21';
-import {fetchModel, MODEL_LOAD_TIMEOUT_MS} from './model-source.mjs?v=20260922-school21';
+import {createViewer, disposeObject} from './exploration.mjs?v=20260922-school22';
+import {fetchModel, loadBudget} from './model-source.mjs?v=20260922-school22';
 
 // Assessment viewer: no verse, vocabulary, answer caption or exploration hints.
 export function mountChallengeModel(holder, {slug, poster, label = '轉動觀察', controls = []} = {}) {
@@ -14,11 +14,12 @@ export function mountChallengeModel(holder, {slug, poster, label = '轉動觀察
     if (viewer) {viewer.reset(); return;}
     busy = true; status.textContent = '正在準備觀察畫面…';
     const request = new AbortController(); pending = request;
-    const timeout = setTimeout(() => request.abort(), MODEL_LOAD_TIMEOUT_MS);
+    const budget = loadBudget(() => request.abort());
     try {
       const {THREE, GLTFLoader, OrbitControls} = await import('./vendor/poetry-three.mjs?v=20260913a');
       if (dead || request.signal.aborted) throw new Error('cancelled');
-      const buffer = await fetchModel(`media/exploration/${slug}/model.glb`, {signal: request.signal, cache: 'no-cache'});
+      budget.touch();
+      const buffer = await fetchModel(`media/exploration/${slug}/model.glb`, {signal: request.signal, cache: 'no-cache', onProgress: budget.touch});
       if (dead || request.signal.aborted) throw new Error('cancelled');
       parsed = await new Promise((resolve, reject) => new GLTFLoader().parse(buffer, '', resolve, reject));
       if (dead || request.signal.aborted) {disposeObject(parsed.scene); parsed = null; throw new Error('cancelled');}
@@ -33,7 +34,7 @@ export function mountChallengeModel(holder, {slug, poster, label = '轉動觀察
     } catch {
       if (parsed) disposeObject(parsed.scene); parsed = null;
       if (!dead) {canvas.hidden = true; status.textContent = '暫時轉不開，看圖也能繼續。';}
-    } finally {clearTimeout(timeout); busy = false; if(pending === request)pending = null;}
+    } finally {budget.clear(); busy = false; if(pending === request)pending = null;}
   }
   holder.addEventListener('click', event => {
     const button = event.target.closest('[data-model]'); if (!button || dead) return;

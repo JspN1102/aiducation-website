@@ -1,7 +1,7 @@
 import {EXPLORATION_CONTENT} from './exploration-data.mjs?v=20260920a';
 import {createProcessResearch} from './poem-games/research.mjs?v=20260920a';
 import {modelPixelRatio} from './model-quality.mjs?v=20260921-ar1';
-import {fetchModel, MODEL_LOAD_TIMEOUT_MS} from './model-source.mjs?v=20260922-school21';
+import {fetchModel, loadBudget, MODEL_LOAD_TIMEOUT_MS} from './model-source.mjs?v=20260922-school22';
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ICONS = {
@@ -192,7 +192,8 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
     loading.hidden = false;
     stage.setAttribute('aria-busy', 'true');
     modelButton.setAttribute('aria-busy', 'true');
-    const timeout = setTimeout(() => controller.abort(), modelTimeoutMs);
+    // The deadline restarts on every sign of progress; only silence expires it.
+    const budget = loadBudget(() => controller.abort(), {timeoutMs: modelTimeoutMs});
     let parsed = null;
     try {
       // Both imports and the model fetch start only after the explicit button.
@@ -200,8 +201,9 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
       // A timed-out load must still reach the catch below so the child is told
       // and offered a retry, instead of the spinner silently disappearing.
       if (!current()) throw new DOMException('Aborted', 'AbortError');
+      budget.touch();
       // Deployed copy and public COS copy race; see model-source.mjs.
-      const buffer = await fetchModel(assetURL(content.modelFile || 'model.glb'), {signal: controller.signal});
+      const buffer = await fetchModel(assetURL(content.modelFile || 'model.glb'), {signal: controller.signal, onProgress: budget.touch});
       if (!current()) throw new DOMException('Aborted', 'AbortError');
       parsed = await new Promise((resolve, reject) => {
         new GLTFLoader().parse(buffer, '', gltf => {
@@ -235,7 +237,7 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
         ? '這部裝置暫時不能轉動畫面。看圖也能完成小發現。'
         : '模型暫時未能打開，再按「點擊體驗 AR」試試。看圖也能繼續。');
     } finally {
-      clearTimeout(timeout);
+      budget.clear();
       if (!dead && generation === loadGeneration) {
         pending = null;
         loading.hidden = true;

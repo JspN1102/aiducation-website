@@ -10,16 +10,29 @@
 // valid model wins and every other attempt is cancelled. The page only sees an
 // error when every route failed. The winning route is remembered for the
 // session, shared with the poem animations. Nothing about the pupil is sent.
+// Pages bound a load with loadBudget, a deadline that restarts on progress
+// (onProgress reports every chunk), so a slow but flowing link is never cut.
 import {MODEL_ASSETS} from './media-models.mjs?v=20260922-school20';
 import {orderRoutes, rememberRoute} from './media-route.mjs?v=20260922-school20';
 
 export const MAX_MODEL_BYTES = 12 * 1024 * 1024;
 export const HEDGE_MS = 3000;
 export const STALL_MS = 8000;
-// Overall budget a page gives one model load (library import, both routes,
-// parse). fetchModel drops a stalled route itself, so this only bounds a slow
-// but still progressing link before the child is offered a retry.
+// Silence a page tolerates during one model load before offering a retry.
+// The budget restarts whenever the load moves (library imported, response
+// headers, each chunk of bytes), so only a link that stops entirely for this
+// long is given up; fetchModel already drops a stalled route while another
+// can take over. From a weak link the first byte alone can take 20-40 s.
 export const MODEL_LOAD_TIMEOUT_MS = 60000;
+
+// A restartable deadline for one load: touch() on every sign of progress,
+// expire runs after timeoutMs without one, clear() once the load is over.
+export function loadBudget(expire, {timeoutMs = MODEL_LOAD_TIMEOUT_MS, view = globalThis} = {}) {
+  let timer = null;
+  const touch = () => { view.clearTimeout(timer); timer = view.setTimeout(expire, timeoutMs); };
+  touch();
+  return {touch, clear() { view.clearTimeout(timer); timer = null; }};
+}
 
 // Generated assets are self-contained GLBs. Reject external references so a
 // model can never silently start unbounded third-party texture downloads.
@@ -78,7 +91,7 @@ export function modelCandidates(source, {preferPublic, memory, cache = 'default'
     .map(candidate => ({...candidate, cache: candidate.route === 'public' ? 'default' : cache}));
 }
 
-async function download(candidate, controller, progress, {stallMs, fetchImpl, canDrop = () => true}) {
+async function download(candidate, controller, progress, {stallMs, fetchImpl, canDrop = () => true, onProgress}) {
   let stall = null, stalled = false;
   const arm = () => {
     clearTimeout(stall);
@@ -89,7 +102,8 @@ async function download(candidate, controller, progress, {stallMs, fetchImpl, ca
     const response = await fetchImpl(candidate.url, {signal: controller.signal, credentials: 'same-origin', cache: candidate.cache || 'default'});
     progress.total = Number(response.headers.get('content-length')) || 0;
     arm();
-    return await readModel(response, controller.signal, received => { progress.received = received; arm(); });
+    onProgress?.(0, progress.total);
+    return await readModel(response, controller.signal, received => { progress.received = received; arm(); onProgress?.(received, progress.total); });
   } catch (error) {
     throw stalled ? new Error('model-stalled') : error;
   } finally { clearTimeout(stall); }
@@ -99,7 +113,7 @@ async function download(candidate, controller, progress, {stallMs, fetchImpl, ca
 // first. Reject with the caller's abort, or with the first route's error once
 // every route has failed.
 export function fetchModel(source, {signal, hedgeMs = HEDGE_MS, stallMs = STALL_MS, cache = 'default',
-                                    candidates = modelCandidates(source, {cache}), fetchImpl = (url, init) => fetch(url, init), onRoute} = {}) {
+                                    candidates = modelCandidates(source, {cache}), fetchImpl = (url, init) => fetch(url, init), onRoute, onProgress} = {}) {
   return new Promise((resolve, reject) => {
     if (!candidates.length) { reject(new Error('model-unavailable')); return; }
     const attempts = [], live = new Set();
@@ -131,7 +145,7 @@ export function fetchModel(source, {signal, hedgeMs = HEDGE_MS, stallMs = STALL_
       live.add(controller);
       latest = progress;
       if (started < candidates.length) timer = setTimeout(hedge, hedgeMs);
-      download(candidate, controller, progress, {stallMs, fetchImpl, canDrop}).then(buffer => {
+      download(candidate, controller, progress, {stallMs, fetchImpl, canDrop, onProgress}).then(buffer => {
         live.delete(controller);
         if (settled) return;
         rememberRoute(candidate.route);

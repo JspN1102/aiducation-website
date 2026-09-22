@@ -27,6 +27,15 @@ const server=http.createServer((req,res)=>{
   if(url.pathname==='/maanshan/app.bundle.css'){res.setHeader('Content-Type','text/css');res.end(css);return;}
   const file=path.resolve(root,'.'+decodeURIComponent(url.pathname));
   if(!file.startsWith(root+path.sep)||!mime[path.extname(file)]){res.writeHead(404).end();return;}
+  if(url.searchParams.has('trickle')){
+    // A slow but flowing route: the file arrives in eight pieces 400 ms apart.
+    fs.readFile(file,(error,bytes)=>{
+      if(error){res.writeHead(404).end();return;}
+      res.writeHead(200,{'Content-Type':mime[path.extname(file)],'Content-Length':bytes.length});
+      let offset=0;const step=Math.ceil(bytes.length/8);
+      const tick=()=>{if(offset>=bytes.length){res.end();return;}res.write(bytes.subarray(offset,offset+step));offset+=step;setTimeout(tick,400);};tick();
+    });return;
+  }
   fs.readFile(file,(error,bytes)=>{if(error){res.writeHead(404).end();return;}res.setHeader('Content-Type',mime[path.extname(file)]);res.end(bytes);});
 });
 let browser;const checks=[],errors=[];
@@ -104,6 +113,12 @@ async function verifyModels(){
     check('the timed-out load reports a timeout to research',await page.evaluate(()=>events.some(e=>e.type==='error'&&e.itemId.endsWith('.model')&&e.error?.code==='timeout')));
     await page.unroute('**/*.glb*');slowRelease();await page.locator('[data-explore=ar]').click();await page.locator('.is-model').waitFor();check('retry after a timeout succeeds',await page.locator('canvas').isVisible());
     await page.evaluate(()=>activity.destroy());
+    // Only a slow but flowing copy is left, taking longer than the whole budget: progress keeps the budget alive and the model still shows.
+    await page.route('**/*.glb*',route=>{const u=new URL(route.request().url());return u.origin===COS_ORIGIN?route.abort('connectionrefused'):route.continue({url:u.href+(u.search?'&':'?')+'trickle=1'});});
+    const trickleStart=Date.now();await mount(poems[3],{modelTimeoutMs:1500});await page.locator('[data-explore=ar]').click();await page.locator('.is-model').waitFor({timeout:20000});
+    check('a slow but flowing download outlasting the budget still shows the model',Date.now()-trickleStart>1500&&await page.locator('canvas').isVisible()&&!await page.locator('.explore-notice').isVisible());
+    check('a flowing download is never reported as a timeout',!await page.evaluate(()=>events.some(e=>e.type==='error'&&e.itemId.endsWith('.model'))));
+    await page.evaluate(()=>activity.destroy());await page.unroute('**/*.glb*');
     // A response that arrives after the child leaves must not restore a canvas.
     let release;await page.route('**/*.glb*',async route=>{await new Promise(resolve=>release=resolve);await route.fallback().catch(()=>{});});
     await mount(poems[3]);await page.locator('[data-explore=ar]').click();

@@ -846,7 +846,7 @@ async function renderQuiz() {
 }
 async function renderExploration(){
   preloadActivityModules('explore');
-  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260922-school21'));
+  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260922-school22'));
   if(!module)return;
   const holder=$('#view');
   if(!holder||!poem)return;

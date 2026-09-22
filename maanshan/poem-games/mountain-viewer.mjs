@@ -1,5 +1,5 @@
 import {modelPixelRatio} from '../model-quality.mjs?v=20260921-ar1';
-import {fetchModel} from '../model-source.mjs?v=20260922-school21';
+import {fetchModel} from '../model-source.mjs?v=20260922-school22';
 const modelURL = new URL('../media/exploration/ti-xi-lin-bi/model.glb?v=20260914-restored', import.meta.url);
 
 function disposeModel(model) {

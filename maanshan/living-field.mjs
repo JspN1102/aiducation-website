@@ -1,4 +1,4 @@
-import {fetchModel, MODEL_LOAD_TIMEOUT_MS} from './model-source.mjs?v=20260922-school21';
+import {fetchModel, loadBudget} from './model-source.mjs?v=20260922-school22';
 import {modelPixelRatio} from './model-quality.mjs?v=20260921-ar1';
 
 // Source meshes own GPU resources; plant clones only borrow them. Rendering is
@@ -10,7 +10,7 @@ export function mountLivingField(holder, {density = {}, onStatus = () => {}} = {
   const geometries = new Set(), materials = new Set(), textures = new Set(), bitmaps = new Set(), skeletons = new Set();
   const disposed = new WeakSet(), closed = new WeakSet();
   let dead = false, failed = false, renderer = null, controls = null, scene = null;
-  let camera = null, plants = null, models = [], frame = 0, observer = null, canvas = null, timer = 0;
+  let camera = null, plants = null, models = [], frame = 0, observer = null, canvas = null, budget = null;
   let current = normalize(density);
   const alive = () => !dead && !failed && !network.signal.aborted;
   const asset = name => new URL(`./media/${name}`, import.meta.url).href;
@@ -58,7 +58,7 @@ export function mountLivingField(holder, {density = {}, onStatus = () => {}} = {
     bitmaps.clear();
   }
   function release() {
-    view.clearTimeout(timer);timer = 0;
+    budget?.clear();budget = null;
     if (frame) view.cancelAnimationFrame(frame);frame = 0;
     observer?.disconnect();observer = null;
     events.abort();
@@ -98,7 +98,7 @@ export function mountLivingField(holder, {density = {}, onStatus = () => {}} = {
   }
   async function loadPlant(THREE, GLTFLoader, name, kind) {
     try {
-      const bytes = await fetchModel(asset(`living-scenes/${name}-v1.glb`), {signal: network.signal, cache: 'no-cache'});
+      const bytes = await fetchModel(asset(`living-scenes/${name}-v1.glb`), {signal: network.signal, cache: 'no-cache', onProgress: () => budget?.touch()});
       if (!alive()) return null;
       const parsed = await new Promise((resolve, reject) => new GLTFLoader().parse(bytes, '', resolve, reject));
       // A parse cannot be aborted. Its success callback still has an owner,
@@ -148,10 +148,11 @@ export function mountLivingField(holder, {density = {}, onStatus = () => {}} = {
   async function load() {
     status('正在準備立體植物…', 'loading');
     if (!alive()) return;
-    timer = view.setTimeout(() => fail('timeout'), MODEL_LOAD_TIMEOUT_MS);
+    budget = loadBudget(() => fail('timeout'), {view});
     try {
       const {THREE, GLTFLoader, OrbitControls} = await import('./vendor/poetry-three.mjs?v=20260913a');
       if (!alive()) return;
+      budget?.touch();
       const outcomes = await Promise.allSettled([
         loadPlant(THREE, GLTFLoader, 'grass', 0), loadPlant(THREE, GLTFLoader, 'bean', 1), loadSoil(THREE)
       ]);
@@ -201,7 +202,7 @@ export function mountLivingField(holder, {density = {}, onStatus = () => {}} = {
       doc.addEventListener('visibilitychange', render, {signal: events.signal});
       resize();populate();status('拖一拖，換個角度看看。', 'ready');
     } catch {fail();}
-    finally {view.clearTimeout(timer);timer = 0;}
+    finally {budget?.clear();budget = null;}
   }
   void load();
   return {

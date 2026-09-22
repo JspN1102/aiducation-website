@@ -53,10 +53,10 @@ async function run(page,candidates,options={}){
   const mod=await import('/maanshan/model-source.mjs?v=test');
   const started=performance.now(),controller=new AbortController();
   if(options.abortAfter)setTimeout(()=>controller.abort(),options.abortAfter);
-  let route=null,url=null;
-  const snapshot=()=>({route,url,elapsed:Math.round(performance.now()-started),remembered:sessionStorage.getItem('maanshan:media-route')});
+  let route=null,url=null;const progress=[];
+  const snapshot=()=>({route,url,elapsed:Math.round(performance.now()-started),remembered:sessionStorage.getItem('maanshan:media-route'),progress:progress.length,lastProgress:progress.at(-1)??null});
   try{
-   const buffer=await mod.fetchModel('media/example/model.glb',{...options,candidates,signal:controller.signal,onRoute:(r,u)=>{route=r;url=u;}});
+   const buffer=await mod.fetchModel('media/example/model.glb',{...options,candidates,signal:controller.signal,onRoute:(r,u)=>{route=r;url=u;},onProgress:(received,total)=>progress.push([received,total])});
    return {ok:true,bytes:buffer.byteLength,valid:!!mod.validateGLB(buffer),...snapshot()};
   }catch(error){return {ok:false,error:error.message,name:error.name,...snapshot()};}
  },{candidates,options});
@@ -124,6 +124,8 @@ const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   assert.equal(results.healthy.route,'public');await pause(500);
   assert.deepEqual(since(mark),['/model/ok.glb'],'no duplicate download for a working route');
   assert.equal(results.healthy.remembered,'public');
+  assert(results.healthy.progress>1,'every chunk is reported as progress');
+  assert.deepEqual(results.healthy.lastProgress,[model.length,model.length],'progress reports bytes received against the announced size');
 
   // 4. A slow route that is already past half way keeps going: no duplicate download either.
   mark=requests.length;
@@ -147,6 +149,24 @@ const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   assert(results.lastStalled.elapsed>=1100,'the last route was kept past several stall windows');
   assert.deepEqual(since(mark),['/model/missing.glb','/model/half.glb']);
   await pause(300);assert(closed.includes('/model/half.glb'),'the caller abort still cancels the request');
+
+  // 5c. The page's budget restarts on every sign of progress and only expires after silence.
+  results.budget=await page.evaluate(async()=>{
+   const mod=await import('/maanshan/model-source.mjs?v=test');
+   const log=[],started=performance.now(),wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+   const budget=mod.loadBudget(()=>log.push(Math.round(performance.now()-started)),{timeoutMs:200});
+   for(let i=0;i<6;i++){await wait(100);budget.touch();}
+   const whileTouched=log.length;
+   await wait(450);
+   const afterSilence=log.length;
+   const cleared=mod.loadBudget(()=>log.push('cleared'),{timeoutMs:100});cleared.clear();
+   await wait(250);
+   return {whileTouched,afterSilence,total:log.length,at:log[0]};
+  });
+  assert.equal(results.budget.whileTouched,0,'a budget that keeps being touched never expires');
+  assert.equal(results.budget.afterSilence,1,'the budget expires exactly once after the silence');
+  assert(results.budget.at>=780,'expiry counts from the last touch, not from the start');
+  assert.equal(results.budget.total,1,'a cleared budget never expires');
 
   // 6. Garbage or an oversized answer is not a model: the other copy wins without an error.
   for(const [name,url] of [['garbage','/model/bad.glb'],['oversized','/model/huge.glb']]){
