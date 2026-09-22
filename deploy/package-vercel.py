@@ -55,16 +55,19 @@ def main():
     verify_local_assets(ROOT, media)
     media_config = build_media_config(media)
     omit = set(media_config['excludedFiles']) | obsolete_audio_files(ROOT)
-    # The recital buttons and old 3D mascot have been removed from this platform.
-    # Keep old assessment mountain/river models for existing browser records.
+    # The recital buttons, old 3D mascot and lower-grade models (no AR below
+    # grade 4) are not used by this platform. The older mountain, river and
+    # field models remain the assessment viewer's models.
     unused = {'maanshan/media/shishi/model.glb', 'maanshan/media/shishi/guide-v2.glb',
               'maanshan/media/challenges/sound-pod-v1.glb',
-              'maanshan/media/exploration/gui-yuan-tian-ju/model.glb',
               'maanshan/media/exploration/yong-e/model.glb',
               'maanshan/media/exploration/zeng-wang-lun/model.glb'}
+    # Every deployed 3D model also needs its verified COS copy: the page hedges
+    # between the two routes, so a model with one route would fail alone.
+    published_models = {model['source'].lstrip('/') for model in media_config['models']}
     paths = subprocess.check_output(['git', 'ls-files', '-z'], cwd=ROOT).decode().split('\0')
     destination.mkdir(parents=True)
-    copied, skipped = [], []
+    copied, skipped, models = [], [], 0
     for relative in paths:
         if not relative or any(part.startswith('.') for part in Path(relative).parts):
             continue
@@ -80,6 +83,10 @@ def main():
         if relative in omit or relative in unused or relative.endswith('/recital.mp4') or is_authoring_file(relative):
             skipped.append({'path': relative, 'bytes': source.stat().st_size})
             continue
+        if relative.endswith('.glb'):
+            if relative not in published_models:
+                raise RuntimeError('A deployed 3D model has no verified COS mapping: ' + relative)
+            models += 1
         target_relative = public_path(relative)
         target = destination / target_relative
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -145,7 +152,7 @@ def main():
                'projectId': args.project_id, 'files': copied, 'excluded': skipped,
                'fileCount': len(copied), 'uploadBytes': sum(row['bytes'] for row in copied),
                'omittedBytes': sum(row['bytes'] for row in skipped),
-               'dualRouteVideos': len(published),
+               'dualRouteVideos': len(published), 'dualRouteModels': models,
                'companyProjectUnchanged': True,
                'apiRuntime': 'guangzhou-ssh-relay', 'apiFunctions': 1}
     destination.with_suffix('.manifest.json').write_text(json.dumps(summary, indent=2), encoding='utf-8')

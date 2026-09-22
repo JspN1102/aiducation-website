@@ -1,4 +1,4 @@
-import {readModel} from './exploration.mjs?v=20260921-school9';
+import {fetchModel} from './model-source.mjs?v=20260922-school20';
 import {modelPixelRatio} from './model-quality.mjs?v=20260921-ar1';
 
 // Source meshes own GPU resources; plant clones only borrow them. Rendering is
@@ -98,8 +98,7 @@ export function mountLivingField(holder, {density = {}, onStatus = () => {}} = {
   }
   async function loadPlant(THREE, GLTFLoader, name, kind) {
     try {
-      const response = await fetch(asset(`living-scenes/${name}-v1.glb`), {signal: network.signal, cache: 'no-cache'});
-      const bytes = await readModel(response, network.signal);
+      const bytes = await fetchModel(asset(`living-scenes/${name}-v1.glb`), {signal: network.signal, cache: 'no-cache'});
       if (!alive()) return null;
       const parsed = await new Promise((resolve, reject) => new GLTFLoader().parse(bytes, '', resolve, reject));
       // A parse cannot be aborted. Its success callback still has an owner,

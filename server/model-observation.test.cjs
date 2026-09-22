@@ -13,7 +13,7 @@ test('model drawing buffers preserve retina detail within the pixel budget', asy
 });
 
 test('all selected observation models are bounded self-contained GLBs', async () => {
-  const {validateGLB} = await import('../maanshan/exploration.mjs');
+  const {validateGLB} = await import('../maanshan/model-source.mjs');
   const {EXPLORATION_CONTENT} = await import('../maanshan/exploration-data.mjs');
   for (const slug of ['bo-chuan-gua-zhou','gui-yuan-tian-ju','zao-chun']) {
     const bytes=fs.readFileSync(path.join(__dirname,'../maanshan/media/exploration',slug,EXPLORATION_CONTENT[slug].modelFile));
@@ -23,7 +23,7 @@ test('all selected observation models are bounded self-contained GLBs', async ()
 });
 
 test('invalid or externally linked model files cannot start extra downloads', async () => {
-  const {validateGLB} = await import('../maanshan/exploration.mjs');
+  const {validateGLB} = await import('../maanshan/model-source.mjs');
   assert.throws(()=>validateGLB(new ArrayBuffer(19)),/invalid-model/);
   const json=Buffer.from(JSON.stringify({asset:{version:'2.0'},images:[{uri:'https://example.invalid/texture.png'}]}));
   const length=Math.ceil(json.length/4)*4,bytes=Buffer.alloc(20+length,32);

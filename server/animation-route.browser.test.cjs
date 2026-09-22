@@ -47,7 +47,7 @@ async function mount(page,candidates){
  },{candidates,stallMs:STALL_MS,debug});
 }
 const settle=page=>page.waitForFunction(()=>animationTest.playing>0||animationTest.appErrors>0,null,{timeout:8000});
-const snapshot=page=>page.evaluate(()=>({current:animationTest.route.current,route:animationTest.route.route,appErrors:animationTest.appErrors,playing:animationTest.playing,mediaError:animationTest.player.error?.code||0,paused:animationTest.player.paused,remembered:sessionStorage.getItem('maanshan:animation-route')}));
+const snapshot=page=>page.evaluate(()=>({current:animationTest.route.current,route:animationTest.route.route,appErrors:animationTest.appErrors,playing:animationTest.playing,mediaError:animationTest.player.error?.code||0,paused:animationTest.player.paused,remembered:sessionStorage.getItem('maanshan:media-route')}));
 (async()=>{
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const origin=`http://127.0.0.1:${server.address().port}`;
@@ -86,7 +86,7 @@ const snapshot=page=>page.evaluate(()=>({current:animationTest.route.current,rou
   assert.equal(results.hang.current,'/clip/ok.mp4','stalled route switched to the deployed copy');
   assert.equal(results.hang.appErrors,0,'a stall is not reported as a failure');
   assert(results.hang.playing>0,'the second route plays');
-  assert.equal(results.hang.remembered,'local','the working route is remembered for the session');
+  assert.equal(results.hang.remembered,'local','the working route is remembered for the session, shared with 3D models');
   assert(requests.includes('/clip/hang.mp4'),'the preferred route was really tried first');
 
   // 2. The preferred route fails outright: immediate switch, and the page-level error listener never fires.

@@ -7,8 +7,20 @@ const source=fs.readFileSync(path.join(root,'scripts/build-maanshan-css.cjs'),'u
 const cssFiles=[...source.match(/const files = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map(m=>m[1]);
 const css=cssFiles.map(file=>fs.readFileSync(path.join(root,'maanshan',file),'utf8')).join('\n');
 const poems=JSON.parse(fs.readFileSync(path.join(root,'maanshan/poems.json'),'utf8')).poems;
+// The public COS copies are answered from the same local files, so both model
+// routes are exercised without any network access.
+const COS_ORIGIN=JSON.parse(fs.readFileSync(path.join(root,'deploy/media-manifest.json'),'utf8')).origin;
+const cosRequests=[];
+async function serveCosLocally(page){
+  await page.route(COS_ORIGIN+'/**',route=>{
+    const pathname=new URL(route.request().url()).pathname.replace(/^\/published\/[0-9a-f]{20}(?=\/)/,'');cosRequests.push(pathname);
+    const file=path.resolve(root,'.'+pathname);
+    if(!file.startsWith(root+path.sep)||!pathname.startsWith('/maanshan/media/')||!fs.existsSync(file))return route.fulfill({status:404,body:''});
+    return route.fulfill({path:file,contentType:mime[path.extname(file)]||'application/octet-stream',headers:{'Access-Control-Allow-Origin':'*','Cache-Control':'public, max-age=31536000, immutable'}});
+  });
+}
 const mime={'.html':'text/html','.json':'application/json','.mjs':'text/javascript','.css':'text/css','.js':'text/javascript','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.glb':'model/gltf-binary','.woff2':'font/woff2'};
-const fixture='<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/maanshan/app.bundle.css"><style>body{overflow:auto}.workspace{height:auto;min-height:100dvh}#holder{width:100%;max-width:1148px;margin:16px auto}</style><main class="workspace view-explore"><div id="view"><div id="holder"></div></div></main>';
+const fixture='<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/maanshan/app.bundle.css"><style>body{overflow:auto}.workspace{height:auto;min-height:100dvh}#holder{width:100%;max-width:1148px;margin:16px auto;height:calc(100dvh - 32px)}</style><main class="workspace view-explore"><div id="view"><div id="holder"></div></div></main>';
 const server=http.createServer((req,res)=>{
   const url=new URL(req.url,'http://localhost');
   if(url.pathname==='/maanshan/fixture'){res.setHeader('Content-Type','text/html; charset=utf-8');res.end(fixture);return;}
@@ -38,6 +50,7 @@ async function setup(width,height){
       for(const method of ['drawElements','drawArrays']){const native=prototype[method];prototype[method]=function(...args){window.drawCalls++;return native.apply(this,args);};}
     }
   });
+  await serveCosLocally(page);
   await page.goto(`http://127.0.0.1:${server.address().port}/maanshan/fixture`);
   await page.evaluate(()=>document.fonts.ready);
   const mount=async poem=>page.evaluate(async poem=>{
@@ -72,13 +85,20 @@ async function verifyModels(){
       await page.waitForFunction(()=>window.lost>0);check(poem.slug+' leaving disposes the GPU context',await page.locator('canvas').count()===0);
     }
     for(const poem of poems.filter(p=>p.grade<=3)){await mount(poem);check(poem.slug+' retains the lower-grade rule',await page.locator('.explore-unavailable').count()===1&&await page.locator('[data-explore=ar],canvas').count()===0);}
-    let failures=1;await page.route('**/*.glb*',route=>failures-- >0?route.fulfill({status:503,body:''}):route.continue());
+    // One failing route is invisible to the child: the other copy answers at once.
+    const glbHosts=[];let failures=1;await page.route('**/*.glb*',route=>{glbHosts.push(new URL(route.request().url()).origin);return failures-- >0?route.fulfill({status:503,body:''}):route.fallback();});
+    await mount(poems[3]);await page.locator('[data-explore=ar]').click();await page.locator('.explore.is-model').waitFor({timeout:25000});
+    check('a failed first route is covered by the second copy without a notice',!await page.locator('.explore-notice').isVisible()&&await page.locator('canvas').isVisible());
+    check('the second copy came from the other host',new Set(glbHosts).size===2&&glbHosts.includes(new URL(COS_ORIGIN).origin));
+    await page.evaluate(()=>activity.destroy());await page.unroute('**/*.glb*');
+    // Only when both copies fail does the child see the picture and a retry button.
+    failures=2;await page.route('**/*.glb*',route=>failures-- >0?route.fulfill({status:503,body:''}):route.fallback());
     await mount(poems[3]);await page.locator('[data-explore=ar]').click();await page.locator('.explore-notice').waitFor();
     check('failed model preserves the picture and a retry button',await page.locator('[data-explore=ar]').isEnabled()&&await page.locator('.explore-card').isVisible());
     await page.locator('[data-explore=ar]').click();await page.locator('.is-model').waitFor();check('model retry succeeds',await page.locator('canvas').isVisible());
     await page.unroute('**/*.glb*');
     // A response that arrives after the child leaves must not restore a canvas.
-    let release;await page.route('**/*.glb*',async route=>{await new Promise(resolve=>release=resolve);await route.continue().catch(()=>{});});
+    let release;await page.route('**/*.glb*',async route=>{await new Promise(resolve=>release=resolve);await route.fallback().catch(()=>{});});
     await mount(poems[3]);await page.locator('[data-explore=ar]').click();
     for(let n=0;!release&&n<30;n++)await page.waitForTimeout(20);
     assert(release);await page.evaluate(()=>activity.destroy());release();await page.waitForTimeout(180);

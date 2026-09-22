@@ -57,6 +57,7 @@ for(const [name,source] of Object.entries(entries)){
                 'maanshan/app.mjs':"const image='/maanshan/media/one.webp';const remote='https://cos.example/maanshan/media/one.webp';fetch('/api/school-auth/');",
                 'maanshan/poems.json':json.dumps({'poems':[{'animation':{'src':'media/example/animation.mp4'}}]}),
                 'maanshan/media/example/animation.mp4':'deployed-media',
+                'maanshan/media/example/model.glb':'deployed-model',
                 'maanshan/media/example/ASSET-SOURCES.md':'private authoring notes',
                 'maanshan/vendor/licenses/example.txt':'required third-party notice',
                 'deploy/media-manifest.json':json.dumps({'assets':[]}),
@@ -80,7 +81,8 @@ for(const [name,source] of Object.entries(entries)){
                 if args[1:]==['rev-parse','HEAD']:return 'a'*40+'\n'
                 if args[1:]==['ls-files','-z']:return '\0'.join(fixture).encode()
                 raise AssertionError(args)
-            media={'excludedFiles':[],'redirects':[],'headers':[],'videos':[{'source':'/maanshan/media/example/animation.mp4','destination':'https://cos.example/maanshan/media/example/animation.mp4','bytes':14}]}
+            media={'excludedFiles':[],'redirects':[],'headers':[],'videos':[{'source':'/maanshan/media/example/animation.mp4','destination':'https://cos.example/maanshan/media/example/animation.mp4','bytes':14}],
+                   'models':[{'source':'/maanshan/media/example/model.glb','destination':'https://cos.example/published/0123456789abcdef0123/maanshan/media/example/model.glb','bytes':14}]}
             arguments=['package-vercel.py','--destination',str(destination),'--project-id','school-test','--team-id','team-test']
             with patch.object(packager,'ROOT',root),patch.object(packager.subprocess,'check_output',side_effect=git),patch.object(packager,'verify_local_assets'),patch.object(packager,'build_media_config',return_value=media),patch.object(packager,'obsolete_audio_files',return_value=set()),patch.object(sys,'argv',arguments),contextlib.redirect_stdout(io.StringIO()):
                 packager.main()
@@ -95,7 +97,9 @@ for(const [name,source] of Object.entries(entries)){
             self.assertEqual((destination/'school/index.html').read_text(), 'school-only')
             # The animation ships on this origin; COS is the second route, not a redirect.
             self.assertEqual((destination/'school/media/example/animation.mp4').read_text(), 'deployed-media')
-            self.assertFalse(any(row['source'].endswith('.mp4') for row in json.loads((destination/'vercel.json').read_text())['redirects']))
+            # So does every 3D model: the page hedges between this copy and the COS object.
+            self.assertEqual((destination/'school/media/example/model.glb').read_text(), 'deployed-model')
+            self.assertFalse(any(row['source'].endswith(('.mp4','.glb')) for row in json.loads((destination/'vercel.json').read_text())['redirects']))
             worker=(destination/'school/recovery-sw.js').read_text(encoding='utf-8')
             self.assertEqual(worker,fixture['maanshan/recovery-sw.js'])
             app=(destination/'school/app.mjs').read_text()
@@ -118,6 +122,7 @@ for(const [name,source] of Object.entries(entries)){
             self.assertEqual(manifest['apiRuntime'],'guangzhou-ssh-relay')
             self.assertEqual(manifest['apiFunctions'],1)
             self.assertEqual(manifest['dualRouteVideos'],1)
+            self.assertEqual(manifest['dualRouteModels'],1)
             for row in manifest['files']:
                 data=(destination/row['path']).read_bytes()
                 self.assertEqual(row['bytes'],len(data))
@@ -139,7 +144,11 @@ assert.equal(encoding.acceptsGzip('gzip'),true);assert.equal(encoding.acceptsGzi
             # An animation without a verified COS copy would leave pupils with a single route.
             arguments[2]=str(base/'single-route')
             with patch.object(packager,'ROOT',root),patch.object(packager.subprocess,'check_output',side_effect=git),patch.object(packager,'verify_local_assets'),patch.object(packager,'build_media_config',return_value={**media,'videos':[]}),patch.object(packager,'obsolete_audio_files',return_value=set()),patch.object(sys,'argv',arguments),contextlib.redirect_stdout(io.StringIO()):
-                with self.assertRaisesRegex(RuntimeError,'no verified COS mapping'):packager.main()
+                with self.assertRaisesRegex(RuntimeError,'animation has no verified COS mapping'):packager.main()
+            # A deployed 3D model without a verified COS copy would have a single route too.
+            arguments[2]=str(base/'single-route-model')
+            with patch.object(packager,'ROOT',root),patch.object(packager.subprocess,'check_output',side_effect=git),patch.object(packager,'verify_local_assets'),patch.object(packager,'build_media_config',return_value={**media,'models':[]}),patch.object(packager,'obsolete_audio_files',return_value=set()),patch.object(sys,'argv',arguments),contextlib.redirect_stdout(io.StringIO()):
+                with self.assertRaisesRegex(RuntimeError,'3D model has no verified COS mapping: maanshan/media/example/model.glb'):packager.main()
             fixture.pop('api/_lib/response-encoding.cjs')
             arguments[2]=str(base/'incomplete')
             with patch.object(packager,'ROOT',root),patch.object(packager.subprocess,'check_output',side_effect=git),patch.object(packager,'verify_local_assets'),patch.object(packager,'build_media_config',return_value=media),patch.object(packager,'obsolete_audio_files',return_value=set()),patch.object(sys,'argv',arguments),contextlib.redirect_stdout(io.StringIO()):

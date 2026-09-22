@@ -1,6 +1,7 @@
 import {EXPLORATION_CONTENT} from './exploration-data.mjs?v=20260920a';
 import {createProcessResearch} from './poem-games/research.mjs?v=20260920a';
 import {modelPixelRatio} from './model-quality.mjs?v=20260921-ar1';
+import {fetchModel} from './model-source.mjs?v=20260922-school20';
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ICONS = {
@@ -16,48 +17,6 @@ const ICONS = {
   check: '<path d="m5 12 4 4L19 6"/>'
 };
 const icon = name => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ''}</svg>`;
-const MAX_MODEL_BYTES = 12 * 1024 * 1024;
-
-// Generated assets are self-contained GLBs. Reject external references so a
-// model can never silently start unbounded third-party texture downloads.
-export function validateGLB(buffer) {
-  if (buffer.byteLength < 20 || buffer.byteLength > MAX_MODEL_BYTES) throw new Error('invalid-model');
-  const header = new DataView(buffer);
-  if (header.getUint32(0, true) !== 0x46546c67 || header.getUint32(4, true) !== 2 ||
-      header.getUint32(8, true) !== buffer.byteLength || header.getUint32(16, true) !== 0x4e4f534a) throw new Error('invalid-model');
-  const length = header.getUint32(12, true);
-  if (20 + length > buffer.byteLength) throw new Error('invalid-model');
-  const data = JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, 20, length)));
-  for (const entry of [...(data.buffers || []), ...(data.images || [])]) {
-    if (entry.uri && !entry.uri.startsWith('data:')) throw new Error('external-model-resource');
-  }
-  return buffer;
-}
-
-export async function readModel(response, signal) {
-  if (!response.ok) throw new Error('model-unavailable');
-  if (Number(response.headers.get('content-length')) > MAX_MODEL_BYTES) throw new Error('model-too-large');
-  if (!response.body?.getReader) return validateGLB(await response.arrayBuffer());
-  const reader = response.body.getReader(), chunks = [];
-  let total = 0;
-  try {
-    for (;;) {
-      if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
-      const {done, value} = await reader.read();
-      if (done) break;
-      total += value.byteLength;
-      if (total > MAX_MODEL_BYTES) throw new Error('model-too-large');
-      chunks.push(value);
-    }
-  } catch (error) {
-    await reader.cancel().catch(() => {});
-    throw error;
-  } finally { reader.releaseLock(); }
-  const bytes = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {bytes.set(chunk, offset); offset += chunk.byteLength;}
-  return validateGLB(bytes.buffer);
-}
 
 export function disposeObject(root) {
   const geometries = new Set(), materials = new Set(), textures = new Set(), images = new Set();
@@ -239,8 +198,8 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
       // Both imports and the model fetch start only after the explicit button.
       const {THREE, GLTFLoader, OrbitControls} = await import('./vendor/poetry-three.mjs?v=20260913a');
       if (!current()) return;
-      const response = await fetch(assetURL(content.modelFile || 'model.glb'), {signal: controller.signal, credentials: 'same-origin'});
-      const buffer = await readModel(response, controller.signal);
+      // Deployed copy and public COS copy race; see model-source.mjs.
+      const buffer = await fetchModel(assetURL(content.modelFile || 'model.glb'), {signal: controller.signal});
       if (!current()) return;
       parsed = await new Promise((resolve, reject) => {
         new GLTFLoader().parse(buffer, '', gltf => {

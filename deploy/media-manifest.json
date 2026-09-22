@@ -84,6 +84,15 @@
       "objectCacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "source": "/maanshan/media/exploration/bo-chuan-gua-zhou/model.glb",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/9440463a264bed81217c/maanshan/media/exploration/bo-chuan-gua-zhou/model.glb",
+      "bytes": 2334380,
+      "sha256": "9440463a264bed81217c5edf6e1242c30a1822df691e0b5a51639b967c42a7b3",
+      "md5": "60f0a3e0f3c6cc455f66ecf1d623fd8a",
+      "contentType": "model/gltf-binary",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "source": "/maanshan/media/exploration/gui-yuan-tian-ju/model-20260920a.glb",
       "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/8314aa1050f459812960/maanshan/media/exploration/gui-yuan-tian-ju/model-20260920a.glb",
       "bytes": 3998540,
@@ -116,6 +125,15 @@
       "bytes": 1719700,
       "sha256": "d026e39e93b3b80009550264d678bd67ec830e5483e0b69ea0d3faa22386ed22",
       "md5": "94db31e298e53d93683fdd5ada07201b",
+      "contentType": "model/gltf-binary",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/exploration/zao-chun/model.glb",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/cd6ff9a12978705b44b3/maanshan/media/exploration/zao-chun/model.glb",
+      "bytes": 2404332,
+      "sha256": "cd6ff9a12978705b44b3e51aa0bafea41fa9efee31f2209243354bfcd90959df",
+      "md5": "095ef2b6c51bda491afa4614abdb80b1",
       "contentType": "model/gltf-binary",
       "objectCacheControl": "public, max-age=31536000, immutable"
     },

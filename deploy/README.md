@@ -4,7 +4,7 @@
 
 备案期间：`https://aiducation.asia/maanshan/` 保留原 Vercel 项目；
 `https://mandarin.aiducation.asia/` 使用独立临时 Vercel 项目，并自动进入
-`/maanshan/`。模型继续使用广州 COS；六段动画同时随 Vercel 发布并保留 COS 副本，
+`/maanshan/`。六段动画和九个 3D 模型同时随 Vercel 发布并保留 COS 副本，
 浏览器在两条线路之间自动切换（见下文），广州轻量服务器保留完整部署。
 临时入口的发布、存储和切回说明见 `vercel-temporary.md`。两个 Vercel 项目分别更新，
 下面的 `update.py` 仅更新广州服务器，不会发布 Vercel 或改变 DNS。
@@ -48,7 +48,7 @@ HTTPS页面；全部一致且服务正常便直接结束，不复制资源或重
 - `/home/ubuntu/maanshan-backups/blob/`：临时入口学习记录的每日私密导出。
 - `/home/ubuntu/maanshan-shared/bridge-backup.env`：仅供上述导出使用的配置，权限600。
 - `/home/ubuntu/maanshan-backups/before-20260919/`：迁移前配置和数据库备份。
-- `/etc/nginx/maanshan-media.conf`：六段动画和六个模型的精确 COS 路径重定向。
+- `/etc/nginx/maanshan-media.conf`：六段动画、九个模型和全部 WebP 图片的精确 COS 路径重定向。
 
 ```sh
 sudo systemctl status maanshan
@@ -126,6 +126,23 @@ python deploy/backup-local.py
 打包器要求每首现用诗的动画都同时具备本地文件和已验证的 COS 映射。
 广州 Nginx 仍把动画 307 到 COS，因为广州出口约 5.8 Mbps 由全班共享。
 浏览器层验证：`node server/animation-route.browser.test.cjs`（headless Edge，本地服务器模拟挂起、404 与正常线路）。资源包与实际请求、外网流量按腾讯云规则计量。
+
+3D 模型也走双线路（2026-09-22 起）：页面在用的九个 GLB（三首诗的观察模型新旧各一版、
+题西林壁山景、豆苗与春草，合计约 27 MB）同时随两个 Vercel 项目发布，并保留 COS
+内容摘要对象；`maanshan/media-models.mjs` 由 `media_config.py --write` 生成。
+模型必须整份下载并通过 GLB 校验才有用，所以 `maanshan/model-source.mjs` 采用对冲
+下载而不是中途切换：先请求偏好线路；出错立即开另一条；3 秒未完成且不足一半也同时
+开另一条；任何一条 8 秒没有新数据即放弃；先完成并校验通过的一份生效，其余请求取消；
+两条都失败才向页面报错。成功线路与动画共用 sessionStorage 记忆
+（`maanshan/media-route.mjs`，键 `maanshan:media-route`）。打包器要求发布包内每个
+GLB 都有已验证的 COS 映射，广州 Nginx 继续把模型 307 到 COS。
+新增或更换模型：在广州服务器上运行
+`node --env-file=/home/ubuntu/maanshan-shared/app.env deploy/publish-media.cjs <仓库路径>`
+（COS 密钥只在服务器环境中读取，不打印；已存在且内容相同的对象跳过，内容不同则报错），
+把输出的条目加入 `media-manifest.json`，再 `python deploy/media_config.py --write`
+并安装 Nginx 映射。浏览器层验证：`node server/model-route.browser.test.cjs`
+（挂起、404、半途停滞、垃圾字节、超大、两条都失败、离开页面取消）和
+`node server/model-observation.browser.test.cjs`（真实 GLB，其中 COS 域名由本地文件应答）。
 
 用户从旧域名切换到新域名时，浏览器本地进度不会自动跨域迁移；旧站保留，
 不要将域名切换误称为已完成旧本地记录迁移。

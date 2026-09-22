@@ -1,5 +1,5 @@
 import {imageAsset} from './media-images.mjs?v=20260922-school16';
-import {manageAnimationSource} from './animation-source.mjs?v=20260922-school19';
+import {manageAnimationSource} from './animation-source.mjs?v=20260922-school20';
 import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260921-school9';
 import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260922-school16';
 import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
@@ -19,7 +19,7 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20260922-school15';
 import {requestJSON, requestChat} from './network.mjs?v=20260922-school18';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20260922-school18';
-import {schoolSession} from './bootstrap.mjs?v=20260922-school19';
+import {schoolSession} from './bootstrap.mjs?v=20260922-school20';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260922-school18';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school18';
 import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
@@ -832,7 +832,7 @@ function preloadActivityModules(activity,slug) {
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
   preloadActivityModules('quiz',poem?.slug);
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260922-school17'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260922-school20'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
@@ -846,7 +846,7 @@ async function renderQuiz() {
 }
 async function renderExploration(){
   preloadActivityModules('explore');
-  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260921-school9'));
+  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20260922-school20'));
   if(!module)return;
   const holder=$('#view');
   if(!holder||!poem)return;

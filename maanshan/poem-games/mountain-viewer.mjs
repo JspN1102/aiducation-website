@@ -1,4 +1,5 @@
 import {modelPixelRatio} from '../model-quality.mjs?v=20260921-ar1';
+import {fetchModel} from '../model-source.mjs?v=20260922-school20';
 const modelURL = new URL('../media/exploration/ti-xi-lin-bi/model.glb?v=20260914-restored', import.meta.url);
 
 function disposeModel(model) {
@@ -11,12 +12,10 @@ function disposeModel(model) {
 // or resize, so a still scene does not consume a mobile animation loop.
 export async function createMountainViewer(holder,{signal,angle=0,onContextLost}={}){
  if(signal?.aborted)throw new DOMException('Aborted','AbortError');
- const [{THREE,GLTFLoader},response]=await Promise.all([
-  import('../vendor/poetry-three.mjs?v=20260913a'),fetch(modelURL,{signal,credentials:'same-origin'})
+ // The deployed copy and the public COS copy race; see model-source.mjs.
+ const [{THREE,GLTFLoader},buffer]=await Promise.all([
+  import('../vendor/poetry-three.mjs?v=20260913a'),fetchModel(modelURL,{signal})
  ]);
- if(signal?.aborted)throw new DOMException('Aborted','AbortError');
- if(!response.ok)throw new Error('model-unavailable');
- const buffer=await response.arrayBuffer();
  if(signal?.aborted)throw new DOMException('Aborted','AbortError');
  const gltf=await new Promise((resolve,reject)=>{
   const abort=()=>reject(new DOMException('Aborted','AbortError'));

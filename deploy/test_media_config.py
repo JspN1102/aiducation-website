@@ -21,13 +21,27 @@ def fixture(model=False, image=False):
 
 
 class MediaConfigTests(unittest.TestCase):
+    # Every model the pages load: exploration viewers (grades 4-6), the
+    # assessment viewer's older models, the mountain game and the living field.
+    PAGE_MODELS = ['exploration/bo-chuan-gua-zhou/model-20260919b.glb', 'exploration/bo-chuan-gua-zhou/model.glb',
+                   'exploration/gui-yuan-tian-ju/model-20260920a.glb', 'exploration/gui-yuan-tian-ju/model.glb',
+                   'exploration/ti-xi-lin-bi/model.glb', 'exploration/zao-chun/model-20260919b.glb',
+                   'exploration/zao-chun/model.glb', 'living-scenes/bean-v1.glb', 'living-scenes/grass-v1.glb']
+
     def test_repository_manifest_routes_every_excluded_binary_and_only_those(self):
         manifest = json.loads(Path(__file__).with_name('media-manifest.json').read_text(encoding='utf-8'))
         original = copy.deepcopy(manifest)
         config = media_config.build_media_config(manifest)
-        routed = [a for a in manifest['assets'] if a['contentType'] != 'video/mp4']
+        routed = [a for a in manifest['assets'] if a['contentType'] == 'image/webp']
         videos = [a for a in manifest['assets'] if a['contentType'] == 'video/mp4']
+        models = [a for a in manifest['assets'] if a['contentType'] == 'model/gltf-binary']
         self.assertEqual(len(config['redirects']), len(routed))
+        # Every model used by a page has both routes: deployed copy and COS copy.
+        self.assertEqual([m['source'] for m in config['models']], [a['source'] for a in models])
+        for name in self.PAGE_MODELS:
+            self.assertIn('/maanshan/media/' + name, [m['source'] for m in config['models']])
+        self.assertFalse(any(p.endswith('.glb') for p in config['excludedFiles']))
+        self.assertFalse(any(r['source'].endswith('.glb') for r in config['redirects']))
         images = [a for a in manifest['assets'] if a['contentType'] == 'image/webp']
         poems = json.loads((Path(__file__).parent.parent / 'maanshan/poems.json').read_text(encoding='utf-8'))['poems']
         for poem in poems:
@@ -87,13 +101,38 @@ class MediaConfigTests(unittest.TestCase):
         image_manifest, _ = fixture(image=True)
         self.assertEqual(media_config.build_video_module(image_manifest).count('https://'), 0)
         self.assertEqual(media_config.build_media_config(image_manifest)['videos'], [])
+        self.assertEqual(config['models'], [])
         # The Guangzhou origin still redirects animations: its uplink is shared by the whole class.
+        self.assertIn('location = ' + manifest['assets'][0]['source'], media_config.build_nginx_config(manifest))
+
+    def test_generated_model_module_maps_only_models_which_ship_on_both_routes(self):
+        manifest, data = fixture(model=True)
+        module = media_config.build_model_module(manifest)
+        self.assertIn('export const MODEL_ASSETS = Object.freeze(', module)
+        self.assertIn(json.dumps(manifest['assets'][0]['source']) + ': ' + json.dumps(manifest['assets'][0]['destination']), module)
+        self.assertIn('/published/' + hashlib.sha256(data).hexdigest()[:20] + '/', module)
+        self.assertNotIn('import ', module)
+        config = media_config.build_media_config(manifest)
+        # Models are deployed on the page's origin as well, so nothing is redirected or omitted.
+        self.assertEqual(config['redirects'], [])
+        self.assertEqual(config['headers'], [])
+        self.assertEqual(config['excludedFiles'], [])
+        self.assertEqual(config['totalExcludedBytes'], 0)
+        self.assertEqual(config['models'], [{'source': manifest['assets'][0]['source'],
+                                            'destination': manifest['assets'][0]['destination'],
+                                            'bytes': manifest['assets'][0]['bytes']}])
+        self.assertEqual(config['videos'], [])
+        for other in [fixture()[0], fixture(image=True)[0]]:
+            self.assertEqual(media_config.build_model_module(other).count('https://'), 0)
+            self.assertEqual(media_config.build_media_config(other)['models'], [])
+        # The Guangzhou origin still redirects models: its uplink is shared by the whole class.
         self.assertIn('location = ' + manifest['assets'][0]['source'], media_config.build_nginx_config(manifest))
 
     def test_repository_generated_files_are_current(self):
         root = Path(__file__).parent.parent
         manifest = json.loads((root / 'deploy/media-manifest.json').read_text(encoding='utf-8'))
         self.assertEqual((root / 'maanshan/media-videos.mjs').read_text(encoding='utf-8'), media_config.build_video_module(manifest))
+        self.assertEqual((root / 'maanshan/media-models.mjs').read_text(encoding='utf-8'), media_config.build_model_module(manifest))
         self.assertEqual((root / 'maanshan/media-images.mjs').read_text(encoding='utf-8'), media_config.build_image_module(manifest))
         self.assertEqual((root / 'deploy/maanshan-media.conf').read_text(encoding='utf-8'), media_config.build_nginx_config(manifest))
 

@@ -1,35 +1,23 @@
 // Two independent routes for every poem animation: the page's own origin
 // (the Vercel deployment) and the public COS copy in Guangzhou. Hong Kong and
 // overseas networks reach Vercel in well under a second but often lose packets
-// to COS; mainland networks see the opposite. The session image probe decides
-// which route goes first, the other route takes over when playback errors or
-// stalls, and the route that actually played is remembered for the session.
-// Nothing about the pupil is sent or stored.
+// to COS; mainland networks see the opposite. The shared media-route memory
+// (session image probe, then whichever route last worked for an animation or
+// a 3D model) decides which route goes first, the other route takes over when
+// playback errors or stalls, and the route that actually played is remembered
+// for the session. Nothing about the pupil is sent or stored.
 import {VIDEO_ASSETS} from './media-videos.mjs?v=20260922-school19';
-import {preferPublicImages} from './image-policy.mjs?v=20260922-school16';
+import {orderRoutes, rememberRoute} from './media-route.mjs?v=20260922-school20';
 
-const STORAGE_KEY = 'maanshan:animation-route';
 export const STALL_MS = 8000;
 const HAVE_FUTURE_DATA = 3;
 
-function remembered() {
-  try { return sessionStorage.getItem(STORAGE_KEY); } catch { return null; }
-}
-
-function remember(route) {
-  try { sessionStorage.setItem(STORAGE_KEY, route); } catch { /* storage unavailable */ }
-}
-
 // Ordered routes for one animation source such as "media/<poem>/animation.mp4".
-export function animationCandidates(source, {preferPublic = preferPublicImages(), memory = remembered()} = {}) {
+export function animationCandidates(source, {preferPublic, memory} = {}) {
   if (typeof source !== 'string' || !source) return [];
   const local = source.split('?')[0].split('#')[0];
   const key = local.startsWith('media/') ? '/maanshan/' + local : local;
-  const remote = VIDEO_ASSETS[key];
-  if (!remote) return [{route: 'local', url: local}];
-  const publicFirst = memory === 'public' ? true : memory === 'local' ? false : !!preferPublic;
-  const pair = [{route: 'public', url: remote}, {route: 'local', url: local}];
-  return publicFirst ? pair : pair.reverse();
+  return orderRoutes(local, VIDEO_ASSETS[key], {preferPublic, memory});
 }
 
 // Attach the first route to the player and switch to the next one when the
@@ -67,7 +55,7 @@ export function manageAnimationSource(player, source, {stallMs = STALL_MS, candi
   listen('error', event => { if (advance()) event.stopImmediatePropagation(); else recovering = false; });
   listen('play', () => { wantsPlay = true; arm(); });
   listen('waiting', () => { if (!player.paused) arm(); });
-  listen('playing', () => { clear(); recovering = false; remember(candidates[index].route); });
+  listen('playing', () => { clear(); recovering = false; rememberRoute(candidates[index].route); });
   listen('pause', () => { wantsPlay = false; recovering = false; clear(); });
   listen('ended', clear);
   listen('emptied', clear);
