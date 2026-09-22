@@ -1,5 +1,5 @@
-import {createViewer, disposeObject} from './exploration.mjs?v=20260922-school20';
-import {fetchModel} from './model-source.mjs?v=20260922-school20';
+import {createViewer, disposeObject} from './exploration.mjs?v=20260922-school21';
+import {fetchModel, MODEL_LOAD_TIMEOUT_MS} from './model-source.mjs?v=20260922-school21';
 
 // Assessment viewer: no verse, vocabulary, answer caption or exploration hints.
 export function mountChallengeModel(holder, {slug, poster, label = '轉動觀察', controls = []} = {}) {
@@ -14,7 +14,7 @@ export function mountChallengeModel(holder, {slug, poster, label = '轉動觀察
     if (viewer) {viewer.reset(); return;}
     busy = true; status.textContent = '正在準備觀察畫面…';
     const request = new AbortController(); pending = request;
-    const timeout = setTimeout(() => request.abort(), 35000);
+    const timeout = setTimeout(() => request.abort(), MODEL_LOAD_TIMEOUT_MS);
     try {
       const {THREE, GLTFLoader, OrbitControls} = await import('./vendor/poetry-three.mjs?v=20260913a');
       if (dead || request.signal.aborted) throw new Error('cancelled');

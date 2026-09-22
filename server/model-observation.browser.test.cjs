@@ -53,11 +53,11 @@ async function setup(width,height){
   await serveCosLocally(page);
   await page.goto(`http://127.0.0.1:${server.address().port}/maanshan/fixture`);
   await page.evaluate(()=>document.fonts.ready);
-  const mount=async poem=>page.evaluate(async poem=>{
+  const mount=async(poem,options={})=>page.evaluate(async({poem,options})=>{
     window.activity?.destroy();window.events=[];window.completed=0;
     const {mountExploration}=await import('/maanshan/exploration.mjs');
-    window.activity=mountExploration(document.querySelector('#holder'),{poem,onResearch:(type,fields)=>events.push({type,...fields}),onComplete:()=>completed++});
-  },poem);
+    window.activity=mountExploration(document.querySelector('#holder'),{poem,...options,onResearch:(type,fields)=>events.push({type,...fields}),onComplete:()=>completed++});
+  },{poem,options});
   return {context,page,mount};
 }
 async function verifyModels(){
@@ -97,6 +97,13 @@ async function verifyModels(){
     check('failed model preserves the picture and a retry button',await page.locator('[data-explore=ar]').isEnabled()&&await page.locator('.explore-card').isVisible());
     await page.locator('[data-explore=ar]').click();await page.locator('.is-model').waitFor();check('model retry succeeds',await page.locator('canvas').isVisible());
     await page.unroute('**/*.glb*');
+    // Both copies too slow for the page's budget: the child is told and can retry, never a silent spinner.
+    let slowRelease;await page.route('**/*.glb*',async route=>{await new Promise(resolve=>slowRelease=resolve);await route.fallback().catch(()=>{});});
+    await mount(poems[3],{modelTimeoutMs:1500});await page.locator('[data-explore=ar]').click();await page.locator('.explore-notice').waitFor({timeout:6000});
+    check('a timed-out model load announces the retry instead of failing silently',await page.locator('[data-explore=ar]').isEnabled()&&await page.locator('.explore-card').isVisible()&&await page.locator('.explore-loading').isHidden()&&(await page.locator('.explore-notice').textContent()).includes('再按'));
+    check('the timed-out load reports a timeout to research',await page.evaluate(()=>events.some(e=>e.type==='error'&&e.itemId.endsWith('.model')&&e.error?.code==='timeout')));
+    await page.unroute('**/*.glb*');slowRelease();await page.locator('[data-explore=ar]').click();await page.locator('.is-model').waitFor();check('retry after a timeout succeeds',await page.locator('canvas').isVisible());
+    await page.evaluate(()=>activity.destroy());
     // A response that arrives after the child leaves must not restore a canvas.
     let release;await page.route('**/*.glb*',async route=>{await new Promise(resolve=>release=resolve);await route.fallback().catch(()=>{});});
     await mount(poems[3]);await page.locator('[data-explore=ar]').click();

@@ -1,7 +1,7 @@
 import {EXPLORATION_CONTENT} from './exploration-data.mjs?v=20260920a';
 import {createProcessResearch} from './poem-games/research.mjs?v=20260920a';
 import {modelPixelRatio} from './model-quality.mjs?v=20260921-ar1';
-import {fetchModel} from './model-source.mjs?v=20260922-school20';
+import {fetchModel, MODEL_LOAD_TIMEOUT_MS} from './model-source.mjs?v=20260922-school21';
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ICONS = {
@@ -42,7 +42,7 @@ export function disposeObject(root) {
  * An optional, local poetry observation activity. onComplete receives only
  * {poemId, observations, version, completedAt}; it is never an assessment score.
  */
-export function mountExploration(container, {poem, speakWord, onComplete, onResearch} = {}) {
+export function mountExploration(container, {poem, speakWord, onComplete, onResearch, modelTimeoutMs = MODEL_LOAD_TIMEOUT_MS} = {}) {
   const content = EXPLORATION_CONTENT[poem?.slug];
   if (!container || !content) throw new Error('Unknown poem exploration');
   if (Number(poem.grade) <= 3) {
@@ -192,22 +192,24 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
     loading.hidden = false;
     stage.setAttribute('aria-busy', 'true');
     modelButton.setAttribute('aria-busy', 'true');
-    const timeout = setTimeout(() => controller.abort(), 35000);
+    const timeout = setTimeout(() => controller.abort(), modelTimeoutMs);
     let parsed = null;
     try {
       // Both imports and the model fetch start only after the explicit button.
       const {THREE, GLTFLoader, OrbitControls} = await import('./vendor/poetry-three.mjs?v=20260913a');
-      if (!current()) return;
+      // A timed-out load must still reach the catch below so the child is told
+      // and offered a retry, instead of the spinner silently disappearing.
+      if (!current()) throw new DOMException('Aborted', 'AbortError');
       // Deployed copy and public COS copy race; see model-source.mjs.
       const buffer = await fetchModel(assetURL(content.modelFile || 'model.glb'), {signal: controller.signal});
-      if (!current()) return;
+      if (!current()) throw new DOMException('Aborted', 'AbortError');
       parsed = await new Promise((resolve, reject) => {
         new GLTFLoader().parse(buffer, '', gltf => {
           if (!current()) {disposeObject(gltf.scene); reject(new DOMException('Aborted', 'AbortError'));}
           else resolve(gltf);
         }, reject);
       });
-      if (!current()) {disposeObject(parsed.scene); parsed = null; return;}
+      if (!current()) {disposeObject(parsed.scene); parsed = null; throw new DOMException('Aborted', 'AbortError');}
       viewer = createViewer({THREE, OrbitControls, gltf: parsed, holder: canvasHolder, stage, content,
         onInteract: clearPreset,
         onInteractionEnd: kind => research.action(researchStep(),kind,kind),

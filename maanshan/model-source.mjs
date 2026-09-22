@@ -4,7 +4,9 @@
 // validated, so the download is hedged rather than switched: the preferred
 // route starts first; the other route also starts when the first one fails
 // outright or has not finished within hedgeMs and is less than half done; a
-// route that stops delivering bytes for stallMs is dropped; the first complete
+// route that stops delivering bytes for stallMs is dropped while another route
+// can still take over (the last live route waits, since a weak link can take
+// well over stallMs before the first byte); the first complete
 // valid model wins and every other attempt is cancelled. The page only sees an
 // error when every route failed. The winning route is remembered for the
 // session, shared with the poem animations. Nothing about the pupil is sent.
@@ -14,6 +16,10 @@ import {orderRoutes, rememberRoute} from './media-route.mjs?v=20260922-school20'
 export const MAX_MODEL_BYTES = 12 * 1024 * 1024;
 export const HEDGE_MS = 3000;
 export const STALL_MS = 8000;
+// Overall budget a page gives one model load (library import, both routes,
+// parse). fetchModel drops a stalled route itself, so this only bounds a slow
+// but still progressing link before the child is offered a retry.
+export const MODEL_LOAD_TIMEOUT_MS = 60000;
 
 // Generated assets are self-contained GLBs. Reject external references so a
 // model can never silently start unbounded third-party texture downloads.
@@ -72,9 +78,12 @@ export function modelCandidates(source, {preferPublic, memory, cache = 'default'
     .map(candidate => ({...candidate, cache: candidate.route === 'public' ? 'default' : cache}));
 }
 
-async function download(candidate, controller, progress, {stallMs, fetchImpl}) {
+async function download(candidate, controller, progress, {stallMs, fetchImpl, canDrop = () => true}) {
   let stall = null, stalled = false;
-  const arm = () => { clearTimeout(stall); stall = setTimeout(() => { stalled = true; controller.abort(); }, stallMs); };
+  const arm = () => {
+    clearTimeout(stall);
+    stall = setTimeout(() => { if (canDrop()) { stalled = true; controller.abort(); } else arm(); }, stallMs);
+  };
   arm();
   try {
     const response = await fetchImpl(candidate.url, {signal: controller.signal, credentials: 'same-origin', cache: candidate.cache || 'default'});
@@ -93,8 +102,10 @@ export function fetchModel(source, {signal, hedgeMs = HEDGE_MS, stallMs = STALL_
                                     candidates = modelCandidates(source, {cache}), fetchImpl = (url, init) => fetch(url, init), onRoute} = {}) {
   return new Promise((resolve, reject) => {
     if (!candidates.length) { reject(new Error('model-unavailable')); return; }
-    const attempts = [];
+    const attempts = [], live = new Set();
     let started = 0, failed = 0, settled = false, timer = null, firstError = null, latest = null;
+    // Another live download, or one not yet started, can replace a stalled route.
+    const canDrop = () => live.size > 1 || started < candidates.length;
     function finish(callback, value) {
       if (settled) return;
       settled = true;
@@ -117,14 +128,17 @@ export function fetchModel(source, {signal, hedgeMs = HEDGE_MS, stallMs = STALL_
       if (settled || started >= candidates.length) return;
       const candidate = candidates[started++], controller = new AbortController(), progress = {received: 0, total: 0};
       attempts.push(controller);
+      live.add(controller);
       latest = progress;
       if (started < candidates.length) timer = setTimeout(hedge, hedgeMs);
-      download(candidate, controller, progress, {stallMs, fetchImpl}).then(buffer => {
+      download(candidate, controller, progress, {stallMs, fetchImpl, canDrop}).then(buffer => {
+        live.delete(controller);
         if (settled) return;
         rememberRoute(candidate.route);
         onRoute?.(candidate.route, candidate.url);
         finish(resolve, buffer);
       }, error => {
+        live.delete(controller);
         if (settled) return;
         failed++;
         firstError ??= error;

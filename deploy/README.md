@@ -132,8 +132,10 @@ python deploy/backup-local.py
 内容摘要对象；`maanshan/media-models.mjs` 由 `media_config.py --write` 生成。
 模型必须整份下载并通过 GLB 校验才有用，所以 `maanshan/model-source.mjs` 采用对冲
 下载而不是中途切换：先请求偏好线路；出错立即开另一条；3 秒未完成且不足一半也同时
-开另一条；任何一条 8 秒没有新数据即放弃；先完成并校验通过的一份生效，其余请求取消；
-两条都失败才向页面报错。成功线路与动画共用 sessionStorage 记忆
+开另一条；某条 8 秒没有新数据、而另一条还在下载或尚未开始时才放弃它（只剩最后一条
+时耐心等待，因为弱网下首字节常超过 8 秒）；先完成并校验通过的一份生效，其余请求取消；
+两条都失败才向页面报错。三个用到模型的页面共用 `MODEL_LOAD_TIMEOUT_MS`（60 秒，含
+three.js 库加载与解析）作为总预算，超时后学生会看到提示和重试按钮，不再是转圈后无声消失。成功线路与动画共用 sessionStorage 记忆
 （`maanshan/media-route.mjs`，键 `maanshan:media-route`）。打包器要求发布包内每个
 GLB 都有已验证的 COS 映射，广州 Nginx 继续把模型 307 到 COS。
 新增或更换模型：在广州服务器上运行

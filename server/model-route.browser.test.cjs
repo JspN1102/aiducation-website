@@ -138,6 +138,16 @@ const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   assert.deepEqual(since(mark),['/model/half.glb','/model/ok.glb']);
   assert(results.stalled.elapsed<3000,'a stall is detected long before the hedge window');
 
+  // 5b. The same stall on the last remaining route is tolerated: a weak link can
+  // take longer than the stall window before its first byte, and dropping the
+  // only route left would guarantee failure. The page's own timeout ends it.
+  mark=requests.length;
+  results.lastStalled=await run(page,[{route:'public',url:'/model/missing.glb'},{route:'local',url:'/model/half.glb'}],{hedgeMs:5000,stallMs:300,abortAfter:1200});
+  assert.equal(results.lastStalled.ok,false);assert.equal(results.lastStalled.name,'AbortError','the last route waited for the caller instead of reporting a stall');
+  assert(results.lastStalled.elapsed>=1100,'the last route was kept past several stall windows');
+  assert.deepEqual(since(mark),['/model/missing.glb','/model/half.glb']);
+  await pause(300);assert(closed.includes('/model/half.glb'),'the caller abort still cancels the request');
+
   // 6. Garbage or an oversized answer is not a model: the other copy wins without an error.
   for(const [name,url] of [['garbage','/model/bad.glb'],['oversized','/model/huge.glb']]){
    mark=requests.length;

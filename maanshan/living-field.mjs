@@ -1,4 +1,4 @@
-import {fetchModel} from './model-source.mjs?v=20260922-school20';
+import {fetchModel, MODEL_LOAD_TIMEOUT_MS} from './model-source.mjs?v=20260922-school21';
 import {modelPixelRatio} from './model-quality.mjs?v=20260921-ar1';
 
 // Source meshes own GPU resources; plant clones only borrow them. Rendering is
@@ -148,7 +148,7 @@ export function mountLivingField(holder, {density = {}, onStatus = () => {}} = {
   async function load() {
     status('正在準備立體植物…', 'loading');
     if (!alive()) return;
-    timer = view.setTimeout(() => fail('timeout'), 35000);
+    timer = view.setTimeout(() => fail('timeout'), MODEL_LOAD_TIMEOUT_MS);
     try {
       const {THREE, GLTFLoader, OrbitControls} = await import('./vendor/poetry-three.mjs?v=20260913a');
       if (!alive()) return;
