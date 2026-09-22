@@ -7,6 +7,8 @@ let current = {enabled: false, authenticated: false, user: null, csrfToken: ''};
 let blocked = false;
 let loginRequest;
 const listeners = new Set();
+const learningResetListeners = new Set();
+let learningResetting = false;
 // The company site's /school/ entry is the authenticated school platform,
 // even though /maanshan/ on the same host intentionally remains a demo.
 const requiresSchoolAuth = location.hostname === 'mandarin.aiducation.asia' || /^\/school(?:\/|$)/.test(location.pathname);
@@ -16,9 +18,19 @@ const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&
 
 export const schoolState = () => current;
 export function schoolHeaders(headers = {}) {
-  return {...headers, ...(current.enabled && current.csrfToken ? {'X-CSRF-Token':current.csrfToken} : {})};
+  return {...headers, ...(current.enabled && current.csrfToken ? {'X-CSRF-Token':current.csrfToken} : {}),
+    ...(current.enabled && current.user?.role === 'student' && /^[a-f0-9]{32}$/.test(current.learningEpoch || '') ? {'X-Learning-Epoch':current.learningEpoch} : {})};
 }
 export function onSchoolSessionInvalid(callback) { listeners.add(callback); return () => listeners.delete(callback); }
+export function onSchoolLearningReset(callback) { learningResetListeners.add(callback); return () => learningResetListeners.delete(callback); }
+function reloadLearningSession() {
+  if (!current.enabled || learningResetting) return;
+  learningResetting = true; blocked = true;
+  // Stop consumers before reloading. Keep the old generation's local queues
+  // intact so an administrative reset never destroys unsent historical data.
+  for (const callback of learningResetListeners) { try { callback(); } catch {} }
+  if (!learningResetListeners.size) location.reload();
+}
 export function invalidateSchoolSession() {
   if (!current.enabled || blocked) return;
   blocked = true;
@@ -48,6 +60,7 @@ export async function schoolFetch(url, options = {}) {
   const response = await fetch(url, {...options, credentials:'same-origin', headers:schoolHeaders(options.headers)});
   if (current.enabled && [401, 403, 409].includes(response.status)) {
     const data = await response.clone().json().catch(() => null);
+    if (response.status === 409 && data?.code === 'LEARNING_RESET') reloadLearningSession();
     if (response.status === 401 || ['ACTOR_CHANGED','CSRF_INVALID','CSRF_REJECTED','ACCOUNT_CHANGED','AUTH_REQUIRED','SESSION_EXPIRED','INVALID_CSRF'].includes(data?.code)) invalidateSchoolSession();
   }
   return response;
@@ -59,7 +72,7 @@ export async function loadSchoolProgress({signal} = {}) {
   if (!response.ok) throw new Error('學習進度暫時未能同步。');
   if (blocked || current.user?.id !== actorId) throw Object.assign(new Error('請重新登入。'), {code:'AUTH_REQUIRED'});
   if (data.userId !== actorId || !data.poems) throw new Error('學習進度未能核對。');
-  if (current.user.role === 'teacher' && (data.learningEpoch || 'initial') !== (current.learningEpoch || 'initial')) throw Object.assign(new Error('試用進度已重設，正在重新載入。'), {code:'LEARNING_RESET'});
+  if ((data.learningEpoch || 'initial') !== (current.learningEpoch || 'initial')) throw Object.assign(new Error('學習進度已更新，正在重新載入。'), {code:'LEARNING_RESET'});
   return data.poems;
 }
 export async function logoutSchoolSession() {
@@ -84,7 +97,8 @@ function ensureStyle() {
 function validSignedIn(data) {
   return data?.enabled === true && data.authenticated === true &&
     typeof data.user?.id === 'string' && !!data.user.id && ['student','teacher'].includes(data.user.role) &&
-    typeof data.csrfToken === 'string' && !!data.csrfToken;
+    typeof data.csrfToken === 'string' && !!data.csrfToken &&
+    (data.learningEpoch === undefined || /^[a-f0-9]{32}$/.test(data.learningEpoch) || data.user.role === 'teacher' && data.learningEpoch === 'initial');
 }
 async function readSession() {
   const {response, data} = await readOnlyJSON('/api/school-auth/', {credentials:'same-origin', cache:'no-store', timeout:15000, firstAttemptTimeout:5000});

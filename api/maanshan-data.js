@@ -4,6 +4,7 @@ import poemHelpers from './_lib/poems.js';
 import studentStore from './_lib/student-store.js';
 import challengeLoader from './_lib/challenge-loader.cjs';
 import schoolAuth from './_lib/school-auth.cjs';
+import studentLearning from './_lib/student-learning-reset.cjs';
 
 function resultTime(...values) {
   for (const value of values) {
@@ -124,10 +125,17 @@ export default async function handler(req, res) {
 
     // 按学生聚合（每个 section 只取最新一条）
     const studentMap = Object.create(null);
-    const rosterIds=schoolAuth.enabled()?new Set((await schoolAuth.listAccounts(req,{grade,cls})).map(person=>person.id)):null;
+    let rosterIds = null;
+    if (schoolAuth.enabled()) {
+      const [roster, cohort] = await Promise.all([
+        schoolAuth.listAccounts(req, {grade, cls}), studentLearning.current()
+      ]);
+      rosterIds = new Map(roster.filter(person => person.role === 'student' && person.isTest !== true)
+        .map(person => [studentLearning.storageId(person, cohort), person.id]));
+    }
     for (const row of rows) {
-      const sid = row.student_id;
-      if(rosterIds&&!rosterIds.has(sid))continue;
+      if (rosterIds && !rosterIds.has(row.student_id)) continue;
+      const sid = rosterIds ? rosterIds.get(row.student_id) : row.student_id;
       if (!studentMap[sid]) studentMap[sid] = { id: sid, name: row.name, sectionTimes: Object.create(null) };
       // 每个 section 只保留第一条（已按 updated_at DESC 排序）
       if (!studentMap[sid][row.section]) {
@@ -137,6 +145,7 @@ export default async function handler(req, res) {
       }
     }
     const students = Object.values(studentMap);
+    if (!students.length) return res.status(200).json({ grade, cls, poemId, hasData: false });
     // Vercel loads this handler as CommonJS. Native import keeps the shared
     // browser .mjs question bank compatible with that server runtime.
     const { CHALLENGE_SETS } = await challengeLoader.load();

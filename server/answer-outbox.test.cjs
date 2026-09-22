@@ -43,3 +43,24 @@ test('simultaneous tabs retain each others pending answers and exact acknowledge
  a.enqueue(f.input);await Promise.resolve();
  const b=createAnswerOutbox({...f.options,fetchImpl:async()=>{throw Error('offline');}});b.enqueue(f.input);await b.flush();finish();await a.flush();assert.equal(f.memory.size,1);assert.equal(b.status().pending,2);
 });
+
+test('student learning generations retain old answers and upload only their own namespace',async()=>{
+ const {createAnswerOutbox}=await ready,f=fixture(),epoch='a'.repeat(32),secondEpoch='b'.repeat(32),sent=[];
+ const old=createAnswerOutbox({...f.options,fetchImpl:async()=>{throw Error('offline');}});old.enqueue(f.input);await old.flush();old.stop();
+ const historical=new Map(f.memory);
+ const current=createAnswerOutbox({...f.options,learningEpoch:epoch,fetchImpl:async(_url,options)=>{sent.push(options);return{ok:true,status:200,json:async()=>({ok:true,researchRecorded:true})};}});
+ assert.equal(current.status().pending,0);current.enqueue(f.input);await current.flush();
+ assert.equal(sent.length,1);assert.equal(sent[0].headers['X-Learning-Epoch'],epoch);
+ for(const [key,value]of historical)assert.equal(f.memory.get(key),value);
+ const queued=createAnswerOutbox({...f.options,learningEpoch:secondEpoch,fetchImpl:async()=>{throw Error('offline');}});queued.enqueue(f.input);await queued.flush();queued.stop();
+ const rollback=createAnswerOutbox({...f.options,fetchImpl:async()=>{throw Error('offline');}});
+ assert.equal(rollback.status().pending,1);assert.equal(rollback.status().held,0);
+ assert.equal([...f.memory.keys()].filter(key=>key.includes(secondEpoch)).length,1);
+});
+
+test('learning reset stops answer retries without acknowledging or deleting historical data',async()=>{
+ const {createAnswerOutbox}=await ready,f=fixture(),statuses=[];let calls=0;
+ const queue=createAnswerOutbox({...f.options,learningEpoch:'a'.repeat(32),onStatus:s=>statuses.push(s),fetchImpl:async()=>{calls++;return{ok:false,status:409,json:async()=>({code:'LEARNING_RESET',error:'Reload learning'})};}});
+ queue.enqueue(f.input);await queue.flush();await queue.flush({force:true});
+ assert.equal(calls,1);assert(queue.status().stopped);assert.equal(queue.status().pending,1);assert.equal(queue.status().held,0);assert.equal(f.memory.size,1);assert(statuses.includes('learning_reset'));
+});

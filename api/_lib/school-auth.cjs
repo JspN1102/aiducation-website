@@ -83,7 +83,7 @@ function assertPoemAccess(actor, poemId) {
 
 function createBlobStore(client = blob) {
   const pathname = key => {
-    if (!/^(?:directory\/current|account\/[st]_[a-f0-9]{24}|learning\/t_[a-f0-9]{24}|session\/[a-f0-9]{64}|limit\/[a-f0-9]{64}|audit\/\d{8}\/[a-f0-9]{32})$/.test(key)) throw new Error('Invalid auth key');
+    if (!/^(?:directory\/current|account\/[st]_[a-f0-9]{24}|learning\/(?:t_[a-f0-9]{24}|student-cohort)|session\/[a-f0-9]{64}|limit\/[a-f0-9]{64}|audit\/\d{8}\/[a-f0-9]{32})$/.test(key)) throw new Error('Invalid auth key');
     return `${NAMESPACE}/${key}.json`;
   };
   return {
@@ -260,6 +260,7 @@ function createAuth({ env = process.env, store: suppliedStore, now = Date.now, r
       if (!found) fail(401, 'AUTH_REQUIRED');
       if (roles && !roles.includes(found.actor.role)) fail(403, 'ROLE_FORBIDDEN');
       if (csrf) { checkOrigin(req); if (!same(req.headers?.['x-csrf-token'], found.csrfToken)) fail(403, 'CSRF_REJECTED'); }
+      await require('./student-learning-reset.cjs').createStudentLearning({store,enabled:()=>true}).requireEpoch(req,found.actor);
       return found.actor;
     } catch (error) { if (error instanceof AuthError) throw error; fail(503, 'AUTH_UNAVAILABLE'); }
   }

@@ -5,11 +5,12 @@ export const RESEARCH_APP_VERSION = 'school-research-20260920b';
 export const RESEARCH_CONTENT_VERSION = 'edb-20260919b-challenge-20260919d';
 const MAX_QUEUE = 5000, BATCH_SIZE = 32, MAX_BODY_BYTES = 48000, MAX_BATCHES = 4;
 const OPTIONAL = ['attemptId','itemId','attemptNo','hint','retryCount','result','error','metrics','context','response','interaction'];
-export function createResearchTracker({actorId, csrfToken, storage,
+export function createResearchTracker({actorId, csrfToken, learningEpoch, storage,
   fetchImpl = globalThis.fetch, now = Date.now, monotonic = () => performance.now(),
   uuid = () => crypto.randomUUID(), visible = () => document.visibilityState !== 'hidden',
   onStatus = () => {}, enabled = true} = {}) {
-  const key = 'maanshan-research-v1:' + actorId;
+  const epoch = /^[a-f0-9]{32}$/.test(learningEpoch || '') ? learningEpoch : null;
+  const key = 'maanshan-research-v1:' + actorId + (epoch ? ':epoch:' + epoch : '');
   const eventPrefix = key + ':event:';
   if(storage===undefined){try{storage=globalThis.localStorage;}catch{storage=null;}}
   const sessionId = uuid();
@@ -84,8 +85,9 @@ export function createResearchTracker({actorId, csrfToken, storage,
         try{
           calls++;notify('syncing');
           const response=await fetchImpl('/api/research-events/',{method:'POST',credentials:'same-origin',keepalive,
-            headers:{'Content-Type':'application/json','X-CSRF-Token':csrfToken},body:JSON.stringify({schemaVersion:1,batchId,actorId,events}),signal:controller.signal});
-          const data=await response.json().catch(()=>null),code=data?.error||data?.code;
+            headers:{'Content-Type':'application/json','X-CSRF-Token':csrfToken,...(epoch?{'X-Learning-Epoch':epoch}:{})},body:JSON.stringify({schemaVersion:1,batchId,actorId,events}),signal:controller.signal});
+          const data=await response.json().catch(()=>null),code=data?.code||data?.error;
+          if(response.status===409&&code==='LEARNING_RESET'){stopped=true;notify('learning_reset');return;}
           if([401,403].includes(response.status)||(response.status===409&&!['EVENT_ID_CONFLICT','BATCH_ID_CONFLICT'].includes(code))){stopped=true;notify('session_changed');return;}
           if([400,413].includes(response.status)||(response.status===422&&['POEM_GRADE_FORBIDDEN','RESEARCH_EXCLUDED'].includes(code))||(response.status===409&&['EVENT_ID_CONFLICT','BATCH_ID_CONFLICT'].includes(code))){
             if(events.length>1){batchCeiling=ceiling=Math.max(1,Math.floor(events.length/2));continue;}

@@ -169,7 +169,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
      connectedAt=now();
      const gzipAllowed=TEACHER_ROUTES.has(name)&&acceptsGzip(req.headers?.['accept-encoding']);
      const headers={host:'mandarin.aiducation.asia','accept-encoding':gzipAllowed?'gzip':'identity','x-forwarded-proto':'https'};
-     for(const key of ['origin','cookie','content-type','x-csrf-token','sec-fetch-site','accept','user-agent','if-none-match','range'])if(typeof req.headers?.[key]==='string')headers[key]=req.headers[key];
+     for(const key of ['origin','cookie','content-type','x-csrf-token','x-learning-epoch','sec-fetch-site','accept','user-agent','if-none-match','range'])if(typeof req.headers?.[key]==='string')headers[key]=req.headers[key];
      // Vercel supplies this client address; never trust caller-provided X-Real-IP.
      const raw=String(req.headers?.['x-vercel-forwarded-for']||req.socket?.remoteAddress||'').split(',')[0].trim();
      if(net.isIP(raw))headers['x-real-ip']=raw;

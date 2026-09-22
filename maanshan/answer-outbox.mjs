@@ -1,7 +1,7 @@
 import {createPersistentQueue} from './persistent-queue.mjs?v=20260920b';
 // Only discrete curriculum answers are retried. Never repeat paid providers or
 // retain audio, handwriting coordinates, chat text or recognizer candidates.
-export function createAnswerOutbox({actorId,csrfToken,enabled=true,storage,fetchImpl=globalThis.fetch,
+export function createAnswerOutbox({actorId,csrfToken,learningEpoch,enabled=true,storage,fetchImpl=globalThis.fetch,
   uuid=()=>crypto.randomUUID(),now=Date.now,onStatus=()=>{}}={}){
   if(storage===undefined){try{storage=globalThis.localStorage;}catch{storage=null;}}
   enabled=Boolean(enabled&&actorId&&csrfToken);
@@ -9,7 +9,8 @@ export function createAnswerOutbox({actorId,csrfToken,enabled=true,storage,fetch
   const notify=value=>{lastStatus=value;try{onStatus(value,status());}catch{}};
   const status=()=>({...queue?.status(),enabled,stopped,retryAt,lastStatus});
   const isUuid=value=>typeof value==='string'&&/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(value);
-  queue=createPersistentQueue({prefix:'maanshan-answer-v1:'+actorId+':',storage,notify,limit:1000,
+  const epoch=/^[a-f0-9]{32}$/.test(learningEpoch||'')?learningEpoch:null;
+  queue=createPersistentQueue({prefix:'maanshan-answer-v1:'+(epoch?'epoch:'+epoch+':':'')+actorId+':',storage,notify,limit:1000,
     identify:item=>item.researchContext.requestId,
     valid:item=>item?.researchContext?.actorId===actorId&&isUuid(item.researchContext.requestId)&&Number.isFinite(Date.parse(item.researchContext.requestedAt))&&Number.isInteger(item.poemId)&&item.poemId>=1&&item.poemId<=6&&typeof item.itemId==='string'&&['correct','incorrect','skipped'].includes(item.status),
     compare:(a,b)=>a.researchContext.requestedAt.localeCompare(b.researchContext.requestedAt)});
@@ -38,8 +39,9 @@ export function createAnswerOutbox({actorId,csrfToken,enabled=true,storage,fetch
         try{
           notify('syncing');
           const response=await fetchImpl('/api/challenge-result/',{method:'POST',credentials:'same-origin',keepalive,
-            headers:{'Content-Type':'application/json','X-CSRF-Token':csrfToken},body:JSON.stringify(record),signal:controller.signal});
+            headers:{'Content-Type':'application/json','X-CSRF-Token':csrfToken,...(epoch?{'X-Learning-Epoch':epoch}:{})},body:JSON.stringify(record),signal:controller.signal});
           const result=await response.json().catch(()=>null),code=result?.code||result?.error;
+          if(response.status===409&&code==='LEARNING_RESET'){stopped=true;notify('learning_reset');return;}
           if(response.status===422&&['POEM_GRADE_FORBIDDEN','RESEARCH_EXCLUDED'].includes(code)){queue.acknowledge([record.researchContext.requestId]);continue;}
           if([401,403].includes(response.status)||(response.status===409&&code==='ACTOR_CHANGED')){stopped=true;notify('session_changed');return;}
           if([400,409,413].includes(response.status)){queue.hold(record.researchContext.requestId,'answer_rejected');continue;}

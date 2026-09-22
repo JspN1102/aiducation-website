@@ -490,17 +490,31 @@ test('a fresh directory failure during parallel preflight cannot issue a session
 
 test('one request reuses storage verification but always checks role and CSRF again', async () => {
   const f = fixture(), result = await login(f), original = f.store.get;
-  let reads = 0; f.store.get = async key => { reads++; return original(key); };
+  let reads = 0, cohortReads = 0; f.store.get = async key => { if(key==='learning/student-cohort')cohortReads++;else reads++; return original(key); };
   const req = request({ cookie: result.cookie, csrf: result.state.csrfToken });
   await f.service.requireActor(req, { roles: ['student'] });
   await f.service.requireActor(req, { roles: ['student'] });
   assert.equal(reads, 2);
+  assert.equal(cohortReads,2,'each write rechecks the cohort, including a provider outcome on the same incoming request');
   await assert.rejects(f.service.requireActor(req, { roles: ['teacher'] }), e => e.status === 403);
   req.headers['x-csrf-token'] = 'changed';
   await assert.rejects(f.service.requireActor(req), e => e.code === 'CSRF_REJECTED');
   assert.equal(reads, 2);
   await f.service.requireActor(request({ method: 'GET', cookie: result.cookie }));
   assert.equal(reads, 4);
+});
+
+test('a cohort reset rejects stale in-flight student writes without changing credentials or teacher access',async()=>{
+  const f=fixture(),result=await login(f),req=request({cookie:result.cookie,csrf:result.state.csrfToken});
+  await f.service.requireActor(req,{roles:['student']});
+  const epoch='e'.repeat(32);
+  await f.store.cas('learning/student-cohort',{version:1,role:'student',epoch,previousEpoch:null,resetAt:new Date().toISOString()});
+  await assert.rejects(f.service.requireActor(req,{roles:['student']}),error=>error.status===409&&error.code==='LEARNING_RESET');
+  req.headers['x-learning-epoch']=epoch;
+  assert.equal((await f.service.requireActor(req,{roles:['student']})).id,result.state.user.id);
+  assert.equal((await f.service.state(request({method:'GET',cookie:result.cookie}))).authenticated,true,'existing credentials and session remain valid');
+  const teacher=await login(f,{login:'test2',password:'test-password-2'});
+  assert.equal((await f.service.requireActor(request({cookie:teacher.cookie,csrf:teacher.state.csrfToken}),{roles:['teacher']})).role,'teacher');
 });
 
 test('delayed older reset cannot overwrite a newer account revocation generation', async () => {

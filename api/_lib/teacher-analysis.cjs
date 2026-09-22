@@ -55,7 +55,12 @@ function createBlobStore(client=blob,namespace=NS){if(![NS,NS+'-demo'].includes(
  }
 };}
 function createPostgresStore(db,prefix=''){if(!['','demo/'].includes(prefix))throw new Error('Invalid report prefix');return {
- async pending(at){return (await db.query("SELECT key,value,version::text FROM teacher_analysis_records WHERE key LIKE $1 AND value->>'status'='pending' AND value->>'background'='true' AND COALESCE((value->>'leaseUntil')::bigint,0)<=$2 AND COALESCE((value->>'retryAt')::bigint,0)<=$2 ORDER BY updated_at ASC LIMIT 1",[prefix+'report/%',at])).rows.map(row=>({...row,key:row.key.slice(prefix.length)}));},
+ async pending(at,learningEpoch){
+  const values=[prefix+'report/%',at];
+  const epochFilter=learningEpoch===undefined?'':" AND COALESCE(value->>'learningEpoch',value#>>'{report,dataset,learningEpoch}',value#>>'{draftReport,dataset,learningEpoch}',value#>>'{task,dataset,learningEpoch}','initial')=$3";
+  if(learningEpoch!==undefined)values.push(learningEpoch);
+  return (await db.query("SELECT key,value,version::text FROM teacher_analysis_records WHERE key LIKE $1 AND value->>'status'='pending' AND value->>'background'='true' AND COALESCE((value->>'leaseUntil')::bigint,0)<=$2 AND COALESCE((value->>'retryAt')::bigint,0)<=$2"+epochFilter+" ORDER BY updated_at ASC LIMIT 1",values)).rows.map(row=>({...row,key:row.key.slice(prefix.length)}));
+ },
  async get(key){if(!keyValid(key))fail('INVALID_REPORT_KEY',400,false);const row=(await db.query('SELECT value,version::text FROM teacher_analysis_records WHERE key=$1',[prefix+key])).rows[0];return row?{value:row.value,version:row.version}:null;},
  async cas(key,value,version){if(!keyValid(key))fail('INVALID_REPORT_KEY',400,false);const body=bytes(value);
   const result=version===null||version===undefined?await db.query('INSERT INTO teacher_analysis_records(key,value) VALUES($1,$2::jsonb) ON CONFLICT(key) DO NOTHING RETURNING version',[prefix+key,body]):await db.query('UPDATE teacher_analysis_records SET value=$2::jsonb,version=version+1,updated_at=clock_timestamp() WHERE key=$1 AND version=$3 RETURNING version',[prefix+key,body,version]);
@@ -287,7 +292,16 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
  const storage=()=>store||configuredStore(env,namespace);
  const load=loadDataset||((req,filters)=>require('./teacher-data.cjs').loadTeacherDataset(req,filters));
  const follow=buildFollowUp||(dataset=>require('./teacher-data.cjs').buildFollowUp(dataset));
- async function read(key){try{return await storage().get(key);}catch(error){if(error instanceof AnalysisError)throw error;fail('REPORT_STORAGE_UNAVAILABLE');}}
+ const recordEpoch=value=>value?.learningEpoch??value?.report?.dataset?.learningEpoch??value?.draftReport?.dataset?.learningEpoch??value?.task?.dataset?.learningEpoch??'initial';
+ const currentCohort=()=>namespace===NS?require('./student-learning-reset.cjs').current():Promise.resolve(null);
+ async function read(key){try{
+  const record=await storage().get(key);
+  if(namespace===NS&&key.startsWith('report/')){
+   const cohort=await currentCohort();
+   if(cohort&&record&&recordEpoch(record.value)!==cohort.epoch)fail('REPORT_ARCHIVED',409,false);
+  }
+  return record;
+ }catch(error){if(error instanceof AnalysisError)throw error;fail('REPORT_STORAGE_UNAVAILABLE');}}
  async function save(key,value,version){try{return await storage().cas(key,value,version);}catch(error){if(error instanceof AnalysisError)throw error;fail('REPORT_STORAGE_UNAVAILABLE');}}
  function status(record,reportId){
   if(record?.value?.status==='completed'){const report=record.value.report;if(report?.reportId!==reportId||report.schemaVersion!==1||hash(canonical(report))!==record.value.reportChecksum)fail('REPORT_STORAGE_UNAVAILABLE');return {ok:true,reportId,cached:true,report:publicReport(report)};}
@@ -313,12 +327,12 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
   const dataFingerprint=hash(canonical({snapshotId:dataset.snapshotId,payload})),reportId='ta_'+hash(canonical({dataFingerprint,model:config.model,provider:config.url,promptVersion:PROMPT_VERSION})),key=reportKey(reportId);
   let record=await read(key);
   if(record?.value?.status==='completed'||record?.value?.status==='pending'&&(record.value.background||record.value.leaseUntil>now()||record.value.stage==='revision_ready')||record?.value?.status==='failed'&&record.value.retryAt>now())return status(record,reportId);
-  const leaseId=uuid(),startedAt=new Date(now()).toISOString(),lease={schemaVersion:1,status:'pending',leaseId,leaseUntil:now()+LEASE_MS,startedAt};
+  const learningEpoch=dataset.learningEpoch||'initial',leaseId=uuid(),startedAt=new Date(now()).toISOString(),lease={schemaVersion:1,status:'pending',learningEpoch,leaseId,leaseUntil:now()+LEASE_MS,startedAt};
   // Prepare and bound the complete document snapshot before any paid request.
   bytes({dataset,payload});const followUp=follow(dataset);
   if(background&&supportsBackground()){
    const task={dataset,payload,followUp,dataFingerprint,actorId:actor.id,promptVersion:PROMPT_VERSION,model:config.model,provider:config.url};
-   if(!await save(key,{schemaVersion:1,status:'pending',stage:'queued',background:true,leaseUntil:0,task,taskChecksum:hash(canonical(task)),attempts:0},record?.version))return status(await read(key),reportId);
+   if(!await save(key,{schemaVersion:1,status:'pending',learningEpoch,stage:'queued',background:true,leaseUntil:0,task,taskChecksum:hash(canonical(task)),attempts:0},record?.version))return status(await read(key),reportId);
    wakeBackgroundWorker();return {ok:true,status:'generating',reportId,retryAfterSeconds:3};
   }
   if(!await save(key,lease,record?.version)){
@@ -339,12 +353,12 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
    const current=await read(key);if(current?.value?.leaseId!==leaseId)fail('ANALYSIS_RETRY_REQUIRED',409,true);
    const issues=require('./teacher-report-quality.cjs').inspectAnalysis(report.analysis,payload);
    if(issues.length){
-    if(!await save(key,{schemaVersion:1,status:'pending',stage:'revision_ready',leaseUntil:0,draftReport:report,draftChecksum:hash(canonical(report)),issues,...background?{background:true,attempts:0,revisions:0}:{}},current.version))fail('REPORT_STORAGE_UNAVAILABLE');
+    if(!await save(key,{schemaVersion:1,status:'pending',learningEpoch:dataset.learningEpoch||'initial',stage:'revision_ready',leaseUntil:0,draftReport:report,draftChecksum:hash(canonical(report)),issues,...background?{background:true,attempts:0,revisions:0}:{}},current.version))fail('REPORT_STORAGE_UNAVAILABLE');
     if(background)wakeBackgroundWorker();
     return {ok:true,status:'generating',reportId,...background?{}:{nextAction:'continue'},retryAfterSeconds:1};
    }
    report.qualityReview={passed:true,revisions:0};
-   if(!await save(key,{schemaVersion:1,status:'completed',report,reportChecksum:hash(canonical(report))},current.version))fail('REPORT_STORAGE_UNAVAILABLE');
+   if(!await save(key,{schemaVersion:1,status:'completed',learningEpoch:dataset.learningEpoch||'initial',report,reportChecksum:hash(canonical(report))},current.version))fail('REPORT_STORAGE_UNAVAILABLE');
    return {ok:true,reportId,cached:false,report:publicReport(report)};
   }catch(error){
    return recordFailure(error,key,leaseId,{background,retryStage:'queued'});
@@ -362,7 +376,7 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
    wakeBackgroundWorker();return {ok:true,status:'generating',reportId,retryAfterSeconds:3};
   }
   const leaseId=uuid();
-  if(!await save(key,{schemaVersion:1,status:'pending',stage:'revising',leaseId,leaseUntil:now()+LEASE_MS},prior.version))return status(await read(key),reportId);
+  if(!await save(key,{schemaVersion:1,status:'pending',learningEpoch:recordEpoch(prior.value),stage:'revising',leaseId,leaseUntil:now()+LEASE_MS},prior.version))return status(await read(key),reportId);
   return runRevision(report,prior.value.issues,config,reportId,leaseId,{signal});
  }
  async function runRevision(report,issuesToFix,config,reportId,leaseId,{signal,background=false,revisions=0}={}){
@@ -376,7 +390,7 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
    const current=await read(key);if(current?.value?.leaseId!==leaseId)fail('ANALYSIS_RETRY_REQUIRED',409,true);
    if(issues.length){
     if(background&&revisions<1){
-     if(!await save(key,{schemaVersion:1,status:'pending',stage:'revision_ready',leaseUntil:0,background:true,attempts:0,revisions:revisions+1,draftReport:report,draftChecksum:hash(canonical(report)),issues},current.version))fail('REPORT_STORAGE_UNAVAILABLE');
+     if(!await save(key,{schemaVersion:1,status:'pending',learningEpoch:report.dataset.learningEpoch||'initial',stage:'revision_ready',leaseUntil:0,background:true,attempts:0,revisions:revisions+1,draftReport:report,draftChecksum:hash(canonical(report)),issues},current.version))fail('REPORT_STORAGE_UNAVAILABLE');
      wakeBackgroundWorker();return {ok:true,status:'generating',reportId,retryAfterSeconds:3};
     }
     const error=new AnalysisError('AI_REPORT_QUALITY',502,true,30);error.qualityIssues=issues.map(({code,path})=>({code,path}));
@@ -385,7 +399,7 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
     error.qualityDiagnostics={analysis:generated.analysis,evidence:payload.evidence,issues};throw error;
    }
    report.qualityReview={passed:true,revisions:revisions+1};
-   if(!await save(key,{schemaVersion:1,status:'completed',report,reportChecksum:hash(canonical(report))},current.version))fail('REPORT_STORAGE_UNAVAILABLE');
+   if(!await save(key,{schemaVersion:1,status:'completed',learningEpoch:report.dataset.learningEpoch||'initial',report,reportChecksum:hash(canonical(report))},current.version))fail('REPORT_STORAGE_UNAVAILABLE');
    return {ok:true,reportId,cached:false,report:publicReport(report)};
   }catch(error){
    return recordFailure(error,key,leaseId,{background,retryStage:'revision_ready'});
@@ -395,7 +409,7 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
   const safe=error instanceof AnalysisError?error:new AnalysisError('REPORT_STORAGE_UNAVAILABLE'),current=await read(key).catch(()=>null);
   if(current?.value?.leaseId===leaseId){
    const retry=background&&['AI_TIMEOUT','AI_UNAVAILABLE','AI_RATE_LIMITED','REPORT_STORAGE_UNAVAILABLE'].includes(safe.code)&&safeCount(current.value.attempts)<2;
-   const value=retry?{...current.value,stage:retryStage,leaseId:null,leaseUntil:0,retryAt:now()+1000*(safe.retryAfterSeconds||10)}:{schemaVersion:1,status:'failed',promptVersion:PROMPT_VERSION,code:safe.code,httpStatus:safe.status,retryable:safe.retryable,retryAt:now()+1000*(safe.retryAfterSeconds||30),failedAt:new Date(now()).toISOString(),...(safe.qualityIssues?{qualityIssues:safe.qualityIssues}:{}),...(safe.qualityDiagnostics?{qualityDiagnostics:safe.qualityDiagnostics}:{})};
+   const value=retry?{...current.value,stage:retryStage,leaseId:null,leaseUntil:0,retryAt:now()+1000*(safe.retryAfterSeconds||10)}:{schemaVersion:1,status:'failed',learningEpoch:recordEpoch(current.value),promptVersion:PROMPT_VERSION,code:safe.code,httpStatus:safe.status,retryable:safe.retryable,retryAt:now()+1000*(safe.retryAfterSeconds||30),failedAt:new Date(now()).toISOString(),...(safe.qualityIssues?{qualityIssues:safe.qualityIssues}:{}),...(safe.qualityDiagnostics?{qualityDiagnostics:safe.qualityDiagnostics}:{})};
    await save(key,value,current.version).catch(()=>{});
    if(retry)return {ok:true,status:'generating',reportId:'ta_'+key.slice(7),retryAfterSeconds:3};
   }
@@ -409,7 +423,10 @@ function createService({loadDataset,buildFollowUp,store,env=process.env,fetchImp
  }
  async function claimPending(){
   if(!supportsBackground())return null;
-  const records=await storage().pending(now()),prior=records?.[0];if(!prior)return null;
+  const cohort=await currentCohort(),records=await storage().pending(now(),cohort?.epoch);
+  // Filter before claiming: historical jobs remain byte-identical and cannot
+  // consume a worker slot or issue a paid request for the new student cohort.
+  const prior=records?.find(record=>!cohort||recordEpoch(record.value)===cohort.epoch);if(!prior)return null;
   const {key}=prior,reportId='ta_'+key.slice(7),config=modelConfig(env),leaseId=uuid(),revision=['revision_ready','revising'].includes(prior.value.stage);
   if(!keyValid(key)||!key.startsWith('report/')||prior.value.status!=='pending'||!prior.value.background||prior.value.leaseUntil>now()||prior.value.retryAt>now())return null;
   const next={...prior.value,stage:revision?'revising':'generating',leaseId,leaseUntil:now()+BACKGROUND_LEASE_MS,retryAt:0,attempts:safeCount(prior.value.attempts)+1};

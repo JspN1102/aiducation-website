@@ -5,7 +5,7 @@ import {configurePronunciation, getPronunciationPractice} from './pronunciation.
 import {getWordAudioURL} from './word-audio.mjs?v=20260921complete1';
 import {getSpeechAudioURL} from './speech-audio.mjs?v=20260921-school9';
 import {getRecitationAudioURL,getRecitationSequence} from './recitation-audio.mjs?v=20260921-school9';
-import {schoolTtsURL} from './school-audio-url.mjs?v=20260921-network1';
+import {schoolTtsURL} from './school-audio-url.mjs?v=20260922-school18';
 import {mountShishi} from './shishi.mjs?v=20260922-school16';
 import {mountLibraryShishi} from './library-shishi.mjs?v=20260922-school16';
 import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school9';
@@ -14,13 +14,13 @@ import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school9';
 import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20260922-school13';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school13';
-import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20260922-school16';
+import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20260922-school18';
 import {createRecordingLibrary} from './recording-library.mjs?v=20260922-school15';
-import {requestJSON, requestChat} from './network.mjs?v=20260922-school16';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260922-school16';
-import {schoolSession} from './bootstrap.mjs?v=20260922-school17';
-import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school9';
-import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school9';
+import {requestJSON, requestChat} from './network.mjs?v=20260922-school18';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20260922-school18';
+import {schoolSession} from './bootstrap.mjs?v=20260922-school18';
+import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260922-school18';
+import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school18';
 import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
 import {getPoetSuggestions, matchPoetPreset} from './poet-presets.mjs?v=20260922-school13';
 
@@ -37,31 +37,35 @@ const accountSuffix = school.enabled ? ':' + school.user.id : '';
 const isTeacher = school.enabled && school.user?.role === 'teacher';
 const allGrades = school.enabled && (isTeacher || school.user?.learningScope === 'all-grades');
 const collectResearch = school.enabled && !isTeacher && school.user?.researchEnabled !== false;
-const STORE = 'maanshan-learning-v2' + accountSuffix;
+const learningEpoch = isTeacher ? (school.learningEpoch || 'initial') : school.enabled && /^[a-f0-9]{32}$/.test(school.learningEpoch || '') ? school.learningEpoch : null;
+// Student resets select a fresh namespace. Keep all old progress and unsent
+// queues on the device, rather than erasing or replaying them into this batch.
+const learningSuffix = accountSuffix + (!isTeacher && learningEpoch ? ':' + learningEpoch : '');
+const STORE = 'maanshan-learning-v2' + learningSuffix;
 const PROFILE = 'ms_student_info' + accountSuffix;
 const STUDENT_GRADE = 'ms_student_grade' + accountSuffix;
 const REPORT_VERSION = 'grade-v4-compact';
-const PENDING = 'ms_pending_sync' + accountSuffix;
+const PENDING = 'ms_pending_sync' + learningSuffix;
 const LEARNING_EPOCH = 'ms_learning_epoch' + accountSuffix;
-const learningEpoch = isTeacher ? (school.learningEpoch || 'initial') : null;
 let memoryStore = {};
 function readStorage(key, fallback) { if(Object.hasOwn(memoryStore,key))return memoryStore[key];try { const value=JSON.parse(localStorage.getItem(key)); return value ?? fallback; } catch { return fallback; } }
 function writeStorage(key, value) { try { localStorage.setItem(key,JSON.stringify(value)); delete memoryStore[key]; return true; } catch { memoryStore[key]=value; queueMicrotask(()=>toast('此裝置的儲存空間不足，請保留本頁。')); return false; } }
 if(isTeacher){
   if(readStorage(LEARNING_EPOCH,'initial')!==learningEpoch){writeStorage(STORE,{});writeStorage(PENDING,[]);}
   writeStorage(LEARNING_EPOCH,learningEpoch);
-}
+}else if(school.enabled)writeStorage(LEARNING_EPOCH,learningEpoch||'initial');
 let saved = readStorage(STORE, {});
 if (!saved || Array.isArray(saved) || typeof saved !== 'object') saved={};
 let profile=school.enabled ? {id:school.user.id,name:school.user.displayName,grade:school.user.grade,cls:school.user.cls} : readStorage(PROFILE,null);
 let researchState=null,answerState=null,recordingState={pending:0,held:0,volatile:0,syncing:false};
 function recordSyncStatus(kind,status,state){
   if(kind==='events')researchState=state;else answerState=state;
+  if(status==='learning_reset')reloadLearning();
   if(status==='session_changed')invalidateSchoolSession();
   renderRecordSyncStatus();
 }
-const research=createResearchTracker({enabled:collectResearch,actorId:school.user?.id,csrfToken:school.csrfToken,onStatus:(status,state)=>recordSyncStatus('events',status,state)});
-const answerOutbox=createAnswerOutbox({enabled:collectResearch,actorId:school.user?.id,csrfToken:school.csrfToken,onStatus:(status,state)=>recordSyncStatus('answers',status,state)});
+const research=createResearchTracker({enabled:collectResearch,actorId:school.user?.id,csrfToken:school.csrfToken,learningEpoch,onStatus:(status,state)=>recordSyncStatus('events',status,state)});
+const answerOutbox=createAnswerOutbox({enabled:collectResearch,actorId:school.user?.id,csrfToken:school.csrfToken,learningEpoch,onStatus:(status,state)=>recordSyncStatus('answers',status,state)});
 if(collectResearch)attachResearchLifecycle(research);
 if(school.enabled){
   const answerTimer=setInterval(()=>{void answerOutbox.flush();void sync.flush();},15000);
@@ -90,7 +94,7 @@ let ttsUnavailableUntil=0,ttsSuccessVersion=0;
 const requests=new Set();
 const recordings=createRecordingLibrary({enabled:school.enabled,actorId:school.user?.id,learningEpoch,fetch:schoolFetch,
   canUse:()=>!sessionLocked&&(!school.enabled||schoolState().user?.id===school.user.id),preparePayload:prepareAssessmentPayload,
-  onEpochChanged:()=>reloadTeacherLearning(),onStorageError:()=>toast('錄音正在同步，請稍後再關閉本頁。'),
+  onEpochChanged:()=>reloadLearning(),onStorageError:()=>toast('錄音正在同步，請稍後再關閉本頁。'),
   onChange:status=>{
     recordingState=status;
     renderRecordSyncStatus();
@@ -104,7 +108,7 @@ const sync=createSyncQueue({
   write:value=>{if(sessionLocked)return false;const stored=writeStorage(PENDING,value);renderRecordSyncStatus();return stored;},
   send:async item=>{
     const response=await schoolFetch('/api/maanshan-save/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item),signal:AbortSignal.timeout(12000)});
-    if(isTeacher&&response.status===409&&(await response.clone().json().catch(()=>null))?.code==='LEARNING_RESET')reloadTeacherLearning();
+    if(response.status===409&&(await response.clone().json().catch(()=>null))?.code==='LEARNING_RESET')reloadLearning();
     return response;
   }
 });
@@ -154,7 +158,7 @@ function queueSection(section,payload,p=poem) {
   if(sessionLocked)return;
   persist();
   if (!profile?.id || !profile.name || (!allGrades && (!profile.grade || !profile.cls))) return;
-  sync.add({syncId:crypto.randomUUID(),studentId:profile.id,name:profile.name,grade:allGrades?p.grade:Number(profile.grade),cls:allGrades?'T':profile.cls,poemId:p.id,section,payload,queuedAt:Date.now(),...(isTeacher?{learningEpoch}:{})});
+  sync.add({syncId:crypto.randomUUID(),studentId:profile.id,name:profile.name,grade:allGrades?p.grade:Number(profile.grade),cls:allGrades?'T':profile.cls,poemId:p.id,section,payload,queuedAt:Date.now(),...(learningEpoch?{learningEpoch}:{})});
   sync.flush();
 }
 function queueReading(p=poem,extra={}) {
@@ -1055,20 +1059,21 @@ function openAccount(){
   $('#account-title').textContent=school.user.displayName;
   $('#account-dialog').showModal();
 }
-function reloadTeacherLearning(epoch){
-  if(!isTeacher||sessionLocked)return;
+function reloadLearning(epoch){
+  if(!school.enabled||sessionLocked)return;
   sessionLocked=true;routeVersion++;activityLoad++;reportGeneration++;
-  recordings.stop();
+  recordings.stop();research.stop();answerOutbox.stop();
   stopMedia();cancelRecording();requests.forEach(controller=>controller.abort());
   poemSwipe?.destroy();sceneStage?.destroy();challenge?.destroy();lessonMap?.destroy();exploration?.destroy();shishi?.destroy();libraryShishi?.destroy();disposeAnimation?.();
-  if(epoch){saved={};writeStorage(STORE,{});writeStorage(PENDING,[]);writeStorage(LEARNING_EPOCH,epoch);}
+  if(isTeacher&&epoch){saved={};writeStorage(STORE,{});writeStorage(PENDING,[]);writeStorage(LEARNING_EPOCH,epoch);}
   history.replaceState(null,'',location.pathname+location.search);location.reload();
 }
+onSchoolLearningReset(()=>reloadLearning());
 if(isTeacher){
   teacherReset=mountTeacherLearningReset({accountDialog:$('#account-dialog'),fetch:schoolFetch,actorId:school.user.id,learningEpoch,
-    onOpen:()=>{stopMedia();cancelRecording();challenge?.pause();},onReset:reloadTeacherLearning,onEpochChanged:()=>reloadTeacherLearning()});
-  window.addEventListener('storage',event=>{if(event.key===LEARNING_EPOCH&&readStorage(LEARNING_EPOCH,'initial')!==learningEpoch)reloadTeacherLearning();});
+    onOpen:()=>{stopMedia();cancelRecording();challenge?.pause();},onReset:reloadLearning,onEpochChanged:()=>reloadLearning()});
 }
+if(school.enabled)window.addEventListener('storage',event=>{if(event.key===LEARNING_EPOCH&&readStorage(LEARNING_EPOCH,'initial')!==(learningEpoch||'initial'))reloadLearning();});
 $('#profile-open').addEventListener('click',openAccount);
 $('#account-logout').addEventListener('click',async event=>{
   const button=event.currentTarget;button.disabled=true;
@@ -1138,7 +1143,7 @@ async function init(){
         // Library cards do not depend on progress. Rebuilding the homepage here
         // would dismiss a welcome guide opened while hydration was pending.
         if(routeVersion===hydratedRoute&&!recordBusy&&poem&&view==='lesson')route();
-      }catch(error){if(error?.code==='LEARNING_RESET'){reloadTeacherLearning();return;}if(!sessionLocked)setTimeout(()=>{if(!sessionLocked)toast('本機進度已保留；網絡恢復後會繼續同步。');},500);}
+      }catch(error){if(error?.code==='LEARNING_RESET'){reloadLearning();return;}if(!sessionLocked)setTimeout(()=>{if(!sessionLocked)toast('本機進度已保留；網絡恢復後會繼續同步。');},500);}
     })();
   }catch{
     if(sessionLocked)return;

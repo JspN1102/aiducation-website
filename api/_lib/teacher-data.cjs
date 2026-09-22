@@ -52,14 +52,18 @@ function createDatasetLoader({requireTeacher=req=>auth.requireActor(req,{roles:[
   const cache=new Map();
   return async function loadTeacherDataset(req,input={}) {
     const actor=await requireTeacher(req);if(!actor||actor.role!=='teacher')throw new auth.AuthError(403,'ROLE_FORBIDDEN');
-    const filters=normalizeFilters(input),key=research.canonical([actor.id,filters]),prior=cache.get(key);
+    const filters=normalizeFilters(input),cohort=await require('./student-learning-reset.cjs').current(),key=research.canonical([actor.id,filters,cohort?.epoch||null]),prior=cache.get(key);
     if(prior&&prior.expires>now())return structuredClone(await prior.promise);
     if(prior)cache.delete(key);
     if(cache.size>=maxEntries){const finished=[...cache].find(([,entry])=>entry.done);if(finished)cache.delete(finished[0]);else throw new TeacherDataError('EXPORT_BUSY',429);}
     const entry={expires:Infinity,done:false};
     let timer;
     let settled=false;
-    const work=Promise.all([listAccounts(req),readRows(filters)]).then(([people,raw])=>buildDataset(raw,people,filters,now()));
+    const work=Promise.all([listAccounts(req),readRows(filters)]).then(([people,raw])=>{
+      const dataset=buildDataset(raw,people,filters,now());
+      if(cohort){dataset.learningEpoch=cohort.epoch;dataset.snapshotId=research.hash(research.canonical([dataset.snapshotId,cohort.epoch]));}
+      return dataset;
+    });
     void work.finally(()=>{settled=true;if(entry.timedOut&&cache.get(key)===entry)cache.delete(key);}).catch(()=>{});
     entry.promise=Promise.race([work,new Promise((_,reject)=>{timer=setTimeout(()=>{entry.timedOut=true;reject(new TeacherDataError('EXPORT_TIMEOUT',504));},timeoutMs);})]).then(dataset=>{entry.done=true;entry.expires=now()+ttlMs;return dataset;},error=>{if(settled&&cache.get(key)===entry)cache.delete(key);throw error;}).finally(()=>clearTimeout(timer));
     cache.set(key,entry);return structuredClone(await entry.promise);

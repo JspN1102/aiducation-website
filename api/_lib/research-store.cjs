@@ -629,6 +629,8 @@ function aggregateEvents(all,f,{generatedAt=new Date().toISOString(),source='pos
 }
 async function readPostgres(f,db=getPool()){
   const values=[f.from,f.to],where=["received_at >= ($1::date::timestamp AT TIME ZONE 'UTC')","received_at < (($2::date + 1)::timestamp AT TIME ZONE 'UTC')"];
+  const cohort=await require('./student-learning-reset.cjs').current();
+  if(cohort){values.push(cohort.resetAt);where.push('received_at >= $'+values.length+'::timestamptz');}
   for(const [key,column] of [['grade','grade'],['poemId','poem_id'],['cls','cls'],['activity','activity'],['student','research_id']])if(f[key]!==undefined){values.push(f[key]);where.push(column+'=$'+values.length);}
   const rows=(await db.query('SELECT record FROM research_events WHERE '+where.join(' AND ')+' ORDER BY received_at,event_id LIMIT '+(MAX_READ_EVENTS+1),values)).rows;
   if(rows.length>MAX_READ_EVENTS)fail('NARROW_DATE_OR_CLASS_FILTER',413);
@@ -658,7 +660,8 @@ async function readPublished(f,client=blob){
       chunks[index]=chunk.events;
     }
   }));
-  const rows=chunks.flat();
+  const cohort=await require('./student-learning-reset.cjs').current();
+  const rows=chunks.flat().filter(row=>!cohort||Date.parse(row.serverReceivedAt)>=Date.parse(cohort.resetAt));
   return {rows,lastImportedAt:manifest.generatedAt,manifest};
 }
 async function analytics(f,{includeStudentDetails=false}={}){
@@ -666,7 +669,7 @@ async function analytics(f,{includeStudentDetails=false}={}){
   if(mode()==='postgres')return aggregateEvents(await readPostgres(f),f,{includeStudentDetails});
   const manifest=await readPrivate(`${NS}/published/manifest.json`);
   if(manifest?.overview?.status==='filter_required'&&canonical(manifest.overview.filters)===canonical(f))fail('NARROW_DATE_OR_CLASS_FILTER',413);
-  if(!includeStudentDetails&&manifest?.snapshot&&canonical(manifest.snapshot.filters)===canonical(f)){
+  if(!includeStudentDetails&&!await require('./student-learning-reset.cjs').current()&&manifest?.snapshot&&canonical(manifest.snapshot.filters)===canonical(f)){
     const ref=manifest.snapshot;
     if(!new RegExp('^'+NS+'/published/analytics/[a-f0-9]{64}\\.json$').test(ref.path))fail('INVALID_MANIFEST',503);
     const snapshot=await readPrivate(ref.path,{maxBytes:8*1024*1024});

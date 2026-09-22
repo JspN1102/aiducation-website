@@ -52,6 +52,22 @@ test('account or CSRF failures stop uploads, preserving the original account que
   const tracker=createResearchTracker(f.options);await tracker.flush();await tracker.flush();assert.equal(calls,1);assert.equal(tracker.status().stopped,true);assert.equal(tracker.status().pending,1);assert(f.statuses.includes('session_changed'));
 });
 
+test('student learning generations retain old events and attach their own epoch to uploads',async()=>{
+ const {createResearchTracker}=await moduleReady,f=fixture({fetchImpl:async()=>{throw Error('offline');}}),old=createResearchTracker(f.options),epoch='a'.repeat(32);old.emit('item_presented',{itemId:'old-period'});await old.flush();old.stop();
+ const historical=new Map(f.memory),sent=[];
+ const next=createResearchTracker({...f.options,learningEpoch:epoch,fetchImpl:async(_url,options)=>{sent.push(options);const body=JSON.parse(options.body);return{ok:true,status:200,json:async()=>({accepted:true,batchId:body.batchId,eventIds:body.events.map(e=>e.eventId)})};}});
+ assert.equal(next.status().pending,1);await next.flush();
+ assert.equal(sent.length,1);assert.equal(sent[0].headers['X-Learning-Epoch'],epoch);assert(!sent[0].body.includes('old-period'));
+ for(const [key,value]of historical)assert.equal(f.memory.get(key),value);
+ const rollback=createResearchTracker(f.options);assert.equal(rollback.status().pending,3);assert.equal(rollback.status().held,0);rollback.stop();
+});
+
+test('learning reset stops research retries while preserving the stale generation queue',async()=>{
+ const {createResearchTracker}=await moduleReady;let calls=0;
+ const f=fixture({learningEpoch:'a'.repeat(32),fetchImpl:async()=>{calls++;return{ok:false,status:409,json:async()=>({code:'LEARNING_RESET',error:'Reload learning'})};}}),tracker=createResearchTracker(f.options);
+ await tracker.flush();await tracker.flush({force:true});assert.equal(calls,1);assert(tracker.status().stopped);assert.equal(tracker.status().pending,1);assert.equal(tracker.status().held,0);assert(f.statuses.includes('learning_reset'));assert.equal(f.memory.size,1);
+});
+
 test('old cross-grade queued events are discarded permanently while valid own-grade events continue',async()=>{
  const {createResearchTracker}=await moduleReady,sent=[];
  const f=fixture({fetchImpl:async(_url,options)=>{const body=JSON.parse(options.body);if(body.events.some(e=>e.poemId===6))return {ok:false,status:422,json:async()=>({error:'POEM_GRADE_FORBIDDEN',retryable:false})};sent.push(...body.events);return {ok:true,status:200,json:async()=>({accepted:true,batchId:body.batchId,eventIds:body.events.map(e=>e.eventId)})};}});

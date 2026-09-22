@@ -41,11 +41,11 @@ test('shared gateway only accepts allowed endpoints and preserves repeated busin
 test('encrypted channel destination is fixed, auth headers and query survive; same connection reused',async()=>{
  const received=[];const f=await fixture(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;received.push({url:req.url,headers:req.headers,body});res.setHeader('set-cookie',['__Host-maanshan_session=synthetic; Secure; HttpOnly; Path=/; SameSite=Lax']);res.setHeader('content-type','application/json');res.end('{"ok":true}');});
  try{
-  const headers={'Content-Type':'application/json',Origin:'https://mandarin.aiducation.asia',Cookie:'__Host-maanshan_session=synthetic','X-CSRF-Token':'synthetic-csrf','X-Real-IP':'203.0.113.99','X-Vercel-Forwarded-For':'192.0.2.8'};
+  const headers={'Content-Type':'application/json',Origin:'https://mandarin.aiducation.asia',Cookie:'__Host-maanshan_session=synthetic','X-CSRF-Token':'synthetic-csrf','X-Learning-Epoch':'cccccccccccccccccccccccccccccccc','X-Real-IP':'203.0.113.99','X-Vercel-Forwarded-For':'192.0.2.8'};
   const r=await f.call('/api/school-auth/?action=roster',{method:'POST',headers,body:JSON.stringify({action:'session'})});assert.equal(r.status,200);assert.deepEqual(await r.json(),{ok:true});assert.match(r.headers.get('set-cookie'),/HttpOnly/);
   await (await f.call()).text();assert.equal(f.clients.length,1);
   assert.equal(f.requests.length,1,'complete HTTP responses reuse one forwarded channel');
-  assert.equal(received[0].url,'/api/school-auth?action=roster');assert.equal(received[0].headers.origin,headers.Origin);assert.equal(received[0].headers.cookie,headers.Cookie);assert.equal(received[0].headers['x-csrf-token'],'synthetic-csrf');assert.equal(received[0].headers['x-real-ip'],'192.0.2.8');assert.equal(received[0].headers['accept-encoding'],'identity');assert.deepEqual(JSON.parse(received[0].body),{action:'session'});
+  assert.equal(received[0].url,'/api/school-auth?action=roster');assert.equal(received[0].headers.origin,headers.Origin);assert.equal(received[0].headers.cookie,headers.Cookie);assert.equal(received[0].headers['x-csrf-token'],'synthetic-csrf');assert.equal(received[0].headers['x-learning-epoch'],headers['X-Learning-Epoch']);assert.equal(received[0].headers['x-real-ip'],'192.0.2.8');assert.equal(received[0].headers['accept-encoding'],'identity');assert.deepEqual(JSON.parse(received[0].body),{action:'session'});
   assert(f.requests.every(r=>r.to==='127.0.0.1'&&r.target===3100));
   assert.equal(f.clients[0].config.hostHash,'sha256');assert.equal(f.clients[0].config.hostVerifier('b'.repeat(64)),false);
  }finally{await f.close();}

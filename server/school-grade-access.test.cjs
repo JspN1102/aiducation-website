@@ -1,10 +1,11 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),esbuild=require('esbuild');
 const auth=require('../api/_lib/school-auth.cjs'),studentStore=require('../api/_lib/student-store.js');
+const studentLearning=require('../api/_lib/student-learning-reset.cjs');
 const actor={id:'s_'+'a'.repeat(24),researchId:'r_'+'b'.repeat(24),role:'student',grade:2,cls:'A',displayName:'Synthetic student'};
 function response(){return {statusCode:200,headers:{},setHeader(k,v){this.headers[k]=v;},status(code){this.statusCode=code;return this;},json(body){this.body=body;return this;}};}
 function loadHandler(name,stubs){const file=path.join(__dirname,'../api',name),compiled=esbuild.transformSync(fs.readFileSync(file,'utf8'),{format:'cjs',loader:'js'}),m={exports:{}};new Function('require','module','exports',compiled.code)(id=>Object.hasOwn(stubs,id)?stubs[id]:require(id.startsWith('.')?path.resolve(path.dirname(file),id):id),m,m.exports);return m.exports.default;}
-function dependencies(person,extra={}){const learning={scope:async actor=>actor.role==='teacher'?{studentId:actor.id,learningEpoch:'initial'}:{studentId:actor.id},withState:async state=>state,reset:async()=>{throw new Error('not used')}};return {'./_lib/school-auth.cjs':{...auth,enabled:()=>true,requireActor:async()=>person,getStore:()=>({get:async()=>null}),...extra},'./_lib/teacher-learning-reset.cjs':learning,'./_lib/student-store.js':{...studentStore,mode:()=>false},'@vercel/blob':{get:async()=>assert.fail('unexpected Blob read')}};}
+function dependencies(person,extra={}){const learning={scope:async actor=>actor.role==='teacher'?{studentId:actor.id,learningEpoch:'initial'}:{studentId:actor.id},withState:async state=>state,reset:async()=>{throw new Error('not used')}};return {'./_lib/school-auth.cjs':{...auth,enabled:()=>true,requireActor:async()=>person,getStore:()=>({get:async()=>null}),...extra},'./_lib/teacher-learning-reset.cjs':learning,'./_lib/student-learning-reset.cjs':{...studentLearning,current:async()=>null},'./_lib/student-store.js':{...studentStore,mode:()=>false},'@vercel/blob':{get:async()=>assert.fail('unexpected Blob read')}};}
 
 test('save rejects cross-grade and self-granted capability; teacher/test progress remains owned by authenticated identity',async()=>{
  let writes=0,lastArgs;const db={isDbReady:()=>true,execute:async(_sql,args)=>{writes++;lastArgs=args;return {rowCount:1};}};
@@ -20,14 +21,43 @@ test('save rejects cross-grade and self-granted capability; teacher/test progres
 test('progress GET filters old other-grade history without deleting it and teachers/test accounts see only their own six poems',async()=>{
  const historical=Array.from({length:6},(_,i)=>({poem_id:i+1,section:'reading',payload:{testGrade:i+1}}));
  for(const learner of [actor,{...actor,isTest:true,learningScope:'all-grades'},{...actor,id:'t_'+'c'.repeat(24),role:'teacher',grade:null,cls:null}]){
-  let reads=0;
-  const pool={query:async(sql,args)=>{reads++;assert.match(sql,/^SELECT/);assert(!/DELETE|UPDATE/.test(sql));assert.equal(args[0],learner.id);assert.deepEqual(args[3],auth.allowedPoemIds(learner));return {rows:structuredClone(historical)};}};
+  const reads=[];
+  const pool={query:async(sql,args)=>{reads.push(sql);assert.match(sql,/^SELECT/);assert(!/DELETE|UPDATE/.test(sql));assert.equal(args[0],learner.id);assert.deepEqual(args[3],auth.allowedPoemIds(learner));return {rows:sql.includes(' AS challenge')?[]:structuredClone(historical)};}};
   const handler=loadHandler('school-auth.js',dependencies(learner,{getStore:()=>({pool})})),res=response();await handler({method:'GET',query:{action:'progress',grade:6,isTest:true}},res);
-  assert.equal(res.statusCode,200);assert.equal(res.body.userId,learner.id);assert.deepEqual(Object.keys(res.body.poems).map(Number),auth.allowedPoemIds(learner));assert.equal(reads,1);assert.equal(historical.length,6);
+  assert.equal(res.statusCode,200);assert.equal(res.body.userId,learner.id);assert.deepEqual(Object.keys(res.body.poems).map(Number),auth.allowedPoemIds(learner));assert.equal(reads.length,2);assert.match(reads[0],/DISTINCT ON \(poem_id,section\)/);assert.match(reads[1],/ AS challenge/);assert.equal(historical.length,6);
  }
 });
 
 test('legacy teacher data excludes private teacher and test-account progress by official student roster',async()=>{
  const teacher={id:'t_'+'c'.repeat(24),role:'teacher'},rows=[{student_id:actor.id,name:'Student',section:'reading',payload:{totalScore:70},updated_at:'2026-09-20'},{student_id:'s_'+'d'.repeat(24),name:'Test',section:'reading',payload:{totalScore:100},updated_at:'2026-09-20'},{student_id:teacher.id,name:'Teacher',section:'reading',payload:{totalScore:100},updated_at:'2026-09-20'}];
  const handler=loadHandler('maanshan-data.js',{...dependencies(teacher,{listAccounts:async()=>[actor]}),'./_lib/db.js':{isDbReady:()=>true,query:async()=>rows}}),res=response();await handler({method:'GET',query:{grade:'2',cls:'A',poemId:'2'}},res);assert.equal(res.statusCode,200);assert.equal(res.body.stats.total,1);assert.equal(res.body.stats.avg,70);assert.deepEqual(res.body.students.map(p=>p.id),[actor.id]);
+});
+
+test('legacy teacher data maps only current cohort storage IDs to roster identities with one cohort read',async()=>{
+ const teacher={id:'t_'+'c'.repeat(24),role:'teacher'},testActor={...actor,id:'s_'+'d'.repeat(24),isTest:true};
+ const other={...actor,id:'s_'+'e'.repeat(24)},cohort={epoch:'f'.repeat(32)},previous={epoch:'0'.repeat(32)};
+ const row=(studentId,score)=>({student_id:studentId,name:'Student',section:'reading',payload:{totalScore:score},updated_at:'2026-09-22'});
+ const rows=[row(actor.id,100),row(studentLearning.storageId(actor,previous),99),row(studentLearning.storageId(actor,cohort),72),
+  row(studentLearning.storageId(other,cohort),84),row(studentLearning.storageId(testActor,cohort),100),row(teacher.id,100)];
+ const original=structuredClone(rows);let cohortReads=0,rosterReads=0;
+ const handler=loadHandler('maanshan-data.js',{
+  ...dependencies(teacher,{listAccounts:async(_req,filters)=>{rosterReads++;assert.deepEqual(filters,{grade:2,cls:'A'});return[actor,other,testActor,teacher];}}),
+  './_lib/student-learning-reset.cjs':{...studentLearning,current:async()=>{cohortReads++;return cohort;},scope:async()=>assert.fail('per-student scope must not read cohort again')},
+  './_lib/db.js':{isDbReady:()=>true,query:async(sql)=>{assert.match(sql.postgres,/^SELECT/);assert.doesNotMatch(sql.postgres,/DELETE|UPDATE|TRUNCATE/);return rows;}}
+ });
+ const res=response();await handler({method:'GET',query:{grade:'2',cls:'A',poemId:'2'}},res);
+ assert.equal(res.statusCode,200);assert.equal(res.body.hasData,true);assert.equal(res.body.stats.total,2);assert.equal(res.body.stats.avg,78);
+ assert.deepEqual(res.body.students.map(p=>[p.id,p.score]),[[actor.id,72],[other.id,84]]);
+ assert.equal(cohortReads,1);assert.equal(rosterReads,1);assert.deepEqual(rows,original);
+});
+
+test('legacy teacher data is empty after reset when only archived student records exist',async()=>{
+ const teacher={id:'t_'+'c'.repeat(24),role:'teacher'},rows=[{student_id:actor.id,name:'Student',section:'reading',payload:{totalScore:90},updated_at:'2026-09-20'}];
+ const original=structuredClone(rows);
+ const handler=loadHandler('maanshan-data.js',{
+  ...dependencies(teacher,{listAccounts:async()=>[actor]}),
+  './_lib/student-learning-reset.cjs':{...studentLearning,current:async()=>({epoch:'f'.repeat(32)})},
+  './_lib/db.js':{isDbReady:()=>true,query:async()=>rows}
+ }),res=response();await handler({method:'GET',query:{grade:'2',cls:'A',poemId:'2'}},res);
+ assert.equal(res.statusCode,200);assert.equal(res.body.hasData,false);assert.equal(res.body.students,undefined);assert.deepEqual(rows,original);
 });

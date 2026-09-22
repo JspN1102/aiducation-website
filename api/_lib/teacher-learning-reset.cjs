@@ -7,6 +7,7 @@ const validEpoch = value => value === INITIAL || typeof value === 'string' && /^
 // A reset changes only this teacher's private practice namespace. Historical
 // generations remain intact; late writes to them cannot resurrect new progress.
 function createTeacherLearning({ service = auth, store = () => service.getStore(), now = Date.now } = {}) {
+  const studentLearning = require('./student-learning-reset.cjs').createStudentLearning({store,enabled:()=>typeof service.enabled==='function'?service.enabled():true});
   const fail = (status, code) => { throw new auth.AuthError(status, code); };
   function key(actor) {
     if (actor?.role !== 'teacher' || !/^t_[a-f0-9]{24}$/.test(actor.id)) fail(403, 'ROLE_FORBIDDEN');
@@ -23,16 +24,16 @@ function createTeacherLearning({ service = auth, store = () => service.getStore(
     return epoch === INITIAL ? actor.id : 'v_' + crypto.createHash('sha256').update(actor.id + ':' + epoch).digest('hex').slice(0, 28);
   }
   async function scope(actor, options = {}) {
-    if (actor.role !== 'teacher') return { studentId: actor.id };
+    if (actor.role !== 'teacher') return studentLearning.scope(actor, options);
     const row = await read(actor), learningEpoch = row?.value.epoch || INITIAL;
     // Old clients may save generation zero only. After reset they must reload.
     if (options.forSave && (options.learningEpoch ?? INITIAL) !== learningEpoch) fail(409, 'LEARNING_RESET');
     return { studentId: storageId(actor, learningEpoch), learningEpoch };
   }
   async function withState(state) {
-    if (!state.authenticated || state.user?.role !== 'teacher') return state;
+    if (!state.authenticated || !['teacher','student'].includes(state.user?.role)) return state;
     const { learningEpoch } = await scope(state.user);
-    return { ...state, learningEpoch };
+    return learningEpoch ? { ...state, learningEpoch } : state;
   }
   async function reset(req) {
     const actor = await service.requireActor(req, { roles: ['teacher'], csrf: true });
