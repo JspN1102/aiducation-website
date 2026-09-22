@@ -5,6 +5,7 @@ const https = require('https');
 const ttsAgent = new https.Agent({keepAlive: true, maxSockets: 4, maxFreeSockets: 2, timeout: 30000});
 const schoolAuth = require('./_lib/school-auth.cjs');
 const {cacheKey, hasAudio, readAudio, writeAudio, CACHE_VERSION} = require('./_lib/tts-cache');
+const cosAudio = require('./_lib/cos-audio.cjs');
 
 // Keep one request per phrase in each warm function instance. Persistent disk
 // (Guangzhou) or Blob handles later instances; this map prevents first taps from
@@ -194,6 +195,13 @@ function audioURL(key) {
   return signature && `/api/tts/?key=${key}&sig=${signature}`;
 }
 
+// With COS configured, publish the phrase so the signed URL redirects there.
+// The relay path stays the browser's fallback whenever publishing fails.
+async function urlDelivery(key, loadAudio) {
+  const remote = await cosAudio.publish(key, async () => (await loadAudio())?.audio);
+  return remote ? {url: audioURL(key), remote} : {url: audioURL(key)};
+}
+
 function serveAudio(req, res, audio, cacheStatus, cacheControl = 'private, no-store') {
   const range = (req.method === 'GET' || req.method === 'HEAD') && req.headers?.range;
   let start = 0, end = audio.length - 1;
@@ -232,6 +240,14 @@ async function serveCachedAudio(req, res) {
   const expected = audioSignature(key);
   if (!expected || !crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'))) {
     return res.status(404).json({error: 'Audio not found'});
+  }
+  const remote = await cosAudio.publishedURL(key);
+  if (remote) {
+    // The browser follows this to COS and downloads nothing through the relay.
+    res.setHeader('X-TTS-Cache', 'HIT-REMOTE');
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    res.setHeader('Location', remote);
+    return res.status(302).end();
   }
   const cached = await readAudio(key);
   if (cached.status !== 'hit') return res.status(404).json({error: 'Audio not found'});
@@ -319,7 +335,7 @@ module.exports = async function handler(req, res) {
   const cached = wantsURL ? await hasAudio(key) : await readAudio(key);
   if (cached.status === 'hit') {
     res.setHeader('X-TTS-Cache', 'HIT');res.setHeader('X-TTS-Voice', String(voice));
-    if (wantsURL) return res.status(200).json({url: audioURL(key)});
+    if (wantsURL) return res.status(200).json(await urlDelivery(key, () => readAudio(key)));
     return serveAudio(req, res, cached.audio, 'HIT');
   }
   let pending = inflight.get(key);
@@ -342,7 +358,7 @@ module.exports = async function handler(req, res) {
     res.setHeader('X-TTS-Voice', String(voice));res.setHeader('X-TTS-Cache-Version', CACHE_VERSION);
     if (wantsURL && result.stored) {
       res.setHeader('X-TTS-Cache', result.cacheHit ? 'HIT' : 'MISS-STORED');
-      return res.status(200).json({url: audioURL(key)});
+      return res.status(200).json(await urlDelivery(key, async () => result));
     }
     return serveAudio(req, res, result.audio, result.cacheHit ? 'HIT' : result.stored ? 'MISS-STORED' : 'MISS');
   } catch (error) {
