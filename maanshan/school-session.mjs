@@ -1,6 +1,6 @@
 import {TERMS_VERSION, termsConfirmationMarkup, bindTermsConfirmation} from './platform-terms.mjs?v=20260921-school9';
 import {mountShishiSprite} from './shishi-sprite.mjs?v=20260921-school9';
-import {readOnlyJSON} from './read-only-json.mjs?v=20260922-school12b';
+import {readOnlyJSON} from './read-only-json.mjs?v=20260922-school13c';
 // The cookie is HttpOnly. Only the current user's display profile and CSRF
 // token live in memory; passwords and bearer credentials are never persisted.
 let current = {enabled: false, authenticated: false, user: null, csrfToken: ''};
@@ -87,7 +87,7 @@ function validSignedIn(data) {
     typeof data.csrfToken === 'string' && !!data.csrfToken;
 }
 async function readSession() {
-  const {response, data} = await readOnlyJSON('/api/school-auth/', {credentials:'same-origin', cache:'no-store', timeout:15000});
+  const {response, data} = await readOnlyJSON('/api/school-auth/', {credentials:'same-origin', cache:'no-store', timeout:15000, firstAttemptTimeout:5000});
   // Only the intentionally separate legacy site may lack this new endpoint.
   const legacyHost=!requiresSchoolAuth&&(['aiducation.asia','www.aiducation.asia'].includes(location.hostname)||/^aiducation-website(?:-[a-z0-9-]+)?\.vercel\.app$/.test(location.hostname));
   if (response.status === 404 && legacyHost) return {enabled:false, authenticated:false, user:null, csrfToken:''};

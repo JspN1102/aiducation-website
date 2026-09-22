@@ -14,7 +14,7 @@ function pause(signal) {
 
 // Only reads may retry. One deadline includes the response body, the short
 // pause and both attempts; a slow request never receives a fresh time budget.
-export async function readOnlyJSON(url, {timeout = 15000, signal, fetchImpl = globalThis.fetch, ...options} = {}) {
+export async function readOnlyJSON(url, {timeout = 15000, firstAttemptTimeout = 0, signal, fetchImpl = globalThis.fetch, ...options} = {}) {
   if (options.method && options.method !== 'GET') throw new TypeError('READ_ONLY_GET_REQUIRED');
   const controller = new AbortController();
   const cancel = () => controller.abort(signal?.reason);
@@ -24,23 +24,40 @@ export async function readOnlyJSON(url, {timeout = 15000, signal, fetchImpl = gl
     for (let attempt = 0; attempt < 2; attempt++) {
       if (controller.signal.aborted) throw abortReason(controller.signal);
       const started = Date.now();
+      // Only explicitly opted-in reads interrupt a stalled first connection.
+      // The retry still uses the original total deadline, including its body.
+      const interruptFirst = !attempt && Number.isFinite(firstAttemptTimeout) && firstAttemptTimeout > 0 && firstAttemptTimeout < timeout;
+      const attemptController = interruptFirst ? new AbortController() : controller;
+      const cancelAttempt = () => attemptController.abort(abortReason(controller.signal));
+      let firstTimedOut = false;
+      let attemptTimer;
+      if (interruptFirst) {
+        controller.signal.addEventListener('abort', cancelAttempt, {once:true});
+        attemptTimer = setTimeout(() => {
+          firstTimedOut = true;
+          attemptController.abort(new DOMException('First read attempt timed out', 'TimeoutError'));
+        }, firstAttemptTimeout);
+      }
       let retry = false;
       try {
-        const response = await fetchImpl(url, {...options, method:'GET', signal:controller.signal});
-        if (controller.signal.aborted) throw abortReason(controller.signal);
+        const response = await fetchImpl(url, {...options, method:'GET', signal:attemptController.signal});
+        if (attemptController.signal.aborted) throw abortReason(attemptController.signal);
         if (!attempt && RETRY_STATUS.has(response.status)) {
           // The failed read has no useful body. Free its connection before retry.
           void response.body?.cancel().catch(() => {});
           retry = true;
         } else {
           const data = response.ok ? await response.json() : null;
-          if (controller.signal.aborted) throw abortReason(controller.signal);
+          if (attemptController.signal.aborted) throw abortReason(attemptController.signal);
           return {response, data};
         }
       } catch (error) {
         if (controller.signal.aborted) throw abortReason(controller.signal);
-        if (attempt || !(error instanceof TypeError) || Date.now() - started >= EARLY_FAILURE_MS) throw error;
+        if (attempt || (!firstTimedOut && (!(error instanceof TypeError) || Date.now() - started >= EARLY_FAILURE_MS))) throw error;
         retry = true;
+      } finally {
+        clearTimeout(attemptTimer);
+        if (interruptFirst) controller.signal.removeEventListener('abort', cancelAttempt);
       }
       if (retry) await pause(controller.signal);
     }
