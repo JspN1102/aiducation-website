@@ -114,7 +114,20 @@ function mergeItemRecords(set,...sources) {
 
 export function mergeChallengeRecords(incoming,previous,set) {
   if(!incoming||typeof incoming!=='object')return previous;
-  return {...incoming,itemRecords:mergeItemRecords(set,previous,incoming)};
+  const matching=previous?.attemptId===incoming.attemptId?previous:null;
+  return {...incoming,itemRecords:mergeItemRecords(set,previous,incoming),writingCorrections:validWritingCorrections(incoming,set,matching?.writingCorrections,incoming.writingCorrections)};
+}
+
+function validWritingCorrections(attempt,set,...sources) {
+  const result={},items=attemptItems(attempt,set);
+  for(const source of sources)for(const [index,item]of items.entries()){
+    const answer=attempt.answers?.[index],status=source?.[item.id]?.status;
+    if(item.type!=='dictation'||answer?.itemId!==item.id||!['incorrect','skipped'].includes(answer.status)||!['corrected','skipped'].includes(status))continue;
+    // A completed correction cannot be undone by a delayed pre-correction save
+    // or replaced by an earlier skip from another device in this same round.
+    if(result[item.id]?.status!=='corrected')result[item.id]={status};
+  }
+  return result;
 }
 
 export function practiceRecordSummary(saved,set,{which='latest'}={}) {
@@ -244,6 +257,7 @@ export function readAttempt(saved, set) {
     attempt.answers.push({...answer, correct: answer.status === 'correct'});
   }
   attempt.cursor = Math.max(0, Math.min(Number.isInteger(saved.cursor) ? saved.cursor : attempt.answers.length, attempt.answers.length, total));
+  attempt.writingCorrections=validWritingCorrections(attempt,set,saved.writingCorrections);
   if (attempt.answers.length !== total) delete attempt.completedAt;
   attempt.itemRecords=mergeItemRecords(set,attempt);
   return attempt;

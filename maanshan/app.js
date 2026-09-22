@@ -12,16 +12,17 @@ import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921
 import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school9';
 import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school9';
-import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20260921-school10';
-import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260921-school10';
+import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20260922-school13';
+import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school13';
 import {encodeRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage} from './recording-audio.mjs?v=20260922-school12b';
 import {createRecordingLibrary} from './recording-library.mjs?v=20260921-school9';
 import {requestJSON, requestChat} from './network.mjs?v=20260922-school12b';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, invalidateSchoolSession} from './school-session.mjs?v=20260922-school12b';
-import {schoolSession} from './bootstrap.mjs?v=20260922-school12b';
+import {schoolSession} from './bootstrap.mjs?v=20260922-school13';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260921-school9';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260921-school9';
 import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
+import {getPoetSuggestions, matchPoetPreset} from './poet-presets.mjs?v=20260922-school13';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -803,16 +804,17 @@ function preloadActivityModules(activity,slug) {
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
   preloadActivityModules('quiz',poem?.slug);
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260922-school12b'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260922-school13'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
     onChange:attempt=>{state(p).challenge=attempt;state(p).updatedAt=Date.now();persist();},
+    onCorrectionProgress:()=>queueReading(p),
     onComplete:summary=>{research.emit('activity_end',{poemId:p.id,activity:'challenge',attemptId:summary.attemptId,itemId:'p'+p.id+'.challenge',context:{mode:summary.mode||'standard'},result:{status:'completed',score:null,correct:null},metrics:{itemCount:summary.total}});if(!school.enabled)queueReading(p);},
     onResearch:(type,fields)=>research.emit(type,{...fields,poemId:p.id}),
     onAnswer:answer=>{if(!school.enabled)return;queueMicrotask(()=>queueReading(p));const audit={...research.context({...answer}),poemId:p.id};if(!answerOutbox.enqueue({poemId:p.id,itemId:answer.itemId,status:answer.status,response:answer.response||{},researchContext:audit}))research.emit('error',{poemId:p.id,activity:answer.activity,attemptId:answer.attemptId,itemId:answer.itemId,error:{code:'storage_unavailable',retryable:false}});},
     playAudio:playChallengeAudio,stopAudio:stopMedia,
-    recognize:(ink,context)=>api('/api/handwriting',{ink,poemId:poem.id,...(collectResearch?{researchContext:research.context(context)}:{})},16000)});
+    recognize:(ink,context)=>api('/api/handwriting',{ink,poemId:p.id,...(collectResearch?{researchContext:research.context(context)}:{})},16000)});
 }
 async function renderExploration(){
   preloadActivityModules('explore');
@@ -837,10 +839,7 @@ async function renderExploration(){
   });
 }
 function chatSuggestions(p=poem) {
-  if(Math.min(studentGrade(p),p.grade)<=3){
-    return ({1:['白鵝是甚麼顏色？','鵝怎樣叫？','陪我讀「鵝鵝鵝」吧。'],2:['汪倫是誰？','你坐甚麼離開？','朋友來送你，你開心嗎？'],3:['廬山高不高？','你在山裏看到甚麼？','山從兩邊看一樣嗎？']})[p.grade]||['你看到甚麼？','這首詩說甚麼？','陪我讀一句吧。'];
-  }
-  return [p.suggestions[0], '聊聊別的詩吧', '一起寫一首新詩吧'];
+  return getPoetSuggestions(p,Math.min(studentGrade(p),p.grade));
 }
 function chatGreeting(p=poem){
   if(Math.min(studentGrade(p),p.grade)<=3)return `你好，我是${p.author}。`+(({1:'你見過白鵝嗎？',2:'你喜歡和朋友一起玩嗎？',3:'你喜歡看山嗎？'})[p.grade]||'我們一起讀一句詩，好嗎？');
@@ -859,11 +858,11 @@ function showChatRetry(message) {
   const holder=$('#chat-error');if(!holder)return;
   holder.innerHTML=`<span>${esc(message)}</span><button type="button" class="button chat-retry" data-action="chat-retry">再送一次</button>`;
 }
-async function sendChat(text,retry=false) {
+async function sendChat(text,retry=false,presetId=null) {
   if(chatBusy)return;
   const p=poem,version=routeVersion,s=state(p);
   if(retry){if(s.chat.at(-1)?.role!=='user')return;}
-  else {if(!text?.trim())return;s.chat.push({role:'user',content:text.trim().slice(0,1000)});s.chat=s.chat.slice(-30);persist();}
+  else {if(!text?.trim())return;const content=text.trim().slice(0,1000),preset=matchPoetPreset(p.id,content);s.chat.push({role:'user',content,...(presetId&&preset?.id===presetId?{presetId,presetVersion:preset.version}:{})});s.chat=s.chat.slice(-30);persist();}
   const audit=research.context({activity:'chat',itemId:'p'+p.id+'.chat'}),requestedAt=performance.now();
   research.emit(retry?'retry':'attempt_started',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,metrics:{userCharacters:s.chat.at(-1)?.content?.length||0},...(retry?{retryCount:1}:{})});
   stopMedia();chatBusy=true;renderChat();$('#chat-send').disabled=true;
@@ -871,7 +870,8 @@ async function sendChat(text,retry=false) {
   const controller=new AbortController();requests.add(controller);let partial=null;
   const waiting=setTimeout(()=>{if(version===routeVersion&&chatBusy&&!partial)$('#chat-error').innerHTML='<span class="spinner"></span><span>還在等回覆，你的問題已保留。</span>';},8000);
   try {
-    const data=await requestChat({poemId:p.id,grade:Math.min(studentGrade(p),p.grade),messages:s.chat.slice(-10),...(collectResearch?{researchContext:audit}:{})},{signal:controller.signal,onDelta:(_delta,text)=>{
+    const last=s.chat.at(-1),selectedPreset=last?.presetId&&matchPoetPreset(p.id,last.content);
+    const data=await requestChat({poemId:p.id,grade:Math.min(studentGrade(p),p.grade),messages:s.chat.slice(-10).map(({role,content})=>({role,content})),...(selectedPreset&&selectedPreset.id===last.presetId&&selectedPreset.version===last.presetVersion?{presetId:last.presetId,presetVersion:last.presetVersion}:{}),...(collectResearch?{researchContext:audit}:{})},{signal:controller.signal,onDelta:(_delta,text)=>{
       if(version!==routeVersion||sessionLocked)return;
       const holder=$('#chat-messages'),atBottom=holder.scrollHeight-holder.scrollTop-holder.clientHeight<100;
       if(!partial){
@@ -963,7 +963,7 @@ document.addEventListener('click',event=>{
   if(action==='replay')replay(Number(value),button);
   if(action==='replay-all')replay(null,button);
   if(action==='report-generate')generateReport();
-  if(action==='chat-suggestion')sendChat(chatSuggestions()[Number(value)]);
+  if(action==='chat-suggestion'){const question=chatSuggestions()[Number(value)];sendChat(question,false,matchPoetPreset(poem.id,question)?.id);}
   if(action==='chat-retry')sendChat('',true);
   if(action==='chat-speak'){const message=state(poem).chat[Number(value)];if(message?.role==='assistant')speakPoetReply(message.content,button);}
 });

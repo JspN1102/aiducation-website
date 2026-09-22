@@ -28,7 +28,7 @@ async function referenceFor(req, operation) {
   }
   return {poem};
 }
-function outcomeFor(operation, payload, status, reference, elapsedMs) {
+function outcomeFor(operation, payload, status, reference, elapsedMs, providerMetadata) {
   const invalidPayload=!payload||typeof payload!=='object'||Array.isArray(payload);
   const error = status >= 400 || invalidPayload || !!payload?.error;
   const result = {status:error?'error':'completed',score:null,correct:null};
@@ -36,6 +36,9 @@ function outcomeFor(operation, payload, status, reference, elapsedMs) {
     model:operation==='reading'?'16k_zh':operation==='handwriting'?'zh-hant-t-i0-handwrit':'deepseek-flash',
     providerVersion:operation==='reading'?'eval1-coeff1.5-edb20260919':operation==='handwriting'?'upstream-unversioned':'poet-report-prompts-20260920',
     result, metrics:Number.isFinite(elapsedMs)&&elapsedMs>=0?{latencyMs:Math.min(600000,Math.round(elapsedMs))}:{}};
+  if(['chat','report'].includes(operation)&&providerMetadata){
+    for(const key of ['provider','model','providerVersion'])if(typeof providerMetadata[key]==='string'&&/^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,79}$/.test(providerMetadata[key]))value[key]=providerMetadata[key];
+  }
   if (error) { value.error={code:status===504?'timeout':status===429||status>=500?'provider_unavailable':'invalid_response',retryable:status>=500||status===429}; return value; }
   if (operation === 'reading') {
     result.score = score(payload.SuggestedScore) ?? score(payload.PronAccuracy);
@@ -86,7 +89,7 @@ function withSchoolLearning(operation, handler) {
       const status=operation==='chat'&&res.chatOutcomeStatus||res.statusCode||200;
       responseWork=(async()=>{
         let recorded=false;
-        try { recorded=(await research.recordVerifiedOutcome(req,outcomeFor(operation,body,status,reference,performance.now()-started))).recorded===true; }
+        try { recorded=(await research.recordVerifiedOutcome(req,outcomeFor(operation,body,status,reference,performance.now()-started,res.providerMetadata))).recorded===true; }
         catch { /* The learner still receives the provider result and an explicit collection flag. */ }
         return originalJSON({...body,researchRecorded:recorded});
       })();
@@ -96,7 +99,7 @@ function withSchoolLearning(operation, handler) {
     catch(error){
       if(responseWork){await responseWork;return res;}
       const timedOut=error?.name==='TimeoutError'||error?.code==='TIMEOUT';
-      const outcome=outcomeFor(operation,{},timedOut?504:500,reference,performance.now()-started);
+      const outcome=outcomeFor(operation,{},timedOut?504:500,reference,performance.now()-started,res.providerMetadata);
       if(error?.name==='AbortError'){outcome.result.status='cancelled';outcome.error={code:'aborted',retryable:true};}
       let recorded=false;try{recorded=(await research.recordVerifiedOutcome(req,outcome)).recorded===true;}catch{}
       if(res.chatStreaming&&!res.chatSignal?.aborted){res.status(timedOut?504:500);return originalJSON({error:timedOut?'GPT timeout':'Chat service unavailable',researchRecorded:recorded});}

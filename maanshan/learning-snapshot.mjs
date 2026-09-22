@@ -5,6 +5,15 @@ function attemptSnapshot(value,depth=0){
   if(!value||typeof value!=='object'||depth>1)return null;
   const result=Object.fromEntries(ATTEMPT_KEYS.filter(key=>value[key]!==undefined).map(key=>[key,structuredClone(value[key])]));
   result.answers=(value.answers||[]).slice(0,5).map(answer=>Object.fromEntries(['itemId','status','correct','submittedAt','response'].filter(key=>answer[key]!==undefined).map(key=>[key,structuredClone(answer[key])])));
+  // Correction unlocks travel with this round only; recognizer text and first
+  // assessment answers remain separate from this compact progress marker.
+  if(value.writingCorrections&&typeof value.writingCorrections==='object'){
+    result.writingCorrections={};
+    for(const answer of result.answers){
+      const id=answer.itemId,status=value.writingCorrections[id]?.status;
+      if(typeof id==='string'&&id.length<=128&&!['__proto__','constructor','prototype'].includes(id)&&answer.status!=='correct'&&['corrected','skipped'].includes(status))result.writingCorrections[id]={status};
+    }
+  }
   if(value.sourceAttempt&&depth===0)result.sourceAttempt=attemptSnapshot(value.sourceAttempt,1);
   if(value.itemRecords&&typeof value.itemRecords==='object'){
     result.itemRecords={};

@@ -7,9 +7,12 @@ export function mountChallengeWriting(holder, {
   target,
   recognize,
   onSubmit = () => {},
+  onCorrection = () => {},
+  onAdvanceStateChange = () => {},
   onResearch = () => {},
   isAnswered = () => false,
-  initialResult = null
+  initialResult = null,
+  initialCorrection = null
 } = {}) {
   if (!holder?.ownerDocument || !target || Array.from(target.char || '').length !== 1) {
     throw new TypeError('A holder and a single target character are required.');
@@ -24,14 +27,15 @@ export function mountChallengeWriting(holder, {
   const character = target.char, pinyin = typeof target.pinyin === 'string' ? target.pinyin : '';
   let destroyed = false, busy = false, pad = null, writer = null, animationRequest = null;
   let operation = 0, strokeOperation = 0, practising = false, result = null;
-  let eraseCount = 0, lastStrokeCount = 0, recognitionCount = 0;
+  let eraseCount = 0, lastStrokeCount = 0, recognitionCount = 0, correctionCount = 0, correction = null, advanceKey = '';
   const externalAnswered = () => typeof isAnswered === 'function' ? isAnswered() : Boolean(isAnswered);
-  const canSubmit = () => !destroyed && !busy && !result && !externalAnswered();
-  const auditWriting=(type,fields={})=>onResearch(type,{...fields,...(practising?{context:{mode:'free'}}:{})});
+  const canSubmit = () => !destroyed && !busy && (result ? practising : !externalAnswered());
+  const canContinue = () => !destroyed && !busy && Boolean(result && (result.correct || ['corrected','skipped'].includes(correction?.status)));
+  const auditWriting=(type,fields={})=>onResearch(type,{...fields,...(result?{context:{...fields.context,mode:'review'}}:{})});
   const locked = () => destroyed || busy || (Boolean(result) ? !practising : externalAnswered());
 
   const root = doc.createElement('section');
-  root.className = 'challenge-writing';
+  root.className = 'challenge-writing cw-expanded';
   // Deliberately generic before submission: no target in text, attributes,
   // hidden markup, a background image, or the accessibility tree.
   root.innerHTML = `<style>
@@ -57,6 +61,41 @@ export function mountChallengeWriting(holder, {
 .challenge-writing .cw-answer strong{font-family:'Noto Serif TC',serif;font-size:44px;line-height:1.2;font-weight:500}
 .challenge-writing .cw-answer span{font-size:18px;color:#557263}
 @media(max-height:700px){.challenge-writing .cw-board{width:min(100%,188px)}.challenge-writing.is-answered .cw-board{width:min(100%,158px)}}
+/* Keep the same usable square for an answer, its model and its correction.
+   These selectors override the old phone rules that shrank review to 105px. */
+.challenge-writing.cw-expanded{max-width:520px}
+.challenge-writing.cw-expanded .cw-board{width:min(100%,360px);max-width:none}
+.challenge-writing.cw-expanded .cw-correction-skip{min-height:44px;background:transparent;border-color:transparent;font-size:17px}
+.challenge-writing.cw-expanded .cw-status{overflow-wrap:anywhere}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-board{width:min(100%,360px);max-width:none;margin:6px auto 10px}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-controls{flex-wrap:wrap}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-status{font-size:18px!important;line-height:1.45}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-review-actions{gap:8px}
+@media(max-width:700px){
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-board{width:min(100%,340px);margin-block:6px 10px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-answer{margin:8px 0}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-controls{gap:8px}
+}
+@media(min-width:701px) and (orientation:portrait){
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-layout{grid-template-columns:1fr;gap:12px;max-width:600px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading{text-align:center;padding:0}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-board{width:min(100%,430px)}
+}
+@media(min-width:900px) and (orientation:landscape){
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-layout{grid-template-columns:minmax(160px,.48fr) minmax(0,1.52fr);gap:20px;max-width:1280px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded{display:grid;max-width:none;grid-template-columns:minmax(0,1fr) 160px;gap:8px 14px;align-items:center}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-board{grid-column:1;grid-row:1/4;width:min(100%,430px,max(270px,calc(100cqh - 68px)));margin:0;justify-self:center}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-controls{grid-column:2;grid-row:1;flex-direction:column}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-tools,.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-submit{display:flex;flex-direction:column;gap:8px}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-review{grid-column:2;grid-row:2/4}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-status{grid-column:1/-1;grid-row:4;margin:0;min-height:0}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-answer{flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+}
+@media(min-width:701px) and (max-height:560px) and (orientation:landscape){
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-layout{grid-template-columns:minmax(140px,.5fr) minmax(0,1.5fr);gap:14px;align-items:start}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded{max-width:none;grid-template-columns:minmax(0,1fr) 150px;align-items:start}
+ .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded .cw-board{width:min(100%,max(150px,calc(100cqh - 16px)));margin:0;align-self:start}
+}
 </style>
 <div class="cw-board">
   <canvas width="560" height="560" aria-label="手寫答題區"></canvas>
@@ -101,9 +140,28 @@ export function mountChallengeWriting(holder, {
     $('[data-cw="undo"]').disabled = locked() || !hasInk;
     $('[data-cw="clear"]').disabled = locked() || !hasInk;
     $('[data-cw="submit"]').disabled = !canSubmit() || !hasInk;
-    $('[data-cw="skip"]').disabled = !canSubmit();
+    $('[data-cw="submit"]').textContent = result ? '檢查這次練習' : '寫好了';
+    $('[data-cw="skip"]').disabled = Boolean(result) || !canSubmit();
+    $('[data-cw="skip"]').hidden = Boolean(result);
+    // Keep the controls in the same layout while a model turns into writing.
+    // Showing them on touch-down used to move the square under that finger.
+    $('.cw-submit').hidden = false;
+    $('.cw-tools').hidden = false;
+    const skipCorrectionButton = $('[data-cw="skip-correction"]');
+    if (skipCorrectionButton) {
+      skipCorrectionButton.hidden = result.correct || ['corrected','skipped'].includes(correction?.status);
+      skipCorrectionButton.disabled = busy;
+    }
+    root.querySelectorAll('[data-cw="strokes"],[data-cw="practise"]').forEach(button=>button.disabled=busy);
     canvas.setAttribute('aria-disabled', String(locked()));
     root.setAttribute('aria-busy', String(busy));
+    const reason = busy ? 'recognizing' : !result ? 'unanswered' : result.correct ? 'independent-correct' : correction?.status === 'corrected' ? 'corrected' : correction?.status === 'skipped' ? 'explicitly-skipped' : 'correction-required';
+    root.dataset.advance = canContinue() ? 'ready' : 'blocked';
+    const key = `${canContinue()}:${reason}`;
+    if (key !== advanceKey) {
+      advanceKey = key;
+      onAdvanceStateChange({canContinue:canContinue(),reason,correction:correction?{...correction,candidates:[...correction.candidates]}:null});
+    }
   }
 
   function stopAnimation() {
@@ -134,18 +192,19 @@ export function mountChallengeWriting(holder, {
     answer.append(glyph, pronunciation);
     const actions = doc.createElement('div');
     actions.className = 'cw-review-actions';
-    for (const [action, label] of [['strokes', '看筆順'], ['practise', '自己練一遍']]) {
+    for (const [action, label] of [['strokes', '看筆順'], ['practise', '自己練一遍'], ['skip-correction', '這次先跳過']]) {
       const button = doc.createElement('button');
       button.type = 'button';
       button.dataset.cw = action;
+      if (action === 'skip-correction') button.className = 'cw-correction-skip';
       button.textContent = label;
       actions.append(button);
     }
     review.append(answer, actions);
-    status.textContent = result.status === 'skipped' ? '看看字形，直接在田字格練一遍。'
+    status.textContent = result.status === 'skipped' ? '看看字形，再寫一次，寫好後按「檢查這次練習」。'
       : result.correct ? '寫對了！也可以看看這個字的筆順。'
-        : result.recognized ? `這次辨認為「${result.recognized}」。看看下面的字，一起學一學。`
-          : '看看下面的字，一起學一學。';
+        : result.recognized ? `這次辨認為「${result.recognized}」。看看正確的字，再寫一次。`
+          : '看看正確的字，再寫一次。';
     if (result.status === 'skipped') {
       showCharacter();
       animation.hidden = false;
@@ -186,15 +245,15 @@ export function mountChallengeWriting(holder, {
       stroke.map(point => point.t - start)
     ]);
     busy = true;
-    recognitionCount++;
-    auditWriting(recognitionCount>1?'retry':'attempt_started',{retryCount:recognitionCount-1,metrics:{strokeCount:strokes.length,eraseCount}});
+    const correcting = Boolean(result), count = correcting ? ++correctionCount : ++recognitionCount;
+    auditWriting(count>1?'retry':'attempt_started',{retryCount:count-1,metrics:{strokeCount:strokes.length,eraseCount}});
     const request = ++operation;
     status.textContent = '正在辨認你的字…';
     updateControls();
     let candidates;
     try {
-      const response = await recognize(ink);
-      if (destroyed || request !== operation || result || externalAnswered()) return;
+      const response = await recognize(ink,{mode:correcting?'review':'standard',phase:correcting?'correction':'assessment',attemptNo:count});
+      if (destroyed || request !== operation || (!correcting && (result || externalAnswered()))) return;
       candidates = Array.isArray(response?.candidates) ? response.candidates
         .filter(value => typeof value === 'string' && value.trim())
         .map(normalize) : [];
@@ -205,7 +264,7 @@ export function mountChallengeWriting(holder, {
       }
     } catch {
       auditWriting('error',{error:{code:'provider_unavailable',retryable:true},metrics:{strokeCount:strokes.length}});
-      if (!destroyed && request === operation && !result && !externalAnswered()) {
+      if (!destroyed && request === operation && (correcting || !result && !externalAnswered())) {
         status.textContent = '辨認暫時未能連線，這次不計對錯。筆跡已保留，請再試一次。';
       }
       return;
@@ -218,11 +277,19 @@ export function mountChallengeWriting(holder, {
     // Never accept a target merely appearing elsewhere in a word or among
     // lower-ranked alternatives. Explicit accepted single-character variants
     // are allowed, using the service's first non-empty candidate only.
-    commit(accepted.has(candidates[0]) ? 'correct' : 'incorrect', candidates.slice(0, 10));
+    if (correcting) {
+      const correct = accepted.has(candidates[0]);
+      const latest = Object.freeze({status:correct?'corrected':'incorrect',correct,independent:false,mode:'review',recognized:candidates[0],candidates:Object.freeze(candidates.slice(0,10)),attemptNo:count,submittedAt:Date.now()});
+      if (correct || !['corrected','skipped'].includes(correction?.status)) correction = latest;
+      status.textContent = correct ? '這次寫對了！可以繼續下一題。' : `這次辨認為「${candidates[0]}」。再看一看，清空後重新寫。`;
+      auditWriting('feedback_shown',{attemptNo:count,result:{status:correct?'correct':'incorrect',correct,score:null}});
+      onCorrection({...latest,candidates:[...latest.candidates]});
+      updateControls();
+    } else commit(accepted.has(candidates[0]) ? 'correct' : 'incorrect', candidates.slice(0, 10));
   }
 
   async function showStrokes() {
-    if (destroyed || !result) return;
+    if (destroyed || busy || !result) return;
     practising = false;
     stopAnimation();
     const request = strokeOperation;
@@ -269,15 +336,26 @@ export function mountChallengeWriting(holder, {
     }
   }
 
-  function practise() {
-    if (destroyed || !result) return;
+  function practise({reveal=true}={}) {
+    if (destroyed || busy || !result) return;
     stopAnimation();
     practising = true;
     pad.clear();
     $('.cw-tools').hidden = false;
-    status.textContent = '照着正確的字，在田字格練一遍。';
+    status.textContent = '在田字格再寫一次，寫好後按「檢查這次練習」。';
     updateControls();
-    revealBoard();
+    if (reveal) revealBoard();
+  }
+
+  function skipCorrection() {
+    if (destroyed || busy || !result || canContinue()) return;
+    correction = Object.freeze({status:'skipped',correct:false,independent:false,mode:'review',recognized:null,candidates:Object.freeze([]),attemptNo:correctionCount,submittedAt:Date.now()});
+    practising = false;
+    stopAnimation();
+    status.textContent = '這次先跳過，原來的聽寫紀錄已保留。';
+    auditWriting('feedback_shown',{result:{status:'skipped',correct:null,score:null}});
+    onCorrection({...correction,candidates:[]});
+    updateControls();
   }
 
   // A shown answer or completed stroke demonstration is still a writing
@@ -285,7 +363,7 @@ export function mountChallengeWriting(holder, {
   // Capture runs before the pad sees that same gesture, so its first stroke
   // is not swallowed by the character/animation overlay.
   const beginPractice = event => {
-    if (!destroyed && result && !practising && !busy && event.button !== 2) practise();
+    if (!destroyed && result && !practising && !busy && event.button !== 2) practise({reveal:false});
   };
   for (const type of ['pointerdown','touchstart']) $('.cw-board').addEventListener(type,beginPractice,{capture:true,signal:controller.signal,passive:true});
   pad = createHandwritingPad(canvas, {isLocked: locked, onChange: strokes=>{if(strokes.length>lastStrokeCount)auditWriting('item_interacted',{interaction:'stroke_finished',metrics:{strokeCount:strokes.length,eraseCount}});lastStrokeCount=strokes.length;updateControls();}, interactionSurface: $('.cw-board')});
@@ -298,6 +376,7 @@ export function mountChallengeWriting(holder, {
     if (button.dataset.cw === 'skip' && canSubmit()) { pad.finish(); commit('skipped'); }
     if (button.dataset.cw === 'strokes') {auditWriting('hint_used',{hint:{kind:'stroke',count:1}});void showStrokes();}
     if (button.dataset.cw === 'practise') practise();
+    if (button.dataset.cw === 'skip-correction') skipCorrection();
   }, {signal: controller.signal});
   doc.addEventListener('visibilitychange', () => {
     if (doc.visibilityState === 'hidden') {
@@ -319,13 +398,21 @@ export function mountChallengeWriting(holder, {
       recognized: typeof initialResult.recognized === 'string' ? initialResult.recognized : null,
       candidates: Object.freeze(Array.isArray(initialResult.candidates) ? [...initialResult.candidates] : [])
     });
+    if (initialCorrection && ['corrected','skipped'].includes(initialCorrection.status)) {
+      correction = Object.freeze({status:initialCorrection.status,correct:initialCorrection.status==='corrected',independent:false,mode:'review',recognized:typeof initialCorrection.recognized==='string'?initialCorrection.recognized:null,candidates:Object.freeze([]),attemptNo:Number.isSafeInteger(initialCorrection.attemptNo)&&initialCorrection.attemptNo>=0?initialCorrection.attemptNo:0,submittedAt:initialCorrection.submittedAt});
+      correctionCount = correction.attemptNo;
+    }
     showResult();
+    if (correction) status.textContent = correction.status === 'corrected' ? '這個字已訂正，可以繼續下一題。' : '這次先跳過，原來的聽寫紀錄已保留。';
   } else {
     updateControls();
   }
 
   return {
     getResult() { return result ? {...result, candidates: [...result.candidates]} : null; },
+    getCorrection() { return correction ? {...correction,candidates:[...correction.candidates]} : null; },
+    canContinue,
+    skipCorrection,
     destroy() {
       if (destroyed) return;
       destroyed = true;

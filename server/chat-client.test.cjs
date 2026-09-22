@@ -1,5 +1,10 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
+// network.mjs imports the browser session module, which derives its scope
+// from location at module evaluation. All transport remains synthetic here.
+const previousLocation=globalThis.location;
+test.before(()=>{globalThis.location=new URL('https://chat-client.invalid/maanshan/');});
+test.after(()=>{if(previousLocation===undefined)delete globalThis.location;else globalThis.location=previousLocation;});
 const frame=value=>'data: '+JSON.stringify(value)+'\n\n';
 test('chat displays split UTF8 deltas before the final verified answer',async()=>{
  const {requestChat}=await import('../maanshan/network.mjs');let controller;const shown=[];

@@ -28,10 +28,13 @@ function poemContext(poem) {
   ].join('\n');
 }
 
-function requestPoemText(res, messages, { field, temperature, timeoutMs, maxTokens, stream=false }) {
+function requestPoemText(res, messages, { field, temperature, timeoutMs, maxTokens, stream=false,providerVersion='poet-report-prompts-20260920' }) {
   const apiKey = process.env.GPT_API_KEY;
   const apiBase = process.env.GPT_API_BASE;
   if (!apiKey || !apiBase) return res.status(500).json({ error: 'GPT API not configured' });
+  const model=String(process.env.POET_CHAT_MODEL||'deepseek-flash').trim();
+  if(!/^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,79}$/.test(model))return res.status(500).json({error:'Invalid GPT model configuration'});
+  res.providerMetadata={provider:'deepseek',model,providerVersion};
 
   let url;
   try {
@@ -44,7 +47,7 @@ function requestPoemText(res, messages, { field, temperature, timeoutMs, maxToke
   const path = basePath.endsWith('/chat/completions') ? basePath : basePath.endsWith('/v1') ? basePath + '/chat/completions' : basePath + '/v1/chat/completions';
   const streaming=stream===true&&typeof res.chatDelta==='function';
   const payload = JSON.stringify({
-    model: 'deepseek-flash',
+    model,
     messages,
     temperature,
     max_tokens: maxTokens,
@@ -110,6 +113,7 @@ function requestPoemText(res, messages, { field, temperature, timeoutMs, maxToke
           if(settled||done)return;
           if(data.trim()==='[DONE]'){done=true;return;}
           const event=JSON.parse(data);if(event.error)throw new Error('Provider error');
+          if(typeof event.model==='string'&&/^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,79}$/.test(event.model))res.providerMetadata.model=event.model;
           const choice=event.choices?.find(item=>item.index===0)||event.choices?.[0];if(!choice)return;
           if(choice.finish_reason!=null)finishReason=choice.finish_reason;
           if(choice.delta?.content==null)return;
@@ -139,6 +143,7 @@ function requestPoemText(res, messages, { field, temperature, timeoutMs, maxToke
               finish(200,{[field]:reply.trim()});return;
             }
             const data = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+            if(typeof data.model==='string'&&/^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,79}$/.test(data.model))res.providerMetadata.model=data.model;
             const content = data.choices?.[0]?.message?.content;
             const text = typeof content === 'string' ? content.replace(/\*/g, '').trim() : '';
             if (!text || data.error || streaming&&data.choices?.[0]?.finish_reason==='length') throw new Error();
