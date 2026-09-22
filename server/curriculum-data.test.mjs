@@ -1,5 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {CHALLENGE_SETS} from '../maanshan/challenge-data.mjs';
+
+test('every dictation target has usable local demonstration and tracing geometry',()=>{
+  const targets=new Set(Object.values(CHALLENGE_SETS).flatMap(set=>(set.bank||set.items).filter(item=>item.type==='dictation').map(item=>item.target.char)));
+  assert(targets.has('峯'),'preserve the curriculum upper/lower character');
+  for(const char of targets){
+    const file=new URL(`../maanshan/vendor/hanzi-data/${char.codePointAt(0).toString(16)}.json`,import.meta.url);
+    assert(fs.existsSync(file),`Missing local stroke data for ${char}`);
+    const data=JSON.parse(fs.readFileSync(file,'utf8'));
+    assert(Array.isArray(data.strokes)&&data.strokes.length>0,`${char} stroke paths`);
+    assert.equal(data.strokes.length,data.medians.length,`${char} paths/medians match`);
+    for(const [index,stroke]of data.strokes.entries()){
+      assert(/^M /.test(stroke)&&/ Z$/.test(stroke),`${char} stroke ${index} has a closed shape`);
+      assert(data.medians[index].length>=2,`${char} stroke ${index} can be traced`);
+      assert(data.medians[index].every(point=>point.length===2&&point.every(value=>Number.isFinite(value)&&value>=-200&&value<=1200)),`${char} stroke ${index} has finite points within the glyph coordinate space`);
+    }
+  }
+});
 
 test('boot and app share both public curriculum downloads', async () => {
   const original = globalThis.fetch, calls = [];

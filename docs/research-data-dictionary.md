@@ -25,6 +25,16 @@ IDs, enumerations, option orders and typed placements have size/range limits.
 Raw responses and provider error messages must never be forwarded into events.
 Poem word scores contain only known textbook characters and numeric scores.
 
+The guided handwriting flow uses `context.flow: "trace-dictation-v1"` with
+`traceCompleted` and `dictationCompleted`. Local stroke tracing records process
+completion, never a grade. Its independent recognition attempts remain in raw
+history, including an initial error and later correction. Teacher summaries
+and exports show this combined activity as complete only after both stages
+finish; they exclude it from correctness and score means. A trace-only receipt
+has status `completed` with `dictationCompleted: false`, while an actual skip
+retains status `skipped`. This addition does not reinterpret legacy independent
+dictation scores or sound-choice questions.
+
 ## Teacher contract
 
 `GET /api/teacher-analytics` requires a teacher session. Query fields are

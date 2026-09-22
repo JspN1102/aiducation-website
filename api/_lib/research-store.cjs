@@ -131,7 +131,7 @@ const DATA_DICTIONARY = {
     {
       "name": "event.context",
       "type": "optional typed object",
-      "meaning": "mode standard/advanced/review/free; itemType sound/dictation/microgame/match/sequence/scene-builder; position 0..200; total 1..200; optionOrder up to 30 stable tokens; sourceAttemptId UUID."
+      "meaning": "mode standard/advanced/review/free; itemType sound/dictation/microgame/match/sequence/scene-builder; position 0..200; total 1..200; optionOrder up to 30 stable tokens; sourceAttemptId UUID. Dictation may additionally carry flow trace-dictation-v1 and booleans traceCompleted/dictationCompleted; the latter cannot be true before tracing is complete."
     },
     {
       "name": "event.response",
@@ -202,7 +202,8 @@ const DATA_DICTIONARY = {
     "readingWords": "Top-level readingWords only: at most 50 groups from selected server_verified reading outcomes, excluding review/free and invalid records. Group by poemId/itemId/contentVersion/index/char. Each entry has count, meanScore and below60Count; zero is measured, absent word scores do not add samples. readingWordSummary declares cutoff=60, totalGroups, returnedGroups, truncated and character_scores_not_phoneme_diagnosis. Lower scores are practice observations, not a consonant/tone disorder diagnosis. The limit affects teacher display only; raw exports are complete.",
     "readingCharacterAnalysis": "Complete curriculum lines per selected grade (all six poems separately when unfiltered). Verified character scores only, aligned to poemId, line index and Han-character index; punctuation is retained for display but excluded from SOE indices. Keep one selected recording per learner and line across content versions, then average measured character scores without rounding before the 80-point colour threshold. Missing scores remain null and are never inferred from sentence totals. Includes pinyin, counts, and all positions, including repeated characters. Student-only practiceSummary retains the latest actual completed or scored result per item across attempts, plus its best result; opening, skipping or unmeasured retries do not erase a prior score. Original attempts remain in event history. Game completion is never a correct exam answer and browser-only results are unmeasured.",
     "capacity": "Default analytics exceeding 100000 events or the snapshot byte bound does not block publication of the manifest and class/date chunks. The manifest marks overview.status=filter_required, and the API returns NARROW_DATE_OR_CLASS_FILTER with a class/date suggestion. This is not an empty dataset.",
-    "answerReplay": "Challenge answer requests may carry stable requestId/requestedAt in researchContext. A server-derived event ID is scoped to the authenticated actor, and original clientAt and event contents remain stable across retries. The immutable request intent alone is not a receipt: successful current-hour outbox persistence determines the transport serverReceivedAt. Same-hour retries reuse that durable receipt; later-hour retries create new transport objects so a passed synchronization watermark cannot miss recovery. PostgreSQL deduplicates these objects and retains the first imported event row and receive date. Provider remeasurement is not replayed. Future timestamps over five minutes are rejected; old offline requests remain accepted and can be quality-flagged."
+    "answerReplay": "Challenge answer requests may carry stable requestId/requestedAt in researchContext. A server-derived event ID is scoped to the authenticated actor, and original clientAt and event contents remain stable across retries. The immutable request intent alone is not a receipt: successful current-hour outbox persistence determines the transport serverReceivedAt. Same-hour retries reuse that durable receipt; later-hour retries create new transport objects so a passed synchronization watermark cannot miss recovery. PostgreSQL deduplicates these objects and retains the first imported event row and receive date. Provider remeasurement is not replayed. Future timestamps over five minutes are rejected; old offline requests remain accepted and can be quality-flagged.",
+    "guidedWriting": "For flow trace-dictation-v1, local stroke tracing is a learning process and never receives a correctness score. Raw independent handwriting provider outcomes, including first errors and later corrections, remain in history but are excluded from teacher score aggregates. Teacher practiceSummary uses the latest confirmed challenge acknowledgement: traceCompleted and dictationCompleted must both be true for completed; otherwise incomplete. Trace-only acknowledgements use status completed with dictationCompleted false, never skipped. Actual independent skipping stays skipped. Guided completion does not increase correctN or measuredN, and an unfinished later attempt cannot erase a prior completed item. Legacy independent dictation and sound-choice assessment semantics are unchanged."
   },
   "export": {
     "default": "Pseudonymous JSONL or CSV; teacher authentication required.",
@@ -295,13 +296,16 @@ function validateEvent(event, server = false) {
     }
   }
   if(event.context!==undefined){
-    object(event.context,['mode','itemType','position','total','optionOrder','sourceAttemptId']);
+    object(event.context,['mode','itemType','position','total','optionOrder','sourceAttemptId','flow','traceCompleted','dictationCompleted']);
     if(event.context.mode!==undefined&&!['standard','advanced','review','free'].includes(event.context.mode))fail();
     if(event.context.itemType!==undefined&&!['sound','dictation','microgame','match','sequence','scene-builder'].includes(event.context.itemType))fail();
     if(event.context.position!==undefined)integer(event.context.position,0,200);
     if(event.context.total!==undefined)integer(event.context.total,1,200);
     if(event.context.optionOrder!==undefined){if(!Array.isArray(event.context.optionOrder)||event.context.optionOrder.length>30)fail();event.context.optionOrder.forEach(v=>token(v,80));}
     if(event.context.sourceAttemptId!==undefined)uuid(event.context.sourceAttemptId);
+    if(event.context.flow!==undefined&&(event.context.flow!=='trace-dictation-v1'||event.context.itemType!=='dictation'))fail();
+    for(const key of ['traceCompleted','dictationCompleted'])if(event.context[key]!==undefined&&(event.context.flow!=='trace-dictation-v1'||typeof event.context[key]!=='boolean'))fail();
+    if(event.context.dictationCompleted===true&&event.context.traceCompleted!==true)fail();
   }
   if(event.response!==undefined){
     object(event.response,['choiceId','placements']);
@@ -508,6 +512,9 @@ const ITEM_CONSTRUCTS={dictation:'writing.dictation',sound:'sound.recognition',m
 function constructFor(row){
   const e=row.event;
   if(!e.result)return null;
+  // The guided trace-and-write sequence is a completion activity. Its raw
+  // recognition outcomes remain in history without becoming teacher grades.
+  if(e.context?.itemType==='dictation'&&e.context?.flow==='trace-dictation-v1')return null;
   if(row.source==='server_verified'){
     if(e.type!=='provider_result')return null;
     if(e.operation==='reading')return 'reading.pronunciation';

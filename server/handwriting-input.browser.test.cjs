@@ -2,6 +2,7 @@
 // Local production modules and browser input; no accounts or paid providers.
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const {installLearningFixture,finishLearning}=require('./dictation-test-learning.cjs');
 const repo=path.resolve(__dirname,'..'),checks=[],errors=[];
 const cssSource=fs.readFileSync(path.join(repo,'scripts/build-maanshan-css.cjs'),'utf8');
 const css=[...cssSource.match(/const files = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map(m=>fs.readFileSync(path.join(repo,'maanshan',m[1]),'utf8')).join('\n');
@@ -10,6 +11,7 @@ const mime={'.mjs':'text/javascript','.js':'text/javascript','.json':'applicatio
 const server=http.createServer((req,res)=>{const u=new URL(req.url,'http://localhost');if(u.pathname==='/fixture'){res.setHeader('Content-Type','text/html; charset=utf-8');return res.end(fixture);}if(u.pathname==='/fixture.css'){res.setHeader('Content-Type','text/css');return res.end(css);}const file=path.resolve(repo,'.'+decodeURIComponent(u.pathname));if(!file.startsWith(repo+path.sep)||!mime[path.extname(file)])return res.writeHead(404).end();fs.readFile(file,(error,data)=>{if(error)return res.writeHead(404).end();res.setHeader('Content-Type',mime[path.extname(file)]);res.end(data);});});
 const check=(name,pass)=>{assert(pass,name);checks.push(name);};
 async function mount(page,{audio='failed'}={}){
+ await installLearningFixture(page);
  await page.evaluate(async({audio})=>{
   window.challenge?.destroy();scrollTo(0,0);window.submissions=[];window.inkRequests=[];window.audit=[];window.audioMode=audio;
   const {mountChallenge}=await import('/maanshan/challenge.mjs'),{CHALLENGE_SETS}=await import('/maanshan/challenge-data.mjs'),{newAttempt,attemptItems,recordAnswer}=await import('/maanshan/challenge-state.mjs');
@@ -17,7 +19,7 @@ async function mount(page,{audio='failed'}={}){
   for(let i=0;i<index;i++)recordAnswer(saved,set,i,{status:'skipped'});saved.cursor=index;window.target=items[index].target;
   window.challenge=mountChallenge(document.querySelector('#view'),{poem,saved,onChange:state=>{window.saved=state;},onAnswer:value=>submissions.push(value),onResearch:(type,event)=>audit.push({type,...event}),playAudio:()=>audioMode==='pending'?new Promise(resolve=>window.resolveAudio=resolve):Promise.resolve(audioMode==='success'),recognize:async ink=>{inkRequests.push(ink);return{candidates:[target.char]};}});
  },{audio});
- await page.locator('.cw-board').waitFor();await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ await page.locator('.cw-board').waitFor();await finishLearning(page);await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
 }
 async function draw(page,context,engine,{pointer='touch',cancel=false}={}){
  const canvas=page.locator('.cw-board canvas');await canvas.scrollIntoViewIfNeeded();const b=await canvas.boundingBox(),x=b.x+b.width*.25,y=b.y+b.height*.35;
@@ -91,26 +93,25 @@ async function audit(engine,width,height){
    await mount(page);const before=await renderedInk(page,label+'-'+name+'-before');
    await drawMixedEvents(page,options);const visible=await renderedInk(page,label+'-'+name+'-drawn');
    check(label+' '+name+' visible stroke spans board (not just an invisible dot)',visible.pixels-before.pixels>80&&visible.inkWidth>visible.width*.3&&visible.inkHeight>visible.height*.12);
-   await page.locator('[data-cw=submit]').tap();await page.locator('.cw-review:not([hidden])').waitFor();
+   await page.locator('[data-cw=submit]').tap();await page.waitForFunction(()=>document.querySelector('.challenge-writing')?.classList.contains('is-answered'));
    const ink=await page.evaluate(()=>inkRequests);
    check(label+' '+name+' recognition gets one complete stroke without duplicated pressure samples',ink.length===1&&ink[0].length===1&&ink[0][0][0].length>=9&&ink[0][0][0].length<=11);
   }
   await mount(page);
-  const initial=await draw(page,context,engine);check(label+' can write before playing audio',initial.ink);check(label+' touch writing keeps page still',initial.scrollStable);check(label+' local ink enables submit',await page.locator('[data-cw=submit]').isEnabled());
+  const initial=await draw(page,context,engine);check(label+' after initial tracing can write without playing word audio',initial.ink);check(label+' touch writing keeps page still',initial.scrollStable);check(label+' local ink enables submit',await page.locator('[data-cw=submit]').isEnabled());
   await page.locator('[data-ch=listen]').tap();await page.waitForFunction(()=>!document.querySelector('[data-ch=listen]').hasAttribute('aria-busy'));await page.locator('[data-cw=clear]').tap();
   check(label+' failed audio leaves writing available',(await draw(page,context,engine)).ink);
   await page.evaluate(()=>window.audioMode='pending');await page.locator('[data-ch=listen]').tap();await page.locator('[data-cw=clear]').tap();
   check(label+' slow audio leaves writing available',(await draw(page,context,engine,{pointer:'mouse'})).ink);
-  await page.locator('[data-cw=submit]').tap();await page.locator('.cw-review:not([hidden])').waitFor();
+  await page.locator('[data-cw=submit]').tap();await page.waitForFunction(()=>document.querySelector('.challenge-writing')?.classList.contains('is-answered'));
   const submission=await page.evaluate(()=>({calls:inkRequests.length,strokes:inkRequests[0],answers:saved.answers.length}));check(label+' recognition receives real multi-point ink',submission.calls===1&&submission.strokes[0][0].length>=3);check(label+' one assessed answer is saved',submission.answers===3);
   await page.locator('[data-cw=strokes]').tap();await page.locator('.cw-animation svg path').first().waitFor({state:'attached'});await page.locator('.cw-animation svg').waitFor();
   const bounds=await page.locator('.cw-animation svg').evaluate(el=>{const a=el.getBoundingClientRect(),b=el.closest('.cw-board').getBoundingClientRect();return a.left>=b.left&&a.top>=b.top&&a.right<=b.right+1&&a.bottom<=b.bottom+1;});check(label+' stroke demonstration fits board',bounds);
-  await page.locator('[data-cw=practise]').tap();check(label+' practise removes animation overlay',await page.locator('.cw-animation').isHidden());check(label+' practise accepts finger input',(await draw(page,context,engine)).ink);check(label+' free practice leaves original assessment',await page.evaluate(()=>inkRequests.length===1&&saved.answers.length===3));
+  await page.locator('[data-cw=practise]').waitFor({state:'visible'});await page.locator('[data-cw=practise]').tap();check(label+' practise hides its button and animation overlay',await page.locator('[data-cw=practise]').isHidden()&&await page.locator('.cw-animation').isHidden());check(label+' practise accepts finger input',(await draw(page,context,engine)).ink);check(label+' free practice leaves original assessment',await page.evaluate(()=>inkRequests.length===1&&saved.answers.length===3));
   await page.locator('[data-cw=clear]').tap();check(label+' pen event path draws',(await draw(page,context,engine,{pointer:'pen'})).ink);
   await page.locator('[data-cw=clear]').tap();const touchOnly=await draw(page,context,engine,{pointer:'touch-only'});check(label+' Touch Events without Pointer Events draw',touchOnly.ink);check(label+' Touch Events keep page still',touchOnly.scrollStable);
   await page.setViewportSize({width:height,height:width});await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await page.locator('[data-cw=clear]').tap();check(label+' after orientation change mouse writes',(await draw(page,context,engine,{pointer:'mouse'})).ink);
-  await mount(page);await page.locator('[data-ch=skip]').tap();check(label+' learn-first board accepts the very first touch without another button',(await draw(page,context,engine)).ink);check(label+' learning skip stays ungraded',await page.evaluate(()=>saved.answers.at(-1).status==='skipped'&&inkRequests.length===0));
-  await page.locator('[data-cw=clear]').click();await page.locator('[data-cw=strokes]').click();await page.locator('.cw-animation svg').waitFor();check(label+' drawing directly on demonstration begins free practice',(await draw(page,context,engine)).ink);check(label+' touching demonstration removes blocking overlay',await page.locator('.cw-animation').isHidden());
+  await mount(page);await page.locator('[data-cw=skip]').tap();check(label+' explicit skip stays ungraded and preserves the skip correction',await page.evaluate(()=>saved.answers.at(-1).status==='skipped'&&saved.writingCorrections&&Object.values(saved.writingCorrections).some(value=>value.status==='skipped')&&inkRequests.length===0));
  }catch(error){const evidence=process.env.HANDWRITING_EVIDENCE_DIR;if(evidence){fs.mkdirSync(evidence,{recursive:true});await page.screenshot({path:path.join(evidence,label.replace(/ /g,'-')+'-failure.png'),fullPage:true});}throw error;}finally{await context.close();await browser.close();}
 }
 (async()=>{await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));for(const engine of ['chromium','webkit'])for(const [width,height]of [[390,844],[768,1024],[1180,820]])await audit(engine,width,height);check('no browser errors',errors.length===0);console.log(JSON.stringify({ok:true,checks,errors},null,2));})().catch(e=>{console.error(e);console.log(JSON.stringify({ok:false,checks,errors},null,2));process.exitCode=1;}).finally(()=>server.close());

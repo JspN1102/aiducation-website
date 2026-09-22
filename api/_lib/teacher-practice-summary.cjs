@@ -3,7 +3,9 @@ const {poems}=require('../../maanshan/poems.json');
 const TYPES=new Set(['sound','dictation','microgame','match','sequence','scene-builder']);
 function buildPracticeSummary(rows){
  const rounds=new Map();
- for(const row of rows){const event=row.event;if(!event.attemptId||!['challenge','writing'].includes(event.activity)||!TYPES.has(event.context?.itemType)||['review','free'].includes(event.context?.mode))continue;
+ for(const row of rows){const event=row.event;
+  const guidedReceipt=row.source==='server_verified'&&event.type==='provider_result'&&event.operation==='challenge'&&event.context?.itemType==='dictation'&&event.context?.flow==='trace-dictation-v1';
+  if(!event.attemptId||!['challenge','writing'].includes(event.activity)||!TYPES.has(event.context?.itemType)||event.context?.mode==='free'||event.context?.mode==='review'&&!guidedReceipt)continue;
   const key=JSON.stringify([row.researchId,event.poemId,event.attemptId]);let round=rounds.get(key);
   if(!round)rounds.set(key,round={poemId:event.poemId,attemptId:event.attemptId,firstAt:row.serverReceivedAt,lastAt:row.serverReceivedAt,rows:[]});
   round.firstAt=round.firstAt<row.serverReceivedAt?round.firstAt:row.serverReceivedAt;round.lastAt=round.lastAt>row.serverReceivedAt?round.lastAt:row.serverReceivedAt;round.rows.push(row);
@@ -16,22 +18,31 @@ function buildPracticeSummary(rows){
  for(const row of round.rows.sort((a,b)=>a.serverReceivedAt.localeCompare(b.serverReceivedAt))){const event=row.event;if(!event.itemId||event.itemId==='challenge-summary')continue;
   if(Number.isInteger(event.context.total)&&event.context.total>0&&event.context.total<=30)total=Math.max(total||0,event.context.total);
   let item=items.get(event.itemId);if(!item)items.set(event.itemId,item={itemId:event.itemId,type:event.context.itemType,position:null,ack:null,assessment:null,submitted:false,observed:false});
+  if(item.type==='dictation'&&event.context.flow==='trace-dictation-v1')item.flow='trace-dictation-v1';
   if(Number.isInteger(event.context.position)&&event.context.position>=1&&event.context.position<=30)item.position=event.context.position;
   if(row.source==='client'&&event.type==='answer_submitted'){item.submitted=true;item.submittedAt=row.serverReceivedAt;}
   if(row.source!=='server_verified'||event.type!=='provider_result')continue;
   item.observed=true;item.observedAt=row.serverReceivedAt;
-  if(event.operation==='challenge'){item.ack=event.result;item.ackAt=row.serverReceivedAt;}
+  if(event.operation==='challenge'){
+   // A late trace-only receipt from another tab cannot undo this round's
+   // already completed dictation. Keep raw receipts in history unchanged.
+   const completed=item.flow==='trace-dictation-v1'&&item.ackContext?.traceCompleted===true&&item.ackContext?.dictationCompleted===true&&item.ack?.status==='completed';
+   if(!completed){item.ack=event.result;item.ackAt=row.serverReceivedAt;item.ackContext=event.context;}
+  }
   if(item.type!=='microgame'&&['challenge','handwriting'].includes(event.operation)&&typeof event.result?.correct==='boolean'){item.assessment=event.result;item.assessmentAt=row.serverReceivedAt;}
  }
  for(const item of items.values()){
-  const status=item.ack?.status==='skipped'?'skipped':item.assessment?item.assessment.correct?'correct':'incorrect':item.type==='microgame'&&['completed','correct','incorrect'].includes(item.ack?.status)?'completed':item.observed||item.submitted?'unmeasured':'unanswered';
+  const guided=item.flow==='trace-dictation-v1';
+  const traceCompleted=guided&&item.ackContext?.traceCompleted===true;
+  const dictationCompleted=traceCompleted&&item.ackContext?.dictationCompleted===true&&item.ack?.status==='completed';
+  const status=guided?(dictationCompleted?'completed':'incomplete'):item.ack?.status==='skipped'?'skipped':item.assessment?item.assessment.correct?'correct':'incorrect':item.type==='microgame'&&['completed','correct','incorrect'].includes(item.ack?.status)?'completed':item.observed||item.submitted?'unmeasured':'unanswered';
   const key=JSON.stringify([round.poemId,item.itemId]),prior=records.get(key);
   // Merely displaying a new round, or leaving a repeated prompt unanswered,
   // is not a new outcome for that item. A skip retains an earlier answer too.
-  if(['unanswered','skipped','unmeasured'].includes(status)&&prior&&['correct','incorrect','completed'].includes(prior.status))continue;
+  if(['unanswered','skipped','unmeasured','incomplete'].includes(status)&&prior&&['correct','incorrect','completed'].includes(prior.status))continue;
   if(status==='unanswered'&&prior)continue;
   const updatedAt=['correct','incorrect'].includes(status)?item.assessmentAt:status==='completed'||status==='skipped'?item.ackAt:item.observedAt||item.submittedAt||round.lastAt;
-  const result={itemId:item.itemId,type:item.type,position:item.position,status,score:item.assessment&&status!=='skipped'?item.assessment.score:null,attemptId:round.attemptId,poemId:round.poemId,updatedAt};
+  const result={itemId:item.itemId,type:item.type,position:item.position,status,score:!guided&&item.assessment&&status!=='skipped'?item.assessment.score:null,attemptId:round.attemptId,poemId:round.poemId,updatedAt,...(guided?{flow:item.flow,traceCompleted,dictationCompleted}:{})};
   const rank=value=>value?.status==='correct'?3:value?.status==='completed'?2:value?.status==='incorrect'?1:0;
   const previousBest=prior?.best;
   result.best=previousBest&&rank(previousBest)>rank(result)?previousBest:{status:result.status,score:result.score,attemptId:result.attemptId,updatedAt:result.updatedAt};

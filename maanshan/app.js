@@ -13,15 +13,15 @@ import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921
 import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school9';
 import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school9';
-import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20260922-school13';
-import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school13';
+import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20260922-school22';
+import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school22';
 import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20260922-school18';
 import {createRecordingLibrary} from './recording-library.mjs?v=20260922-school15';
-import {requestJSON, requestChat} from './network.mjs?v=20260922-school18';
+import {requestJSON, requestChat} from './network.mjs?v=20260922-school22';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20260922-school18';
-import {schoolSession} from './bootstrap.mjs?v=20260922-school21';
-import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260922-school18';
-import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school18';
+import {schoolSession} from './bootstrap.mjs?v=20260922-school22';
+import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260922-school22';
+import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school22';
 import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
 import {getPoetSuggestions, matchPoetPreset} from './poet-presets.mjs?v=20260922-school13';
 
@@ -832,7 +832,7 @@ function preloadActivityModules(activity,slug) {
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
   preloadActivityModules('quiz',poem?.slug);
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260922-school21'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260922-school22'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
@@ -841,7 +841,7 @@ async function renderQuiz() {
     onComplete:summary=>{research.emit('activity_end',{poemId:p.id,activity:'challenge',attemptId:summary.attemptId,itemId:'p'+p.id+'.challenge',context:{mode:summary.mode||'standard'},result:{status:'completed',score:null,correct:null},metrics:{itemCount:summary.total}});if(!school.enabled)queueReading(p);},
     onResearch:(type,fields)=>research.emit(type,{...fields,poemId:p.id}),
     onAnswer:answer=>{if(!school.enabled)return;queueMicrotask(()=>queueReading(p));const audit={...research.context({...answer}),poemId:p.id};if(!answerOutbox.enqueue({poemId:p.id,itemId:answer.itemId,status:answer.status,response:answer.response||{},researchContext:audit}))research.emit('error',{poemId:p.id,activity:answer.activity,attemptId:answer.attemptId,itemId:answer.itemId,error:{code:'storage_unavailable',retryable:false}});},
-    playAudio:playChallengeAudio,stopAudio:stopMedia,
+    playAudio:playChallengeAudio,stopAudio:stopMedia,prewarm:prewarmAssessment,
     recognize:(ink,context)=>api('/api/handwriting',{ink,poemId:p.id,...(collectResearch?{researchContext:research.context(context)}:{})},16000)});
 }
 async function renderExploration(){

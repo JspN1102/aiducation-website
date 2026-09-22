@@ -1,6 +1,18 @@
 // The mainland standalone server can use the existing Vercel recognizer relay.
 // This option is server configuration, never a URL supplied by a browser.
 const {withSchoolLearning} = require('./_lib/school-learning.cjs');
+const {Agent} = require('undici');
+const {gunzipSync} = require('node:zlib');
+// A pupil normally spends more than fetch's default five-second idle window
+// writing the next character. Keep only this provider's connections warm so
+// each check does not repeat the Guangzhou-to-relay TCP/TLS handshake.
+// No result cache or retry: every submitted drawing is recognised once.
+const recognitionAgent = new Agent({
+  keepAliveTimeout: 55000,
+  keepAliveMaxTimeout: 55000,
+  connections: 32,
+  pipelining: 1
+});
 const MAX_BODY_BYTES = 512 * 1024;
 const MAX_RESPONSE_BYTES = 64 * 1024;
 const RELAY_HEADER = 'x-maanshan-handwriting-relay';
@@ -15,6 +27,16 @@ function validInk(ink) {
     points += count;
     return count > 0 && points <= 12000 && stroke.every(axis => axis.length === count && axis.every(value => typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= 3600000));
   });
+}
+
+function requestInk(body) {
+  if (body.inkGzip === undefined) return body.ink;
+  // Do not accept two competing drawings or noncanonical base64. Bound both
+  // the compressed request above and the decompressed JSON before parsing it.
+  if (body.ink !== undefined || typeof body.inkGzip !== 'string' || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(body.inkGzip) || !body.inkGzip.length) throw new Error('Invalid compressed ink');
+  const packed = Buffer.from(body.inkGzip, 'base64');
+  if (packed.toString('base64') !== body.inkGzip) throw new Error('Invalid compressed ink');
+  return JSON.parse(gunzipSync(packed, {maxOutputLength: MAX_BODY_BYTES}).toString('utf8'));
 }
 
 function relayURL(req) {
@@ -61,14 +83,16 @@ module.exports = withSchoolLearning('handwriting', async (req, res) => {
   const body = req.body;
   if (!body || typeof body !== 'object' || Array.isArray(body)) return res.status(400).json({ error: 'Invalid request body' });
   if (Buffer.byteLength(JSON.stringify(body)) > MAX_BODY_BYTES) return res.status(413).json({ error: 'Request too large' });
-  if (!validInk(body.ink)) return res.status(400).json({ error: 'Invalid ink data' });
+  let ink;
+  try { ink = requestInk(body); }
+  catch { return res.status(400).json({ error: 'Invalid ink data' }); }
+  if (!validInk(ink)) return res.status(400).json({ error: 'Invalid ink data' });
   if (body.pre_context !== undefined && (typeof body.pre_context !== 'string' || body.pre_context.length > 256)) return res.status(400).json({ error: 'Invalid writing context' });
   let relay;
   try { relay = relayURL(req); }
   catch { return res.status(503).json({ error: 'Recognition relay unavailable' }); }
 
   try {
-    const ink = body.ink;
     const pre_context = body.pre_context || '';
     const payload = relay ? { ink, pre_context } : {
       app_version: 0.4,
@@ -84,10 +108,12 @@ module.exports = withSchoolLearning('handwriting', async (req, res) => {
         language: 'zh-hant'
       }]
     };
+    const started = performance.now();
     const response = await fetch(relay || GOOGLE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(relay ? { [RELAY_HEADER]: '1' } : {}) },
       body: JSON.stringify(payload),
+      dispatcher: recognitionAgent,
       redirect: 'error',
       signal: AbortSignal.timeout(relay ? 9000 : 8000)
     });
@@ -96,6 +122,7 @@ module.exports = withSchoolLearning('handwriting', async (req, res) => {
       return res.status(response.status === 504 ? 504 : 502).json({ error: 'Recognition service unavailable' });
     }
     const data = await responseJSON(response);
+    res.setHeader?.('Server-Timing', [res.getHeader?.('Server-Timing'), `handwriting_upstream;dur=${(performance.now() - started).toFixed(1)}`].filter(Boolean).join(', '));
     const candidates = relay ? data?.candidates : data?.[0] === 'SUCCESS' ? data?.[1]?.[0]?.[1] : null;
     if (!validCandidates(candidates)) return res.status(502).json({ error: 'Invalid recognition response' });
     return res.status(200).json({ candidates });

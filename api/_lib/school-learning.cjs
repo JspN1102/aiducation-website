@@ -69,6 +69,7 @@ function withSchoolLearning(operation, handler) {
   return async (req,res) => {
     if(operation==='chat')require('./chat-stream.cjs').installChatStream(req,res);
     if (!auth.enabled() || req.method !== 'POST') return handler(req,res);
+    const authStarted=performance.now();
     res.setHeader('Cache-Control','private, no-store');
     let actor, reference;
     try {
@@ -81,6 +82,7 @@ function withSchoolLearning(operation, handler) {
       if(operation==='chat'&&req.body)req.body.grade=poem.grade;
       if(operation==='report'&&req.body)req.body.studentGrade=poem.grade;
     } catch(error) { return auth.sendError(res,error); }
+    if(operation==='handwriting')res.setHeader('Server-Timing',`handwriting_auth;dur=${(performance.now()-authStarted).toFixed(1)}`);
     if (!reference || !auth.researchEligible(actor)) return handler(req,res);
     const originalJSON=res.json.bind(res), started=performance.now();
     let responseWork=null;
@@ -88,9 +90,11 @@ function withSchoolLearning(operation, handler) {
       if (responseWork) return res;
       const status=operation==='chat'&&res.chatOutcomeStatus||res.statusCode||200;
       responseWork=(async()=>{
+        const recordStarted=performance.now();
         let recorded=false;
         try { recorded=(await research.recordVerifiedOutcome(req,outcomeFor(operation,body,status,reference,performance.now()-started,res.providerMetadata))).recorded===true; }
         catch { /* The learner still receives the provider result and an explicit collection flag. */ }
+        if(operation==='handwriting')res.setHeader('Server-Timing',[res.getHeader?.('Server-Timing'),`handwriting_record;dur=${(performance.now()-recordStarted).toFixed(1)}`].filter(Boolean).join(', '));
         return originalJSON({...body,researchRecorded:recorded});
       })();
       return res;

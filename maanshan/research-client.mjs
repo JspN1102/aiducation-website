@@ -1,7 +1,7 @@
 // Structured learning events, never raw speech, strokes, chat, IP or device IDs.
 // Durable browser queues are partitioned by authenticated school account.
 import {createPersistentQueue} from './persistent-queue.mjs?v=20260920b';
-export const RESEARCH_APP_VERSION = 'school-research-20260920b';
+export const RESEARCH_APP_VERSION = 'school-research-20260922-school22';
 export const RESEARCH_CONTENT_VERSION = 'edb-20260919b-challenge-20260919d';
 const MAX_QUEUE = 5000, BATCH_SIZE = 32, MAX_BODY_BYTES = 48000, MAX_BATCHES = 4;
 const OPTIONAL = ['attemptId','itemId','attemptNo','hint','retryCount','result','error','metrics','context','response','interaction'];

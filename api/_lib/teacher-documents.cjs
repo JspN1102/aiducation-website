@@ -31,8 +31,9 @@ async function buildXlsx(dataset){
   wb.creator='AIDUCATION';wb.created=new Date(dataset.generatedAt);
   wb.title=(dataset.demo?'【模擬數據】':'')+'學生數據表格';wb.subject=rangeLabel(dataset);
   const constructs=['reading.pronunciation','sound.recognition','writing.dictation'];
+  const hasGuided=Object.values(dataset.analytics.studentDetails||{}).some(detail=>detail.practiceSummary?.items?.some(item=>item.flow==='trace-dictation-v1'));
   const students=sheet(wb,'學生明細',[
-    ['年級',9],['班別',9],['座號',9],['姓名',20],['朗讀得分',15],['聽音辨字（分）',17],['聽寫（分）',15],['練一練完成情況',32]
+    ['年級',9],['班別',9],['座號',9],['姓名',20],['朗讀得分',15],['聽音辨字（分）',17],[hasGuided?'描紅與聽寫':'聽寫（分）',hasGuided?25:15],['練一練完成情況',32]
   ]);
   students.views=[{state:'frozen',xSplit:4,ySplit:1,topLeftCell:'E2',showGridLines:false}];
   students.getRow(1).height=42;students.getRow(1).alignment={vertical:'middle',horizontal:'center',wrapText:true};
@@ -41,9 +42,13 @@ async function buildXlsx(dataset){
   students.getCell('A1').note=`${wb.title}\n${rangeLabel(dataset)}\n產生時間：${hongKongTime(dataset.generatedAt)}`;
   for(let index=0;index<constructs.length;index++)students.getCell(1,index+5).note=`${dataset.filters.attempt==='first'?'首次':'最近'}紀錄的平均分（0–100）。0 分是已有評分；空白表示未測。`;
   students.getCell('H1').note='最近一輪練一練的完成題數及答對題數。小遊戲完成計入完成題數，不計入答對題數。';
+  if(hasGuided){students.getCell('G1').note='描紅與聽寫只記完成情況，不計對錯。舊版獨立聽寫分數保留為分數顯示。';students.getCell('H1').note='各題最近的完成情況；描紅與聽寫、小遊戲不計入答對題數。';}
   for(const person of dataset.students){
     const summary=selected(person,dataset),scores=constructs.map(construct=>{const score=metric(summary,construct,'serverVerified');return score.measuredN>0?number(score.meanScore):null;});
     const practice=dataset.analytics.studentDetails?.[person.researchId]?.practiceSummary;
+    const guided=practice?.items?.filter(item=>item.flow==='trace-dictation-v1')||[];
+    if(guided.length)scores[2]=`完成 ${guided.filter(item=>item.status==='completed').length} / ${guided.length} 題`;
+    else if(hasGuided&&scores[2]!==null)scores[2]=`${scores[2]} 分（舊版）`;
     const progress=practice?`完成 ${practice.completedN}${practice.total?' / '+practice.total:''} 題；答對 ${practice.correctN} 題`:'未有紀錄';
     add(students,[person.grade,person.cls,person.classNo,person.displayName,...scores,progress]);
     const row=students.getRow(students.rowCount);row.height=42;

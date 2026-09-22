@@ -1,0 +1,153 @@
+/* One layout for the listening task, handwriting square and its three actions.
+   Keep this after the general tablet/game sheets. */
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-body {container:dictation-work / size;}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-layout {
+  display:grid;grid-template-columns:minmax(0,1fr);align-items:center;
+  width:100%;max-width:720px;min-height:0;margin:auto;gap:18px;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading {
+  min-width:0;padding:0;text-align:center;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading .challenge-prompt {
+  margin:0 0 18px;font-family:var(--sans);font-size:30px;font-weight:500;
+  line-height:1.5;letter-spacing:0;text-wrap:balance;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts {
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;
+  width:100%;max-width:420px;margin-inline:auto;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts button,
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading .cw-review button {
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  width:100%;min-width:0;min-height:66px;margin:0;padding:12px 8px;
+  border:1px solid #bacdbc;border-radius:17px;background:#f0f6e9;color:#294f3d;
+  font:500 23px/1.35 var(--sans);font-size:23px!important;
+  cursor:pointer;touch-action:manipulation;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts svg {
+  flex:none;width:27px;height:27px;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading .challenge-audio-status {
+  display:block;min-height:0;margin:12px 0 0;color:#526a58;
+  font-size:18px;line-height:1.5;text-align:center;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading .challenge-audio-status:empty {display:none;}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .cw-review {
+  padding:0;text-align:center;grid-area:auto;width:100%;max-width:420px;margin:12px auto 0;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .cw-review-actions {display:grid;grid-template-columns:minmax(0,1fr);gap:0;}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-holder {width:100%;min-width:0;}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded {
+  --cw-pad-size:430px;
+  display:grid;grid-template-columns:minmax(0,1fr);align-items:start;
+  width:100%;max-width:430px;margin:0 auto;gap:12px;color:#233d32;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-status {
+  grid-column:1;grid-row:1;justify-self:center;
+  width:min(100%,var(--cw-pad-size));min-height:29px;margin:0;
+  font-size:21px!important;line-height:1.45;text-align:center;color:#365846;
+  overflow-wrap:anywhere;text-wrap:balance;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-status:empty {display:none;}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-board {
+  position:relative;grid-column:1;grid-row:2;justify-self:center;
+  width:min(100%,var(--cw-pad-size));max-width:none;aspect-ratio:1;margin:0;
+  overflow:hidden;border:1px solid #adc2b3;border-radius:22px;background-color:#fff;
+  background-image:linear-gradient(90deg,transparent calc(50% - .5px),#dce4d9 calc(50% - .5px),#dce4d9 calc(50% + .5px),transparent calc(50% + .5px)),linear-gradient(transparent calc(50% - .5px),#dce4d9 calc(50% - .5px),#dce4d9 calc(50% + .5px),transparent calc(50% + .5px));
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-board,
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-board * {
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing canvas {
+  position:absolute;inset:0;display:block;width:100%;height:100%;cursor:crosshair;background:#fff;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-animation {
+  position:absolute;inset:0;display:grid;place-items:center;min-width:0;min-height:0;
+  background:#fff;font-family:var(--serif);line-height:1;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-animation svg {
+  position:absolute;inset:0;display:block;width:100%;height:100%;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-actions {
+  grid-column:1;grid-row:3;display:block;min-width:0;width:100%;align-self:center;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-controls {
+  grid-area:auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) minmax(0,1fr);
+  align-items:center;gap:10px;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing button {
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;min-width:0;min-height:56px;margin:0;padding:10px 8px;
+  border:1px solid #c9d8c9;border-radius:15px;background:#fffef8;color:#294c3b;
+  font:500 22px/1.35 var(--sans);cursor:pointer;touch-action:manipulation;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing button.cw-primary {
+  min-height:66px;font-size:25px;font-weight:600;color:#fff;background:#286650;border-color:#286650;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing button.cw-skip {
+  display:inline-flex;flex-basis:auto;background:#f6f7ee;color:#526450;border-color:#d9e2d3;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation button:focus-visible {outline:3px solid #528b76;outline-offset:3px;}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing button:disabled,
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading button:disabled {opacity:.48;cursor:default;}
+
+@media (min-width:701px) {
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded {
+    grid-template-columns:minmax(0,430px) 144px;justify-content:center;max-width:none;gap:12px 22px;
+  }
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-actions {grid-column:2;grid-row:2;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-controls {grid-template-columns:minmax(0,1fr);gap:18px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing button {min-height:64px;font-size:24px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing button.cw-primary {min-height:86px;font-size:28px;}
+}
+@media (min-width:900px) and (orientation:landscape) {
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-layout {
+    grid-template-columns:minmax(270px,.8fr) minmax(0,1.5fr);max-width:1280px;gap:30px;
+  }
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading .challenge-prompt {font-size:34px;line-height:1.6;margin-bottom:28px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts {gap:14px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts button {min-height:76px;font-size:24px!important;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded {
+    --cw-pad-size:min(460px,max(220px,calc(100cqh - 78px)));
+    grid-template-columns:minmax(0,460px) 136px;gap:14px 22px;
+  }
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-status {font-size:23px!important;}
+}
+@media (min-width:701px) and (max-width:999px) and (orientation:landscape) {
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-layout {grid-template-columns:minmax(230px,.85fr) minmax(0,1.4fr);gap:18px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading .challenge-prompt {font-size:28px;margin-bottom:18px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts {gap:9px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts button {gap:5px;font-size:21px!important;min-height:62px;padding-inline:5px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded {--cw-pad-size:min(380px,max(170px,calc(100cqh - 74px)));grid-template-columns:minmax(0,1fr) 100px;gap:10px 14px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing button {font-size:21px;min-height:56px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing button.cw-primary {font-size:25px;min-height:72px;}
+}
+@media (max-width:700px) {
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-layout {gap:14px;flex:none;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading .challenge-prompt {font-size:27px;line-height:1.4;margin-bottom:12px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts {gap:10px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts button {min-height:56px;font-size:22px!important;border-radius:14px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading .challenge-audio-status {font-size:16px;line-height:1.4;margin-top:8px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded {--cw-pad-size:min(350px,max(210px,calc(100cqh - 328px)));gap:10px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation:has(.cw-review:not([hidden])) .challenge-writing.cw-expanded {--cw-pad-size:min(350px,max(200px,calc(100cqh - 392px)));}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation:has(.cw-review:not([hidden])) .challenge-audio-status {display:none;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-status {font-size:19px!important;min-height:0;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-controls {gap:8px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing button {min-height:52px;font-size:21px;border-radius:13px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing button.cw-primary {min-height:60px;font-size:24px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading .cw-review button {min-height:52px;font-size:21px!important;}
+}
+@media (max-height:600px) and (orientation:landscape) {
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-layout {gap:16px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-body {justify-content:flex-start;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-layout {margin-block:auto;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading .challenge-prompt {font-size:25px;line-height:1.4;margin-bottom:14px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading .challenge-audio-status {display:none;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts button {min-height:52px;font-size:21px!important;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded {--cw-pad-size:min(350px,max(160px,calc(100cqh - 68px)));grid-template-columns:minmax(0,1fr) 106px;gap:8px 12px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-controls {gap:10px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing button {min-height:46px;font-size:20px;padding-block:8px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing button.cw-primary {min-height:60px;font-size:24px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-status {font-size:18px!important;}
+}

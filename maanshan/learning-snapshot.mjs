@@ -4,7 +4,7 @@ const ATTEMPT_KEYS=['version','attemptId','seed','startedAt','selection','schedu
 function attemptSnapshot(value,depth=0){
   if(!value||typeof value!=='object'||depth>1)return null;
   const result=Object.fromEntries(ATTEMPT_KEYS.filter(key=>value[key]!==undefined).map(key=>[key,structuredClone(value[key])]));
-  result.answers=(value.answers||[]).slice(0,5).map(answer=>Object.fromEntries(['itemId','status','correct','submittedAt','response'].filter(key=>answer[key]!==undefined).map(key=>[key,structuredClone(answer[key])])));
+  result.answers=(value.answers||[]).slice(0,5).map(answer=>Object.fromEntries(['itemId','status','correct','submittedAt','response','flow','traceCompleted','dictationCompleted'].filter(key=>answer[key]!==undefined).map(key=>[key,structuredClone(answer[key])])));
   // Correction unlocks travel with this round only; recognizer text and first
   // assessment answers remain separate from this compact progress marker.
   if(value.writingCorrections&&typeof value.writingCorrections==='object'){
@@ -21,7 +21,7 @@ function attemptSnapshot(value,depth=0){
       if(!id||id.length>128||['__proto__','constructor','prototype'].includes(id))continue;
       const entry={};
       for(const kind of ['latest','best'])if(record?.[kind]&&record[kind].itemId===id){
-        entry[kind]=Object.fromEntries(['itemId','type','focus','status','correct','submittedAt','attemptId','mode'].filter(key=>record[kind][key]!==undefined).map(key=>[key,structuredClone(record[kind][key])]));
+        entry[kind]=Object.fromEntries(['itemId','type','focus','status','correct','submittedAt','attemptId','mode','flow','traceCompleted','dictationCompleted'].filter(key=>record[kind][key]!==undefined).map(key=>[key,structuredClone(record[kind][key])]));
       }
       if(Object.keys(entry).length)result.itemRecords[id]=entry;
     }

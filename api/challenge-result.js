@@ -24,7 +24,9 @@ module.exports = async function handler(req,res){
     auth.assertPoemAccess(actor,poem.id);
     const {CHALLENGE_SETS,CHALLENGE_VERSION}=await loader.load(),set=CHALLENGE_SETS[poem.slug];
     const item=(set.bank||set.items).find(item=>item.id===body.itemId);
-    if(!item||!['correct','incorrect','skipped'].includes(body.status))return res.status(400).json({error:'Invalid answer'});
+    const flow=context.context?.flow==='trace-dictation-v1';
+    if(!item||!(['correct','incorrect','skipped'].includes(body.status)||flow&&body.status==='completed'))return res.status(400).json({error:'Invalid answer'});
+    if(flow&&(item.type!=='dictation'||context.context.traceCompleted!==true||typeof context.context.dictationCompleted!=='boolean'||context.context.dictationCompleted!==(body.status==='correct')))return res.status(400).json({error:'Invalid writing completion'});
     let correct=null,status=body.status==='skipped'?'skipped':'completed',verifiedResponse;
     if(body.status!=='skipped'&&item.type==='sound'){
       const choice=body.response?.choiceId;

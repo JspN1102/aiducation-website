@@ -4,6 +4,8 @@ const TOTAL = 5;
 const LEGACY_PLAN = ['sound', 'dictation', 'sound', 'dictation', 'other'];
 const group = item => ['sound', 'dictation'].includes(item.type) ? item.type : 'other';
 const bankOf = set => set.bank || set.items;
+const traceFlow = (value,item) => item?.type === 'dictation' && value?.flow === 'trace-dictation-v1'
+  ? {flow:'trace-dictation-v1',traceCompleted:value.traceCompleted===true,dictationCompleted:value.traceCompleted===true&&value.dictationCompleted===true} : {};
 export const CHALLENGE_SCHEDULE = 'game-first-20260919';
 // Existing saved rounds keep their original order. Only new, untouched rounds
 // use the game-first route; never reinterpret old answers against a new plan.
@@ -90,12 +92,13 @@ function mergeItemRecords(set,...sources) {
   const bank=new Map(bankOf(set).map(item=>[item.id,item])), records={};
   const accept=value=>{
     const item=bank.get(value?.itemId);
-    if(!item||!['correct','incorrect','skipped'].includes(value.status)||!Number.isFinite(value.submittedAt)||typeof value.attemptId!=='string'||value.attemptId.length>128||['review','free'].includes(value.mode))return;
-    const entry={itemId:item.id,type:item.type,focus:item.focus||null,status:value.status,correct:value.status==='correct',submittedAt:value.submittedAt,attemptId:value.attemptId,mode:value.mode||'standard'};
+    const completedReview=value?.flow==='trace-dictation-v1'&&value.traceCompleted===true&&value.dictationCompleted===true;
+    if(!item||!['correct','incorrect','skipped'].includes(value.status)||!Number.isFinite(value.submittedAt)||typeof value.attemptId!=='string'||value.attemptId.length>128||value.mode==='free'||value.mode==='review'&&!completedReview)return;
+    const entry={itemId:item.id,type:item.type,focus:item.focus||null,status:value.status,correct:value.status==='correct',submittedAt:value.submittedAt,attemptId:value.attemptId,mode:value.mode||'standard',...traceFlow(value,item)};
     const previous=records[item.id]||{};
     // A skipped prompt is not a new answer. Retain the last actual answer if
     // the learner opens or skips that prompt in a later round.
-    const rank=result=>result?.status==='correct'?2:result?.status==='incorrect'?1:0;
+    const rank=result=>result?.flow==='trace-dictation-v1'?result.dictationCompleted?2:0:result?.status==='correct'?2:result?.status==='incorrect'?1:0;
     const later=(a,b)=>!b||a.submittedAt>b.submittedAt||a.submittedAt===b.submittedAt&&a.attemptId>b.attemptId;
     if(!previous.latest||rank(entry)>0&&(rank(previous.latest)===0||later(entry,previous.latest))||rank(entry)===0&&rank(previous.latest)===0&&later(entry,previous.latest))previous.latest=entry;
     if(!previous.best||rank(entry)>rank(previous.best)||rank(entry)===rank(previous.best)&&later(entry,previous.best))previous.best=entry;
@@ -104,8 +107,15 @@ function mergeItemRecords(set,...sources) {
   const visit=(source,depth=0)=>{
     if(!source||typeof source!=='object'||depth>1)return;
     for(const [id,value]of Object.entries(source.itemRecords||{}).slice(0,bank.size))if(bank.has(id))for(const kind of ['latest','best'])if(value?.[kind]?.itemId===id)accept(value[kind]);
-    if(source.mode==='review'){visit(source.sourceAttempt,depth+1);return;}
-    for(const [index,answer]of (Array.isArray(source.answers)?source.answers:[]).slice(0,TOTAL).entries())if(answer?.itemId===(source.itemIds||set.items.map(item=>item.id))[index])accept({...answer,attemptId:source.attemptId,mode:source.mode});
+    if(source.mode==='review'){
+      visit(source.sourceAttempt,depth+1);
+      for(const answer of (source.answers||[]).slice(0,TOTAL))if(answer.flow==='trace-dictation-v1'&&answer.traceCompleted===true){
+        const done=answer.dictationCompleted===true||source.writingCorrections?.[answer.itemId]?.status==='corrected';
+        if(done)accept({...answer,dictationCompleted:true,attemptId:source.attemptId,mode:'review'});
+      }
+      return;
+    }
+    for(const [index,answer]of (Array.isArray(source.answers)?source.answers:[]).slice(0,TOTAL).entries())if(answer?.itemId===(source.itemIds||set.items.map(item=>item.id))[index])accept({...answer,...(answer.flow==='trace-dictation-v1'&&answer.traceCompleted===true&&source.writingCorrections?.[answer.itemId]?.status==='corrected'?{dictationCompleted:true}:{}),attemptId:source.attemptId,mode:source.mode});
     if(depth===0)for(const record of (Array.isArray(source.resultArchive)?source.resultArchive:[]).slice(-24))visit(record,1);
   };
   sources.forEach(source=>visit(source));
@@ -132,8 +142,8 @@ function validWritingCorrections(attempt,set,...sources) {
 
 export function practiceRecordSummary(saved,set,{which='latest'}={}) {
   const records=mergeItemRecords(set,saved),kind=which==='best'?'best':'latest';
-  const answers=Object.values(records).map(record=>record[kind]).filter(answer=>answer&&answer.status!=='skipped').sort((a,b)=>a.submittedAt-b.submittedAt||a.itemId.localeCompare(b.itemId));
-  return {version:CHALLENGE_VERSION,scope:'per-item',mode:'standard',completed:answers.length>=TOTAL,answered:answers.length,total:Math.max(TOTAL,answers.length),correct:answers.filter(answer=>answer.correct).length,answers,completedAt:answers.length?Math.max(...answers.map(answer=>answer.submittedAt)):null};
+  const answers=Object.values(records).map(record=>record[kind]).filter(answer=>answer&&(answer.status!=='skipped'||answer.flow==='trace-dictation-v1'&&answer.dictationCompleted)).sort((a,b)=>a.submittedAt-b.submittedAt||a.itemId.localeCompare(b.itemId));
+  return {version:CHALLENGE_VERSION,scope:'per-item',mode:'standard',completed:answers.length>=TOTAL,answered:answers.length,total:Math.max(TOTAL,answers.length),correct:answers.filter(answer=>answer.correct&&answer.flow!=='trace-dictation-v1').length,answers,completedAt:answers.length?Math.max(...answers.map(answer=>answer.submittedAt)):null};
 }
 
 export function newAttempt(set, {previous = null, seed = crypto.randomUUID(), mode = 'standard'} = {}) {
@@ -184,7 +194,9 @@ export function prepareAttempt(set, saved, options = {}) {
 export function newReviewAttempt(set, saved, {seed = crypto.randomUUID()} = {}) {
   const previous = readAttempt(saved, set);
   if (!previous || previous.answers.length !== previous.itemIds.length) return null;
-  const wrongIds = [...new Set([...(previous.reviewPending || []), ...previous.answers.filter(answer => !answer.correct).map(answer => answer.itemId)])];
+  const needsReview = answer => answer.flow === 'trace-dictation-v1'
+    ? !answer.dictationCompleted && previous.writingCorrections?.[answer.itemId]?.status !== 'corrected' : !answer.correct;
+  const wrongIds = [...new Set([...(previous.reviewPending || []), ...previous.answers.filter(needsReview).map(answer => answer.itemId)])];
   if (!wrongIds.length) return null;
   let nonchoices = 0;
   const ids = wrongIds.filter(id => {
@@ -279,7 +291,7 @@ export function challengeSummary(saved, set) {
   if (!attempt) return {version: CHALLENGE_VERSION, completed: false, answered: 0, total: TOTAL, correct: 0};
   const items = attemptItems(attempt, set);
   return {version: CHALLENGE_VERSION, attemptId: attempt.attemptId, mode: attempt.mode, completed: attempt.answers.length === items.length,
-    answered: attempt.answers.length, total: items.length, correct: attempt.answers.filter(a => a.correct).length,
+    answered: attempt.answers.length, total: items.length, correct: attempt.answers.filter(a => a.correct&&a.flow!=='trace-dictation-v1').length,
     answers: attempt.answers.map((answer, i) => ({itemId: answer.itemId, type: items[i].type,
-      focus: items[i].focus || null, status: answer.status})), completedAt: attempt.completedAt || null};
+      focus: items[i].focus || null, status: answer.status,...traceFlow({...answer,...(answer.traceCompleted&&attempt.writingCorrections?.[answer.itemId]?.status==='corrected'?{dictationCompleted:true}:{})},items[i])})), completedAt: attempt.completedAt || null};
 }

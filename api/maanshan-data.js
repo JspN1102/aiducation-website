@@ -38,7 +38,7 @@ function writingResult(student, set) {
   const seen = new Set();
   const results = [];
   for (const answer of challenge.answers) {
-    if (!answer || answer.type !== 'dictation' || seen.has(answer.itemId)) continue;
+    if (!answer || answer.type !== 'dictation' || answer.flow === 'trace-dictation-v1' || seen.has(answer.itemId)) continue;
     const item = bank.get(answer.itemId);
     if (item?.type !== 'dictation' || !['correct', 'incorrect'].includes(answer.status)) continue;
     seen.add(answer.itemId);

@@ -21,6 +21,24 @@ test('provider success without research durability never acknowledges an answer'
  const q=createAnswerOutbox({...f.options,fetchImpl:async()=>({ok:true,status:200,json:async()=>({ok:true,researchRecorded:false})})});
  q.enqueue(f.input);await q.flush();assert.equal(q.status().pending,1);assert.equal(f.memory.size,1);
 });
+test('explicit research exclusion acknowledges teacher practice once and does not retry it after reload',async()=>{
+ const {createAnswerOutbox}=await ready,f=fixture();let calls=0;
+ const options={...f.options,actorId:'teacher-test',fetchImpl:async()=>{calls++;return{ok:true,status:200,json:async()=>({ok:true,researchRecorded:false,researchExcluded:true})};}};
+ const q=createAnswerOutbox(options);q.enqueue(f.input);await q.flush();await q.flush({force:true});
+ assert.equal(q.status().pending,0);assert.equal(q.status().retryAt,0);assert.equal(f.memory.size,0);assert.equal(calls,1);
+ const reloaded=createAnswerOutbox(options);await reloaded.flush({force:true});assert.equal(calls,1);assert.equal(reloaded.status().pending,0);
+});
+test('student storage failure and nonboolean exclusion flags preserve an answer for a later confirmed retry',async()=>{
+ const {createAnswerOutbox}=await ready;
+ for(const exclusion of [undefined,false,'true',1]){
+  const f=fixture();let confirm=false,calls=0;
+  const q=createAnswerOutbox({...f.options,fetchImpl:async()=>{calls++;return{ok:true,status:200,json:async()=>confirm?{ok:true,researchRecorded:true}:{ok:true,researchRecorded:false,researchExcluded:exclusion}};}});
+  q.enqueue(f.input);await q.flush();assert.equal(q.status().pending,1);assert.equal(f.memory.size,1);assert.equal(calls,1);
+  confirm=true;await q.flush({force:true});assert.equal(q.status().pending,0);assert.equal(f.memory.size,0);assert.equal(calls,2);
+ }
+ const f=fixture(),failed=createAnswerOutbox({...f.options,fetchImpl:async()=>({ok:false,status:503,json:async()=>({ok:true,researchRecorded:false,researchExcluded:true})})});
+ failed.enqueue(f.input);await failed.flush();assert.equal(failed.status().pending,1);assert.equal(f.memory.size,1);
+});
 test('student switch cannot inherit pending answers and session rejection preserves originals',async()=>{
  const {createAnswerOutbox}=await ready,f=fixture();
  const q=createAnswerOutbox({...f.options,fetchImpl:async()=>({ok:false,status:409,json:async()=>({code:'ACTOR_CHANGED'})})});q.enqueue(f.input);await q.flush();assert.equal(q.status().stopped,true);assert.equal(q.status().pending,1);

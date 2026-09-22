@@ -1,7 +1,7 @@
 import {imageAsset} from './media-images.mjs?v=20260922-school16';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school9';
-import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20260922-school13';
-import {mountChallengeWriting} from './challenge-writing.mjs?v=20260922-school17';
+import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20260922-school22';
+import {mountChallengeWriting} from './challenge-writing.mjs?v=20260922-school22';
 import {mountChallengeModel} from './challenge-model.mjs?v=20260922-school21';
 import {mountLivingField} from './living-field.mjs?v=20260922-school21';
 
@@ -23,19 +23,19 @@ const COMPACT_PROMPTS = {
   'g6-m1':'哪張是近看？哪張是遠看？'
 };
 const prompt = item => COMPACT_PROMPTS[item.id] || item.prompt;
-const KIND = {sound:'聽音小鋪', dictation:'聽寫一個字', microgame:'詩裏玩一玩', match:'動手解詩', sequence:'故事排一排', 'scene-builder':'種一片詩田'};
+const KIND = {sound:'聽音小鋪', dictation:'描紅與聽寫', microgame:'詩裏玩一玩', match:'動手解詩', sequence:'故事排一排', 'scene-builder':'種一片詩田'};
 const soundIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m10 5-5 4H2v6h3l5 4ZM14 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg>';
 const tone = shape => shape ? `<svg class="challenge-tone" viewBox="0 0 70 35" aria-hidden="true"><path d="${{level:'M8 10H62', rising:'M8 28 62 6', dipping:'M8 13 32 29 62 6', falling:'M8 6 62 28'}[shape]}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>` : '';
 const makeURL = path => new URL(path, import.meta.url).href;
 
-export function mountChallenge(container, {poem, saved, onChange, onComplete, playAudio, stopAudio, recognize, onResearch = () => {}, onAnswer = () => {}, onCorrectionProgress = () => {}} = {}) {
+export function mountChallenge(container, {poem, saved, onChange, onComplete, playAudio, stopAudio, recognize, prewarm = () => {}, onResearch = () => {}, onAnswer = () => {}, onCorrectionProgress = () => {}} = {}) {
   const set = CHALLENGE_SETS[poem.slug];
   if (!set) throw new Error('missing-challenge');
   let attempt = prepareAttempt(set, saved), dead = false, screen = attempt.cursor;
   let items = attemptItems(attempt, set);
   let game = null, gameEpoch = 0, draftTimer = null, pendingGameSolution = false;
   let heard = false, playing = false, selected = null, placements = {}, density = {}, writing = null, model = null, livingField = null;
-  let pageEvents = null, renderGeneration = 0, audioGeneration = 0, writingAdvance = false;
+  let pageEvents = null, renderGeneration = 0, audioGeneration = 0, writingAdvance = false, writingTraced = false;
   const q = selector => container.querySelector(selector);
   const save = () => onChange?.(structuredClone(attempt));
   const saveDraftSoon = () => {clearTimeout(draftTimer);draftTimer=setTimeout(()=>{draftTimer=null;save();},120);};
@@ -47,6 +47,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const item=items[screen];
     return {attemptId:attempt.attemptId,itemId:item?.id||'challenge-summary',activity:item?.type==='dictation'?'writing':'challenge',
       context:{mode:attempt.mode||'standard',itemType:item?.type||'microgame',position:Math.min(screen+1,items.length),total:items.length,
+        ...(item?.type==='dictation'&&(!currentAnswer()||currentAnswer().flow==='trace-dictation-v1')?{flow:'trace-dictation-v1',traceCompleted:writingTraced,dictationCompleted:currentAnswer()?.dictationCompleted===true||storedCorrection(item)?.status==='corrected'}:{}),
         optionOrder:(attempt.orders[item?.id]||[]).map(String),...(attempt.sourceAttempt?.attemptId?{sourceAttemptId:attempt.sourceAttempt.attemptId}:{})}};
   }
   function audit(type,fields={}){const base=researchContext();onResearch(type,{...base,...fields,context:{...base.context,...(fields.context||{})}});}
@@ -66,12 +67,20 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     if(!next||items[screen]?.type!=='dictation')return;
     const ready=!!currentAnswer()&&(writing?.canContinue?.()??writingAdvance);
     next.hidden=!ready;next.disabled=!ready;
+    q('.challenge-footer').hidden=!ready;
   }
   function mountWriting(answer=null) {
     const item=items[screen],generation=renderGeneration,initialCorrection=storedCorrection(item);
+    writingTraced=answer?.traceCompleted===true;
+    prewarm();
     writingAdvance=answer?.status==='correct'||!!initialCorrection;
     writing=mountChallengeWriting(q('.challenge-writing-holder'),{target:item.target,recognize:recognizeItem,onResearch:audit,
       initialResult:answer,initialCorrection,onSubmit:result=>submit(result),
+      onTraceComplete:()=>{
+        if(dead||generation!==renderGeneration)return;
+        writingTraced=true;prewarm();
+        onAnswer({...researchContext(),status:'completed'});
+      },
       onAdvanceStateChange:state=>{
         if(dead||generation!==renderGeneration)return;
         writingAdvance=state.canContinue===true;
@@ -80,6 +89,10 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
           if(previous?.status!==state.correction.status){
             attempt.writingCorrections={...attempt.writingCorrections,[item.id]:{status:state.correction.status}};save();
             onCorrectionProgress({attemptId:attempt.attemptId,itemId:item.id,status:state.correction.status});
+            if(currentAnswer()?.flow==='trace-dictation-v1'&&(currentAnswer().status!=='skipped'||state.correction.status==='corrected')){
+              const context=researchContext();
+              onAnswer({...context,status:state.correction.status==='corrected'?'correct':'skipped',context:{...context.context,flow:'trace-dictation-v1',traceCompleted:true,dictationCompleted:state.correction.status==='corrected'}});
+            }
           }
         }
         updateWritingAdvance();
@@ -141,7 +154,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     return `<div class="challenge-sound-layout"><div class="challenge-sound-stage is-walnut-market"><img class="challenge-market" src="${esc(imageAsset('media/challenges/sound-market-v1.webp'))}" alt="" draggable="false"><button type="button" class="challenge-sound-token is-walnut" data-ch="listen" aria-label="點核桃，聽題目聲音" draggable="false"><img src="${esc(imageAsset('media/challenges/sound-pod-v1.webp'))}" alt="" draggable="false">${soundIcon}</button><p class="challenge-stage-note">點核桃，聽一聽</p></div><div class="challenge-sound-work"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><p class="challenge-instruction">先聽一聽，再點答案。</p><div class="challenge-shelves" role="group" aria-label="點選一個答案">${ordered(item).map(option=>`<button type="button" class="challenge-shelf" data-ch="choose" data-option="${option.id}" aria-pressed="false" disabled>${tone(option.contour)}<span>${esc(option.label)}</span><i aria-hidden="true"></i></button>`).join('')}</div><p class="challenge-audio-status" role="status" aria-live="polite">先點核桃聽聲音，再點答案。</p></div></div>`;
   }
   function writingBody(item) {
-    return `<div class="challenge-writing-layout"><div class="challenge-writing-heading"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><button class="challenge-listen" data-ch="listen">${soundIcon}<span>聽詞語</span></button><p class="challenge-audio-status" role="status">可以聽詞語，也可以直接寫。</p></div><div class="challenge-writing-holder"></div></div>`;
+    return `<div class="challenge-writing-layout"><div class="challenge-writing-heading"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><div class="challenge-writing-prompts"><button class="challenge-listen" data-ch="listen">${soundIcon}<span>聽詞語</span></button><button type="button" class="challenge-strokes" data-cw="strokes"><span>看筆順</span></button></div><p class="challenge-audio-status" role="status"></p><div class="cw-review" hidden></div></div><div class="challenge-writing-holder"></div></div>`;
   }
   function cardHTML(card) {
     return `${card.image ? `<img src="${esc(makeURL(card.image))}" alt="${esc(card.label)}" decoding="async">` : card.color ? `<i class="challenge-color" style="--card-color:${esc(card.color)}" aria-hidden="true"></i>` : ''}<span>${esc(card.label)}</span>`;
@@ -167,13 +180,14 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
   function showQuestion() {
     const item = items[screen];
     if (!item) {summary(); return;}
+    writingTraced=currentAnswer()?.traceCompleted===true;
     itemPresentedAt=performance.now();audit('item_presented');
     heard = false; selected = null; placements = {}; density = {};
     const answer = currentAnswer();
     if (answer?.response && item.type === 'sound') selected = answer.response;
     else if (answer?.response && item.type === 'scene-builder') density = {...answer.response};
     else if (answer?.response && item.type !== 'dictation') placements = {...answer.response};
-    startPage(`<section class="challenge-shell challenge-poem-${poem.grade} challenge-type-${item.type}">${header(item)}<div class="challenge-body">${item.type==='sound'?soundBody(item):item.type==='dictation'?writingBody(item):item.type==='microgame'?gameBody():handsBody(item)}</div><footer class="challenge-footer"><div class="challenge-feedback" role="status"></div><div class="challenge-footer-actions"><button class="challenge-text-button" data-ch="skip" ${answer?'hidden':''}>${item.type==='microgame'?'這次先跳過':item.type==='dictation'?'先學一學':'看提示'}</button><button class="challenge-primary" data-ch="submit" disabled ${['dictation','microgame'].includes(item.type)?'hidden':''}>放好了</button><button class="challenge-primary" data-ch="next" hidden>下一題 <span aria-hidden="true">→</span></button></div></footer></section>`);
+    startPage(`<section class="challenge-shell challenge-poem-${poem.grade} challenge-type-${item.type}">${header(item)}<div class="challenge-body">${item.type==='sound'?soundBody(item):item.type==='dictation'?writingBody(item):item.type==='microgame'?gameBody():handsBody(item)}</div><footer class="challenge-footer"><div class="challenge-feedback" role="status"></div><div class="challenge-footer-actions"><button class="challenge-text-button" data-ch="skip" ${answer||['dictation','sound'].includes(item.type)?'hidden':''}>跳過</button><button class="challenge-primary" data-ch="submit" disabled ${['dictation','microgame'].includes(item.type)?'hidden':''}>放好了</button><button class="challenge-primary" data-ch="next" hidden>下一題 <span aria-hidden="true">→</span></button></div></footer></section>`);
     if (item.type === 'microgame') loadGame();
     else if (item.type === 'dictation') {
       // Writing is local input. A slow, interrupted or unavailable audio
@@ -310,6 +324,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
       mountWriting(answer);
     }
     if(item.type==='dictation')updateWritingAdvance();
+    if(item.type==='dictation')q('.challenge-feedback').replaceChildren();
   }
   function summary() {
     const pendingCorrection=pendingWriting();
@@ -318,12 +333,16 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     if(!result.completed){screen=attempt.answers.length;showQuestion();return;}
     const entries=items.map((item,i)=>{
       const answer=attempt.answers[i], number=attempt.mode==='review'?attempt.sourceAttempt.itemIds.indexOf(item.id)+1:i+1;
-      const focus=item.type==='dictation'?`聽寫「${item.target.char}」`:item.type==='sound'?`${poem.grade===1?'聲調':poem.grade===2||poem.grade===4?'韻母':'聲母'}・${item.focus}`:item.type==='microgame'?item.title:KIND[item.type];
+      const guided=answer.flow==='trace-dictation-v1',done=guided&&(answer.dictationCompleted||attempt.writingCorrections?.[item.id]?.status==='corrected');
+      const focus=item.type==='dictation'?`${guided?'描紅與聽寫':'聽寫'}「${item.target.char}」`:item.type==='sound'?`${poem.grade===1?'聲調':poem.grade===2||poem.grade===4?'韻母':'聲母'}・${item.focus}`:item.type==='microgame'?item.title:KIND[item.type];
       const detail=item.type==='dictation'?item.target.pinyin:item.type==='sound'?`${item.audio.char} ${item.audio.pinyin}`:{'yong-e':'白毛・紅掌・綠水','zeng-wang-lun':'乘舟・踏歌・送別','ti-xi-lin-bi':'橫看成嶺，側看成峯','bo-chuan-gua-zhou':'江水・春意・思鄉','gui-yuan-tian-ju':'草盛豆苗稀','zao-chun':'小・酥・色・是・勝｜x、s、sh'}[poem.slug];
-      return `<div class="challenge-result-row"><span class="challenge-result-number" aria-label="原第 ${number} 題">${number}</span><span class="challenge-result-knowledge">${esc(focus)}<small>${esc(detail)}</small></span><em class="${answer.correct?'is-correct':'needs-practice'}">${answer.correct?'答對':answer.status==='skipped'?'未作答':'答錯'}</em></div>`;
+      return `<div class="challenge-result-row"><span class="challenge-result-number" aria-label="原第 ${number} 題">${number}</span><span class="challenge-result-knowledge">${esc(focus)}<small>${esc(detail)}</small></span><em class="${(guided?done:answer.correct)?'is-correct':'needs-practice'}">${guided?done?'已完成':'未完成':answer.correct?'答對':answer.status==='skipped'?'未作答':'答錯'}</em></div>`;
     }).join('');
-    const allCorrect=result.correct===result.total, pending=attempt.reviewPending?.length || 0;
-    startPage(`<section class="challenge-shell challenge-results"><header class="challenge-results-heading"><img src="media/poetry-motifs/${['goose','boat','mountain','moon','sprout','swallow'][poem.grade-1]}.svg" alt="" width="72" height="72"><div><p class="challenge-eyebrow">${attempt.mode==='review'?'錯題複習成果':'小遊戲練習成果'}</p><h2>${allCorrect?pending?'這一組答對了！':'全部答對了！':'把小發現帶走。'}</h2><p class="challenge-result-detail">${pending?`還有 ${pending} 道錯題，下次接着練。`:allCorrect?'每一題都完成得很好。':`答對 ${result.correct} / ${result.total} 題，再看看這些知識點。`}</p></div></header><div class="challenge-result-list" aria-label="每題結果與知識點">${entries}</div><div class="challenge-results-actions"><button class="challenge-primary" data-ch="new-round">再練五題 <span aria-hidden="true">→</span></button>${!allCorrect||pending?'<button class="challenge-secondary" data-ch="redo-wrong">錯題重做</button>':''}</div></section>`);
+    const guidedDone=answer=>answer.dictationCompleted||attempt.writingCorrections?.[answer.itemId]?.status==='corrected';
+    const hasGuided=attempt.answers.some(answer=>answer.flow==='trace-dictation-v1');
+    const allCorrect=attempt.answers.every(answer=>answer.flow==='trace-dictation-v1'?guidedDone(answer):answer.correct), pending=attempt.reviewPending?.length || 0;
+    const completedN=attempt.answers.filter(answer=>answer.flow==='trace-dictation-v1'?guidedDone(answer):answer.status!=='skipped').length;
+    startPage(`<section class="challenge-shell challenge-results"><header class="challenge-results-heading"><img src="media/poetry-motifs/${['goose','boat','mountain','moon','sprout','swallow'][poem.grade-1]}.svg" alt="" width="72" height="72"><div><p class="challenge-eyebrow">${attempt.mode==='review'?'錯題複習成果':'小遊戲練習成果'}</p><h2>${hasGuided?'這一輪練習結束了！':allCorrect?pending?'這一組答對了！':'全部答對了！':'把小發現帶走。'}</h2><p class="challenge-result-detail">${hasGuided?`已完成 ${completedN} / ${items.length} 題。`:pending?`還有 ${pending} 道錯題，下次接着練。`:allCorrect?'每一題都完成得很好。':`答對 ${result.correct} / ${result.total} 題，再看看這些知識點。`}</p></div></header><div class="challenge-result-list" aria-label="每題結果與知識點">${entries}</div><div class="challenge-results-actions"><button class="challenge-primary" data-ch="new-round">再練五題 <span aria-hidden="true">→</span></button>${!allCorrect||pending?'<button class="challenge-secondary" data-ch="redo-wrong">錯題重做</button>':''}</div></section>`);
   }
   function restart(mode='standard') {flushDraft();attempt=newAttempt(set,{previous:attempt,mode});items=attemptItems(attempt,set);screen=0;audit('attempt_started',{metrics:{itemCount:items.length}});save();showQuestion();}
   function click(event) {
@@ -362,7 +381,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
       else {if(!item.slots.every(slot=>placements[slot.id]))return;response={...placements};correct=item.slots.every(slot=>placements[slot.id]===slot.accepts);}
       submit({status:correct?'correct':'incorrect',response});
     }
-    if(action==='skip')submit({status:'skipped',response:item.type==='microgame'?safeGameState(attempt.gameDrafts[item.id])||{}:item.type==='sound'?selected:item.type==='scene-builder'?{...density}:{...placements}});
+    if(action==='skip'&&!['dictation','sound'].includes(item.type))submit({status:'skipped',response:item.type==='microgame'?safeGameState(attempt.gameDrafts[item.id])||{}:item.type==='scene-builder'?{...density}:{...placements}});
     if(action==='next'){
       if(item?.type==='dictation'&&!(writing?.canContinue?.()??writingAdvance))return;
       if(currentAnswer()){attempt.cursor=screen+1;save();screen++;screen===items.length?summary():showQuestion();}

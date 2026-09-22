@@ -1,4 +1,5 @@
 import {schoolFetch} from './school-session.mjs?v=20260922-school18';
+import {prepareHandwritingPayload} from './handwriting-payload.mjs?v=20260922-school22';
 
 // Only a final, verified completion enters chat history. Partial tokens are
 // shown immediately but an interrupted stream is never saved as an answer.
@@ -61,7 +62,7 @@ export async function requestJSON(path, body, {timeout = 35000, signal, retry = 
   else signal?.addEventListener('abort', abort, {once: true});
   const timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeout);
   const url = path.startsWith('/api/') ? path.replace(/\/+$/, '') + '/' : path;
-  const payload = JSON.stringify(body);
+  const payload = JSON.stringify(/(?:^|\/)handwriting\/?$/.test(path) ? await prepareHandwritingPayload(body) : body);
   try {
     for (let attempt = 0; ; attempt++) {
       const started = Date.now();

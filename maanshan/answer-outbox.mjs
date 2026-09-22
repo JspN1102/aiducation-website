@@ -12,7 +12,7 @@ export function createAnswerOutbox({actorId,csrfToken,learningEpoch,enabled=true
   const epoch=/^[a-f0-9]{32}$/.test(learningEpoch||'')?learningEpoch:null;
   queue=createPersistentQueue({prefix:'maanshan-answer-v1:'+(epoch?'epoch:'+epoch+':':'')+actorId+':',storage,notify,limit:1000,
     identify:item=>item.researchContext.requestId,
-    valid:item=>item?.researchContext?.actorId===actorId&&isUuid(item.researchContext.requestId)&&Number.isFinite(Date.parse(item.researchContext.requestedAt))&&Number.isInteger(item.poemId)&&item.poemId>=1&&item.poemId<=6&&typeof item.itemId==='string'&&['correct','incorrect','skipped'].includes(item.status),
+    valid:item=>item?.researchContext?.actorId===actorId&&isUuid(item.researchContext.requestId)&&Number.isFinite(Date.parse(item.researchContext.requestedAt))&&Number.isInteger(item.poemId)&&item.poemId>=1&&item.poemId<=6&&typeof item.itemId==='string'&&(['correct','incorrect','skipped'].includes(item.status)||item.status==='completed'&&item.researchContext.context?.flow==='trace-dictation-v1'&&item.researchContext.context.itemType==='dictation'&&item.researchContext.context.traceCompleted===true&&item.researchContext.context.dictationCompleted===false),
     compare:(a,b)=>a.researchContext.requestedAt.localeCompare(b.researchContext.requestedAt)});
   function enqueue(input){
     if(!enabled||stopped)return false;
@@ -45,7 +45,7 @@ export function createAnswerOutbox({actorId,csrfToken,learningEpoch,enabled=true
           if(response.status===422&&['POEM_GRADE_FORBIDDEN','RESEARCH_EXCLUDED'].includes(code)){queue.acknowledge([record.researchContext.requestId]);continue;}
           if([401,403].includes(response.status)||(response.status===409&&code==='ACTOR_CHANGED')){stopped=true;notify('session_changed');return;}
           if([400,409,413].includes(response.status)){queue.hold(record.researchContext.requestId,'answer_rejected');continue;}
-          if(!response.ok||result?.ok!==true||result.researchRecorded!==true)throw Error('unconfirmed');
+          if(!response.ok||result?.ok!==true||(result.researchRecorded!==true&&result.researchExcluded!==true))throw Error('unconfirmed');
           queue.acknowledge([record.researchContext.requestId]);failures=0;retryAt=0;
         }catch{failures++;retryAt=now()+Math.min(60000,2000*2**Math.min(failures-1,5));notify('sync_pending');return;}
         finally{clearTimeout(timer);}
