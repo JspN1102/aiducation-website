@@ -1,5 +1,6 @@
 import {COMPAT_IMAGES} from './image-compat.mjs?v=20260920-art2';
-import {IMAGE_ASSETS} from './media-images.mjs?v=20260920-art2';
+import {IMAGE_ASSETS, publicImagesReady} from './media-images.mjs?v=20260922-school16';
+import {preferPublicImages} from './image-policy.mjs?v=20260922-school16';
 
 const canonical = new Map([
   ...Object.entries(IMAGE_ASSETS).map(([path, url]) => [url, path]),
@@ -9,10 +10,14 @@ export function imageCandidates(source) {
   const url = new URL(source, import.meta.url);
   const key = canonical.get(url.href.split('?')[0]) || (url.origin === new URL(import.meta.url).origin ? canonical.get(url.pathname) || url.pathname : '');
   if (!COMPAT_IMAGES[key]) return [url.href];
-  return [...new Set([COMPAT_IMAGES[key], IMAGE_ASSETS[key] || key].map(value => new URL(value, import.meta.url).href))];
+  const local = COMPAT_IMAGES[key], remote = IMAGE_ASSETS[key];
+  // The public copy goes first only while the session probe says it is reachable and decodable.
+  const order = preferPublicImages() && remote ? [remote, local] : [local, remote || key];
+  return [...new Set(order.map(value => new URL(value, import.meta.url).href))];
 }
 
 export async function loadTeachingImage(source, {timeout = 6000, reload = false} = {}) {
+  await publicImagesReady;
   for (const candidate of imageCandidates(source)) {
     try {
       return await new Promise((resolve, reject) => {
@@ -66,7 +71,8 @@ export function installImageRecovery(root = document) {
     // Do not replace an already decoded retry URL with its cached original.
     if (image.complete && image.naturalWidth) {state.tried.add(resource(image.src));return;}
     delete image.dataset.loaded;
-    // Prefer a same-origin full-resolution image, including on older tablets.
+    // Prefer the current first candidate: the public copy while it is known to
+    // work, otherwise the same-origin full-resolution image (older tablets).
     if (resource(urls[0]) !== resource(image.src)) fail(image, state);
     else {
       state.tried.add(resource(image.src));

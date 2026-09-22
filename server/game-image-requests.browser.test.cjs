@@ -11,7 +11,8 @@ const artwork=['/media/compatible/9518ba9e71e4700d3ceb.jpg','/media/compatible/d
    await context.route('**/*',async route=>{
     const url=new URL(route.request().url());
     if(url.pathname===prefix+'/')return route.fulfill({contentType:'text/html',body:'<!doctype html><div id="game"></div>'});
-    if(route.request().resourceType()==='image')images.push(url.pathname);
+    // The public-image probe targets the COS host; it is answered 404 here and must not count as artwork.
+    if(route.request().resourceType()==='image'&&url.hostname==='images.invalid')images.push(url.pathname);
     const filename=path.join(repo,'maanshan',decodeURIComponent(url.pathname.slice(prefix.length+1)));
     if(!filename.startsWith(path.join(repo,'maanshan')+path.sep)||!fs.existsSync(filename))return route.fulfill({status:404,body:''});
     const ext=path.extname(filename),types={'.mjs':'text/javascript','.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp'};
