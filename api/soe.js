@@ -174,10 +174,13 @@ function mapResult(r) {
     PronFluency: r.pron_fluency ?? r.PronFluency ?? null,
     PronCompletion: r.pron_completion ?? r.PronCompletion ?? null,
     SuggestedScore: r.suggested_score ?? r.SuggestedScore ?? null,
+    // MatchTag: 0 matched, 1 inserted (not in the reference), 2 missing,
+    // 3 misread, 4 not in the lexicon.
     Words: (r.words || r.Words || []).map(w => ({
       Word: w.word || w.Word || '',
       PronAccuracy: w.pron_accuracy ?? w.PronAccuracy ?? null,
       PronFluency: w.pron_fluency ?? w.PronFluency ?? null,
+      MatchTag: w.match_tag ?? w.MatchTag ?? 0,
       MemBeginTime: w.begin_time ?? w.MemBeginTime ?? 0,
       MemEndTime: w.end_time ?? w.MemEndTime ?? 0,
       PhoneInfos: (w.phone_infos || w.PhoneInfos || []).map(p => ({

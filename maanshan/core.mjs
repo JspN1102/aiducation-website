@@ -10,11 +10,13 @@ export function mapAssessment(raw, line) {
   if (total === null) throw new Error('評測沒有返回分數，請重新錄音。');
   const characters = verseCharacters(line.text);
   const simple = verseCharacters(line.simplified);
-  const words = (Array.isArray(raw.Words) ? raw.Words : []).filter(w => /[\u3400-\u9fff]/.test(w.Word || '')).map((w, index) => {
+  // MatchTag 1 is a word the learner added that is not in the verse; 2 is a
+  // verse word the assessment did not hear. Older servers send neither.
+  const words = (Array.isArray(raw.Words) ? raw.Words : []).filter(w => /[\u3400-\u9fff]/.test(w.Word || '') && w.MatchTag !== 1).map((w, index) => {
     const source = w.Word || '';
     const position = simple[index] === source || characters[index] === source ? index : Math.max(simple.indexOf(source), characters.indexOf(source));
     const score = numeric(w.PronAccuracy);
-    return {c: position >= 0 ? characters[position] : source, p:position >= 0 ? line.pinyin[position] : '', score:score === null ? null : Math.round(clamp(score)), status:score === null ? 'unknown' : score < 60 ? 'error' : score < 80 ? 'warn' : 'ok', error:score !== null && score < 80 ? '這個字可以再練習' : '', phones:(w.PhoneInfos || []).map(p => ({phone:p.Phone || '',score:numeric(p.PronAccuracy)})).filter(p => p.score !== null)};
+    return {c: position >= 0 ? characters[position] : source, p:position >= 0 ? line.pinyin[position] : '', ...(position >= 0 ? {i:position} : {}), ...(w.MatchTag === 2 ? {missing:true} : {}), score:score === null ? null : Math.round(clamp(score)), status:score === null ? 'unknown' : score < 60 ? 'error' : score < 80 ? 'warn' : 'ok', error:score !== null && score < 80 ? '這個字可以再練習' : '', phones:(w.PhoneInfos || []).map(p => ({phone:p.Phone || '',score:numeric(p.PronAccuracy)})).filter(p => p.score !== null)};
   });
   return {total_score:Math.round(clamp(total)),grade:scoreLabel(total),dimensions:{phone_score:accuracy === null ? null : Math.round(clamp(accuracy)),fluency_score:numeric(raw.PronFluency) === null ? null : Math.round(clamp(raw.PronFluency * 100)),integrity_score:numeric(raw.PronCompletion) === null ? null : Math.round(clamp(raw.PronCompletion * 100))},words};
 }

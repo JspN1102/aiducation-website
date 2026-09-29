@@ -32,24 +32,84 @@ export function parsePinyin(pinyin) {
   return {base,initial,final,tone};
 }
 
-function phoneEvidence(word, syllable) {
-  const raw=Array.isArray(word.phones)?word.phones:Array.isArray(word.PhoneInfos)?word.PhoneInfos:[];
-  const aliases={v:'ü',ve:'üe',van:'üan',vn:'ün',iou:'iu',uei:'ui',uen:'un',i2:'i'};
-  return raw.slice(0,16).flatMap(entry=>{
-    if (!entry || typeof entry!=='object') return [];
-    const code=String(entry.phone ?? entry.Phone ?? '').toLowerCase().trim();
-    if (!/^[a-zü:0-5_-]{1,24}$/.test(code)) return [];
-    const score=scoreValue(entry.score ?? entry.PronAccuracy);
-    let kind=null, label=null;
-    const stripped=code.replace(/[1-5]$/,'').replace(/u:/g,'ü');
-    const normal=aliases[code] || aliases[stripped] || stripped;
-    if (syllable.initial && code===syllable.initial) {kind='initial';label=`聲母 ${syllable.initial}`;}
-    else if (/^[1-5]$/.test(code) && Number(code)===syllable.tone) {kind='tone';label=`第${syllable.tone}聲對應音素`;}
-    else if (normal===syllable.final || (syllable.final==='i-apical' && normal==='i')) {
-      kind='final';label=syllable.final==='i-apical'?'整體認讀音節的韻部':`韻母 ${syllable.final}`;
-    }
-    return kind ? [{phone:code,label,kind,score,source:'assessment'}] : [];
-  });
+// The written syllable the way pupils learn it: y and w count as initials and
+// ü keeps its dots after j, q, x and y (yuǎn is y + üan, shuǐ is sh + ui).
+export function writtenSyllable(pinyin) {
+  const {base,tone}=parsePinyin(pinyin);
+  const initial=base.match(/^(zh|ch|sh|[bpmfdtnlgkhjqxrzcsyw])/)?.[0] || '';
+  let final=base.slice(initial.length);
+  if (['j','q','x','y'].includes(initial) && final.startsWith('u')) final='ü'+final.slice(1);
+  return {initial,final,tone};
+}
+
+export const toneName=tone=>['','第一聲','第二聲','第三聲','第四聲','輕聲'][tone] || '';
+const initialPhones=new Set(['b','p','m','f','d','t','n','l','g','k','h','j','q','x','zh','ch','sh','r','z','c','s','y','w']);
+const partState=score=>score===null?'unknown':score>=80?'ok':score>=60?'near':'miss';
+
+// Tones a fluent reader may produce here: 一 and 不 change with the next
+// syllable, and a third tone before another third tone rises. Null accepts any.
+function acceptedTones(char, tone, nextTone) {
+  if (tone===5) return null;
+  if (char==='一') return [1,2,4];
+  if (char==='不') return [4,2];
+  if (tone===3 && nextTone===3) return [2,3];
+  return [tone];
+}
+
+/**
+ * Initial, final and tone of one assessed character.
+ *
+ * The assessment scores the initial as its own phone and the final as one or
+ * more phones (天 t, i1, an). The tone digit on the first final phone is the
+ * tone it heard, which its word score ignores; the tone is judged from it,
+ * allowing for tone sandhi. Returns null without phone data.
+ */
+export function syllableParts(word, line) {
+  if (!word || typeof word!=='object' || typeof word.p!=='string' || !word.p) return null;
+  const written=writtenSyllable(word.p);
+  const clause=[];
+  let charIndex=0;
+  for (const char of Array.from(line?.text || '')) {
+    if (/\p{Script=Han}/u.test(char)) clause.push({char,pinyin:line.pinyin?.[charIndex++] || '',pause:false});
+    else if (clause.length && /\S/u.test(char)) clause.at(-1).pause=true;
+  }
+  const position=Number.isInteger(word.i) && clause[word.i]?.char===word.c ? word.i : clause.findIndex(entry=>entry.char===word.c);
+  const next=position>=0 && !clause[position].pause ? clause[position+1] : null;
+  const accepted=acceptedTones(word.c,written.tone,next ? parsePinyin(next.pinyin).tone : null);
+  const empty={initial:{sound:written.initial,score:null,state:written.initial?'unknown':'none'},final:{sound:written.final,score:null,state:'unknown'},tone:{tone:written.tone,heard:null,state:'unknown'}};
+  if (word.missing===true) return {...empty,missing:true};
+  const phones=(Array.isArray(word.phones)?word.phones:[]).slice(0,8).map(entry=>({
+    label:String(entry?.phone ?? '').toLowerCase().trim(),score:scoreValue(entry?.score)
+  })).filter(entry=>entry.label && entry.score!==null);
+  if (!phones.length) return null;
+  const hasInitial=phones.length>1 && initialPhones.has(phones[0].label);
+  const finals=hasInitial?phones.slice(1):phones;
+  const finalScore=Math.round(Math.min(...finals.map(entry=>entry.score)));
+  const heard=Number(finals.map(entry=>entry.label.match(/[1-5]$/)?.[0]).find(Boolean)) || null;
+  // Without its own phone, y or w is read as part of the final (一 yī, 五 wǔ).
+  const initialScore=!written.initial?null:hasInitial?Math.round(phones[0].score):['y','w'].includes(written.initial)?finalScore:null;
+  const toneHeard=heard!==null && (!accepted || accepted.includes(heard));
+  // The assessment expects its own changed tone for 一 and 不 and marks their
+  // vowel down when the book tone is read instead (一水 yī scored 22), so a low
+  // vowel score after an accepted tone says nothing about the final.
+  const finalState=['一','不'].includes(word.c) && toneHeard && finalScore<80 ? 'unknown' : partState(finalScore);
+  const initialState=!written.initial?'none':hasInitial?partState(initialScore):initialScore===null?'unknown':finalState;
+  return {
+    initial:{sound:written.initial,score:initialScore,state:initialState,...(hasInitial?{}:{shared:true})},
+    final:{sound:written.final,score:finalScore,state:finalState},
+    tone:{tone:written.tone,heard,state:heard===null?'unknown':toneHeard?'ok':'miss'},
+    missing:false
+  };
+}
+
+function phoneEvidence(parts) {
+  if (!parts || parts.missing) return [];
+  const evidence=[];
+  const {initial,final,tone}=parts;
+  if (initial.sound && initial.score!==null && !initial.shared) evidence.push({phone:initial.sound,label:`聲母 ${initial.sound}`,kind:'initial',score:initial.score,source:'assessment'});
+  if (final.score!==null && final.state!=='unknown') evidence.push({phone:final.sound,label:`韻母 ${final.sound}`,kind:'final',score:final.score,source:'assessment'});
+  if (tone.state==='miss') evidence.push({phone:`tone${tone.heard}`,label:`聲調（應讀${toneName(tone.tone)}，聽起來像${toneName(tone.heard)}）`,kind:'tone',score:null,expectedTone:tone.tone,heardTone:tone.heard,source:'assessment'});
+  return evidence;
 }
 
 function referenceEntries(poem) {
@@ -69,7 +129,10 @@ function selectReference(word, entries) {
   const lines=new Set(candidates.map(entry=>entry.lineIndex));
   const pinyins=new Set(candidates.map(entry=>entry.pinyin));
   if (pinyins.size>1) return null;
-  return {...candidates[0],studentLineIndex:lines.size===1?candidates[0].lineIndex:null};
+  // The same character can appear twice in a line; its own position decides
+  // which neighbour affects its tone.
+  const exact=lines.size===1 && candidates.find(entry=>entry.charIndex===word.i);
+  return {...(exact || candidates[0]),studentLineIndex:lines.size===1?candidates[0].lineIndex:null};
 }
 
 function contrastsFor(groups, override) {
@@ -101,23 +164,27 @@ export function getPronunciationPractice(result, poem, data=practiceData) {
     }
     const {char,pinyin,line,studentLineIndex}=reference;
     const syllable=parsePinyin(pinyin);
-    const phones=phoneEvidence(word,syllable);
+    const parts=syllableParts({...word,c:char,p:pinyin,i:reference.charIndex},line);
+    const phones=phoneEvidence(parts);
     const lowPhones=phones.filter(phone=>phone.score!==null && phone.score<60).sort((a,b)=>a.score-b.score);
+    const toneMiss=phones.find(phone=>phone.kind==='tone') || null;
     if (score===null) {
       output.unknownWords.push({char,pinyin,score:null,lineIndex:studentLineIndex,phones,reason:'本字未提供有效分數，未把缺失值當成零分或錯讀。'});
       continue;
     }
     output.assessedCount++;
-    if (score>=80 && !lowPhones.length) continue;
-    const weakest=lowPhones[0] || null;
+    // The word score ignores the tone, so a clear wrong tone is listed even
+    // when the score is high.
+    if (score>=80 && !lowPhones.length && !toneMiss && !parts?.missing) continue;
+    const weakest=toneMiss || lowPhones[0] || null;
     const initialGroup=data.groups?.[data.initials?.[syllable.initial]];
     const finalGroup=data.groups?.[data.finals?.[syllable.final]];
     const toneGroup=data.tones?.[syllable.tone];
     const focusGroup=weakest?.kind==='initial'?initialGroup:weakest?.kind==='final'?finalGroup:weakest?.kind==='tone'?toneGroup:initialGroup || finalGroup || toneGroup;
     const override=data.characters?.[`${poem.id}:${char}`];
     const evidence=weakest ? {level:'phone',kind:weakest.kind,label:weakest.label,score:weakest.score} : {level:'word',kind:'word',label:'本字發音準確度',score};
-    const issue=weakest?.kind==='initial'?'聲母待改善':weakest?.kind==='final'?'韻母待改善':weakest?.kind==='tone'?'聲調對應音素待練習':score<60?'字音需要加強':'字音可以更準確';
-    const explanation=weakest ? `「${char}」（${pinyin}）的${weakest.label}評分為${weakest.score}分，可優先練習這個部分；這不代表已辨識出你讀成了另一個字。` : `「${char}」（${pinyin}）的字級發音準確度為${score}分。這次資料不足以確定是哪個聲母、韻母或聲調出錯，先按原詩讀音做對比練習。`;
+    const issue=parts?.missing?'這個字沒有讀出來':weakest?.kind==='initial'?'聲母待改善':weakest?.kind==='final'?'韻母待改善':weakest?.kind==='tone'?'聲調待改善':score<60?'字音需要加強':'字音可以更準確';
+    const explanation=parts?.missing ? `這次評測沒有聽到「${char}」（${pinyin}），先聽示範，再把整句讀一次。` : weakest?.kind==='tone' ? `「${char}」（${pinyin}）應讀${toneName(weakest.expectedTone)}，這次聽起來像${toneName(weakest.heardTone)}，先聽示範再讀一次。` : weakest ? `「${char}」（${pinyin}）的${weakest.label}評分為${weakest.score}分，可優先練習這個部分；這不代表已辨識出你讀成了另一個字。` : `「${char}」（${pinyin}）的字級發音準確度為${score}分。這次資料不足以確定是哪個聲母、韻母或聲調出錯，先按原詩讀音做對比練習。`;
     const tips=[override?.tip,focusGroup?.tip];
     if (toneGroup && focusGroup?.kind!=='tone' && !override) tips.push(toneGroup.tip);
     const articulationDetail=[...new Set(tips.filter(Boolean))].join(' ') || `先聽「${char}」在原句中的${pinyin}讀音，慢讀一次，再用自然速度讀回原句。`;
@@ -128,7 +195,7 @@ export function getPronunciationPractice(result, poem, data=practiceData) {
     output.items.push({
       key:`${poem.id}:${studentLineIndex ?? 'unknown'}:${wordIndex}:${char}`,
       char,pinyin,score,lineIndex:studentLineIndex,lineText:line.text,linePinyin:line.pinyin.join(' '),
-      issue,explanation,tip,articulationDetail,evidence,phones,
+      issue,explanation,tip,articulationDetail,evidence,phones,parts,
       model:{label:'示範讀音',text:line.text,pinyin:line.pinyin.join(' '),source:'model',lineIndex:reference.lineIndex},
       student:{label:'我的原句錄音',lineIndex:studentLineIndex,source:'student'},
       contrasts:contrastsFor([focusGroup,initialGroup,finalGroup,toneGroup],override)

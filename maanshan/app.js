@@ -1,8 +1,8 @@
 import {imageAsset} from './media-images.mjs?v=20260923-school23';
 import {manageAnimationSource} from './animation-source.mjs?v=20260923-school23';
-import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260921-school9';
+import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260929-parts1';
 import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260923-school23';
-import {configurePronunciation, getPronunciationPractice} from './pronunciation.mjs?v=20260909a';
+import {configurePronunciation, getPronunciationPractice, syllableParts, toneName} from './pronunciation.mjs?v=20260929-parts1';
 import {getWordAudioURL} from './word-audio.mjs?v=20260923-school23';
 import {getSpeechAudioURL} from './speech-audio.mjs?v=20260923-school23';
 import {getRecitationAudioURL,getRecitationSequence} from './recitation-audio.mjs?v=20260921-school9';
@@ -19,7 +19,7 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20260922-school15';
 import {requestJSON, requestChat} from './network.mjs?v=20260923-school23';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20260923-school23';
-import {schoolSession} from './bootstrap.mjs?v=20260929-hk1';
+import {schoolSession} from './bootstrap.mjs?v=20260929-parts1';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260922-school22';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school22';
 import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
@@ -604,8 +604,8 @@ function renderRecord() {
   }else if(recordStep==='result'){
     content='<div class="record-feedback"><img class="feedback-motif" src="'+poemMotif()+'" width="64" height="64" alt=""><div class="record-result" aria-label="這次朗讀'+result.total_score+'分">'+result.total_score+'<small>分</small></div><h2 tabindex="-1" class="record-feedback-title">'+esc(result.grade)+'</h2><div class="record-actions"><button class="button" data-action="record-retry">'+icon('rotate-ccw')+'再讀一次</button>'+next+'</div></div>';
   }else{
-    recordWordIndex=clamp(recordWordIndex,0,weak.length-1);const word=weak[recordWordIndex];
-    content='<div class="record-word-heading"><span>這句 '+result.total_score+' 分</span><span>第 '+(recordWordIndex+1)+' / '+weak.length+' 個字</span></div><div class="record-review"><button class="focus-word" data-action="word-tts" data-value="'+esc(word.c)+'" data-pinyin="'+esc(word.p)+'" aria-label="聽'+esc(word.c)+'的讀音"><ruby>'+esc(word.c)+'<rt>'+esc(word.p)+'</rt></ruby>'+icon('volume-2')+'</button></div><p class="record-word-hint">再練這個字，點字聽讀音。</p><div class="record-word-pager"><button class="icon-button" data-action="record-word-step" data-value="-1" aria-label="上一個字" '+(recordWordIndex===0?'disabled':'')+'>'+icon('chevron-left')+'</button><button class="icon-button" data-action="record-word-step" data-value="1" aria-label="下一個字" '+(recordWordIndex===weak.length-1?'disabled':'')+'>'+icon('chevron-right')+'</button></div><div class="record-actions">'+next+'</div>';
+    recordWordIndex=clamp(recordWordIndex,0,weak.length-1);const word=weak[recordWordIndex],parts=syllableParts(word,line);
+    content='<div class="record-word-heading"><span>這句 '+result.total_score+' 分</span><span>第 '+(recordWordIndex+1)+' / '+weak.length+' 個字</span></div><div class="record-review"><button class="focus-word" data-action="word-tts" data-value="'+esc(word.c)+'" data-pinyin="'+esc(word.p)+'" aria-label="聽'+esc(word.c)+'的讀音"><ruby>'+esc(word.c)+'<rt>'+esc(word.p)+'</rt></ruby>'+icon('volume-2')+'</button></div>'+syllablePartsHTML(parts,word.c)+'<p class="record-word-hint">'+syllableHint(parts)+'</p><div class="record-word-pager"><button class="icon-button" data-action="record-word-step" data-value="-1" aria-label="上一個字" '+(recordWordIndex===0?'disabled':'')+'>'+icon('chevron-left')+'</button><button class="icon-button" data-action="record-word-step" data-value="1" aria-label="下一個字" '+(recordWordIndex===weak.length-1?'disabled':'')+'>'+icon('chevron-right')+'</button></div><div class="record-actions">'+next+'</div>';
   }
   $('#record-tool').dataset.step=recordStep;
   const extensionEntry=poem.id===2&&recordStep!=='extension'?'<button class="text-button extension-entry" data-action="record-extension" '+(recordBusy?'disabled':'')+'>拓展字：快</button>':'';
@@ -615,7 +615,34 @@ function renderRecord() {
   setRecordingBusy();
   icons();
 }
-function recordWeakWords(){return state(poem).reading[currentLine]?.words.filter(w=>Number.isFinite(w.score)&&w.score<80)||[];}
+// The word score ignores the tone, so a clearly wrong tone is practised too.
+function recordWeakWords(){const line=poem.lines[currentLine];return state(poem).reading[currentLine]?.words.filter(w=>Number.isFinite(w.score)&&(w.score<80||w.missing===true||syllableParts(w,line)?.tone.state==='miss'))||[];}
+const partStates={ok:['check','讀對了'],near:['','差一點'],miss:['x','要再練'],unknown:['','未能判斷'],none:['','沒有聲母']};
+function syllablePartsHTML(parts,char){
+  if(!parts||parts.missing)return '';
+  const card=(name,sound,state,label=partStates[state][1])=>'<li class="syllable-part '+state+'"><span class="part-name">'+name+'</span><strong class="part-sound">'+esc(sound)+'</strong><span class="part-state">'+(partStates[state][0]?icon(partStates[state][0]):'')+esc(label)+'</span></li>';
+  const {initial,final,tone}=parts;
+  return '<ul class="syllable-parts" aria-label="'+esc(char)+'的聲母、韻母和聲調">'+card('聲母',initial.sound||'—',initial.state)+card('韻母',final.sound,final.state)+card('聲調',toneName(tone.tone),tone.state,tone.state==='miss'?'像'+toneName(tone.heard):undefined)+'</ul>';
+}
+// The one part a report card names: a wrong tone first, then the weaker of
+// the initial and the final.
+function partFocus(parts){
+  if(!parts)return '';
+  if(parts.missing)return '漏讀';
+  if(parts.tone.state==='miss')return '聲調';
+  return [['聲母',parts.initial],['韻母',parts.final]].filter(([,part])=>['near','miss'].includes(part.state)).sort((a,b)=>a[1].score-b[1].score)[0]?.[0]||'';
+}
+function syllableHint(parts){
+  if(!parts)return '再練這個字，點字聽讀音。';
+  if(parts.missing)return '這個字好像沒有讀出來，點字聽一聽，再讀一次。';
+  const {initial,final,tone}=parts,weak=[['聲母',initial],['韻母',final]].filter(([,part])=>['near','miss'].includes(part.state)).map(([name])=>name);
+  const notes=[];
+  if(weak.length)notes.push('留意'+weak.join('、'));
+  if(tone.state==='miss')notes.push('應讀'+toneName(tone.tone)+'，聽起來像'+toneName(tone.heard));
+  if(notes.length)return notes.join('；')+'。點字聽讀音，再跟讀。';
+  if([initial,final,tone].every(part=>['ok','none'].includes(part.state)))return '聲母、韻母、聲調都對了，再讀得清楚響亮一點。';
+  return '再練這個字，點字聽讀音。';
+}
 function setRecordingBusy(){
   if(recordBusy)poemSwipe?.cancel();
   const layout=$('.record-layout');if(layout)layout.dataset.recordBusy=String(recordBusy);
@@ -796,7 +823,10 @@ function renderReport() {
     s.reading.map((lineResult,i)=>{
       if(!lineResult)return '';
       const columns=Math.min(7,lineResult.words.length>7?Math.ceil(lineResult.words.length/2):lineResult.words.length||1);
-      return '<div class="report-line" data-line="'+i+'"><div class="report-sentence" role="group" aria-label="'+esc(poem.lines[i].text)+'"><span class="word-grid" data-columns="'+columns+'" style="--report-columns:'+columns+'">'+lineResult.words.map(w=>'<button type="button" class="word-result '+esc(w.status)+'" data-action="word-tts" data-value="'+esc(w.c)+'" data-pinyin="'+esc(w.p)+'" aria-label="聽'+esc(w.c)+'，'+esc(w.p)+'的讀音" aria-pressed="false"><ruby>'+esc(w.c)+'<rt>'+esc(w.p)+'</rt></ruby><strong>'+(w.score??'未測')+'</strong></button>').join('')+'</span></div><div class="report-line-actions"><button type="button" class="button" data-action="report-line-tts" data-value="'+i+'" aria-pressed="false">'+icon('volume-2')+'聽原句</button><button type="button" class="button" data-action="replay" data-value="'+i+'" '+(recordings.has(poem.id+'-'+i)?'':'disabled title="這次重新朗讀後，就可以回聽錄音。"')+'>'+icon('headphones')+'聽自己讀</button><a class="button report-reread" href="'+link('record')+'" data-action="record-target" data-value="'+i+'">'+icon('mic')+'再讀這一句</a></div></div>';
+      return '<div class="report-line" data-line="'+i+'"><div class="report-sentence" role="group" aria-label="'+esc(poem.lines[i].text)+'"><span class="word-grid" data-columns="'+columns+'" style="--report-columns:'+columns+'">'+lineResult.words.map(w=>{
+        const parts=syllableParts(w,poem.lines[i]),status=w.status==='ok'&&parts?.tone.state==='miss'?'warn':w.status,focus=status==='ok'?'':partFocus(parts);
+        return '<button type="button" class="word-result '+esc(status)+'" data-action="word-tts" data-value="'+esc(w.c)+'" data-pinyin="'+esc(w.p)+'" aria-label="聽'+esc(w.c)+'，'+esc(w.p)+'的讀音'+(focus?'，留意'+focus:'')+'" aria-pressed="false"><ruby>'+esc(w.c)+'<rt>'+esc(w.p)+'</rt></ruby><strong>'+(w.score??'未測')+'</strong>'+'<small class="word-part">'+focus+'</small></button>';
+      }).join('')+'</span></div><div class="report-line-actions"><button type="button" class="button" data-action="report-line-tts" data-value="'+i+'" aria-pressed="false">'+icon('volume-2')+'聽原句</button><button type="button" class="button" data-action="replay" data-value="'+i+'" '+(recordings.has(poem.id+'-'+i)?'':'disabled title="這次重新朗讀後，就可以回聽錄音。"')+'>'+icon('headphones')+'聽自己讀</button><a class="button report-reread" href="'+link('record')+'" data-action="record-target" data-value="'+i+'">'+icon('mic')+'再讀這一句</a></div></div>';
     }).join('')+'</section><div class="report-next"><a class="button primary report-animation-next" href="'+link('animation')+'">'+icon('clapperboard')+'<span>去看動畫</span>'+icon('arrow-right')+'</a></div>';
   if(!s.reading[reportLine])reportLine=s.reading.findIndex(Boolean);
   updateScoreLine();icons();

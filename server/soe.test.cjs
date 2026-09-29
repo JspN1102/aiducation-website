@@ -90,3 +90,11 @@ test('browser compact upload keeps the recorder bytes, skips gzip and maps the d
  const other=async()=>({ok:false,status:422,json:async()=>({error:'other'})});
  await assert.rejects(submitAssessment(payload,{fetchImpl:other}),error=>error.code==='SERVICE');
 });
+test('SOE passes each word match tag and its phone scores through to the browser',async()=>{
+ const f=fixture(),{res,pending}=f.call({refText:'曲项向天歌',audio:Buffer.alloc(1600,27).toString('base64')});
+ await new Promise(resolve=>setImmediate(resolve));const ws=f.clients[0];
+ ws.emit('message',Buffer.from(JSON.stringify({code:0,final:1,result:{pron_accuracy:70,words:[{word:'曲',pron_accuracy:69,match_tag:0,phone_infos:[{phone:'q',pron_accuracy:50},{phone:'v1',pron_accuracy:87}]},{word:'啊',pron_accuracy:40,match_tag:1},{word:'向',pron_accuracy:0,match_tag:2},{word:'天',pron_accuracy:99}]}})));await pending;
+ const words=JSON.parse(JSON.stringify(res.body.Words));
+ assert.deepEqual(words.map(w=>w.MatchTag),[0,1,2,0],'older results without a tag count as matched');
+ assert.deepEqual(words[0].PhoneInfos,[{Phone:'q',PronAccuracy:50},{Phone:'v1',PronAccuracy:87}]);ws.emit('close');
+});
