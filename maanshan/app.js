@@ -15,11 +15,11 @@ import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school9';
 import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20260922-school22';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school22';
-import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20260923-school23';
+import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20260929-voice1';
 import {createRecordingLibrary} from './recording-library.mjs?v=20260922-school15';
 import {requestJSON, requestChat} from './network.mjs?v=20260923-school23';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20260923-school23';
-import {schoolSession} from './bootstrap.mjs?v=20260929-parts1';
+import {schoolSession} from './bootstrap.mjs?v=20260929-voice1';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260922-school22';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school22';
 import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
@@ -85,7 +85,7 @@ let transientAudio=null, transientUrl=null, speechVersion=0, toastTimer=null;
 let currentLine=0, recorder=null, stream=null, recordContext=null, recordTimer=null, recordStarted=0, recordBusy=false, recordingVersion=0;
 let recordStep='read', recordWordIndex=0;
 let reportGeneration=0;
-let chatBusy=false;
+let chatBusy=false,chatVoice=null;
 let sceneStage=null, exploration=null, activeSpeechButton=null, finishTransient=null;
 let shishi=null,libraryShishi=null,teacherReset=null,challenge=null,lessonMap=null,poemSwipe=null;
 let animationPlayer=null,disposeAnimation=null;
@@ -383,6 +383,7 @@ function cancelRecording() {
   stream?.getTracks().forEach(track=>track.stop());stream=null;recorder=null;
   if(recordContext?.state!=='closed')recordContext?.close().catch(()=>{});recordContext=null;
   clearInterval(recordTimer);recordTimer=null;recordBusy=false;
+  cancelChatVoice();
 }
 async function api(path,body,timeout=35000,retry=false) {
   const controller=new AbortController();requests.add(controller);
@@ -949,9 +950,10 @@ function chatGreeting(p=poem){
 }
 function renderChat() {
   const messages=state(poem).chat;
-  $('#view').innerHTML=`<div class="chat-layout"><aside class="poet-profile"><img src="${asset('avatar.webp')}" width="480" height="600" alt="${esc(poem.author)}"><h2>${esc(poem.author)}</h2><p>${esc(poem.authorBio)}</p></aside><div class="chat-tool"><div class="chat-messages" id="chat-messages" role="log" aria-live="polite"><div class="chat-message"><img src="${asset('avatar.webp')}" width="32" height="32" alt="${esc(poem.author)}"><div class="chat-bubble">${esc(chatGreeting())}</div></div>${messages.map((m,i)=>chatMessage(m,i)).join('')}</div><div class="chat-suggestions">${chatSuggestions().map((q,i)=>`<button data-action="chat-suggestion" data-value="${i}">${esc(q)}</button>`).join('')}</div><form class="chat-form" id="chat-form"><textarea id="chat-input" aria-label="想和詩人聊的話" placeholder="我想聊……" rows="2" maxlength="1000" required></textarea><button type="submit" class="icon-button" id="chat-send" aria-label="傳送問題" title="傳送問題">${icon('send')}</button></form><div id="chat-error" class="chat-error" role="status"></div></div></div>`;
+  $('#view').innerHTML=`<div class="chat-layout"><aside class="poet-profile"><img src="${asset('avatar.webp')}" width="480" height="600" alt="${esc(poem.author)}"><h2>${esc(poem.author)}</h2><p>${esc(poem.authorBio)}</p></aside><div class="chat-tool"><div class="chat-messages" id="chat-messages" role="log" aria-live="polite"><div class="chat-message"><img src="${asset('avatar.webp')}" width="32" height="32" alt="${esc(poem.author)}"><div class="chat-bubble">${esc(chatGreeting())}</div></div>${messages.map((m,i)=>chatMessage(m,i)).join('')}</div><div class="chat-suggestions">${chatSuggestions().map((q,i)=>`<button data-action="chat-suggestion" data-value="${i}">${esc(q)}</button>`).join('')}</div><form class="chat-form" id="chat-form"><textarea id="chat-input" aria-label="想和詩人聊的話" placeholder="我想聊……" rows="2" maxlength="1000" required></textarea><button type="button" class="icon-button chat-voice" id="chat-voice" data-action="chat-voice" aria-label="用說話輸入" title="用說話輸入">${icon('mic')}</button><button type="submit" class="icon-button" id="chat-send" aria-label="傳送問題" title="傳送問題">${icon('send')}</button></form><p id="chat-voice-status" class="chat-voice-status" role="status" aria-live="polite"></p><div id="chat-error" class="chat-error" role="status"></div></div></div>`;
   $('#chat-form').addEventListener('submit',event=>{event.preventDefault();sendChat($('#chat-input').value.trim());});
   $('#chat-input').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();$('#chat-form').requestSubmit();}});icons();
+  chatVoiceUI();
   const holder=$('#chat-messages');holder.scrollTop=holder.scrollHeight;
   if(messages.at(-1)?.role==='user'&&!chatBusy)showChatRetry('上一句還未收到回覆，可以再送一次。');
 }
@@ -967,7 +969,7 @@ async function sendChat(text,retry=false,presetId=null) {
   else {if(!text?.trim())return;const content=text.trim().slice(0,1000),preset=matchPoetPreset(p.id,content);s.chat.push({role:'user',content,...(presetId&&preset?.id===presetId?{presetId,presetVersion:preset.version}:{})});s.chat=s.chat.slice(-30);persist();}
   const audit=research.context({activity:'chat',itemId:'p'+p.id+'.chat'}),requestedAt=performance.now();
   research.emit(retry?'retry':'attempt_started',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,metrics:{userCharacters:s.chat.at(-1)?.content?.length||0},...(retry?{retryCount:1}:{})});
-  stopMedia();chatBusy=true;renderChat();$('#chat-send').disabled=true;
+  stopMedia();cancelChatVoice();chatBusy=true;renderChat();$('#chat-send').disabled=true;
   $('#chat-error').innerHTML='<span class="spinner"></span><span>正在想一想…</span>';
   const controller=new AbortController();requests.add(controller);let partial=null;
   const waiting=setTimeout(()=>{if(version===routeVersion&&chatBusy&&!partial)$('#chat-error').innerHTML='<span class="spinner"></span><span>還在等回覆，你的問題已保留。</span>';},8000);
@@ -997,8 +999,82 @@ async function sendChat(text,retry=false,presetId=null) {
   } finally {
     requests.delete(controller);
     clearTimeout(waiting);
-    if(version===routeVersion){chatBusy=false;$('#chat-send').disabled=false;}
+    if(version===routeVersion){chatBusy=false;$('#chat-send').disabled=false;chatVoiceUI();}
   }
+}
+// Speech input: record one question, turn it into Hong Kong traditional text
+// on the server and leave it in the box, so the pupil checks it before sending.
+function chatVoiceUI(){
+  const button=$('#chat-voice');if(!button)return;
+  const phase=chatVoice?.phase||'idle',recording=phase==='recording';
+  button.classList.toggle('recording',recording);button.disabled=chatBusy||phase==='starting'||phase==='converting';
+  button.setAttribute('aria-label',recording?'說完了':'用說話輸入');button.title=recording?'說完了':'用說話輸入';
+  button.innerHTML=recording?icon('square'):phase==='idle'?icon('mic'):'<span class="spinner"></span>';icons();
+}
+function chatVoiceStatus(message,tone=''){const status=$('#chat-voice-status');if(!status)return;status.className='chat-voice-status'+(tone?' '+tone:'');status.textContent=message;}
+function cancelChatVoice(){
+  const voice=chatVoice;if(!voice)return;chatVoice=null;
+  clearInterval(voice.timer);voice.controller?.abort();
+  if(voice.recorder){voice.recorder.ondataavailable=null;voice.recorder.onerror=null;voice.recorder.onstop=null;if(voice.recorder.state!=='inactive'){try{voice.recorder.stop();}catch{}}}
+  voice.stream?.getTracks().forEach(track=>track.stop());
+  if(voice.context&&voice.context.state!=='closed')voice.context.close().catch(()=>{});
+  chatVoiceStatus('');chatVoiceUI();
+}
+function chatVoiceError(voice,error){
+  if(chatVoice!==voice)return;
+  cancelChatVoice();
+  chatVoiceStatus(error?.code==='TOO_SHORT'?'說得太短了，按一下麥克風再說一次。':error?.code==='AUDIO_UNSUPPORTED'?'這個瀏覽器未能使用說話輸入，請更新瀏覽器，或者先打字。':recordingErrorMessage(error),'error');
+}
+async function toggleChatVoice(){
+  if(chatVoice?.phase==='recording'){stopChatVoice();return;}
+  if(chatBusy||chatVoice)return;
+  stopMedia();
+  const voice={phase:'starting',chunks:[]};chatVoice=voice;chatVoiceUI();chatVoiceStatus('正在開啟麥克風…');
+  prewarmAssessment();
+  try {
+    const Audio=window.AudioContext||window.webkitAudioContext;
+    if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder||!Audio)throw Object.assign(new Error('unsupported'),{code:'AUDIO_UNSUPPORTED'});
+    // Start audio activation during the tap itself, before the permission prompt on Safari.
+    voice.context=new Audio();voice.context.resume().catch(()=>{});
+    const acquired=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},video:false});
+    if(chatVoice!==voice){acquired.getTracks().forEach(track=>track.stop());return;}
+    voice.stream=acquired;
+    const mime=['audio/webm;codecs=opus','audio/mp4','audio/webm'].find(type=>MediaRecorder.isTypeSupported(type));
+    const recorder=new MediaRecorder(acquired,mime?{mimeType:mime}:{});voice.recorder=recorder;
+    recorder.ondataavailable=event=>{if(event.data.size)voice.chunks.push(event.data);};
+    recorder.onerror=event=>chatVoiceError(voice,event.error);
+    recorder.onstop=()=>{acquired.getTracks().forEach(track=>track.stop());if(chatVoice!==voice)return;chatVoiceConverting(voice);transcribeChatVoice(voice,new Blob(voice.chunks,{type:recorder.mimeType}));};
+    recorder.start();voice.phase='recording';voice.started=Date.now();chatVoiceUI();
+    const tick=()=>{const seconds=Math.floor((Date.now()-voice.started)/1000);chatVoiceStatus(`正在聽你說 0:${String(seconds).padStart(2,'0')} · 說完再按一下`,'live');if(seconds>=30)stopChatVoice();};
+    tick();voice.timer=setInterval(tick,250);
+  } catch(error) {chatVoiceError(voice,error);}
+}
+function chatVoiceConverting(voice){if(voice.phase==='converting')return;clearInterval(voice.timer);voice.phase='converting';chatVoiceUI();chatVoiceStatus('正在把聲音變成文字…');}
+function stopChatVoice(){
+  const voice=chatVoice;if(voice?.phase!=='recording')return;
+  chatVoiceConverting(voice);
+  try{voice.recorder.stop();}catch(error){chatVoiceError(voice,error);}
+}
+async function transcribeChatVoice(voice,blob){
+  const controller=new AbortController();voice.controller=controller;requests.add(controller);
+  try {
+    // Compact Opus/AAC first, decoded on the origin; plain PCM only if that is refused.
+    const compact=await compactRecording(blob);let result;
+    if(chatVoice!==voice)return;
+    try{result=await submitSpeech(compact?{audio:compact.audio,audioFormat:compact.audioFormat}:{audio:await encodeRecording(blob,voice.context)},{signal:controller.signal});}
+    catch(error){
+      if(error?.code!=='TRANSCODE'||!compact)throw error;
+      if(chatVoice!==voice)return;
+      result=await submitSpeech({audio:await encodeRecording(blob,voice.context)},{signal:controller.signal});
+    }
+    if(chatVoice!==voice)return;
+    const text=typeof result?.text==='string'?result.text.trim():'',input=$('#chat-input');
+    chatVoice=null;if(voice.context?.state!=='closed')voice.context?.close().catch(()=>{});chatVoiceUI();
+    if(!text){chatVoiceStatus('聽不清楚，請靠近一點，按一下麥克風再說一次。','error');return;}
+    if(input){input.value=(input.value.trim()+text).slice(0,1000);input.scrollTop=input.scrollHeight;}
+    chatVoiceStatus('已變成文字。看看對不對，可以改一改，再按傳送。','done');
+  } catch(error) {chatVoiceError(voice,error);}
+  finally {requests.delete(controller);}
 }
 function route() {
   if(sessionLocked)return;
@@ -1068,6 +1144,7 @@ document.addEventListener('click',event=>{
   if(action==='report-generate')generateReport();
   if(action==='chat-suggestion'){const question=chatSuggestions()[Number(value)];sendChat(question,false,matchPoetPreset(poem.id,question)?.id);}
   if(action==='chat-retry')sendChat('',true);
+  if(action==='chat-voice')toggleChatVoice();
   if(action==='chat-speak'){const message=state(poem).chat[Number(value)];if(message?.role==='assistant')speakPoetReply(message.content,button);}
 });
 document.addEventListener('keydown',event=>{

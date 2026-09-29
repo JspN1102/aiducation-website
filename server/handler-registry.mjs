@@ -8,6 +8,7 @@ import maanshanSave from '../api/maanshan-save.js';
 import maanshanData from '../api/maanshan-data.js';
 import maanshanInit from '../api/maanshan-init.js';
 import handwriting from '../api/handwriting.js';
+import speechToText from '../api/speech-to-text.js';
 import schoolAuth from '../api/school-auth.js';
 import schoolRecordings from '../api/school-recordings.js';
 import researchEvents from '../api/research-events.js';
@@ -27,5 +28,6 @@ export default Object.freeze({
   'research-events':researchEvents,
   'teacher-analytics':teacherAnalytics,
   'challenge-result':challengeResult,
-  'teacher-tools':teacherTools
+  'teacher-tools':teacherTools,
+  'speech-to-text':speechToText
 });

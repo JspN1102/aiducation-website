@@ -12,6 +12,7 @@ module.exports = Object.freeze({
   'maanshan-data': { bodyLimit: 1024, timeoutMs: 20000 },
   'maanshan-init': { bodyLimit: 1024, timeoutMs: 15000 },
   handwriting: { bodyLimit: 512 * 1024, timeoutMs: 15000 },
+  'speech-to-text': { bodyLimit: 4 * 1024 * 1024, timeoutMs: 30000 },
   'school-auth': { bodyLimit: 16 * 1024, timeoutMs: 30000 },
   'school-recordings': { bodyLimit: 1400000, timeoutMs: 20000 },
   'research-events': { bodyLimit: 128 * 1024, timeoutMs: 15000 },

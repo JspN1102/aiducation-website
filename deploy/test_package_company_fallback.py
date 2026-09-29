@@ -91,7 +91,7 @@ const relative=new URL('./media/a.png',import.meta.url);
             config = json.loads((destination / 'vercel.json').read_text(encoding='utf-8'))
             self.assertEqual(config['functions'], {'api/tts.js': {'maxDuration': 20}})
             self.assertNotIn('regions', config)
-            self.assertEqual(len(config['rewrites']), 13)
+            self.assertEqual(len(config['rewrites']), 14)
             for route in config['rewrites']:
                 name = route['source'].removeprefix('/school-api/').removesuffix('/')
                 self.assertIn(name, packager.API_NAMES)
@@ -104,7 +104,7 @@ const relative=new URL('./media/a.png',import.meta.url);
             self.assertIn({'key':'Cache-Control','value':'no-cache'},worker_headers)
             self.assertEqual((destination/'school/recovery-sw.js').read_text(encoding='utf-8'),
                              (HERE.parent/'maanshan/recovery-sw.js').read_text(encoding='utf-8'))
-            self.assertEqual(result['apiRouteCount'], 13)
+            self.assertEqual(result['apiRouteCount'], 14)
             manifest = json.loads(destination.with_suffix('.manifest.json').read_text())
             for row in manifest['addedFiles']:
                 self.assertEqual(packager.sha256(destination / row['path']), row['sha256'])

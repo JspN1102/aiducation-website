@@ -13,10 +13,11 @@ from module_preloads import render_index
 ROOT = Path(__file__).resolve().parent.parent
 API_FILES = {'soe.js', 'tts.js', 'maanshan-chat.js', 'maanshan-report.js',
              'maanshan-save.js', 'maanshan-data.js', 'handwriting.js',
-             'school-auth.js', 'school-recordings.js', 'research-events.js', 'teacher-analytics.js', 'challenge-result.js', 'teacher-tools.js'}
+             'school-auth.js', 'school-recordings.js', 'research-events.js', 'teacher-analytics.js', 'challenge-result.js', 'teacher-tools.js',
+             'speech-to-text.js'}
 RELAY_FILE = 'api/_lib/guangzhou-relay.cjs'
 RELAY_RUNTIME = {RELAY_FILE, 'api/_lib/response-encoding.cjs'}
-# One shared function serves the thirteen fixed school endpoints.
+# One shared function serves the fourteen fixed school endpoints.
 # Guangzhou persists long report jobs and returns 202 for polling. Individual
 # relay requests still finish before Vercel's 60-second function deadline.
 FUNCTION_SECONDS = {name: 60 for name in API_FILES}
@@ -32,7 +33,7 @@ def relay_entry(filename):
 
 
 def functions_config():
-    if set(FUNCTION_SECONDS) != API_FILES or len(API_FILES) != 13:
+    if set(FUNCTION_SECONDS) != API_FILES or len(API_FILES) != 14:
         raise RuntimeError('School relay endpoints and duration limits disagree.')
     return {'api/school-gateway.js': {'maxDuration': 60}}
 

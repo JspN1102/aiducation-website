@@ -24,7 +24,8 @@ SCHOOL_ORIGIN = 'https://mandarin.aiducation.asia'
 API_NAMES = frozenset(['soe', 'tts', 'maanshan-chat', 'maanshan-report',
                       'maanshan-save', 'maanshan-data', 'handwriting',
                       'school-auth', 'school-recordings', 'research-events',
-                      'teacher-analytics', 'challenge-result', 'teacher-tools'])
+                      'teacher-analytics', 'challenge-result', 'teacher-tools',
+                      'speech-to-text'])
 TEXT_SUFFIXES = {'.js', '.mjs', '.html', '.json', '.css'}
 LOCAL_LITERAL = re.compile(r'([\"\'`])(/maanshan/|/api/)')
 REMOTE_URL = re.compile(r'https?://[^\s\"\'`<>]+')

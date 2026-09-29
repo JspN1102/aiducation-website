@@ -48,9 +48,9 @@ Set-Location C:/Users/Administrator/maanshan-work/school-release-new
 vercel --prod --yes --scope jspn1102s-projects --local-config ./vercel.json
 ```
 
-打包器把 13 个固定入口交给同一个 `school-gateway` 函数：`soe`、`tts`、`maanshan-chat`、`maanshan-report`、
+打包器把 14 个固定入口交给同一个 `school-gateway` 函数：`soe`、`tts`、`maanshan-chat`、`maanshan-report`、
 `maanshan-save`、`maanshan-data`、`handwriting`、`school-auth`、`research-events`、
-`teacher-analytics`、`challenge-result`、`teacher-tools`、`school-recordings`。每个入口固定上游路径，
+`teacher-analytics`、`challenge-result`、`teacher-tools`、`school-recordings`、`speech-to-text`（和詩人對話的說話輸入）。每个入口固定上游路径，
 只接受该白名单，调用者不能选择其他目标。路由重写的来源及目的都保留尾斜线，
 与 `trailingSlash: true` 一致。Vercel 只包含页面、relay 和必要依赖，
 不打包 `.env`、数据库、账号名单、广州业务模块、原官网或其他网站。

@@ -88,7 +88,16 @@ export async function prepareAssessmentPayload(payload, scope = globalThis) {
 
 // Only one quick transport failure is retried, with the same request context.
 // A slow request, HTTP error, or explicit cancellation always returns control to the learner.
-export async function submitAssessment(payload, {signal, onRetry, onWaiting, fetchImpl = schoolFetch, timeout = 30000} = {}) {
+export function submitAssessment(payload, options = {}) {
+  return postRecording('/api/soe/', payload, options, {busy:'現在較多人使用，稍後可以再送一次。', service:'評測暫時未能完成，稍後可以再送一次。'});
+}
+
+// Speech input for the poet conversation: the same upload, returned as text.
+export function submitSpeech(payload, options = {}) {
+  return postRecording('/api/speech-to-text/', payload, {timeout:25000, ...options}, {busy:'說話輸入用得太密了，請等一會兒再試，或者先打字。', service:'暫時未能把聲音變成文字，請再說一次，或者先打字。'});
+}
+
+async function postRecording(url, payload, {signal, onRetry, onWaiting, fetchImpl = schoolFetch, timeout = 30000} = {}, messages) {
   if (globalThis.navigator?.onLine === false) throw audioError('OFFLINE', '網絡未連上，連線後可以再送一次。', true);
   const body = JSON.stringify(await prepareAssessmentPayload(payload));
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -98,14 +107,14 @@ export async function submitAssessment(payload, {signal, onRetry, onWaiting, fet
     const timer = setTimeout(() => {expired = true;controller.abort();}, timeout);
     const waiting = setTimeout(() => onWaiting?.(), 7000);
     try {
-      const response = await fetchImpl('/api/soe/', {method:'POST', headers:{'Content-Type':'application/json'}, body, signal:controller.signal});
+      const response = await fetchImpl(url, {method:'POST', headers:{'Content-Type':'application/json'}, body, signal:controller.signal});
       const data = await response.json().catch(() => null);
       if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
       if (!response.ok || !data || data.error) {
-        if (response.status === 429) throw audioError('BUSY', '現在較多人使用，稍後可以再送一次。', true);
+        if (response.status === 429) throw audioError('BUSY', messages.busy, true);
         // Definite, pre-scoring refusal of the compact upload: the caller re-sends PCM once.
         if (response.status === 422 && data?.code === 'AUDIO_TRANSCODE_FAILED') throw audioError('TRANSCODE', '錄音處理未能完成，請再試一次。', true);
-        throw audioError('SERVICE', '評測暫時未能完成，稍後可以再送一次。', true);
+        throw audioError('SERVICE', messages.service, true);
       }
       return data;
     } catch (error) {
