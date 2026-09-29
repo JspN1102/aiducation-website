@@ -47,7 +47,7 @@
 .workspace.view-record .syllable-part .part-state{font-size:12px}
 .workspace.view-record .syllable-part .part-state svg{display:none}
 }
-/* The part to practise, under a word's score in the results. */
-/* Always present, so the characters of one line stay level. */
-.workspace.view-report .word-analysis .word-result .word-part{min-height:1.3em;font:600 clamp(13px,1.3vw,16px)/1.3 var(--sans);color:#855d0c;white-space:nowrap}
+/* Each part to practise, one per line under a word's score in the results.
+   Always present, so the characters of one line stay level. */
+.workspace.view-report .word-analysis .word-result .word-part{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:1.35em;font:700 clamp(14px,1.45vw,17px)/1.35 var(--sans);color:#855d0c;white-space:nowrap}
 .workspace.view-report .word-analysis .word-result.error .word-part{color:var(--red)}

@@ -15,11 +15,11 @@ import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school9';
 import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20260922-school22';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school22';
-import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20260929-voice1';
+import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20260930-school26';
 import {createRecordingLibrary} from './recording-library.mjs?v=20260922-school15';
 import {requestJSON, requestChat} from './network.mjs?v=20260923-school23';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20260923-school23';
-import {schoolSession} from './bootstrap.mjs?v=20260929-voice1';
+import {schoolSession} from './bootstrap.mjs?v=20260930-school26';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260922-school22';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school22';
 import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
@@ -402,15 +402,15 @@ function verseHTML(line,extra='') {
 function renderLibrary() {
   poem=null;document.title='AI普通話學習平台';
   app.innerHTML='<main class="library" id="main">'+
-    '<div class="library-heading library-with-shishi"><div><h1><span class="library-title-start">AI普通話</span><span class="library-title-end">學習平台</span></h1></div></div>'+
+    '<div class="library-heading library-with-shishi"><div><h1><span class="library-title-start">AI普通話</span><span class="library-title-end">學習平台</span></h1><button type="button" class="pack-button" data-action="pack" hidden></button></div></div>'+
     '<div class="poem-grid library-books" id="poem-grid" aria-label="選擇古詩"></div></main>';
   renderCards();icons();renderPackButton();
   libraryShishi?.destroy();
   libraryShishi=mountLibraryShishi($('.library-heading'),{canPlay:()=>!sessionLocked&&!poem});
 }
-// The one-tap resource pack: its button sits in the header row beside the
-// pupil's name (index.html), shows on the library screen only (pack.css) and
-// follows the download state (resource-pack.mjs). Nothing else waits on it.
+// The one-tap resource pack: its button sits under the library title (the
+// header's left corner holds the school badge) and follows the download state
+// (resource-pack.mjs). Nothing else waits on it.
 function packMB(bytes){return Math.max(1,Math.round(bytes/1048576));}
 function packButtonView(s){
   const size=s.totalBytes?'（約 '+packMB(s.totalBytes)+' MB）':'';
@@ -625,13 +625,14 @@ function syllablePartsHTML(parts,char){
   const {initial,final,tone}=parts;
   return '<ul class="syllable-parts" aria-label="'+esc(char)+'的聲母、韻母和聲調">'+card('聲母',initial.sound||'—',initial.state)+card('韻母',final.sound,final.state)+card('聲調',toneName(tone.tone),tone.state,tone.state==='miss'?'像'+toneName(tone.heard):undefined)+'</ul>';
 }
-// The one part a report card names: a wrong tone first, then the weaker of
-// the initial and the final.
-function partFocus(parts){
-  if(!parts)return '';
-  if(parts.missing)return '漏讀';
-  if(parts.tone.state==='miss')return '聲調';
-  return [['聲母',parts.initial],['韻母',parts.final]].filter(([,part])=>['near','miss'].includes(part.state)).sort((a,b)=>a[1].score-b[1].score)[0]?.[0]||'';
+// Every part a report card names, so a pupil sees each thing to fix.
+function partIssues(parts){
+  if(!parts)return [];
+  if(parts.missing)return ['漏讀'];
+  const issues=[['聲母',parts.initial],['韻母',parts.final]].filter(([,part])=>['near','miss'].includes(part.state)).map(([name,part])=>name+(part.state==='miss'?'錯誤':'不準'));
+  if(parts.tone.state==='miss')issues.push('聲調錯誤');
+  if(!issues.length&&[parts.initial,parts.final,parts.tone].every(part=>['ok','none'].includes(part.state)))issues.push('讀清楚一點');
+  return issues;
 }
 function syllableHint(parts){
   if(!parts)return '再練這個字，點字聽讀音。';
@@ -825,8 +826,8 @@ function renderReport() {
       if(!lineResult)return '';
       const columns=Math.min(7,lineResult.words.length>7?Math.ceil(lineResult.words.length/2):lineResult.words.length||1);
       return '<div class="report-line" data-line="'+i+'"><div class="report-sentence" role="group" aria-label="'+esc(poem.lines[i].text)+'"><span class="word-grid" data-columns="'+columns+'" style="--report-columns:'+columns+'">'+lineResult.words.map(w=>{
-        const parts=syllableParts(w,poem.lines[i]),status=w.status==='ok'&&parts?.tone.state==='miss'?'warn':w.status,focus=status==='ok'?'':partFocus(parts);
-        return '<button type="button" class="word-result '+esc(status)+'" data-action="word-tts" data-value="'+esc(w.c)+'" data-pinyin="'+esc(w.p)+'" aria-label="聽'+esc(w.c)+'，'+esc(w.p)+'的讀音'+(focus?'，留意'+focus:'')+'" aria-pressed="false"><ruby>'+esc(w.c)+'<rt>'+esc(w.p)+'</rt></ruby><strong>'+(w.score??'未測')+'</strong>'+'<small class="word-part">'+focus+'</small></button>';
+        const parts=syllableParts(w,poem.lines[i]),status=w.status==='ok'&&parts?.tone.state==='miss'?'warn':w.status,issues=status==='ok'?[]:partIssues(parts);
+        return '<button type="button" class="word-result '+esc(status)+'" data-action="word-tts" data-value="'+esc(w.c)+'" data-pinyin="'+esc(w.p)+'" aria-label="聽'+esc(w.c)+'，'+esc(w.p)+'的讀音'+(issues.length?'，'+issues.join('、'):'')+'" aria-pressed="false"><ruby>'+esc(w.c)+'<rt>'+esc(w.p)+'</rt></ruby><strong>'+(w.score??'未測')+'</strong>'+'<small class="word-part">'+issues.map(issue=>'<span>'+issue+'</span>').join('')+'</small></button>';
       }).join('')+'</span></div><div class="report-line-actions"><button type="button" class="button" data-action="report-line-tts" data-value="'+i+'" aria-pressed="false">'+icon('volume-2')+'聽原句</button><button type="button" class="button" data-action="replay" data-value="'+i+'" '+(recordings.has(poem.id+'-'+i)?'':'disabled title="這次重新朗讀後，就可以回聽錄音。"')+'>'+icon('headphones')+'聽自己讀</button><a class="button report-reread" href="'+link('record')+'" data-action="record-target" data-value="'+i+'">'+icon('mic')+'再讀這一句</a></div></div>';
     }).join('')+'</section><div class="report-next"><a class="button primary report-animation-next" href="'+link('animation')+'">'+icon('clapperboard')+'<span>去看動畫</span>'+icon('arrow-right')+'</a></div>';
   if(!s.reading[reportLine])reportLine=s.reading.findIndex(Boolean);

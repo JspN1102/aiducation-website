@@ -90,7 +90,7 @@ const fakeMicrophone=()=>{
    check(name+' service failure suggests trying again or typing',!(await mic.isDisabled()));
    speechReply=()=>({status:429,body:{error:'Too many speech requests',code:'SPEECH_LIMIT'}});
    await mic.click();await page.waitForFunction(()=>document.querySelector('#chat-voice').classList.contains('recording'));await page.waitForTimeout(700);await mic.click();
-   await page.waitForFunction(()=>/用得太密/.test(document.querySelector('#chat-voice-status').textContent));
+   await page.waitForFunction(()=>/繁忙/.test(document.querySelector('#chat-voice-status').textContent));
    check(name+' per-pupil limit is explained',true);
    await page.evaluate(()=>{window.__mic.denied=true;});await mic.click();
    await page.waitForFunction(()=>/允許使用麥克風/.test(document.querySelector('#chat-voice-status').textContent));

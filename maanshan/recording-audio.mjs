@@ -94,7 +94,7 @@ export function submitAssessment(payload, options = {}) {
 
 // Speech input for the poet conversation: the same upload, returned as text.
 export function submitSpeech(payload, options = {}) {
-  return postRecording('/api/speech-to-text/', payload, {timeout:25000, ...options}, {busy:'說話輸入用得太密了，請等一會兒再試，或者先打字。', service:'暫時未能把聲音變成文字，請再說一次，或者先打字。'});
+  return postRecording('/api/speech-to-text/', payload, {timeout:25000, ...options}, {busy:'語音輸入現在繁忙，請稍後再試，或者先打字。', service:'暫時未能把聲音變成文字，請再說一次，或者先打字。'});
 }
 
 async function postRecording(url, payload, {signal, onRetry, onWaiting, fetchImpl = schoolFetch, timeout = 30000} = {}, messages) {

@@ -15,11 +15,25 @@ const HOST = 'asr.tencentcloudapi.com';
 const ENGINE = '16k_zh-PY';
 // Poets, titles and places of the six course poems, in the engine's simplified
 // script; each word is at most ten characters.
-const HOTWORDS = ['骆宾王', '李白', '汪伦', '苏轼', '苏东坡', '王安石', '陶渊明', '韩愈', '咏鹅', '赠汪伦', '题西林壁', '泊船瓜洲', '归园田居', '初春小雨', '早春呈水部张十八员外', '桃花潭', '庐山', '瓜洲', '京口', '钟山', '南山', '天街小雨'].map(word => word + '|10').join(',');
+const HOTWORDS = ['鹅鹅鹅', '骆宾王', '李白', '汪伦', '苏轼', '苏东坡', '王安石', '陶渊明', '韩愈', '咏鹅', '赠汪伦', '题西林壁', '泊船瓜洲', '归园田居', '初春小雨', '早春呈水部张十八员外', '桃花潭', '庐山', '瓜洲', '京口', '钟山', '南山', '天街小雨'].map(word => word + '|10').join(',');
 // Each successful recognition is billed. A pupil asks a question at a time;
 // these ceilings stop a stuck button or a script from running up the bill.
 const ACTOR_LIMIT = {max: 20, windowMs: 10 * 60000};
 const GLOBAL_LIMIT = {max: 1200, windowMs: 60 * 60000};
+// Each pupil account has ten recognitions per Hong Kong calendar month, and
+// the whole site stops below the provider's 5000 free recognitions a month so
+// nothing is ever billed. Counts live in the school database so a restart
+// does not reset them.
+const MONTHLY_PUPIL_LIMIT = 10;
+const MONTHLY_SITE_LIMIT = 4800;
+const SITE = '*site';
+const USAGE_SCHEMA = `CREATE TABLE IF NOT EXISTS speech_input_usage (
+  actor_id varchar(30) NOT NULL, month char(7) NOT NULL,
+  used smallint NOT NULL CHECK(used >= 0),
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY(actor_id, month)
+)`;
+const usageReady = new WeakMap();
 const usage = new Map();
 let globalUsage = {count: 0, until: 0};
 let converter = null;
@@ -52,6 +66,23 @@ function consume(key, now = Date.now()) {
   current.count++;globalUsage.count++;usage.set(key, current);
   if (usage.size > 5000) for (const [name, entry] of usage) if (entry.until <= now) usage.delete(name);
   return true;
+}
+
+function hongKongMonth(now = Date.now()) {
+  return new Date(now + 8 * 3600000).toISOString().slice(0, 7);
+}
+// Takes one of this month's recognitions, or returns false when none is left.
+async function reserveMonthly(pool, actorId, month, limit) {
+  if (!usageReady.has(pool)) usageReady.set(pool, pool.query(USAGE_SCHEMA).catch(error => { usageReady.delete(pool); throw error; }));
+  await usageReady.get(pool);
+  const {rows} = await pool.query(`INSERT INTO speech_input_usage(actor_id, month, used) VALUES($1, $2, 1)
+    ON CONFLICT(actor_id, month) DO UPDATE SET used = speech_input_usage.used + 1, updated_at = CURRENT_TIMESTAMP
+    WHERE speech_input_usage.used < $3 RETURNING used`, [actorId, month, limit]);
+  return rows.length > 0;
+}
+// A recognition the provider refused is not billed, so it is given back.
+function releaseMonthly(pool, actorId, month) {
+  return pool.query('UPDATE speech_input_usage SET used = used - 1, updated_at = CURRENT_TIMESTAMP WHERE actor_id = $1 AND month = $2 AND used > 0', [actorId, month]).catch(() => {});
 }
 
 function hongKongText(text) {
@@ -126,11 +157,26 @@ module.exports = async function handler(req, res) {
     try { audioBuf = await transcodeToWav(audioBuf, audioFormat); }
     catch (error) { return res.status(422).json({error: 'Audio transcode failed', code: 'AUDIO_TRANSCODE_FAILED', reason: error?.code || 'TRANSCODE_FAILED'}); }
   }
-  if (!consume(actor?.id ? 'actor:' + actor.id : 'anonymous')) return res.status(429).json({error: 'Too many speech requests', code: 'SPEECH_LIMIT'});
+  const busy = () => res.status(429).json({error: 'Too many speech requests', code: 'SPEECH_LIMIT'});
+  if (!consume(actor?.id ? 'actor:' + actor.id : 'anonymous')) return busy();
+  let monthly = null;
+  if (actor) {
+    // Without the database the monthly counts cannot be kept, so nothing is sent.
+    const month = hongKongMonth(), pupil = actor.role === 'student';let pool;
+    try {
+      pool = schoolAuth.getStore().pool;
+      if (!pool || !await reserveMonthly(pool, SITE, month, MONTHLY_SITE_LIMIT)) return busy();
+      if (pupil && !await reserveMonthly(pool, actor.id, month, MONTHLY_PUPIL_LIMIT)) { await releaseMonthly(pool, SITE, month); return busy(); }
+    } catch { return busy(); }
+    monthly = {pool, month, pupil};
+  }
   try {
     const result = await recognise(audioBuf);
     return res.status(200).json({text: hongKongText(result.trim()).slice(0, 1000)});
   } catch (error) {
+    if (monthly?.pupil) await releaseMonthly(monthly.pool, actor.id, monthly.month);
+    // A timeout may still have been recognised and billed, so only a definite refusal is given back.
+    if (monthly && error.upstreamCode && error.upstreamCode !== 'INVALID_RESPONSE') await releaseMonthly(monthly.pool, SITE, monthly.month);
     if (error.upstreamCode) console.error('speech-to-text upstream', error.upstreamCode);
     return res.status(error.statusCode || 502).json({error: 'Speech recognition unavailable', code: 'SPEECH_UNAVAILABLE'});
   }
