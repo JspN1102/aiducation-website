@@ -7,14 +7,14 @@
 // the session. The small variant subsets stay in the stylesheet. Text shows in
 // the system font until a copy arrives, exactly as font-display: swap did.
 // Nothing about the pupil is sent or stored.
-import {FONT_ASSETS} from './media-fonts.mjs?v=20260923-school23';
+import {FONT_ASSETS} from './media-fonts.mjs?v=20260929-hk1';
 import {orderRoutes, rememberRoute, rememberedRoute} from './media-route.mjs?v=20260923-school23';
 import {publicImagesReady} from './media-images.mjs?v=20260923-school23';
 
 export const HEDGE_MS = 3000;
 export const FONTS = Object.freeze([
-  {family: 'Noto Serif TC', path: '/maanshan/vendor/fonts/noto-serif-tc.woff2', version: '20260921-full1'},
-  {family: 'Noto Sans TC', path: '/maanshan/vendor/fonts/noto-sans-tc.woff2', version: '20260921-full1'}
+  {family: 'Noto Serif HK', path: '/maanshan/vendor/fonts/noto-serif-hk.woff2', version: '20260929-hk1'},
+  {family: 'Noto Sans HK', path: '/maanshan/vendor/fonts/noto-sans-hk.woff2', version: '20260929-hk1'}
 ]);
 
 // Ordered routes for one font file. The local copy keeps the cache-busting

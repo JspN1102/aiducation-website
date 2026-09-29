@@ -1,10 +1,17 @@
-Copyright 2012 Google Inc. All Rights Reserved.
+Noto Serif HK (noto-serif-hk.woff2, noto-serif-hk-variants.woff2)
 
-This Font Software is licensed under the SIL Open Font License,
-Version 1.1.
+Copyright 2017-2024 Adobe (http://www.adobe.com/).
 
+Modified 2026-09-29 for this website (scripts/build-maanshan-fonts.py): subset to the
+characters the platform uses, weights limited to 400-700, line metrics set to those of
+the Google Fonts build of the same family, and 27 simplified handwriting variants
+taken from Noto Serif SC into noto-serif-hk-variants.woff2. The font names are unchanged; no Reserved
+Font Name is used.
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
-http://scripts.sil.org/OFL
+https://openfontlicense.org
+
 
 -----------------------------------------------------------
 SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007

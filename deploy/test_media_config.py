@@ -83,7 +83,7 @@ class MediaConfigTests(unittest.TestCase):
         self.assertTrue(config['videos'])
         # The page's fonts and every current recording have a public copy too.
         self.assertEqual([f['source'] for f in config['fonts']], by_type('font/woff2'))
-        self.assertIn('/maanshan/vendor/fonts/noto-serif-tc.woff2', [f['source'] for f in config['fonts']])
+        self.assertIn('/maanshan/vendor/fonts/noto-serif-hk.woff2', [f['source'] for f in config['fonts']])
         self.assertEqual(len(config['audio']), len(by_type('audio/mpeg')))
         self.assertEqual(set(config['audioGroups']), {'words', 'speech', 'recitations/edb-20260921'})
         for name, group in config['audioGroups'].items():

@@ -32,7 +32,7 @@ test('each kind of file goes to the grade that uses it', async () => {
   const classify = scope.classifier(catalogue, indexes);
   const grade = slug => catalogue.find(poem => poem.slug === slug).grade;
   // Shared by every grade.
-  assert.equal(classify('vendor/fonts/noto-sans-tc-variants.woff2'), null);
+  assert.equal(classify('vendor/fonts/noto-sans-hk-variants.woff2'), null);
   assert.equal(classify('media/shishi-guide.webp'), null);
   assert.equal(classify('media/paper-crane-v2.webp'), null);
   assert.equal(classify('media/challenges/sound-market-v1.webp'), null);

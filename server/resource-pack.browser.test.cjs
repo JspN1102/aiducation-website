@@ -15,7 +15,7 @@ const mime={'.mjs':'text/javascript','.js':'text/javascript','.json':'applicatio
 const packed=[
   ['media/words/8c46-dou4-f101001-20260918a.mp3','audio/mpeg','g-9181908b9a88540cf3bd'],
   ['media/bo-chuan-gua-zhou/preview-1.webp','image/webp',null,[4]],
-  ['vendor/fonts/noto-sans-tc-variants.woff2','font/woff2',null]
+  ['vendor/fonts/noto-sans-hk-variants.woff2','font/woff2',null]
 ];
 const overrides=new Map();
 // Files listed here are sent in pieces with pauses, like a big file on a slow line.
@@ -93,7 +93,7 @@ const probe=(page,url,init)=>page.evaluate(async([url,init])=>{
     check('pack completes with every byte accounted for',state.done===3&&state.bytesDone===state.totalBytes&&state.version===version);
     check('the wish persists for later visits',await page.evaluate(()=>localStorage.getItem('maanshan:pack'))==='all');
     const keys=await page.evaluate(async()=>(await (await caches.open('maanshan-pack-v1')).keys()).map(r=>new URL(r.url).pathname).sort());
-    assert.deepEqual(keys,['/school/__pack-version','/school/media/bo-chuan-gua-zhou/preview-1.webp','/school/media/words/8c46-dou4-f101001-20260918a.mp3','/school/pack-manifest.json','/school/vendor/fonts/noto-sans-tc-variants.woff2']);
+    assert.deepEqual(keys,['/school/__pack-version','/school/media/bo-chuan-gua-zhou/preview-1.webp','/school/media/words/8c46-dou4-f101001-20260918a.mp3','/school/pack-manifest.json','/school/vendor/fonts/noto-sans-hk-variants.woff2']);
     results.push('cache holds exactly the packed files, the manifest and the version note');
     const stored=await page.evaluate(async path=>{const r=await (await caches.open('maanshan-pack-v1')).match(path);return {sha:r.headers.get('X-Pack-Sha256'),type:r.headers.get('Content-Type'),bytes:(await r.arrayBuffer()).byteLength};},'/school/'+mp3.path);
     check('stored entry carries the verified digest',stored.sha===mp3.sha256&&stored.type==='audio/mpeg'&&stored.bytes===mp3.bytes);
@@ -189,12 +189,12 @@ const probe=(page,url,init)=>page.evaluate(async([url,init])=>{
     // Fonts: the failing host is skipped and the working route remembered.
     const fonts=await page.evaluate(async cos=>{
       const {fetchFont}=await import('/school/font-source.mjs?v=test');
-      const font={family:'Noto Sans TC',path:'/maanshan/vendor/fonts/noto-sans-tc-variants.woff2',version:'test'};
+      const font={family:'Noto Sans HK',path:'/maanshan/vendor/fonts/noto-sans-hk-variants.woff2',version:'test'};
       sessionStorage.removeItem('maanshan:media-route');
-      const local='/school/vendor/fonts/noto-sans-tc-variants.woff2';
-      const first=await fetchFont(font,{hedgeMs:200,candidates:[{route:'public',url:cos+'/published/deadbeefdeadbeefdead/maanshan/vendor/fonts/noto-sans-tc-variants.woff2'},{route:'local',url:local}]});
+      const local='/school/vendor/fonts/noto-sans-hk-variants.woff2';
+      const first=await fetchFont(font,{hedgeMs:200,candidates:[{route:'public',url:cos+'/published/deadbeefdeadbeefdead/maanshan/vendor/fonts/noto-sans-hk-variants.woff2'},{route:'local',url:local}]});
       const memory=sessionStorage.getItem('maanshan:media-route');
-      const second=await fetchFont(font,{hedgeMs:200,candidates:[{route:'local',url:local},{route:'public',url:cos+'/published/deadbeefdeadbeefdead/maanshan/vendor/fonts/noto-sans-tc-variants.woff2'}]});
+      const second=await fetchFont(font,{hedgeMs:200,candidates:[{route:'local',url:local},{route:'public',url:cos+'/published/deadbeefdeadbeefdead/maanshan/vendor/fonts/noto-sans-hk-variants.woff2'}]});
       let failed=null;try{await fetchFont(font,{hedgeMs:50,candidates:[{route:'public',url:cos+'/x.woff2'},{route:'public',url:cos+'/y.woff2'}]});}catch(error){failed=error.message||error.name;}
       return {first:{route:first.route,bytes:first.buffer.byteLength},memory,second:{route:second.route,bytes:second.buffer.byteLength},failed};
     },cos);

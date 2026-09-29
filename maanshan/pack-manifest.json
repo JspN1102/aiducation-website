@@ -1,8 +1,8 @@
 {
  "schemaVersion": 1,
- "version": "097185cce5a0621bcc1d",
+ "version": "7092868f39f6dfd0045f",
  "cache": "maanshan-pack-v1",
- "totalBytes": 219495477,
+ "totalBytes": 219534677,
  "assets": [
   {
    "path": "media/bo-chuan-gua-zhou/animation-20260917.mp4",
@@ -5977,31 +5977,45 @@
    ]
   },
   {
-   "path": "vendor/fonts/noto-sans-tc-variants.woff2",
-   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/8618256cfb6f22d7e70e/maanshan/vendor/fonts/noto-sans-tc-variants.woff2",
-   "bytes": 10460,
-   "sha256": "8618256cfb6f22d7e70ec18431822587d7139350d7901576916c9ec9b55ff254",
+   "path": "vendor/fonts/noto-sans-hk-variants.woff2",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/38f517e51a8a25aff1e3/maanshan/vendor/fonts/noto-sans-hk-variants.woff2",
+   "bytes": 10972,
+   "sha256": "38f517e51a8a25aff1e330bd28b1509a1379819671c9562a116d6a879123d0c4",
    "type": "font/woff2"
   },
   {
-   "path": "vendor/fonts/noto-sans-tc.woff2",
-   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/7ce4f70d4de7850d814f/maanshan/vendor/fonts/noto-sans-tc.woff2",
-   "bytes": 402544,
-   "sha256": "7ce4f70d4de7850d814f802384891d876bc3913e5dd22642c6e8f10ac7cf8ef4",
+   "path": "vendor/fonts/noto-sans-hk.woff2",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/1dfcba192871af35da75/maanshan/vendor/fonts/noto-sans-hk.woff2",
+   "bytes": 403276,
+   "sha256": "1dfcba192871af35da759ccb087449e09e7d452f92f86a83ae11cbe2435c4b7b",
    "type": "font/woff2"
   },
   {
-   "path": "vendor/fonts/noto-serif-tc-variants.woff2",
-   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/7e01461e5006ede780c3/maanshan/vendor/fonts/noto-serif-tc-variants.woff2",
+   "path": "vendor/fonts/noto-serif-hk-variants.woff2",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/a9e02af4d66dfc7ef15d/maanshan/vendor/fonts/noto-serif-hk-variants.woff2",
    "bytes": 12992,
-   "sha256": "7e01461e5006ede780c3ae7f0f13aebc3a430f90c882df6f573b6f39f81e4924",
+   "sha256": "a9e02af4d66dfc7ef15d78030bd9e32698857786af27ae1919cf816f72fa1388",
    "type": "font/woff2"
   },
   {
-   "path": "vendor/fonts/noto-serif-tc.woff2",
-   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/a0c9b7af5e1d0ab4bce5/maanshan/vendor/fonts/noto-serif-tc.woff2",
-   "bytes": 550560,
-   "sha256": "a0c9b7af5e1d0ab4bce547804d2abc84a71ff7daa76efc8b5afb4a7785a74ae1",
+   "path": "vendor/fonts/noto-serif-hk.woff2",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/3de831b6e9955fdd9e28/maanshan/vendor/fonts/noto-serif-hk.woff2",
+   "bytes": 552204,
+   "sha256": "3de831b6e9955fdd9e282aff42e1a8ce50db70b0d7effda39553551863718c92",
+   "type": "font/woff2"
+  },
+  {
+   "path": "vendor/fonts/school-pinyin-400.woff2",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4c0dc07e58072e53a42e/maanshan/vendor/fonts/school-pinyin-400.woff2",
+   "bytes": 18052,
+   "sha256": "4c0dc07e58072e53a42e8756535ca41ea17a01f43b831abd2f841e9dd9dccca7",
+   "type": "font/woff2"
+  },
+  {
+   "path": "vendor/fonts/school-pinyin-700.woff2",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/0db66e6e94fc64984d0b/maanshan/vendor/fonts/school-pinyin-700.woff2",
+   "bytes": 18260,
+   "sha256": "0db66e6e94fc64984d0bcc047420bdaac9f14c581d2344be5c7a2af42a9d66a1",
    "type": "font/woff2"
   }
  ]

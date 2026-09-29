@@ -1,8 +1,16 @@
+Noto Sans HK (noto-sans-hk.woff2, noto-sans-hk-variants.woff2)
+
 Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'
+
+Modified 2026-09-29 for this website (scripts/build-maanshan-fonts.py): subset to the
+characters the platform uses, weights limited to 400-700, line metrics set to those of
+the Google Fonts build of the same family, and 27 simplified handwriting variants
+taken from Noto Sans SC into noto-sans-hk-variants.woff2. The font names are unchanged; no Reserved
+Font Name is used.
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
-https://scripts.sil.org/OFL
+https://openfontlicense.org
 
 
 -----------------------------------------------------------

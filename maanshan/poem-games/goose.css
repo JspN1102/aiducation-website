@@ -28,7 +28,7 @@
 .poem-goose-game .goose-feedback{font-size:20px;font-weight:500;line-height:1.5;text-align:center;margin:0;min-height:1.5em;color:#4a6a59;text-wrap:pretty}
 .poem-goose-game .goose-loading{position:absolute;inset:0;z-index:4;display:grid;align-content:center;justify-items:center;gap:15px;padding:20px;background:#f5f2eae8;font-size:21px;line-height:1.5;text-align:center}
 .poem-goose-game .goose-loading button{min-height:48px;padding:10px 22px;border:1px solid #97ad9b;border-radius:14px;background:#fffefa;color:#254a3f;font-family:inherit;font-weight:600;font-size:20px;line-height:1.2;cursor:pointer}
-.poem-goose-game .goose-caption{position:absolute;bottom:12px;right:14px;display:flex;flex-direction:column;gap:4px;padding:10px 14px;border-radius:12px;background:#fefbf0e8;color:#315240;font-family:'Noto Serif TC','Source Han Serif TC',serif;font-size:clamp(18px,3vw,26px);font-weight:600;line-height:1.45;letter-spacing:.12em;pointer-events:none}
+.poem-goose-game .goose-caption{position:absolute;bottom:12px;right:14px;display:flex;flex-direction:column;gap:4px;padding:10px 14px;border-radius:12px;background:#fefbf0e8;color:#315240;font-family:'Noto Serif HK','Source Han Serif HK',serif;font-size:clamp(18px,3vw,26px);font-weight:600;line-height:1.45;letter-spacing:.12em;pointer-events:none}
 .poem-goose-game [hidden]{display:none!important}
 .poem-goose-game .goose-ripple{position:absolute;z-index:1;width:32px;height:20px;border:2px solid #fffef4;box-shadow:0 0 0 7px #ffffff32;border-radius:50%;pointer-events:none;animation:goose-colour-ripple .8s ease-out forwards}
 @keyframes goose-colour-ripple{from{transform:translate(-50%,-50%) scale(.5);opacity:.95}to{transform:translate(-50%,-50%) scale(3);opacity:0}}

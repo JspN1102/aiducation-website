@@ -1,7 +1,7 @@
 import {initializeSchoolSession, schoolState, onSchoolSessionInvalid} from './school-session.mjs?v=20260923-school23';
 import {installImageRecovery} from './image-loader.mjs?v=20260923-school23';
 import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
-import {installFonts} from './font-source.mjs?v=20260923-school23';
+import {installFonts} from './font-source.mjs?v=20260929-hk1';
 import {announcePackVersion} from './resource-pack.mjs?v=20260923-school24';
 
 installImageRecovery();
@@ -48,7 +48,7 @@ schoolSession.then(async school => {
     const resources=await classroomResources;
     if(resources.some(result=>result.status==='rejected'))throw new Error('Learning resource unavailable');
     if (invalidated || schoolState() !== school) return;
-    await import('./app.js?v=20260923-school24');
+    await import('./app.js?v=20260929-hk1');
   } catch {
     if (!invalidated) window.showLoadRecovery?.();
   } finally {
