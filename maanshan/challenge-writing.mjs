@@ -176,7 +176,8 @@ export function mountChallengeWriting(holder, {
     const signal=animationRequest.signal, timer=view.setTimeout(()=>animationRequest?.abort(),12000);
     auditLearning('hint_used',{hint:{kind:'stroke',count:1}});
     try {
-      const resource=new URL(`./vendor/hanzi-data/${character.codePointAt(0).toString(16)}.json`,import.meta.url);
+      // Browsers keep vendor files for 30 days: change the tag whenever the stroke data changes.
+      const resource=new URL(`./vendor/hanzi-data/${character.codePointAt(0).toString(16)}.json?v=hk-20260929`,import.meta.url);
       const [HanziWriter,data]=await Promise.all([loadHanziWriter(view,{signal}),view.fetch(resource,{signal}).then(response=>{if(!response.ok)throw new Error('Stroke data is unavailable.');return response.json();})]);
       view.clearTimeout(timer);if(destroyed||request!==strokeOperation)return;
       const size=Math.max(1,board.clientWidth);

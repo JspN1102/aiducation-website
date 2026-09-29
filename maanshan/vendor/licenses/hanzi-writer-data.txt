@@ -10,6 +10,12 @@ Make Me a Hanzi
 Copyright 1999 Arphic Technology Co., Ltd., copyright 2016 Shaunak Kishore; licensed under the Arphic Public License
 https://github.com/skishore/makemeahanzi
 
+Modifications
+On 2026-09-29 the files for 情 惜 舟 重 荷 送 遙 遠 還 隔 霑 洲 嶺 低 in vendor/hanzi-data/ were changed to follow
+Hong Kong stroke order (Lexical Lists for Chinese Learning in Hong Kong): strokes reordered, one stroke cut in two,
+or a dot turned. Each of these files states its change in its "notice" field; the script that makes them is
+scripts/build-hk-stroke-order.py. The modified files are available from this site under the Arphic Public License.
+
 ARPHIC PUBLIC LICENSE
 
 Copyright (C) 1999 Arphic Technology Co., Ltd.
