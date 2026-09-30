@@ -179,14 +179,20 @@ sudo certbot renew --dry-run --cert-name mandarin.aiducation.asia --non-interact
 ## 备案域名 aiducation.hk.cn（2026-09-30 起）
 
 `aiducation.hk.cn` 已通过 ICP 备案（桂ICP备2026022751号）。目前**尚未迁移**：
-该域名只显示一个带备案号的占位页，学生仍使用原有两个 Vercel 入口。
+该域名是一个无需登录的**展示版**（供公安联网备案等审核查看），学生仍使用原有两个 Vercel 入口。
 
 - DNS（DNSPod）：`@` 与 `www` 两条 A 记录指向 134.175.149.14，NS 记录不动。
   备案要求该域名持续解析到腾讯云服务器。
-- 现行 Nginx：`deploy/nginx-aiducation-hk-cn-placeholder.conf` 安装为
-  `/etc/nginx/sites-available/aiducation-hk-cn`（sites-enabled 有链接），
-  页面 `deploy/aiducation-hk-cn-placeholder.html` 放在 `/var/www/aiducation-hk-cn/index.html`；
-  除 `/` 外一律 302 回首页，`www` 与 HTTP 均 301 到 `https://aiducation.hk.cn`。
+- 现行 Nginx（2026-09-30 起）：`deploy/nginx-aiducation-hk-cn-showcase.conf` 安装为
+  `/etc/nginx/sites-available/aiducation-hk-cn`（sites-enabled 有链接），`/` 302 到 `/school/`，
+  与平台同一份 `/srv/maanshan/current/public`，但 `/api/`、`/school-api/` 一律 404，
+  媒体直接由本机提供（不经 COS 跳转，COS CORS 未包含此域名）。
+  前端 `maanshan/showcase.mjs` 按域名启用：不登录、不显示个人资料与教师后台，所有年级古诗、
+  示范朗读、动画、小游戏和 AR 可用；录音评分、诗人对话、报告、手写辨认会弹出「展示版」说明，
+  学校接口请求在浏览器内直接拦下，不会发出。
+- 之前的占位页：`deploy/nginx-aiducation-hk-cn-placeholder.conf` +
+  `deploy/aiducation-hk-cn-placeholder.html`（`/var/www/aiducation-hk-cn/index.html`），
+  服务器上另存为 `/etc/nginx/aiducation-hk-cn.placeholder.conf`。
 - 迁移时改用 `deploy/nginx-aiducation-hk-cn.conf`（与 mandarin 模板相同的完整站点，
   服务器上另存为 `/etc/nginx/aiducation-hk-cn.full-site.conf`），`nginx -t` 后 reload。
 - 证书：Let's Encrypt，证书名 `aiducation.hk.cn`（含 www），备案后 HTTP 不再被拦截，
@@ -194,7 +200,7 @@ sudo certbot renew --dry-run --cert-name mandarin.aiducation.asia --non-interact
   `sudo certbot renew --dry-run --cert-name aiducation.hk.cn --non-interactive` 可验证。
 - 登录来源：`app.env` 的 `SCHOOL_AUTH_ADDITIONAL_ORIGINS` 已加入
   `"https://aiducation.hk.cn"`（备份 `app.env.bak-20260930-hkcn`），占位期间无影响。
-- 备案号：迁移时 `maanshan/index.html` 底部的 `#icp-footer` 只在 aiducation.hk.cn 显示，
+- 备案号：`maanshan/index.html` 底部的 `#icp-footer` 只在 aiducation.hk.cn 显示，
   链接到 https://beian.miit.gov.cn/ ；香港入口不显示。公安联网备案号取得后也要放在同一处。
 - 公安联网备案：网站开通（管局审核通过）后 30 日内由备案主体本人在
   https://beian.mps.gov.cn/ 实名办理，取得的公安备案号及图标须在 30 日内挂到网站上。

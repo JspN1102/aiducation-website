@@ -1,6 +1,7 @@
 import {TERMS_VERSION, termsConfirmationMarkup, bindTermsConfirmation} from './platform-terms.mjs?v=20260930-school27';
 import {mountShishiSprite} from './shishi-sprite.mjs?v=20260923-school23';
 import {readOnlyJSON} from './read-only-json.mjs?v=20260922-school15';
+import {SHOWCASE} from './showcase.mjs?v=20260930-school29';
 // The cookie is HttpOnly. Only the current user's display profile and CSRF
 // token live in memory; passwords and bearer credentials are never persisted.
 let current = {enabled: false, authenticated: false, user: null, csrfToken: ''};
@@ -10,8 +11,9 @@ const listeners = new Set();
 const learningResetListeners = new Set();
 let learningResetting = false;
 // The company site's /school/ entry is the authenticated school platform,
-// even though /maanshan/ on the same host intentionally remains a demo.
-const requiresSchoolAuth = location.hostname === 'mandarin.aiducation.asia' || /^\/school(?:\/|$)/.test(location.pathname);
+// even though /maanshan/ on the same host intentionally remains a demo. The
+// showcase domain has no accounts at all.
+const requiresSchoolAuth = !SHOWCASE && (location.hostname === 'mandarin.aiducation.asia' || /^\/school(?:\/|$)/.test(location.pathname));
 const fallbackEntrance = () => location.hostname === 'mandarin.aiducation.asia'
   ? '<a class="school-fallback-link" href="https://aiducation.asia/school/">連線不穩？使用備用入口</a>' : '';
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -101,6 +103,7 @@ function validSignedIn(data) {
     (data.learningEpoch === undefined || /^[a-f0-9]{32}$/.test(data.learningEpoch) || data.user.role === 'teacher' && data.learningEpoch === 'initial');
 }
 async function readSession() {
+  if (SHOWCASE) return {enabled:false, authenticated:false, user:null, csrfToken:''};
   const {response, data} = await readOnlyJSON('/api/school-auth/', {credentials:'same-origin', cache:'no-store', timeout:15000, firstAttemptTimeout:5000});
   // Only the intentionally separate legacy site may lack this new endpoint.
   const legacyHost=!requiresSchoolAuth&&(['aiducation.asia','www.aiducation.asia'].includes(location.hostname)||/^aiducation-website(?:-[a-z0-9-]+)?\.vercel\.app$/.test(location.hostname));
@@ -214,7 +217,7 @@ export async function initializeSchoolSession(host) {
     }
   }
   current = data;
-  if (!data.enabled) { document.querySelector('#profile-open')?.removeAttribute('hidden'); return current; }
+  if (!data.enabled) { if (!SHOWCASE) document.querySelector('#profile-open')?.removeAttribute('hidden'); return current; }
   connectSessionChannel();
   if (!data.authenticated) {
     const signedIn = await loginScreen(host);

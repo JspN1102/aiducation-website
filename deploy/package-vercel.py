@@ -127,6 +127,11 @@ def main():
         'regions': ['iad1'],
         'functions': functions_config(),
         'rewrites': [{'source':'/api/'+Path(name).stem+'/', 'destination':'/api/school-gateway/?__school_route='+Path(name).stem} for name in sorted(API_FILES)],
+        # A pupil opening the page after a quiet spell otherwise waits for a new
+        # Guangzhou SSH session (about 4 s from Hong Kong instead of 1-2 s). The
+        # relay keeps an idle session for 240 s, so a read-only account check every
+        # 3 minutes keeps one warm. It reads no pupil data.
+        'crons': [{'path': '/api/school-auth/', 'schedule': '*/3 * * * *'}],
         'redirects': [{'source': '/', 'destination': '/school/', 'statusCode': 307},
                       {'source': '/maanshan', 'destination': '/school/', 'statusCode': 307},
                       {'source': '/maanshan/', 'destination': '/school/', 'statusCode': 307},

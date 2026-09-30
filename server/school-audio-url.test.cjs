@@ -21,3 +21,15 @@ test('actual company packager relocates playback while preserving validation and
   assert.throws(()=>schoolTtsURL('/school-api/tts/'+query));
   assert.throws(()=>schoolTtsURL('https://elsewhere.invalid/api/tts/'+query));
 });
+test('published speech plays straight from COS only for the same signed key', async () => {
+  const {schoolTtsRemote} = await import('../maanshan/school-audio-url.mjs');
+  const key = 'a'.repeat(64), signed = '/api/tts/?key=' + key + '&sig=' + 'b'.repeat(64);
+  const remote = 'https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/tts/20260919b3/' + key + '.wav';
+  assert.equal(schoolTtsRemote(remote, signed), remote);
+  assert.equal(schoolTtsRemote(remote, '/school-api/tts/?key=' + key + '&sig=' + 'b'.repeat(64)), remote);
+  for (const bad of [undefined, null, '', remote.replace(key, 'c'.repeat(64)), remote.replace('https:', 'http:'),
+    'https://evil.test/tts/20260919b3/' + key + '.wav', 'https://x.cos.ap-guangzhou.myqcloud.com.evil.test/tts/v/' + key + '.wav',
+    remote + '?x=1', remote.replace('.wav', '.mp3')]) {
+    assert.equal(schoolTtsRemote(bad, signed), null);
+  }
+});

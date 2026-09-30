@@ -12,3 +12,12 @@ export function schoolTtsURL(value) {
       !/^[a-f0-9]{64}$/.test(parsed.searchParams.get('sig') || '')) throw new Error('TTS URL');
   return deliveryPath + parsed.search;
 }
+// Speech the origin already published to the school's COS bucket downloads
+// straight from Guangzhou; the signed URL (one relay round trip, then a
+// redirect to that same COS object) stays the fallback route.
+const PUBLISHED_SPEECH = /^https:\/\/[a-z0-9-]+\.cos\.[a-z0-9-]+\.myqcloud\.com\/tts\/[0-9a-z]+\/([0-9a-f]{64})\.wav$/;
+export function schoolTtsRemote(value, signedURL) {
+  const match = typeof value === 'string' && PUBLISHED_SPEECH.exec(value);
+  const key = new URL(signedURL, 'https://school.invalid').searchParams.get('key');
+  return match && match[1] === key ? value : null;
+}

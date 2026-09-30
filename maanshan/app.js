@@ -6,7 +6,7 @@ import {configurePronunciation, getPronunciationPractice, syllableParts, toneNam
 import {getWordAudioURL} from './word-audio.mjs?v=20260923-school23';
 import {getSpeechAudioURL} from './speech-audio.mjs?v=20260923-school23';
 import {getRecitationAudioURL,getRecitationSequence} from './recitation-audio.mjs?v=20260921-school9';
-import {schoolTtsURL} from './school-audio-url.mjs?v=20260922-school18';
+import {schoolTtsURL,schoolTtsRemote} from './school-audio-url.mjs?v=20260930-school29';
 import {mountShishi} from './shishi.mjs?v=20260923-school23';
 import {mountLibraryShishi} from './library-shishi.mjs?v=20260923-school23';
 import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school9';
@@ -15,17 +15,17 @@ import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school9';
 import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20260922-school22';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school22';
-import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20260930-school27';
+import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20260930-school29';
 import {createRecordingLibrary} from './recording-library.mjs?v=20260922-school15';
-import {requestJSON, requestChat} from './network.mjs?v=20260930-school27';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20260930-school27';
-import {schoolSession} from './bootstrap.mjs?v=20260930-school27';
+import {requestJSON, requestChat} from './network.mjs?v=20260930-school29';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20260930-school29';
+import {schoolSession} from './bootstrap.mjs?v=20260930-school29';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260922-school22';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school22';
 import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
 import {getPoetSuggestions, matchPoetPreset} from './poet-presets.mjs?v=20260922-school13';
 import {audioCandidates} from './audio-source.mjs?v=20260923-school23';
-import {rememberRoute} from './media-route.mjs?v=20260923-school23';
+import {rememberRoute,orderRoutes} from './media-route.mjs?v=20260923-school23';
 import {packState, onPackChange, resumeResourcePack, requestResourcePack, cancelResourcePack} from './resource-pack.mjs?v=20260923-school24';
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -95,6 +95,8 @@ const TTS_VOICE=403001;
 const TTS_SPEED=-.25;
 const TTS_PRONUNCIATION='edb-20260921-natural1-yunxiaohe';
 const speechCache=new Map(), speechPending=new Map(), speechFailureUntil=new Map(), staticAudioFailures=new Map();
+// Signed speech URL -> the same phrase's public COS copy, when the origin reports one.
+const publishedSpeech=new Map();
 const STATIC_AUDIO_RETRY_MS=60000;
 let ttsUnavailableUntil=0,ttsSuccessVersion=0;
 const requests=new Set();
@@ -232,6 +234,8 @@ async function speechSource(text,{markup=null,voice=TTS_VOICE,purpose}={}) {
       if(type.startsWith('application/json')){
         const result=await response.json();
         source=schoolTtsURL(result.url);
+        const remote=schoolTtsRemote(result.remote,source);
+        if(remote){if(publishedSpeech.size>=80)publishedSpeech.delete(publishedSpeech.keys().next().value);publishedSpeech.set(source,remote);}
       }else if(type.startsWith('audio/')){
         source=await response.blob();
         if(!source.size)throw new Error('empty audio');
@@ -278,8 +282,9 @@ async function speakPoemHeading(kind,button) {
 }
 function playSource(url,revoke=false,playbackRate=1) {
   return new Promise(resolve=>{
-    // A published recording has two copies (deployed and COS); a recording made on the spot has one.
-    const routes=revoke?[{route:'local',url}]:audioCandidates(url);
+    // A published recording has two copies (deployed and COS), as does speech the origin published (signed URL and COS);
+    // a recording made on the spot has one.
+    const routes=revoke?[{route:'local',url}]:publishedSpeech.has(url)?orderRoutes(url,publishedSpeech.get(url)):audioCandidates(url);
     let attempt=0;
     const player=new Audio(routes[0].url);player.preload='auto';player.defaultPlaybackRate=playbackRate;
     let settled=false,watchdog,started=false;
