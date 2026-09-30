@@ -83,8 +83,8 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
       await agreement.waitForLoadState('domcontentloaded');
       assert.equal(new URL(agreement.url()).pathname, '/maanshan/agreement.html');
       assert.equal(await agreement.locator('h1').innerText(), '使用協議及私隱說明');
-      assert.match(await agreement.locator('.version').innerText(), /2026-09-21-v2/);
-      assert.match(await agreement.locator('body').innerText(), /並不代替研究參與或監護人的同意/);
+      assert.match(await agreement.locator('.version').innerText(), /2026-09-30-v3/);
+      assert.match(await agreement.locator('body').innerText(), /勾選本協議，即同意經去標識化處理後的數據可用於教研用途。[\s\S]*香港教育大學倫理委員會監督/);
       assert.equal(await agreement.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.equal(await checkbox.isChecked(), false); assert.equal(posts, 0);
       await agreement.close();
@@ -111,7 +111,7 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
       await page.locator('input[name=termsAccepted]').check(); await page.locator('[type=submit]').click();
       await page.waitForFunction(() => window.ready);
       assert.equal(bodies.length, 1);
-      assert.equal(bodies[0].termsAccepted, true); assert.equal(bodies[0].termsVersion, '2026-09-21-v2');
+      assert.equal(bodies[0].termsAccepted, true); assert.equal(bodies[0].termsVersion, '2026-09-30-v3');
       assert.equal('termsAcceptedAt' in bodies[0], false); assert.equal('researchConsent' in bodies[0], false);
     });
     await run('teacher login also defaults to checked terms but withdrawal still blocks native and synthetic submit', async page => {
@@ -135,7 +135,7 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
       await checkbox.check(); await page.locator('#teacher-login-form [type=submit]').click();
       await page.waitForFunction(() => document.querySelector('#login-error')?.textContent.includes('密碼不正確'));
       assert.equal(bodies.length, 1);
-      assert.equal(bodies[0].termsAccepted, true); assert.equal(bodies[0].termsVersion, '2026-09-21-v2');
+      assert.equal(bodies[0].termsAccepted, true); assert.equal(bodies[0].termsVersion, '2026-09-30-v3');
       assert.equal('researchConsent' in bodies[0], false);
       assert.equal(await checkbox.isChecked(), true);
     });

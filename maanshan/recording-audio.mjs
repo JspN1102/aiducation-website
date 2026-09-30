@@ -1,4 +1,4 @@
-import {schoolFetch} from './school-session.mjs?v=20260923-school23';
+import {schoolFetch} from './school-session.mjs?v=20260930-school27';
 function audioError(code, message, canRetry = false) {
   return Object.assign(new Error(message), {code, canRetry});
 }

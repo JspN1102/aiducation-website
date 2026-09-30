@@ -1,4 +1,4 @@
-export const TERMS_VERSION = '2026-09-21-v2';
+export const TERMS_VERSION = '2026-09-30-v3';
 
 export function termsConfirmationMarkup(id = 'school-terms') {
   return `<div class="platform-terms-confirmation"><input type="checkbox" id="${id}" name="termsAccepted" checked required aria-describedby="${id}-label"><label id="${id}-label" for="${id}">我已閱讀並同意<a href="agreement.html" target="_blank" rel="noopener">使用協議及私隱說明</a></label></div>`;

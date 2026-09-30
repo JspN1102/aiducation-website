@@ -60,8 +60,8 @@ test('new login requires an explicit boolean acceptance before credential checks
   }
 });
 
-test('only the current exact terms version can create a new session', async () => {
-  assert.equal(auth.TERMS_VERSION, '2026-09-21-v2');
+test('only the current (or the previous, still-open page) terms version can create a new session', async () => {
+  assert.equal(auth.TERMS_VERSION, '2026-09-30-v3');
   for (const version of [undefined, null, '', '2026-09-19-v1', '2026-09-20-v1 ', 1, { version: auth.TERMS_VERSION }]) {
     const f = fixture(), req = request(), res = response();
     if (version === undefined) delete req.body.termsVersion;
@@ -73,6 +73,13 @@ test('only the current exact terms version can create a new session', async () =
     assert.equal(f.records.size, 1);
     assert.match(res.headers['Set-Cookie'], /Max-Age=0/);
   }
+});
+
+test('a login page loaded before v3 still works and its v2 acceptance is recorded as v2', async () => {
+  const f = fixture(), req = request({ termsVersion: '2026-09-21-v2' });
+  await f.service.login(req, response());
+  const sessions = [...f.records].filter(([key]) => key.startsWith('session/')).map(([, row]) => row.value);
+  assert.equal(sessions.length, 1); assert.equal(sessions[0].termsAcceptance.version, '2026-09-21-v2');
 });
 
 test('terms receipt uses server time in the existing session write and does not grant research consent', async () => {

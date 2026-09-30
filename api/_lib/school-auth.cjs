@@ -8,7 +8,9 @@ const scrypt = promisify(crypto.scrypt);
 const NAMESPACE = 'maanshan-school-auth-v1';
 const COOKIE = '__Host-maanshan_session';
 const SESSION_MS = 12 * 3600000;
-const TERMS_VERSION = '2026-09-21-v2';
+const TERMS_VERSION = '2026-09-30-v3';
+// Login pages loaded before the v3 wording went live still send v2; accept it for now and record the version the pupil saw.
+const ACCEPTED_TERMS = new Set([TERMS_VERSION, '2026-09-21-v2']);
 const FORMAT = 'maanshan-school-accounts-v1';
 const MAX_OBJECT = 2 * 1024 * 1024;
 const ID = /^(?:s|t)_[a-f0-9]{24}$/;
@@ -289,10 +291,11 @@ function createAuth({ env = process.env, store: suppliedStore, now = Date.now, r
     checkOrigin(req);
     // Clear previous identity even if a pupil mistypes the next account password.
     await revoke(req, res);
-    // Platform terms are a login acknowledgement, not research or guardian consent.
+    // Since v3 the terms include agreeing that de-identified data may be used for teaching research.
     // Existing sessions remain valid; only a new login requires the current terms.
     if (req.body?.termsAccepted !== true) fail(400, 'TERMS_REQUIRED');
-    if (req.body?.termsVersion !== TERMS_VERSION) fail(400, 'TERMS_VERSION_CHANGED');
+    if (!ACCEPTED_TERMS.has(req.body?.termsVersion)) fail(400, 'TERMS_VERSION_CHANGED');
+    const termsVersion = req.body.termsVersion;
     const username = normalizeLogin(req.body?.login), password = req.body?.password;
     if (!username || username.length > 64 || typeof password !== 'string' || !password || Buffer.byteLength(password) > 256) fail(401, 'INVALID_CREDENTIALS');
     // Fixed HMAC buckets spread a school's shared NAT across independent CAS
@@ -322,7 +325,7 @@ function createAuth({ env = process.env, store: suppliedStore, now = Date.now, r
     const issuedAt = now();
     await store().cas('session/' + hash(value), { version: 1, actorId: account.id, authVersion: account.authVersion,
       issuedAt, expiresAt: issuedAt + SESSION_MS, csrf, revoked: false,
-      termsAcceptance: { version: TERMS_VERSION, acceptedAt: issuedAt, kind: 'platform_terms' } });
+      termsAcceptance: { version: termsVersion, acceptedAt: issuedAt, kind: 'platform_terms' } });
     setCookie(res, value, SESSION_MS / 1000);
     return { enabled: true, authenticated: true, user: publicActor(account), csrfToken: csrf };
   }
