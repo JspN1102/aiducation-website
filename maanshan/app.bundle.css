@@ -3556,6 +3556,12 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 @media(max-width:820px){.school-brand{gap:10px}.school-title{font-size:18px;letter-spacing:1.5px}}
 @media(max-width:700px){.school-brand{gap:8px}.school-title{font-size:16px;letter-spacing:1px}}
 @media(max-width:360px){.school-title{font-size:15px;letter-spacing:.5px}}
+/* ICP filing number, shown only on aiducation.hk.cn (inline script in index.html); the login screen leaves room for it. */
+.icp-footer{padding:10px 16px 14px;text-align:center;font-family:var(--sans);font-size:12px;line-height:1.5}
+.icp-footer a{color:#6b7d74;text-decoration:none}
+.icp-footer a:hover{text-decoration:underline}
+body:has(.icp-footer:not([hidden])) .school-login{min-height:calc(100svh - 44px)}
+body:has(.lesson-shell) .icp-footer{display:none}
 .school-badge{display:block;flex:none;width:auto;height:48px;margin-block:-4px}
 @media(max-width:820px){.school-badge{height:42px}}
 @media(max-width:700px){.school-badge{height:40px;margin-block:0}}
