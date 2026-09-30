@@ -9,6 +9,20 @@
 临时入口的发布、存储和切回说明见 `vercel-temporary.md`。两个 Vercel 项目分别更新，
 下面的 `update.py` 仅更新广州服务器，不会发布 Vercel 或改变 DNS。
 
+## 发布流程（2026-09-30 起）
+
+`https://mandarin.aiducation.asia/school/` 是学校正式平台。新版本先只发布到
+`https://aiducation.asia/school/`，用户在那里确认后，再用同一个 commit 发布正式平台：
+
+1. 测试通过后运行 `package-vercel.py`（只打包，不部署）和 `package-company-fallback.py`，
+   只在公司包目录执行 `vercel --prod`。公司首页固定为 `BASE_COMMIT` 的归档，不受影响。
+2. 用户确认后，部署第 1 步生成的同一个学生包目录；改了 `server/` 才运行 `update.py`
+   （它同时更新 aiducation.hk.cn 展示页）。
+3. 两个入口共用学生项目里的 gateway、广州后台和数据库：在 aiducation.asia 登录、录音、
+   提交都会写入真实数据、消耗真实额度。`api/`、`server/` 的改动无法只给测试入口用，
+   必须保证正式平台现有页面照常工作（只增不改），并在上线前告诉用户；做不到兼容的，
+   等用户确认后与正式平台一起发布。
+
 独立 Vercel 包只包含 gateway、广州 relay 与纯编码协商工具
 `api/_lib/response-encoding.cjs`；打包器逐项校验此白名单，不复制服务器业务代码。
 教师 JSON 在客户端接受 gzip 时由广州压缩并原样转发，Excel/Word 文件不重复压缩。
