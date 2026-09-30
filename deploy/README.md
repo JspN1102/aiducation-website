@@ -175,3 +175,30 @@ DNS01 hook 固定安装在 root 所有的
 ```sh
 sudo certbot renew --dry-run --cert-name mandarin.aiducation.asia --non-interactive
 ```
+
+## 备案域名 aiducation.hk.cn（2026-09-30 起）
+
+`aiducation.hk.cn` 已通过 ICP 备案（桂ICP备2026022751号）。目前**尚未迁移**：
+该域名只显示一个带备案号的占位页，学生仍使用原有两个 Vercel 入口。
+
+- DNS（DNSPod）：`@` 与 `www` 两条 A 记录指向 134.175.149.14，NS 记录不动。
+  备案要求该域名持续解析到腾讯云服务器。
+- 现行 Nginx：`deploy/nginx-aiducation-hk-cn-placeholder.conf` 安装为
+  `/etc/nginx/sites-available/aiducation-hk-cn`（sites-enabled 有链接），
+  页面 `deploy/aiducation-hk-cn-placeholder.html` 放在 `/var/www/aiducation-hk-cn/index.html`；
+  除 `/` 外一律 302 回首页，`www` 与 HTTP 均 301 到 `https://aiducation.hk.cn`。
+- 迁移时改用 `deploy/nginx-aiducation-hk-cn.conf`（与 mandarin 模板相同的完整站点，
+  服务器上另存为 `/etc/nginx/aiducation-hk-cn.full-site.conf`），`nginx -t` 后 reload。
+- 证书：Let's Encrypt，证书名 `aiducation.hk.cn`（含 www），备案后 HTTP 不再被拦截，
+  使用 webroot `/var/www/html` 续期；
+  `sudo certbot renew --dry-run --cert-name aiducation.hk.cn --non-interactive` 可验证。
+- 登录来源：`app.env` 的 `SCHOOL_AUTH_ADDITIONAL_ORIGINS` 已加入
+  `"https://aiducation.hk.cn"`（备份 `app.env.bak-20260930-hkcn`），占位期间无影响。
+- 备案号：迁移时 `maanshan/index.html` 底部的 `#icp-footer` 只在 aiducation.hk.cn 显示，
+  链接到 https://beian.miit.gov.cn/ ；香港入口不显示。公安联网备案号取得后也要放在同一处。
+- 公安联网备案：网站开通（管局审核通过）后 30 日内由备案主体本人在
+  https://beian.mps.gov.cn/ 实名办理，取得的公安备案号及图标须在 30 日内挂到网站上。
+- 此入口没有注册 recovery service worker，也不显示「备用入口」链接。
+- 2026-09-30 实测（Globalping 香港住宅宽带 HKT/HKBN）：静态页面与 CSS 走 Vercel 香港节点更快
+  （约 30–120 ms，对比直连广州约 0.2–0.8 s）；接口直连广州更快（约 0.2–0.5 s，对比经 Vercel 中继约 1–4 s）。
+  HGC 与部分香港机房到广州线路差（约 1–2 s，Amazon 香港完全不通）。
