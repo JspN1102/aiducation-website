@@ -129,9 +129,10 @@ def main():
         'rewrites': [{'source':'/api/'+Path(name).stem+'/', 'destination':'/api/school-gateway/?__school_route='+Path(name).stem} for name in sorted(API_FILES)],
         # A pupil opening the page after a quiet spell otherwise waits for a new
         # Guangzhou SSH session (about 4 s from Hong Kong instead of 1-2 s). The
-        # relay keeps an idle session for 240 s, so a read-only account check every
-        # 3 minutes keeps one warm. It reads no pupil data.
-        'crons': [{'path': '/api/school-auth/', 'schedule': '*/3 * * * *'}],
+        # relay keeps an idle session for 240 s and an idle channel for 85 s, so a
+        # read-only account check every minute (the Pro plan's finest schedule)
+        # keeps both warm, with room for a late or skipped run. It reads no pupil data.
+        'crons': [{'path': '/api/school-auth/', 'schedule': '* * * * *'}],
         'redirects': [{'source': '/', 'destination': '/school/', 'statusCode': 307},
                       {'source': '/maanshan', 'destination': '/school/', 'statusCode': 307},
                       {'source': '/maanshan/', 'destination': '/school/', 'statusCode': 307},

@@ -28,11 +28,13 @@ function logAuthFailure(status,result,input){
  // Only fixed labels, status, and presence flags reach logs; never payloads or headers.
  console.warn(JSON.stringify(entry));
 }
-// The loopback HTTP server closes idle sockets after 65 seconds. Expire earlier,
-// including after a suspended serverless instance resumes without firing timers.
-// A pupil's next line usually comes within a minute, so the warm channel is
-// reused instead of paying a fresh SSH channel round trip for every request.
-const CHANNEL_IDLE_MS=55000;
+// The loopback HTTP server closes idle sockets after 95 seconds (older releases:
+// 65) and says so in its Keep-Alive header. Expire ten seconds before whichever
+// deadline the origin advertises, including after a suspended serverless
+// instance resumes without firing timers. The once-a-minute keep-warm request
+// therefore keeps one channel open, and a pupil's first request after a quiet
+// spell skips the fresh SSH channel round trip.
+const CHANNEL_IDLE_MS=85000,CHANNEL_DEADLINE_MARGIN_MS=10000;
 // Opening a channel normally takes one round trip (well under two seconds even
 // when many open at once). Longer silence means the session is gone.
 const CHANNEL_OPEN_TIMEOUT_MS=5000;
@@ -72,7 +74,7 @@ class ChannelAgent extends http.Agent{
   if(this.closed||socket.destroyed)return false;
   let lifetime=CHANNEL_IDLE_MS;
   const hint=/(?:^|,)\s*timeout=(\d+)/i.exec(String(socket._httpMessage?.res?.headers['keep-alive']||''));
-  if(hint)lifetime=Math.min(lifetime,Number(hint[1])*1000-1000);
+  if(hint)lifetime=Math.min(lifetime,Number(hint[1])*1000-CHANNEL_DEADLINE_MARGIN_MS);
   if(lifetime<=0)return false;
   this.clearIdle(socket);
   const timer=setTimeout(()=>{this.clearIdle(socket);socket.destroy();},lifetime);timer.unref?.();
@@ -131,7 +133,9 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
    client.once('end',()=>{clear();});
    client.on('error',error=>{clear();if(!ready){const code=typeof error?.code==='string'&&/^[A-Z0-9_]+$/.test(error.code)?error.code:'SSH_CONNECT_ERROR';console.error('Guangzhou relay transport:',code,error?.level==='client-timeout'?'HANDSHAKE_TIMEOUT':'CONNECT_FAILED',JSON.stringify({tcpConnected,handshakeComplete}));reject(new Error('RELAY_CONNECT_FAILED'));}});
    client.once('close',()=>{clear();if(!ready)reject(new Error('RELAY_CONNECT_FAILED'));});
-   client.connect({host:config.host,port,username:config.username,privateKey:config.privateKey,hostHash:'sha256',hostVerifier:hash=>hash===config.hostHash,readyTimeout:4500,keepaliveInterval:15000,keepaliveCountMax:2,tryKeyboard:false});
+   // Offer the key straight away: the relay account accepts nothing else, and
+   // the default 'none' probe costs a Pacific round trip on every new session.
+   client.connect({host:config.host,port,username:config.username,privateKey:config.privateKey,authHandler:['publickey'],hostHash:'sha256',hostVerifier:hash=>hash===config.hostHash,readyTimeout:4500,keepaliveInterval:15000,keepaliveCountMax:2,tryKeyboard:false});
   });
   try{return await pending;}catch(error){if(pendingClient===client){pending=null;pendingClient=null;}client.destroy();throw error;}
  }

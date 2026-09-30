@@ -144,7 +144,7 @@ function createApiServer({ handlers, requestTimeoutMs } = {}) {
   });
   server.headersTimeout = 15000;
   server.requestTimeout = 30000;
-  server.keepAliveTimeout = 65000; // the relay expires its channels at 55 s
+  server.keepAliveTimeout = 95000; // the relay expires its channels ten seconds earlier
   server.maxRequestsPerSocket = 100;
   const stopReportWorker=loadedHandlers['teacher-tools'].startBackgroundWorker?.();
   if(stopReportWorker)server.once('close',stopReportWorker);

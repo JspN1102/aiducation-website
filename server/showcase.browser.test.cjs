@@ -48,7 +48,9 @@ async function expectNotice(page){
       assert.equal(await page.locator('#school-login').count(),0,'no sign-in screen');
       assert(await page.locator('#profile-open').isHidden(),'no profile button');
       assert.equal(await page.locator('.teacher-entry').count(),0,'no teacher dashboard');
-      assert.equal((await page.locator('.showcase-tag').innerText()).trim(),'展示版');
+      assert(await page.locator('.site-header').isHidden(),'no header: no school badge, name or label');
+      assert(await page.locator('.school-badge').isHidden());
+      assert(!(await page.locator('body').innerText()).includes('靈糧'),'the school name appears nowhere');
       assert(await page.locator('#icp-footer').isVisible(),'ICP number shown');
       const last=poems[poems.length-1];
       await page.goto('https://aiducation.hk.cn/school/#'+last.slug+'/record');
@@ -59,13 +61,14 @@ async function expectNotice(page){
       await page.locator('#chat-input').fill('你好');
       await page.locator('#chat-form').evaluate(form=>form.requestSubmit());
       await expectNotice(page);
-      assert.equal(await page.locator('.showcase-tag').count(),1,'one label after navigation');
+      assert(await page.locator('.site-header').isHidden(),'still no header after navigation');
       assert.deepEqual(apiRequests,[],'no school API request left the page');
       assert.deepEqual(errors,[]);
       // The same files on the student entrance still ask pupils to sign in.
       await page.goto('https://mandarin.aiducation.asia/school/');
       await page.locator('#school-login-title').waitFor();
-      assert.equal(await page.locator('.showcase-tag').count(),0);
+      assert.equal(await page.evaluate(()=>document.documentElement.dataset.showcase),undefined);
+      assert.equal(await page.locator('.school-title').innerText(),'馬鞍山靈糧小學','the school keeps its badge and name');
       assert(apiRequests.some(request=>request.startsWith('mandarin.aiducation.asia/api/school-auth')),'student entrance checks the account');
       checks.push({engine,width,poems:poems.length});
     }finally{await context.close();await browser.close();}

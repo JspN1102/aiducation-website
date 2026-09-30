@@ -152,6 +152,21 @@ GLB 都有已验证的 COS 映射，广州 Nginx 继续把模型 307 到 COS。
 用户从旧域名切换到新域名时，浏览器本地进度不会自动跨域迁移；旧站保留，
 不要将域名切换误称为已完成旧本地记录迁移。
 
+## Vercel 中继保温与广州 relay sshd（2026-09-30 起）
+
+- Vercel cron 每分钟 GET 一次 `/api/school-auth/`（只读，不含学生数据），SSH 会话（闲置 240 s
+  重连）与一条 HTTP 通道（闲置 85 s 关闭）因此一直保温；学生隔一阵后的第一个请求不必重新握手，
+  也不必新开通道。
+- 通道寿命取「85 s」与「源站 Keep-Alive 声明减 10 s」的较小值。源站 `server/index.cjs`
+  的 `keepAliveTimeout` 为 95 s；旧源站（65 s）搭配新中继时自动退回 55 s，发布先后顺序不影响安全。
+- 新 SSH 会话直接出示密钥（`authHandler:['publickey']`），省去默认的 none 认证往返。
+- 2222 端口每天被扫描器尝试登录上千次，曾在 2026-09-23、09-29 触发 MaxStartups 随机丢弃新连接。
+  `/etc/ssh/maanshan-relay-2222.conf` 现为 `LoginGraceTime 10`、`MaxStartups 40:30:120`、
+  `PerSourceMaxStartups 10`（Vercel 同一秒最多约 5 个新会话），修改前备份为 `.bak-20260930`；
+  改动须先 `sudo sshd -t -f /etc/ssh/maanshan-relay-2222.conf`，再 `systemctl reload maanshan-relay-2222`，
+  已建立的会话不受影响。
+- 广州 `/etc/sysctl.d/90-maanshan-network.conf` 已启用 BBR、fq 与 `tcp_slow_start_after_idle=0`。
+
 ## 已核实的备案访问限制
 
 2026-09-19 初次部署时 HTTPS 曾通过主站、API 和浏览器检查；同日23:10香港时间
@@ -189,7 +204,8 @@ sudo certbot renew --dry-run --cert-name mandarin.aiducation.asia --non-interact
   媒体直接由本机提供（不经 COS 跳转，COS CORS 未包含此域名）。
   前端 `maanshan/showcase.mjs` 按域名启用：不登录、不显示个人资料与教师后台，所有年级古诗、
   示范朗读、动画、小游戏和 AR 可用；录音评分、诗人对话、报告、手写辨认会弹出「展示版」说明，
-  学校接口请求在浏览器内直接拦下，不会发出。
+  学校接口请求在浏览器内直接拦下，不会发出。页面不显示校徽、校名或「展示版」标签：
+  `index.html` 头部的内联脚本在首次绘制前标记 `html[data-showcase]`，`pack.css` 隐藏整条页头。
 - 之前的占位页：`deploy/nginx-aiducation-hk-cn-placeholder.conf` +
   `deploy/aiducation-hk-cn-placeholder.html`（`/var/www/aiducation-hk-cn/index.html`），
   服务器上另存为 `/etc/nginx/aiducation-hk-cn.placeholder.conf`。

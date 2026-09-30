@@ -194,13 +194,13 @@ test('HTTP keep-alive preserves per-request identities, CSRF, bodies and origin 
 });
 
 test('real ssh2 channels carry successive HTTP requests without requiring net.Socket methods', {timeout:5000},async()=>{
- const origin=http.createServer((req,res)=>res.end(req.headers.cookie||'anonymous')),originPort=await listen(origin);
+ const origin=http.createServer((req,res)=>res.end(req.headers.cookie||'anonymous'));origin.keepAliveTimeout=95000;const originPort=await listen(origin);
  const key=generateKeyPairSync('rsa',{modulusLength:2048}).privateKey.export({type:'pkcs1',format:'pem'});
  const hash=createHash('sha256').update(sshUtils.parseKey(key).getPublicSSH()).digest('hex');
- let channelCount=0;const connections=[],targets=[];
+ let channelCount=0;const connections=[],targets=[],methods=[];
  const ssh=new SSHServer({hostKeys:[key]},client=>{
   connections.push(client);client.on('error',()=>{});
-  client.on('authentication',ctx=>ctx.accept()).on('ready',()=>client.on('tcpip',(accept,reject,info)=>{
+  client.on('authentication',ctx=>{methods.push(ctx.method);if(ctx.method==='publickey')ctx.accept();else ctx.reject(['publickey']);}).on('ready',()=>client.on('tcpip',(accept,reject,info)=>{
    assert.equal(info.destIP,'127.0.0.1');assert.equal(info.destPort,3100);channelCount++;
    const channel=accept(),target=net.connect(originPort,'127.0.0.1');targets.push(target);
    target.on('error',()=>channel.destroy());channel.on('error',()=>target.destroy());channel.on('close',()=>target.destroy());
@@ -208,7 +208,7 @@ test('real ssh2 channels carry successive HTTP requests without requiring net.So
   }));
  });
  const sshPort=await listen(ssh);
- class LocalClient extends SSHClient{connect(config){return super.connect({...config,host:'127.0.0.1',port:sshPort,privateKey:undefined});}}
+ class LocalClient extends SSHClient{connect(config){return super.connect({...config,host:'127.0.0.1',port:sshPort,privateKey:key});}}
  const relay=createRelay({env:{...env,GUANGZHOU_RELAY_HOST_SHA256:hash},clientFactory:()=>new LocalClient(),timeoutMs:1500});
  const front=http.createServer((req,res)=>relay.relay('school-auth',req,res)),port=await listen(front);
  try{
@@ -217,6 +217,7 @@ test('real ssh2 channels carry successive HTTP requests without requiring net.So
    assert.equal(response.status,200);assert.equal(await response.text(),identity||'anonymous');
   }
   assert.equal(channelCount,1);assert.equal(connections.length,1);
+  assert.deepEqual([...new Set(methods)],['publickey'],'the key is offered at once, without a none-auth round trip');
  }finally{
   relay.close();for(const client of connections)client.end();for(const target of targets)target.destroy();
   front.closeAllConnections();origin.closeAllConnections();
@@ -293,6 +294,19 @@ test('expired HTTP channels reconnect on the same SSH session even after a suspe
   const previous=f.channels[1],closed=new Promise(resolve=>previous.once('close',resolve));
   f.clients[0].emit('close');await closed;
   await (await f.call()).text();assert.equal(f.clients.length,2);assert.equal(f.requests.length,3);
+ }finally{await f.close();}
+});
+
+test('the once-a-minute keep-warm request keeps a channel open against the 95 second origin',async()=>{
+ let clock=1000;const origin=http.createServer((req,res)=>res.end('ok'));origin.keepAliveTimeout=95000;
+ const f=await fixture(null,{origin,now:()=>clock});
+ try{
+  await (await f.call()).text();clock+=62000;
+  await (await f.call()).text();assert.equal(f.requests.length,1,'a minute later the channel is reused');
+  clock+=86000;
+  await (await f.call()).text();assert.equal(f.requests.length,2,'past 85 seconds a fresh channel is opened');
+  assert(f.channels[0].destroyed,'the expired channel is closed before the origin deadline');
+  assert.equal(f.clients.length,1);
  }finally{await f.close();}
 });
 

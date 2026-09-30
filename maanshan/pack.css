@@ -10,8 +10,8 @@
 .icp-footer a:hover{text-decoration:underline}
 body:has(.icp-footer:not([hidden])) .school-login{min-height:calc(100svh - 44px)}
 body:has(.lesson-shell) .icp-footer{display:none}
-/* aiducation.hk.cn showcase (showcase.mjs): a quiet label in the header and the dialog explaining account-only features. */
-.showcase-tag{padding:4px 12px;border:1px solid var(--line);border-radius:999px;color:var(--green);font:600 14px/1.5 var(--sans);white-space:nowrap}
+/* aiducation.hk.cn showcase (showcase.mjs): no school badge, name or header at all, and a dialog explaining account-only features. */
+html[data-showcase] .site-header{display:none}
 .showcase-dialog p{margin:0 0 20px;color:var(--ink);font:16px/1.75 var(--sans)}
 .showcase-dialog .button{width:100%;min-height:48px;justify-content:center}
 .school-badge{display:block;flex:none;width:auto;height:48px;margin-block:-4px}

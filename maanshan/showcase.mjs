@@ -4,7 +4,9 @@
 // school API at all (nginx refuses /api/ there), so features that need the
 // school server - recording assessment, poet chat, reports, handwriting
 // recognition, synthesised speech - explain that instead of failing midway.
-// Nothing is sent or stored about the visitor.
+// Nothing is sent or stored about the visitor. The page carries no school
+// badge, name or label: index.html marks the showcase before the first paint
+// and pack.css hides the header.
 export const SHOWCASE = /^(?:www\.)?aiducation\.hk\.cn$/.test(location.hostname);
 
 // Actions that would start work only the school server can finish.
@@ -52,6 +54,4 @@ export function installShowcase() {
     if (event.target?.id !== 'chat-form') return;
     event.preventDefault(); event.stopImmediatePropagation(); showNotice();
   }, true);
-  const header = document.querySelector('.header-right');
-  if (header && !header.querySelector('.showcase-tag')) header.insertAdjacentHTML('afterbegin', '<span class="showcase-tag">展示版</span>');
 }
