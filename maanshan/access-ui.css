@@ -49,6 +49,7 @@
  .school-login .school-login-heading{gap:8px}
  .school-login .school-login-heading .school-login-mascot{width:clamp(52px,17vw,76px);height:clamp(78px,25vw,112px)}
  .school-login .school-login-heading .school-login-badge{height:clamp(46px,14vw,62px)}
- .school-login .school-login-heading .school-login-partners{margin-top:4px;font-size:clamp(12px,3.4vw,14px);letter-spacing:.02em}
- .school-login .school-login-heading #school-login-title{font-size:clamp(21px,calc(6.25vw + 1px),31px);line-height:1.35}
+ .school-login .school-login-heading .school-login-brand{margin-top:-6px}
+ .school-login .school-login-heading .school-login-partners{margin-top:4px;margin-bottom:5px;font-size:clamp(12px,3.4vw,14px);letter-spacing:.02em}
+ .school-login .school-login-heading #school-login-title{font-size:clamp(21px,calc(9.6vw - 9.2px),34px);line-height:1.35}
 }
