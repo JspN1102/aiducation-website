@@ -2589,8 +2589,8 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 .school-login-heading>div{min-width:0}
 /* School badge, the partnership line and the platform name stack to the right of 詩詩. */
 .school-login-brand{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center}
-.school-login-badge{display:block;width:auto;height:120px}
-.school-login .school-login-partners{margin:10px 0 0;font:400 20px/1.45 var(--sans);color:#5d655f;letter-spacing:.04em}
+.school-login-badge{display:block;width:auto;height:84px}
+.school-login .school-login-partners{margin:6px 0 0;font:400 16px/1.45 var(--sans);color:#5d655f;letter-spacing:.04em}
 .school-login-partners span{white-space:nowrap}
 /* The taller heading still leaves the login button in view on a 768px-high laptop. */
 @media(min-width:481px) and (max-height:860px){main.school-login{padding-block:20px}}
@@ -2816,8 +2816,8 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 @media(max-width:480px){
  .school-login .school-login-heading{gap:8px}
  .school-login .school-login-heading .school-login-mascot{width:clamp(52px,17vw,76px);height:clamp(78px,25vw,112px)}
- .school-login .school-login-heading .school-login-badge{height:clamp(64px,20vw,88px)}
- .school-login .school-login-heading .school-login-partners{margin-top:6px;font-size:clamp(14px,4vw,17px);letter-spacing:.02em}
+ .school-login .school-login-heading .school-login-badge{height:clamp(46px,14vw,62px)}
+ .school-login .school-login-heading .school-login-partners{margin-top:4px;font-size:clamp(12px,3.4vw,14px);letter-spacing:.02em}
  .school-login .school-login-heading #school-login-title{font-size:clamp(21px,calc(6.25vw + 1px),31px);line-height:1.35}
 }
 
