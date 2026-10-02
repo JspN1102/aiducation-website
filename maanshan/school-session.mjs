@@ -17,6 +17,16 @@ const requiresSchoolAuth = !SHOWCASE && (location.hostname === 'mandarin.aiducat
 const fallbackEntrance = () => location.hostname === 'mandarin.aiducation.asia'
   ? '<a class="school-fallback-link" href="https://aiducation.asia/school/">連線不穩？使用備用入口</a>' : '';
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+// A device whose last visit ended at the login form opens straight on it after
+// a refresh instead of the poem-loading placeholder (index.html reads the same
+// key before the first paint). Only this flag is stored, never who signed in.
+const LOGIN_HINT = 'maanshan:school-login';
+function rememberLoginScreen(shown) {
+  try { if (shown) localStorage.setItem(LOGIN_HINT, '1'); else localStorage.removeItem(LOGIN_HINT); } catch {}
+}
+function lastSeenLoginScreen() {
+  try { return localStorage.getItem(LOGIN_HINT) === '1'; } catch { return false; }
+}
 
 export const schoolState = () => current;
 export function schoolHeaders(headers = {}) {
@@ -81,6 +91,7 @@ export async function logoutSchoolSession() {
   const response = await schoolFetch('/api/school-auth/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'logout'}), signal:AbortSignal.timeout(15000)});
   if (!response.ok) throw new Error('暫時未能登出，請再試一次。');
   broadcast('signed-out');
+  rememberLoginScreen(true);
   location.replace(location.pathname);
 }
 let channel;
@@ -90,11 +101,17 @@ function connectSessionChannel() {
   channel = new BroadcastChannel('maanshan-school-session');
   channel.addEventListener('message', () => invalidateSchoolSession());
 }
+let styleReady = Promise.resolve();
 function ensureStyle() {
-  if (document.querySelector('link[data-school-auth-style]')) return;
+  if (document.querySelector('link[data-school-auth-style]')) return styleReady;
   const link = document.createElement('link');
   link.rel = 'stylesheet'; link.href = 'school-session.css?v=20260920-ui1';
-  link.dataset.schoolAuthStyle = 'true'; document.head.append(link);
+  link.dataset.schoolAuthStyle = 'true';
+  // An unstyled login form must not flash; a stylesheet that never answers
+  // still lets the form appear after a short wait.
+  styleReady = new Promise(resolve => { link.onload = link.onerror = resolve; setTimeout(resolve, 2500); });
+  document.head.append(link);
+  return styleReady;
 }
 function validSignedIn(data) {
   return data?.enabled === true && data.authenticated === true &&
@@ -127,10 +144,11 @@ function loginError(response, data) {
   if (response.status === 401) return '登入名稱或密碼不正確，請核對學校提供的資料。';
   return '帳戶服務回覆不完整，請稍後再試。';
 }
-function loginScreen(host, initialError = '') {
+function loginScreen(host, initialError = '', {signal} = {}) {
   document.body.dataset.screen = 'school-login';
+  rememberLoginScreen(true);
   document.querySelector('#profile-open')?.setAttribute('hidden', '');
-  host.innerHTML = `<main class="school-login" id="main"><section class="school-login-card" aria-labelledby="school-login-title"><header class="school-login-heading"><button type="button" class="school-login-mascot" aria-label="點詩詩，看她翻書"><span class="school-login-sprite" aria-hidden="true"></span></button><div><h1 id="school-login-title">AI普通話學習平台</h1></div></header><form id="school-login-form" aria-busy="false"><label for="school-login-name">登入名稱<input id="school-login-name" name="login" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="64" enterkeyhint="next" required placeholder="學校提供的登入名稱"></label><label for="school-login-password">登入密碼<span class="school-password"><input id="school-login-password" name="password" type="password" autocomplete="current-password" maxlength="128" enterkeyhint="go" required aria-describedby="school-login-error"><button type="button" aria-label="顯示密碼" aria-pressed="false" id="school-password-toggle">顯示</button></span></label>${termsConfirmationMarkup()}<p id="school-login-error" role="alert">${escape(initialError)}</p><button class="button primary school-login-submit" type="submit">登入，開始學習</button></form><p class="school-login-help">忘記密碼？請找老師幫忙。</p></section></main>`;
+  host.innerHTML = `<main class="school-login" id="main"><section class="school-login-card" aria-labelledby="school-login-title"><header class="school-login-heading"><button type="button" class="school-login-mascot" aria-label="點詩詩，看她翻書"><span class="school-login-sprite" aria-hidden="true"></span></button><div class="school-login-brand"><img class="school-login-badge" src="school-badge-login.webp" width="229" height="293" alt="" decoding="async"><p class="school-login-partners"><span>馬鞍山靈糧小學&nbsp;×</span> <span>香港教育大學</span></p><h1 id="school-login-title">AI普通話學習平台</h1></div></header><form id="school-login-form" aria-busy="false"><label for="school-login-name">登入名稱<input id="school-login-name" name="login" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="64" enterkeyhint="next" required placeholder="學校提供的登入名稱"></label><label for="school-login-password">登入密碼<span class="school-password"><input id="school-login-password" name="password" type="password" autocomplete="current-password" maxlength="128" enterkeyhint="go" required aria-describedby="school-login-error"><button type="button" aria-label="顯示密碼" aria-pressed="false" id="school-password-toggle">顯示</button></span></label>${termsConfirmationMarkup()}<p id="school-login-error" role="alert">${escape(initialError)}</p><button class="button primary school-login-submit" type="submit">登入，開始學習</button></form><p class="school-login-help">忘記密碼？請找老師幫忙。</p></section></main>`;
   const form = host.querySelector('form'), status = host.querySelector('#school-login-error');
   bindTermsConfirmation(form);
   const mascot=host.querySelector('.school-login-mascot');
@@ -138,6 +156,7 @@ function loginScreen(host, initialError = '') {
   mascot.addEventListener('click',()=>void sprite.play('book'));
   form.addEventListener('focusin',()=>sprite.stop());
   const stopMascot=onSchoolSessionInvalid(()=>sprite.destroy());
+  signal?.addEventListener('abort',()=>{sprite.destroy();stopMascot();},{once:true});
   host.querySelector('#school-password-toggle').addEventListener('click', event => {
     const show = form.elements.password.type === 'password';
     form.elements.password.type = show ? 'text' : 'password';
@@ -180,7 +199,7 @@ function loginScreen(host, initialError = '') {
         return;
       }
       form.elements.password.value = '';
-      sprite.destroy();stopMascot();
+      sprite.destroy();stopMascot();rememberLoginScreen(false);
       succeeded = true; status.textContent = ''; button.textContent = '登入成功，正在開啟…';
       broadcast('signed-in');
       resolve(data);
@@ -200,8 +219,10 @@ function loginScreen(host, initialError = '') {
   }));
 }
 export async function initializeSchoolSession(host) {
-  ensureStyle();
+  const styled = ensureStyle();
   document.querySelector('#profile-open')?.setAttribute('hidden', '');
+  if (requiresSchoolAuth && lastSeenLoginScreen()) return openOnLoginScreen(host, styled);
+  delete document.documentElement.dataset.schoolBoot;
   let data;
   while (!data) {
     try { data = await readSession(); }
@@ -225,7 +246,32 @@ export async function initializeSchoolSession(host) {
     // tab. Its cookie could already belong to the next shared-device user.
     if (blocked) return new Promise(() => {});
     current = signedIn;
+  } else rememberLoginScreen(false);
+  return enterSchool();
+}
+// The login form shows at once while the account check runs. A session that
+// is still signed in replaces the form unless the user is already signing in;
+// a failed check leaves the form, whose own request reports the outage.
+async function openOnLoginScreen(host, styled) {
+  await styled;
+  connectSessionChannel();
+  const cancel = new AbortController();
+  const login = loginScreen(host, '', {signal:cancel.signal}).then(data => ({data, typed:true}));
+  delete document.documentElement.dataset.schoolBoot;
+  const signingIn = () => host.querySelector('#school-login-form')?.getAttribute('aria-busy') === 'true';
+  const checked = readSession().then(data => (data.authenticated || !data.enabled) && !signingIn() ? {data, typed:false} : login, () => login);
+  const {data, typed} = await Promise.race([login, checked]);
+  if (blocked) return new Promise(() => {});
+  if (!typed) {
+    cancel.abort(); rememberLoginScreen(false);
+    delete document.body.dataset.screen;
+    host.innerHTML = '<main id="main" class="loading-page" aria-busy="true"><span class="spinner"></span><p>正在載入古詩</p></main>';
   }
+  current = data;
+  if (!data.enabled) { document.querySelector('#profile-open')?.removeAttribute('hidden'); return current; }
+  return enterSchool();
+}
+function enterSchool() {
   if (!['student','teacher'].includes(current.user?.role) || !current.csrfToken) throw new Error('Invalid school session');
   document.querySelector('#profile-open')?.removeAttribute('hidden');
   let checking = false;

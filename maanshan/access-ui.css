@@ -43,10 +43,12 @@
  .workspace.view-record #view{padding-bottom:8px;scroll-padding-bottom:8px}
 }
 /* The login title is one complete name, including on a 320px phone. Keep the
-   mascot beside it without allowing the later auth stylesheet to wrap it. */
+   mascot and school badge beside it without allowing the later auth stylesheet to wrap it. */
 .school-login .school-login-heading #school-login-title{white-space:nowrap;text-wrap:nowrap;letter-spacing:0}
 @media(max-width:480px){
  .school-login .school-login-heading{gap:8px}
- .school-login .school-login-heading .school-login-mascot{width:clamp(44px,14vw,64px);height:clamp(70px,21vw,96px)}
+ .school-login .school-login-heading .school-login-mascot{width:clamp(52px,17vw,76px);height:clamp(78px,25vw,112px)}
+ .school-login .school-login-heading .school-login-badge{height:clamp(64px,20vw,88px)}
+ .school-login .school-login-heading .school-login-partners{margin-top:6px;font-size:clamp(14px,4vw,17px);letter-spacing:.02em}
  .school-login .school-login-heading #school-login-title{font-size:clamp(21px,calc(6.25vw + 1px),31px);line-height:1.35}
 }

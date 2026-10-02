@@ -10,6 +10,9 @@
 .icp-footer a:hover{text-decoration:underline}
 body:has(.icp-footer:not([hidden])) .school-login{min-height:calc(100svh - 44px)}
 body:has(.lesson-shell) .icp-footer{display:none}
+/* Last seen at the login form (index.html head script): the header and poem-loading text stay hidden until the form replaces them. */
+html[data-school-boot=login] .site-header{display:none}
+html[data-school-boot=login] #app>.loading-page>:is(.spinner,.spinner+p){visibility:hidden}
 /* aiducation.hk.cn showcase (showcase.mjs): no school badge, name or header at all, and a dialog explaining account-only features. */
 html[data-showcase] .site-header{display:none}
 .showcase-dialog p{margin:0 0 20px;color:var(--ink);font:16px/1.75 var(--sans)}
