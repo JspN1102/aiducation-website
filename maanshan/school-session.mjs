@@ -2,7 +2,7 @@ import {TERMS_VERSION, termsConfirmationMarkup, bindTermsConfirmation} from './p
 import {mountShishiSprite} from './shishi-sprite.mjs?v=20260923-school23';
 import {readOnlyJSON} from './read-only-json.mjs?v=20260922-school15';
 import {SHOWCASE} from './showcase.mjs?v=20260930-school30';
-import {animationCandidates, manageAnimationSource} from './animation-source.mjs?v=20261003-school34';
+import {animationCandidates, manageAnimationSource} from './animation-source.mjs?v=20261003-school35';
 // The cookie is HttpOnly. Only the current user's display profile and CSRF
 // token live in memory; passwords and bearer credentials are never persisted.
 let current = {enabled: false, authenticated: false, user: null, csrfToken: ''};
@@ -106,7 +106,7 @@ let styleReady = Promise.resolve();
 function ensureStyle() {
   if (document.querySelector('link[data-school-auth-style]')) return styleReady;
   const link = document.createElement('link');
-  link.rel = 'stylesheet'; link.href = 'school-session.css?v=20261003-school34';
+  link.rel = 'stylesheet'; link.href = 'school-session.css?v=20261003-school35';
   link.dataset.schoolAuthStyle = 'true';
   // An unstyled login form must not flash; a stylesheet that never answers
   // still lets the form appear after a short wait.
@@ -169,7 +169,7 @@ function loginScreen(host, initialError = '', {signal} = {}) {
   document.body.dataset.screen = 'school-login';
   rememberLoginScreen(true);
   document.querySelector('#profile-open')?.setAttribute('hidden', '');
-  host.innerHTML = `<main class="school-login" id="main"><section class="school-login-card" aria-labelledby="school-login-title"><header class="school-login-heading"><button type="button" class="school-login-mascot" aria-label="點詩詩，看她翻書"><span class="school-login-sprite" aria-hidden="true"></span></button><div class="school-login-brand"><img class="school-login-badge" src="school-badge-login.webp" width="229" height="293" alt="" decoding="async"><p class="school-login-partners"><span>馬鞍山靈糧小學&nbsp;×</span> <span>香港教育大學</span></p><h1 id="school-login-title">AI普通話學習平台</h1></div></header><form id="school-login-form" aria-busy="false"><label for="school-login-name">登入名稱<input id="school-login-name" name="login" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="64" enterkeyhint="next" required placeholder="學校提供的登入名稱"></label><label for="school-login-password">登入密碼<span class="school-password"><input id="school-login-password" name="password" type="password" autocomplete="current-password" maxlength="128" enterkeyhint="go" required aria-describedby="school-login-error"><button type="button" aria-label="顯示密碼" aria-pressed="false" id="school-password-toggle">顯示</button></span></label>${termsConfirmationMarkup()}<p id="school-login-error" role="alert">${escape(initialError)}</p><button class="button primary school-login-submit" type="submit">登入，開始學習</button></form><p class="school-login-help">忘記密碼？請找老師幫忙。</p><p class="school-login-guide-row"><button type="button" class="school-login-guide">▶ 使用指南（短片）</button></p></section></main>`;
+  host.innerHTML = `<main class="school-login" id="main"><section class="school-login-card" aria-labelledby="school-login-title"><header class="school-login-heading"><button type="button" class="school-login-mascot" aria-label="點詩詩，看她翻書"><span class="school-login-sprite" aria-hidden="true"></span></button><div class="school-login-brand"><img class="school-login-badge" src="school-badge-login.webp" width="229" height="293" alt="" decoding="async"><p class="school-login-partners"><span>馬鞍山靈糧小學&nbsp;×</span> <span>香港教育大學</span></p><h1 id="school-login-title">AI普通話學習平台</h1></div></header><form id="school-login-form" aria-busy="false"><label for="school-login-name">登入名稱<input id="school-login-name" name="login" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="64" enterkeyhint="next" required placeholder="學校提供的登入名稱"></label><label for="school-login-password">登入密碼<span class="school-password"><input id="school-login-password" name="password" type="password" autocomplete="current-password" maxlength="128" enterkeyhint="go" required aria-describedby="school-login-error"><button type="button" aria-label="顯示密碼" aria-pressed="false" id="school-password-toggle">顯示</button></span></label>${termsConfirmationMarkup()}<p id="school-login-error" role="alert">${escape(initialError)}</p><button class="button primary school-login-submit" type="submit">登入，開始學習</button></form><p class="school-login-help">忘記密碼？請找老師幫忙。</p><p class="school-login-guide-row"><button type="button" class="school-login-guide">使用指南</button></p></section></main>`;
   const form = host.querySelector('form'), status = host.querySelector('#school-login-error');
   bindTermsConfirmation(form);
   const mascot=host.querySelector('.school-login-mascot');

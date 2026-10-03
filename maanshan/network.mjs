@@ -1,4 +1,4 @@
-import {schoolFetch} from './school-session.mjs?v=20261003-school34';
+import {schoolFetch} from './school-session.mjs?v=20261003-school35';
 import {prepareHandwritingPayload} from './handwriting-payload.mjs?v=20260922-school22';
 
 // Only a final, verified completion enters chat history. Partial tokens are

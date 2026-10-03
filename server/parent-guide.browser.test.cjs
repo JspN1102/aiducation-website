@@ -29,7 +29,7 @@ const server=http.createServer((req,res)=>{
    try{
     await page.goto(origin+'/school/');await page.locator('#school-login-form').waitFor({timeout:10000});
     const link=page.locator('.school-login-guide');
-    assert.equal((await link.textContent()).trim(),'▶ 使用指南（短片）');
+    assert.equal((await link.textContent()).trim(),'使用指南');
     const below=await page.evaluate(()=>document.querySelector('.school-login-guide').getBoundingClientRect().top>document.querySelector('.school-login-help').getBoundingClientRect().bottom-1);
     assert(below,'the link sits under 忘記密碼');
     await link.click();
