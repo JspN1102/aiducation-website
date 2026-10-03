@@ -3,7 +3,6 @@ import {mountShishiSprite} from './shishi-sprite.mjs?v=20260923-school23';
 import {readOnlyJSON} from './read-only-json.mjs?v=20260922-school15';
 import {SHOWCASE} from './showcase.mjs?v=20260930-school30';
 import {animationCandidates, manageAnimationSource} from './animation-source.mjs?v=20261003-school35';
-import {rememberedRoute} from './media-route.mjs?v=20260923-school23';
 // The cookie is HttpOnly. Only the current user's display profile and CSRF
 // token live in memory; passwords and bearer credentials are never persisted.
 let current = {enabled: false, authenticated: false, user: null, csrfToken: ''};
@@ -107,7 +106,7 @@ let styleReady = Promise.resolve();
 function ensureStyle() {
   if (document.querySelector('link[data-school-auth-style]')) return styleReady;
   const link = document.createElement('link');
-  link.rel = 'stylesheet'; link.href = 'school-session.css?v=20261003-school36';
+  link.rel = 'stylesheet'; link.href = 'school-session.css?v=20261003-school37';
   link.dataset.schoolAuthStyle = 'true';
   // An unstyled login form must not flash; a stylesheet that never answers
   // still lets the form appear after a short wait.
@@ -148,18 +147,18 @@ function loginError(response, data) {
 }
 // The parents' guide plays in a dialog over the login form. The source is set
 // and play() is called inside the tap itself, so phones start it with sound.
-// The COS copy goes first so the video never uses the school server's uplink
-// and mainland phones skip the slow Vercel route; the page's own copy is only
-// the fallback, or first when COS already failed in this session. The login
-// page preconnects to COS, and a stall switches route after 3 s, not 8 s.
+// Neither route touches the school server's uplink: the guide streams from
+// the COS bucket or the page's own Vercel copy, ordered like the animations by
+// the session's media probe and route memory. The login page preconnects to
+// COS, and a stall switches route after 2 s instead of the animations' 8 s.
 const GUIDE_VIDEO = 'media/guide/parent-guide-20261003.mp4';
-const GUIDE_STALL_MS = 3000;
-const guideCandidates = () => animationCandidates(GUIDE_VIDEO, {preferPublic: true, memory: rememberedRoute() === 'local' ? 'local' : null});
+const GUIDE_STALL_MS = 2000;
+const guideCandidates = () => animationCandidates(GUIDE_VIDEO);
 function preconnectGuide() {
-  const first = guideCandidates()[0];
-  if (first?.route !== 'public' || document.querySelector('link[data-guide-preconnect]')) return;
+  const remote = guideCandidates().find(candidate => candidate.route === 'public');
+  if (!remote || document.querySelector('link[data-guide-preconnect]')) return;
   const link = document.createElement('link');
-  link.rel = 'preconnect'; link.href = new URL(first.url).origin; link.dataset.guidePreconnect = '';
+  link.rel = 'preconnect'; link.href = new URL(remote.url).origin; link.dataset.guidePreconnect = '';
   document.head.append(link);
 }
 function openGuideVideo() {
