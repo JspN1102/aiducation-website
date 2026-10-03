@@ -2,7 +2,7 @@ import {TERMS_VERSION, termsConfirmationMarkup, bindTermsConfirmation} from './p
 import {mountShishiSprite} from './shishi-sprite.mjs?v=20260923-school23';
 import {readOnlyJSON} from './read-only-json.mjs?v=20260922-school15';
 import {SHOWCASE} from './showcase.mjs?v=20260930-school30';
-import {animationCandidates, manageAnimationSource} from './animation-source.mjs?v=20260923-school23';
+import {animationCandidates, manageAnimationSource} from './animation-source.mjs?v=20261003-school34';
 // The cookie is HttpOnly. Only the current user's display profile and CSRF
 // token live in memory; passwords and bearer credentials are never persisted.
 let current = {enabled: false, authenticated: false, user: null, csrfToken: ''};

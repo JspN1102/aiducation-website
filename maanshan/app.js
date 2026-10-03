@@ -1,5 +1,5 @@
 import {imageAsset} from './media-images.mjs?v=20260923-school23';
-import {manageAnimationSource} from './animation-source.mjs?v=20260923-school23';
+import {manageAnimationSource} from './animation-source.mjs?v=20261003-school34';
 import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260929-parts1';
 import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260923-school23';
 import {configurePronunciation, getPronunciationPractice, syllableParts, toneName} from './pronunciation.mjs?v=20260929-parts1';

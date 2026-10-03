@@ -197,6 +197,9 @@ def pack_entries(manifest):
     the page, both routes' digest and size, in a stable order."""
     entries = []
     for asset in validated_assets(manifest):
+        # The login page's parents' guide is streamed on demand, not packed for pupils.
+        if asset['source'].startswith('/maanshan/media/guide/'):
+            continue
         entries.append({'path': asset['source'][len('/maanshan/'):], 'remote': asset['destination'],
                         'bytes': asset['bytes'], 'sha256': asset['sha256'], 'type': asset['contentType']})
     return entries

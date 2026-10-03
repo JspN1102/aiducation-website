@@ -435,6 +435,15 @@
       "objectCacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "source": "/maanshan/media/guide/parent-guide-20261003.mp4",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/guide/parent-guide-20261003.mp4",
+      "bytes": 19550626,
+      "sha256": "199a8442cc5254e93cc28c67612b7a60a9d231eb70d2243035e9811f2f8049c2",
+      "md5": "ed2203dde23c534f419630b35366e202",
+      "contentType": "video/mp4",
+      "objectCacheControl": "public, max-age=2592000"
+    },
+    {
       "source": "/maanshan/media/living-scenes/bean-v1.glb",
       "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4e819ae9a9782074c7ab/maanshan/media/living-scenes/bean-v1.glb",
       "bytes": 693568,
