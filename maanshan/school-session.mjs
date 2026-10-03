@@ -2,6 +2,7 @@ import {TERMS_VERSION, termsConfirmationMarkup, bindTermsConfirmation} from './p
 import {mountShishiSprite} from './shishi-sprite.mjs?v=20260923-school23';
 import {readOnlyJSON} from './read-only-json.mjs?v=20260922-school15';
 import {SHOWCASE} from './showcase.mjs?v=20260930-school30';
+import {animationCandidates, manageAnimationSource} from './animation-source.mjs?v=20260923-school23';
 // The cookie is HttpOnly. Only the current user's display profile and CSRF
 // token live in memory; passwords and bearer credentials are never persisted.
 let current = {enabled: false, authenticated: false, user: null, csrfToken: ''};
@@ -105,7 +106,7 @@ let styleReady = Promise.resolve();
 function ensureStyle() {
   if (document.querySelector('link[data-school-auth-style]')) return styleReady;
   const link = document.createElement('link');
-  link.rel = 'stylesheet'; link.href = 'school-session.css?v=20260920-ui1';
+  link.rel = 'stylesheet'; link.href = 'school-session.css?v=20261003-school34';
   link.dataset.schoolAuthStyle = 'true';
   // An unstyled login form must not flash; a stylesheet that never answers
   // still lets the form appear after a short wait.
@@ -144,16 +145,37 @@ function loginError(response, data) {
   if (response.status === 401) return '登入名稱或密碼不正確，請核對學校提供的資料。';
   return '帳戶服務回覆不完整，請稍後再試。';
 }
+// The parents' guide plays in a dialog over the login form. The source is set
+// and play() is called inside the tap itself, so phones start it with sound.
+// It uses the animations' two routes once a COS copy is in the media manifest.
+const GUIDE_VIDEO = 'media/guide/parent-guide-20261003.mp4';
+function openGuideVideo() {
+  if (document.querySelector('.school-guide-dialog')) return;
+  const dialog = document.createElement('dialog');
+  dialog.className = 'school-guide-dialog';
+  dialog.setAttribute('aria-label', '使用指南短片');
+  dialog.innerHTML = '<div class="school-guide-bar"><h2>使用指南</h2><button type="button" class="school-guide-close">關閉</button></div><video controls playsinline preload="auto"></video>';
+  document.body.append(dialog);
+  const player = dialog.querySelector('video');
+  const source = manageAnimationSource(player, GUIDE_VIDEO, {candidates: animationCandidates(GUIDE_VIDEO)});
+  const close = () => dialog.open ? dialog.close() : dialog.dispatchEvent(new Event('close'));
+  dialog.addEventListener('close', () => { player.pause(); source.dispose(); player.removeAttribute('src'); player.load(); dialog.remove(); }, {once:true});
+  dialog.querySelector('.school-guide-close').addEventListener('click', close);
+  dialog.addEventListener('click', event => { if (event.target === dialog) close(); });
+  if (dialog.showModal) dialog.showModal(); else dialog.setAttribute('open', '');
+  player.play().catch(() => {});
+}
 function loginScreen(host, initialError = '', {signal} = {}) {
   document.body.dataset.screen = 'school-login';
   rememberLoginScreen(true);
   document.querySelector('#profile-open')?.setAttribute('hidden', '');
-  host.innerHTML = `<main class="school-login" id="main"><section class="school-login-card" aria-labelledby="school-login-title"><header class="school-login-heading"><button type="button" class="school-login-mascot" aria-label="點詩詩，看她翻書"><span class="school-login-sprite" aria-hidden="true"></span></button><div class="school-login-brand"><img class="school-login-badge" src="school-badge-login.webp" width="229" height="293" alt="" decoding="async"><p class="school-login-partners"><span>馬鞍山靈糧小學&nbsp;×</span> <span>香港教育大學</span></p><h1 id="school-login-title">AI普通話學習平台</h1></div></header><form id="school-login-form" aria-busy="false"><label for="school-login-name">登入名稱<input id="school-login-name" name="login" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="64" enterkeyhint="next" required placeholder="學校提供的登入名稱"></label><label for="school-login-password">登入密碼<span class="school-password"><input id="school-login-password" name="password" type="password" autocomplete="current-password" maxlength="128" enterkeyhint="go" required aria-describedby="school-login-error"><button type="button" aria-label="顯示密碼" aria-pressed="false" id="school-password-toggle">顯示</button></span></label>${termsConfirmationMarkup()}<p id="school-login-error" role="alert">${escape(initialError)}</p><button class="button primary school-login-submit" type="submit">登入，開始學習</button></form><p class="school-login-help">忘記密碼？請找老師幫忙。</p></section></main>`;
+  host.innerHTML = `<main class="school-login" id="main"><section class="school-login-card" aria-labelledby="school-login-title"><header class="school-login-heading"><button type="button" class="school-login-mascot" aria-label="點詩詩，看她翻書"><span class="school-login-sprite" aria-hidden="true"></span></button><div class="school-login-brand"><img class="school-login-badge" src="school-badge-login.webp" width="229" height="293" alt="" decoding="async"><p class="school-login-partners"><span>馬鞍山靈糧小學&nbsp;×</span> <span>香港教育大學</span></p><h1 id="school-login-title">AI普通話學習平台</h1></div></header><form id="school-login-form" aria-busy="false"><label for="school-login-name">登入名稱<input id="school-login-name" name="login" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="64" enterkeyhint="next" required placeholder="學校提供的登入名稱"></label><label for="school-login-password">登入密碼<span class="school-password"><input id="school-login-password" name="password" type="password" autocomplete="current-password" maxlength="128" enterkeyhint="go" required aria-describedby="school-login-error"><button type="button" aria-label="顯示密碼" aria-pressed="false" id="school-password-toggle">顯示</button></span></label>${termsConfirmationMarkup()}<p id="school-login-error" role="alert">${escape(initialError)}</p><button class="button primary school-login-submit" type="submit">登入，開始學習</button></form><p class="school-login-help">忘記密碼？請找老師幫忙。</p><p class="school-login-guide-row"><button type="button" class="school-login-guide">▶ 使用指南（短片）</button></p></section></main>`;
   const form = host.querySelector('form'), status = host.querySelector('#school-login-error');
   bindTermsConfirmation(form);
   const mascot=host.querySelector('.school-login-mascot');
   const sprite=mountShishiSprite(mascot.querySelector('span'),{canPlay:()=>mascot.isConnected&&!form.querySelector('[type=submit]').disabled&&!form.contains(document.activeElement)});
   mascot.addEventListener('click',()=>void sprite.play('book'));
+  host.querySelector('.school-login-guide').addEventListener('click',openGuideVideo);
   form.addEventListener('focusin',()=>sprite.stop());
   const stopMascot=onSchoolSessionInvalid(()=>sprite.destroy());
   signal?.addEventListener('abort',()=>{sprite.destroy();stopMascot();},{once:true});
