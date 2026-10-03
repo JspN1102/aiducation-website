@@ -106,7 +106,7 @@ let styleReady = Promise.resolve();
 function ensureStyle() {
   if (document.querySelector('link[data-school-auth-style]')) return styleReady;
   const link = document.createElement('link');
-  link.rel = 'stylesheet'; link.href = 'school-session.css?v=20261003-school37';
+  link.rel = 'stylesheet'; link.href = 'school-session.css?v=20261003-school38';
   link.dataset.schoolAuthStyle = 'true';
   // An unstyled login form must not flash; a stylesheet that never answers
   // still lets the form appear after a short wait.
@@ -150,9 +150,9 @@ function loginError(response, data) {
 // Neither route touches the school server's uplink: the guide streams from
 // the COS bucket or the page's own Vercel copy, ordered like the animations by
 // the session's media probe and route memory. The login page preconnects to
-// COS, and a stall switches route after 2 s instead of the animations' 8 s.
+// COS, and a stall switches route after 4 s instead of the animations' 8 s.
 const GUIDE_VIDEO = 'media/guide/parent-guide-20261003.mp4';
-const GUIDE_STALL_MS = 2000;
+const GUIDE_STALL_MS = 4000;
 const guideCandidates = () => animationCandidates(GUIDE_VIDEO);
 function preconnectGuide() {
   const remote = guideCandidates().find(candidate => candidate.route === 'public');
