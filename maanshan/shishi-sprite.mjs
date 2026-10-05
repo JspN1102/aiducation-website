@@ -1,5 +1,5 @@
-import {imageAsset} from './media-images.mjs?v=20260923-school23';
-import {fetchImage} from './image-loader.mjs?v=20260923-school23';
+import {imageAsset} from './media-images.mjs?v=20261005-school40';
+import {fetchImage} from './image-loader.mjs?v=20261005-school40';
 const stillURL=new URL(imageAsset('media/shishi/guide-still-20260919a.webp'),import.meta.url).href;
 const gestures={wave:{url:new URL('./media/shishi/guide-wave-20260919a.webp',import.meta.url).href,duration:2000},book:{url:new URL('./media/shishi/guide-book-20260919a.webp',import.meta.url).href,duration:4000}};
 const bytes=new Map();

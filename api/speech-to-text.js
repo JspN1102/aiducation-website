@@ -15,7 +15,8 @@ const HOST = 'asr.tencentcloudapi.com';
 const ENGINE = '16k_zh-PY';
 // Poets, titles and places of the six course poems, in the engine's simplified
 // script; each word is at most ten characters.
-const HOTWORDS = ['鹅鹅鹅', '骆宾王', '李白', '汪伦', '苏轼', '苏东坡', '王安石', '陶渊明', '韩愈', '咏鹅', '赠汪伦', '题西林壁', '泊船瓜洲', '归园田居', '初春小雨', '早春呈水部张十八员外', '桃花潭', '庐山', '瓜洲', '京口', '钟山', '南山', '天街小雨'].map(word => word + '|10').join(',');
+const HOTWORDS = ['鹅鹅鹅', '骆宾王', '李白', '汪伦', '苏轼', '苏东坡', '王安石', '陶渊明', '韩愈', '咏鹅', '赠汪伦', '题西林壁', '泊船瓜洲', '归园田居', '初春小雨', '早春呈水部张十八员外', '桃花潭', '庐山', '瓜洲', '京口', '钟山', '南山', '天街小雨',
+  '郑燮', '郑板桥', '唐寅', '唐伯虎', '曹植', '杜甫', '韩非', '韩非子', '咏雪', '画鸡', '七步诗', '绝句', '郑人买履', '客至'].map(word => word + '|10').join(',');
 // Each successful recognition is billed. A pupil asks a question at a time;
 // these ceilings stop a stuck button or a script from running up the bill.
 const ACTOR_LIMIT = {max: 20, windowMs: 10 * 60000};

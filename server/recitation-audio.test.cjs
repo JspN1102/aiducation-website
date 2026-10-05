@@ -29,3 +29,28 @@ test('all official title, author and lesson recordings resolve to verified clips
  for(const text of ['目','白毛','橫看成嶺','側成峰','春風又綠','豆苗','草盛'])assert.equal(getRecitationSequence(text),null,'short vocabulary stays TTS: '+text);
  assert(getSpeechAudioURL('滋潤，滋潤的潤。').includes('/media/speech/'));
 });
+
+test('preview poems 7-12 resolve title, author, each line and the whole poem to their verified clips',async()=>{
+ const {getRecitationAudioURL,getRecitationTextURL,getRecitationSequence}=await import('../maanshan/recitation-audio.mjs');
+ const {getSpeechAudioURL}=await import('../maanshan/speech-audio.mjs');
+ const round2=require('../maanshan/media/recitations/round2-20261005/manifest.json'),preview=require('../maanshan/poems-preview.json').poems;
+ assert.deepEqual(round2.poems.map(p=>p.poemId),[7,8,9,10,11,12]);let count=0;
+ for(const poem of preview){
+  const recorded=round2.poems.find(p=>p.poemId===poem.id);assert.equal(recorded.slug,poem.slug);assert.equal(recorded.grade,poem.grade);
+  for(const clip of Object.values(recorded.segments)){
+   const bytes=fs.readFileSync(path.join(root,'maanshan',clip.src));assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),clip.sha256);assert.equal(bytes.length,clip.bytes);
+   assert(clip.sourceStartSeconds>=0&&clip.sourceEndSeconds>clip.sourceStartSeconds&&clip.sourceEndSeconds<=recorded.sourceDurationSeconds);count++;
+  }
+  for(const kind of ['title','author','poem'])assert(getRecitationAudioURL(poem,kind).endsWith(recorded.segments[kind].src),poem.slug+' '+kind);
+  for(const [i,line] of poem.lines.entries()){
+   const url=getRecitationAudioURL(poem,'line',i);assert(url.endsWith(recorded.segments['line'+(i+1)].src));
+   assert.equal(getSpeechAudioURL(line.text+line.punctuation),url);assert.equal(getSpeechAudioURL(line.simplified+line.punctuation),url);
+  }
+  assert.equal(getRecitationAudioURL(poem,'line',poem.lines.length),null);
+  assert.equal(getRecitationSequence(poem.lines.map(line=>line.text+line.punctuation).join(''))[0],getRecitationAudioURL(poem,'poem'));
+ }
+ assert.equal(count,55);
+ // Poems 1-6 keep their own clips even where a grade now has two poems.
+ for(const poem of poems)assert(getRecitationAudioURL(poem,'poem').includes('/edb-20260921/'));
+ assert.equal(getRecitationTextURL('頭上紅冠不用裁'),getRecitationAudioURL(preview[1],'line',0));
+});

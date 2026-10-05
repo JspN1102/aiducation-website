@@ -1,0 +1,640 @@
+{
+  "schemaVersion": 1,
+  "id": "round2-20261005",
+  "source": "User-supplied recitations for the second batch of poems (第二轮素材)",
+  "processing": {
+    "speed": 1,
+    "pitchChanged": false,
+    "denoising": false,
+    "sampleRate": 44100,
+    "channels": 1,
+    "codec": "mp3",
+    "bitrate": 160000,
+    "edgeFadeSeconds": 0.008,
+    "notes": "Clip edges sit in the quiet gaps around each spoken unit (about 0.1 s lead-in, 0.15 s tail); sentence-internal pauses preserved. 8 ms fades affect the quiet clip edges only."
+  },
+  "poems": [
+    {
+      "poemId": 7,
+      "grade": 1,
+      "slug": "yong-xue",
+      "title": "詠雪",
+      "author": "鄭燮",
+      "sourceFile": "咏雪.mp3",
+      "sourceSHA256": "cd74cbbfe28e68728da0fcf32dc06b3ff4320f35cef5c0e9f1186ffc7cb297fa",
+      "sourceDurationSeconds": 25.626063,
+      "segments": {
+        "title": {
+          "text": "詠雪",
+          "src": "media/recitations/round2-20261005/p7-title.mp3",
+          "sourceStartSeconds": 0.24,
+          "sourceEndSeconds": 1.4,
+          "contentDurationSeconds": 1.16,
+          "encodedDurationSeconds": 1.202,
+          "bytes": 24600,
+          "sha256": "1367d383f917021420ae104440179cbe2683d981faff7274a7c833b21fd4afc6"
+        },
+        "author": {
+          "text": "鄭燮",
+          "src": "media/recitations/round2-20261005/p7-author.mp3",
+          "sourceStartSeconds": 2.18,
+          "sourceEndSeconds": 3.2,
+          "contentDurationSeconds": 1.02,
+          "encodedDurationSeconds": 1.071,
+          "bytes": 21987,
+          "sha256": "c5a6e5aee1775d457bab7372343020bd9568f1a8f30ccc77f972af41463f1026"
+        },
+        "line1": {
+          "text": "一片兩片三四片，",
+          "src": "media/recitations/round2-20261005/p7-line1.mp3",
+          "sourceStartSeconds": 5.11,
+          "sourceEndSeconds": 9.26,
+          "contentDurationSeconds": 4.15,
+          "encodedDurationSeconds": 4.18,
+          "bytes": 84159,
+          "sha256": "189e0bb12414319bd1f5db35e7738e15473916c16a1c9b0b8f917d8214fb3940"
+        },
+        "line2": {
+          "text": "五六七八九十片。",
+          "src": "media/recitations/round2-20261005/p7-line2.mp3",
+          "sourceStartSeconds": 10.92,
+          "sourceEndSeconds": 14.81,
+          "contentDurationSeconds": 3.89,
+          "encodedDurationSeconds": 3.918,
+          "bytes": 78934,
+          "sha256": "36285b421c675d49a512c7add8218c6a0649156e4959b73d1ac89187f050d9ac"
+        },
+        "line3": {
+          "text": "千片萬片無數片，",
+          "src": "media/recitations/round2-20261005/p7-line3.mp3",
+          "sourceStartSeconds": 16.38,
+          "sourceEndSeconds": 20.54,
+          "contentDurationSeconds": 4.16,
+          "encodedDurationSeconds": 4.206,
+          "bytes": 84681,
+          "sha256": "bb24a0cb6ea8d09c37d310257590b1c4c4f1f2142dd023aa647305b015217794"
+        },
+        "line4": {
+          "text": "飛入梅花都不見。",
+          "src": "media/recitations/round2-20261005/p7-line4.mp3",
+          "sourceStartSeconds": 21.19,
+          "sourceEndSeconds": 25.46,
+          "contentDurationSeconds": 4.27,
+          "encodedDurationSeconds": 4.31,
+          "bytes": 86771,
+          "sha256": "b5dd9755ee50d3666b81cd3aa7b0adea78b4530ec17ebd9054b76cc40f3a2e64"
+        },
+        "poem": {
+          "text": "一片兩片三四片，五六七八九十片。千片萬片無數片，飛入梅花都不見。",
+          "src": "media/recitations/round2-20261005/p7-poem.mp3",
+          "sourceStartSeconds": 5.11,
+          "sourceEndSeconds": 25.46,
+          "contentDurationSeconds": 20.35,
+          "encodedDurationSeconds": 20.402,
+          "bytes": 408600,
+          "sha256": "cd3ea0c7ee4bf9a60c468394bebb6e45dd35d7e3e68e251291ea9ce3b659cd53"
+        }
+      }
+    },
+    {
+      "poemId": 8,
+      "grade": 2,
+      "slug": "hua-ji",
+      "title": "畫雞",
+      "author": "唐寅",
+      "sourceFile": "画鸡.mp3",
+      "sourceSHA256": "cb246c5169deb51f57f569e6f44eefb765c77e3a20e6b94ac5e052f5e50ebbec",
+      "sourceDurationSeconds": 26.59265,
+      "segments": {
+        "title": {
+          "text": "畫雞",
+          "src": "media/recitations/round2-20261005/p8-title.mp3",
+          "sourceStartSeconds": 4.9,
+          "sourceEndSeconds": 5.89,
+          "contentDurationSeconds": 0.99,
+          "encodedDurationSeconds": 1.019,
+          "bytes": 20943,
+          "sha256": "82fe1ff27f86855ea6bd6948e37acf49960597fe917b9bad9b027002bcd4775d"
+        },
+        "author": {
+          "text": "唐寅",
+          "src": "media/recitations/round2-20261005/p8-author.mp3",
+          "sourceStartSeconds": 6.89,
+          "sourceEndSeconds": 7.95,
+          "contentDurationSeconds": 1.06,
+          "encodedDurationSeconds": 1.097,
+          "bytes": 22510,
+          "sha256": "7372024f6a2234e1052daa2f761304db60e02dce5ce817f1c241225dc08ac2f2"
+        },
+        "line1": {
+          "text": "頭上紅冠不用裁，",
+          "src": "media/recitations/round2-20261005/p8-line1.mp3",
+          "sourceStartSeconds": 10.09,
+          "sourceEndSeconds": 13.15,
+          "contentDurationSeconds": 3.06,
+          "encodedDurationSeconds": 3.109,
+          "bytes": 62738,
+          "sha256": "3268833b377356b4ad710e1ad6a13c01e214cf348eb94c30e2892dceaca7bce2"
+        },
+        "line2": {
+          "text": "滿身雪白走將來。",
+          "src": "media/recitations/round2-20261005/p8-line2.mp3",
+          "sourceStartSeconds": 14.16,
+          "sourceEndSeconds": 17.15,
+          "contentDurationSeconds": 2.99,
+          "encodedDurationSeconds": 3.03,
+          "bytes": 61171,
+          "sha256": "566752c336d36aecb5b03ff581590c7e5f3f177a828d4f94f3b39572f42d48a6"
+        },
+        "line3": {
+          "text": "平生不敢輕言語，",
+          "src": "media/recitations/round2-20261005/p8-line3.mp3",
+          "sourceStartSeconds": 18.26,
+          "sourceEndSeconds": 21.1,
+          "contentDurationSeconds": 2.84,
+          "encodedDurationSeconds": 2.873,
+          "bytes": 58036,
+          "sha256": "c581c1fe0c9bbdaa77f8905f1fc08f1767d64c08e15783f3a8b2c6532617fdd7"
+        },
+        "line4": {
+          "text": "一叫千門萬戶開。",
+          "src": "media/recitations/round2-20261005/p8-line4.mp3",
+          "sourceStartSeconds": 21.87,
+          "sourceEndSeconds": 25.41,
+          "contentDurationSeconds": 3.54,
+          "encodedDurationSeconds": 3.579,
+          "bytes": 72143,
+          "sha256": "632007faa28052d41b2e8c40bb51bc42b6ce527e5db8342f368437bf6bd08579"
+        },
+        "poem": {
+          "text": "頭上紅冠不用裁，滿身雪白走將來。平生不敢輕言語，一叫千門萬戶開。",
+          "src": "media/recitations/round2-20261005/p8-poem.mp3",
+          "sourceStartSeconds": 10.09,
+          "sourceEndSeconds": 25.41,
+          "contentDurationSeconds": 15.32,
+          "encodedDurationSeconds": 15.36,
+          "bytes": 307767,
+          "sha256": "b6fec7273921533b5b77351d8da1f0f8d33bcb0b2c70dded312a6fd0649312f3"
+        }
+      }
+    },
+    {
+      "poemId": 9,
+      "grade": 3,
+      "slug": "qi-bu-shi",
+      "title": "七步詩",
+      "author": "曹植",
+      "sourceFile": "七步诗.mp3",
+      "sourceSHA256": "1bdb07359018b4ce4e6676b3e17d61992507efca31ac6b75c1f7e332a43a0bd9",
+      "sourceDurationSeconds": 29.2049,
+      "segments": {
+        "title": {
+          "text": "七步詩",
+          "src": "media/recitations/round2-20261005/p9-title.mp3",
+          "sourceStartSeconds": 4.22,
+          "sourceEndSeconds": 5.5,
+          "contentDurationSeconds": 1.28,
+          "encodedDurationSeconds": 1.306,
+          "bytes": 26689,
+          "sha256": "dea00340ed804c7d31e2eb87cba89c9c714a511b00ca9c84462fdc0c5c093dd3"
+        },
+        "author": {
+          "text": "曹植",
+          "src": "media/recitations/round2-20261005/p9-author.mp3",
+          "sourceStartSeconds": 6.2,
+          "sourceEndSeconds": 7.23,
+          "contentDurationSeconds": 1.03,
+          "encodedDurationSeconds": 1.071,
+          "bytes": 21987,
+          "sha256": "79a517e9a72c042bd9c3e4635222b5bdc9e1352c9b6904926911b6fdc1e57ada"
+        },
+        "verse1": {
+          "text": "煮豆持作羹",
+          "src": "media/recitations/round2-20261005/p9-verse1.mp3",
+          "sourceStartSeconds": 8.92,
+          "sourceEndSeconds": 11.07,
+          "contentDurationSeconds": 2.15,
+          "encodedDurationSeconds": 2.194,
+          "bytes": 44453,
+          "sha256": "5793089a699da82b111b67181f920dcd6befd7a38b13219ebd67b1974278c657"
+        },
+        "verse2": {
+          "text": "漉豉以為汁",
+          "src": "media/recitations/round2-20261005/p9-verse2.mp3",
+          "sourceStartSeconds": 12.09,
+          "sourceEndSeconds": 14.27,
+          "contentDurationSeconds": 2.18,
+          "encodedDurationSeconds": 2.22,
+          "bytes": 44975,
+          "sha256": "02c57516d0245f24feb2acf10ffc1e5298ff02f1de9f35aa79a9bd7fae176dba"
+        },
+        "verse3": {
+          "text": "萁在釜下燃",
+          "src": "media/recitations/round2-20261005/p9-verse3.mp3",
+          "sourceStartSeconds": 15.27,
+          "sourceEndSeconds": 17.54,
+          "contentDurationSeconds": 2.27,
+          "encodedDurationSeconds": 2.299,
+          "bytes": 46543,
+          "sha256": "3ba398adee286a5a64ac11ebb32a434d23fc2a93200c71e01f28aff9062b56ab"
+        },
+        "verse4": {
+          "text": "豆在釜中泣",
+          "src": "media/recitations/round2-20261005/p9-verse4.mp3",
+          "sourceStartSeconds": 18.25,
+          "sourceEndSeconds": 20.56,
+          "contentDurationSeconds": 2.31,
+          "encodedDurationSeconds": 2.351,
+          "bytes": 47587,
+          "sha256": "d5846783dd6603cb0b5e79ba4769a804c77e39641d9fcf53cd761a3edba5fb3d"
+        },
+        "verse5": {
+          "text": "本是同根生",
+          "src": "media/recitations/round2-20261005/p9-verse5.mp3",
+          "sourceStartSeconds": 21.71,
+          "sourceEndSeconds": 23.96,
+          "contentDurationSeconds": 2.25,
+          "encodedDurationSeconds": 2.299,
+          "bytes": 46543,
+          "sha256": "32ff849ddaecb38b0cc272271172a84d9796ea373095305c9f78b8ac07cafef3"
+        },
+        "verse6": {
+          "text": "相煎何太急",
+          "src": "media/recitations/round2-20261005/p9-verse6.mp3",
+          "sourceStartSeconds": 24.35,
+          "sourceEndSeconds": 27.31,
+          "contentDurationSeconds": 2.96,
+          "encodedDurationSeconds": 3.004,
+          "bytes": 60649,
+          "sha256": "9e4965968987ce112a8c26dea2cc34a50ced0999b45626f819429d972d43bf7a"
+        },
+        "line1": {
+          "text": "煮豆持作羹，漉豉以為汁。",
+          "src": "media/recitations/round2-20261005/p9-line1.mp3",
+          "sourceStartSeconds": 8.92,
+          "sourceEndSeconds": 14.27,
+          "contentDurationSeconds": 5.35,
+          "encodedDurationSeconds": 5.381,
+          "bytes": 108192,
+          "sha256": "02bfc9b068336c3fd1dd128930d77c2d1384148c38ca6f63ef8f215caae391c6"
+        },
+        "line2": {
+          "text": "萁在釜下燃，豆在釜中泣。",
+          "src": "media/recitations/round2-20261005/p9-line2.mp3",
+          "sourceStartSeconds": 15.27,
+          "sourceEndSeconds": 20.56,
+          "contentDurationSeconds": 5.29,
+          "encodedDurationSeconds": 5.329,
+          "bytes": 107147,
+          "sha256": "10ed64d1c7217faa30be231793360923becae9c09e3cdced091939e9abf9fe80"
+        },
+        "line3": {
+          "text": "本是同根生，相煎何太急。",
+          "src": "media/recitations/round2-20261005/p9-line3.mp3",
+          "sourceStartSeconds": 21.71,
+          "sourceEndSeconds": 27.31,
+          "contentDurationSeconds": 5.6,
+          "encodedDurationSeconds": 5.642,
+          "bytes": 113416,
+          "sha256": "fde8a64485b8f3c43487f5acb39b5ccf42727fc4322bcbaea9210f1f71601e03"
+        },
+        "poem": {
+          "text": "煮豆持作羹，漉豉以為汁。萁在釜下燃，豆在釜中泣。本是同根生，相煎何太急。",
+          "src": "media/recitations/round2-20261005/p9-poem.mp3",
+          "sourceStartSeconds": 8.92,
+          "sourceEndSeconds": 27.31,
+          "contentDurationSeconds": 18.39,
+          "encodedDurationSeconds": 18.416,
+          "bytes": 368894,
+          "sha256": "62782ce913004fa708bc40773f8e4e02f53579618d01f74bf7ed6c5122871ec3"
+        }
+      }
+    },
+    {
+      "poemId": 10,
+      "grade": 4,
+      "slug": "jue-ju",
+      "title": "絕句",
+      "author": "杜甫",
+      "sourceFile": "绝句.mp3",
+      "sourceSHA256": "d09160be90d51a8ad0075a9397d691c1ff4a5a79131e35d8a4a0e2e2563d4c2c",
+      "sourceDurationSeconds": 26.5404,
+      "segments": {
+        "title": {
+          "text": "絕句",
+          "src": "media/recitations/round2-20261005/p10-title.mp3",
+          "sourceStartSeconds": 4.64,
+          "sourceEndSeconds": 5.62,
+          "contentDurationSeconds": 0.98,
+          "encodedDurationSeconds": 1.019,
+          "bytes": 20943,
+          "sha256": "efc30d390be52f86aeec33f3fe0487c40a3d24735e6e14dce2c59e778b76a70b"
+        },
+        "author": {
+          "text": "杜甫",
+          "src": "media/recitations/round2-20261005/p10-author.mp3",
+          "sourceStartSeconds": 6.53,
+          "sourceEndSeconds": 7.64,
+          "contentDurationSeconds": 1.11,
+          "encodedDurationSeconds": 1.149,
+          "bytes": 23555,
+          "sha256": "f8091176f16d4f969e5bfa5e6bc0dcf959da4368814db34445eff32167cc5ec2"
+        },
+        "line1": {
+          "text": "兩個黃鸝鳴翠柳，",
+          "src": "media/recitations/round2-20261005/p10-line1.mp3",
+          "sourceStartSeconds": 9.88,
+          "sourceEndSeconds": 12.86,
+          "contentDurationSeconds": 2.98,
+          "encodedDurationSeconds": 3.03,
+          "bytes": 61171,
+          "sha256": "ee58a19b249f3eab20fc969fcce67dbcfc3c445406c6ec12d288858d5bd19b88"
+        },
+        "line2": {
+          "text": "一行白鷺上青天。",
+          "src": "media/recitations/round2-20261005/p10-line2.mp3",
+          "sourceStartSeconds": 13.56,
+          "sourceEndSeconds": 16.54,
+          "contentDurationSeconds": 2.98,
+          "encodedDurationSeconds": 3.03,
+          "bytes": 61171,
+          "sha256": "c99c914a6ee3bcd6f2c4ad66e6fde54a76ee214cd488851761f171aef3cfb696"
+        },
+        "line3": {
+          "text": "窗含西嶺千秋雪，",
+          "src": "media/recitations/round2-20261005/p10-line3.mp3",
+          "sourceStartSeconds": 17.69,
+          "sourceEndSeconds": 20.76,
+          "contentDurationSeconds": 3.07,
+          "encodedDurationSeconds": 3.109,
+          "bytes": 62738,
+          "sha256": "4be5b949cc4ce7fa36b87462f74c7b9654403a1e76f5a78d983653b0c6768c7c"
+        },
+        "line4": {
+          "text": "門泊東吳萬里船。",
+          "src": "media/recitations/round2-20261005/p10-line4.mp3",
+          "sourceStartSeconds": 21.14,
+          "sourceEndSeconds": 24.57,
+          "contentDurationSeconds": 3.43,
+          "encodedDurationSeconds": 3.474,
+          "bytes": 70053,
+          "sha256": "a1a54e288828ac06f17890b119d61d9260a56627ab5bafb8e9b446cf50c20a5e"
+        },
+        "poem": {
+          "text": "兩個黃鸝鳴翠柳，一行白鷺上青天。窗含西嶺千秋雪，門泊東吳萬里船。",
+          "src": "media/recitations/round2-20261005/p10-poem.mp3",
+          "sourceStartSeconds": 9.88,
+          "sourceEndSeconds": 24.57,
+          "contentDurationSeconds": 14.69,
+          "encodedDurationSeconds": 14.733,
+          "bytes": 295228,
+          "sha256": "ef639f4819beb0e3e8a3f0d1d5403d01f80b0f3570fb1e0d9c84f0a959a52250"
+        }
+      }
+    },
+    {
+      "poemId": 11,
+      "grade": 5,
+      "slug": "zheng-ren-mai-lu",
+      "title": "鄭人買履",
+      "author": "韓非",
+      "sourceFile": "郑人买履只用前50s.mp3",
+      "sourceSHA256": "c9b882a27ef916e71c114a8c8529b143699406d892012e470128de6ecb973fee",
+      "sourceDurationSeconds": 129.792,
+      "segments": {
+        "title": {
+          "text": "鄭人買履",
+          "src": "media/recitations/round2-20261005/p11-title.mp3",
+          "sourceStartSeconds": 2.3,
+          "sourceEndSeconds": 4.73,
+          "contentDurationSeconds": 2.43,
+          "encodedDurationSeconds": 2.482,
+          "bytes": 50200,
+          "sha256": "25785ca1c1660f1a1aeb43560f8c4d16bea5e5db97e64a79a9bd90f35bfd6464"
+        },
+        "author": {
+          "text": "韓非",
+          "src": "media/recitations/round2-20261005/p11-author.mp3",
+          "sourceStartSeconds": 6.22,
+          "sourceEndSeconds": 8.51,
+          "contentDurationSeconds": 2.29,
+          "encodedDurationSeconds": 2.325,
+          "bytes": 47065,
+          "sha256": "b43276fb1e61043dc72f374b5b81e41e10a8e72ac71b6725a1c8fdcbc6681e25"
+        },
+        "line1": {
+          "text": "鄭人有且置履者，先自度其足而置之其坐。",
+          "src": "media/recitations/round2-20261005/p11-line1.mp3",
+          "sourceStartSeconds": 12.44,
+          "sourceEndSeconds": 19.51,
+          "contentDurationSeconds": 7.07,
+          "encodedDurationSeconds": 7.105,
+          "bytes": 142673,
+          "sha256": "4957af603ec61bdca312e8b6bf15754c083971b5d9eae7e34e489b9d86ee990a"
+        },
+        "line2": {
+          "text": "至之市，而忘操之，已得履，乃曰：「吾忘持度。」",
+          "src": "media/recitations/round2-20261005/p11-line2.mp3",
+          "sourceStartSeconds": 20.88,
+          "sourceEndSeconds": 29.67,
+          "contentDurationSeconds": 8.79,
+          "encodedDurationSeconds": 8.829,
+          "bytes": 177155,
+          "sha256": "483257574a5102c33d86f885b1855ab2ebec4ea8df8ba314e6650d0a730bef4f"
+        },
+        "line3": {
+          "text": "反歸取之，及反，市罷，遂不得履。",
+          "src": "media/recitations/round2-20261005/p11-line3.mp3",
+          "sourceStartSeconds": 30.76,
+          "sourceEndSeconds": 38.4,
+          "contentDurationSeconds": 7.64,
+          "encodedDurationSeconds": 7.68,
+          "bytes": 154167,
+          "sha256": "56293384374270fe9ae1055b7db37d78652f23938e365db31e387ae41c506e96"
+        },
+        "line4": {
+          "text": "人曰：「何不試之以足？」曰：「寧信度，無自信也。」",
+          "src": "media/recitations/round2-20261005/p11-line4.mp3",
+          "sourceStartSeconds": 39.15,
+          "sourceEndSeconds": 49.25,
+          "contentDurationSeconds": 10.1,
+          "encodedDurationSeconds": 10.136,
+          "bytes": 203277,
+          "sha256": "f1ef5821238196afbd3ea8c6edef9a10742c050ab96fccb96b45417e48a19f35"
+        },
+        "poem": {
+          "text": "鄭人有且置履者，先自度其足而置之其坐。至之市，而忘操之，已得履，乃曰：「吾忘持度。」反歸取之，及反，市罷，遂不得履。人曰：「何不試之以足？」曰：「寧信度，無自信也。」",
+          "src": "media/recitations/round2-20261005/p11-poem.mp3",
+          "sourceStartSeconds": 12.44,
+          "sourceEndSeconds": 49.25,
+          "contentDurationSeconds": 36.81,
+          "encodedDurationSeconds": 36.859,
+          "bytes": 737743,
+          "sha256": "cb1b9840451fd48505a9543c9471e3deb91418305588495cd6dc0aabc400e92b"
+        }
+      }
+    },
+    {
+      "poemId": 12,
+      "grade": 6,
+      "slug": "ke-zhi",
+      "title": "客至",
+      "author": "杜甫",
+      "sourceFile": "客至.mp3",
+      "sourceSHA256": "8244d436f3a015030cae0f547705e9bdaed8ade93bcce7da230d388b33652569",
+      "sourceDurationSeconds": 40.9861,
+      "segments": {
+        "title": {
+          "text": "客至",
+          "src": "media/recitations/round2-20261005/p12-title.mp3",
+          "sourceStartSeconds": 4.64,
+          "sourceEndSeconds": 5.63,
+          "contentDurationSeconds": 0.99,
+          "encodedDurationSeconds": 1.019,
+          "bytes": 20943,
+          "sha256": "5ac950e6c76791dc001c41c6404aeff6c0b052b6cdfac2a042ced1423fe61698"
+        },
+        "author": {
+          "text": "杜甫",
+          "src": "media/recitations/round2-20261005/p12-author.mp3",
+          "sourceStartSeconds": 6.57,
+          "sourceEndSeconds": 7.58,
+          "contentDurationSeconds": 1.01,
+          "encodedDurationSeconds": 1.045,
+          "bytes": 21465,
+          "sha256": "dfdc2763887fb3c39aedd695601ce20c7954bd8f69c7c50ebc932051dd15e3c8"
+        },
+        "verse1": {
+          "text": "舍南舍北皆春水",
+          "src": "media/recitations/round2-20261005/p12-verse1.mp3",
+          "sourceStartSeconds": 8.74,
+          "sourceEndSeconds": 11.8,
+          "contentDurationSeconds": 3.06,
+          "encodedDurationSeconds": 3.109,
+          "bytes": 62738,
+          "sha256": "95cc8ca99c997d7c4a5212cb233a1f570a8eabe5fc55ea79e491d2852855204a"
+        },
+        "verse2": {
+          "text": "但見群鷗日日來",
+          "src": "media/recitations/round2-20261005/p12-verse2.mp3",
+          "sourceStartSeconds": 12.46,
+          "sourceEndSeconds": 15.23,
+          "contentDurationSeconds": 2.77,
+          "encodedDurationSeconds": 2.821,
+          "bytes": 56992,
+          "sha256": "8bd637876e92c84cdcea4d6e1016253b7865e44f017869d5c85a3ee0955b227f"
+        },
+        "verse3": {
+          "text": "花徑不曾緣客掃",
+          "src": "media/recitations/round2-20261005/p12-verse3.mp3",
+          "sourceStartSeconds": 16.09,
+          "sourceEndSeconds": 18.93,
+          "contentDurationSeconds": 2.84,
+          "encodedDurationSeconds": 2.873,
+          "bytes": 58036,
+          "sha256": "66b71fd04c2ae438a1a02068f13e58def5e8af907d7d9e26375b761fd6ca35ab"
+        },
+        "verse4": {
+          "text": "蓬門今始為君開",
+          "src": "media/recitations/round2-20261005/p12-verse4.mp3",
+          "sourceStartSeconds": 19.48,
+          "sourceEndSeconds": 22.47,
+          "contentDurationSeconds": 2.99,
+          "encodedDurationSeconds": 3.03,
+          "bytes": 61171,
+          "sha256": "b0038075ed15dd5c051be93e8b0816f418ee879beefbda89866c2c59dd1c131c"
+        },
+        "verse5": {
+          "text": "盤飧市遠無兼味",
+          "src": "media/recitations/round2-20261005/p12-verse5.mp3",
+          "sourceStartSeconds": 24.04,
+          "sourceEndSeconds": 26.84,
+          "contentDurationSeconds": 2.8,
+          "encodedDurationSeconds": 2.847,
+          "bytes": 57514,
+          "sha256": "44706b761bdd1dd4d5edadc3bffc4038c7dcc8f0c14e79861c577fc15ff5e4fc"
+        },
+        "verse6": {
+          "text": "樽酒家貧只舊醅",
+          "src": "media/recitations/round2-20261005/p12-verse6.mp3",
+          "sourceStartSeconds": 27.39,
+          "sourceEndSeconds": 30.43,
+          "contentDurationSeconds": 3.04,
+          "encodedDurationSeconds": 3.082,
+          "bytes": 62216,
+          "sha256": "2549ccf1bdd6b2ee8b1fbb899f684aa2fbb3a497b3819438d77a9305e1531d4e"
+        },
+        "verse7": {
+          "text": "肯與鄰翁相對飲",
+          "src": "media/recitations/round2-20261005/p12-verse7.mp3",
+          "sourceStartSeconds": 32.49,
+          "sourceEndSeconds": 35.5,
+          "contentDurationSeconds": 3.01,
+          "encodedDurationSeconds": 3.056,
+          "bytes": 61694,
+          "sha256": "924b031ca270328347e8616f1a7ba9f2ceca7c79cca288466024881da32901bc"
+        },
+        "verse8": {
+          "text": "隔籬呼取盡餘杯",
+          "src": "media/recitations/round2-20261005/p12-verse8.mp3",
+          "sourceStartSeconds": 36.12,
+          "sourceEndSeconds": 39.31,
+          "contentDurationSeconds": 3.19,
+          "encodedDurationSeconds": 3.239,
+          "bytes": 65351,
+          "sha256": "9173b82361a3b5f1b42eaf4fef03520786c55d730ffef31d2d765f4c590d0011"
+        },
+        "line1": {
+          "text": "舍南舍北皆春水，但見群鷗日日來。",
+          "src": "media/recitations/round2-20261005/p12-line1.mp3",
+          "sourceStartSeconds": 8.74,
+          "sourceEndSeconds": 15.23,
+          "contentDurationSeconds": 6.49,
+          "encodedDurationSeconds": 6.531,
+          "bytes": 131179,
+          "sha256": "7151c114e52bc00544a0e0e486506e6f2c4bf2bb10658cfe7ed76af1ec2d6de7"
+        },
+        "line2": {
+          "text": "花徑不曾緣客掃，蓬門今始為君開。",
+          "src": "media/recitations/round2-20261005/p12-line2.mp3",
+          "sourceStartSeconds": 16.09,
+          "sourceEndSeconds": 22.47,
+          "contentDurationSeconds": 6.38,
+          "encodedDurationSeconds": 6.426,
+          "bytes": 129089,
+          "sha256": "fce9cb0c201e52309cbb57a17cc4be53c2666d2e7237d57689b4061abfc42db8"
+        },
+        "line3": {
+          "text": "盤飧市遠無兼味，樽酒家貧只舊醅。",
+          "src": "media/recitations/round2-20261005/p12-line3.mp3",
+          "sourceStartSeconds": 24.04,
+          "sourceEndSeconds": 30.43,
+          "contentDurationSeconds": 6.39,
+          "encodedDurationSeconds": 6.426,
+          "bytes": 129089,
+          "sha256": "051813468d16a085880ab2c33aeec016483fe6aefa840a3ee4cadea473eb69eb"
+        },
+        "line4": {
+          "text": "肯與鄰翁相對飲，隔籬呼取盡餘杯。",
+          "src": "media/recitations/round2-20261005/p12-line4.mp3",
+          "sourceStartSeconds": 32.49,
+          "sourceEndSeconds": 39.31,
+          "contentDurationSeconds": 6.82,
+          "encodedDurationSeconds": 6.87,
+          "bytes": 137971,
+          "sha256": "e09010660c9b11e98bb9401afc8efbaf908113e8d120e2ae2e0c5331f8cd4bff"
+        },
+        "poem": {
+          "text": "舍南舍北皆春水，但見群鷗日日來。花徑不曾緣客掃，蓬門今始為君開。盤飧市遠無兼味，樽酒家貧只舊醅。肯與鄰翁相對飲，隔籬呼取盡餘杯。",
+          "src": "media/recitations/round2-20261005/p12-poem.mp3",
+          "sourceStartSeconds": 8.74,
+          "sourceEndSeconds": 39.31,
+          "contentDurationSeconds": 30.57,
+          "encodedDurationSeconds": 30.616,
+          "bytes": 612877,
+          "sha256": "9f1498d672bc82224a0c7114da822cd45f2ef3f2d22ff38e7e9be16a3557ad14"
+        }
+      }
+    }
+  ]
+}

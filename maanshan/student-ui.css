@@ -185,6 +185,22 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace.view-record .record-tool[data-step="read"]>.verse ruby{font-size:36px}
  .workspace.view-record .record-tool[data-step="read"]>.verse:has(>ruby:nth-of-type(7)){grid-template-columns:repeat(8,minmax(0,1fr));gap:5px 0;max-width:300px}
 }
+/* Prose sentences (鄭人買履) have clauses of eight to ten characters. Shrink the
+   whole sentence together so each clause stays on one row inside the column. */
+.workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8))>.verse-clause{max-width:none}
+.workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8)) ruby{font-size:42px}
+.workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8)) .punct{font-size:38px;width:18px}
+@media(max-width:700px){
+ .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8)) ruby{font-size:min(40px,calc((100vw - 64px) / 11))}
+ .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8)) rt{font-size:13px}
+ .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8)) .punct{font-size:min(36px,calc((100vw - 64px) / 12));width:14px}
+}
+@media(max-width:360px){
+ .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8))>.verse-clause{display:flex;width:100%;max-width:none;gap:0}
+ .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8))>.verse-clause>ruby,
+ .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8))>.verse-clause>ruby:nth-of-type(5),
+ .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8))>.verse-clause>.punct{grid-column:auto;grid-row:auto}
+}
 @media(min-width:701px) and (max-height:560px) and (orientation:landscape){
  .workspace.view-record .record-tool[data-step="read"]>.record-counter{min-height:32px}
  .workspace.view-record .record-tool[data-step="read"] .practice-motif{width:30px;height:30px}

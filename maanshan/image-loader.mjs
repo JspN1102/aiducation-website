@@ -1,5 +1,5 @@
 import {COMPAT_IMAGES} from './image-compat.mjs?v=20260920-art2';
-import {IMAGE_ASSETS, publicImagesReady} from './media-images.mjs?v=20260923-school23';
+import {IMAGE_ASSETS, publicImagesReady} from './media-images.mjs?v=20261005-school40';
 import {imageRoutes} from './image-policy.mjs?v=20260923-school23';
 import {rememberRoute} from './media-route.mjs?v=20260923-school23';
 

@@ -1,9 +1,12 @@
-import {CHALLENGE_VERSION} from './challenge-data.mjs?v=20260921-school9';
+import {CHALLENGE_VERSION} from './challenge-data.mjs?v=20261005-school40';
 
 const TOTAL = 5;
 const LEGACY_PLAN = ['sound', 'dictation', 'sound', 'dictation', 'other'];
 const group = item => ['sound', 'dictation'].includes(item.type) ? item.type : 'other';
 const bankOf = set => set.bank || set.items;
+// A round opens with the poem's game. Poems without a game yet open with their
+// hands-on question (ordering or matching) instead.
+const opener = (set, item) => item.type === 'microgame' || group(item) === 'other' && !bankOf(set).some(value => value.type === 'microgame');
 const traceFlow = (value,item) => item?.type === 'dictation' && value?.flow === 'trace-dictation-v1'
   ? {flow:'trace-dictation-v1',traceCompleted:value.traceCompleted===true,dictationCompleted:value.traceCompleted===true&&value.dictationCompleted===true} : {};
 export const CHALLENGE_SCHEDULE = 'game-first-20260919';
@@ -152,7 +155,7 @@ export function newAttempt(set, {previous = null, seed = crypto.randomUUID(), mo
   const variant = mode === 'advanced' ? 'writing' : 'hands';
   const bank = bankOf(set), random = seededRandom(seed), history = {}, picked = {}, plan = challengePlan(set, variant, mode);
   for (const type of ['sound', 'dictation', 'other']) {
-    const pool = bank.filter(item => group(item) === type && (type !== 'other' || item.type === 'microgame') && (type !== 'sound' || (item.difficulty || 1) === (mode === 'advanced' ? 2 : 1))), count = plan.filter(part => part === type).length;
+    const pool = bank.filter(item => group(item) === type && (type !== 'other' || opener(set, item)) && (type !== 'sound' || (item.difficulty || 1) === (mode === 'advanced' ? 2 : 1))), count = plan.filter(part => part === type).length;
     if (!count) {history[type] = validHistory(previous?.history?.[type], bank, type);picked[type] = [];continue;}
     if (pool.length < count) throw new Error('Incomplete challenge bank');
     const seen = validHistory(previous?.history?.[type] || attemptItems(previous, set).filter(item => group(item) === type).map(item => item.id), bank, type);
@@ -241,7 +244,7 @@ export function readAttempt(saved, set) {
   const gameFirst = saved.schedule === CHALLENGE_SCHEDULE;
   const plan = legacy ? LEGACY_PLAN : gameFirst ? challengePlan(set, variant, mode) : previousPlan(set, variant, saved.schedule === 'games-20260918' ? mode : 'standard');
   if (items.length !== total || (mode !== 'review' && items.some((item, i) => group(item) !== plan[i]))) return null;
-  if (!legacy && gameFirst && mode !== 'review' && items[0].type !== 'microgame') return null;
+  if (!legacy && gameFirst && mode !== 'review' && !opener(set, items[0])) return null;
   if (mode === 'advanced' && items.some(item => item.type === 'sound' && item.difficulty !== 2)) return null;
   const attempt = {...saved, version: CHALLENGE_VERSION, selection: legacy ? 'legacy-v1' : mode === 'review' ? 'wrong-review' : 'grade-bank', mode, variant, itemIds: [...itemIds], seed: saved.seed || `legacy:${saved.attemptId}`, answers: [], orders: {}, history: {}};
   attempt.gameDrafts = gameDrafts(saved.gameDrafts, set);

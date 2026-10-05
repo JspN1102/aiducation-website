@@ -1,8 +1,10 @@
 // Tencent SOE TextMode 1 accepts a JSON wordList with optional pronunciation.
 // https://cloud.tencent.com/document/product/884/78883
-const { poems } = require('../../maanshan/poems.json');
-const polyphonic = new Set(Array.from('曲乘將将行踏橫横看側侧識识只中泊間间祇數数重綠绿還还種种盛興兴荷長长露衣霑好處处都'));
-const compactText = text => text.replace(/[\s，。！？；、,.!?;]/gu, '');
+const { catalog: poems } = require('./poems.js');
+const polyphonic = new Set(Array.from('曲乘將将行踏橫横看側侧識识只中泊間间祇數数重綠绿還还種种盛興兴荷長长露衣霑好處处都'+
+  // Preview poems 7-12.
+  '冠語语為为相度寧宁遂得罷罢舍見见曾掃扫與与飲饮盡尽'));
+const compactText = text => text.replace(/[\s，。！？；、：「」『』,.!?;:]/gu, '');
 function numberedPinyin(value) {
   let tone=5;const marks=['āēīōūǖ','áéíóúǘ','ǎěǐǒǔǚ','àèìòùǜ'];
   marks.forEach((set,index)=>{if(Array.from(value).some(c=>set.includes(c)))tone=index+1;});

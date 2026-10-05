@@ -1,6 +1,6 @@
 import {fetchModel, loadBudget} from './model-source.mjs?v=20260923-school23';
 import {modelPixelRatio} from './model-quality.mjs?v=20260921-ar1';
-import {fetchImage} from './image-loader.mjs?v=20260923-school23';
+import {fetchImage} from './image-loader.mjs?v=20261005-school40';
 
 // Source meshes own GPU resources; plant clones only borrow them. Rendering is
 // scheduled by interaction, resize or a density change, never by an idle loop.

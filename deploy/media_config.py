@@ -27,6 +27,10 @@ MONTH = 'public, max-age=2592000'
 VERSION_TAG = '20260923-school23'
 PACK_CACHE = 'maanshan-pack-v1'
 PACK_SCOPE = 'deploy/pack-scope.json'
+# Poems 7-12 are shown to two preview teacher accounts only, so pupils' packs
+# and the session's route probe leave their media out.
+PREVIEW_MEDIA = tuple('/maanshan/media/' + folder + '/' for folder in (
+    'yong-xue', 'hua-ji', 'qi-bu-shi', 'jue-ju', 'zheng-ren-mai-lu', 'ke-zhi', 'recitations/round2-20261005'))
 
 
 def group_id(members):
@@ -200,6 +204,8 @@ def pack_entries(manifest):
         # The login page's parents' guide is streamed on demand, not packed for pupils.
         if asset['source'].startswith('/maanshan/media/guide/'):
             continue
+        if asset['source'].startswith(PREVIEW_MEDIA):
+            continue
         entries.append({'path': asset['source'][len('/maanshan/'):], 'remote': asset['destination'],
                         'bytes': asset['bytes'], 'sha256': asset['sha256'], 'type': asset['contentType']})
     return entries
@@ -279,7 +285,8 @@ def verify_local_assets(repo, manifest):
 
 def probe_image(manifest):
     """The smallest public image: one request settles the session's route."""
-    images = [asset for asset in validated_assets(manifest) if asset['contentType'] == 'image/webp']
+    images = [asset for asset in validated_assets(manifest)
+              if asset['contentType'] == 'image/webp' and not asset['source'].startswith(PREVIEW_MEDIA)]
     return min(images, key=lambda asset: (asset['bytes'], asset['source']))['destination'] if images else ''
 
 

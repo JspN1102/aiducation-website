@@ -5,7 +5,7 @@
 // the first errors or produces nothing. Recordings made on the spot (blob and
 // data URLs) and speech synthesised by the school server have one route only.
 // Nothing about the pupil is sent or stored.
-import {AUDIO_GROUPS} from './media-audio.mjs?v=20260923-school23';
+import {AUDIO_GROUPS} from './media-audio.mjs?v=20261005-school40';
 import {orderRoutes} from './media-route.mjs?v=20260923-school23';
 
 const NAME = /^[a-z0-9_-]+\.(?:mp3|m4a)$/;

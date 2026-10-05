@@ -1,32 +1,32 @@
-import {imageAsset} from './media-images.mjs?v=20260923-school23';
-import {manageAnimationSource} from './animation-source.mjs?v=20261003-school35';
+import {imageAsset} from './media-images.mjs?v=20261005-school40';
+import {manageAnimationSource} from './animation-source.mjs?v=20261005-school40';
 import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260929-parts1';
-import {mountStage, getScenePreview, preloadScene} from './scene-stage.mjs?v=20260923-school23';
+import {mountStage, getScenePreview, preloadScene, addScenePreviews} from './scene-stage.mjs?v=20261005-school40';
 import {configurePronunciation, getPronunciationPractice, syllableParts, toneName} from './pronunciation.mjs?v=20260929-parts1';
 import {getWordAudioURL} from './word-audio.mjs?v=20260923-school23';
-import {getSpeechAudioURL} from './speech-audio.mjs?v=20260923-school23';
-import {getRecitationAudioURL,getRecitationSequence} from './recitation-audio.mjs?v=20260921-school9';
+import {getSpeechAudioURL} from './speech-audio.mjs?v=20261005-school40';
+import {getRecitationAudioURL,getRecitationSequence} from './recitation-audio.mjs?v=20261005-school40';
 import {schoolTtsURL,schoolTtsRemote} from './school-audio-url.mjs?v=20260930-school29';
-import {mountShishi} from './shishi.mjs?v=20260923-school23';
-import {mountLibraryShishi} from './library-shishi.mjs?v=20260923-school23';
+import {mountShishi} from './shishi.mjs?v=20261005-school40';
+import {mountLibraryShishi} from './library-shishi.mjs?v=20261005-school40';
 import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school9';
 import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school9';
-import {mountLessonMap} from './lesson-map.mjs?v=20260920-ui2';
-import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school9';
-import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20260922-school22';
+import {mountLessonMap} from './lesson-map.mjs?v=20261005-school40';
+import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261005-school40';
+import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20261005-school40';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school22';
-import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20261005-school39';
-import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school39';
-import {requestJSON, requestChat} from './network.mjs?v=20261005-school39';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261005-school39';
-import {schoolSession} from './bootstrap.mjs?v=20261005-school39';
+import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20261005-school40';
+import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
+import {requestJSON, requestChat} from './network.mjs?v=20261005-school40';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261005-school40';
+import {schoolSession} from './bootstrap.mjs?v=20261005-school40';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260922-school22';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school22';
-import {loadCurriculum} from './curriculum-data.mjs?v=20260922-school12b';
-import {getPoetSuggestions, matchPoetPreset} from './poet-presets.mjs?v=20260922-school13';
-import {audioCandidates} from './audio-source.mjs?v=20260923-school23';
+import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school40';
+import {getPoetSuggestions, matchPoetPreset} from './poet-presets.mjs?v=20261005-school40';
+import {audioCandidates} from './audio-source.mjs?v=20261005-school40';
 import {rememberRoute,orderRoutes} from './media-route.mjs?v=20260923-school23';
-import {packState, onPackChange, resumeResourcePack, requestResourcePack, cancelResourcePack} from './resource-pack.mjs?v=20260923-school24';
+import {packState, onPackChange, resumeResourcePack, requestResourcePack, cancelResourcePack} from './resource-pack.mjs?v=20261005-school40';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -125,7 +125,9 @@ const lineLabel=index=>'第'+(['一','二','三','四','五','六','七','八'][
 const asset=(name,p=poem)=>imageAsset(`media/${p.slug}/${name}`);
 const teacherEntry = () => isTeacher ? '<a class="teacher-entry" href="teacher.html">教師後台</a>' : '';
 if(isTeacher){$('#profile-open').insertAdjacentHTML('beforebegin',teacherEntry());}
-const poemMotif=(p=poem)=>'media/poetry-motifs/'+['goose','boat','mountain','moon','sprout','swallow'][p.id-1]+'.svg';
+const poemMotif=(p=poem)=>'media/poetry-motifs/'+['goose','boat','mountain','moon','sprout','swallow','snow','rooster','beans','oriole','shoe','cup'][p.id-1]+'.svg';
+// Only poems with prepared AR scenes offer the exploration activity.
+const hasExplore=(p=poem)=>p.grade>=4&&p.explore!==false;
 const link=(v='record',p=poem)=>`#${p.slug}/${v}`;
 const state=p=>{
   const old=saved[p.id];
@@ -400,7 +402,7 @@ async function api(path,body,timeout=35000,retry=false) {
 }
 function verseHTML(line,extra='') {
   let index=0;
-  const clauses=(line.text+(line.punctuation||'')).match(/[^，。！？；]+[，。！？；]?/g)||[];
+  const clauses=(line.text+(line.punctuation||'')).match(/[^，。！？；」]+[，。！？；」]*/g)||[];
   const contents=clauses.map(clause=>Array.from(clause).map(c=>/\p{Script=Han}/u.test(c)?`<ruby>${esc(c)}<rt>${esc(line.pinyin[index++])}</rt></ruby>`:`<span class="punct">${esc(c)}</span>`).join(''));
   return `<div class="verse ${extra}${contents.length>1?' verse-compound':''}" aria-label="${esc(line.text+(line.punctuation||''))}">${contents.length>1?contents.map(part=>'<span class="verse-clause">'+part+'</span>').join(''):contents.join('')}</div>`;
 }
@@ -452,7 +454,7 @@ function renderWorkspace() {
   const name=NAV.find(n=>n[0]===view)?.[2]||'';
   document.title='AI普通話學習平台';
   const activityOrder=['record','animation','explore','quiz','chat','report'];
-  const activities=NAV.filter(([id])=>activityOrder.includes(id)&&(id!=='explore'||poem.grade>=4)).sort((a,b)=>activityOrder.indexOf(a[0])-activityOrder.indexOf(b[0]));
+  const activities=NAV.filter(([id])=>activityOrder.includes(id)&&(id!=='explore'||hasExplore())).sort((a,b)=>activityOrder.indexOf(a[0])-activityOrder.indexOf(b[0]));
   app.innerHTML='<div class="workspace lesson-shell poem-color-'+poem.id+' view-'+view+'"><div class="lesson-bar"><a class="back-library" href="'+(view==='lesson'?'#':link('lesson'))+'">'+icon('arrow-left')+'<span>'+(view==='lesson'?'選詩':'返回')+'</span></a><div class="lesson-title">'+(view==='quiz'?'':'<img class="lesson-portrait" src="'+asset('avatar.webp')+'" width="48" height="48" alt="'+esc(poem.author)+'">')+'<div class="lesson-heading"><h1>'+(view==='quiz'?'練習小遊戲':headingAudioHTML('title',titleOf(poem)))+'</h1><p>'+(view==='quiz'?['','一','二','三','四','五','六'][poem.grade]+'年級':(view==='record'?'':esc(poem.dynasty)+' · ')+headingAudioHTML('author',poem.author))+'</p></div></div><div class="lesson-tools">'+teacherEntry()+'<details class="lesson-menu"><summary title="切換學習欄目" aria-label="切換學習欄目">'+icon('ellipsis')+'<span>更多</span></summary><nav class="menu-panel" aria-label="切換學習欄目">'+activities.map(([id,symbol,label])=>'<a href="'+link(id)+'" '+(view===id?'aria-current="page"':'')+'>'+icon(symbol)+'<span>'+label+'</span></a>').join('')+'</nav></details></div></div>'+lessonTabs()+'<main class="study-main" id="main"><section id="view" class="view-section '+(showPinyin?'':'hide-pinyin')+'"></section></main></div>';
   renderView();attachShishi();icons();
 }
@@ -488,7 +490,7 @@ function renderAnimation() {
     $('#view').innerHTML=`<section class="animation-pending"><img src="${poemMotif()}" width="88" height="88" alt=""><h2>動畫看古詩</h2><p>這首詩的動畫還在準備中。</p><a class="button primary" href="${link('record')}">${icon('mic')}先讀一讀</a></section>`;
     return;
   }
-  $('#view').innerHTML=`<section class="animation-lesson" aria-labelledby="animation-heading"><header class="animation-heading"><h2 id="animation-heading">動畫看古詩</h2><p>${esc(media.caption||`跟着${poem.author}看動畫`)}</p></header><div class="animation-stage"><video id="animation-video" controls playsinline preload="metadata" poster="${esc(imageAsset(media.poster))}" aria-label="${esc(titleOf(poem))}動畫"></video></div><p class="animation-status" id="animation-status" role="status" aria-live="polite" hidden></p><div class="animation-actions"><button type="button" class="button primary" id="animation-toggle" aria-controls="animation-video">${icon('play')}<span>播放動畫</span></button><a class="button" href="${link(poem.grade<=3?'quiz':'explore')}"><span>${poem.grade<=3?'練習小遊戲':'AR體驗'}</span>${icon('arrow-right')}</a></div></section>`;
+  $('#view').innerHTML=`<section class="animation-lesson" aria-labelledby="animation-heading"><header class="animation-heading"><h2 id="animation-heading">動畫看古詩</h2><p>${esc(media.caption||`跟着${poem.author}看動畫`)}</p></header><div class="animation-stage"><video id="animation-video" controls playsinline preload="metadata" poster="${esc(imageAsset(media.poster))}" aria-label="${esc(titleOf(poem))}動畫"></video></div><p class="animation-status" id="animation-status" role="status" aria-live="polite" hidden></p><div class="animation-actions"><button type="button" class="button primary" id="animation-toggle" aria-controls="animation-video">${icon('play')}<span>播放動畫</span></button><a class="button" href="${link(hasExplore()?'explore':'quiz')}"><span>${hasExplore()?'AR體驗':'練習小遊戲'}</span>${icon('arrow-right')}</a></div></section>`;
   const player=$('#animation-video'),button=$('#animation-toggle'),label=$('span',button),status=$('#animation-status');
   // Two routes for the same file (this origin and COS); registered first so a recoverable error never reaches the listeners below.
   const route=manageAnimationSource(player,media.src);
@@ -913,7 +915,7 @@ function preloadActivityModules(activity,slug) {
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
   preloadActivityModules('quiz',poem?.slug);
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20260929-hk1'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20261005-school40'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
@@ -951,7 +953,7 @@ function chatSuggestions(p=poem) {
   return getPoetSuggestions(p,Math.min(studentGrade(p),p.grade));
 }
 function chatGreeting(p=poem){
-  if(Math.min(studentGrade(p),p.grade)<=3)return `你好，我是${p.author}。`+(({1:'你見過白鵝嗎？',2:'你喜歡和朋友一起玩嗎？',3:'你喜歡看山嗎？'})[p.grade]||'我們一起讀一句詩，好嗎？');
+  if(Math.min(studentGrade(p),p.grade)<=3)return `你好，我是${p.author}。`+(({1:'你見過白鵝嗎？',2:'你喜歡和朋友一起玩嗎？',3:'你喜歡看山嗎？',7:'你見過下雪嗎？',8:'你見過公雞嗎？',9:'你喜歡吃豆子嗎？'})[p.id]||'我們一起讀一句詩，好嗎？');
   return `你好，我是${p.author}。想聊《${titleOf(p)}》、別的詩，還是今天的趣事？也可以一起寫一首新詩！`;
 }
 function renderChat() {
@@ -1098,7 +1100,7 @@ function route() {
   if(!next){research.begin('navigation',null);shishi?.destroy();shishi=null;document.body.dataset.screen='library';renderLibrary();window.scrollTo({top:0});return;}
   if(parts[1]==='write'){parts[1]='quiz';history.replaceState(null,'','#'+next.slug+'/quiz');}
   if(parts[1]==='read'){parts[1]='record';history.replaceState(null,'','#'+next.slug+'/record');}
-  if(parts[1]==='explore'&&next.grade<=3){parts[1]='lesson';history.replaceState(null,'','#'+next.slug+'/lesson');}
+  if(parts[1]==='explore'&&!hasExplore(next)){parts[1]='lesson';history.replaceState(null,'','#'+next.slug+'/lesson');}
   const changed=poem?.id!==next.id;poem=next;view=NAV.some(n=>n[0]===parts[1])?parts[1]:'lesson';
   presentedReadingItem=null;
   research.begin(({record:'read',animation:'animation',quiz:'challenge',explore:'explore',chat:'chat'})[view]||'navigation',poem.id);
@@ -1269,10 +1271,13 @@ window.addEventListener('pagehide',()=>{if(sessionLocked)return;stopMedia();canc
 onSchoolSessionInvalid(()=>{sessionLocked=true;routeVersion++;activityLoad++;reportGeneration++;stopMedia();cancelRecording();requests.forEach(controller=>controller.abort());libraryShishi?.destroy();libraryShishi=null;teacherReset?.destroy();teacherReset=null;challenge?.destroy();challenge=null;exploration?.destroy();exploration=null;disposeAnimation?.();disposeAnimation=null;research.stop();});
 async function init(){
   try{
-    const [data,pronunciation]=await loadCurriculum();
+    const [[data,pronunciation],preview]=await Promise.all([loadCurriculum(),school.enabled&&school.user?.previewPoems===true?loadPreviewCurriculum().catch(()=>null):null]);
     if(sessionLocked)return;
     if(!Array.isArray(data.poems)||!data.poems.length)throw new Error('catalog');
-    poems=school.enabled&&!allGrades ? data.poems.filter(p=>p.grade===Number(school.user.grade)) : data.poems;
+    // Preview poems join the library by grade, after that grade's current poem.
+    const catalog=Array.isArray(preview?.poems)?[...data.poems,...preview.poems].sort((a,b)=>a.grade-b.grade||a.id-b.id):data.poems;
+    if(Array.isArray(preview?.poems))addScenePreviews(preview.scenePreviews);
+    poems=school.enabled&&!allGrades ? catalog.filter(p=>p.grade===Number(school.user.grade)) : catalog;
     if(!poems.length)throw new Error('catalog-grade');
     configurePronunciation(pronunciation);route();sync.flush();answerOutbox.flush();icons();
     void recordings.hydrate({remote:false});

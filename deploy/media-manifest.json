@@ -444,6 +444,366 @@
       "objectCacheControl": "public, max-age=2592000"
     },
     {
+      "source": "/maanshan/media/hua-ji/animation-20261005.mp4",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/hua-ji/animation-20261005.mp4",
+      "bytes": 15268374,
+      "sha256": "6186b934f894f8e48078e4bf9c43494d0daea58be4fa04bb5dd586e006754584",
+      "md5": "3540ea59db23167b3b88063fc0bf6668",
+      "contentType": "video/mp4",
+      "objectCacheControl": "public, max-age=2592000"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/animation-poster-20261005.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/a196caf4b62202e26a46/maanshan/media/hua-ji/animation-poster-20261005.webp",
+      "bytes": 24474,
+      "sha256": "a196caf4b62202e26a467fb715609055a743533ae9001789cd5259813c8f6c34",
+      "md5": "4f42ae7aabe5a1e81cd9b9b4dcfb100f",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/avatar.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/3a4bb6accbd4b4041786/maanshan/media/hua-ji/avatar.webp",
+      "bytes": 71382,
+      "sha256": "3a4bb6accbd4b40417868c79c1ffb7f42b879e8ed080b8f2cc937f3c95fb1dcb",
+      "md5": "ae7e474b51e5eafff5b62f51c77eda9a",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/cover-final.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/adf8f393f08999d302f1/maanshan/media/hua-ji/cover-final.webp",
+      "bytes": 105628,
+      "sha256": "adf8f393f08999d302f1fcda1debd5219f6f3f22386900d7e38e924ea00ecdaa",
+      "md5": "b2331fdebe35f0a44ab0bfd3dec0d7bf",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/cover.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/414105e2543b92650f89/maanshan/media/hua-ji/cover.webp",
+      "bytes": 54394,
+      "sha256": "414105e2543b92650f8976201edfa4e08d27b77998bde4f6b0e9394ea98429fe",
+      "md5": "9860b88920aa7f3c39df6ef7fcd9ef1b",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/poster.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/5502509317690368b7cd/maanshan/media/hua-ji/poster.webp",
+      "bytes": 65750,
+      "sha256": "5502509317690368b7cdb8b61243f3b37bdfffd8f21ad9b0140e82219887faa9",
+      "md5": "debe96e5d4bac4652b2fffc78862befb",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/preview-1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ecd5807e6b6b31861674/maanshan/media/hua-ji/preview-1.webp",
+      "bytes": 2476,
+      "sha256": "ecd5807e6b6b31861674e81766bd94baee5a8762a3ffb87fbb492ff83a031990",
+      "md5": "a00433f5353e1ad7ec114113dfbaa93d",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/preview-2.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4149d618c6994bda3275/maanshan/media/hua-ji/preview-2.webp",
+      "bytes": 2520,
+      "sha256": "4149d618c6994bda32754a58020dd73870e8ce253330f3940457f94e999cda32",
+      "md5": "a407ef05bb3cd63d199af00ef15f2472",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/preview-3.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/341780499cd957b69c12/maanshan/media/hua-ji/preview-3.webp",
+      "bytes": 3740,
+      "sha256": "341780499cd957b69c12ff9fec38de8693d190502e8a8effdd21b15dc38b20ac",
+      "md5": "5cbf580c7a2d743938c0af4eb256d5a2",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/preview-4.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/be53899f57bd58c02cef/maanshan/media/hua-ji/preview-4.webp",
+      "bytes": 5338,
+      "sha256": "be53899f57bd58c02cef4f91c32f190d2cd8a970e614f224172348920a245639",
+      "md5": "f49a8d8fdc20de3dcc4321ba108f6947",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/scene-1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/a7f7a4c8dd3056926108/maanshan/media/hua-ji/scene-1.webp",
+      "bytes": 163908,
+      "sha256": "a7f7a4c8dd3056926108547f81b0b31c4ca52e5898951f475bc49be8eaae61cb",
+      "md5": "715dad85d78854a1c6904ecfb9476709",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/scene-2.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/04e4bb9a671aa01b1eb0/maanshan/media/hua-ji/scene-2.webp",
+      "bytes": 146564,
+      "sha256": "04e4bb9a671aa01b1eb0bb988a33b2dbef5545a25ce02cc24a034b5549e4b884",
+      "md5": "3aa40431d9fbbeb3d52bd89b998e675f",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/scene-3.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/5de9374e897066c9a13d/maanshan/media/hua-ji/scene-3.webp",
+      "bytes": 228352,
+      "sha256": "5de9374e897066c9a13debf3ad5c1c4202818111659b52922374af531492fc72",
+      "md5": "710ced842429c907e6a1c412c74483f9",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/scene-4.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/bafc823899fe4d78fef3/maanshan/media/hua-ji/scene-4.webp",
+      "bytes": 308708,
+      "sha256": "bafc823899fe4d78fef3838f5451253c1a57f26e7f182938384a644836c86e64",
+      "md5": "c9f1e1724eb8f86f7adcf27d66d196d2",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/animation-20261005.mp4",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/jue-ju/animation-20261005.mp4",
+      "bytes": 16225295,
+      "sha256": "fb2cfdd17ef1c4c3258a0d0929cccebc6bc341fa33f5c6f8107b241ce112be2d",
+      "md5": "d45f9adeb1558bd36aeafef0823c6d21",
+      "contentType": "video/mp4",
+      "objectCacheControl": "public, max-age=2592000"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/animation-poster-20261005.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/c38dd8d986920631a5e9/maanshan/media/jue-ju/animation-poster-20261005.webp",
+      "bytes": 40876,
+      "sha256": "c38dd8d986920631a5e98669b832a9c0ad773d46e7a445a457dc595635c966e3",
+      "md5": "1bc867d263b8ac7e081fc01b088e3807",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/avatar.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/abd7e14c9b54c860a8be/maanshan/media/jue-ju/avatar.webp",
+      "bytes": 75524,
+      "sha256": "abd7e14c9b54c860a8bea5aef4a75d0cc3006da041745045c7929bf2d7ca640a",
+      "md5": "4661af96a719403cb92d8cc8df82abf7",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/cover-final.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/d2d1238f2529e07fd5ae/maanshan/media/jue-ju/cover-final.webp",
+      "bytes": 103420,
+      "sha256": "d2d1238f2529e07fd5ae8d65ba28a830a2cfbaf8b2fb59131aaaee23b4f5d29b",
+      "md5": "9691554eeefb58b9c56063fa58ff9937",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/cover.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/6d0df4446859206d8679/maanshan/media/jue-ju/cover.webp",
+      "bytes": 91560,
+      "sha256": "6d0df4446859206d8679a099b6c70622946d8c48ade73f44a5cbc01d6c569180",
+      "md5": "b061d3e1a30cd9f0c6e54474a238ed58",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/poster.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/142d7d1100d8f6ba151d/maanshan/media/jue-ju/poster.webp",
+      "bytes": 69880,
+      "sha256": "142d7d1100d8f6ba151de21fc28279e654690f158ffaeb3abc2706cd5fcf8777",
+      "md5": "4c8e0bcfb9bb6f09295eb9ce0d38f217",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/preview-1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/d1b27dce4c90c926fc84/maanshan/media/jue-ju/preview-1.webp",
+      "bytes": 3682,
+      "sha256": "d1b27dce4c90c926fc84cde9e10c9be3f4919a5d997758cbc442efa255a0b117",
+      "md5": "710d1d0714301ecd6decdf0d959a9cbb",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/preview-2.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/c0d483f8ca9cd88a6045/maanshan/media/jue-ju/preview-2.webp",
+      "bytes": 4012,
+      "sha256": "c0d483f8ca9cd88a60457794ceb8393491f6d890501db3251b92e5ed95722158",
+      "md5": "a1c6f657be9b3b669a1cbc9a3b7e4735",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/preview-3.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ee7ee9132aeb947bc168/maanshan/media/jue-ju/preview-3.webp",
+      "bytes": 4612,
+      "sha256": "ee7ee9132aeb947bc168254f23e70b2430d33f35fe42f7a701375b05dc7bfbf3",
+      "md5": "d7c350a1044e2a90c039b7aaf6df4ccd",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/preview-4.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/15a0d1f481e7e6ace25c/maanshan/media/jue-ju/preview-4.webp",
+      "bytes": 4974,
+      "sha256": "15a0d1f481e7e6ace25c93da416b72e0ba31750889d1155499d94568d1b9d45c",
+      "md5": "baaa5fe6a5f367a8d1fe9172b9824873",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/scene-1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/6fbeea7af487f2dec1bb/maanshan/media/jue-ju/scene-1.webp",
+      "bytes": 282688,
+      "sha256": "6fbeea7af487f2dec1bba7429ffa4083536b6c743796772fa7c15266a15c45f0",
+      "md5": "87f22b93ff6e16a08c0fe94255ed4029",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/scene-2.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4623d83ca211c8664034/maanshan/media/jue-ju/scene-2.webp",
+      "bytes": 224872,
+      "sha256": "4623d83ca211c8664034ae7121d8cc930f2ea7b0aba27bc67d08791c26d399d7",
+      "md5": "b5d75530a91f32ebf143db46585d2879",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/scene-3.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/1b46aa4079819500422c/maanshan/media/jue-ju/scene-3.webp",
+      "bytes": 236172,
+      "sha256": "1b46aa4079819500422cd2903570d86e6e320a0e78e4bcc688547e650de768b8",
+      "md5": "77b2b5acc6cb8224e8c3fef739b57d60",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/scene-4.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/636093dc0ec934142320/maanshan/media/jue-ju/scene-4.webp",
+      "bytes": 269494,
+      "sha256": "636093dc0ec93414232065b53b5e028145e08dcd1467465af42115ed877ae257",
+      "md5": "996f0eeb7143992f042474878eda9045",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/ke-zhi/avatar.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/277f403e15480e4c91fe/maanshan/media/ke-zhi/avatar.webp",
+      "bytes": 86220,
+      "sha256": "277f403e15480e4c91fe67e55530d848e3ba0bdcf7dbd6981a9da1abe22b1567",
+      "md5": "a4054a0a5873e6136242960bcfe388ca",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/ke-zhi/cover-final.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/d8102171fdff88e365e9/maanshan/media/ke-zhi/cover-final.webp",
+      "bytes": 152058,
+      "sha256": "d8102171fdff88e365e9380b8986d8bd7092c5c60e9748b2819affa6c0e10274",
+      "md5": "64ba0fbcd36d187b7e9f9d71fefcab93",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/ke-zhi/cover.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/41d99fb31ce986f1c356/maanshan/media/ke-zhi/cover.webp",
+      "bytes": 135026,
+      "sha256": "41d99fb31ce986f1c356f3f61cfcd92769ee8992aa2777771d8e117ce1ebe348",
+      "md5": "35b1ef066498e6a781fe6506b1bc9fb8",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/ke-zhi/poster.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ac14f0f51d0c00682c3e/maanshan/media/ke-zhi/poster.webp",
+      "bytes": 79698,
+      "sha256": "ac14f0f51d0c00682c3e0c2a4b90c4fc6a6f16a804b4ca29f06ffad40138d6c8",
+      "md5": "35fe16c91cef69363c6a94bae75f17a5",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/ke-zhi/preview-1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/e41d05827bf0734063bf/maanshan/media/ke-zhi/preview-1.webp",
+      "bytes": 5498,
+      "sha256": "e41d05827bf0734063bf3aa6f49c9cca10d6747edeae02e0b18f915dc4f5b009",
+      "md5": "718497f9128239a61de2726489af61d5",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/ke-zhi/preview-2.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/5f4312c0406c6187cb9c/maanshan/media/ke-zhi/preview-2.webp",
+      "bytes": 6678,
+      "sha256": "5f4312c0406c6187cb9c5ba50baf10e8c4ec9650bc8ba043c08778a7f5065c25",
+      "md5": "e6d616a2eaad682663909a9aab3f0088",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/ke-zhi/preview-3.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ae84b437a7da07884d37/maanshan/media/ke-zhi/preview-3.webp",
+      "bytes": 6536,
+      "sha256": "ae84b437a7da07884d373b8f63f8437801c84117912af9c0389af230e492e300",
+      "md5": "9752416e933a66498b80b3a23816ccc9",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/ke-zhi/preview-4.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/11c46d0f600efdefae77/maanshan/media/ke-zhi/preview-4.webp",
+      "bytes": 6786,
+      "sha256": "11c46d0f600efdefae770fe7724bd12671ca02cbfddb0a6163bc7a032ad1db88",
+      "md5": "6a365b7af29cdeec3b3d30f9097b1f12",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/ke-zhi/scene-1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4584e62303f168f03cec/maanshan/media/ke-zhi/scene-1.webp",
+      "bytes": 438780,
+      "sha256": "4584e62303f168f03cec5f66f17485b7b03aac9dca8925c1b2498731b745a5f2",
+      "md5": "58c5b4915d2f0e9718f11f3c79375128",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/ke-zhi/scene-2.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/b7998dfe41fec1395d24/maanshan/media/ke-zhi/scene-2.webp",
+      "bytes": 506900,
+      "sha256": "b7998dfe41fec1395d24ed01031ba2271702f29009ed67eb404a99632a8fe447",
+      "md5": "3a0b0eab3408bef4f2e3ead73bfef926",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/ke-zhi/scene-3.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/b6560d074a02dbb6f256/maanshan/media/ke-zhi/scene-3.webp",
+      "bytes": 440338,
+      "sha256": "b6560d074a02dbb6f256b6af647faef57a4ef58a28fa4bc349846d42919f7574",
+      "md5": "769c6bd7cca361fa8e990f06be1a0097",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/ke-zhi/scene-4.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/b6032672dbd705ef9078/maanshan/media/ke-zhi/scene-4.webp",
+      "bytes": 437292,
+      "sha256": "b6032672dbd705ef9078be7e9fcad649b7c81de2ffe5235314e98fabea3ab075",
+      "md5": "079355d806bd4650110b4bb18f7e1d8a",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "source": "/maanshan/media/living-scenes/bean-v1.glb",
       "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4e819ae9a9782074c7ab/maanshan/media/living-scenes/bean-v1.glb",
       "bytes": 693568,
@@ -665,6 +1025,114 @@
       "bytes": 294082,
       "sha256": "eecd30e1ad89e33682f7abd81f652f7ba11f40aee68df8238c9c745ed9ed7193",
       "md5": "454db09205334006040678d81b576b44",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/qi-bu-shi/animation-20261005.mp4",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/qi-bu-shi/animation-20261005.mp4",
+      "bytes": 21576970,
+      "sha256": "240da7c471ef6c7f1465426f3823a880a41c729ef5fc5c905eeb6a75f6c9541d",
+      "md5": "16902acc3b3dcf7705d3aa2eb0e0c20f",
+      "contentType": "video/mp4",
+      "objectCacheControl": "public, max-age=2592000"
+    },
+    {
+      "source": "/maanshan/media/qi-bu-shi/animation-poster-20261005.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/b29a3c7fa410403850a5/maanshan/media/qi-bu-shi/animation-poster-20261005.webp",
+      "bytes": 39218,
+      "sha256": "b29a3c7fa410403850a51b1fa89d537eabda07643c0c1b2ac44e5b16f28f8079",
+      "md5": "12d56a318b87c12cfef172d60a3cd985",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/qi-bu-shi/avatar.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/741c4c4f8a6263e55a4f/maanshan/media/qi-bu-shi/avatar.webp",
+      "bytes": 55210,
+      "sha256": "741c4c4f8a6263e55a4f9b0a230d4bd8e320eff136e556bb0d424e85ec5f022a",
+      "md5": "d916b030152ccab9abfba6f19bd6d230",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/qi-bu-shi/cover-final.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/121e79f9726691a56e9a/maanshan/media/qi-bu-shi/cover-final.webp",
+      "bytes": 96962,
+      "sha256": "121e79f9726691a56e9a1b0ffc9893262f64b0e81bdbea4493d434e279a151fc",
+      "md5": "b1a82af110681253654e89af15f35a5d",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/qi-bu-shi/cover.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/b6b5dac3085ee9e40871/maanshan/media/qi-bu-shi/cover.webp",
+      "bytes": 87690,
+      "sha256": "b6b5dac3085ee9e408714d76d8e2b34815357136ba7550357aa5b9fd2d7738fd",
+      "md5": "94762dd88c9857d13346e380816f0723",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/qi-bu-shi/poster.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/87102e06623ccbe62ef5/maanshan/media/qi-bu-shi/poster.webp",
+      "bytes": 50998,
+      "sha256": "87102e06623ccbe62ef526276ec500ccb0bc0bc2da259857af1b8fcd3830e094",
+      "md5": "4e89a4bc0e205714ae0657b77f42f349",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/qi-bu-shi/preview-1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ffacd3b66a59659aed2f/maanshan/media/qi-bu-shi/preview-1.webp",
+      "bytes": 3758,
+      "sha256": "ffacd3b66a59659aed2f4fc8d92a206b773930476d51bb7eef1a9b2d43121af8",
+      "md5": "76453a6a880b5e397dafc2d6c6fffde3",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/qi-bu-shi/preview-2.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ef3a425adb7d6589c3d5/maanshan/media/qi-bu-shi/preview-2.webp",
+      "bytes": 4070,
+      "sha256": "ef3a425adb7d6589c3d51259396420a25e485b424bdbc4131d57342a984c8824",
+      "md5": "515a6719bc29eda4f3da0a2306b41be5",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/qi-bu-shi/preview-3.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2af45cd9b28969541888/maanshan/media/qi-bu-shi/preview-3.webp",
+      "bytes": 4820,
+      "sha256": "2af45cd9b28969541888f81eb2deefcee063fe85490184802fc439d475ec8f13",
+      "md5": "65d0fc8d2970836386ff74b1219e1d98",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/qi-bu-shi/scene-1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/1d2dc08267c3a4f30008/maanshan/media/qi-bu-shi/scene-1.webp",
+      "bytes": 280240,
+      "sha256": "1d2dc08267c3a4f3000832e03f7eddac5527f4e2a7d7f3187efff319eedfc1b9",
+      "md5": "240e08356643e887857520b8c6ec3d39",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/qi-bu-shi/scene-2.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/60be6893d6f1d89fda3f/maanshan/media/qi-bu-shi/scene-2.webp",
+      "bytes": 258680,
+      "sha256": "60be6893d6f1d89fda3fd5430470941bf5b2bdd0a7967249692072b1a420d029",
+      "md5": "a1404be77593a8caa3738a48b6ed8b28",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/qi-bu-shi/scene-3.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/17322176fd2d54ff52b0/maanshan/media/qi-bu-shi/scene-3.webp",
+      "bytes": 271488,
+      "sha256": "17322176fd2d54ff52b07f03b00ab94837579ad9ec2d9696a1ff7d175639a8e6",
+      "md5": "54626a863558c8c3c6f02be7277c58ca",
       "contentType": "image/webp",
       "objectCacheControl": "public, max-age=31536000, immutable"
     },
@@ -1167,6 +1635,556 @@
       "contentType": "audio/mpeg",
       "objectCacheControl": "public, max-age=31536000, immutable",
       "group": "recitations/edb-20260921"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p10-author.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p10-author.mp3",
+      "bytes": 23555,
+      "sha256": "f8091176f16d4f969e5bfa5e6bc0dcf959da4368814db34445eff32167cc5ec2",
+      "md5": "9a67890f4ac54e394e6768597623a039",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p10-line1.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p10-line1.mp3",
+      "bytes": 61171,
+      "sha256": "ee58a19b249f3eab20fc969fcce67dbcfc3c445406c6ec12d288858d5bd19b88",
+      "md5": "a6b14a1cfef2127da3bd7a9cd79cc307",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p10-line2.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p10-line2.mp3",
+      "bytes": 61171,
+      "sha256": "c99c914a6ee3bcd6f2c4ad66e6fde54a76ee214cd488851761f171aef3cfb696",
+      "md5": "da92fd9502c890588ed0021b9655da9d",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p10-line3.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p10-line3.mp3",
+      "bytes": 62738,
+      "sha256": "4be5b949cc4ce7fa36b87462f74c7b9654403a1e76f5a78d983653b0c6768c7c",
+      "md5": "63d71de0bf60e6219f0ba5636e1ac8a3",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p10-line4.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p10-line4.mp3",
+      "bytes": 70053,
+      "sha256": "a1a54e288828ac06f17890b119d61d9260a56627ab5bafb8e9b446cf50c20a5e",
+      "md5": "7a712e0570f57f95c0bede326ba0ce8b",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p10-poem.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p10-poem.mp3",
+      "bytes": 295228,
+      "sha256": "ef639f4819beb0e3e8a3f0d1d5403d01f80b0f3570fb1e0d9c84f0a959a52250",
+      "md5": "1c31c055f2aa37721e8a63d747280fc9",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p10-title.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p10-title.mp3",
+      "bytes": 20943,
+      "sha256": "efc30d390be52f86aeec33f3fe0487c40a3d24735e6e14dce2c59e778b76a70b",
+      "md5": "b75b7e64740490fb9d52b144df65aeee",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p11-author.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p11-author.mp3",
+      "bytes": 47065,
+      "sha256": "b43276fb1e61043dc72f374b5b81e41e10a8e72ac71b6725a1c8fdcbc6681e25",
+      "md5": "502760c39e8a7fbd77494b14ab4eca91",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p11-line1.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p11-line1.mp3",
+      "bytes": 142673,
+      "sha256": "4957af603ec61bdca312e8b6bf15754c083971b5d9eae7e34e489b9d86ee990a",
+      "md5": "e1b4b290a2e457bcfea0b474e5a1148a",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p11-line2.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p11-line2.mp3",
+      "bytes": 177155,
+      "sha256": "483257574a5102c33d86f885b1855ab2ebec4ea8df8ba314e6650d0a730bef4f",
+      "md5": "13e9537b3eb46d658c70e4153bd0cfd0",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p11-line3.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p11-line3.mp3",
+      "bytes": 154167,
+      "sha256": "56293384374270fe9ae1055b7db37d78652f23938e365db31e387ae41c506e96",
+      "md5": "cc0276f466b506ee41fbc12ea83819dd",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p11-line4.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p11-line4.mp3",
+      "bytes": 203277,
+      "sha256": "f1ef5821238196afbd3ea8c6edef9a10742c050ab96fccb96b45417e48a19f35",
+      "md5": "7111315352c3fe6f5a01ed3083585795",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p11-poem.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p11-poem.mp3",
+      "bytes": 737743,
+      "sha256": "cb1b9840451fd48505a9543c9471e3deb91418305588495cd6dc0aabc400e92b",
+      "md5": "a465b013bcc2a399cdc19bb4790bc331",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p11-title.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p11-title.mp3",
+      "bytes": 50200,
+      "sha256": "25785ca1c1660f1a1aeb43560f8c4d16bea5e5db97e64a79a9bd90f35bfd6464",
+      "md5": "708607d4fda98eca19b308ee0534a436",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p12-author.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-author.mp3",
+      "bytes": 21465,
+      "sha256": "dfdc2763887fb3c39aedd695601ce20c7954bd8f69c7c50ebc932051dd15e3c8",
+      "md5": "305c1337fa0eff88dde06a6691b7df01",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p12-line1.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-line1.mp3",
+      "bytes": 131179,
+      "sha256": "7151c114e52bc00544a0e0e486506e6f2c4bf2bb10658cfe7ed76af1ec2d6de7",
+      "md5": "7db05c50790d5078c7d8fee837ea98c2",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p12-line2.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-line2.mp3",
+      "bytes": 129089,
+      "sha256": "fce9cb0c201e52309cbb57a17cc4be53c2666d2e7237d57689b4061abfc42db8",
+      "md5": "2c9adbe1f7717475bc42c5452f2e1cd7",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p12-line3.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-line3.mp3",
+      "bytes": 129089,
+      "sha256": "051813468d16a085880ab2c33aeec016483fe6aefa840a3ee4cadea473eb69eb",
+      "md5": "74ca5dc433830af87f2dd366d5f7c8ac",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p12-line4.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-line4.mp3",
+      "bytes": 137971,
+      "sha256": "e09010660c9b11e98bb9401afc8efbaf908113e8d120e2ae2e0c5331f8cd4bff",
+      "md5": "a2621476efba82e0b741c37aaf20bad0",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p12-poem.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-poem.mp3",
+      "bytes": 612877,
+      "sha256": "9f1498d672bc82224a0c7114da822cd45f2ef3f2d22ff38e7e9be16a3557ad14",
+      "md5": "b83703502a901e6deae1b23f040fcfc3",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p12-title.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-title.mp3",
+      "bytes": 20943,
+      "sha256": "5ac950e6c76791dc001c41c6404aeff6c0b052b6cdfac2a042ced1423fe61698",
+      "md5": "b5d1eafdd459a1a7b4d6427056a6f706",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p12-verse1.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-verse1.mp3",
+      "bytes": 62738,
+      "sha256": "95cc8ca99c997d7c4a5212cb233a1f570a8eabe5fc55ea79e491d2852855204a",
+      "md5": "ffc11ff7bd3540f21221f98d03b0f961",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p12-verse2.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-verse2.mp3",
+      "bytes": 56992,
+      "sha256": "8bd637876e92c84cdcea4d6e1016253b7865e44f017869d5c85a3ee0955b227f",
+      "md5": "2f9dc8591326af1b81f331d65717f3ea",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p12-verse3.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-verse3.mp3",
+      "bytes": 58036,
+      "sha256": "66b71fd04c2ae438a1a02068f13e58def5e8af907d7d9e26375b761fd6ca35ab",
+      "md5": "4f95e1ac651992efa5dbbd5416ad8e36",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p12-verse4.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-verse4.mp3",
+      "bytes": 61171,
+      "sha256": "b0038075ed15dd5c051be93e8b0816f418ee879beefbda89866c2c59dd1c131c",
+      "md5": "69f7d8b6c68eecd57637c09208d02fe6",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p12-verse5.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-verse5.mp3",
+      "bytes": 57514,
+      "sha256": "44706b761bdd1dd4d5edadc3bffc4038c7dcc8f0c14e79861c577fc15ff5e4fc",
+      "md5": "55619bcd4318d9b8a968195d50b6dcd9",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p12-verse6.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-verse6.mp3",
+      "bytes": 62216,
+      "sha256": "2549ccf1bdd6b2ee8b1fbb899f684aa2fbb3a497b3819438d77a9305e1531d4e",
+      "md5": "b52a4f873cb9c8bd148631f3f1e86884",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p12-verse7.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-verse7.mp3",
+      "bytes": 61694,
+      "sha256": "924b031ca270328347e8616f1a7ba9f2ceca7c79cca288466024881da32901bc",
+      "md5": "170e696d2a85977b00ef79d18b0fc5cf",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p12-verse8.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-verse8.mp3",
+      "bytes": 65351,
+      "sha256": "9173b82361a3b5f1b42eaf4fef03520786c55d730ffef31d2d765f4c590d0011",
+      "md5": "a5983b3f368104e53b3b5321b431a43e",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p7-author.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p7-author.mp3",
+      "bytes": 21987,
+      "sha256": "c5a6e5aee1775d457bab7372343020bd9568f1a8f30ccc77f972af41463f1026",
+      "md5": "649b8f2c1c0009b211a752f601731536",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p7-line1.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p7-line1.mp3",
+      "bytes": 84159,
+      "sha256": "189e0bb12414319bd1f5db35e7738e15473916c16a1c9b0b8f917d8214fb3940",
+      "md5": "89188a4a80abdba0ea3aabcfad1259fd",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p7-line2.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p7-line2.mp3",
+      "bytes": 78934,
+      "sha256": "36285b421c675d49a512c7add8218c6a0649156e4959b73d1ac89187f050d9ac",
+      "md5": "932b672c1a683b35f1451b1982203b9e",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p7-line3.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p7-line3.mp3",
+      "bytes": 84681,
+      "sha256": "bb24a0cb6ea8d09c37d310257590b1c4c4f1f2142dd023aa647305b015217794",
+      "md5": "c031487969d24c9084083d03ad2f8d0b",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p7-line4.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p7-line4.mp3",
+      "bytes": 86771,
+      "sha256": "b5dd9755ee50d3666b81cd3aa7b0adea78b4530ec17ebd9054b76cc40f3a2e64",
+      "md5": "aa0f6988f09405d437c123f38851a6e5",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p7-poem.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p7-poem.mp3",
+      "bytes": 408600,
+      "sha256": "cd3ea0c7ee4bf9a60c468394bebb6e45dd35d7e3e68e251291ea9ce3b659cd53",
+      "md5": "12415e51dee11b4a47f2381608fd3066",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p7-title.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p7-title.mp3",
+      "bytes": 24600,
+      "sha256": "1367d383f917021420ae104440179cbe2683d981faff7274a7c833b21fd4afc6",
+      "md5": "5587fb05cf101d27ba1ac023926dd167",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p8-author.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p8-author.mp3",
+      "bytes": 22510,
+      "sha256": "7372024f6a2234e1052daa2f761304db60e02dce5ce817f1c241225dc08ac2f2",
+      "md5": "2736c3394c6925dc2b3df4fc2680cd67",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p8-line1.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p8-line1.mp3",
+      "bytes": 62738,
+      "sha256": "3268833b377356b4ad710e1ad6a13c01e214cf348eb94c30e2892dceaca7bce2",
+      "md5": "1803594c522e65d933333e6787efd81a",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p8-line2.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p8-line2.mp3",
+      "bytes": 61171,
+      "sha256": "566752c336d36aecb5b03ff581590c7e5f3f177a828d4f94f3b39572f42d48a6",
+      "md5": "1047172553ca571c7dd1c6809e8bb413",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p8-line3.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p8-line3.mp3",
+      "bytes": 58036,
+      "sha256": "c581c1fe0c9bbdaa77f8905f1fc08f1767d64c08e15783f3a8b2c6532617fdd7",
+      "md5": "64df28a87f829b71b9901ed91016eb9d",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p8-line4.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p8-line4.mp3",
+      "bytes": 72143,
+      "sha256": "632007faa28052d41b2e8c40bb51bc42b6ce527e5db8342f368437bf6bd08579",
+      "md5": "48d6b96106139d18c36c740c2b9f0973",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p8-poem.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p8-poem.mp3",
+      "bytes": 307767,
+      "sha256": "b6fec7273921533b5b77351d8da1f0f8d33bcb0b2c70dded312a6fd0649312f3",
+      "md5": "2f811787107661b20666e3beeb64588b",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p8-title.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p8-title.mp3",
+      "bytes": 20943,
+      "sha256": "82fe1ff27f86855ea6bd6948e37acf49960597fe917b9bad9b027002bcd4775d",
+      "md5": "7c9f5b917fcebaa8e7e92aab6998b1b6",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p9-author.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-author.mp3",
+      "bytes": 21987,
+      "sha256": "79a517e9a72c042bd9c3e4635222b5bdc9e1352c9b6904926911b6fdc1e57ada",
+      "md5": "4d1bd1333ca2243b4a227093b2bde296",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p9-line1.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-line1.mp3",
+      "bytes": 108192,
+      "sha256": "02bfc9b068336c3fd1dd128930d77c2d1384148c38ca6f63ef8f215caae391c6",
+      "md5": "9533187b070a384b3d78deb9650133d8",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p9-line2.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-line2.mp3",
+      "bytes": 107147,
+      "sha256": "10ed64d1c7217faa30be231793360923becae9c09e3cdced091939e9abf9fe80",
+      "md5": "ce62bfea0b306cf1de9760b8eb5df021",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p9-line3.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-line3.mp3",
+      "bytes": 113416,
+      "sha256": "fde8a64485b8f3c43487f5acb39b5ccf42727fc4322bcbaea9210f1f71601e03",
+      "md5": "9a5ed0166bdd6d289d5dd265f239829c",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p9-poem.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-poem.mp3",
+      "bytes": 368894,
+      "sha256": "62782ce913004fa708bc40773f8e4e02f53579618d01f74bf7ed6c5122871ec3",
+      "md5": "74c85408c3158c864135f6360eb5bf34",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p9-title.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-title.mp3",
+      "bytes": 26689,
+      "sha256": "dea00340ed804c7d31e2eb87cba89c9c714a511b00ca9c84462fdc0c5c093dd3",
+      "md5": "14a99a304cc24c7ebea29d3ff7f0cc6a",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p9-verse1.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-verse1.mp3",
+      "bytes": 44453,
+      "sha256": "5793089a699da82b111b67181f920dcd6befd7a38b13219ebd67b1974278c657",
+      "md5": "8b472e43b38ed1f68b87cb1a7b28a153",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p9-verse2.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-verse2.mp3",
+      "bytes": 44975,
+      "sha256": "02c57516d0245f24feb2acf10ffc1e5298ff02f1de9f35aa79a9bd7fae176dba",
+      "md5": "b61186ac654f9dac77171928cbe45789",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p9-verse3.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-verse3.mp3",
+      "bytes": 46543,
+      "sha256": "3ba398adee286a5a64ac11ebb32a434d23fc2a93200c71e01f28aff9062b56ab",
+      "md5": "36521a8a78dde22483db3057725a4ef9",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p9-verse4.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-verse4.mp3",
+      "bytes": 47587,
+      "sha256": "d5846783dd6603cb0b5e79ba4769a804c77e39641d9fcf53cd761a3edba5fb3d",
+      "md5": "b8dfca2b5035415b01ce8c6e24762e84",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p9-verse5.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-verse5.mp3",
+      "bytes": 46543,
+      "sha256": "32ff849ddaecb38b0cc272271172a84d9796ea373095305c9f78b8ac07cafef3",
+      "md5": "259aabec720890d57c54999aa7b0c763",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
+    },
+    {
+      "source": "/maanshan/media/recitations/round2-20261005/p9-verse6.mp3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-verse6.mp3",
+      "bytes": 60649,
+      "sha256": "9e4965968987ce112a8c26dea2cc34a50ced0999b45626f819429d972d43bf7a",
+      "md5": "54c462d95b19ebcd3ae9c4c78f5d4de7",
+      "contentType": "audio/mpeg",
+      "objectCacheControl": "public, max-age=31536000, immutable",
+      "group": "recitations/round2-20261005"
     },
     {
       "source": "/maanshan/media/shishi-guide.webp",
@@ -5833,6 +6851,132 @@
       "objectCacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "source": "/maanshan/media/yong-xue/animation-20261005.mp4",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/yong-xue/animation-20261005.mp4",
+      "bytes": 6614648,
+      "sha256": "ac46f9aaf4bad0a7474fb886be23de5b8ea365137549287654f30d0618ccf520",
+      "md5": "f49914a5b848a6aa5cb8f36d36e063ec",
+      "contentType": "video/mp4",
+      "objectCacheControl": "public, max-age=2592000"
+    },
+    {
+      "source": "/maanshan/media/yong-xue/animation-poster-20261005.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/d2520e61790b6a83dee9/maanshan/media/yong-xue/animation-poster-20261005.webp",
+      "bytes": 25222,
+      "sha256": "d2520e61790b6a83dee95d8b30785c7e277584862ba70f30b1d56deed21e0ffd",
+      "md5": "12fe40ba264455b0132d9f9dc4362cc2",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/yong-xue/avatar.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/97b969aac1d273fb2066/maanshan/media/yong-xue/avatar.webp",
+      "bytes": 69522,
+      "sha256": "97b969aac1d273fb2066bbba5a5912c0d2c240b24dd9d94403662fff0818f29a",
+      "md5": "42e4ec36fbb4fbd4caba73a920cc40cf",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/yong-xue/cover-final.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/66ebdbb417226fa79486/maanshan/media/yong-xue/cover-final.webp",
+      "bytes": 97140,
+      "sha256": "66ebdbb417226fa79486245401cc6affe736755f53ea0622c49600f826df09b6",
+      "md5": "ec54d77061a71061a0f7bc2a251b60e7",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/yong-xue/cover.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/6a65a373401b46cf25b8/maanshan/media/yong-xue/cover.webp",
+      "bytes": 24726,
+      "sha256": "6a65a373401b46cf25b8405e6553f74c939603a0a93a2d02233effbdec64246b",
+      "md5": "d788841f8d07b4f1f8487c3e2df88a81",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/yong-xue/poster.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/fdd040fb870f2da44760/maanshan/media/yong-xue/poster.webp",
+      "bytes": 62992,
+      "sha256": "fdd040fb870f2da44760d515ebf917c45515eecdae855e4496d4371bbe9a6077",
+      "md5": "cdf1e66fc5869f787a8b1c077b5a9c31",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/yong-xue/preview-1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/aa21ecef2ef1ca0dd48a/maanshan/media/yong-xue/preview-1.webp",
+      "bytes": 1370,
+      "sha256": "aa21ecef2ef1ca0dd48a27397414d67208c894d332320a342a9386e40c0d655c",
+      "md5": "5b556245920ad780ee0c2029576bec1e",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/yong-xue/preview-2.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/33e6fd86c0984d96036f/maanshan/media/yong-xue/preview-2.webp",
+      "bytes": 2092,
+      "sha256": "33e6fd86c0984d96036f012dece936dad31ba6bb720f389e4637a52d51bb2437",
+      "md5": "7828fc247874fad0115e209e11a14237",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/yong-xue/preview-3.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/6e24aca0d645768979c2/maanshan/media/yong-xue/preview-3.webp",
+      "bytes": 1958,
+      "sha256": "6e24aca0d645768979c256f85adf768b464c2b628e482d191235bdb921d2e82e",
+      "md5": "85f626c042dfa4091e33e2adbb603590",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/yong-xue/preview-4.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/a789b64b3998d623fcb0/maanshan/media/yong-xue/preview-4.webp",
+      "bytes": 4496,
+      "sha256": "a789b64b3998d623fcb06a8c4ccc85ab5cdfbbd1733037a1e76030d97ddfec0d",
+      "md5": "8b068bb5ccb42d01826bcc124b311e6e",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/yong-xue/scene-1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/716ca448b977b59e5e68/maanshan/media/yong-xue/scene-1.webp",
+      "bytes": 83040,
+      "sha256": "716ca448b977b59e5e687b0c6cb1c495011a4ab2aa0d5b61945f37c5d5486570",
+      "md5": "98cddcf1a6aea802dbe9236fde4af3ab",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/yong-xue/scene-2.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/1c9cc4b28dbbf1d3a56b/maanshan/media/yong-xue/scene-2.webp",
+      "bytes": 140474,
+      "sha256": "1c9cc4b28dbbf1d3a56b8097fb0b3de39393a95908c05121ff1d19c4d0ea265a",
+      "md5": "e0e092bb27ecaeaed3e032704288d308",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/yong-xue/scene-3.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/5c3bbfe6f5c73cc818aa/maanshan/media/yong-xue/scene-3.webp",
+      "bytes": 179878,
+      "sha256": "5c3bbfe6f5c73cc818aa2e2896118d319c94ab123e81f733cb45a7310e260695",
+      "md5": "728f7000764f67086b64e3394ac28708",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/yong-xue/scene-4.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/f7694e9f63f3deb10060/maanshan/media/yong-xue/scene-4.webp",
+      "bytes": 286846,
+      "sha256": "f7694e9f63f3deb100607f3a4894a6f919949402d68c90ad473d5bc9b2250855",
+      "md5": "dac6c6a009f3535d49f0409cda2ee59c",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "source": "/maanshan/media/zao-chun/animation-20260917.mp4",
       "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/zao-chun/animation-20260917.mp4",
       "bytes": 30904798,
@@ -6081,6 +7225,114 @@
       "bytes": 298800,
       "sha256": "1f1291a1820aff5b3b9591dd993f5ec19e3f98bd97e4af575a2fde5a46a4f3ec",
       "md5": "9caa74db83712af8a769e00c78fce1de",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/zheng-ren-mai-lu/avatar.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/06012cd295c0a99c4182/maanshan/media/zheng-ren-mai-lu/avatar.webp",
+      "bytes": 71800,
+      "sha256": "06012cd295c0a99c4182ec863932a2ff0123c234bfa9c24a520743e48bc58e45",
+      "md5": "574328812659ff3f4d05eaacd9662666",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/zheng-ren-mai-lu/cover-final.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/00058212428bc21ff95d/maanshan/media/zheng-ren-mai-lu/cover-final.webp",
+      "bytes": 119308,
+      "sha256": "00058212428bc21ff95da755fd21528d0a49fd0eb316c1aabab0235a523077ae",
+      "md5": "7c55f8e5900c32f5db2944d858732d6e",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/zheng-ren-mai-lu/cover.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/7795decdf58e5e2c54c8/maanshan/media/zheng-ren-mai-lu/cover.webp",
+      "bytes": 91162,
+      "sha256": "7795decdf58e5e2c54c8d6aa56ff85bcf6d9349b57ca5594b0a9577b3209c7d6",
+      "md5": "b6cbcc46afb038ef63cc17962e7c396f",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/zheng-ren-mai-lu/poster.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4821b7949bb66a812b7b/maanshan/media/zheng-ren-mai-lu/poster.webp",
+      "bytes": 66748,
+      "sha256": "4821b7949bb66a812b7b7f6b94eda52414d364d3e02a0b5e22d7009b37eb1d3b",
+      "md5": "f89e0d4e10f667fd7937883cba562073",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/zheng-ren-mai-lu/preview-1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/606256c0bb43e8b771c1/maanshan/media/zheng-ren-mai-lu/preview-1.webp",
+      "bytes": 4150,
+      "sha256": "606256c0bb43e8b771c133b9b8c0871cc13e340fcef5c092b1a7a73fad3c133f",
+      "md5": "8f2b4611ec8b75bae70e85cee5e26eb1",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/zheng-ren-mai-lu/preview-2.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/56f597709e3b46a1ded7/maanshan/media/zheng-ren-mai-lu/preview-2.webp",
+      "bytes": 5700,
+      "sha256": "56f597709e3b46a1ded7e894e7489009a78d389185be2b7c25e1ef66bd9e6961",
+      "md5": "0ba20dceaf27f9bef764cae38593f122",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/zheng-ren-mai-lu/preview-3.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/c3076a153485adc7f6dd/maanshan/media/zheng-ren-mai-lu/preview-3.webp",
+      "bytes": 5220,
+      "sha256": "c3076a153485adc7f6dd59b0303fac4a346ff2f0463609819209a1903c8b9100",
+      "md5": "959e1d6c163f9685a9536d16005b4c37",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/zheng-ren-mai-lu/preview-4.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/5ffb32ec89b6138dee19/maanshan/media/zheng-ren-mai-lu/preview-4.webp",
+      "bytes": 5422,
+      "sha256": "5ffb32ec89b6138dee19a767d8b69df84a8b1b6de826f3645e4eb6ce48d7ffdc",
+      "md5": "17ed186dc79e091a6e09176ef2e430f4",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/zheng-ren-mai-lu/scene-1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/3806ffe735840749662e/maanshan/media/zheng-ren-mai-lu/scene-1.webp",
+      "bytes": 273450,
+      "sha256": "3806ffe735840749662e3f022f6e8e7e1d62e4f41311a985510c622f8a4681c7",
+      "md5": "cdfd69c1b19cd2e65f54ec5138f5b722",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/zheng-ren-mai-lu/scene-2.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/cc8e4a3676f1e2da5aa2/maanshan/media/zheng-ren-mai-lu/scene-2.webp",
+      "bytes": 297524,
+      "sha256": "cc8e4a3676f1e2da5aa2175175f94a667c18eefdbe30046d4e1847dfb55d0997",
+      "md5": "15cdb9def5b1bf28ea30686a847a2a33",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/zheng-ren-mai-lu/scene-3.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ea09e117545fec74be0f/maanshan/media/zheng-ren-mai-lu/scene-3.webp",
+      "bytes": 350702,
+      "sha256": "ea09e117545fec74be0fcccf44e4014579b39cd159eda95130dcba1d9fa6a4e3",
+      "md5": "52da7ff47847b12d4d2953c39ca7185e",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/zheng-ren-mai-lu/scene-4.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ce2f2db8ce8ad0594672/maanshan/media/zheng-ren-mai-lu/scene-4.webp",
+      "bytes": 330878,
+      "sha256": "ce2f2db8ce8ad059467272fbd7791e2640c67daa73ec2ab1c7984c3327b119e6",
+      "md5": "8e093a005d1d7e1d27fafbb9f97a64b4",
       "contentType": "image/webp",
       "objectCacheControl": "public, max-age=31536000, immutable"
     },

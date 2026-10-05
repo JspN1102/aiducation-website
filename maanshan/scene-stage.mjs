@@ -1,11 +1,15 @@
-import {imageAsset} from './media-images.mjs?v=20260923-school23';
-import {loadTeachingImage} from './image-loader.mjs?v=20260923-school23';
+import {imageAsset} from './media-images.mjs?v=20261005-school40';
+import {loadTeachingImage} from './image-loader.mjs?v=20261005-school40';
 const mountedStages = new WeakMap();
 const decodedSources = new Map();
 const MAX_CACHED_SOURCES = 8;
 
 export function getScenePreview(poemSlug, scene = 1) {
   return scene === 0 ? '' : PREVIEWS[poemSlug]?.[scene] || '';
+}
+// Preview poems bring their own thumbnails, so other accounts never download them.
+export function addScenePreviews(previews) {
+  for (const [slug, scenes] of Object.entries(previews || {})) if (!Object.hasOwn(PREVIEWS, slug)) PREVIEWS[slug] = scenes;
 }
 
 // Warm a nearby painting without revealing it; the paper stays blank until show().

@@ -10,14 +10,27 @@ const questions = [
   [5, 'farming', '「晨興理荒穢」寫的是甚麼農事？'],
   [5, 'other-poems', '聊聊別的詩吧', true], [5, 'new-poem', '一起寫一首新詩吧', true],
   [6, 'rain', '「潤如酥」寫出春雨怎樣的感覺？'],
-  [6, 'other-poems', '聊聊別的詩吧', true], [6, 'new-poem', '一起寫一首新詩吧', true]
+  [6, 'other-poems', '聊聊別的詩吧', true], [6, 'new-poem', '一起寫一首新詩吧', true],
+  // Preview poems 7-12 (jasper and molly only for now).
+  [7, 'count', '你數了多少片雪花？'], [7, 'where', '雪花飛到哪裏去了？'], [7, 'read', '陪我讀「一片兩片三四片」吧。', true],
+  [8, 'colors', '公雞是甚麼顏色？'], [8, 'call', '公雞甚麼時候叫？'], [8, 'wake', '公雞一叫，大家會怎樣？'],
+  [9, 'beans', '鍋裏煮的是甚麼？'], [9, 'cry', '豆子為甚麼會哭？'], [9, 'stalks', '豆萁是甚麼？'],
+  [10, 'window-view', '您在草堂窗前看到了哪些春天的景物？'],
+  [10, 'other-poems', '聊聊別的詩吧', true], [10, 'new-poem', '一起寫一首新詩吧', true],
+  [11, 'try-shoes', '鄭人為甚麼不用自己的腳試鞋？'],
+  [11, 'other-poems', '聊聊別的詩吧', true], [11, 'new-poem', '一起寫一首新詩吧', true],
+  [12, 'flower-path', '「花徑不曾緣客掃」是甚麼意思？'],
+  [12, 'other-poems', '聊聊別的詩吧', true], [12, 'new-poem', '一起寫一首新詩吧', true]
 ];
 export const POET_PRESETS = Object.freeze(questions.map(([poemId, key, question, explicitOnly=false]) =>
   Object.freeze({id:`p${poemId}.${key}`,poemId,question,explicitOnly,version:POET_PRESET_VERSION})));
 const lower = {
   1: ['白鵝是甚麼顏色？', '鵝怎樣叫？', '陪我讀「鵝鵝鵝」吧。'],
   2: ['汪倫是誰？', '你坐甚麼離開？', '朋友來送你，你開心嗎？'],
-  3: ['廬山高不高？', '你在山裏看到甚麼？', '山從兩邊看一樣嗎？']
+  3: ['廬山高不高？', '你在山裏看到甚麼？', '山從兩邊看一樣嗎？'],
+  7: ['你數了多少片雪花？', '雪花飛到哪裏去了？', '陪我讀「一片兩片三四片」吧。'],
+  8: ['公雞是甚麼顏色？', '公雞甚麼時候叫？', '公雞一叫，大家會怎樣？'],
+  9: ['鍋裏煮的是甚麼？', '豆子為甚麼會哭？', '豆萁是甚麼？']
 };
 export function getPoetSuggestions(poem, grade = poem?.grade) {
   if (Math.min(Number(grade), Number(poem?.grade)) <= 3)

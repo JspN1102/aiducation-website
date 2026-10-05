@@ -1,0 +1,1458 @@
+{
+  "poems": [
+    {
+      "id": 7,
+      "slug": "yong-xue",
+      "title": "詠雪",
+      "animation": {
+        "src": "media/yong-xue/animation-20261005.mp4",
+        "poster": "media/yong-xue/animation-poster-20261005.webp",
+        "caption": "跟着鄭板橋數雪花，找找雪花去了哪裏"
+      },
+      "author": "鄭燮",
+      "dynasty": "清",
+      "grade": 1,
+      "preview": true,
+      "explore": false,
+      "description": "詩人從一片兩片數起，數到千片萬片數不清，雪花最後飛入梅花中，都不見了。",
+      "authorBio": "鄭燮，號板橋，大家常叫他鄭板橋。他是清代著名的書畫家、文學家，做知縣時很得百姓愛戴；他的畫以蘭、竹、石見長，詩寫得真率自然。",
+      "theme": "詠物",
+      "lines": [
+        {
+          "text": "一片兩片三四片",
+          "simplified": "一片两片三四片",
+          "pinyin": [
+            "yī",
+            "piàn",
+            "liǎng",
+            "piàn",
+            "sān",
+            "sì",
+            "piàn"
+          ],
+          "punctuation": "，",
+          "scene": 1
+        },
+        {
+          "text": "五六七八九十片",
+          "simplified": "五六七八九十片",
+          "pinyin": [
+            "wǔ",
+            "liù",
+            "qī",
+            "bā",
+            "jiǔ",
+            "shí",
+            "piàn"
+          ],
+          "punctuation": "。",
+          "scene": 2
+        },
+        {
+          "text": "千片萬片無數片",
+          "simplified": "千片万片无数片",
+          "pinyin": [
+            "qiān",
+            "piàn",
+            "wàn",
+            "piàn",
+            "wú",
+            "shù",
+            "piàn"
+          ],
+          "punctuation": "，",
+          "scene": 3
+        },
+        {
+          "text": "飛入梅花都不見",
+          "simplified": "飞入梅花都不见",
+          "pinyin": [
+            "fēi",
+            "rù",
+            "méi",
+            "huā",
+            "dōu",
+            "bù",
+            "jiàn"
+          ],
+          "punctuation": "。",
+          "scene": 4
+        }
+      ],
+      "dictation": [
+        {
+          "char": "片",
+          "pinyin": "piàn",
+          "word": "雪片"
+        },
+        {
+          "char": "兩",
+          "pinyin": "liǎng",
+          "word": "兩個"
+        },
+        {
+          "char": "千",
+          "pinyin": "qiān",
+          "word": "一千"
+        },
+        {
+          "char": "萬",
+          "pinyin": "wàn",
+          "word": "一萬"
+        },
+        {
+          "char": "無",
+          "pinyin": "wú",
+          "word": "無數"
+        },
+        {
+          "char": "飛",
+          "pinyin": "fēi",
+          "word": "飛舞"
+        },
+        {
+          "char": "梅",
+          "pinyin": "méi",
+          "word": "梅花"
+        },
+        {
+          "char": "花",
+          "pinyin": "huā",
+          "word": "雪花"
+        },
+        {
+          "char": "見",
+          "pinyin": "jiàn",
+          "word": "看見"
+        }
+      ],
+      "suggestions": [
+        "您為甚麼一片一片地數雪花？",
+        "您的詩題是《詠雪》，為甚麼詩裏沒有「雪」字？",
+        "雪花飛進梅花裏，為甚麼都不見了？"
+      ],
+      "phonics": [
+        {
+          "id": "yong-xue-tone",
+          "label": "四聲",
+          "prompt": "「梅」 是第幾聲？",
+          "options": [
+            "第一聲",
+            "第二聲",
+            "第三聲"
+          ],
+          "answer": 1,
+          "explanation": "méi 是第二聲，聲音由低向高上揚。",
+          "audio": {
+            "char": "梅",
+            "pinyin": "méi"
+          }
+        },
+        {
+          "id": "yong-xue-a",
+          "label": "a/o/e",
+          "prompt": "「八」 用了哪一個單韻母？",
+          "options": [
+            "a",
+            "o",
+            "e"
+          ],
+          "answer": 0,
+          "explanation": "「八」的拼音是 bā，單韻母是 a。",
+          "audio": {
+            "char": "八",
+            "pinyin": "bā"
+          }
+        },
+        {
+          "id": "yong-xue-i",
+          "label": "i/u/ü",
+          "prompt": "「七」 的韻母是哪一個？",
+          "options": [
+            "i",
+            "u",
+            "ü"
+          ],
+          "answer": 0,
+          "explanation": "qī 的韻母是 i，讀的時候嘴角向兩邊展開。",
+          "audio": {
+            "char": "七",
+            "pinyin": "qī"
+          }
+        },
+        {
+          "id": "yong-xue-p",
+          "label": "b/p/m/f",
+          "prompt": "「片」 的聲母是哪一個？",
+          "options": [
+            "b",
+            "p",
+            "m"
+          ],
+          "answer": 1,
+          "explanation": "piàn 的聲母是 p，發音時有較明顯的氣流。",
+          "audio": {
+            "char": "片",
+            "pinyin": "piàn"
+          }
+        },
+        {
+          "id": "yong-xue-l",
+          "label": "d/t/n/l",
+          "prompt": "「六」 的聲母是哪一個？",
+          "options": [
+            "d",
+            "n",
+            "l"
+          ],
+          "answer": 2,
+          "explanation": "liù 的聲母是 l，氣流從舌頭兩邊出來，不要讀成鼻音 n。",
+          "audio": {
+            "char": "六",
+            "pinyin": "liù"
+          }
+        },
+        {
+          "id": "yong-xue-shu",
+          "label": "i/u/ü",
+          "prompt": "「無數」的「數」應讀哪一個音？",
+          "options": [
+            "shǔ",
+            "shù",
+            "sù"
+          ],
+          "answer": 1,
+          "explanation": "「無數」是多得數不清，「數」讀 shù，韻母是 u；動手數一數時才讀 shǔ。",
+          "audio": {
+            "char": "數",
+            "pinyin": "shù"
+          }
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "slug": "hua-ji",
+      "title": "畫雞",
+      "animation": {
+        "src": "media/hua-ji/animation-20261005.mp4",
+        "poster": "media/hua-ji/animation-poster-20261005.webp",
+        "caption": "跟着大公雞走一走，聽牠喚醒千家萬戶"
+      },
+      "author": "唐寅",
+      "dynasty": "明",
+      "grade": 2,
+      "preview": true,
+      "explore": false,
+      "description": "這是一首題畫詩，寫紅冠白羽的大公雞神氣地走來；牠平日不亂叫，一叫就喚醒千家萬戶。",
+      "authorBio": "唐寅，字伯虎，是明代畫家、文學家。他年少時已很有才華，後來以賣畫為生，山水、人物、花鳥都畫得好，也擅長書法，能寫詩文。",
+      "theme": "題畫詠物",
+      "lines": [
+        {
+          "text": "頭上紅冠不用裁",
+          "simplified": "头上红冠不用裁",
+          "pinyin": [
+            "tóu",
+            "shàng",
+            "hóng",
+            "guān",
+            "bù",
+            "yòng",
+            "cái"
+          ],
+          "punctuation": "，",
+          "scene": 1
+        },
+        {
+          "text": "滿身雪白走將來",
+          "simplified": "满身雪白走将来",
+          "pinyin": [
+            "mǎn",
+            "shēn",
+            "xuě",
+            "bái",
+            "zǒu",
+            "jiāng",
+            "lái"
+          ],
+          "punctuation": "。",
+          "scene": 2
+        },
+        {
+          "text": "平生不敢輕言語",
+          "simplified": "平生不敢轻言语",
+          "pinyin": [
+            "píng",
+            "shēng",
+            "bù",
+            "gǎn",
+            "qīng",
+            "yán",
+            "yǔ"
+          ],
+          "punctuation": "，",
+          "scene": 3
+        },
+        {
+          "text": "一叫千門萬戶開",
+          "simplified": "一叫千门万户开",
+          "pinyin": [
+            "yī",
+            "jiào",
+            "qiān",
+            "mén",
+            "wàn",
+            "hù",
+            "kāi"
+          ],
+          "punctuation": "。",
+          "scene": 4
+        }
+      ],
+      "dictation": [
+        {
+          "char": "冠",
+          "pinyin": "guān",
+          "word": "雞冠"
+        },
+        {
+          "char": "裁",
+          "pinyin": "cái",
+          "word": "剪裁"
+        },
+        {
+          "char": "雪",
+          "pinyin": "xuě",
+          "word": "雪白"
+        },
+        {
+          "char": "走",
+          "pinyin": "zǒu",
+          "word": "走路"
+        },
+        {
+          "char": "敢",
+          "pinyin": "gǎn",
+          "word": "勇敢"
+        },
+        {
+          "char": "輕",
+          "pinyin": "qīng",
+          "word": "輕易"
+        },
+        {
+          "char": "語",
+          "pinyin": "yǔ",
+          "word": "言語"
+        },
+        {
+          "char": "叫",
+          "pinyin": "jiào",
+          "word": "叫聲"
+        },
+        {
+          "char": "戶",
+          "pinyin": "hù",
+          "word": "萬戶"
+        }
+      ],
+      "suggestions": [
+        "「頭上紅冠不用裁」是甚麼意思？",
+        "您為甚麼說公雞「不敢輕言語」？",
+        "公雞一叫，為甚麼千門萬戶都打開了？"
+      ],
+      "phonics": [
+        {
+          "id": "hua-ji-ie",
+          "label": "ia/ie",
+          "prompt": "「雪」 和「寫」，哪一個字的韻母是 ie？",
+          "options": [
+            "雪",
+            "寫",
+            "兩個都是"
+          ],
+          "answer": 1,
+          "explanation": "拓展字「寫」xiě 的韻母是 ie；「雪」xuě 的韻母是 üe，跟 x 相拼時省去兩點，寫作 ue。",
+          "audio": {
+            "char": "雪",
+            "pinyin": "xuě",
+            "text": "雪，寫。",
+            "parts": [
+              {
+                "char": "雪",
+                "pinyin": "xuě"
+              },
+              {
+                "char": "寫",
+                "pinyin": "xiě"
+              }
+            ]
+          }
+        },
+        {
+          "id": "hua-ji-iao",
+          "label": "iao/iu",
+          "prompt": "「一叫」的「叫」，韻母是哪一個？",
+          "options": [
+            "iu",
+            "iao",
+            "ao"
+          ],
+          "answer": 1,
+          "explanation": "jiào 的韻母是 iao，由 i 滑向 ao；「九」jiǔ 的韻母才是 iu。",
+          "audio": {
+            "char": "叫",
+            "pinyin": "jiào"
+          }
+        },
+        {
+          "id": "hua-ji-ian",
+          "label": "ian/in",
+          "prompt": "「千門萬戶」的「千」，韻母是哪一個？",
+          "options": [
+            "ian",
+            "in",
+            "ing"
+          ],
+          "answer": 0,
+          "explanation": "qiān 的韻母是 ian；詩人「唐寅」的「寅」讀 yín，韻母才是 in。",
+          "audio": {
+            "char": "千",
+            "pinyin": "qiān"
+          }
+        },
+        {
+          "id": "hua-ji-ing",
+          "label": "iang/ing/iong",
+          "prompt": "「輕言語」的「輕」，韻母是哪一個？",
+          "options": [
+            "iang",
+            "iong",
+            "ing"
+          ],
+          "answer": 2,
+          "explanation": "qīng 的韻母是 ing；「走將來」的「將」讀 jiāng，韻母才是 iang。",
+          "audio": {
+            "char": "輕",
+            "pinyin": "qīng"
+          }
+        },
+        {
+          "id": "hua-ji-ua",
+          "label": "ua/uo",
+          "prompt": "詩題「畫雞」的「畫」，韻母是哪一個？",
+          "options": [
+            "ua",
+            "uo",
+            "ao"
+          ],
+          "answer": 0,
+          "explanation": "huà 的韻母是 ua；「火」huǒ 的韻母才是 uo。",
+          "audio": {
+            "char": "畫",
+            "pinyin": "huà"
+          }
+        },
+        {
+          "id": "hua-ji-ui",
+          "label": "uai/ui",
+          "prompt": "「睡」 的韻母，在拼音中寫成甚麼？",
+          "options": [
+            "uai",
+            "ui",
+            "iu"
+          ],
+          "answer": 1,
+          "explanation": "拓展字「睡」讀 shuì。uei 跟聲母相拼時縮寫成 ui，所以寫作 shuì。",
+          "audio": {
+            "char": "睡",
+            "pinyin": "shuì"
+          }
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "slug": "qi-bu-shi",
+      "title": "七步詩",
+      "animation": {
+        "src": "media/qi-bu-shi/animation-20261005.mp4",
+        "poster": "media/qi-bu-shi/animation-poster-20261005.webp",
+        "caption": "看豆萁燒、豆兒泣，想想同根生的情誼"
+      },
+      "author": "曹植",
+      "dynasty": "魏",
+      "grade": 3,
+      "preview": true,
+      "explore": false,
+      "description": "從煮豆燃萁的生活小事說起，借豆和豆萁本是同根，比喻兄弟不應互相逼迫。",
+      "authorBio": "曹植，字子建，是三國時魏國詩人，曹操的第三子、曹丕的弟弟。他從小聰穎，擅長詩文，被譽為「才高八斗」；詩作以五言為主，語言精煉，情感熱烈。",
+      "theme": "手足之情",
+      "lines": [
+        {
+          "text": "煮豆持作羹，漉豉以為汁",
+          "simplified": "煮豆持作羹，漉豉以为汁",
+          "pinyin": [
+            "zhǔ",
+            "dòu",
+            "chí",
+            "zuò",
+            "gēng",
+            "lù",
+            "chǐ",
+            "yǐ",
+            "wéi",
+            "zhī"
+          ],
+          "punctuation": "。",
+          "scene": 1
+        },
+        {
+          "text": "萁在釜下燃，豆在釜中泣",
+          "simplified": "萁在釜下燃，豆在釜中泣",
+          "pinyin": [
+            "qí",
+            "zài",
+            "fǔ",
+            "xià",
+            "rán",
+            "dòu",
+            "zài",
+            "fǔ",
+            "zhōng",
+            "qì"
+          ],
+          "punctuation": "。",
+          "scene": 2
+        },
+        {
+          "text": "本是同根生，相煎何太急",
+          "simplified": "本是同根生，相煎何太急",
+          "pinyin": [
+            "běn",
+            "shì",
+            "tóng",
+            "gēn",
+            "shēng",
+            "xiāng",
+            "jiān",
+            "hé",
+            "tài",
+            "jí"
+          ],
+          "punctuation": "。",
+          "scene": 3
+        }
+      ],
+      "dictation": [
+        {
+          "char": "煮",
+          "pinyin": "zhǔ",
+          "word": "煮飯"
+        },
+        {
+          "char": "豆",
+          "pinyin": "dòu",
+          "word": "豆子"
+        },
+        {
+          "char": "汁",
+          "pinyin": "zhī",
+          "word": "果汁"
+        },
+        {
+          "char": "作",
+          "pinyin": "zuò",
+          "word": "工作"
+        },
+        {
+          "char": "燃",
+          "pinyin": "rán",
+          "word": "燃燒"
+        },
+        {
+          "char": "泣",
+          "pinyin": "qì",
+          "word": "哭泣"
+        },
+        {
+          "char": "根",
+          "pinyin": "gēn",
+          "word": "樹根"
+        },
+        {
+          "char": "煎",
+          "pinyin": "jiān",
+          "word": "煎蛋"
+        },
+        {
+          "char": "急",
+          "pinyin": "jí",
+          "word": "急忙"
+        }
+      ],
+      "suggestions": [
+        "《七步詩》這個名字是怎樣來的？",
+        "您為甚麼說豆子在鍋裏「泣」？",
+        "「本是同根生」是甚麼意思？"
+      ],
+      "phonics": [
+        {
+          "id": "qi-bu-shi-tone",
+          "label": "四聲複習",
+          "prompt": "「豆在釜中泣」的「泣」 是第幾聲？",
+          "options": [
+            "第一聲",
+            "第三聲",
+            "第四聲"
+          ],
+          "answer": 2,
+          "explanation": "「泣」讀 qì，是第四聲，聲音從高處往下降。",
+          "audio": {
+            "char": "泣",
+            "pinyin": "qì"
+          }
+        },
+        {
+          "id": "qi-bu-shi-e",
+          "label": "a/o/e",
+          "prompt": "「何」 的單韻母是哪一個？",
+          "options": [
+            "a",
+            "e",
+            "o"
+          ],
+          "answer": 1,
+          "explanation": "hé 由聲母 h 和單韻母 e 組成。",
+          "audio": {
+            "char": "何",
+            "pinyin": "hé"
+          }
+        },
+        {
+          "id": "qi-bu-shi-u",
+          "label": "i/u/ü",
+          "prompt": "「漉」 的韻母是哪一個？",
+          "options": [
+            "ü",
+            "i",
+            "u"
+          ],
+          "answer": 2,
+          "explanation": "「漉」讀 lù，韻母是 u，意思是過濾；不要讀成「綠」的 lǜ。",
+          "audio": {
+            "char": "漉",
+            "pinyin": "lù"
+          }
+        },
+        {
+          "id": "qi-bu-shi-f",
+          "label": "b/p/m/f/d/t/n/l",
+          "prompt": "「釜」 的聲母是哪一個？",
+          "options": [
+            "p",
+            "f",
+            "b"
+          ],
+          "answer": 1,
+          "explanation": "fǔ 的聲母是 f，發音時上牙輕碰下嘴唇。「釜」是古代煮食用的鍋。",
+          "audio": {
+            "char": "釜",
+            "pinyin": "fǔ"
+          }
+        },
+        {
+          "id": "qi-bu-shi-g",
+          "label": "g/k/h",
+          "prompt": "「同根生」的「根」，聲母是哪一個？",
+          "options": [
+            "g",
+            "k",
+            "h"
+          ],
+          "answer": 0,
+          "explanation": "gēn 的聲母是 g；g 不送氣，k 送氣，讀 k 時氣流較強。",
+          "audio": {
+            "char": "根",
+            "pinyin": "gēn"
+          }
+        },
+        {
+          "id": "qi-bu-shi-wei",
+          "label": "四聲複習",
+          "prompt": "「以為汁」的「為」應讀哪一個音？",
+          "options": [
+            "wèi",
+            "wěi",
+            "wéi"
+          ],
+          "answer": 2,
+          "explanation": "「以為汁」是用來做成豆汁，「為」讀第二聲 wéi；「因為」的「為」才讀第四聲 wèi。",
+          "audio": {
+            "char": "為",
+            "pinyin": "wéi"
+          }
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "slug": "jue-ju",
+      "title": "絕句",
+      "animation": {
+        "src": "media/jue-ju/animation-20261005.mp4",
+        "poster": "media/jue-ju/animation-poster-20261005.webp",
+        "caption": "跟着杜甫倚窗遠望，看黃鸝、白鷺、雪嶺和萬里船"
+      },
+      "author": "杜甫",
+      "dynasty": "唐",
+      "grade": 4,
+      "preview": true,
+      "explore": false,
+      "description": "杜甫在成都草堂，看見黃鸝、白鷺、西嶺積雪和門前遠航的船，描繪出春回大地的美景。",
+      "authorBio": "杜甫是唐代詩人，字子美，後世尊稱為「詩聖」。他的作品反映唐代由盛轉衰的社會面貌，被稱為「詩史」。他曾在成都浣花溪畔搭建草堂居住。",
+      "theme": "春日寫景",
+      "lines": [
+        {
+          "text": "兩個黃鸝鳴翠柳",
+          "simplified": "两个黄鹂鸣翠柳",
+          "pinyin": [
+            "liǎng",
+            "gè",
+            "huáng",
+            "lí",
+            "míng",
+            "cuì",
+            "liǔ"
+          ],
+          "punctuation": "，",
+          "scene": 1
+        },
+        {
+          "text": "一行白鷺上青天",
+          "simplified": "一行白鹭上青天",
+          "pinyin": [
+            "yī",
+            "háng",
+            "bái",
+            "lù",
+            "shàng",
+            "qīng",
+            "tiān"
+          ],
+          "punctuation": "。",
+          "scene": 2
+        },
+        {
+          "text": "窗含西嶺千秋雪",
+          "simplified": "窗含西岭千秋雪",
+          "pinyin": [
+            "chuāng",
+            "hán",
+            "xī",
+            "lǐng",
+            "qiān",
+            "qiū",
+            "xuě"
+          ],
+          "punctuation": "，",
+          "scene": 3
+        },
+        {
+          "text": "門泊東吳萬里船",
+          "simplified": "门泊东吴万里船",
+          "pinyin": [
+            "mén",
+            "bó",
+            "dōng",
+            "wú",
+            "wàn",
+            "lǐ",
+            "chuán"
+          ],
+          "punctuation": "。",
+          "scene": 4
+        }
+      ],
+      "dictation": [
+        {
+          "char": "鳴",
+          "pinyin": "míng",
+          "word": "鳴叫"
+        },
+        {
+          "char": "翠",
+          "pinyin": "cuì",
+          "word": "翠綠"
+        },
+        {
+          "char": "柳",
+          "pinyin": "liǔ",
+          "word": "柳樹"
+        },
+        {
+          "char": "鷺",
+          "pinyin": "lù",
+          "word": "白鷺"
+        },
+        {
+          "char": "窗",
+          "pinyin": "chuāng",
+          "word": "窗戶"
+        },
+        {
+          "char": "含",
+          "pinyin": "hán",
+          "word": "包含"
+        },
+        {
+          "char": "雪",
+          "pinyin": "xuě",
+          "word": "積雪"
+        },
+        {
+          "char": "泊",
+          "pinyin": "bó",
+          "word": "停泊"
+        },
+        {
+          "char": "船",
+          "pinyin": "chuán",
+          "word": "船隻"
+        }
+      ],
+      "suggestions": [
+        "您在草堂窗前看到了哪些春天的景物？",
+        "「一行白鷺」的「行」為甚麼讀 háng？",
+        "看見門前的萬里船，您想到了甚麼？"
+      ],
+      "phonics": [
+        {
+          "id": "jue-ju-c",
+          "label": "z/c/s",
+          "prompt": "「翠」 的聲母是哪一個？",
+          "options": [
+            "c",
+            "ch",
+            "q"
+          ],
+          "answer": 0,
+          "explanation": "cuì 的聲母是平舌音 c；「吹」chuī 的聲母才是翹舌音 ch。",
+          "audio": {
+            "char": "翠",
+            "pinyin": "cuì"
+          }
+        },
+        {
+          "id": "jue-ju-sh",
+          "label": "zh/ch/sh/r",
+          "prompt": "「上青天」的「上」，聲母是哪一個？",
+          "options": [
+            "s",
+            "x",
+            "sh"
+          ],
+          "answer": 2,
+          "explanation": "shàng 的聲母是翹舌音 sh，舌尖要翹起，不能讀成平舌音 s。",
+          "audio": {
+            "char": "上",
+            "pinyin": "shàng"
+          }
+        },
+        {
+          "id": "jue-ju-si",
+          "label": "zi/ci/si",
+          "prompt": "「柳絲」的「絲」，正確拼音是哪一個？",
+          "options": [
+            "xī",
+            "sī",
+            "shī"
+          ],
+          "answer": 1,
+          "explanation": "拓展字「絲」讀 sī，是整體認讀音節 si 的第一聲；詩中「西嶺」的「西」讀 xī，聲母不同。",
+          "audio": {
+            "char": "絲",
+            "pinyin": "sī"
+          }
+        },
+        {
+          "id": "jue-ju-u",
+          "label": "u/ua/uo",
+          "prompt": "「東吳」的「吳」，韻母是哪一個？",
+          "options": [
+            "uo",
+            "ua",
+            "u"
+          ],
+          "answer": 2,
+          "explanation": "wú 的韻母是 u；u 前面沒有聲母時，音節寫成 wu。",
+          "audio": {
+            "char": "吳",
+            "pinyin": "wú"
+          }
+        },
+        {
+          "id": "jue-ju-ui",
+          "label": "uai/ui",
+          "prompt": "「翠」 的韻母，在拼音中寫成甚麼？",
+          "options": [
+            "uai",
+            "ui",
+            "iu"
+          ],
+          "answer": 1,
+          "explanation": "uei 跟聲母相拼時縮寫成 ui，所以「翠」寫作 cuì；「柳」liǔ 的韻母才寫作 iu。",
+          "audio": {
+            "char": "翠",
+            "pinyin": "cuì"
+          }
+        },
+        {
+          "id": "jue-ju-ch",
+          "label": "zh/ch/sh/r",
+          "prompt": "「船」 的聲母是哪一個？",
+          "options": [
+            "sh",
+            "ch",
+            "c"
+          ],
+          "answer": 1,
+          "explanation": "chuán 的聲母是翹舌音 ch，舌尖翹起，送氣較強。粵語「船」以 s 開頭，讀普通話時不要讀成 shuán。",
+          "audio": {
+            "char": "船",
+            "pinyin": "chuán"
+          }
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "slug": "zheng-ren-mai-lu",
+      "title": "鄭人買履",
+      "animation": {
+        "caption": "跟着鄭人量腳、趕集，看他為甚麼買不到鞋"
+      },
+      "author": "韓非",
+      "dynasty": "戰國",
+      "persona": "思想家",
+      "grade": 5,
+      "preview": true,
+      "explore": false,
+      "description": "鄭人量好腳卻忘了帶尺寸，回家去取，市集已散；他寧信尺寸也不用腳試鞋，故事諷刺不懂變通的人。",
+      "authorBio": "韓非是戰國末期思想家，法家的主要代表人物，出身戰國時韓國的貴族，是荀子的學生。他的文章條理分明，又善用寓言，把道理說得生動。",
+      "theme": "知所變通",
+      "lines": [
+        {
+          "text": "鄭人有且置履者，先自度其足而置之其坐",
+          "simplified": "郑人有且置履者，先自度其足而置之其坐",
+          "pinyin": [
+            "zhèng",
+            "rén",
+            "yǒu",
+            "qiě",
+            "zhì",
+            "lǚ",
+            "zhě",
+            "xiān",
+            "zì",
+            "duó",
+            "qí",
+            "zú",
+            "ér",
+            "zhì",
+            "zhī",
+            "qí",
+            "zuò"
+          ],
+          "punctuation": "。",
+          "scene": 1
+        },
+        {
+          "text": "至之市，而忘操之，已得履，乃曰：「吾忘持度。」",
+          "simplified": "至之市，而忘操之，已得履，乃曰：「吾忘持度。」",
+          "pinyin": [
+            "zhì",
+            "zhī",
+            "shì",
+            "ér",
+            "wàng",
+            "cāo",
+            "zhī",
+            "yǐ",
+            "dé",
+            "lǚ",
+            "nǎi",
+            "yuē",
+            "wú",
+            "wàng",
+            "chí",
+            "dù"
+          ],
+          "punctuation": "",
+          "scene": 2
+        },
+        {
+          "text": "反歸取之，及反，市罷，遂不得履",
+          "simplified": "反归取之，及反，市罢，遂不得履",
+          "pinyin": [
+            "fǎn",
+            "guī",
+            "qǔ",
+            "zhī",
+            "jí",
+            "fǎn",
+            "shì",
+            "bà",
+            "suì",
+            "bù",
+            "dé",
+            "lǚ"
+          ],
+          "punctuation": "。",
+          "scene": 3
+        },
+        {
+          "text": "人曰：「何不試之以足？」曰：「寧信度，無自信也。」",
+          "simplified": "人曰：「何不试之以足？」曰：「宁信度，无自信也。」",
+          "pinyin": [
+            "rén",
+            "yuē",
+            "hé",
+            "bù",
+            "shì",
+            "zhī",
+            "yǐ",
+            "zú",
+            "yuē",
+            "nìng",
+            "xìn",
+            "dù",
+            "wú",
+            "zì",
+            "xìn",
+            "yě"
+          ],
+          "punctuation": "",
+          "scene": 4
+        }
+      ],
+      "dictation": [
+        {
+          "char": "履",
+          "pinyin": "lǚ",
+          "word": "鞋履"
+        },
+        {
+          "char": "置",
+          "pinyin": "zhì",
+          "word": "購置"
+        },
+        {
+          "char": "度",
+          "pinyin": "dù",
+          "word": "尺度"
+        },
+        {
+          "char": "市",
+          "pinyin": "shì",
+          "word": "市集"
+        },
+        {
+          "char": "忘",
+          "pinyin": "wàng",
+          "word": "忘記"
+        },
+        {
+          "char": "持",
+          "pinyin": "chí",
+          "word": "堅持"
+        },
+        {
+          "char": "罷",
+          "pinyin": "bà",
+          "word": "罷休"
+        },
+        {
+          "char": "寧",
+          "pinyin": "nìng",
+          "word": "寧可"
+        },
+        {
+          "char": "試",
+          "pinyin": "shì",
+          "word": "試穿"
+        }
+      ],
+      "suggestions": [
+        "鄭人為甚麼不用自己的腳試鞋？",
+        "「度其足」和「持度」的「度」，為甚麼讀音不同？",
+        "您為甚麼喜歡用寓言來講道理？"
+      ],
+      "phonics": [
+        {
+          "id": "zheng-ren-mai-lu-duo",
+          "label": "一四聲/二三聲",
+          "prompt": "「先自度其足」的「度」應讀哪一個音？",
+          "options": [
+            "duó",
+            "dù",
+            "duò"
+          ],
+          "answer": 0,
+          "explanation": "「先自度其足」是先量度自己的腳，「度」是動詞，讀第二聲 duó；表示量好的尺寸時才讀 dù。",
+          "audio": {
+            "char": "度",
+            "pinyin": "duó"
+          }
+        },
+        {
+          "id": "zheng-ren-mai-lu-du",
+          "label": "一四聲/二三聲",
+          "prompt": "「吾忘持度」的「度」應讀哪一個音？",
+          "options": [
+            "duó",
+            "dú",
+            "dù"
+          ],
+          "answer": 2,
+          "explanation": "「吾忘持度」是我忘了帶量好的尺寸，「度」是名詞，讀第四聲 dù；作動詞「量度」解時才讀 duó。",
+          "audio": {
+            "char": "度",
+            "pinyin": "dù"
+          }
+        },
+        {
+          "id": "zheng-ren-mai-lu-bp",
+          "label": "b/p",
+          "prompt": "「罷」 和「怕」，哪一個聲母送氣較強？",
+          "options": [
+            "罷",
+            "兩個一樣",
+            "怕"
+          ],
+          "answer": 2,
+          "explanation": "p 是送氣音，氣流較強；b 是不送氣音。「市罷」的「罷」讀 bà，拓展字「怕」讀 pà。",
+          "audio": {
+            "char": "罷",
+            "pinyin": "bà",
+            "text": "罷，怕。",
+            "parts": [
+              {
+                "char": "罷",
+                "pinyin": "bà"
+              },
+              {
+                "char": "怕",
+                "pinyin": "pà"
+              }
+            ]
+          }
+        },
+        {
+          "id": "zheng-ren-mai-lu-dt",
+          "label": "d/t",
+          "prompt": "「得」 的聲母是哪一個？",
+          "options": [
+            "t",
+            "d",
+            "n"
+          ],
+          "answer": 1,
+          "explanation": "dé 的聲母是 d；d 不送氣，t 送氣。「已得履」是已經挑到了鞋子。",
+          "audio": {
+            "char": "得",
+            "pinyin": "dé"
+          }
+        },
+        {
+          "id": "zheng-ren-mai-lu-nl",
+          "label": "n/l",
+          "prompt": "「履」 的聲母是哪一個？",
+          "options": [
+            "n",
+            "l",
+            "r"
+          ],
+          "answer": 1,
+          "explanation": "lǚ 的聲母是邊音 l，氣流從舌頭兩側通過；韻母是 ü，嘴唇要圓起來。",
+          "audio": {
+            "char": "履",
+            "pinyin": "lǚ"
+          }
+        },
+        {
+          "id": "zheng-ren-mai-lu-g",
+          "label": "g/k/h",
+          "prompt": "「歸」 的聲母是哪一個？",
+          "options": [
+            "g",
+            "k",
+            "h"
+          ],
+          "answer": 0,
+          "explanation": "guī 的聲母是 g，不送氣；韻母 uei 跟聲母相拼時寫成 ui。「反歸」就是返回家中。",
+          "audio": {
+            "char": "歸",
+            "pinyin": "guī"
+          }
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "slug": "ke-zhi",
+      "title": "客至",
+      "animation": {
+        "caption": "跟着杜甫掃花徑、開蓬門，迎接來訪的崔明府"
+      },
+      "author": "杜甫",
+      "dynasty": "唐",
+      "grade": 6,
+      "preview": true,
+      "explore": false,
+      "description": "崔明府來訪草堂，杜甫喜出望外，掃徑開門、以家常酒菜款待，還隔籬邀鄰翁同飲。",
+      "authorBio": "杜甫是唐代詩人，字子美，後世尊稱為「詩聖」；作品反映唐代由盛轉衰的社會面貌，被稱為「詩史」。他曾在成都浣花溪畔築草堂居住。",
+      "theme": "待客與情誼",
+      "lines": [
+        {
+          "text": "舍南舍北皆春水，但見群鷗日日來",
+          "simplified": "舍南舍北皆春水，但见群鸥日日来",
+          "pinyin": [
+            "shè",
+            "nán",
+            "shè",
+            "běi",
+            "jiē",
+            "chūn",
+            "shuǐ",
+            "dàn",
+            "jiàn",
+            "qún",
+            "ōu",
+            "rì",
+            "rì",
+            "lái"
+          ],
+          "punctuation": "。",
+          "scene": 1
+        },
+        {
+          "text": "花徑不曾緣客掃，蓬門今始為君開",
+          "simplified": "花径不曾缘客扫，蓬门今始为君开",
+          "pinyin": [
+            "huā",
+            "jìng",
+            "bù",
+            "céng",
+            "yuán",
+            "kè",
+            "sǎo",
+            "péng",
+            "mén",
+            "jīn",
+            "shǐ",
+            "wèi",
+            "jūn",
+            "kāi"
+          ],
+          "punctuation": "。",
+          "scene": 2
+        },
+        {
+          "text": "盤飧市遠無兼味，樽酒家貧只舊醅",
+          "simplified": "盘飧市远无兼味，樽酒家贫只旧醅",
+          "pinyin": [
+            "pán",
+            "sūn",
+            "shì",
+            "yuǎn",
+            "wú",
+            "jiān",
+            "wèi",
+            "zūn",
+            "jiǔ",
+            "jiā",
+            "pín",
+            "zhǐ",
+            "jiù",
+            "pēi"
+          ],
+          "punctuation": "。",
+          "scene": 3
+        },
+        {
+          "text": "肯與鄰翁相對飲，隔籬呼取盡餘杯",
+          "simplified": "肯与邻翁相对饮，隔篱呼取尽余杯",
+          "pinyin": [
+            "kěn",
+            "yǔ",
+            "lín",
+            "wēng",
+            "xiāng",
+            "duì",
+            "yǐn",
+            "gé",
+            "lí",
+            "hū",
+            "qǔ",
+            "jìn",
+            "yú",
+            "bēi"
+          ],
+          "punctuation": "。",
+          "scene": 4
+        }
+      ],
+      "dictation": [
+        {
+          "char": "鷗",
+          "pinyin": "ōu",
+          "word": "海鷗"
+        },
+        {
+          "char": "徑",
+          "pinyin": "jìng",
+          "word": "花徑"
+        },
+        {
+          "char": "曾",
+          "pinyin": "céng",
+          "word": "曾經"
+        },
+        {
+          "char": "掃",
+          "pinyin": "sǎo",
+          "word": "打掃"
+        },
+        {
+          "char": "貧",
+          "pinyin": "pín",
+          "word": "貧窮"
+        },
+        {
+          "char": "舊",
+          "pinyin": "jiù",
+          "word": "新舊"
+        },
+        {
+          "char": "鄰",
+          "pinyin": "lín",
+          "word": "鄰居"
+        },
+        {
+          "char": "籬",
+          "pinyin": "lí",
+          "word": "籬笆"
+        },
+        {
+          "char": "杯",
+          "pinyin": "bēi",
+          "word": "酒杯"
+        }
+      ],
+      "suggestions": [
+        "「花徑不曾緣客掃」是甚麼意思？",
+        "家裏只有一樣菜和舊酒，您為甚麼直接說出來？",
+        "您為甚麼要隔着籬笆請鄰居老翁來？"
+      ],
+      "phonics": [
+        {
+          "id": "ke-zhi-z",
+          "label": "j/z/zh",
+          "prompt": "「樽酒」的「樽」，聲母是哪一個？",
+          "options": [
+            "zh",
+            "j",
+            "z"
+          ],
+          "answer": 2,
+          "explanation": "zūn 的聲母是平舌音 z，舌尖靠前；不要讀成翹舌音 zh 或舌面音 j。",
+          "audio": {
+            "char": "樽",
+            "pinyin": "zūn"
+          }
+        },
+        {
+          "id": "ke-zhi-c",
+          "label": "q/c/ch",
+          "prompt": "「不曾」的「曾」，聲母是哪一個？",
+          "options": [
+            "ch",
+            "c",
+            "q"
+          ],
+          "answer": 1,
+          "explanation": "「不曾」是從來沒有，「曾」讀 céng，聲母是平舌音 c；「曾祖」的「曾」才讀 zēng。",
+          "audio": {
+            "char": "曾",
+            "pinyin": "céng"
+          }
+        },
+        {
+          "id": "ke-zhi-sh",
+          "label": "x/s/sh",
+          "prompt": "「舍南舍北」的「舍」，聲母是哪一個？",
+          "options": [
+            "sh",
+            "s",
+            "x"
+          ],
+          "answer": 0,
+          "explanation": "「舍」在這裏指房屋，讀 shè，聲母是翹舌音 sh，舌尖輕輕翹起。",
+          "audio": {
+            "char": "舍",
+            "pinyin": "shè"
+          }
+        },
+        {
+          "id": "ke-zhi-an",
+          "label": "an/ang",
+          "prompt": "「盤」 的韻母是哪一個？",
+          "options": [
+            "ang",
+            "an",
+            "en"
+          ],
+          "answer": 1,
+          "explanation": "pán 的韻母是前鼻韻母 an，收尾時舌尖抵住上齒齦；「旁」páng 的韻母才是 ang。",
+          "audio": {
+            "char": "盤",
+            "pinyin": "pán"
+          }
+        },
+        {
+          "id": "ke-zhi-jun",
+          "label": "j/z/zh",
+          "prompt": "「君」的正確拼音是哪一個？",
+          "options": [
+            "jūn",
+            "zūn",
+            "zhūn"
+          ],
+          "answer": 0,
+          "explanation": "「為君開」的「君」讀 jūn，聲母是 j；韻母 ün 跟 j 相拼時省略 ü 上的兩點。zūn 是「樽」的讀音。",
+          "audio": {
+            "char": "君",
+            "pinyin": "jūn"
+          }
+        },
+        {
+          "id": "ke-zhi-s",
+          "label": "x/s/sh",
+          "prompt": "「掃」 的聲母是哪一個？",
+          "options": [
+            "x",
+            "s",
+            "sh"
+          ],
+          "answer": 1,
+          "explanation": "sǎo 的聲母是平舌音 s；「少」shǎo 的聲母才是翹舌音 sh。",
+          "audio": {
+            "char": "掃",
+            "pinyin": "sǎo"
+          }
+        }
+      ]
+    }
+  ]
+}

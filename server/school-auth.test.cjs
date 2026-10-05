@@ -157,6 +157,29 @@ test('learning capability comes only from stored identity, with teacher/test acc
  assert.equal(auth.publicActor({...accounts[0],researchEnabled:false}).researchEnabled,true);
 });
 
+test('poems 7-12 are offered and accepted only for the two preview teacher accounts', async () => {
+  const f = fixture(), directory = f.records.get('directory/current').value;
+  // test0 pupil, test1 all-grades test pupil renamed jasper (a pupil may not unlock them), test2 teacher molly.
+  Object.assign(directory.accounts[1], { login: 'jasper', isTest: true, learningScope: 'all-grades' });
+  directory.accounts[2].login = 'molly'; directory.sha256 = auth.directoryHash(directory.accounts); f.service.clearCache();
+  const preview = [7, 8, 9, 10, 11, 12];
+  const molly = await login(f, { login: 'MOLLY ', password: 'test-password-2' });
+  assert.equal(molly.state.user.previewPoems, true);
+  const sessionActor = await f.service.requireActor(request({ method: 'GET', cookie: molly.cookie }));
+  assert.equal(sessionActor.previewPoems, true);
+  assert.deepEqual(auth.allowedPoemIds(sessionActor), [1, 2, 3, 4, 5, 6, ...preview]);
+  for (const id of preview) assert.equal(auth.assertPoemAccess(sessionActor, id).id, id);
+  const testPupil = await login(f, { login: 'jasper', password: 'test-password-1' });
+  const pupil = await login(f);
+  const otherTeacher = auth.publicActor({ ...directory.accounts[2], login: 'teacher2' });
+  for (const actor of [testPupil.state.user, pupil.state.user, otherTeacher]) {
+    assert.equal(actor.previewPoems, false);
+    assert.equal(auth.allowedPoemIds(actor).some(id => id > 6), false);
+    for (const id of preview) assert.throws(() => auth.assertPoemAccess(actor, id), e => e.status === 422 && e.code === 'POEM_GRADE_FORBIDDEN');
+  }
+  assert.throws(() => auth.assertPoemAccess(sessionActor, 13), e => e.status === 400);
+});
+
 test('unknown and wrong passwords fail identically, including disabled accounts', async () => {
   const f = fixture();
   for (const options of [{ login: 'absent' }, { password: 'wrong' }]) {

@@ -12,15 +12,20 @@ its own centre line, and mirrors or turns a dot about its own centre.
 Everything else is left as it was. Each rewritten file carries a notice of
 the change, as the Arphic Public License asks.
 
+Eleven more followed on 2026-10-05: 花 萬 梅 船 舊 鄰 雪 含 罷 敢 籬. Besides
+the edits above, 敢 and 籬 cut a stroke at its corner (橫折 as 橫、豎; 撇折
+in 厶 as 撇、提), and 罷 turns the 撇 that starts each 匕 into a 提.
+
 The source must be the unmodified files (hanzi-writer-data 2.0 on npm, or
 git show 759a572:maanshan/vendor/hanzi-data/<hex>.json); a checksum stops the
-script from converting a converted file a second time.
+script from converting a converted file a second time. Name characters after
+the options to convert only those.
 
-    python scripts/build-hk-stroke-order.py --source <original files> --destination maanshan/vendor/hanzi-data
+    python scripts/build-hk-stroke-order.py --source <original files> --destination maanshan/vendor/hanzi-data [characters]
 """
 import argparse, hashlib, json, math, pathlib, re
 from shapely.geometry import Polygon, LineString, Point, box
-from shapely.affinity import scale as shp_scale
+from shapely.affinity import rotate as shp_rotate, scale as shp_scale
 from shapely.ops import split, unary_union
 
 # order: new position -> original stroke index; 'a'/'b' name the two parts of a cut stroke.
@@ -43,13 +48,32 @@ EDITS = {
     '洲': {'dots': {3: ('mirror', -30)}},
     '嶺': {'dots': {5: ('rotate', 10)}},
     '低': {'dots': {6: ('rotate', 5)}},
+    '花': {'gap': 0, 'order': ['0a', 1, '0b', 2, 3, 4, 5, 6]},
+    # 艹 already in four strokes, but 豎、橫 each time; Hong Kong 橫、豎. The top of 舊 is 橫、豎、豎、橫.
+    '萬': {'order': [1, 0, 3, 2] + list(range(4, 13))},
+    '舊': {'order': [1, 0] + list(range(2, 18))},
+    # 母: both dots before the long horizontal; 舟 as in 舟.
+    '梅': {'order': list(range(9)) + [10, 9]},
+    '船': {'order': [0, 1, 2, 3, 5, 4] + list(range(6, 11))},
+    '鄰': {'turn': 12, 'order': list(range(12)) + ['12a', '12b', 13]},
+    # corner: cut at the sharpest bend of the centre line; 敢 starts 橫、豎, 厶 in 籬 is 撇、提、點.
+    '敢': {'corner': 0, 'order': ['0a', '0b'] + list(range(1, 11))},
+    '籬': {'corner': 14, 'order': list(range(14)) + ['14a', '14b'] + list(range(15, 24))},
+    '雪': {'dots': {5: ('mirror', 25), 6: ('mirror', -140)}},
+    '含': {'dots': {2: ('rotate', 10)}},
+    # turned: like dots, for the 撇 that Hong Kong writes as 提 at the top of each 匕 in 能.
+    '罷': {'turned': {11: ('rotate', 10), 13: ('rotate', 10)}},
 }
 # sha256 (first 16 hex) of the original files as compact JSON with sorted keys.
 ORIGINAL = {'情': '307eb32919cdd1ef', '惜': '58ac55615318f3b7', '舟': 'f26cbefda2177d40', '重': '77aad250a1d567a1',
             '荷': '4ad1c5d77c5521ba', '送': 'b90e8660f5134ee8', '遙': '628fb3c48e934625', '遠': '1f01078f667dee7c',
             '還': '2498e61b038dd71e', '隔': 'ba8a5d3c08b5201a', '霑': '039200e73329a2ca', '洲': 'f0a9920e3863ada7',
-            '嶺': 'f50a7d976c77752d', '低': '9347e6cbd4a30761'}
-CHANGED_ON = '2026-09-29'
+            '嶺': 'f50a7d976c77752d', '低': '9347e6cbd4a30761',
+            '花': '49c54257e567f152', '萬': '5e6e0dbef0264270', '舊': '5f7ac1674059785d', '梅': '67341b86539b9410',
+            '船': 'd740b970e57ebabf', '鄰': '0a609080aad9de02', '敢': 'b07018977c89474a', '籬': '486abf2ebe675738',
+            '雪': '31f36fd3e5407f3d', '含': '42f8db00abe2bf6a', '罷': '6cbf76dbe4813016'}
+CHANGED_ON = {ch: '2026-09-29' for ch in '情惜舟重荷送遙遠還隔霑洲嶺低'}
+CHANGED_ON.update({ch: '2026-10-05' for ch in '花萬舊梅船鄰敢籬雪含罷'})
 
 
 def checksum(data):
@@ -58,14 +82,17 @@ def checksum(data):
 
 def notice(ch):
     spec, done = EDITS[ch], []
-    if 'gap' in spec or 'turn' in spec:
+    if 'gap' in spec or 'turn' in spec or 'corner' in spec:
         done.append(f"original stroke {int(str(next(k for k in spec['order'] if isinstance(k, str)))[:-1]) + 1} cut in two")
     if 'dots' in spec:
         many = 's' if len(spec['dots']) > 1 else ''
         done.append(f"dot{many} at stroke{many} " + ', '.join(str(i + 1) for i in spec['dots']) + ' turned')
+    if 'turned' in spec:
+        many = 's' if len(spec['turned']) > 1 else ''
+        done.append(f"stroke{many} " + ', '.join(str(i + 1) for i in spec['turned']) + ' turned')
     if 'order' in spec and [int(str(k).rstrip('ab')) for k in spec['order']] != sorted(int(str(k).rstrip('ab')) for k in spec['order']):
         done.append('strokes reordered')
-    return (f"Modified {CHANGED_ON} from Hanzi Writer Data 2.0 (Make Me a Hanzi, Arphic Public License) for Hong Kong "
+    return (f"Modified {CHANGED_ON[ch]} from Hanzi Writer Data 2.0 (Make Me a Hanzi, Arphic Public License) for Hong Kong "
             f"stroke order: {'; '.join(done)}. See scripts/build-hk-stroke-order.py.")
 
 
@@ -171,6 +198,40 @@ def split_at_turn(outline, median):
     return (path_of(a2), ma), (path_of(b2), mb), {'cutY': round(y), 'width': round(w)}
 
 
+def split_at_corner(outline, median):
+    """Cut a stroke at the sharpest bend of its centre line (the corner of 橫折 or 撇折), along the
+    line that halves the corner. Both parts keep a shallow rounded end that overlaps the other."""
+    first, last = median[0], median[-1]
+
+    def bend(j):
+        a = math.atan2(median[j][1] - first[1], median[j][0] - first[0])
+        b = math.atan2(last[1] - median[j][1], last[0] - median[j][0])
+        return abs((math.degrees(b - a) + 180) % 360 - 180)
+    # leave out the small hooks within a stroke's width of either end
+    inner = [j for j in range(1, len(median) - 1) if math.dist(median[j], first) > 50 and math.dist(median[j], last) > 50]
+    c = median[max(inner, key=bend)]
+    unit = lambda x, y: (x / math.hypot(x, y), y / math.hypot(x, y))
+    u = unit(first[0] - c[0], first[1] - c[1]); v = unit(last[0] - c[0], last[1] - c[1])
+    d = unit(u[0] + v[0], u[1] + v[1])
+    at = lambda t: (c[0] + d[0] * t, c[1] + d[1] * t)
+    poly = flatten(outline)
+    probe = LineString([at(-150), at(150)]).intersection(poly)
+    segs = [probe] if probe.geom_type == 'LineString' else list(probe.geoms)
+    seg = min(segs, key=lambda s: s.distance(Point(c)))
+    t1, t2 = sorted((q[0] - c[0]) * d[0] + (q[1] - c[1]) * d[1] for q in seg.coords)
+    parts = list(split(poly, LineString([at(t1 - 1), at(t2 + 1)])).geoms)
+    assert len(parts) == 2, ('cut did not give two parts', len(parts))
+    start = Point(first)
+    a = min(parts, key=lambda g: g.distance(start)); b = parts[1] if parts[0] is a else parts[0]
+    w = t2 - t1; depth = min(12.0, w * 0.28); m = at((t1 + t2) / 2)
+    cap = shp_rotate(ellipse(m[0], m[1], w * 0.62, depth), math.degrees(math.atan2(d[1], d[0])), origin=m).intersection(poly)
+    a2 = unary_union([a, cap.intersection(b)]); b2 = unary_union([b, cap.intersection(a)])
+    head, p, tail = cut_median(median, LineString([at(t1 - 5), at(t2 + 5)]))
+    ma = polyline(head + [p, along(head[-1], p, depth * 0.6)])
+    mb = polyline([along(tail[0], p, depth * 0.6), p] + tail)
+    return (path_of(a2), ma), (path_of(b2), mb), {'corner': rint(c), 'width': round(w)}
+
+
 def split_with_gap(outline, median, left_x, right_x, gap=30):
     """Break a horizontal in two between the two verticals (艹 as 十十), rounding both new ends."""
     poly = flatten(outline)
@@ -232,8 +293,10 @@ def convert(ch, data):
         i = spec['gap']; hy = sum(p[1] for p in medians[i]) / len(medians[i])
         lx, rx = vertical_x_at(medians[1], hy), vertical_x_at(medians[2], hy)
         a, b, info = split_with_gap(strokes[i], medians[i], lx, rx); parts[f'{i}a'], parts[f'{i}b'] = a, b
+    if 'corner' in spec:
+        i = spec['corner']; a, b, info = split_at_corner(strokes[i], medians[i]); parts[f'{i}a'], parts[f'{i}b'] = a, b
     strokes, medians = list(strokes), list(medians)
-    for i, (kind, target) in spec.get('dots', {}).items():
+    for i, (kind, target) in {**spec.get('dots', {}), **spec.get('turned', {})}.items():
         strokes[i], medians[i] = turn_dot(strokes[i], medians[i], kind, target)
     new_s, new_m, origin = [], [], []
     for key in spec.get('order', range(len(strokes))):
@@ -254,9 +317,11 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('--source', type=pathlib.Path, required=True, help='directory with the original Make Me a Hanzi files')
     ap.add_argument('--destination', type=pathlib.Path, required=True)
+    ap.add_argument('characters', nargs='?', default=''.join(EDITS), help='convert only these (default: all)')
     args = ap.parse_args()
+    assert set(args.characters) <= set(EDITS), ('no edit for', set(args.characters) - set(EDITS))
     report = {}
-    for ch in EDITS:
+    for ch in args.characters:
         name = format(ord(ch), 'x') + '.json'
         data = json.loads((args.source / name).read_text(encoding='utf-8'))
         assert checksum(data) == ORIGINAL[ch], (ch, 'expected the unmodified original file')

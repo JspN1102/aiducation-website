@@ -70,15 +70,23 @@ function validateDirectory(data) {
 }
 function publicActor(account) {
   return {...Object.fromEntries(['id', 'researchId', 'role', 'login', 'displayName', 'grade', 'cls', 'classNo'].map(key => [key, account[key]])),
-    isTest: account.isTest === true, learningScope: allGrades(account) ? 'all-grades' : 'own-grade', researchEnabled: researchEligible(account)};
+    isTest: account.isTest === true, learningScope: allGrades(account) ? 'all-grades' : 'own-grade', researchEnabled: researchEligible(account),
+    previewPoems: previewPoems(account)};
 }
 function allGrades(actor) { return actor?.role === 'teacher' || actor?.role === 'student' && actor.isTest === true && actor.learningScope === 'all-grades'; }
 function researchEligible(actor) { return actor?.role === 'student' && actor.isTest !== true; }
-function allowedPoemIds(actor) { return require('../../maanshan/poems.json').poems.filter(poem => allGrades(actor) || actor?.role === 'student' && poem.grade === actor.grade).map(poem => poem.id); }
+// The second set of poems (poems-preview.json) is still being checked by these
+// two teachers. Nobody else is offered them or may practise them.
+const PREVIEW_LOGINS = new Set(['jasper', 'molly']);
+function previewPoems(actor) { return actor?.role === 'teacher' && PREVIEW_LOGINS.has(actor.login); }
+function poemVisible(actor, poem) { return (!poem.preview || previewPoems(actor)) && (allGrades(actor) || actor?.role === 'student' && poem.grade === actor.grade); }
+function allowedPoemIds(actor) { return require('./poems.js').catalog.filter(poem => poemVisible(actor, poem)).map(poem => poem.id); }
 function assertPoemAccess(actor, poemId) {
   const poem = require('./poems.js').getPoem(poemId, null);
   if (!poem) fail(400, 'INVALID_LEARNING_CONTEXT');
   if (!['student','teacher'].includes(actor?.role)) fail(403, 'ROLE_FORBIDDEN');
+  // Same code as a wrong grade, so queued saves are dropped rather than retried.
+  if (poem.preview && !previewPoems(actor)) fail(422, 'POEM_GRADE_FORBIDDEN');
   if (!allGrades(actor) && poem.grade !== actor.grade) fail(422, 'POEM_GRADE_FORBIDDEN');
   return poem;
 }
@@ -419,5 +427,5 @@ function sendError(res, error) {
 }
 const singleton = createAuth();
 module.exports = { NAMESPACE, COOKIE, SESSION_MS, TERMS_VERSION, FORMAT, SCHEMA, AuthError, Conflict, MAX_OBJECT,
-  hashPassword, verifyPassword, normalizeLogin, validateDirectory, directoryHash, validAccount, publicActor, allGrades, researchEligible, allowedPoemIds, assertPoemAccess,
+  hashPassword, verifyPassword, normalizeLogin, validateDirectory, directoryHash, validAccount, publicActor, allGrades, researchEligible, previewPoems, allowedPoemIds, assertPoemAccess,
   createBlobStore, createPostgresStore, getStore, createAuth, sendError, ...singleton };

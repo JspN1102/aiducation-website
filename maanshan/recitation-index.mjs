@@ -1,6 +1,9 @@
 export const EDB_RECITATIONS = [
   {
+    "poemId": 1,
     "grade": 1,
+    "folder": "edb-20260921",
+    "prefix": "grade1",
     "title": "詠鵝",
     "author": "駱賓王",
     "lineCount": 4,
@@ -16,7 +19,10 @@ export const EDB_RECITATIONS = [
     }
   },
   {
+    "poemId": 2,
     "grade": 2,
+    "folder": "edb-20260921",
+    "prefix": "grade2",
     "title": "贈汪倫",
     "author": "李白",
     "lineCount": 4,
@@ -31,7 +37,10 @@ export const EDB_RECITATIONS = [
     }
   },
   {
+    "poemId": 3,
     "grade": 3,
+    "folder": "edb-20260921",
+    "prefix": "grade3",
     "title": "題西林壁",
     "author": "蘇軾",
     "lineCount": 4,
@@ -47,7 +56,10 @@ export const EDB_RECITATIONS = [
     }
   },
   {
+    "poemId": 4,
     "grade": 4,
+    "folder": "edb-20260921",
+    "prefix": "grade4",
     "title": "泊船瓜洲",
     "author": "王安石",
     "lineCount": 4,
@@ -63,7 +75,10 @@ export const EDB_RECITATIONS = [
     }
   },
   {
+    "poemId": 5,
     "grade": 5,
+    "folder": "edb-20260921",
+    "prefix": "grade5",
     "title": "歸園田居",
     "author": "陶潛",
     "lineCount": 4,
@@ -94,7 +109,10 @@ export const EDB_RECITATIONS = [
     }
   },
   {
+    "poemId": 6,
     "grade": 6,
+    "folder": "edb-20260921",
+    "prefix": "grade6",
     "title": "初春小雨",
     "author": "韓愈",
     "lineCount": 4,
@@ -107,6 +125,136 @@ export const EDB_RECITATIONS = [
       "最是一年春好处": "grade6-line3.mp3",
       "絕勝煙柳滿皇都": "grade6-line4.mp3",
       "绝胜烟柳满皇都": "grade6-line4.mp3"
+    }
+  },
+  {
+    "poemId": 7,
+    "grade": 1,
+    "folder": "round2-20261005",
+    "prefix": "p7",
+    "title": "詠雪",
+    "author": "鄭燮",
+    "lineCount": 4,
+    "phrases": {
+      "一片兩片三四片": "p7-line1.mp3",
+      "一片两片三四片": "p7-line1.mp3",
+      "五六七八九十片": "p7-line2.mp3",
+      "千片萬片無數片": "p7-line3.mp3",
+      "千片万片无数片": "p7-line3.mp3",
+      "飛入梅花都不見": "p7-line4.mp3",
+      "飞入梅花都不见": "p7-line4.mp3"
+    }
+  },
+  {
+    "poemId": 8,
+    "grade": 2,
+    "folder": "round2-20261005",
+    "prefix": "p8",
+    "title": "畫雞",
+    "author": "唐寅",
+    "lineCount": 4,
+    "phrases": {
+      "頭上紅冠不用裁": "p8-line1.mp3",
+      "头上红冠不用裁": "p8-line1.mp3",
+      "滿身雪白走將來": "p8-line2.mp3",
+      "满身雪白走将来": "p8-line2.mp3",
+      "平生不敢輕言語": "p8-line3.mp3",
+      "平生不敢轻言语": "p8-line3.mp3",
+      "一叫千門萬戶開": "p8-line4.mp3",
+      "一叫千门万户开": "p8-line4.mp3"
+    }
+  },
+  {
+    "poemId": 9,
+    "grade": 3,
+    "folder": "round2-20261005",
+    "prefix": "p9",
+    "title": "七步詩",
+    "author": "曹植",
+    "lineCount": 3,
+    "phrases": {
+      "煮豆持作羹，漉豉以為汁": "p9-line1.mp3",
+      "煮豆持作羹，漉豉以为汁": "p9-line1.mp3",
+      "煮豆持作羹": "p9-verse1.mp3",
+      "漉豉以為汁": "p9-verse2.mp3",
+      "漉豉以为汁": "p9-verse2.mp3",
+      "萁在釜下燃，豆在釜中泣": "p9-line2.mp3",
+      "萁在釜下燃": "p9-verse3.mp3",
+      "豆在釜中泣": "p9-verse4.mp3",
+      "本是同根生，相煎何太急": "p9-line3.mp3",
+      "本是同根生": "p9-verse5.mp3",
+      "相煎何太急": "p9-verse6.mp3"
+    }
+  },
+  {
+    "poemId": 10,
+    "grade": 4,
+    "folder": "round2-20261005",
+    "prefix": "p10",
+    "title": "絕句",
+    "author": "杜甫",
+    "lineCount": 4,
+    "phrases": {
+      "兩個黃鸝鳴翠柳": "p10-line1.mp3",
+      "两个黄鹂鸣翠柳": "p10-line1.mp3",
+      "一行白鷺上青天": "p10-line2.mp3",
+      "一行白鹭上青天": "p10-line2.mp3",
+      "窗含西嶺千秋雪": "p10-line3.mp3",
+      "窗含西岭千秋雪": "p10-line3.mp3",
+      "門泊東吳萬里船": "p10-line4.mp3",
+      "门泊东吴万里船": "p10-line4.mp3"
+    }
+  },
+  {
+    "poemId": 11,
+    "grade": 5,
+    "folder": "round2-20261005",
+    "prefix": "p11",
+    "title": "鄭人買履",
+    "author": "韓非",
+    "lineCount": 4,
+    "phrases": {
+      "鄭人有且置履者，先自度其足而置之其坐": "p11-line1.mp3",
+      "郑人有且置履者，先自度其足而置之其坐": "p11-line1.mp3",
+      "至之市，而忘操之，已得履，乃曰：「吾忘持度。」": "p11-line2.mp3",
+      "反歸取之，及反，市罷，遂不得履": "p11-line3.mp3",
+      "反归取之，及反，市罢，遂不得履": "p11-line3.mp3",
+      "人曰：「何不試之以足？」曰：「寧信度，無自信也。」": "p11-line4.mp3",
+      "人曰：「何不试之以足？」曰：「宁信度，无自信也。」": "p11-line4.mp3"
+    }
+  },
+  {
+    "poemId": 12,
+    "grade": 6,
+    "folder": "round2-20261005",
+    "prefix": "p12",
+    "title": "客至",
+    "author": "杜甫",
+    "lineCount": 4,
+    "phrases": {
+      "舍南舍北皆春水，但見群鷗日日來": "p12-line1.mp3",
+      "舍南舍北皆春水，但见群鸥日日来": "p12-line1.mp3",
+      "舍南舍北皆春水": "p12-verse1.mp3",
+      "但見群鷗日日來": "p12-verse2.mp3",
+      "但见群鸥日日来": "p12-verse2.mp3",
+      "花徑不曾緣客掃，蓬門今始為君開": "p12-line2.mp3",
+      "花径不曾缘客扫，蓬门今始为君开": "p12-line2.mp3",
+      "花徑不曾緣客掃": "p12-verse3.mp3",
+      "花径不曾缘客扫": "p12-verse3.mp3",
+      "蓬門今始為君開": "p12-verse4.mp3",
+      "蓬门今始为君开": "p12-verse4.mp3",
+      "盤飧市遠無兼味，樽酒家貧只舊醅": "p12-line3.mp3",
+      "盘飧市远无兼味，樽酒家贫只旧醅": "p12-line3.mp3",
+      "盤飧市遠無兼味": "p12-verse5.mp3",
+      "盘飧市远无兼味": "p12-verse5.mp3",
+      "樽酒家貧只舊醅": "p12-verse6.mp3",
+      "樽酒家贫只旧醅": "p12-verse6.mp3",
+      "肯與鄰翁相對飲，隔籬呼取盡餘杯": "p12-line4.mp3",
+      "肯与邻翁相对饮，隔篱呼取尽余杯": "p12-line4.mp3",
+      "肯與鄰翁相對飲": "p12-verse7.mp3",
+      "肯与邻翁相对饮": "p12-verse7.mp3",
+      "隔籬呼取盡餘杯": "p12-verse8.mp3",
+      "隔篱呼取尽余杯": "p12-verse8.mp3"
     }
   }
 ];

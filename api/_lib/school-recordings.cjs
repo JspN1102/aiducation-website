@@ -10,7 +10,7 @@ const MAX_WAV_BYTES = 44 + 32000 * 32;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 const SCHEMA = `CREATE TABLE IF NOT EXISTS school_recordings (
   actor_id varchar(30) NOT NULL, learning_epoch varchar(32) NOT NULL,
-  poem_id smallint NOT NULL CHECK(poem_id BETWEEN 1 AND 6),
+  poem_id smallint NOT NULL CHECK(poem_id BETWEEN 1 AND 12),
   line_index smallint NOT NULL CHECK(line_index BETWEEN 0 AND 7),
   recording_id uuid NOT NULL, recorded_at bigint NOT NULL,
   audio_gzip bytea NOT NULL CHECK(octet_length(audio_gzip) <= 1025000),

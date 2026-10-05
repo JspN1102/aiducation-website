@@ -1,9 +1,9 @@
-import {imageAsset} from './media-images.mjs?v=20260923-school23';
-import {CHALLENGE_SETS} from './challenge-data.mjs?v=20260921-school9';
-import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20260922-school22';
+import {imageAsset} from './media-images.mjs?v=20261005-school40';
+import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261005-school40';
+import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20261005-school40';
 import {mountChallengeWriting} from './challenge-writing.mjs?v=20260929-hk1';
 import {mountChallengeModel} from './challenge-model.mjs?v=20260923-school23';
-import {mountLivingField} from './living-field.mjs?v=20260923-school23';
+import {mountLivingField} from './living-field.mjs?v=20261005-school40';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const COMPACT_PROMPTS = {
@@ -121,7 +121,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const locked = !!answer;
     const active = () => !dead && epoch === gameEpoch && generation === renderGeneration;
     try {
-      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20260923-school23');
+      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20261005-school40');
       if (!active()) return;
       let completionReceived = false;
       const mounted = mountPoemGame(holder, {slug: poem.slug, initialState: state, readOnly: locked,
@@ -187,7 +187,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     if (answer?.response && item.type === 'sound') selected = answer.response;
     else if (answer?.response && item.type === 'scene-builder') density = {...answer.response};
     else if (answer?.response && item.type !== 'dictation') placements = {...answer.response};
-    startPage(`<section class="challenge-shell challenge-poem-${poem.grade} challenge-type-${item.type}">${header(item)}<div class="challenge-body">${item.type==='sound'?soundBody(item):item.type==='dictation'?writingBody(item):item.type==='microgame'?gameBody():handsBody(item)}</div><footer class="challenge-footer"><div class="challenge-feedback" role="status"></div><div class="challenge-footer-actions"><button class="challenge-text-button" data-ch="skip" ${answer||['dictation','sound'].includes(item.type)?'hidden':''}>跳過</button><button class="challenge-primary" data-ch="submit" disabled ${['dictation','microgame'].includes(item.type)?'hidden':''}>放好了</button><button class="challenge-primary" data-ch="next" hidden>下一題 <span aria-hidden="true">→</span></button></div></footer></section>`);
+    startPage(`<section class="challenge-shell challenge-poem-${poem.id} challenge-type-${item.type}">${header(item)}<div class="challenge-body">${item.type==='sound'?soundBody(item):item.type==='dictation'?writingBody(item):item.type==='microgame'?gameBody():handsBody(item)}</div><footer class="challenge-footer"><div class="challenge-feedback" role="status"></div><div class="challenge-footer-actions"><button class="challenge-text-button" data-ch="skip" ${answer||['dictation','sound'].includes(item.type)?'hidden':''}>跳過</button><button class="challenge-primary" data-ch="submit" disabled ${['dictation','microgame'].includes(item.type)?'hidden':''}>放好了</button><button class="challenge-primary" data-ch="next" hidden>下一題 <span aria-hidden="true">→</span></button></div></footer></section>`);
     if (item.type === 'microgame') loadGame();
     else if (item.type === 'dictation') {
       // Writing is local input. A slow, interrupted or unavailable audio
@@ -197,9 +197,10 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
       updateSound();
     } else if (item.type === 'scene-builder') updateField();
     else {
-      const poster = item.cards.find(c=>c.image)?.image || `media/exploration/${poem.slug}/scene.webp`;
-      if(poem.grade===1) q('[data-observation]').innerHTML=gooseHTML(item);
-      else if (poem.grade <= 3) q('[data-observation]').innerHTML=`<img class="challenge-observation-picture" src="${esc(makeURL(poster))}" alt="觀察畫面">`;
+      const poster = item.cards.find(c=>c.image)?.image || (poem.preview ? `media/${poem.slug}/poster.webp` : `media/exploration/${poem.slug}/scene.webp`);
+      if(poem.slug==='yong-e') q('[data-observation]').innerHTML=gooseHTML(item);
+      // Preview poems have no 3D models yet, so they show the picture at every grade.
+      else if (poem.grade <= 3 || poem.preview) q('[data-observation]').innerHTML=`<img class="challenge-observation-picture" src="${esc(makeURL(poster))}" alt="觀察畫面">`;
       else model = mountChallengeModel(q('[data-observation]'), {slug: poem.slug, poster: makeURL(poster),
         label: poem.grade === 3 ? '轉一轉山' : poem.grade === 6 ? '遠近看一看' : '走進畫面',
         controls: poem.grade===3 ? [{id:'side',label:'橫看'},{id:'front',label:'側看'}] : poem.grade===6 ? [{id:'far',label:'遠看'},{id:'near',label:'近看'}] : []});
@@ -277,7 +278,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
   }
   function updatePlacements() {
     const item=items[screen],answer=currentAnswer();
-    if(poem.grade===1 && q('[data-observation]'))q('[data-observation]').innerHTML=gooseHTML(item);
+    if(poem.slug==='yong-e' && q('[data-observation]'))q('[data-observation]').innerHTML=gooseHTML(item);
     container.querySelectorAll('[data-card]').forEach(button=>{
       button.disabled=!!answer;button.setAttribute('aria-pressed',String(button.dataset.card===selected));
       button.classList.toggle('is-placed',Object.values(placements).includes(button.dataset.card));
@@ -335,14 +336,14 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
       const answer=attempt.answers[i], number=attempt.mode==='review'?attempt.sourceAttempt.itemIds.indexOf(item.id)+1:i+1;
       const guided=answer.flow==='trace-dictation-v1',done=guided&&(answer.dictationCompleted||attempt.writingCorrections?.[item.id]?.status==='corrected');
       const focus=item.type==='dictation'?`${guided?'描紅與聽寫':'聽寫'}「${item.target.char}」`:item.type==='sound'?`${poem.grade===1?'聲調':poem.grade===2||poem.grade===4?'韻母':'聲母'}・${item.focus}`:item.type==='microgame'?item.title:KIND[item.type];
-      const detail=item.type==='dictation'?item.target.pinyin:item.type==='sound'?`${item.audio.char} ${item.audio.pinyin}`:{'yong-e':'白毛・紅掌・綠水','zeng-wang-lun':'乘舟・踏歌・送別','ti-xi-lin-bi':'橫看成嶺，側看成峯','bo-chuan-gua-zhou':'江水・春意・思鄉','gui-yuan-tian-ju':'草盛豆苗稀','zao-chun':'小・酥・色・是・勝｜x、s、sh'}[poem.slug];
+      const detail=item.type==='dictation'?item.target.pinyin:item.type==='sound'?`${item.audio.char} ${item.audio.pinyin}`:{'yong-e':'白毛・紅掌・綠水','zeng-wang-lun':'乘舟・踏歌・送別','ti-xi-lin-bi':'橫看成嶺，側看成峯','bo-chuan-gua-zhou':'江水・春意・思鄉','gui-yuan-tian-ju':'草盛豆苗稀','zao-chun':'小・酥・色・是・勝｜x、s、sh','yong-xue':'一片・千片・梅花','hua-ji':'紅冠・雪白・一叫','qi-bu-shi':'煮豆・燃萁・同根','jue-ju':'近景・中景・遠景','zheng-ren-mai-lu':'度足・忘度・試足','ke-zhi':'迎客・待客・呼鄰'}[poem.slug];
       return `<div class="challenge-result-row"><span class="challenge-result-number" aria-label="原第 ${number} 題">${number}</span><span class="challenge-result-knowledge">${esc(focus)}<small>${esc(detail)}</small></span><em class="${(guided?done:answer.correct)?'is-correct':'needs-practice'}">${guided?done?'已完成':'未完成':answer.correct?'答對':answer.status==='skipped'?'未作答':'答錯'}</em></div>`;
     }).join('');
     const guidedDone=answer=>answer.dictationCompleted||attempt.writingCorrections?.[answer.itemId]?.status==='corrected';
     const hasGuided=attempt.answers.some(answer=>answer.flow==='trace-dictation-v1');
     const allCorrect=attempt.answers.every(answer=>answer.flow==='trace-dictation-v1'?guidedDone(answer):answer.correct), pending=attempt.reviewPending?.length || 0;
     const completedN=attempt.answers.filter(answer=>answer.flow==='trace-dictation-v1'?guidedDone(answer):answer.status!=='skipped').length;
-    startPage(`<section class="challenge-shell challenge-results"><header class="challenge-results-heading"><img src="media/poetry-motifs/${['goose','boat','mountain','moon','sprout','swallow'][poem.grade-1]}.svg" alt="" width="72" height="72"><div><p class="challenge-eyebrow">${attempt.mode==='review'?'錯題複習成果':'小遊戲練習成果'}</p><h2>${hasGuided?'這一輪練習結束了！':allCorrect?pending?'這一組答對了！':'全部答對了！':'把小發現帶走。'}</h2><p class="challenge-result-detail">${hasGuided?`已完成 ${completedN} / ${items.length} 題。`:pending?`還有 ${pending} 道錯題，下次接着練。`:allCorrect?'每一題都完成得很好。':`答對 ${result.correct} / ${result.total} 題，再看看這些知識點。`}</p></div></header><div class="challenge-result-list" aria-label="每題結果與知識點">${entries}</div><div class="challenge-results-actions"><button class="challenge-primary" data-ch="new-round">再練五題 <span aria-hidden="true">→</span></button>${!allCorrect||pending?'<button class="challenge-secondary" data-ch="redo-wrong">錯題重做</button>':''}</div></section>`);
+    startPage(`<section class="challenge-shell challenge-results"><header class="challenge-results-heading"><img src="media/poetry-motifs/${['goose','boat','mountain','moon','sprout','swallow','snow','rooster','beans','oriole','shoe','cup'][poem.id-1]}.svg" alt="" width="72" height="72"><div><p class="challenge-eyebrow">${attempt.mode==='review'?'錯題複習成果':'小遊戲練習成果'}</p><h2>${hasGuided?'這一輪練習結束了！':allCorrect?pending?'這一組答對了！':'全部答對了！':'把小發現帶走。'}</h2><p class="challenge-result-detail">${hasGuided?`已完成 ${completedN} / ${items.length} 題。`:pending?`還有 ${pending} 道錯題，下次接着練。`:allCorrect?'每一題都完成得很好。':`答對 ${result.correct} / ${result.total} 題，再看看這些知識點。`}</p></div></header><div class="challenge-result-list" aria-label="每題結果與知識點">${entries}</div><div class="challenge-results-actions"><button class="challenge-primary" data-ch="new-round">再練五題 <span aria-hidden="true">→</span></button>${!allCorrect||pending?'<button class="challenge-secondary" data-ch="redo-wrong">錯題重做</button>':''}</div></section>`);
   }
   function restart(mode='standard') {flushDraft();attempt=newAttempt(set,{previous:attempt,mode});items=attemptItems(attempt,set);screen=0;audit('attempt_started',{metrics:{itemCount:items.length}});save();showQuestion();}
   function click(event) {

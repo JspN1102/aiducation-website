@@ -22,7 +22,7 @@ function validRecord(record) {
     typeof record.name === 'string' && record.name.length <= 64 &&
     Number.isInteger(record.grade) && record.grade >= 1 && record.grade <= 6 &&
     typeof record.cls === 'string' && /^[A-Z]$/.test(record.cls) &&
-    Number.isInteger(record.poem_id) && record.poem_id >= 1 && record.poem_id <= 6 &&
+    Number.isInteger(record.poem_id) && record.poem_id >= 1 && record.poem_id <= 12 &&
     SECTIONS.has(record.section) && !!record.payload && typeof record.payload === 'object' && !Array.isArray(record.payload) &&
     typeof record.sync_id === 'string' && record.sync_id.length > 0 && record.sync_id.length <= 64 &&
     typeof record.source_at === 'string' && Number.isFinite(Date.parse(record.source_at)) &&
@@ -123,7 +123,7 @@ function createStudentStore({ client = blob, now = Date.now } = {}) {
       if (!result || !Array.isArray(result.blobs)) throw new Error('Invalid student listing');
       for (const item of result.blobs) {
         if (typeof item.pathname !== 'string' || !item.pathname.startsWith(prefix) ||
-            !new RegExp(`^${NAMESPACE}/class/[1-6]/[A-Z]/poem/[1-6]/[a-f0-9]{64}/(?:reading|writing|report)\\.json$`).test(item.pathname) ||
+            !new RegExp(`^${NAMESPACE}/class/[1-6]/[A-Z]/poem/(?:[1-9]|1[0-2])/[a-f0-9]{64}/(?:reading|writing|report)\\.json$`).test(item.pathname) ||
             !Number.isFinite(item.size) || item.size < 1 || item.size > MAX_RECORD_BYTES || paths.has(item.pathname)) {
           throw new Error('Invalid student listing item');
         }
@@ -152,7 +152,7 @@ function createStudentStore({ client = blob, now = Date.now } = {}) {
 
   async function readClass(grade, cls, poemId) {
     if (!Number.isInteger(grade) || grade < 1 || grade > 6 || !/^[A-Z]$/.test(cls) ||
-        !Number.isInteger(poemId) || poemId < 1 || poemId > 6) throw new Error('Invalid class');
+        !Number.isInteger(poemId) || poemId < 1 || poemId > 12) throw new Error('Invalid class');
     const records = await readPrefix(classPrefix(grade, cls, poemId), {
       maxRecords: MAX_CLASS_RECORDS, maxBytes: MAX_CLASS_BYTES, timeoutMs: 11500
     });

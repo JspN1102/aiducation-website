@@ -32,8 +32,38 @@ test('boot and app share both public curriculum downloads', async () => {
     assert.equal(calls.length, 2);assert.strictEqual(boot[0], app[0]);assert.strictEqual(boot[1], app[1]);
     await loadCurriculum();assert.equal(calls.length, 2);
     assert(calls.some(url => url.endsWith('poems.json?v=20260919b')));
-    assert(calls.some(url => url.endsWith('pronunciation.json?v=20260919a')));
+    assert(calls.some(url => url.endsWith('pronunciation.json?v=20261005-school40')));
   } finally {globalThis.fetch = original;}
+});
+
+test('the preview poems load only on request and carry their scene pictures', async () => {
+  const original = globalThis.fetch, calls = [];
+  try {
+    globalThis.fetch = async url => {
+      calls.push(url);
+      return new Response(JSON.stringify(url.includes('poems-preview.json') ? {poems:[{id:7}]} : {'yong-xue':['scene']}));
+    };
+    const {loadCurriculum, loadPreviewCurriculum} = await import('../maanshan/curriculum-data.mjs?test=preview');
+    await loadCurriculum();
+    assert.equal(calls.some(url => url.includes('preview')), false);
+    assert.deepEqual(await loadPreviewCurriculum(), {poems:[{id:7}], scenePreviews:{'yong-xue':['scene']}});
+    assert(calls.some(url => url.endsWith('poems-preview.json?v=20261005-school40')));
+    assert(calls.some(url => url.endsWith('scene-previews-preview.json?v=20261005-school40')));
+  } finally {globalThis.fetch = original;}
+});
+
+test('the preview files describe poems 7-12 apart from the public curriculum', () => {
+  const read = name => JSON.parse(fs.readFileSync(new URL('../maanshan/' + name, import.meta.url), 'utf8'));
+  const {poems} = read('poems-preview.json'), scenes = read('scene-previews-preview.json');
+  assert.deepEqual(poems.map(poem => poem.id), [7, 8, 9, 10, 11, 12]);
+  assert.deepEqual(poems.map(poem => poem.grade), [1, 2, 3, 4, 5, 6]);
+  for (const poem of poems) {
+    assert.equal(poem.preview, true, poem.slug);
+    assert(poem.lines.length > 0 && poem.dictation.length > 0, poem.slug);
+    const pictures = Object.values(scenes[poem.slug] || {});
+    assert(pictures.length > 0 && pictures.every(src => src.startsWith('data:image/webp;base64,')), poem.slug + ' scene pictures');
+  }
+  assert.deepEqual(read('poems.json').poems.map(poem => poem.id), [1, 2, 3, 4, 5, 6]);
 });
 
 test('a failed resource retries without downloading successful content again', async () => {

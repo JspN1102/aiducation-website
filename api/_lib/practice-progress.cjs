@@ -1,5 +1,5 @@
 'use strict';
-const {poems}=require('../../maanshan/poems.json');
+const {catalog:poems}=require('./poems.js');
 let loaded;
 const modules=()=>loaded||(loaded=Promise.all([import('../../maanshan/challenge-state.mjs'),import('../../maanshan/challenge-data.mjs')]));
 

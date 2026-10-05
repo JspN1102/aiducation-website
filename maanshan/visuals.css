@@ -11,6 +11,12 @@
 .poem-color-4{--poem-color:#697a46;--poem-soft:#eff2e0;--poem-light:#fafbf0;--poem-mark:url('media/poetry-motifs/moon.svg')}
 .poem-color-5{--poem-color:#937128;--poem-soft:#f8f0da;--poem-light:#fdf9ee;--poem-mark:url('media/poetry-motifs/sprout.svg')}
 .poem-color-6{--poem-color:#79709a;--poem-soft:#f0edf7;--poem-light:#f9f6fc;--poem-mark:url('media/poetry-motifs/swallow.svg')}
+.poem-color-7{--poem-color:#4f6f8f;--poem-soft:#e8eef5;--poem-light:#f4f7fb;--poem-mark:url('media/poetry-motifs/snow.svg')}
+.poem-color-8{--poem-color:#a14a3c;--poem-soft:#f8e6e0;--poem-light:#fcf3ef;--poem-mark:url('media/poetry-motifs/rooster.svg')}
+.poem-color-9{--poem-color:#7d5a3c;--poem-soft:#f3e9de;--poem-light:#faf5ee;--poem-mark:url('media/poetry-motifs/beans.svg')}
+.poem-color-10{--poem-color:#2f7a86;--poem-soft:#e3f1f3;--poem-light:#f1f8f9;--poem-mark:url('media/poetry-motifs/oriole.svg')}
+.poem-color-11{--poem-color:#8b5e83;--poem-soft:#f4eaf2;--poem-light:#faf5f9;--poem-mark:url('media/poetry-motifs/shoe.svg')}
+.poem-color-12{--poem-color:#4f7a30;--poem-soft:#edf4e2;--poem-light:#f7fbf0;--poem-mark:url('media/poetry-motifs/cup.svg')}
 body{background:radial-gradient(ellipse at 6% 0%,#fff9e7 0,transparent 48%),radial-gradient(ellipse at 100% 80%,#edf3e97a,transparent 55%),#fbf9f1}
 .site-header{border-bottom-color:#e7e7db;background:#fffcf57d}
 .brand-mark{background:#fffef6;border-color:#bfd4c1;box-shadow:0 2px 5px #264e4410}.brand strong{color:#2d6054;letter-spacing:1.8px}.profile-button{color:#3a745f}

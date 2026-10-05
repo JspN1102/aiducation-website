@@ -2,6 +2,7 @@
 // Render only prompt/options/cards/slot labels before submission. Audio text, targets,
 // explanations and curriculum metadata must never become pre-answer captions or aria labels.
 import {DICTATION_BANK} from './challenge-dictation-bank.mjs?v=20260918c';
+import {PREVIEW_SETS} from './challenge-preview-sets.mjs?v=20261005-school40';
 export const CHALLENGE_VERSION = 2;
 
 const toneOptions = () => [
@@ -193,15 +194,17 @@ export const POEM_GAME_ITEMS = Object.freeze(Object.fromEntries([
 
 // Keep the original five IDs available for version-one saved attempts. New attempts
 // draw from bank and store their five selected IDs; set.items is never a live attempt.
-export const CHALLENGE_SETS = Object.freeze(Object.fromEntries(Object.entries(LEGACY_SETS).map(([slug, set]) => {
-  const additions = DICTATION_BANK[slug].filter(word => !set.items.some(item => item.type === 'dictation' && item.target.char === word.char)).map(word => ({
-    id: `g${set.grade}-d-${word.char.codePointAt(0).toString(16)}`, type: 'dictation',
+// Preview sets carry their own extra sounds and words; their ids start p<poem id>.
+export const CHALLENGE_SETS = Object.freeze(Object.fromEntries(Object.entries({...LEGACY_SETS, ...PREVIEW_SETS}).map(([slug, source]) => {
+  const {moreSounds = MORE_SOUNDS[slug], variedSounds = VARIED_SOUNDS[slug], dictationBank = DICTATION_BANK[slug], idPrefix = `g${source.grade}`, ...set} = source;
+  const additions = dictationBank.filter(word => !set.items.some(item => item.type === 'dictation' && item.target.char === word.char)).map(word => ({
+    id: `${idPrefix}-d-${word.char.codePointAt(0).toString(16)}`, type: 'dictation',
     prompt: '聽一聽，寫出指定的字。',
     audio: {text: `${word.word}，${word.word}的${word.char}。`, char: word.char, pinyin: word.pinyin},
     target: {char: word.char, pinyin: word.pinyin, accept: word.accept},
     explanation: `「${word.word}」的「${word.char}」。聽清讀音，再看看這個字怎樣寫。`
   }));
-  const bank = [...set.items, ...MORE_SOUNDS[slug], ...VARIED_SOUNDS[slug], ...additions, POEM_GAME_ITEMS[slug]].map(item => ({difficulty: 1, ...item}));
+  const bank = [...set.items, ...moreSounds, ...variedSounds, ...additions, ...(POEM_GAME_ITEMS[slug] ? [POEM_GAME_ITEMS[slug]] : [])].map(item => ({difficulty: 1, ...item}));
   const {sampled, notSampled, ...curriculum} = set.curriculum;
   return [slug, Object.freeze({...set, curriculum: {...curriculum, legacySampled: sampled, legacyNotSampled: notSampled,
     bankFocus: [...new Set(bank.filter(item => item.type === 'sound').map(item => item.focus))],

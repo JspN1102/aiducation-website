@@ -4,7 +4,7 @@ const MAX_AUDIO = 1365400;
 const DB_NAME = 'maanshan-private-recordings-v1';
 const slot = value => `${value.poemId}-${value.lineIndex}`;
 const newer = (a,b) => !b || a.recordedAt>b.recordedAt || a.recordedAt===b.recordedAt&&a.recordingId>b.recordingId;
-const valid = value => value && Number.isInteger(value.poemId)&&value.poemId>=1&&value.poemId<=6&&
+const valid = value => value && Number.isInteger(value.poemId)&&value.poemId>=1&&value.poemId<=12&&
   Number.isInteger(value.lineIndex)&&value.lineIndex>=0&&value.lineIndex<8&&
   typeof value.recordingId==='string'&&/^[a-f0-9-]{36}$/.test(value.recordingId)&&Number.isSafeInteger(value.recordedAt)&&
   (value.audioFormat===undefined||typeof value.audioFormat==='string'&&/^[a-z0-9]{2,5}$/.test(value.audioFormat));

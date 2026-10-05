@@ -3,8 +3,12 @@ export const VIDEO_ASSETS = Object.freeze({
   "/maanshan/media/bo-chuan-gua-zhou/animation-20260917.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/bo-chuan-gua-zhou/animation-20260917.mp4",
   "/maanshan/media/gui-yuan-tian-ju/animation-20260919b.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/gui-yuan-tian-ju/animation-20260919b.mp4",
   "/maanshan/media/guide/parent-guide-20261003.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/guide/parent-guide-20261003.mp4",
+  "/maanshan/media/hua-ji/animation-20261005.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/hua-ji/animation-20261005.mp4",
+  "/maanshan/media/jue-ju/animation-20261005.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/jue-ju/animation-20261005.mp4",
+  "/maanshan/media/qi-bu-shi/animation-20261005.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/qi-bu-shi/animation-20261005.mp4",
   "/maanshan/media/ti-xi-lin-bi/animation-20260917b.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/ti-xi-lin-bi/animation-20260917b.mp4",
   "/maanshan/media/yong-e/animation-20260918c.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/yong-e/animation-20260918c.mp4",
+  "/maanshan/media/yong-xue/animation-20261005.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/yong-xue/animation-20261005.mp4",
   "/maanshan/media/zao-chun/animation-20260917.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/zao-chun/animation-20260917.mp4",
   "/maanshan/media/zeng-wang-lun/animation-20260917.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/zeng-wang-lun/animation-20260917.mp4"
 });

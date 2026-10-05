@@ -16,9 +16,9 @@ function response(){const res=new EventEmitter();return Object.assign(res,{statu
   flushHeaders(){this.headersSent=true;},write(value){this.headersSent=true;this.chunks.push(value);return true;},end(value){if(value)this.write(value);this.writableEnded=true;this.emit('finish');this.emit('close');return this;},
   json(body){this.body=body;this.setHeader('Content-Type','application/json');return this.end(JSON.stringify(body));}});}
 
-test('all six poems expose three shared preset buttons and eighteen unique keys',async()=>{
-  const module=await catalogue();assert.equal(module.POET_PRESETS.length,18);assert.equal(new Set(module.POET_PRESETS.map(item=>item.id)).size,18);
-  for(let poemId=1;poemId<=6;poemId++){
+test('all twelve poems expose three shared preset buttons and thirty-six unique keys',async()=>{
+  const module=await catalogue();assert.equal(module.POET_PRESETS.length,36);assert.equal(new Set(module.POET_PRESETS.map(item=>item.id)).size,36);
+  for(let poemId=1;poemId<=12;poemId++){
     const poem=getPoem(poemId),questions=module.getPoetSuggestions(poem);assert.equal(questions.length,3);
     for(const question of questions){const preset=module.matchPoetPreset(poemId,question);assert(preset);assert.equal(preset.poemId,poemId);assert.equal(preset.version,module.POET_PRESET_VERSION);}
   }

@@ -85,11 +85,11 @@ class MediaConfigTests(unittest.TestCase):
         self.assertEqual([f['source'] for f in config['fonts']], by_type('font/woff2'))
         self.assertIn('/maanshan/vendor/fonts/noto-serif-hk.woff2', [f['source'] for f in config['fonts']])
         self.assertEqual(len(config['audio']), len(by_type('audio/mpeg')))
-        self.assertEqual(set(config['audioGroups']), {'words', 'speech', 'recitations/edb-20260921'})
+        self.assertEqual(set(config['audioGroups']), {'words', 'speech', 'recitations/edb-20260921', 'recitations/round2-20261005'})
         for name, group in config['audioGroups'].items():
             self.assertRegex(group['prefix'], r'^https://[^/]+/published/g-[a-f0-9]{20}$')
             self.assertEqual(group['bytes'], sum(a['bytes'] for a in manifest['assets'] if a.get('group') == name))
-        self.assertEqual(media_config.verify_audio_groups(root, manifest)['audioGroups'], 3)
+        self.assertEqual(media_config.verify_audio_groups(root, manifest)['audioGroups'], 4)
         self.assertEqual(manifest, original)
 
     def test_image_digest_type_and_cache_are_verified_before_routes(self):
@@ -274,6 +274,20 @@ class MediaConfigTests(unittest.TestCase):
         self.assertEqual(json.loads(media_config.build_pack_manifest(manifest, {})), plain)
         with self.assertRaisesRegex(ValueError, 'does not publish: media/gone.webp'):
             media_config.build_pack_manifest(manifest, {'media/gone.webp': [1]})
+
+    def test_preview_poem_media_stays_out_of_packs_and_the_probe(self):
+        manifest, _ = fixture(image=True)
+        data = b'preview poem picture, smaller'
+        manifest['assets'] += [entry('/maanshan/media/yong-xue/preview-1.webp', data),
+                               entry('/maanshan/media/recitations/round2-20261005/p7-line1.mp3', data,
+                                     group='recitations/round2-20261005')]
+        pack = json.loads(media_config.build_pack_manifest(manifest))
+        self.assertEqual([asset['path'] for asset in pack['assets']], ['media/test/scene-1.webp'])
+        self.assertEqual(media_config.probe_image(manifest), manifest['assets'][0]['destination'])
+        # Still published on both routes for the preview accounts.
+        config = media_config.build_media_config(manifest)
+        self.assertIn('/maanshan/media/yong-xue/preview-1.webp', [image['source'] for image in config['images']])
+        self.assertIn('recitations/round2-20261005', config['audioGroups'])
 
     def test_pack_scope_file_is_validated(self):
         with tempfile.TemporaryDirectory() as tmp:

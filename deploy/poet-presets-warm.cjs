@@ -8,8 +8,8 @@ function argumentsFor(args){
   for(let index=0;index<args.length;index++){
     const value=args[index];
     if(value==='--apply')apply=true;
-    else if(value==='--poem'&&/^[1-6]$/.test(args[index+1]||''))poemId=Number(args[++index]);
-    else throw new Error('USAGE: node --env-file=/private/app.env deploy/poet-presets-warm.cjs [--apply] [--poem 1..6]');
+    else if(value==='--poem'&&/^([1-9]|1[0-2])$/.test(args[index+1]||''))poemId=Number(args[++index]);
+    else throw new Error('USAGE: node --env-file=/private/app.env deploy/poet-presets-warm.cjs [--apply] [--poem 1..12]');
   }
   return {apply,poemId};
 }

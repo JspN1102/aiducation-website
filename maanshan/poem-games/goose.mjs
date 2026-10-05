@@ -1,4 +1,4 @@
-import {imageAsset} from '../media-images.mjs?v=20260923-school23';
+import {imageAsset} from '../media-images.mjs?v=20261005-school40';
 import {createProcessResearch} from './research.mjs?v=20260920a';
 import {createGameImageLoader} from './image-ready.mjs?v=20260922-school11';
 const asset = name => new URL(imageAsset(`media/poem-games/yong-e/${name}.webp`), import.meta.url).href;

@@ -1,6 +1,6 @@
 # Poem motifs
 
-Six original SVG interface illustrations drawn for the AIDUCATION poetry reader. They extend the existing paper-crane line work and use a shared muted ink, jade, coral and yellow palette. No external images, fonts, filters or network requests are embedded.
+Twelve original SVG interface illustrations drawn for the AIDUCATION poetry reader. They extend the existing paper-crane line work and use a shared muted ink, jade, coral and yellow palette. No external images, fonts, filters or network requests are embedded.
 
 | File | Poem |
 | --- | --- |
@@ -10,5 +10,11 @@ Six original SVG interface illustrations drawn for the AIDUCATION poetry reader.
 | moon.svg | 泊船瓜洲 |
 | sprout.svg | 歸園田居·其三 |
 | swallow.svg | 初春小雨 |
+| snow.svg | 詠雪 |
+| rooster.svg | 畫雞 |
+| beans.svg | 七步詩 |
+| oriole.svg | 絕句 |
+| shoe.svg | 鄭人買履 |
+| cup.svg | 客至 |
 
 All files have a transparent 96 × 96 view box. Decorative uses in the application are hidden from assistive technology; poem titles and activity labels remain in text.
