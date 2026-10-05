@@ -8,7 +8,13 @@ const loaders={
  'ti-xi-lin-bi':()=>import('./views.mjs?v=20260923-school23').then(m=>m.mountMountain),
  'bo-chuan-gua-zhou':()=>import('./river.mjs?v=20261005-school40').then(m=>m.mountRiver),
  'gui-yuan-tian-ju':()=>import('./garden.mjs?v=20261005-school40').then(m=>m.mountGarden),
- 'zao-chun':()=>import('./rain.mjs?v=20261005-school40').then(m=>m.mountRain)
+ 'zao-chun':()=>import('./rain.mjs?v=20261005-school40').then(m=>m.mountRain),
+ 'yong-xue':()=>import('./snow-count.mjs?v=20261005-school41').then(m=>m.mountSnowCount),
+ 'hua-ji':()=>import('./rooster.mjs?v=20261005-school41').then(m=>m.mountRooster),
+ 'qi-bu-shi':()=>import('./seven-steps.mjs?v=20261005-school41').then(m=>m.mountSevenSteps),
+ 'jue-ju':()=>import('./couplet.mjs?v=20261005-school41').then(m=>m.mountCouplet),
+ 'zheng-ren-mai-lu':()=>import('./shoe-market.mjs?v=20261005-school41').then(m=>m.mountShoeMarket),
+ 'ke-zhi':()=>import('./guest.mjs?v=20261005-school41').then(m=>m.mountGuest)
 };
 export function mountPoemGame(holder,{slug,...options}={}){
  if(!loaders[slug])throw new TypeError('Unknown poem game');

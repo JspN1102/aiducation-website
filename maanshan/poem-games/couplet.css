@@ -1,0 +1,148 @@
+/* 對仗對對碰 (絕句). The root stays a block (the quiz shell styles holder>section); .cp-layout is the grid.
+   Tile sizes come from --cp-fs / --cp-h; .is-long shrinks three-character words, .is-final compacts the finished board. */
+.poem-couplet-game{--cp-fs:25px;--cp-h:56px;--cp-seal:14px;position:relative;display:block;width:100%;max-width:760px;margin-inline:auto;align-self:start;align-self:safe center;min-width:0;color:#2f4a3c;font-family:var(--sans,sans-serif)}
+.poem-couplet-game .cp-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;height:100%;min-width:0}
+.poem-couplet-game.is-final{--cp-k:.86}
+.poem-couplet-game *{box-sizing:border-box}
+.poem-couplet-game [hidden]{display:none!important}
+.poem-couplet-game button{font-family:var(--sans,sans-serif);-webkit-tap-highlight-color:transparent}
+.poem-couplet-game .cp-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.poem-couplet-game .cp-head p{margin:0;min-width:0;font-size:21px;font-weight:600;line-height:1.4}
+.poem-couplet-game .cp-count{flex:none;padding:3px 13px;border:1px solid #e3d3b0;border-radius:999px;background:#fbf3e1;color:#7d5d36;font-size:17px;font-weight:600;line-height:1.5;font-variant-numeric:tabular-nums;white-space:nowrap}
+.poem-couplet-game .cp-stage{position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border:1px solid #cdbf9f;border-radius:20px;background:#efe6d3;box-shadow:0 12px 26px -20px #5a4626a6}
+.poem-couplet-game .cp-pic{position:absolute;inset:0}
+.poem-couplet-game .cp-scene{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .9s ease;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
+.poem-couplet-game .cp-scene.is-on{opacity:1}
+.poem-couplet-game .cp-piece{-webkit-mask-image:radial-gradient(var(--rx) var(--ry) at var(--mx) var(--my),#000 66%,#0000 100%);mask-image:radial-gradient(var(--rx) var(--ry) at var(--mx) var(--my),#000 66%,#0000 100%)}
+.poem-couplet-game .cp-glows{position:absolute;inset:0;z-index:2;pointer-events:none}
+.poem-couplet-game .cp-glow{position:absolute;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,#fff8dc99,#ffeeb84d 55%,#ffeeb800);opacity:0;animation:poem-couplet-glow 3.2s ease forwards}
+.poem-couplet-game .cp-glow::after{content:"";position:absolute;inset:0;border:2px solid #fff3cad9;border-radius:50%;box-shadow:0 0 0 1.5px #dba54a59,0 0 18px 4px #ffe6a0b3,inset 0 0 18px 3px #ffeab399;filter:blur(1px)}
+@keyframes poem-couplet-glow{0%{opacity:0;scale:.82}16%{opacity:1;scale:1}76%{opacity:1}100%{opacity:0}}
+.poem-couplet-game .cp-loading{position:absolute;inset:0;z-index:5;display:grid;align-content:center;justify-items:center;gap:14px;padding:20px;background:#f5f2eae8;color:#3c5646;font-size:20px;line-height:1.5;text-align:center}
+.poem-couplet-game .cp-loading button{min-height:48px;padding:9px 22px;border:1px solid #b9b08f;border-radius:14px;background:#fffdf5;color:#2f4a3c;font-size:19px;font-weight:600;line-height:1.2;cursor:pointer}
+.poem-couplet-game .cp-panel{display:grid;gap:12px;min-width:0}
+.poem-couplet-game .cp-board{display:grid;gap:10px;min-width:0}
+.poem-couplet-game .cp-block{position:relative;display:grid;grid-template-columns:22px repeat(4,minmax(0,1fr));grid-template-rows:auto auto auto;column-gap:8px;row-gap:4px;padding:10px 12px 12px 8px;border:1px solid #e2d4b4;border-radius:18px;background:linear-gradient(180deg,#fffcf4,#fbf2df);box-shadow:0 2px 0 #ece1c8}
+.poem-couplet-game .cp-col{display:contents}
+.poem-couplet-game .cp-col>*{grid-column:var(--c)}
+.poem-couplet-game .cp-label{grid-column:1;align-self:center;justify-self:center;writing-mode:vertical-rl;color:#94724a;font-size:14px;font-weight:600;line-height:1;letter-spacing:.14em}
+.poem-couplet-game .cp-label-up,.poem-couplet-game .cp-up{grid-row:1}
+.poem-couplet-game .cp-seal{grid-row:2}
+.poem-couplet-game .cp-label-down,.poem-couplet-game .cp-slot{grid-row:3}
+.poem-couplet-game .cp-tile,.poem-couplet-game .cp-slot{min-width:0;min-height:max(44px,calc(var(--cp-h) * var(--cp-k,1)));padding:5px 2px;border-radius:13px;font-size:calc(var(--cp-fs) * var(--cp-k,1));font-weight:600;line-height:1.15;white-space:nowrap}
+.poem-couplet-game .is-long{font-size:calc(var(--cp-fs) * var(--cp-k,1) * var(--cp-l,.84));letter-spacing:-.03em}
+.poem-couplet-game .cp-tile{position:relative;border:1.5px solid #d9cba8;background:#fffdf7;color:#2f4a3c;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 3px 0 #e7dabb;transition:background .18s,border-color .18s,box-shadow .18s,color .18s}
+.poem-couplet-game .cp-tile:hover:not(:disabled){border-color:#c9a865;background:#fffaf0}
+.poem-couplet-game .cp-tile:active:not(:disabled){translate:0 2px;box-shadow:0 1px 0 #e7dabb}
+.poem-couplet-game .cp-tile:disabled{opacity:1;cursor:default}
+.poem-couplet-game .cp-tile[aria-pressed=true]{border-color:#c4772f;background:#fff0d6;box-shadow:0 0 0 3px #e9a64f59,0 3px 0 #e2c48f}
+.poem-couplet-game .cp-tile:focus-visible,.poem-couplet-game .cp-actions button:focus-visible,.poem-couplet-game .cp-loading button:focus-visible{outline:3px solid #de9b34;outline-offset:3px}
+.poem-couplet-game .cp-tile.is-hinted{border-color:#d9a03f;box-shadow:0 0 0 4px #f3c96b70,0 3px 0 #e7cf9d;animation:poem-couplet-hint 1.3s ease-in-out 2}
+.poem-couplet-game .cp-tile.is-wrong{animation:poem-couplet-shake .46s ease}
+.poem-couplet-game .cp-tile.is-dragging{z-index:20;scale:1.06;cursor:grabbing;transition:none;box-shadow:0 14px 24px -10px #4a36189e,0 0 0 3px #e9a64f59}
+.poem-couplet-game .cp-col.is-matched .cp-up{border-color:#bccdab;background:#f1f5e8;color:#2a5440;box-shadow:0 2px 0 #d7e2c8}
+.poem-couplet-game .cp-slot{display:grid;place-items:center;border:1.5px dashed #cdbd98;background:#f6eedb99;color:#2a5440;transition:background .2s,border-color .2s}
+.poem-couplet-game .cp-slot b{font-weight:inherit;visibility:hidden}
+.poem-couplet-game .cp-col.is-matched .cp-slot{border-style:solid;border-color:#bccdab;background:#f1f5e8;box-shadow:0 2px 0 #d7e2c8}
+.poem-couplet-game .cp-col.is-matched .cp-slot b{visibility:visible}
+.poem-couplet-game .cp-col.is-target .cp-slot,.poem-couplet-game .cp-col.is-over .cp-slot{border-color:#c4772f;background:#fff0d6}
+.poem-couplet-game .cp-col.is-over .cp-up{border-color:#c4772f}
+.poem-couplet-game .cp-seal{justify-self:center;align-self:center;width:0;min-height:18px;border-left:2px dotted #d3c29b;color:#0000;font-size:0}
+.poem-couplet-game .cp-col.is-matched .cp-seal{width:auto;max-width:100%;min-height:0;padding:1px 4px;border:1.5px solid #c8644b;border-radius:6px;background:#fff7ef;color:#a5432e;font-size:var(--cp-seal);font-weight:600;line-height:1.25;text-align:center;word-break:keep-all;box-shadow:inset 0 0 0 2px #fff7ef,inset 0 0 0 3px #e9b3a2}
+.poem-couplet-game .cp-col.is-new .cp-slot{animation:poem-couplet-pop .5s ease}
+.poem-couplet-game .cp-col.is-new .cp-seal{animation:poem-couplet-stamp .45s .12s ease both}
+.poem-couplet-game .cp-block[data-reciting=up] .cp-up,.poem-couplet-game .cp-block[data-reciting=down] .cp-slot{border-color:#d9a24c;background:#fff0d2;box-shadow:0 2px 0 #ecd29f}
+.poem-couplet-game .cp-tray{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:10px 12px;border-radius:18px;background:#f1e7d1b3;box-shadow:inset 0 1px 3px #8a6a3a1f}
+.poem-couplet-game .cp-down{border-color:#dcc8a2;background:#fffaf1;box-shadow:0 3px 0 #e2d0ab,0 7px 12px -9px #6a4c2380;rotate:-1.2deg}
+.poem-couplet-game .cp-down:nth-child(even){rotate:1deg}
+.poem-couplet-game .cp-down.is-used{border:1.5px dashed #d6c6a2;background:#0000;color:#0000;box-shadow:none;rotate:0deg}
+.poem-couplet-game .cp-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.poem-couplet-game .cp-actions button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:9px 18px;border:1.5px solid #cdbf9d;border-radius:16px;background:#fffdf5;color:#3d5a45;font-size:20px;font-weight:600;line-height:1.2;cursor:pointer;touch-action:manipulation;box-shadow:0 2px 0 #e6dbc2}
+.poem-couplet-game .cp-actions svg{width:22px;height:22px;flex:none}
+.poem-couplet-game .cp-actions .cp-next{border-color:#446d50;background:#446d50;color:#fffdf1;box-shadow:0 2px 0 #2f5139}
+.poem-couplet-game .cp-actions button:disabled{opacity:.6}
+.poem-couplet-game .cp-feedback{margin:0;min-height:3em;color:#4b6553;font-size:19px;line-height:1.5;text-align:center;text-wrap:pretty}
+@keyframes poem-couplet-shake{20%{translate:-5px 0}40%{translate:5px 0}60%{translate:-3px 0}80%{translate:2px 0}}
+@keyframes poem-couplet-hint{50%{box-shadow:0 0 0 8px #f3c96b30,0 3px 0 #e7cf9d}}
+@keyframes poem-couplet-pop{0%{scale:.86}60%{scale:1.06}100%{scale:1}}
+@keyframes poem-couplet-stamp{0%{opacity:0;scale:1.7}100%{opacity:1;scale:1}}
+.poem-couplet-game.is-settling *,.poem-couplet-game.is-reduced-motion *{transition:none!important}
+.poem-couplet-game.is-reduced-motion *{animation:none!important}
+.poem-couplet-game.is-reduced-motion .cp-glow{opacity:1}
+@media(prefers-reduced-motion:reduce){.poem-couplet-game *{transition:none!important;animation:none!important}.poem-couplet-game .cp-glow{opacity:1}}
+@media(max-width:700px){
+ .poem-couplet-game{--cp-l:.9}
+ .poem-couplet-game .cp-layout{gap:10px}
+ .poem-couplet-game.is-final{--cp-k:.84}
+ .poem-couplet-game .cp-panel{gap:10px}
+ .poem-couplet-game .cp-board{gap:8px}
+ .poem-couplet-game.is-final .cp-block{padding-block:6px 8px;row-gap:3px}
+ .poem-couplet-game .cp-feedback{min-height:0;font-size:18px}
+}
+@media(max-width:420px){
+ .poem-couplet-game{--cp-fs:22px;--cp-h:52px}
+ .poem-couplet-game .cp-head{gap:8px}
+ .poem-couplet-game .cp-head p{font-size:19px}
+ .poem-couplet-game .cp-count{font-size:16px;padding-inline:10px}
+ .poem-couplet-game .cp-stage{border-radius:16px}
+ .poem-couplet-game .cp-block{grid-template-columns:16px repeat(4,minmax(0,1fr));column-gap:6px;padding:8px 8px 10px 5px;border-radius:16px}
+ .poem-couplet-game .cp-label{letter-spacing:.08em}
+ .poem-couplet-game .cp-tile,.poem-couplet-game .cp-slot{border-radius:12px}
+ .poem-couplet-game .cp-col.is-matched .cp-seal{padding-inline:3px}
+ .poem-couplet-game .cp-tray{gap:8px;padding:8px}
+ .poem-couplet-game .cp-actions button{min-height:50px;font-size:19px;padding-inline:15px}
+}
+@media(max-width:370px){
+ .poem-couplet-game{--cp-fs:20px}
+ .poem-couplet-game .cp-head p{font-size:18px}
+ .poem-couplet-game .cp-block{grid-template-columns:15px repeat(4,minmax(0,1fr));column-gap:4px;padding-inline:3px 5px}
+ .poem-couplet-game .cp-col.is-matched .cp-seal{padding-inline:2px}
+ .poem-couplet-game .cp-tray{gap:6px;padding:7px}
+}
+/* Tablets and wide landscape: picture on the left, the couplet board on the right. */
+@media(min-width:701px) and (orientation:landscape),(orientation:landscape) and (max-height:500px){
+ .poem-couplet-game{--cp-fs:24px;--cp-h:54px;max-width:none}
+ .poem-couplet-game .cp-layout{grid-template-columns:minmax(0,1.2fr) minmax(330px,1fr);grid-template-rows:auto minmax(0,1fr);column-gap:24px;row-gap:12px;align-items:start}
+ .poem-couplet-game.is-final{--cp-k:.82}
+ .poem-couplet-game .cp-stage{grid-column:1;grid-row:1/3;align-self:center;width:min(100%,calc(100cqh * 16 / 9))}
+ .poem-couplet-game .cp-head{grid-column:2;grid-row:1}
+ .poem-couplet-game .cp-head p{font-size:21px}
+ .poem-couplet-game .cp-panel{grid-column:2;grid-row:2;align-content:start}
+ .poem-couplet-game.is-final .cp-block{padding-block:6px 8px;row-gap:3px}
+ .poem-couplet-game .cp-feedback{min-height:0;font-size:18px;text-align:left}
+ .poem-couplet-game .cp-actions{justify-content:flex-start}
+}
+@media(min-width:900px) and (min-height:620px) and (orientation:landscape){
+ .poem-couplet-game{--cp-fs:clamp(24px,3.4vh,29px);--cp-h:clamp(54px,7.8vh,66px);--cp-seal:clamp(14px,1.9vh,16px)}
+ .poem-couplet-game .cp-head p{font-size:clamp(21px,2.9vh,26px)}
+ .poem-couplet-game .cp-count{font-size:clamp(17px,2.3vh,19px)}
+ .poem-couplet-game .cp-panel{gap:clamp(10px,1.7vh,16px)}
+ .poem-couplet-game .cp-actions button{min-height:clamp(50px,6.8vh,58px);font-size:clamp(19px,2.6vh,22px)}
+ .poem-couplet-game .cp-feedback{font-size:clamp(18px,2.5vh,21px)}
+}
+@media(orientation:landscape) and (max-height:500px){
+ .poem-couplet-game{--cp-fs:20px;--cp-h:44px}
+ .poem-couplet-game .cp-layout{row-gap:8px;column-gap:16px}
+ .poem-couplet-game.is-final{--cp-k:1}
+ .poem-couplet-game .cp-head p{font-size:17px;line-height:1.35}
+ .poem-couplet-game .cp-count{font-size:15px;padding-inline:9px}
+ .poem-couplet-game .cp-stage{position:sticky;top:0;z-index:1;align-self:start;border-radius:14px}
+ .poem-couplet-game .cp-panel,.poem-couplet-game .cp-board{gap:8px}
+ .poem-couplet-game .cp-block,.poem-couplet-game.is-final .cp-block{grid-template-columns:15px repeat(4,minmax(0,1fr));column-gap:6px;row-gap:2px;padding:6px 8px 7px 4px;border-radius:14px}
+ .poem-couplet-game .cp-label{letter-spacing:.04em}
+ .poem-couplet-game .cp-tile,.poem-couplet-game .cp-slot{padding-block:3px;border-radius:11px}
+ .poem-couplet-game .cp-seal{min-height:12px}
+ .poem-couplet-game .cp-col.is-matched .cp-seal{padding:0 3px}
+ .poem-couplet-game .cp-tray{gap:7px;padding:6px 8px;border-radius:14px}
+ .poem-couplet-game .cp-actions button{min-height:44px;padding:6px 14px;font-size:17px;border-radius:13px}
+ .poem-couplet-game .cp-actions svg{width:19px;height:19px}
+ .poem-couplet-game .cp-feedback{font-size:16px;line-height:1.4}
+}
+/* Portrait tablets keep the picture, board and buttons inside the play area. */
+@media(min-width:701px) and (orientation:portrait){
+ .poem-couplet-game{--cp-fs:28px;--cp-h:62px;--cp-seal:15px}
+ .poem-couplet-game.is-final{--cp-k:.8}
+ .poem-couplet-game .cp-stage{width:min(100%,calc((100cqh - 440px) * 16 / 9))}
+ .poem-couplet-game .cp-head p{font-size:24px}
+ .poem-couplet-game .cp-feedback{font-size:20px;min-height:0}
+}

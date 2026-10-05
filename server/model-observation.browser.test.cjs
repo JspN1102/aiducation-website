@@ -7,6 +7,8 @@ const source=fs.readFileSync(path.join(root,'scripts/build-maanshan-css.cjs'),'u
 const cssFiles=[...source.match(/const files = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map(m=>m[1]);
 const css=cssFiles.map(file=>fs.readFileSync(path.join(root,'maanshan',file),'utf8')).join('\n');
 const poems=JSON.parse(fs.readFileSync(path.join(root,'maanshan/poems.json'),'utf8')).poems;
+// Preview poems 7-12 (grades 1-6) open the model at every grade.
+const previewPoems=JSON.parse(fs.readFileSync(path.join(root,'maanshan/poems-preview.json'),'utf8')).poems;
 // The public COS copies are answered from the same local files, so both model
 // routes are exercised without any network access.
 const COS_ORIGIN=JSON.parse(fs.readFileSync(path.join(root,'deploy/media-manifest.json'),'utf8')).origin;
@@ -72,7 +74,7 @@ async function setup(width,height){
 async function verifyModels(){
   const {page,context,mount}=await setup(1180,820);
   try{
-    for(const poem of poems.filter(p=>p.grade>=4)){
+    for(const poem of [...poems.filter(p=>p.grade>=4),...previewPoems]){
       await mount(poem);check(poem.slug+' model remains lazy',await page.locator('canvas').count()===0);
       await page.locator('[data-explore=ar]').click();await page.locator('.explore.is-model').waitFor({timeout:25000});
       await page.waitForFunction(()=>window.drawCalls>0);

@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "generated": "2026-10-05",
+  "note": "Preview poems 7-12. Service task IDs, key identifiers and signed URLs are kept only in the local source folder.",
+  "models": [
+    {
+      "slug": "yong-xue",
+      "model": {
+        "file": "model-20261005.glb",
+        "bytes": 2402208,
+        "sha256": "5d60f2b6baa25a9007242858d03ede13a101a590b9ca52336d253e5295086d09",
+        "triangles": 64999,
+        "validatorErrors": 0,
+        "textures": "3 embedded 1024px JPEG (base colour, normal, metallic-roughness)"
+      },
+      "scene": {
+        "file": "scene.webp",
+        "bytes": 319720,
+        "sha256": "103471057064705b5fd16e81cd80be54752e968411b3827c68e45ff0178939db"
+      },
+      "generator": {
+        "service": "Tripo image_to_model",
+        "modelVersion": "v3.1-20260211",
+        "geometryQuality": "detailed",
+        "textureQuality": "detailed",
+        "pbr": true,
+        "faceLimit": 80000,
+        "referenceSha256": "86c62c5b8457e26ce9bc989f17d068d20c1b449f28e790534b2304c3f1ead6f9",
+        "sourceBytes": 16497188,
+        "sourceSha256": "2b52748610cbc92bfbf8c927c4ed9fc134a996cd77a7e552a138d677632ed2d8",
+        "sourceTriangles": 73929
+      }
+    },
+    {
+      "slug": "hua-ji",
+      "model": {
+        "file": "model-20261005.glb",
+        "bytes": 2276952,
+        "sha256": "a00cacc41d4d51782d5c82dbdf63f4026fabafff56da64e39791d55515c58bc4",
+        "triangles": 65000,
+        "validatorErrors": 0,
+        "textures": "3 embedded 1024px JPEG (base colour, normal, metallic-roughness)"
+      },
+      "scene": {
+        "file": "scene.webp",
+        "bytes": 176256,
+        "sha256": "dd93a2766c07d24eb8713250ced076a76a85128fa510beb24b31ccd0dcc7a094"
+      },
+      "generator": {
+        "service": "Tripo image_to_model",
+        "modelVersion": "v3.1-20260211",
+        "geometryQuality": "detailed",
+        "textureQuality": "detailed",
+        "pbr": true,
+        "faceLimit": 80000,
+        "referenceSha256": "33511da0191d63d6238f0f55df70a761e5a30052040fd07f83bf0abf23cd014a",
+        "sourceBytes": 11599796,
+        "sourceSha256": "e43f2078430100b91e394ce96d6da567cb561fbcb14761cdefa1386feba360b8",
+        "sourceTriangles": 76368
+      }
+    },
+    {
+      "slug": "qi-bu-shi",
+      "model": {
+        "file": "model-20261005.glb",
+        "bytes": 2209564,
+        "sha256": "31ee40817206b1d18262a1667ac3b377593115bba16f303aa0156710f5ce8c5d",
+        "triangles": 65000,
+        "validatorErrors": 0,
+        "textures": "3 embedded 1024px JPEG (base colour, normal, metallic-roughness)"
+      },
+      "scene": {
+        "file": "scene.webp",
+        "bytes": 268062,
+        "sha256": "e76e8ae27e5ee08e2390dec0cba6807a8b90ffd52b6c8d4036a40068f0a5b655"
+      },
+      "generator": {
+        "service": "Tripo image_to_model",
+        "modelVersion": "v3.1-20260211",
+        "geometryQuality": "detailed",
+        "textureQuality": "detailed",
+        "pbr": true,
+        "faceLimit": 80000,
+        "referenceSha256": "0f133a3ffd3ddf2926ee4a71aef31801d24a4cc3b3193d69037763a50ebb5a66",
+        "sourceBytes": 17883692,
+        "sourceSha256": "c8dbf4cdba0b967cc30fd9016241a9a42622c164bfcf5dbeefccf0335654db96",
+        "sourceTriangles": 75478
+      }
+    },
+    {
+      "slug": "jue-ju",
+      "model": {
+        "file": "model-20261005.glb",
+        "bytes": 2583860,
+        "sha256": "8cbd250cedaee29ece3385d3092695c660a9c2db6b17b91788a6c832d4ebfab7",
+        "triangles": 64999,
+        "validatorErrors": 0,
+        "textures": "3 embedded 1024px JPEG (base colour, normal, metallic-roughness)"
+      },
+      "scene": {
+        "file": "scene.webp",
+        "bytes": 295680,
+        "sha256": "3eac8c506e05880376bf82ace96de0a8dca447c4534a8538d65f52afce21996b"
+      },
+      "generator": {
+        "service": "Tripo image_to_model",
+        "modelVersion": "v3.1-20260211",
+        "geometryQuality": "detailed",
+        "textureQuality": "detailed",
+        "pbr": true,
+        "faceLimit": 80000,
+        "referenceSha256": "4dfb15aace79714b1fc1bb12d25f752c672d3492df69102cddd0ab6494330cdd",
+        "sourceBytes": 16057048,
+        "sourceSha256": "1c759d73028fe08209938a2d1a22da4dff40a25e4cfd382a654d61d89ef566e3",
+        "sourceTriangles": 77959
+      }
+    },
+    {
+      "slug": "zheng-ren-mai-lu",
+      "model": {
+        "file": "model-20261005.glb",
+        "bytes": 2158588,
+        "sha256": "adcaaf9a72b6c3693f7af77df0f1750795195cdedc31b9d2cf5a2100c7d72158",
+        "triangles": 64997,
+        "validatorErrors": 0,
+        "textures": "3 embedded 1024px JPEG (base colour, normal, metallic-roughness)"
+      },
+      "scene": {
+        "file": "scene.webp",
+        "bytes": 298352,
+        "sha256": "4b4ee7787100a2ef118dc8a7ff5a317f09ffe5269de6567d0099d49b0646446b"
+      },
+      "generator": {
+        "service": "Tripo image_to_model",
+        "modelVersion": "v3.1-20260211",
+        "geometryQuality": "detailed",
+        "textureQuality": "detailed",
+        "pbr": true,
+        "faceLimit": 80000,
+        "referenceSha256": "be5c62b11645b6e9c62e33f120c77463d8324be090205cb8ad1509e6c7928066",
+        "sourceBytes": 17191556,
+        "sourceSha256": "30d156bcf9d18af8c2bab9925331eaae6acb9c9604244571ffa1b7a334e403f4",
+        "sourceTriangles": 76557
+      }
+    },
+    {
+      "slug": "ke-zhi",
+      "model": {
+        "file": "model-20261005.glb",
+        "bytes": 2600400,
+        "sha256": "61c12af1504d6da6619df0820eba72f63629becf52a072796ffc4d62ce4c0fc7",
+        "triangles": 64999,
+        "validatorErrors": 0,
+        "textures": "3 embedded 1024px JPEG (base colour, normal, metallic-roughness)"
+      },
+      "scene": {
+        "file": "scene.webp",
+        "bytes": 418978,
+        "sha256": "364a966f1a380dbe01dc7b28098da7af6a3a95a8d967823b8be3ed465ca5a0a8"
+      },
+      "generator": {
+        "service": "Tripo image_to_model",
+        "modelVersion": "v3.1-20260211",
+        "geometryQuality": "detailed",
+        "textureQuality": "detailed",
+        "pbr": true,
+        "faceLimit": 80000,
+        "referenceSha256": "45ac5ca0932c4e29cb68ccaa6cc29e3d47d06f5be32c536a0810e94796eb5a0b",
+        "sourceBytes": 16852896,
+        "sourceSha256": "4233da511e9bb4bb63b961055c9cff2a7271b20201953f86fdeaada4bebdd6a1",
+        "sourceTriangles": 71621
+      }
+    }
+  ]
+}

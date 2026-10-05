@@ -199,7 +199,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     else {
       const poster = item.cards.find(c=>c.image)?.image || (poem.preview ? `media/${poem.slug}/poster.webp` : `media/exploration/${poem.slug}/scene.webp`);
       if(poem.slug==='yong-e') q('[data-observation]').innerHTML=gooseHTML(item);
-      // Preview poems have no 3D models yet, so they show the picture at every grade.
+      // Preview poems show the picture at every grade; their models open in the AR tab.
       else if (poem.grade <= 3 || poem.preview) q('[data-observation]').innerHTML=`<img class="challenge-observation-picture" src="${esc(makeURL(poster))}" alt="觀察畫面">`;
       else model = mountChallengeModel(q('[data-observation]'), {slug: poem.slug, poster: makeURL(poster),
         label: poem.grade === 3 ? '轉一轉山' : poem.grade === 6 ? '遠近看一看' : '走進畫面',

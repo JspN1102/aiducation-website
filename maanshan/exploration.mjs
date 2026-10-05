@@ -45,7 +45,7 @@ export function disposeObject(root) {
 export function mountExploration(container, {poem, speakWord, onComplete, onResearch, modelTimeoutMs = MODEL_LOAD_TIMEOUT_MS} = {}) {
   const content = EXPLORATION_CONTENT[poem?.slug];
   if (!container || !content) throw new Error('Unknown poem exploration');
-  if (Number(poem.grade) <= 3) {
+  if (Number(poem.grade) <= 3 && poem.preview !== true) {
     container.innerHTML = '<p class="explore-unavailable" role="status">這個年級不設 AR 體驗，請返回學習路線。</p>';
     return {destroy(){container.replaceChildren();}};
   }

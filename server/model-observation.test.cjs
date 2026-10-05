@@ -15,10 +15,29 @@ test('model drawing buffers preserve retina detail within the pixel budget', asy
 test('all selected observation models are bounded self-contained GLBs', async () => {
   const {validateGLB} = await import('../maanshan/model-source.mjs');
   const {EXPLORATION_CONTENT} = await import('../maanshan/exploration-data.mjs');
-  for (const slug of ['bo-chuan-gua-zhou','gui-yuan-tian-ju','zao-chun']) {
+  for (const slug of ['bo-chuan-gua-zhou','gui-yuan-tian-ju','zao-chun','yong-xue','hua-ji','qi-bu-shi','jue-ju','zheng-ren-mai-lu','ke-zhi']) {
     const bytes=fs.readFileSync(path.join(__dirname,'../maanshan/media/exploration',slug,EXPLORATION_CONTENT[slug].modelFile));
     const buffer=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);
     assert.equal(validateGLB(buffer),buffer);
+  }
+});
+
+test('preview poems 7-12 each carry a grounded two-step observation', async () => {
+  const {EXPLORATION_CONTENT} = await import('../maanshan/exploration-data.mjs');
+  const {poems} = JSON.parse(fs.readFileSync(path.join(__dirname,'../maanshan/poems-preview.json'),'utf8'));
+  const bare = s => String(s).replace(/[\s，。、；：？！「」『』]/g,'');
+  assert.equal(poems.length,6);
+  for (const poem of poems) {
+    const entry=EXPLORATION_CONTENT[poem.slug];
+    assert(entry,poem.slug);assert.notEqual(poem.explore,false);
+    assert(fs.existsSync(path.join(__dirname,'../maanshan/media/exploration',poem.slug,'scene.webp')),poem.slug);
+    const text=bare(poem.lines.map(line=>line.text).join(''));
+    assert.equal(entry.observations.length,2);
+    for (const step of entry.observations) {
+      assert(text.includes(bare(step.verse)),`${poem.slug}: ${step.verse}`);
+      assert(step.verse.includes(step.word[0]),`${poem.slug}: ${step.word[0]}`);
+      assert.equal(step.choices.length,2);assert([0,1].includes(step.answer));
+    }
   }
 });
 

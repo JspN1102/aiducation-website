@@ -10,5 +10,6 @@ export const VIDEO_ASSETS = Object.freeze({
   "/maanshan/media/yong-e/animation-20260918c.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/yong-e/animation-20260918c.mp4",
   "/maanshan/media/yong-xue/animation-20261005.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/yong-xue/animation-20261005.mp4",
   "/maanshan/media/zao-chun/animation-20260917.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/zao-chun/animation-20260917.mp4",
-  "/maanshan/media/zeng-wang-lun/animation-20260917.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/zeng-wang-lun/animation-20260917.mp4"
+  "/maanshan/media/zeng-wang-lun/animation-20260917.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/zeng-wang-lun/animation-20260917.mp4",
+  "/maanshan/media/zheng-ren-mai-lu/animation-20261005.mp4": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/zheng-ren-mai-lu/animation-20261005.mp4"
 });

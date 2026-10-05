@@ -53,7 +53,7 @@ export function mountLessonMap(holder, {poem, progress = {}, resume = null, onNa
       {view:'animation',title:'動畫看古詩',status:poem.animation?.src?'跟着詩人看故事':'動畫準備中',pending:!poem.animation?.src},
       {view:'explore',title:'AR體驗',status:'讓詩中風景來到身邊'},
       {view:'quiz',title:'練習小遊戲',status:challengeLabel,done:completed}
-    ].filter(step=>step.view!=='explore'||poem.grade>=4&&poem.explore!==false);
+    ].filter(step=>step.view!=='explore'||(poem.grade>=4||poem.preview===true)&&poem.explore!==false);
     root.classList.toggle('lesson-map-lower',poem.grade<=3);
     root.innerHTML = `<header class="lesson-map-hero"><img class="lesson-map-motif" src="media/poetry-motifs/${details.motif}.svg" width="48" height="48" alt=""><h2>一起學古詩</h2></header>
       <nav class="lesson-map-steps" aria-label="學古詩的活動">${steps.map((step,index)=>{

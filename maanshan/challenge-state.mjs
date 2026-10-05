@@ -7,6 +7,9 @@ const bankOf = set => set.bank || set.items;
 // A round opens with the poem's game. Poems without a game yet open with their
 // hands-on question (ordering or matching) instead.
 const opener = (set, item) => item.type === 'microgame' || group(item) === 'other' && !bankOf(set).some(value => value.type === 'microgame');
+// Preview poems 7-12 got their games later. Rounds saved before then opened
+// with the poem's only hands-on question; keep reading them as they were.
+const savedOpener = (set, item) => opener(set, item) || group(item) === 'other' && /^p\d+-m1$/.test(item.id);
 const traceFlow = (value,item) => item?.type === 'dictation' && value?.flow === 'trace-dictation-v1'
   ? {flow:'trace-dictation-v1',traceCompleted:value.traceCompleted===true,dictationCompleted:value.traceCompleted===true&&value.dictationCompleted===true} : {};
 export const CHALLENGE_SCHEDULE = 'game-first-20260919';
@@ -244,7 +247,7 @@ export function readAttempt(saved, set) {
   const gameFirst = saved.schedule === CHALLENGE_SCHEDULE;
   const plan = legacy ? LEGACY_PLAN : gameFirst ? challengePlan(set, variant, mode) : previousPlan(set, variant, saved.schedule === 'games-20260918' ? mode : 'standard');
   if (items.length !== total || (mode !== 'review' && items.some((item, i) => group(item) !== plan[i]))) return null;
-  if (!legacy && gameFirst && mode !== 'review' && !opener(set, items[0])) return null;
+  if (!legacy && gameFirst && mode !== 'review' && !savedOpener(set, items[0])) return null;
   if (mode === 'advanced' && items.some(item => item.type === 'sound' && item.difficulty !== 2)) return null;
   const attempt = {...saved, version: CHALLENGE_VERSION, selection: legacy ? 'legacy-v1' : mode === 'review' ? 'wrong-review' : 'grade-bank', mode, variant, itemIds: [...itemIds], seed: saved.seed || `legacy:${saved.attemptId}`, answers: [], orders: {}, history: {}};
   attempt.gameDrafts = gameDrafts(saved.gameDrafts, set);

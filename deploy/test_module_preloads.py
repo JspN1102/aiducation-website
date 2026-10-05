@@ -69,11 +69,12 @@ class ModulePreloadTests(unittest.TestCase):
         self.assertEqual(urls.count('nested/leaf.mjs?v=1'), 1)
         self.assertEqual(urls.count('nested/leaf.mjs?v=2'), 1)
 
-    def test_real_project_contains_six_games_and_never_preloads_model_runtime(self):
+    def test_real_project_contains_twelve_games_and_never_preloads_model_runtime(self):
         root = Path(__file__).resolve().parent.parent / 'maanshan'
         _, startup, activities = preload_data(root, (root / 'index.html').read_text(encoding='utf-8'))
         self.assertGreater(len(startup), 25)
-        self.assertEqual(len(activities['quiz']['games']), 6)
+        # Poems 1-6 and the preview poems 7-12 each have one game.
+        self.assertEqual(len(activities['quiz']['games']), 12)
         all_urls = startup + activities['quiz']['common'] + activities['explore']
         for urls in activities['quiz']['games'].values():
             all_urls += urls

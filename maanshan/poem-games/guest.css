@@ -1,0 +1,169 @@
+.poem-guest-game{--gk-ink:#294c3b;--gk-soft:#5f7566;--gk-paper:#fffdf7;--gk-line:#dcd8c8;--gk-gold:#e3a548;display:block;width:100%;max-width:880px;margin-inline:auto;color:var(--gk-ink);font-family:var(--sans);min-width:0}
+.poem-guest-game *{box-sizing:border-box}
+.poem-guest-game [hidden]{display:none!important}
+.poem-guest-game button{font-family:inherit;color:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.poem-guest-game button:disabled{opacity:1}
+.poem-guest-game img{max-width:none}
+.poem-guest-game button:focus-visible{outline:3px solid #de9b34;outline-offset:3px}
+.poem-guest-game .gk-layout{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "stage" "side";gap:12px;height:100%;align-content:center}
+.poem-guest-game .gk-head{grid-area:head;display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.poem-guest-game .gk-instruction{margin:0;font-size:clamp(19px,2.4vw,24px);font-weight:650;line-height:1.42;text-wrap:balance}
+.poem-guest-game .gk-progress{flex:none;min-width:66px;padding:5px 12px;border-radius:18px;background:#edf3e7;color:#3c6447;font-size:18px;font-weight:600;text-align:center;font-variant-numeric:tabular-nums}
+.poem-guest-game.is-done .gk-progress{background:#f6e5c8;color:#8a4f24}
+
+/* Stage: three 16:9 scene paintings; every overlay sits in % of the painting. */
+.poem-guest-game .gk-stage{grid-area:stage;position:relative;isolation:isolate;container-type:inline-size;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#e9e2d2;border:1px solid #d6d2c1;box-shadow:0 6px 20px #2c443114;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.poem-guest-game .gk-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;pointer-events:none;-webkit-user-drag:none;transition:opacity .9s ease}
+.poem-guest-game .gk-scene.is-on{opacity:1}
+.poem-guest-game .gk-layer{position:absolute;inset:0;z-index:2;visibility:hidden;opacity:0;transition:opacity .5s ease,visibility 0s linear .5s}
+.poem-guest-game .gk-layer.is-on{visibility:visible;opacity:1;transition:opacity .6s ease .25s,visibility 0s}
+.poem-guest-game .gk-layer img{-webkit-user-drag:none;pointer-events:none}
+
+/* Fallen petals on the flower path. */
+.poem-guest-game .gk-pile{position:absolute;left:var(--x);top:var(--y);z-index:3;width:max(44px,9.5%);min-height:44px;aspect-ratio:100/56;padding:0;border:0;border-radius:40%;background:none;transform:translate(-50%,-50%);touch-action:none;cursor:pointer;transition:transform .2s ease,opacity .2s ease}
+.poem-guest-game .gk-pile svg{display:block;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 1px 1px #6b4a3a40)}
+.poem-guest-game .gk-pile:hover:not(:disabled){transform:translate(-50%,-50%) scale(1.06)}
+.poem-guest-game .gk-pile:disabled{cursor:default}
+.poem-guest-game .gk-pile::before{content:'';position:absolute;z-index:-1;inset:-8% -4%;border-radius:50%;background:radial-gradient(closest-side,#fffbeccc,#fff6dc80 55%,#fff6dc00);opacity:.25;pointer-events:none}
+.poem-guest-game .gk-pile:not(:disabled)::before{animation:gk-breathe 2.4s ease-in-out infinite}
+.poem-guest-game .gk-pile.is-swept{pointer-events:none;opacity:0;transform:translate(calc(-50% + var(--fx,60px)),calc(-50% + var(--fy,-20px))) rotate(24deg) scale(.7);transition:transform .6s cubic-bezier(.2,.7,.3,1),opacity .6s ease}
+.poem-guest-game .gk-gap{position:absolute;left:23.125%;top:46.667%;width:10%;height:32.444%;pointer-events:none}
+.poem-guest-game .gk-broom{position:absolute;z-index:4;left:calc(var(--bx,28.4%) - 2.8%);top:calc(var(--by,76.7%) - 28.9%);width:5.6%;height:28.9%;transform:rotate(var(--br,-13deg));transform-origin:50% 100%;pointer-events:none;transition:left .22s ease,top .22s ease,transform .22s ease}
+.poem-guest-game .gk-broom img{display:block;width:100%;height:100%;filter:drop-shadow(1px 2px 1px #3b2a1a40)}
+.poem-guest-game .gk-broom.is-active{pointer-events:auto;touch-action:none;cursor:grab}
+.poem-guest-game .gk-broom.is-active::before{content:'';position:absolute;inset:-6% -60%}
+.poem-guest-game .gk-broom.is-held{cursor:grabbing;transition:left .05s linear,top .05s linear,transform .12s ease}
+.poem-guest-game .gk-broom.is-held img{filter:drop-shadow(2px 6px 4px #3b2a1a55)}
+
+/* 蓬門: a closed reed door laid over the painted open one. */
+.poem-guest-game .gk-door{position:absolute;left:29.6%;top:33%;z-index:2;width:17.8%;height:38.5%;padding:0;border:0;border-radius:6px;background:none;perspective:700px;cursor:pointer;visibility:visible;transition:visibility 0s linear 1.2s}
+.poem-guest-game .gk-door:disabled{cursor:default}
+.poem-guest-game .gk-leaf{position:absolute;top:0;bottom:0;left:0;width:50.5%;overflow:hidden;transform-origin:0 50%;transition:transform 1s cubic-bezier(.4,.1,.3,1),opacity .5s ease .65s}
+.poem-guest-game .gk-leaf+.gk-leaf{left:auto;right:0;transform-origin:100% 50%}
+.poem-guest-game .gk-leaf img{position:absolute;top:0;left:0;width:198%;height:100%;filter:drop-shadow(0 3px 3px #2c1f1240)}
+.poem-guest-game .gk-leaf+.gk-leaf img{left:auto;right:0}
+.poem-guest-game .gk-door.is-cue{animation:gk-glow 1.8s ease-in-out infinite}
+.poem-guest-game .gk-door.is-cue::after{content:'蓬門';position:absolute;left:50%;top:-2%;transform:translate(-50%,-100%);padding:2px 12px;border-radius:999px;background:#fffaf0f2;color:#5c4126;font-size:clamp(14px,2.3cqw,18px);font-weight:700;letter-spacing:.12em;white-space:nowrap;box-shadow:0 2px 6px #2a1d1033}
+.poem-guest-game .gk-door:hover.is-cue .gk-leaf:first-child{transform:rotateY(-12deg)}
+.poem-guest-game .gk-door:hover.is-cue .gk-leaf+.gk-leaf{transform:rotateY(12deg)}
+.poem-guest-game .gk-door.is-open{visibility:hidden;pointer-events:none}
+.poem-guest-game .gk-door.is-open .gk-leaf{opacity:0;transform:rotateY(-80deg)}
+.poem-guest-game .gk-door.is-open .gk-leaf+.gk-leaf{transform:rotateY(80deg)}
+
+/* Hand-made overlays: glow rings, paper tags, speech bubbles. */
+.poem-guest-game .gk-spot{position:absolute;left:var(--x);top:var(--y);z-index:5;width:var(--w);min-width:48px;aspect-ratio:1;transform:translate(-50%,-50%);padding:0;border:2.5px dashed #fffaeef2;border-radius:50%;background:radial-gradient(closest-side,#fff8e436,#fff8e414 70%,transparent);box-shadow:0 0 0 2px #4a332066,inset 0 0 0 2px #4a33204d,0 0 14px 4px #fff4d633;cursor:pointer;animation:gk-call 1.7s ease-in-out infinite;transition:border-color .2s,background .2s}
+.poem-guest-game .gk-spot:hover{border-style:solid;border-color:#ffd27a;background:radial-gradient(closest-side,#fff3c955,#ffe6a022 70%,transparent)}
+.poem-guest-game .gk-spot>span,.poem-guest-game .gk-mark>b{position:absolute;left:50%;top:0;transform:translate(-50%,-115%);padding:2px 11px;border-radius:999px;background:#fffaf0f2;color:#2d4a3c;font-size:clamp(14px,2.3cqw,18px);font-weight:700;line-height:1.4;letter-spacing:.06em;white-space:nowrap;box-shadow:0 2px 6px #2a1d1033;pointer-events:none}
+.poem-guest-game .gk-mark{position:absolute;left:var(--x);top:var(--y);z-index:3;width:var(--w);aspect-ratio:var(--a,1);transform:translate(-50%,-50%) scale(.85);border-radius:50%;border:2px solid #ffe3a6e6;background:radial-gradient(closest-side,#fff1c240,transparent);box-shadow:0 0 16px 5px #ffdb8a66,inset 0 0 10px #fff3d066;opacity:0;pointer-events:none;transition:opacity .5s ease,transform .5s cubic-bezier(.3,1.4,.5,1)}
+.poem-guest-game .gk-mark.is-on{opacity:1;transform:translate(-50%,-50%)}
+.poem-guest-game .gk-mark>b{top:100%;transform:translate(-50%,5px);color:#7b3e22}
+.poem-guest-game .gk-mark[data-gk-mark=wine]>b{top:0;transform:translate(-50%,-112%)}
+.poem-guest-game .gk-glow{position:absolute;left:var(--x);top:var(--y);z-index:3;width:var(--w);aspect-ratio:1;transform:translate(-50%,-50%) scale(.6);border-radius:50%;background:radial-gradient(closest-side,#fff8dc00 34%,#fff0c0e6 54%,#ffd36a99 72%,#ffd36a00);opacity:0;pointer-events:none}
+.poem-guest-game .gk-glow::after{content:'';position:absolute;left:72%;top:8%;width:30%;aspect-ratio:1;background:#fffbe8;clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);filter:drop-shadow(0 0 2px #ffd36a)}
+.poem-guest-game.is-toast .gk-glow{animation:gk-cheers 1.6s ease-out var(--d) both}
+.poem-guest-game .gk-bubble{position:absolute;left:var(--x);top:var(--y);z-index:6;max-width:44%;padding:5px 13px;border-radius:16px;background:#fffaf0f5;color:#3b2c1c;font-size:clamp(14px,2.6cqw,21px);font-weight:700;line-height:1.4;white-space:nowrap;box-shadow:0 3px 10px #2a1d1033;transform:translate(-50%,-100%) scale(.6);transform-origin:50% 120%;opacity:0;pointer-events:none;transition:opacity .3s ease,transform .4s cubic-bezier(.3,1.5,.5,1)}
+.poem-guest-game .gk-bubble::after{content:'';position:absolute;left:50%;top:calc(100% - 1px);width:12px;height:9px;transform:translateX(-50%);background:inherit;clip-path:polygon(0 0,100% 0,40% 100%)}
+.poem-guest-game .gk-bubble.is-on{opacity:1;transform:translate(-50%,-100%)}
+.poem-guest-game .gk-end{position:absolute;right:3.5%;top:5%;z-index:6;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 16px;border-radius:14px;background:#fefbf0e8;color:#315240;box-shadow:0 4px 14px #2a1d1026;pointer-events:none;opacity:0;transform:translateY(8px);transition:opacity .7s ease 1.2s,transform .7s ease 1.2s}
+.poem-guest-game .gk-end b{font-size:clamp(16px,3cqw,28px);letter-spacing:.16em;color:#7b3e22}
+.poem-guest-game .gk-end small{font-size:clamp(14px,1.9cqw,17px);font-weight:600;letter-spacing:.04em}
+.poem-guest-game .gk-end.is-on{opacity:1;transform:none}
+@container (max-width:520px){.poem-guest-game .gk-end{right:2.5%;top:3.5%;padding:3px 12px}.poem-guest-game .gk-end small{display:none}}
+.poem-guest-game .gk-loading{position:absolute;inset:0;z-index:9;display:grid;align-content:center;justify-items:center;gap:14px;padding:20px;background:#f4f0dfeb;font-size:20px;line-height:1.5;text-align:center}
+.poem-guest-game .gk-loading button{min-height:48px;padding:10px 22px;border:1px solid #97ad9b;border-radius:14px;background:#fffefa;font-weight:600;font-size:19px;cursor:pointer}
+
+/* Side panel: verse, choices, action line, feedback. */
+.poem-guest-game .gk-side{grid-area:side;display:flex;flex-direction:column;gap:12px;min-width:0}
+.poem-guest-game .gk-verse{margin:0;padding:10px 14px;border:1px solid #dce5ce;border-radius:16px;background:#f3f6e9;color:#93a596;font-size:clamp(21px,2.6vw,25px);font-weight:600;line-height:1.5;letter-spacing:.1em;text-align:center}
+.poem-guest-game .gk-verse span{display:inline-block;transition:color .4s}
+.poem-guest-game .gk-verse .is-done{color:#3d6a52}
+.poem-guest-game .gk-verse .is-now{color:#294c3b;background:linear-gradient(transparent 62%,#f2d58f99 62%)}
+.poem-guest-game .gk-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.poem-guest-game .gk-choice{position:relative;display:grid;justify-items:center;align-content:center;gap:4px;min-width:0;min-height:120px;padding:8px 8px 10px;border:1.5px solid var(--gk-line);border-radius:18px;background:var(--gk-paper);font-size:19px;font-weight:650;line-height:1.3;cursor:pointer;box-shadow:0 3px 0 #e6e1d2;transition:border-color .2s,background .2s,opacity .3s,filter .3s,transform .2s}
+.poem-guest-game .gk-choice img{display:block;width:100%;height:clamp(64px,10vw,96px);object-fit:contain;pointer-events:none;-webkit-user-drag:none;filter:drop-shadow(0 3px 3px #3b2a1a2e)}
+.poem-guest-game .gk-choice:hover:not(:disabled){border-color:#c98b3a;background:#fff6e2;transform:translateY(-2px)}
+.poem-guest-game .gk-choice:disabled{cursor:default}
+.poem-guest-game .gk-choice.is-right{border-color:#6f9a6d;background:#f1f7ea;box-shadow:0 0 0 3px #a9c9a040,0 3px 0 #d4e3cd}
+.poem-guest-game .gk-choice.is-right::after{content:'✓';position:absolute;right:8px;top:6px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#4f7d58;color:#fff;font-size:18px;font-weight:700}
+.poem-guest-game .gk-choice.is-wrong{opacity:.55;filter:grayscale(.5);box-shadow:none}
+.poem-guest-game .gk-choice.is-shake{animation:gk-shake .45s ease}
+.poem-guest-game .gk-summary{padding:12px 16px;border-radius:16px;background:#fbf3e2;border:1px solid #ecdcbc;text-align:center}
+.poem-guest-game .gk-summary b{display:block;font-size:21px;letter-spacing:.12em;color:#7b3e22}
+.poem-guest-game .gk-summary p{margin:6px 0 0;font-size:17px;line-height:1.6;color:#4b5f50;text-align:left}
+.poem-guest-game .gk-actionline{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.poem-guest-game .gk-primary{flex:1 1 150px;min-height:52px;padding:10px 20px;border:0;border-radius:16px;background:#446d50;color:#fff!important;font-size:20px;font-weight:650;letter-spacing:.06em;cursor:pointer;box-shadow:0 3px 0 #2f4f39;transition:background .2s,transform .1s}
+.poem-guest-game .gk-primary:hover:not(:disabled,.is-busy){background:#3a5f45}
+.poem-guest-game .gk-primary:active:not(:disabled,.is-busy){transform:translateY(2px);box-shadow:0 1px 0 #2f4f39}
+.poem-guest-game .gk-primary.is-next{background:#b8743a;box-shadow:0 3px 0 #8a5426}
+.poem-guest-game .gk-primary.is-next:hover:not(:disabled,.is-busy){background:#a6662f}
+.poem-guest-game .gk-primary:disabled,.poem-guest-game .gk-primary.is-busy{opacity:.5;cursor:default}
+.poem-guest-game .gk-listen{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:52px;margin-left:auto;padding:8px 18px;border:1px solid #b9cbae;border-radius:999px;background:#fffef7;color:#356148!important;font-size:18px;font-weight:600;cursor:pointer}
+.poem-guest-game .gk-listen svg{width:22px;height:22px;flex:none;stroke-linecap:round;stroke-linejoin:round}
+.poem-guest-game .gk-listen svg path{fill:none}
+.poem-guest-game .gk-listen:disabled,.poem-guest-game .gk-listen.is-busy{opacity:.7;cursor:default}
+.poem-guest-game .gk-feedback{margin:0;min-height:3em;font-size:19px;line-height:1.5;color:#55715a;text-align:center;text-wrap:pretty}
+
+@keyframes gk-call{50%{box-shadow:0 0 0 4px #ffd27a59,0 0 20px 8px #ffd98a4d,inset 0 0 0 2px #4a33204d}}
+@keyframes gk-glow{0%,100%{filter:drop-shadow(0 0 0 #ffe2a400)}50%{filter:drop-shadow(0 0 7px #ffe2a4)}}
+@keyframes gk-breathe{50%{opacity:1}}
+@keyframes gk-shake{20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}}
+@keyframes gk-cheers{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}35%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}100%{opacity:.75;transform:translate(-50%,-50%) scale(1)}}
+
+/* Landscape: picture on the left, verse and choices on the right. */
+@media (orientation:landscape) and (min-width:701px),(orientation:landscape) and (max-height:500px){
+ .poem-guest-game{max-width:1280px}
+ .poem-guest-game .gk-layout{grid-template-columns:minmax(0,1.7fr) minmax(270px,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"stage head" "stage side";column-gap:22px;row-gap:12px;align-items:center}
+ .poem-guest-game .gk-stage{width:min(100%,calc((100cqh - 24px) * 16 / 9));align-self:start}
+ .poem-guest-game .gk-head{align-self:end;align-items:flex-start}
+ .poem-guest-game .gk-side{align-self:start}
+ .poem-guest-game .gk-choice img{height:clamp(56px,7.5vw,92px)}
+}
+@media (orientation:landscape) and (min-width:1100px) and (min-height:700px){
+ .poem-guest-game .gk-instruction{font-size:26px}
+ .poem-guest-game .gk-feedback{font-size:20px}
+}
+@media (orientation:landscape) and (max-height:500px){
+ .poem-guest-game .gk-layout{grid-template-columns:minmax(0,1.45fr) minmax(250px,1fr);column-gap:14px;row-gap:6px}
+ .poem-guest-game .gk-stage{border-radius:14px;width:min(100%,calc((100cqh - 8px) * 16 / 9))}
+ .poem-guest-game .gk-head{gap:8px}
+ .poem-guest-game .gk-instruction{font-size:17px;line-height:1.35}
+ .poem-guest-game .gk-progress{min-width:52px;padding:3px 8px;font-size:15px}
+ .poem-guest-game .gk-side{gap:6px}
+ .poem-guest-game .gk-verse{padding:4px 8px;font-size:17px;letter-spacing:.04em;border-radius:12px}
+ .poem-guest-game .gk-choices{gap:6px}
+ .poem-guest-game .gk-choice{min-height:0;padding:4px 4px 6px;font-size:15px;border-radius:14px;gap:2px}
+ .poem-guest-game .gk-choice img{height:46px}
+ .poem-guest-game .gk-choice.is-right::after{width:22px;height:22px;font-size:14px;right:4px;top:4px}
+ .poem-guest-game .gk-summary{padding:6px 10px}.poem-guest-game .gk-summary b{font-size:16px}.poem-guest-game .gk-summary p{font-size:14px;line-height:1.45;margin-top:2px}
+ .poem-guest-game .gk-primary{min-height:44px;padding:5px 12px;font-size:17px;flex-basis:100px}
+ .poem-guest-game .gk-listen{min-height:44px;padding:5px 12px;font-size:15px}
+ .poem-guest-game .gk-feedback{font-size:15px;line-height:1.4;min-height:2.8em;text-align:left}
+}
+@media (max-width:420px){
+ .poem-guest-game .gk-layout{gap:10px}
+ .poem-guest-game .gk-instruction{font-size:19px;min-height:2.84em}
+ .poem-guest-game .gk-progress{min-width:56px;padding:4px 8px;font-size:16px}
+ .poem-guest-game .gk-stage{border-radius:15px}
+ .poem-guest-game .gk-side{gap:10px}
+ .poem-guest-game .gk-verse{font-size:21px;letter-spacing:.04em;padding:8px 10px}
+ .poem-guest-game .gk-choice{min-height:108px;font-size:18px}
+ .poem-guest-game .gk-primary{font-size:19px;padding:10px 14px}
+ .poem-guest-game .gk-listen{padding:8px 14px;font-size:17px}
+ .poem-guest-game .gk-feedback{font-size:17px;text-align:left}
+ .poem-guest-game .gk-end{padding:4px 9px;border-radius:10px}
+}
+@media (max-width:370px){
+ .poem-guest-game .gk-verse{font-size:19px;letter-spacing:0}
+ .poem-guest-game .gk-choice{font-size:16px}
+ .poem-guest-game .gk-listen span{font-size:16px}
+}
+.poem-guest-game.is-reduced .gk-scene,.poem-guest-game.is-reduced .gk-layer,.poem-guest-game.is-reduced .gk-leaf,.poem-guest-game.is-reduced .gk-door,.poem-guest-game.is-reduced .gk-broom,.poem-guest-game.is-reduced .gk-pile,.poem-guest-game.is-reduced .gk-mark,.poem-guest-game.is-reduced .gk-bubble,.poem-guest-game.is-reduced .gk-end,.poem-guest-game.is-reduced .gk-verse span,.poem-guest-game.is-reduced .gk-choice{transition:none}
+.poem-guest-game.is-reduced .gk-spot,.poem-guest-game.is-reduced .gk-door,.poem-guest-game.is-reduced .gk-choice,.poem-guest-game.is-reduced .gk-pile::before{animation:none}
+.poem-guest-game.is-reduced .gk-pile:not(:disabled)::before{opacity:.7}
+.poem-guest-game.is-reduced.is-toast .gk-glow{animation:none;opacity:.8;transform:translate(-50%,-50%)}
+@media (prefers-reduced-motion:reduce){
+ .poem-guest-game .gk-scene,.poem-guest-game .gk-layer,.poem-guest-game .gk-leaf,.poem-guest-game .gk-door,.poem-guest-game .gk-broom,.poem-guest-game .gk-pile,.poem-guest-game .gk-mark,.poem-guest-game .gk-bubble,.poem-guest-game .gk-end{transition:none}
+ .poem-guest-game .gk-spot,.poem-guest-game .gk-door,.poem-guest-game .gk-choice,.poem-guest-game .gk-pile::before{animation:none}
+ .poem-guest-game .gk-pile:not(:disabled)::before{opacity:.7}
+ .poem-guest-game.is-toast .gk-glow{animation:none;opacity:.8;transform:translate(-50%,-50%)}
+}

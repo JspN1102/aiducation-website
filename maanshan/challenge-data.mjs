@@ -187,9 +187,16 @@ export const POEM_GAME_ITEMS = Object.freeze(Object.fromEntries([
   ['ti-xi-lin-bi', 3, '山中小攝影師', '換個角度，拍下山的樣子。', '橫看成嶺，側看成峯。同一座山，從不同位置看，樣子也不同。'],
   ['bo-chuan-gua-zhou', 4, '拼出江南春色', '把六塊畫片放回畫中，拼出江岸和小舟。', '王安石泊船瓜洲，春風使江岸草木變綠；月光下，他盼望回到鍾山的家。'],
   ['gui-yuan-tian-ju', 5, '豆苗小園丁', '照顧小豆苗，整理詩中的田地。', '草盛豆苗稀。野草茂盛，豆苗稀疏；詩人一早起來整理田地。'],
-  ['zao-chun', 6, '春雨接字', '左右移動小葉舟，一局收集五個詩中字。', '「小」xiǎo 的聲母是 x；「酥」sū、「色」sè 是 s；「是」shì、「勝」shèng 是 sh。把五個字放回詩句，再讀一讀。']
-].map(([slug, grade, title, prompt, explanation]) => [slug, Object.freeze({
-  id: `g${grade}-play-20260918`, type: 'microgame', slug, title, prompt, explanation, difficulty: 1
+  ['zao-chun', 6, '春雨接字', '左右移動小葉舟，一局收集五個詩中字。', '「小」xiǎo 的聲母是 x；「酥」sū、「色」sè 是 s；「是」shì、「勝」shèng 是 sh。把五個字放回詩句，再讀一讀。'],
+  // Preview poems 7-12 share grades with poems 1-6, so their ids name the poem.
+  ['yong-xue', 1, '數雪花', '接住雪花數一數，再把雪花藏進白梅裏。', '雪花從一片數到無數片，越下越多。白雪飛進白梅花裏，顏色一樣，分不出來，所以「都不見」。', 'p7-play-20261005'],
+  ['hua-ji', 2, '公雞叫天亮', '找出紅冠和雪白的羽毛，再讓公雞叫開千門萬戶。', '公雞頭戴紅冠、全身雪白。牠平時不隨便叫，一叫天就亮了，千家萬戶都打開門。', 'p8-play-20261005'],
+  ['qi-bu-shi', 3, '七步煮豆', '一步一步煮豆、燒萁，走完曹植的七步。', '豆和豆萁從同一條根長出來，比喻親兄弟。「相煎何太急」是勸哥哥不要互相傷害。', 'p9-play-20261005'],
+  ['jue-ju', 4, '窗外對對子', '把上下兩句的詞語一一對上，看看近景和遠景。', '兩個對一行、黃鸝對白鷺、翠柳對青天。上下兩句詞語一一相對，這叫對仗；四句詩寫出近景和遠景。', 'p10-play-20261005'],
+  ['zheng-ren-mai-lu', 5, '鄭人買鞋記', '跟着鄭人量腳、趕集、回家取尺，最後試一試鞋。', '鄭國人寧可相信量好的尺碼，也不相信自己的腳。做事要從實際出發，懂得變通。', 'p11-play-20261005'],
+  ['ke-zhi', 6, '草堂迎客', '掃花徑、開蓬門、端菜倒酒，再隔着籬笆請鄰翁。', '杜甫家貧，只有家常菜和舊酒，卻真誠熱情地招待客人，還隔着籬笆請鄰居一起喝酒。', 'p12-play-20261005']
+].map(([slug, grade, title, prompt, explanation, id = `g${grade}-play-20260918`]) => [slug, Object.freeze({
+  id, type: 'microgame', slug, title, prompt, explanation, difficulty: 1
 })])));
 
 // Keep the original five IDs available for version-one saved attempts. New attempts

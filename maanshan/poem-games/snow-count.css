@@ -1,0 +1,175 @@
+.poem-snow-game{--sc-ink:#2c4858;--sc-soft:#5b7484;--sc-paper:#fffdf8;--sc-line:#d5dee3;--sc-plum:#b4545e;position:relative;display:block;width:100%;max-width:820px;margin-inline:auto;min-width:0;color:var(--sc-ink);font-family:var(--sans)}
+.poem-snow-game *{box-sizing:border-box}
+.poem-snow-game [hidden]{display:none!important}
+.poem-snow-game .sc-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:center;height:100%;min-width:0}
+.poem-snow-game .sc-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.poem-snow-game .sc-task{margin:0;font-size:clamp(19px,2.4vw,24px);font-weight:700;line-height:1.4;text-wrap:balance}
+.poem-snow-game .sc-chip{flex:none;padding:4px 12px;border-radius:999px;background:#e8eff3;color:var(--sc-soft);font-size:17px;font-weight:700;line-height:1.4;font-variant-numeric:tabular-nums;white-space:nowrap}
+.poem-snow-game .sc-stage{position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#e7edf0;border:1px solid #7f97a640;box-shadow:0 14px 28px -20px #23404f99;user-select:none;-webkit-user-select:none;touch-action:manipulation;font-family:var(--sans);container-type:inline-size}
+.poem-snow-game .sc-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.3s ease;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.poem-snow-game .sc-scene.is-on{opacity:1}
+.poem-snow-game .sc-veil{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(115% 95% at 50% 42%,#fff0 28%,#f2f6f8c4 100%),#ffffff1f;opacity:0;transition:opacity 1.4s ease}
+.poem-snow-game .sc-veil.is-on{opacity:1}
+.poem-snow-game .sc-fall{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.poem-snow-game .sc-fall[data-level="off"]{display:none}
+.poem-snow-game .sc-fall i{position:absolute;top:0;left:var(--x);width:var(--s);height:100%;animation:sc-fall var(--d) linear var(--t) infinite;will-change:transform}
+.poem-snow-game .sc-fall i::before{content:"";position:absolute;left:0;top:0;width:var(--s);height:var(--s);border-radius:50%;background:radial-gradient(circle,#fff 0 40%,#ffffffa8 60%,#fff0 76%);box-shadow:0 0 1.5px #4d67794d;opacity:var(--o)}
+.poem-snow-game .sc-fall[data-level="0"] i:nth-child(n+19),.poem-snow-game .sc-fall[data-level="1"] i:nth-child(n+39),.poem-snow-game .sc-fall[data-level="2"] i:nth-child(n+65){display:none}
+.poem-snow-game .sc-flakes,.poem-snow-game .sc-plums,.poem-snow-game .sc-bigs{position:absolute;inset:0;pointer-events:none}
+.poem-snow-game .sc-stage button{-webkit-tap-highlight-color:transparent;font-family:var(--sans)}
+.poem-snow-game .sc-flake,.poem-snow-game .sc-plum,.poem-snow-game .sc-big{position:absolute;left:var(--x);top:var(--y);aspect-ratio:1;margin:0;padding:0;border:0;border-radius:50%;background:transparent;pointer-events:auto;cursor:pointer;display:grid;place-items:center}
+.poem-snow-game .sc-flake{z-index:3;width:clamp(48px,10%,92px);transform:translate(-50%,-50%);touch-action:manipulation;transition:opacity .3s ease,transform .3s ease}
+.poem-snow-game .sc-flake::before,.poem-snow-game .sc-big::before{content:"";position:absolute;inset:2%;border-radius:50%;background:radial-gradient(circle,#ffffffeb 0 17%,#ffffff70 42%,#fff0 69%);transition:opacity .4s,box-shadow .25s}
+.poem-snow-game .sc-flake svg{position:relative;width:76%;height:76%;overflow:visible;animation:sc-drift var(--d) ease-in-out var(--t) infinite alternate}
+.poem-snow-game .sc-flake:hover:not(:disabled) svg{filter:drop-shadow(0 0 5px #fff)}
+.poem-snow-game .sc-flake.is-caught{opacity:0;transform:translate(-50%,-50%) scale(.5);pointer-events:none}
+.poem-snow-game .sc-flake:disabled,.poem-snow-game .sc-plum:disabled,.poem-snow-game .sc-big:disabled,.poem-snow-game .sc-sky:disabled{cursor:default}
+.poem-snow-game svg .sc-edge{fill:none;stroke:#42617a;stroke-opacity:.5;stroke-width:10;stroke-linecap:round;stroke-linejoin:round}
+.poem-snow-game svg .sc-core{fill:none;stroke:#fff;stroke-width:4.6;stroke-linecap:round;stroke-linejoin:round}
+.poem-snow-game svg .sc-hub{fill:#fff;stroke:#42617a;stroke-opacity:.45;stroke-width:3}
+.poem-snow-game button:focus-visible{outline:3px solid #de9b34;outline-offset:3px}
+.poem-snow-game .sc-sky{position:absolute;inset:0;z-index:3;width:100%;height:100%;margin:0;padding:0;border:0;border-radius:inherit;background:transparent;cursor:pointer;touch-action:manipulation}
+.poem-snow-game .sc-sky:focus-visible{outline-offset:-7px}
+.poem-snow-game .sc-sky-hint{position:absolute;left:50%;top:20%;transform:translate(-50%,-50%);padding:8px 20px;border-radius:999px;background:#fffdf8e8;color:var(--sc-ink);font-size:clamp(17px,2.3vw,22px);font-weight:700;letter-spacing:.1em;line-height:1.3;white-space:nowrap;box-shadow:0 0 0 6px #ffffff5c,0 8px 18px -10px #23404f99;animation:sc-breathe 2.4s ease-in-out infinite;transition:opacity .4s}
+.poem-snow-game .sc-sky:disabled .sc-sky-hint{opacity:0}
+.poem-snow-game .sc-ripple{position:absolute;z-index:4;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 8px #ffffff40,inset 0 0 18px #ffffffa0;pointer-events:none;animation:sc-ripple 1s ease-out forwards}
+.poem-snow-game .sc-plum{z-index:3;width:clamp(52px,11%,96px);transform:translate(-50%,-50%);touch-action:manipulation}
+.poem-snow-game .sc-plum span{position:absolute;inset:8%;border-radius:50%;border:3px dashed #bf5f69;box-shadow:0 0 0 3px #ffffffc4,inset 0 0 0 3px #ffffffa8,0 0 14px 2px #ffffffd0;transition:transform .25s,border-color .25s,box-shadow .25s}
+.poem-snow-game .sc-plum:not(:disabled) span{animation:sc-ring 2.8s ease-in-out infinite}
+.poem-snow-game .sc-plum:nth-child(2n) span{animation-delay:-1.4s}
+.poem-snow-game.is-carrying .sc-plum span{border-style:solid;border-color:#d4943a;animation-duration:1.4s}
+.poem-snow-game .sc-plum.is-near span{transform:scale(1.22);border-color:#e08a24;box-shadow:0 0 0 4px #fff,0 0 0 8px #e3a5487a,0 0 26px #fff;animation:none}
+.poem-snow-game .sc-task span{display:inline-block}
+.poem-snow-game .sc-plum.is-glow::after{content:"";position:absolute;inset:-35%;border-radius:50%;background:radial-gradient(circle,#fffef7 0 18%,#fff3dcb0 40%,#fff0 70%);pointer-events:none;animation:sc-glow 1.5s ease-out forwards}
+.poem-snow-game[data-stage="done"] .sc-plums{display:none}
+.poem-snow-game .sc-big{z-index:4;width:clamp(56px,12.5%,104px);transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,0px)));cursor:grab;touch-action:none;transition:left .6s cubic-bezier(.3,.7,.3,1),top .6s cubic-bezier(.3,.7,.3,1),transform .6s cubic-bezier(.3,.7,.3,1)}
+.poem-snow-game .sc-big-art{position:absolute;inset:11%;display:grid;place-items:center;transition:opacity .8s ease .45s,transform .9s ease .45s,filter .8s ease .45s}
+.poem-snow-game .sc-big-art svg{width:100%;height:100%;overflow:visible;animation:sc-drift 8s ease-in-out infinite alternate}
+.poem-snow-game .sc-big:nth-child(2n) .sc-big-art svg{animation-duration:9.5s;animation-delay:-3s}
+.poem-snow-game .sc-big.is-selected::before{box-shadow:0 0 0 4px #e3a548,0 0 0 10px #ffffff80}
+.poem-snow-game .sc-big.is-dragging{z-index:6;cursor:grabbing;transition:none}
+.poem-snow-game .sc-big.is-dragging .sc-big-art{transform:scale(1.12);transition:transform .15s}
+.poem-snow-game .sc-big.is-gone{pointer-events:none}
+.poem-snow-game .sc-big.is-gone::before{opacity:0}
+.poem-snow-game .sc-big.is-gone .sc-big-art{opacity:0;transform:scale(.3);filter:blur(3px)}
+.poem-snow-game .sc-bigs.is-nudge .sc-big:not(:disabled) .sc-big-art{animation:sc-nudge .8s ease}
+.poem-snow-game .sc-end{position:absolute;z-index:5;left:3.5%;top:6%;display:grid;gap:3px;max-width:86%;padding:9px 16px 10px;border-radius:14px;background:#fffdf8eb;box-shadow:0 10px 22px -14px #23404fb3;color:var(--sc-ink);pointer-events:none;animation:sc-appear .9s ease both}
+.poem-snow-game .sc-end span{font-size:clamp(18px,4cqw,28px);font-weight:700;letter-spacing:.1em;line-height:1.3}
+.poem-snow-game .sc-end small{font-size:clamp(14px,2.3cqw,16px);line-height:1.4;color:var(--sc-soft)}
+.poem-snow-game .sc-loading{position:absolute;inset:0;z-index:8;display:grid;place-content:center;justify-items:center;gap:14px;padding:20px;background:#edf2f4ee;font-size:20px;line-height:1.5;text-align:center}
+.poem-snow-game .sc-loading button{min-height:48px;padding:10px 22px;border:1px solid #9fb2bd;border-radius:14px;background:var(--sc-paper);color:var(--sc-ink);font-size:19px;font-weight:700;cursor:pointer}
+.poem-snow-game .sc-ghost{position:absolute;left:0;top:0;z-index:20;display:block;pointer-events:none;filter:drop-shadow(0 0 6px #fff)}
+.poem-snow-game .sc-ghost svg{display:block;width:100%;height:100%;overflow:visible}
+.poem-snow-game .sc-card{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 18px;min-width:0;padding:10px 16px;border-radius:18px;background:var(--sc-paper);border:1px solid var(--sc-line);box-shadow:0 3px 0 #e5ebee}
+.poem-snow-game .sc-count{display:grid;justify-items:center;align-content:center;min-width:4.4em;min-height:66px;line-height:1.15}
+.poem-snow-game .sc-count small{font-size:15px;font-weight:600;color:var(--sc-soft);letter-spacing:.06em}
+.poem-snow-game .sc-count b{font-family:var(--serif);font-size:clamp(31px,4.2vw,40px);font-weight:700;letter-spacing:.06em;color:var(--sc-ink);white-space:nowrap}
+.poem-snow-game .sc-count b.is-muted{color:#8aa0ad}
+.poem-snow-game .sc-marks{display:grid;grid-template-columns:repeat(5,30px);gap:6px 7px}
+.poem-snow-game .sc-marks[data-kind="flurry"]{grid-template-columns:repeat(3,auto);gap:8px}
+.poem-snow-game .sc-mark{position:relative;width:30px;height:30px;border-radius:50%;border:1.5px dashed #b6c5cd;transition:border-color .3s,background-color .3s}
+.poem-snow-game .sc-mark svg{position:absolute;inset:2px;width:calc(100% - 4px);height:calc(100% - 4px);overflow:visible;opacity:0;transform:scale(.4);transition:opacity .3s,transform .4s cubic-bezier(.3,1.6,.5,1)}
+.poem-snow-game .sc-mark.is-on{border-style:solid;border-color:#9bb2c1;background:#dbe6ed}
+.poem-snow-game .sc-mark.is-on svg{opacity:1;transform:none}
+.poem-snow-game .sc-marks[data-kind="hide"] .sc-mark{border-style:solid;border-color:#c3d1d9;background:#e3ecf1}
+.poem-snow-game .sc-marks[data-kind="hide"] .sc-mark>svg:first-child{opacity:1;transform:none}
+.poem-snow-game .sc-marks[data-kind="hide"] .sc-mark.is-on{border-color:#e3bcc0;background:#fbf2f1}
+.poem-snow-game .sc-marks[data-kind="hide"] .sc-mark.is-on>svg:first-child{opacity:0;transform:scale(.3)}
+.poem-snow-game .sc-bloom circle{fill:#fffdfb;stroke:#c7787f;stroke-width:3.5}
+.poem-snow-game .sc-bloom .sc-heart{fill:#e6b24e;stroke:#c7787f;stroke-width:2}
+.poem-snow-game .sc-pill{padding:5px 12px;border-radius:999px;border:1.5px dashed #b6c5cd;color:#8ea2ae;font-family:var(--serif);font-size:19px;font-style:normal;font-weight:700;line-height:1.3;letter-spacing:.04em;white-space:nowrap;transition:background-color .3s,border-color .3s,color .3s}
+.poem-snow-game .sc-pill.is-on{border-style:solid;border-color:#9bb2c1;background:#dbe6ed;color:var(--sc-ink)}
+.poem-snow-game .sc-actionline{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px 18px;min-width:0}
+.poem-snow-game .sc-verse{display:flex;margin:0;font-family:var(--serif);font-size:clamp(25px,3vw,30px);font-weight:700;line-height:1.3;letter-spacing:.06em;white-space:nowrap}
+.poem-snow-game .sc-verse span{color:#2c485830;transition:color .45s ease}
+.poem-snow-game .sc-verse span.is-lit{color:var(--sc-ink)}
+.poem-snow-game .sc-listen{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:8px 18px;border:1.5px solid #c1cfd7;border-radius:16px;background:var(--sc-paper);color:var(--sc-ink);font-family:inherit;font-size:19px;font-weight:700;line-height:1.2;white-space:nowrap;cursor:pointer;box-shadow:0 3px 0 #e0e8ec}
+.poem-snow-game .sc-listen svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.poem-snow-game .sc-listen:hover:not(:disabled){background:#f3f7f9}
+.poem-snow-game .sc-listen:disabled{cursor:default;opacity:.65}
+.poem-snow-game .sc-listen[aria-busy="true"]{opacity:1;background:#e9f0f4}
+.poem-snow-game .sc-feedback{margin:0;min-height:2.9em;font-size:19px;line-height:1.45;text-align:center;color:#3d596a;text-wrap:pretty}
+.poem-snow-game.is-instant *,.poem-snow-game.is-instant *::before{transition:none!important}
+@keyframes sc-fall{from{transform:translate3d(0,-4%,0)}to{transform:translate3d(var(--w),101%,0)}}
+@keyframes sc-drift{from{transform:translate(-4px,-5px) rotate(-18deg)}to{transform:translate(4px,6px) rotate(24deg)}}
+@keyframes sc-breathe{50%{box-shadow:0 0 0 13px #ffffff33,0 8px 18px -10px #23404f99}}
+@keyframes sc-ripple{from{transform:scale(.3);opacity:1}to{transform:scale(3.4);opacity:0}}
+@keyframes sc-ring{50%{transform:scale(1.1)}}
+@keyframes sc-glow{0%{opacity:0;transform:scale(.4)}25%{opacity:1}100%{opacity:0;transform:scale(1.3)}}
+@keyframes sc-fade{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
+@keyframes sc-nudge{30%{transform:scale(1.16)}60%{transform:scale(.95)}}
+@keyframes sc-appear{from{opacity:0;transform:translateY(6px)}}
+@media (orientation:landscape) and (min-width:701px),(orientation:landscape) and (max-height:500px){
+  .poem-snow-game{max-width:1280px}
+  .poem-snow-game .sc-layout{grid-template-columns:minmax(0,1.75fr) minmax(250px,.9fr);grid-template-rows:minmax(0,1fr) auto auto minmax(0,1fr);column-gap:22px;row-gap:12px;align-items:center}
+  .poem-snow-game .sc-stage{grid-column:1;grid-row:1/5;width:min(100%,calc(100cqh * 16 / 9));align-self:center}
+  .poem-snow-game .sc-head{grid-column:2;grid-row:1;align-self:end;flex-direction:column;align-items:flex-start;gap:6px}
+  .poem-snow-game .sc-chip{order:-1}
+  .poem-snow-game .sc-card{grid-column:2;grid-row:2}
+  .poem-snow-game .sc-actionline{grid-column:2;grid-row:3}
+  .poem-snow-game .sc-feedback{grid-column:2;grid-row:4;align-self:start;min-height:0;font-size:18px;line-height:1.45}
+}
+@media (orientation:landscape) and (max-height:500px){
+  .poem-snow-game .sc-layout{grid-template-columns:min(calc(100cqh * 16 / 9),calc((100svh - 200px) * 16 / 9),58%) minmax(0,1fr);column-gap:16px;row-gap:5px}
+  .poem-snow-game .sc-stage{width:100%;border-radius:14px}
+  .poem-snow-game .sc-head{flex-direction:row;align-items:center;justify-content:space-between;gap:8px}
+  .poem-snow-game .sc-task{font-size:17px;line-height:1.35}
+  .poem-snow-game .sc-chip{order:1;font-size:14px;padding:2px 9px}
+  .poem-snow-game .sc-card{justify-content:flex-start;padding:5px 12px;gap:4px 10px;border-radius:14px}
+  .poem-snow-game .sc-count{display:flex;align-items:baseline;gap:6px;min-width:0;min-height:0;white-space:nowrap}
+  .poem-snow-game .sc-count small{font-size:14px}
+  .poem-snow-game .sc-count b{font-size:25px}
+  .poem-snow-game .sc-marks{grid-template-columns:repeat(5,22px);gap:3px 4px}
+  .poem-snow-game .sc-mark{width:22px;height:22px}
+  .poem-snow-game .sc-marks[data-kind="flurry"]{gap:5px}
+  .poem-snow-game .sc-pill{font-size:15px;padding:2px 8px}
+  .poem-snow-game .sc-actionline{justify-content:flex-start;gap:6px 12px}
+  .poem-snow-game .sc-verse{font-size:21px}
+  .poem-snow-game .sc-listen{min-height:44px;padding:6px 13px;font-size:17px;border-radius:13px}
+  .poem-snow-game .sc-listen svg{width:19px;height:19px}
+  .poem-snow-game .sc-feedback{font-size:15px;line-height:1.35;text-align:left}
+  .poem-snow-game .sc-loading{font-size:17px}
+}
+@media (max-width:700px){
+  .poem-snow-game .sc-layout{gap:10px}
+  .poem-snow-game .sc-stage{border-radius:16px}
+}
+@media (max-width:420px){
+  .poem-snow-game .sc-task{font-size:19px}
+  .poem-snow-game .sc-chip{font-size:15px;padding:3px 10px}
+  .poem-snow-game .sc-card{padding:8px 12px;gap:6px 12px}
+  .poem-snow-game .sc-count{min-height:62px}
+  .poem-snow-game .sc-count b{font-size:32px}
+  .poem-snow-game .sc-marks{grid-template-columns:repeat(5,28px);gap:6px}
+  .poem-snow-game .sc-mark{width:28px;height:28px}
+  .poem-snow-game .sc-pill{font-size:17px;padding:4px 8px}
+  .poem-snow-game .sc-marks[data-kind="flurry"]{gap:5px}
+  .poem-snow-game .sc-verse{font-size:25px;letter-spacing:.04em}
+  .poem-snow-game .sc-listen{font-size:18px;padding:8px 14px}
+  .poem-snow-game .sc-feedback{font-size:18px}
+  .poem-snow-game .sc-end{padding:6px 10px 7px;border-radius:10px}
+  .poem-snow-game .sc-sky-hint{padding:6px 15px}
+}
+@media (max-width:370px){
+  .poem-snow-game .sc-task{font-size:18px}
+  .poem-snow-game .sc-count{min-width:3.6em;min-height:55px}
+  .poem-snow-game .sc-count b{font-size:28px}
+  .poem-snow-game .sc-marks{grid-template-columns:repeat(5,25px);gap:5px}
+  .poem-snow-game .sc-mark{width:25px;height:25px}
+  .poem-snow-game .sc-verse{font-size:22px;letter-spacing:.02em}
+  .poem-snow-game .sc-listen{padding:8px 11px;font-size:17px}
+}
+.poem-snow-game.is-reduced .sc-fall i{animation:none;transform:translateY(var(--y))}
+.poem-snow-game.is-reduced .sc-flake svg,.poem-snow-game.is-reduced .sc-big-art svg,.poem-snow-game.is-reduced .sc-sky-hint,.poem-snow-game.is-reduced .sc-plum span,.poem-snow-game.is-reduced .sc-end,.poem-snow-game.is-reduced .sc-bigs.is-nudge .sc-big-art{animation:none!important}
+.poem-snow-game.is-reduced .sc-flake,.poem-snow-game.is-reduced .sc-flake.is-caught{transform:translate(-50%,-50%);transition:opacity .2s}
+.poem-snow-game.is-reduced .sc-big{transition:none}
+.poem-snow-game.is-reduced .sc-big-art,.poem-snow-game.is-reduced .sc-big.is-dragging .sc-big-art{transform:none;filter:none;transition:opacity .5s ease}
+.poem-snow-game.is-reduced .sc-ripple{display:none}
+.poem-snow-game.is-reduced .sc-plum.is-glow::after{animation:sc-fade 1.5s ease-out forwards;transform:none}
+.poem-snow-game.is-reduced .sc-scene,.poem-snow-game.is-reduced .sc-veil{transition-duration:.4s}
+@media (prefers-reduced-motion:reduce){
+  .poem-snow-game .sc-fall i{animation:none;transform:translateY(var(--y))}
+  .poem-snow-game .sc-flake svg,.poem-snow-game .sc-big-art svg,.poem-snow-game .sc-sky-hint,.poem-snow-game .sc-plum span,.poem-snow-game .sc-end,.poem-snow-game .sc-bigs.is-nudge .sc-big-art{animation:none!important}
+  .poem-snow-game .sc-ripple{display:none}
+  .poem-snow-game .sc-big{transition:none}
+}

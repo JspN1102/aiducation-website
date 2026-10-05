@@ -1,0 +1,206 @@
+.poem-seven-steps{--ss-ink:#294c3b;--ss-soft:#5f7566;--ss-paper:#fffdf7;--ss-line:#dcd8c8;--ss-gold:#e3a548;--ss-fire:#c9673a;display:block;width:100%;max-width:900px;margin-inline:auto;align-self:start;align-self:safe center;color:var(--ss-ink);font-family:var(--sans);min-width:0}
+.poem-seven-steps *{box-sizing:border-box}
+.poem-seven-steps [hidden]{display:none!important}
+.poem-seven-steps button{font-family:inherit;color:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.poem-seven-steps button:focus-visible{outline:3px solid #de9b34;outline-offset:3px}
+.poem-seven-steps .ss-layout{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "stage" "side";gap:12px;height:100%;align-content:center}
+.poem-seven-steps .ss-head{grid-area:head;display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.poem-seven-steps .ss-instruction{margin:0;font-size:clamp(19px,2.4vw,24px);font-weight:650;line-height:1.42}
+.poem-seven-steps .ss-instruction span{display:inline-block}
+.poem-seven-steps .ss-progress{flex:none;min-width:66px;padding:5px 12px;border-radius:18px;background:#edf3e7;color:#3c6447;font-size:18px;font-weight:600;text-align:center;font-variant-numeric:tabular-nums}
+.poem-seven-steps.is-done .ss-progress{background:#f6e5c8;color:#8a4f24}
+
+/* Stage: the three scene paintings stay 16:9; every overlay is placed in % of that box. */
+.poem-seven-steps .ss-stage{grid-area:stage;position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#e9e2d2;border:1px solid #d6d2c1;box-shadow:0 6px 20px #2c443114;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.poem-seven-steps .ss-scene,.poem-seven-steps .ss-hintplant{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none}
+.poem-seven-steps .ss-scene-2,.poem-seven-steps .ss-scene-3{opacity:0;transition:opacity 1.1s ease}
+.poem-seven-steps .ss-scene.is-on{opacity:1}
+.poem-seven-steps .ss-patch{position:absolute;left:var(--l);top:var(--t);width:var(--w);height:auto;opacity:0;pointer-events:none;transition:opacity .9s ease .35s;-webkit-user-drag:none}
+.poem-seven-steps .ss-patch.is-on{opacity:1;transition:none}
+.poem-seven-steps .ss-hintplant{opacity:0;transition:opacity .8s ease;-webkit-mask-image:radial-gradient(ellipse 21% 32% at 41% 26%,#000 52%,transparent 100%);mask-image:radial-gradient(ellipse 21% 32% at 41% 26%,#000 52%,transparent 100%)}
+.poem-seven-steps .ss-hintplant.is-on{opacity:.34}
+.poem-seven-steps .ss-glow{position:absolute;left:29%;top:88%;width:34%;height:34%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,#ffb35a70,#ff8a3a2c 55%,transparent);mix-blend-mode:screen;opacity:0;pointer-events:none;transition:opacity 1.2s ease}
+.poem-seven-steps .ss-glow.is-on{opacity:1;animation:ss-flicker 2.4s ease-in-out 1.2s 6 alternate}
+.poem-seven-steps .ss-tear{position:absolute;left:var(--x);top:var(--y);z-index:2;width:3.1%;min-width:13px;transform:translate(-50%,-50%) translateY(-8px);opacity:0;pointer-events:none;transition:opacity .35s ease,transform .7s cubic-bezier(.3,.7,.4,1);filter:drop-shadow(0 1px 1px #24403555)}
+.poem-seven-steps .ss-tear.is-on{opacity:1;transform:translate(-50%,-50%)}
+.poem-seven-steps .ss-tear svg,.poem-seven-steps .ss-sob-icons svg{display:block;width:100%;height:auto;fill:#d8eef4;stroke:#5c8fa3;stroke-width:1.4}
+.poem-seven-steps .ss-shine{fill:none;stroke:#fff;stroke-width:1.6;stroke-linecap:round}
+.poem-seven-steps .ss-token{position:absolute;left:var(--x);top:var(--y);z-index:3;display:grid;place-items:center;width:clamp(30px,6.4%,52px);aspect-ratio:1;transform:translate(-50%,-50%) scale(.6);border-radius:50%;background:#fffaf0f2;border:2px solid #b5523b;color:#9a3f2c;font-size:clamp(16px,2.6vw,26px);font-weight:700;line-height:1;box-shadow:0 3px 8px #3b2a1a38;opacity:0;pointer-events:none;transition:opacity .35s ease,transform .45s cubic-bezier(.3,1.4,.5,1),left 1s ease,top 1s ease}
+.poem-seven-steps .ss-token.is-on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.poem-seven-steps[data-step="6"] .ss-token,.poem-seven-steps[data-step="7"] .ss-token{opacity:1;transform:translate(-50%,-50%) scale(.92)}
+.poem-seven-steps .ss-fx{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden}
+
+/* Drop targets: soft ink rings with a paper label, only shown when they are useful. */
+.poem-seven-steps .ss-target{position:absolute;left:var(--x);top:var(--y);z-index:5;width:var(--w);height:var(--h);min-width:46px;min-height:46px;transform:translate(-50%,-50%);padding:0;border:2.5px dashed #fffaeef2;border-radius:50%;background:radial-gradient(closest-side,#fff8e42e,#fff8e412 70%,transparent);box-shadow:0 0 0 2px #4a332066,inset 0 0 0 2px #4a33204d,0 0 14px 4px #fff4d633;cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s}
+.poem-seven-steps .ss-target>span{position:absolute;left:50%;top:var(--ly,0%);transform:translate(-50%,-50%);padding:3px 11px;border-radius:999px;background:#fffaf0f0;color:#2d4a3c;font-size:clamp(14px,1.9vw,18px);font-weight:650;line-height:1.35;white-space:nowrap;box-shadow:0 2px 6px #2a1d1033}
+.poem-seven-steps .ss-target-stove{--ly:50%}
+.poem-seven-steps .ss-target-root{--ly:118%;border-style:solid;border-color:#fff6dfd9;background:#fffaf033}
+.poem-seven-steps .ss-target-root svg{position:absolute;left:50%;top:50%;width:62%;transform:translate(-50%,-50%);fill:none;stroke:#7a5532;stroke-width:2.6;stroke-linecap:round}
+.poem-seven-steps .ss-target.is-calling{border-color:#ffe2a4;animation:ss-call 1.6s ease-in-out infinite}
+.poem-seven-steps .ss-target.is-over,.poem-seven-steps .ss-target:hover:not(:disabled){border-style:solid;border-color:#ffd27a;background:radial-gradient(closest-side,#fff3c94d,#ffe6a01f 70%,transparent);box-shadow:0 0 0 4px #ffcf7366,0 0 22px 8px #ffd98a55}
+.poem-seven-steps .ss-target:disabled{cursor:default}
+.poem-seven-steps[data-step="4"] .ss-target-pot>span{--ly:0%}
+.poem-seven-steps .ss-caption{position:absolute;right:3.5%;top:5%;z-index:6;display:flex;flex-direction:column;gap:2px;padding:9px 16px;border-radius:14px;background:#fefbf0e6;color:#315240;font-size:clamp(17px,2.6vw,27px);font-weight:650;line-height:1.45;letter-spacing:.12em;box-shadow:0 4px 14px #2a1d1026;pointer-events:none;animation:ss-rise .7s ease both}
+.poem-seven-steps .ss-loading{position:absolute;inset:0;z-index:9;display:grid;align-content:center;justify-items:center;gap:14px;padding:20px;background:#f5f2eae8;font-size:20px;line-height:1.5;text-align:center}
+.poem-seven-steps .ss-loading button{min-height:48px;padding:10px 22px;border:1px solid #97ad9b;border-radius:14px;background:#fffefa;font-weight:600;font-size:19px;cursor:pointer}
+
+/* Spawned motion (never created when reducedMotion is on). */
+.poem-seven-steps .ss-bean{position:absolute;left:var(--x);top:24%;width:2.3%;min-width:7px;aspect-ratio:1.15;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f6e2b0,#d4a85e 60%,#a87a3c);box-shadow:0 1px 1px #5a3d1a55;opacity:0;animation:ss-fall .8s cubic-bezier(.5,0,.8,.6) var(--d) both}
+.poem-seven-steps .ss-pour{position:absolute;left:63%;top:31%;width:17%;transform-origin:85% 70%;animation:ss-pour 1.4s ease both}
+.poem-seven-steps .ss-pour img,.poem-seven-steps .ss-push img{display:block;width:100%;height:auto}
+.poem-seven-steps .ss-drip{position:absolute;left:var(--x);top:71.5%;width:.7%;min-width:4px;aspect-ratio:.7;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:#e9dcc0;box-shadow:inset -1px -1px 0 #b39a6e88;opacity:0;animation:ss-drip .9s ease-in var(--d) 3}
+.poem-seven-steps .ss-push{position:absolute;left:44%;top:84%;width:17%;animation:ss-push 1.2s ease both}
+.poem-seven-steps .ss-gudu{position:absolute;left:var(--x);top:var(--y);transform:translate(-50%,-50%);padding:1px 8px;border-radius:999px;background:#fffaf0dd;color:#5c4126;font-size:clamp(14px,1.8vw,18px);font-style:normal;font-weight:700;letter-spacing:.06em;animation:ss-gudu 1.2s ease-out both}
+
+/* Side panel: footprints, materials, action line and feedback. */
+.poem-seven-steps .ss-side{grid-area:side;display:flex;flex-direction:column;gap:12px;min-width:0}
+.poem-seven-steps .ss-walk{--at:0;position:relative;display:grid;grid-template-columns:repeat(9,minmax(0,1fr));align-items:end;justify-items:center;padding:36px 4px 6px;border-radius:18px;background:linear-gradient(#fbf7ec,#f3eedf);border:1px solid #e3dccb}
+.poem-seven-steps .ss-walk::before{content:'';position:absolute;left:8%;right:8%;bottom:9px;height:2px;border-radius:2px;background:repeating-linear-gradient(90deg,#c9bfa6 0 6px,transparent 6px 12px)}
+.poem-seven-steps .ss-foot{width:min(22px,64%);display:block;transform:translateY(-3px) rotate(-8deg);transition:transform .4s ease}
+.poem-seven-steps .ss-foot.is-right{transform:translateY(3px) scaleX(-1) rotate(-8deg)}
+.poem-seven-steps .ss-foot:nth-child(1){grid-column:2}
+.poem-seven-steps .ss-foot svg{display:block;width:100%;height:auto;fill:#d8d0bd;transition:fill .45s ease,filter .45s ease}
+.poem-seven-steps .ss-foot.is-lit svg{fill:#2f5443;filter:drop-shadow(0 0 4px #f2c76d)}
+.poem-seven-steps .ss-seal{display:grid;place-items:center;width:min(34px,90%);aspect-ratio:1;border-radius:7px;border:2px solid #c9b8a0;color:#b9ab95;font-size:18px;line-height:1;font-weight:700;transition:background .4s,color .4s,border-color .4s}
+.poem-seven-steps .ss-seal.is-lit{background:#b5523b;border-color:#9a3f2c;color:#fff7ea;box-shadow:0 2px 6px #9a3f2c55}
+.poem-seven-steps .ss-walker{position:absolute;top:3px;left:calc((var(--at) + .5) * (100% - 8px) / 9 + 4px);width:32px;height:32px;transform:translateX(-50%);border-radius:50%;overflow:hidden;border:2px solid #fff;background:#efe6d3;box-shadow:0 2px 6px #2a1d1040;transition:left .7s cubic-bezier(.4,1.3,.5,1)}
+.poem-seven-steps .ss-walker img{width:100%;height:100%;object-fit:cover;object-position:50% 14%;display:block}
+.poem-seven-steps .ss-tray{display:flex;flex-wrap:wrap;justify-content:center;align-items:stretch;gap:10px;min-height:66px}
+.poem-seven-steps .ss-item{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:66px;flex:1 1 150px;max-width:240px;padding:6px 14px;border:1.5px solid var(--ss-line);border-radius:18px;background:var(--ss-paper);font-size:19px;font-weight:650;line-height:1.25;cursor:pointer;box-shadow:0 3px 0 #e6e1d2;transition:border-color .2s,background .2s,box-shadow .2s,opacity .2s,transform .2s;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.poem-seven-steps .ss-item span{white-space:nowrap}
+.poem-seven-steps .ss-item img{display:block;height:50px;width:auto;max-width:86px;object-fit:contain;pointer-events:none;-webkit-user-drag:none;filter:drop-shadow(0 2px 2px #3b2a1a2e)}
+.poem-seven-steps .ss-item.is-draggable{touch-action:none;cursor:grab}
+.poem-seven-steps .ss-item[aria-pressed=true]{border-color:#c98b3a;background:#fff3d9;box-shadow:0 0 0 4px #e3a54870,0 3px 0 #ead7b4;transform:translateY(-2px)}
+.poem-seven-steps .ss-item:hover:not(:disabled){border-color:#b9c7b1}
+.poem-seven-steps .ss-item.is-source{opacity:.45}
+.poem-seven-steps .ss-item:disabled{cursor:default}
+.poem-seven-steps .ss-item.is-used{opacity:.5;background:#f2efe6;box-shadow:none}
+.poem-seven-steps .ss-chip{flex:0 1 170px;gap:6px}
+.poem-seven-steps .ss-item.ss-chip img{height:40px;max-width:64px}
+.poem-seven-steps .ss-chip b{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:2px solid #b5523b;color:#9a3f2c;background:#fffaf0;font-size:25px;line-height:1}
+.poem-seven-steps .ss-sobs{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 14px;border-radius:16px;background:#f3f5ee;font-size:18px;font-weight:600;color:var(--ss-soft)}
+.poem-seven-steps .ss-sob-icons{display:flex;gap:6px}
+.poem-seven-steps .ss-sob-icons i{width:20px;opacity:.35;filter:grayscale(1);transition:opacity .3s,filter .3s}
+.poem-seven-steps .ss-sob-icons i.is-on{opacity:1;filter:none}
+.poem-seven-steps .ss-kin{width:100%;display:grid;gap:8px;text-align:center}
+.poem-seven-steps .ss-kin div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.poem-seven-steps .ss-kin button{min-height:58px;padding:8px 6px;border:1.5px solid var(--ss-line);border-radius:16px;background:var(--ss-paper);font-size:22px;font-weight:650;letter-spacing:.08em;cursor:pointer;box-shadow:0 3px 0 #e6e1d2}
+.poem-seven-steps .ss-kin button:hover:not(:disabled){border-color:#c98b3a;background:#fff6e2}
+.poem-seven-steps .ss-kin button:disabled{cursor:default;opacity:.7}
+.poem-seven-steps .ss-summary{width:100%;padding:12px 16px;border-radius:16px;background:#fbf4e4;border:1px solid #ecdcbc;text-align:center}
+.poem-seven-steps .ss-summary b{display:block;font-size:21px;letter-spacing:.1em;color:#7b3e22}
+.poem-seven-steps .ss-summary p{margin:6px 0 0;font-size:17px;line-height:1.55;color:#4b5f50;text-align:left}
+.poem-seven-steps .ss-actionline{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.poem-seven-steps .ss-method{font-size:17px;line-height:1.4;color:var(--ss-soft)}
+.poem-seven-steps .ss-audio{flex:none;display:inline-flex;align-items:center;gap:7px;min-height:48px;padding:8px 16px;border:1px solid #b9cbae;border-radius:999px;background:#fffef7;color:#356148;font-size:18px;font-weight:600;cursor:pointer}
+.poem-seven-steps .ss-audio svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.poem-seven-steps .ss-audio svg path:first-child{fill:currentColor}
+.poem-seven-steps .ss-feedback{margin:0;min-height:3em;font-size:18px;line-height:1.5;color:#4a6a59;text-align:center;text-wrap:pretty}
+.poem-seven-steps .ss-ghost{position:fixed;left:0;top:0;z-index:80;width:112px;transform:translate(-50%,-62%) rotate(-6deg);pointer-events:none;filter:drop-shadow(0 8px 10px #2a1d1045)}
+.poem-seven-steps .ss-ghost img{display:block;width:100%;height:auto}
+.poem-seven-steps .ss-ghost b{display:grid;place-items:center;width:56px;height:56px;margin:auto;border-radius:50%;border:2px solid #b5523b;background:#fffaf0;color:#9a3f2c;font-size:30px}
+.poem-seven-steps.is-readonly .ss-actionline .ss-method{visibility:hidden}
+
+@keyframes ss-call{50%{box-shadow:0 0 0 4px #ffd27a59,0 0 20px 8px #ffd98a4d}}
+@keyframes ss-flicker{from{opacity:.75}to{opacity:1}}
+@keyframes ss-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes ss-fall{0%{opacity:0;top:22%}15%{opacity:1}80%{opacity:1}100%{opacity:0;top:50%}}
+@keyframes ss-pour{0%{opacity:0;transform:rotate(0)}20%{opacity:1}55%{transform:rotate(-28deg)}85%{opacity:1}100%{opacity:0;transform:rotate(-28deg)}}
+@keyframes ss-drip{0%{opacity:0;top:71.5%}20%{opacity:.95}100%{opacity:0;top:80%}}
+@keyframes ss-push{0%{opacity:0;transform:translateX(30%)}25%{opacity:1}80%{opacity:1;transform:translateX(-60%) scale(.9)}100%{opacity:0;transform:translateX(-70%) scale(.85)}}
+@keyframes ss-gudu{0%{opacity:0;transform:translate(-50%,-30%) scale(.8)}25%{opacity:1;transform:translate(-50%,-60%) scale(1)}100%{opacity:0;transform:translate(-50%,-150%)}}
+
+/* Landscape: picture on the left, the walk and the materials on the right. */
+@media (orientation:landscape) and (min-width:701px),(orientation:landscape) and (max-height:500px){
+ .poem-seven-steps{max-width:1280px}
+ .poem-seven-steps .ss-layout{grid-template-columns:minmax(0,1.75fr) minmax(290px,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"stage head" "stage side";column-gap:22px;row-gap:12px;align-items:center}
+ .poem-seven-steps .ss-stage{width:min(100%,calc((100cqh - 24px) * 16 / 9));align-self:center}
+ .poem-seven-steps .ss-head{align-self:end}
+ .poem-seven-steps .ss-side{align-self:start}
+}
+@media (orientation:landscape) and (min-width:1100px) and (min-height:700px){
+ .poem-seven-steps .ss-instruction{font-size:26px}
+ .poem-seven-steps .ss-item{min-height:76px;font-size:21px}
+ .poem-seven-steps .ss-item img{height:60px;max-width:100px}
+ .poem-seven-steps .ss-item.ss-chip img{height:48px;max-width:76px}
+ .poem-seven-steps .ss-feedback{font-size:20px}
+ .poem-seven-steps .ss-walk{padding-top:48px}
+ .poem-seven-steps .ss-walker{width:42px;height:42px}
+ .poem-seven-steps .ss-foot{width:min(27px,64%)}
+ .poem-seven-steps .ss-seal{width:min(40px,90%);font-size:21px}
+}
+@media (orientation:portrait) and (min-width:701px){
+ .poem-seven-steps .ss-walk{padding-top:46px}
+ .poem-seven-steps .ss-walker{width:40px;height:40px}
+ .poem-seven-steps .ss-foot{width:min(27px,64%)}
+ .poem-seven-steps .ss-seal{width:min(40px,90%);font-size:21px}
+ .poem-seven-steps .ss-item{min-height:74px;font-size:21px}
+ .poem-seven-steps .ss-item img{height:58px;max-width:100px}
+ .poem-seven-steps .ss-item.ss-chip img{height:50px;max-width:80px}
+ .poem-seven-steps .ss-chip{flex-basis:200px}
+}
+/* Short phone landscape: the host gives the game only ~180px of height, so the picture
+   takes the full height and the right column packs the walk, materials and feedback. */
+@media (orientation:landscape) and (max-height:500px){
+ .poem-seven-steps .ss-layout{grid-template-columns:min(calc((100cqh - 2px) * 16 / 9),56%) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);column-gap:12px;row-gap:5px;align-items:start}
+ .poem-seven-steps .ss-stage{width:100%;border-radius:12px}
+ .poem-seven-steps .ss-head{gap:8px;align-self:start}
+ .poem-seven-steps .ss-instruction{font-size:17px;line-height:1.3}
+ .poem-seven-steps .ss-progress{min-width:50px;padding:2px 8px;font-size:15px}
+ .poem-seven-steps .ss-side{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"walk walk" "tray audio" "fb fb";gap:5px 8px;align-items:center}
+ .poem-seven-steps .ss-walk{grid-area:walk;min-height:30px;padding:3px 2px;align-items:center;border-radius:12px}
+ .poem-seven-steps .ss-walk::before{bottom:5px}
+ .poem-seven-steps .ss-walker{top:50%;width:24px;height:24px;transform:translate(-50%,-50%)}
+ .poem-seven-steps .ss-foot{width:min(14px,60%)}
+ .poem-seven-steps .ss-seal{width:min(23px,90%);font-size:14px;border-radius:5px}
+ .poem-seven-steps .ss-tray{grid-area:tray;gap:6px;min-height:46px}
+ .poem-seven-steps .ss-item{min-height:46px;max-width:200px;padding:3px 10px;font-size:16px;border-radius:13px;gap:6px;flex-basis:110px}
+ .poem-seven-steps .ss-item img{height:34px;max-width:58px}
+ .poem-seven-steps .ss-chip b{width:36px;height:36px;font-size:20px}
+ .poem-seven-steps .ss-item.ss-chip img{height:26px;max-width:44px}
+ .poem-seven-steps .ss-sobs{padding:4px 10px;font-size:15px;gap:8px}
+ .poem-seven-steps .ss-sob-icons i{width:15px}
+ .poem-seven-steps .ss-kin div{gap:6px}
+ .poem-seven-steps .ss-kin button{min-height:46px;font-size:18px}
+ .poem-seven-steps .ss-summary{padding:5px 10px;border-radius:12px}
+ .poem-seven-steps .ss-summary b{display:none}
+ .poem-seven-steps .ss-summary p{margin:0;font-size:14px;line-height:1.45}
+ .poem-seven-steps .ss-actionline{display:contents}
+ .poem-seven-steps .ss-method{display:none}
+ .poem-seven-steps .ss-audio{grid-area:audio;min-height:44px;padding:4px 11px;gap:5px;font-size:15px}
+ .poem-seven-steps .ss-audio svg{width:19px;height:19px}
+ .poem-seven-steps .ss-feedback{grid-area:fb;min-height:2.8em;font-size:15px;line-height:1.4;text-align:left}
+ .poem-seven-steps .ss-target>span{font-size:14px;padding:1px 7px}
+ .poem-seven-steps .ss-token{font-size:17px}
+ .poem-seven-steps .ss-caption{right:3%;top:4%;gap:0;padding:4px 8px;border-radius:9px;font-size:14px;line-height:1.4;letter-spacing:.04em}
+ .poem-seven-steps.is-done .ss-walk{display:none}
+ .poem-seven-steps.is-done .ss-side{grid-template-areas:"tray tray" "fb audio"}
+}
+@media (max-width:420px){
+ .poem-seven-steps .ss-layout{gap:10px}
+ .poem-seven-steps .ss-instruction{font-size:19px}
+ .poem-seven-steps .ss-progress{min-width:56px;padding:4px 8px;font-size:16px}
+ .poem-seven-steps .ss-stage{border-radius:15px}
+ .poem-seven-steps .ss-side{gap:10px}
+ .poem-seven-steps .ss-item{flex-basis:140px;padding:6px 10px;font-size:18px;gap:6px}
+ .poem-seven-steps .ss-item img{height:44px;max-width:70px}
+ .poem-seven-steps .ss-method{font-size:15px}
+ .poem-seven-steps .ss-audio{padding:7px 12px;font-size:17px}
+ .poem-seven-steps .ss-feedback{font-size:17px;text-align:left}
+ .poem-seven-steps .ss-target>span{font-size:14px;padding:2px 8px}
+ .poem-seven-steps .ss-caption{padding:5px 9px;border-radius:10px;letter-spacing:.06em}
+}
+@media (max-width:370px){
+ .poem-seven-steps .ss-item{flex-direction:column;gap:2px;padding:5px 6px;font-size:16px}
+ .poem-seven-steps .ss-item.ss-chip{flex-direction:row;gap:4px}
+ .poem-seven-steps .ss-item img{height:38px}
+ .poem-seven-steps .ss-kin button{font-size:19px;letter-spacing:0}
+ .poem-seven-steps .ss-walker{width:26px;height:26px}
+}
+.poem-seven-steps.is-reduced .ss-scene,.poem-seven-steps.is-reduced .ss-patch,.poem-seven-steps.is-reduced .ss-tear,.poem-seven-steps.is-reduced .ss-token,.poem-seven-steps.is-reduced .ss-glow,.poem-seven-steps.is-reduced .ss-hintplant,.poem-seven-steps.is-reduced .ss-walker,.poem-seven-steps.is-reduced .ss-foot svg,.poem-seven-steps.is-reduced .ss-seal{transition:none}
+.poem-seven-steps.is-reduced .ss-glow,.poem-seven-steps.is-reduced .ss-target,.poem-seven-steps.is-reduced .ss-caption{animation:none}
+@media (prefers-reduced-motion:reduce){
+ .poem-seven-steps .ss-scene,.poem-seven-steps .ss-patch,.poem-seven-steps .ss-tear,.poem-seven-steps .ss-token,.poem-seven-steps .ss-glow,.poem-seven-steps .ss-hintplant,.poem-seven-steps .ss-walker,.poem-seven-steps .ss-foot svg,.poem-seven-steps .ss-seal{transition:none}
+ .poem-seven-steps .ss-glow,.poem-seven-steps .ss-target,.poem-seven-steps .ss-caption,.poem-seven-steps .ss-fx *{animation:none}
+ .poem-seven-steps .ss-fx{display:none}
+}

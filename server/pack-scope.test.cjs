@@ -41,6 +41,8 @@ test('each kind of file goes to the grade that uses it', async () => {
   assert.deepEqual(classify('media/yong-e/cover.webp'), [grade('yong-e')]);
   assert.deepEqual(classify('media/gui-yuan-tian-ju/animation-20260919b.mp4'), [grade('gui-yuan-tian-ju')]);
   assert.deepEqual(classify('media/exploration/gui-yuan-tian-ju/model.glb'), [grade('gui-yuan-tian-ju')]);
+  // Preview poems 7-12 are not in the catalogue; their media never enters a pack.
+  assert.equal(classify('media/exploration/yong-xue/model-20261005.glb'), null);
   assert.deepEqual(classify('media/recitations/edb-20260921/grade3-poem.mp3'), [3]);
   assert.equal(classify('media/recitations/edb-20260921/grade9-poem.mp3'), null);
   assert.deepEqual(classify('media/poem-games/yong-e/goose.webp'), [grade('yong-e')]);
