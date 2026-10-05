@@ -1,5 +1,5 @@
-import {createViewer, disposeObject} from './exploration.mjs?v=20260923-school23';
-import {fetchModel, loadBudget} from './model-source.mjs?v=20260923-school23';
+import {createViewer, disposeObject} from './exploration.mjs?v=20261005-school41';
+import {fetchModel, loadBudget} from './model-source.mjs?v=20261005-school41';
 
 // Assessment viewer: no verse, vocabulary, answer caption or exploration hints.
 export function mountChallengeModel(holder, {slug, poster, label = '轉動觀察', controls = []} = {}) {

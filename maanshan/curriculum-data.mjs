@@ -19,6 +19,6 @@ export function loadCurriculum() {
 // Poems still under review. Only accounts the server marks with previewPoems
 // request them; the server refuses every learning request for anyone else.
 export function loadPreviewCurriculum() {
-  return Promise.all([loadJSON('./poems-preview.json?v=20261005-school40'), loadJSON('./scene-previews-preview.json?v=20261005-school40')])
+  return Promise.all([loadJSON('./poems-preview.json?v=20261005-school41'), loadJSON('./scene-previews-preview.json?v=20261005-school40')])
     .then(([data, scenePreviews]) => ({...data, scenePreviews}));
 }
