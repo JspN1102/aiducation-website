@@ -102,32 +102,52 @@ function configuration(env){
  if(![22,2222].includes(port))throw new Error('RELAY_NOT_CONFIGURED');
  return {host,port,username,privateKey,hostHash};
 }
-function createRelay({env=process.env,clientFactory=()=>new Client(),request=http.request,now=Date.now,timeoutMs=55000,channelOpenTimeoutMs=CHANNEL_OPEN_TIMEOUT_MS}={}){
- let pending=null,pendingClient=null,connection=null,lastUsed=0,active=0;
+// A whole class reading at once used to share one SSH session, which is one TCP
+// flow across the Pacific: every upload queued behind every other one and
+// scores timed out although Guangzhou answered within five seconds. Spread the
+// load over several sessions (several flows), and keep the bulky background
+// uploads (recordings, research events, saves) off the sessions that carry the
+// scoring, speech and chat requests a pupil is waiting for.
+const BACKGROUND_ROUTES=new Set(['school-recordings','research-events','maanshan-save']);
+const LANE_SESSIONS=Object.freeze({interactive:3,background:2});
+// A session carrying fewer requests than this is shared before another opens.
+const SESSION_SHARE_LIMIT=2;
+function createRelay({env=process.env,clientFactory=()=>new Client(),request=http.request,now=Date.now,timeoutMs=55000,channelOpenTimeoutMs=CHANNEL_OPEN_TIMEOUT_MS,laneSessions=LANE_SESSIONS,maxActive=48}={}){
+ let active=0;
+ const slot=()=>({pending:null,pendingClient:null,connection:null,lastUsed:0,active:0});
+ const lanes={interactive:Array.from({length:Math.max(1,laneSessions.interactive|0)},slot),background:Array.from({length:Math.max(1,laneSessions.background|0)},slot)};
+ const slots=[...lanes.interactive,...lanes.background];
  const agents=new Map();
  const disposeAgent=client=>{const agent=agents.get(client);if(agent){agents.delete(client);agent.destroy();}};
  const agentFor=client=>{if(!agents.has(client))agents.set(client,new ChannelAgent(client,now,channelOpenTimeoutMs));return agents.get(client);};
  // Forget a session whose first round trip failed, so that no later request
  // (including a concurrent one that shares it) is offered the same dead client.
- const discard=client=>{disposeAgent(client);if(connection===client)connection=null;if(pendingClient===client){pending=null;pendingClient=null;}client.destroy();};
- async function tunnel(alternate=false){
+ const discard=client=>{disposeAgent(client);for(const s of slots){if(s.connection===client)s.connection=null;if(s.pendingClient===client){s.pending=null;s.pendingClient=null;}}client.destroy();};
+ // Least-loaded live session first; open another only when every live one is busy.
+ function choose(lane){
+  const pool=lanes[lane];
+  const live=pool.filter(s=>s.connection||s.pending).sort((a,b)=>a.active-b.active);
+  if(live.length&&live[0].active<SESSION_SHARE_LIMIT)return live[0];
+  return pool.find(s=>!s.connection&&!s.pending)||live[0];
+ }
+ async function tunnel(s,alternate=false){
   // A child can listen or write for several minutes between calls. Keep the
   // verified SSH session across those pauses (the relay sshd tolerates about
   // ten minutes of silence); transport errors/close still invalidate it
   // immediately, dead sessions are detected on use, and no forwarded POST is
   // ever replayed.
-  if(connection&&now()-lastUsed>240000&&active<=1){disposeAgent(connection);connection.end();connection=null;pending=null;pendingClient=null;}
-  lastUsed=now();
-  if(pending)return pending;
+  if(s.connection&&now()-s.lastUsed>240000&&s.active<=1){disposeAgent(s.connection);s.connection.end();s.connection=null;s.pending=null;s.pendingClient=null;}
+  s.lastUsed=now();
+  if(s.pending)return s.pending;
   const config=configuration(env),client=clientFactory();
   const port=alternate?(config.port===2222?22:2222):config.port;
-  pendingClient=client;
-  pending=new Promise((resolve,reject)=>{
+  s.pendingClient=client;
+  s.pending=new Promise((resolve,reject)=>{
    let ready=false,tcpConnected=false,handshakeComplete=false;
    client.once('connect',()=>{tcpConnected=true;client.setNoDelay?.(true);});
    client.once('handshake',()=>{handshakeComplete=true;});
-   const clear=()=>{disposeAgent(client);if(connection===client)connection=null;if(pendingClient===client){pending=null;pendingClient=null;}};
-   client.once('ready',()=>{ready=true;connection=client;resolve(client);});
+   const clear=()=>{disposeAgent(client);if(s.connection===client)s.connection=null;if(s.pendingClient===client){s.pending=null;s.pendingClient=null;}};
+   client.once('ready',()=>{ready=true;s.connection=client;resolve(client);});
    // The peer closing its side ends the writable socket before 'close' fires;
    // forget the session at once so nothing tries to open a channel on it.
    client.once('end',()=>{clear();});
@@ -137,7 +157,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
    // the default 'none' probe costs a Pacific round trip on every new session.
    client.connect({host:config.host,port,username:config.username,privateKey:config.privateKey,authHandler:['publickey'],hostHash:'sha256',hostVerifier:hash=>hash===config.hostHash,readyTimeout:4500,keepaliveInterval:15000,keepaliveCountMax:2,tryKeyboard:false});
   });
-  try{return await pending;}catch(error){if(pendingClient===client){pending=null;pendingClient=null;}client.destroy();throw error;}
+  try{return await s.pending;}catch(error){if(s.pendingClient===client){s.pending=null;s.pendingClient=null;}client.destroy();throw error;}
  }
  function fail(res,status,code){if(res.writableEnded||res.destroyed)return;if(res.headersSent){res.destroy();return;}res.statusCode=status;res.setHeader('Cache-Control','private, no-store');res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify({ok:false,code,error:'服務暫時未能連線，請稍後再試。'}));}
  async function relay(name,req,res){
@@ -151,8 +171,9 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
    body=['GET','HEAD'].includes(req.method)?null:Buffer.isBuffer(req.body)?req.body:Buffer.from(typeof req.body==='string'?req.body:JSON.stringify(req.body??{}));
    if(body&&body.length>LIMITS[name])return fail(res,413,'REQUEST_TOO_LARGE');
   }catch{return fail(res,400,'INVALID_REQUEST');}
-  if(active>=16)return fail(res,503,'SERVICE_BUSY');
-  active++;
+  if(active>=maxActive)return fail(res,503,'SERVICE_BUSY');
+  const session=choose(BACKGROUND_ROUTES.has(name)?'background':'interactive');
+  active++;session.active++;
   let upstream,channel,timer,done=false,responseComplete=false;
   const startedAt=now();let connectedAt=startedAt,channelAt=startedAt;
   const close=()=>{upstream?.destroy();channel?.destroy();};
@@ -167,7 +188,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
     try{
      // A second handshake is safe before any request reaches the origin.
      // Never retry once a channel/request has been opened.
-     const connect=async()=>{try{return await tunnel();}catch{if(done||res.destroyed)return null;return tunnel(true);}};
+     const connect=async()=>{try{return await tunnel(session);}catch{if(done||res.destroyed)return null;return tunnel(session,true);}};
      const client=await connect();
      if(client===null||done||res.destroyed){finish();return;}
      connectedAt=now();
@@ -242,9 +263,9 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
      send(client);
     }catch{error(503,'ORIGIN_UNAVAILABLE');}
    });
-  }finally{clearTimeout(timer);res.off('close',disconnected);if(!responseComplete)close();active--;}
+  }finally{clearTimeout(timer);res.off('close',disconnected);if(!responseComplete)close();active--;session.active--;}
  }
- return {relay,close(){for(const client of agents.keys())disposeAgent(client);const connecting=pendingClient;if(connecting&&connecting!==connection)connecting.destroy();connection?.end();connection=null;pending=null;pendingClient=null;}};
+ return {relay,close(){for(const client of agents.keys())disposeAgent(client);for(const s of slots){const connecting=s.pendingClient;if(connecting&&connecting!==s.connection)connecting.destroy();s.connection?.end();s.connection=null;s.pending=null;s.pendingClient=null;}}};
 }
 let singleton;
 const relay=(name,req,res)=>(singleton||(singleton=createRelay())).relay(name,req,res);
@@ -259,4 +280,4 @@ function createGateway(forward=relay){return function gateway(req,res){
  req.url='/api/'+name+(search.size?'?'+search.toString():'');
  return forward(name,req,res);
 };}
-module.exports={LIMITS,configuration,createRelay,relay,createGateway,gateway:createGateway()};
+module.exports={LIMITS,BACKGROUND_ROUTES,configuration,createRelay,relay,createGateway,gateway:createGateway()};

@@ -94,10 +94,12 @@ export function submitAssessment(payload, options = {}) {
 
 // Speech input for the poet conversation: the same upload, returned as text.
 export function submitSpeech(payload, options = {}) {
-  return postRecording('/api/speech-to-text/', payload, {timeout:25000, ...options}, {busy:'語音輸入現在繁忙，請稍後再試，或者先打字。', service:'暫時未能把聲音變成文字，請再說一次，或者先打字。'});
+  return postRecording('/api/speech-to-text/', payload, {timeout:40000, ...options}, {busy:'語音輸入現在繁忙，請稍後再試，或者先打字。', service:'暫時未能把聲音變成文字，請再說一次，或者先打字。'});
 }
-
-async function postRecording(url, payload, {signal, onRetry, onWaiting, fetchImpl = schoolFetch, timeout = 30000} = {}, messages) {
+// When a whole class sends at once the US-to-Guangzhou relay can queue a reading
+// for a while even though Guangzhou scores it within seconds. Wait up to fifty
+// seconds (the relay itself gives up at fifty-five) before asking for a resend.
+async function postRecording(url, payload, {signal, onRetry, onWaiting, fetchImpl = schoolFetch, timeout = 50000} = {}, messages) {
   if (globalThis.navigator?.onLine === false) throw audioError('OFFLINE', '網絡未連上，連線後可以再送一次。', true);
   const body = JSON.stringify(await prepareAssessmentPayload(payload));
   for (let attempt = 0; attempt < 2; attempt++) {

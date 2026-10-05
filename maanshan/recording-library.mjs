@@ -67,7 +67,9 @@ export function createRecordingLibrary({enabled,actorId,learningEpoch,fetch:requ
   async function call(url,options={}) {
     if(!active())throw new Error('Recording session ended');
     const controller=new AbortController();controllers.add(controller);
-    const timer=timers.setTimeout(()=>controller.abort(),18000);
+    // A class-wide burst queues uploads in the relay; giving up early only
+    // resends the same recording into the queue, so wait as long as the relay.
+    const timer=timers.setTimeout(()=>controller.abort(),50000);
     try{
       const response=await request(url,{...options,signal:controller.signal});
       // Headers are not completion: retain cancellation through the full body

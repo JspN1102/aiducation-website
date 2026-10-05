@@ -19,8 +19,8 @@ async function fixture(fn,options={}){
   forwardOut(from,port,to,target,cb){requests.push({from,port,to,target});const socket=net.connect(originPort,'127.0.0.1');channels.push(socket);socket.once('connect',()=>options.forwardDelayMs?setTimeout(()=>cb(null,socket),options.forwardDelayMs):cb(null,socket));socket.once('error',cb);}
   end(){this.emit('close');}destroy(){if(options.onDestroy)return options.onDestroy(this);this.end();}
  }
- const relay=createRelay({env,clientFactory:()=>{const client=new SSH();clients.push(client);return client;},timeoutMs:options.timeoutMs||1500,...options.now?{now:options.now}:{},...options.channelOpenTimeoutMs?{channelOpenTimeoutMs:options.channelOpenTimeoutMs}:{}});
- const frontend=http.createServer(async(req,res)=>{const chunks=[];for await(const chunk of req)chunks.push(chunk);if(chunks.length){try{req.body=JSON.parse(Buffer.concat(chunks));}catch{req.body=Buffer.concat(chunks);}}options.onRequest?.(req);await relay.relay(options.name||'school-auth',req,res);});
+ const relay=createRelay({env,clientFactory:()=>{const client=new SSH();clients.push(client);return client;},timeoutMs:options.timeoutMs||1500,...options.now?{now:options.now}:{},...options.channelOpenTimeoutMs?{channelOpenTimeoutMs:options.channelOpenTimeoutMs}:{},...options.laneSessions?{laneSessions:options.laneSessions}:{},...options.maxActive?{maxActive:options.maxActive}:{}});
+ const frontend=http.createServer(async(req,res)=>{const chunks=[];for await(const chunk of req)chunks.push(chunk);if(chunks.length){try{req.body=JSON.parse(Buffer.concat(chunks));}catch{req.body=Buffer.concat(chunks);}}options.onRequest?.(req);await relay.relay(req.headers['x-test-route']||options.name||'school-auth',req,res);});
  const port=await listen(frontend);
  return {clients,requests,channels,call:(url='/api/school-auth',init={})=>fetch('http://127.0.0.1:'+port+url,init),raw:(url,init)=>raw('http://127.0.0.1:'+port+url,init),close:async()=>{relay.close();frontend.closeAllConnections();origin.closeAllConnections();await Promise.all([new Promise(r=>frontend.close(r)),new Promise(r=>origin.close(r))]);}};
 }
@@ -258,7 +258,7 @@ test('a half-closed SSH socket is forgotten at once and the next request reconne
  }finally{await f.close();}
 });
 test('concurrent requests on a dead session share one replacement session',async()=>{
- let calls=0,clock=1000;const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{now:()=>clock});
+ let calls=0,clock=1000;const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{now:()=>clock,laneSessions:{interactive:1,background:1}});
  try{
   await (await f.call()).text();clock+=60000;
   f.clients[0].forwardOut=()=>{throw new Error('Not connected');};
@@ -333,7 +333,7 @@ test('idle HTTP channels close before the origin keep-alive deadline', {timeout:
 
 test('sixteen concurrent requests use bounded separate channels and reuse them after completion',async()=>{
  let allArrived;const arrived=new Promise(resolve=>allArrived=resolve),held=[],sockets=new Set();let release=false;
- const f=await fixture((req,res)=>{sockets.add(req.socket);if(release)return res.end('ok');held.push(res);if(held.length===16)allArrived();});
+ const f=await fixture((req,res)=>{sockets.add(req.socket);if(release)return res.end('ok');held.push(res);if(held.length===16)allArrived();},{laneSessions:{interactive:1,background:1},maxActive:16});
  try{
   const pending=Array.from({length:16},()=>f.call());await arrived;
   const overflow=await f.call();assert.equal(overflow.status,503);assert.equal((await overflow.json()).code,'SERVICE_BUSY');
@@ -414,4 +414,27 @@ test('teacher relay keeps Office identity and compressed error status; rejects u
  }finally{await f.close();}
  const bad=await fixture((req,res)=>{res.setHeader('Content-Type','application/json');res.setHeader('Content-Encoding','gzip');res.end(gzipSync(Buffer.from(JSON.stringify(failure))));},{name:'teacher-tools'});
  try{const response=await bad.raw('/api/teacher-tools',{headers:{'Accept-Encoding':'gzip;q=0'}});assert.equal(response.status,502);assert.equal(response.headers['content-encoding'],undefined);assert.equal(JSON.parse(response.body).code,'ORIGIN_ENCODING_UNSUPPORTED');}finally{await bad.close();}
+});
+
+test('a class-wide burst spreads over at most three scoring sessions; a single pupil keeps one',async()=>{
+ let allArrived;const arrived=new Promise(resolve=>allArrived=resolve),held=[];let release=false;
+ const f=await fixture((req,res)=>{if(release)return res.end('ok');held.push(res);if(held.length===12)allArrived();},{name:'soe'});
+ try{
+  await (await f.call('/api/soe')).text();assert.equal(f.clients.length,1,'one request at a time never opens a second session');
+  const pending=Array.from({length:12},()=>f.call('/api/soe',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}));await arrived;
+  assert.equal(f.clients.length,3,'concurrent scoring opens extra sessions, bounded at three');
+  release=true;for(const res of held)res.end('ok');
+  for(const response of await Promise.all(pending))assert.equal(await response.text(),'ok');
+ }finally{for(const res of held)res.end();await f.close();}
+});
+test('background uploads travel on their own session, never the one carrying scores',async()=>{
+ const f=await fixture((req,res)=>res.end('{"ok":true}'));
+ try{
+  await (await f.call('/api/soe',{headers:{'x-test-route':'soe'}})).text();
+  await (await f.call('/api/school-recordings',{method:'POST',headers:{'x-test-route':'school-recordings','Content-Type':'application/json'},body:'{}'})).text();
+  await (await f.call('/api/research-events',{method:'POST',headers:{'x-test-route':'research-events','Content-Type':'application/json'},body:'{}'})).text();
+  await (await f.call('/api/soe',{headers:{'x-test-route':'soe'}})).text();
+  assert.equal(f.clients.length,2,'one scoring session and one background session, each reused');
+ }finally{await f.close();}
+ assert(f.clients.every(client=>client.closed),'relay cleanup must close every SSH session');
 });

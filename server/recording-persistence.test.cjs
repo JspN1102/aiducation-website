@@ -150,7 +150,7 @@ test('response headers never end the deadline: stalled JSON upload/list bodies t
  const fetch=async(_url,options)=>({ok:true,status:200,json:()=>new Promise((resolve,reject)=>{
   bodyWaits.push(options.signal);options.signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError')),{once:true});
  })});
- const shortTimers={setTimeout:(fn,ms)=>setTimeout(fn,ms===18000?20:ms),clearTimeout};
+ const shortTimers={setTimeout:(fn,ms)=>setTimeout(fn,ms===50000?20:ms),clearTimeout};
  const timed=createRecordingLibrary({enabled:true,actorId:student.id,fetch,storage,timers:shortTimers});
  await timed.save({poemId:1,lineIndex:0,recordingId:crypto.randomUUID(),recordedAt:NOW,audio:wav().toString('base64')});await timed.flush();
  assert.equal(bodyWaits[0].aborted,true);assert.equal(timed.pendingCount(),1);timed.stop();
