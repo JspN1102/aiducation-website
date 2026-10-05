@@ -2515,6 +2515,1176 @@ dialog h2{font-size:26px;line-height:1.4}
   .rain-catcher .rc-splash i,.rain-catcher .rc-boat-ripple{animation:none!important}
 }
 
+/* poem-games/snow-count.css */
+.poem-snow-game{--sc-ink:#2c4858;--sc-soft:#5b7484;--sc-paper:#fffdf8;--sc-line:#d5dee3;--sc-plum:#b4545e;position:relative;display:block;width:100%;max-width:820px;margin-inline:auto;min-width:0;color:var(--sc-ink);font-family:var(--sans)}
+.poem-snow-game *{box-sizing:border-box}
+.poem-snow-game [hidden]{display:none!important}
+.poem-snow-game .sc-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:center;height:100%;min-width:0}
+.poem-snow-game .sc-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.poem-snow-game .sc-task{margin:0;font-size:clamp(19px,2.4vw,24px);font-weight:700;line-height:1.4;text-wrap:balance}
+.poem-snow-game .sc-chip{flex:none;padding:4px 12px;border-radius:999px;background:#e8eff3;color:var(--sc-soft);font-size:17px;font-weight:700;line-height:1.4;font-variant-numeric:tabular-nums;white-space:nowrap}
+.poem-snow-game .sc-stage{position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#e7edf0;border:1px solid #7f97a640;box-shadow:0 14px 28px -20px #23404f99;user-select:none;-webkit-user-select:none;touch-action:manipulation;font-family:var(--sans);container-type:inline-size}
+.poem-snow-game .sc-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.3s ease;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.poem-snow-game .sc-scene.is-on{opacity:1}
+.poem-snow-game .sc-veil{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(115% 95% at 50% 42%,#fff0 28%,#f2f6f8c4 100%),#ffffff1f;opacity:0;transition:opacity 1.4s ease}
+.poem-snow-game .sc-veil.is-on{opacity:1}
+.poem-snow-game .sc-fall{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.poem-snow-game .sc-fall[data-level="off"]{display:none}
+.poem-snow-game .sc-fall i{position:absolute;top:0;left:var(--x);width:var(--s);height:100%;animation:sc-fall var(--d) linear var(--t) infinite;will-change:transform}
+.poem-snow-game .sc-fall i::before{content:"";position:absolute;left:0;top:0;width:var(--s);height:var(--s);border-radius:50%;background:radial-gradient(circle,#fff 0 40%,#ffffffa8 60%,#fff0 76%);box-shadow:0 0 1.5px #4d67794d;opacity:var(--o)}
+.poem-snow-game .sc-fall[data-level="0"] i:nth-child(n+19),.poem-snow-game .sc-fall[data-level="1"] i:nth-child(n+39),.poem-snow-game .sc-fall[data-level="2"] i:nth-child(n+65){display:none}
+.poem-snow-game .sc-flakes,.poem-snow-game .sc-plums,.poem-snow-game .sc-bigs{position:absolute;inset:0;pointer-events:none}
+.poem-snow-game .sc-stage button{-webkit-tap-highlight-color:transparent;font-family:var(--sans)}
+.poem-snow-game .sc-flake,.poem-snow-game .sc-plum,.poem-snow-game .sc-big{position:absolute;left:var(--x);top:var(--y);aspect-ratio:1;margin:0;padding:0;border:0;border-radius:50%;background:transparent;pointer-events:auto;cursor:pointer;display:grid;place-items:center}
+.poem-snow-game .sc-flake{z-index:3;width:clamp(48px,10%,92px);transform:translate(-50%,-50%);touch-action:manipulation;transition:opacity .3s ease,transform .3s ease}
+.poem-snow-game .sc-flake::before,.poem-snow-game .sc-big::before{content:"";position:absolute;inset:2%;border-radius:50%;background:radial-gradient(circle,#ffffffeb 0 17%,#ffffff70 42%,#fff0 69%);transition:opacity .4s,box-shadow .25s}
+.poem-snow-game .sc-flake svg{position:relative;width:76%;height:76%;overflow:visible;animation:sc-drift var(--d) ease-in-out var(--t) infinite alternate}
+.poem-snow-game .sc-flake:hover:not(:disabled) svg{filter:drop-shadow(0 0 5px #fff)}
+.poem-snow-game .sc-flake.is-caught{opacity:0;transform:translate(-50%,-50%) scale(.5);pointer-events:none}
+.poem-snow-game .sc-flake:disabled,.poem-snow-game .sc-plum:disabled,.poem-snow-game .sc-big:disabled,.poem-snow-game .sc-sky:disabled{cursor:default}
+.poem-snow-game svg .sc-edge{fill:none;stroke:#42617a;stroke-opacity:.5;stroke-width:10;stroke-linecap:round;stroke-linejoin:round}
+.poem-snow-game svg .sc-core{fill:none;stroke:#fff;stroke-width:4.6;stroke-linecap:round;stroke-linejoin:round}
+.poem-snow-game svg .sc-hub{fill:#fff;stroke:#42617a;stroke-opacity:.45;stroke-width:3}
+.poem-snow-game button:focus-visible{outline:3px solid #de9b34;outline-offset:3px}
+.poem-snow-game .sc-sky{position:absolute;inset:0;z-index:3;width:100%;height:100%;margin:0;padding:0;border:0;border-radius:inherit;background:transparent;cursor:pointer;touch-action:manipulation}
+.poem-snow-game .sc-sky:focus-visible{outline-offset:-7px}
+.poem-snow-game .sc-sky-hint{position:absolute;left:50%;top:20%;transform:translate(-50%,-50%);padding:8px 20px;border-radius:999px;background:#fffdf8e8;color:var(--sc-ink);font-size:clamp(17px,2.3vw,22px);font-weight:700;letter-spacing:.1em;line-height:1.3;white-space:nowrap;box-shadow:0 0 0 6px #ffffff5c,0 8px 18px -10px #23404f99;animation:sc-breathe 2.4s ease-in-out infinite;transition:opacity .4s}
+.poem-snow-game .sc-sky:disabled .sc-sky-hint{opacity:0}
+.poem-snow-game .sc-ripple{position:absolute;z-index:4;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 8px #ffffff40,inset 0 0 18px #ffffffa0;pointer-events:none;animation:sc-ripple 1s ease-out forwards}
+.poem-snow-game .sc-plum{z-index:3;width:clamp(52px,11%,96px);transform:translate(-50%,-50%);touch-action:manipulation}
+.poem-snow-game .sc-plum span{position:absolute;inset:8%;border-radius:50%;border:3px dashed #bf5f69;box-shadow:0 0 0 3px #ffffffc4,inset 0 0 0 3px #ffffffa8,0 0 14px 2px #ffffffd0;transition:transform .25s,border-color .25s,box-shadow .25s}
+.poem-snow-game .sc-plum:not(:disabled) span{animation:sc-ring 2.8s ease-in-out infinite}
+.poem-snow-game .sc-plum:nth-child(2n) span{animation-delay:-1.4s}
+.poem-snow-game.is-carrying .sc-plum span{border-style:solid;border-color:#d4943a;animation-duration:1.4s}
+.poem-snow-game .sc-plum.is-near span{transform:scale(1.22);border-color:#e08a24;box-shadow:0 0 0 4px #fff,0 0 0 8px #e3a5487a,0 0 26px #fff;animation:none}
+.poem-snow-game .sc-task span{display:inline-block}
+.poem-snow-game .sc-plum.is-glow::after{content:"";position:absolute;inset:-35%;border-radius:50%;background:radial-gradient(circle,#fffef7 0 18%,#fff3dcb0 40%,#fff0 70%);pointer-events:none;animation:sc-glow 1.5s ease-out forwards}
+.poem-snow-game[data-stage="done"] .sc-plums{display:none}
+.poem-snow-game .sc-big{z-index:4;width:clamp(56px,12.5%,104px);transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,0px)));cursor:grab;touch-action:none;transition:left .6s cubic-bezier(.3,.7,.3,1),top .6s cubic-bezier(.3,.7,.3,1),transform .6s cubic-bezier(.3,.7,.3,1)}
+.poem-snow-game .sc-big-art{position:absolute;inset:11%;display:grid;place-items:center;transition:opacity .8s ease .45s,transform .9s ease .45s,filter .8s ease .45s}
+.poem-snow-game .sc-big-art svg{width:100%;height:100%;overflow:visible;animation:sc-drift 8s ease-in-out infinite alternate}
+.poem-snow-game .sc-big:nth-child(2n) .sc-big-art svg{animation-duration:9.5s;animation-delay:-3s}
+.poem-snow-game .sc-big.is-selected::before{box-shadow:0 0 0 4px #e3a548,0 0 0 10px #ffffff80}
+.poem-snow-game .sc-big.is-dragging{z-index:6;cursor:grabbing;transition:none}
+.poem-snow-game .sc-big.is-dragging .sc-big-art{transform:scale(1.12);transition:transform .15s}
+.poem-snow-game .sc-big.is-gone{pointer-events:none}
+.poem-snow-game .sc-big.is-gone::before{opacity:0}
+.poem-snow-game .sc-big.is-gone .sc-big-art{opacity:0;transform:scale(.3);filter:blur(3px)}
+.poem-snow-game .sc-bigs.is-nudge .sc-big:not(:disabled) .sc-big-art{animation:sc-nudge .8s ease}
+.poem-snow-game .sc-end{position:absolute;z-index:5;left:3.5%;top:6%;display:grid;gap:3px;max-width:86%;padding:9px 16px 10px;border-radius:14px;background:#fffdf8eb;box-shadow:0 10px 22px -14px #23404fb3;color:var(--sc-ink);pointer-events:none;animation:sc-appear .9s ease both}
+.poem-snow-game .sc-end span{font-size:clamp(18px,4cqw,28px);font-weight:700;letter-spacing:.1em;line-height:1.3}
+.poem-snow-game .sc-end small{font-size:clamp(14px,2.3cqw,16px);line-height:1.4;color:var(--sc-soft)}
+.poem-snow-game .sc-loading{position:absolute;inset:0;z-index:8;display:grid;place-content:center;justify-items:center;gap:14px;padding:20px;background:#edf2f4ee;font-size:20px;line-height:1.5;text-align:center}
+.poem-snow-game .sc-loading button{min-height:48px;padding:10px 22px;border:1px solid #9fb2bd;border-radius:14px;background:var(--sc-paper);color:var(--sc-ink);font-size:19px;font-weight:700;cursor:pointer}
+.poem-snow-game .sc-ghost{position:absolute;left:0;top:0;z-index:20;display:block;pointer-events:none;filter:drop-shadow(0 0 6px #fff)}
+.poem-snow-game .sc-ghost svg{display:block;width:100%;height:100%;overflow:visible}
+.poem-snow-game .sc-card{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 18px;min-width:0;padding:10px 16px;border-radius:18px;background:var(--sc-paper);border:1px solid var(--sc-line);box-shadow:0 3px 0 #e5ebee}
+.poem-snow-game .sc-count{display:grid;justify-items:center;align-content:center;min-width:4.4em;min-height:66px;line-height:1.15}
+.poem-snow-game .sc-count small{font-size:15px;font-weight:600;color:var(--sc-soft);letter-spacing:.06em}
+.poem-snow-game .sc-count b{font-family:var(--serif);font-size:clamp(31px,4.2vw,40px);font-weight:700;letter-spacing:.06em;color:var(--sc-ink);white-space:nowrap}
+.poem-snow-game .sc-count b.is-muted{color:#8aa0ad}
+.poem-snow-game .sc-marks{display:grid;grid-template-columns:repeat(5,30px);gap:6px 7px}
+.poem-snow-game .sc-marks[data-kind="flurry"]{grid-template-columns:repeat(3,auto);gap:8px}
+.poem-snow-game .sc-mark{position:relative;width:30px;height:30px;border-radius:50%;border:1.5px dashed #b6c5cd;transition:border-color .3s,background-color .3s}
+.poem-snow-game .sc-mark svg{position:absolute;inset:2px;width:calc(100% - 4px);height:calc(100% - 4px);overflow:visible;opacity:0;transform:scale(.4);transition:opacity .3s,transform .4s cubic-bezier(.3,1.6,.5,1)}
+.poem-snow-game .sc-mark.is-on{border-style:solid;border-color:#9bb2c1;background:#dbe6ed}
+.poem-snow-game .sc-mark.is-on svg{opacity:1;transform:none}
+.poem-snow-game .sc-marks[data-kind="hide"] .sc-mark{border-style:solid;border-color:#c3d1d9;background:#e3ecf1}
+.poem-snow-game .sc-marks[data-kind="hide"] .sc-mark>svg:first-child{opacity:1;transform:none}
+.poem-snow-game .sc-marks[data-kind="hide"] .sc-mark.is-on{border-color:#e3bcc0;background:#fbf2f1}
+.poem-snow-game .sc-marks[data-kind="hide"] .sc-mark.is-on>svg:first-child{opacity:0;transform:scale(.3)}
+.poem-snow-game .sc-bloom circle{fill:#fffdfb;stroke:#c7787f;stroke-width:3.5}
+.poem-snow-game .sc-bloom .sc-heart{fill:#e6b24e;stroke:#c7787f;stroke-width:2}
+.poem-snow-game .sc-pill{padding:5px 12px;border-radius:999px;border:1.5px dashed #b6c5cd;color:#8ea2ae;font-family:var(--serif);font-size:19px;font-style:normal;font-weight:700;line-height:1.3;letter-spacing:.04em;white-space:nowrap;transition:background-color .3s,border-color .3s,color .3s}
+.poem-snow-game .sc-pill.is-on{border-style:solid;border-color:#9bb2c1;background:#dbe6ed;color:var(--sc-ink)}
+.poem-snow-game .sc-actionline{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px 18px;min-width:0}
+.poem-snow-game .sc-verse{display:flex;margin:0;font-family:var(--serif);font-size:clamp(25px,3vw,30px);font-weight:700;line-height:1.3;letter-spacing:.06em;white-space:nowrap}
+.poem-snow-game .sc-verse span{color:#2c485830;transition:color .45s ease}
+.poem-snow-game .sc-verse span.is-lit{color:var(--sc-ink)}
+.poem-snow-game .sc-listen{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:8px 18px;border:1.5px solid #c1cfd7;border-radius:16px;background:var(--sc-paper);color:var(--sc-ink);font-family:inherit;font-size:19px;font-weight:700;line-height:1.2;white-space:nowrap;cursor:pointer;box-shadow:0 3px 0 #e0e8ec}
+.poem-snow-game .sc-listen svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.poem-snow-game .sc-listen:hover:not(:disabled){background:#f3f7f9}
+.poem-snow-game .sc-listen:disabled{cursor:default;opacity:.65}
+.poem-snow-game .sc-listen[aria-busy="true"]{opacity:1;background:#e9f0f4}
+.poem-snow-game .sc-feedback{margin:0;min-height:2.9em;font-size:19px;line-height:1.45;text-align:center;color:#3d596a;text-wrap:pretty}
+.poem-snow-game.is-instant *,.poem-snow-game.is-instant *::before{transition:none!important}
+@keyframes sc-fall{from{transform:translate3d(0,-4%,0)}to{transform:translate3d(var(--w),101%,0)}}
+@keyframes sc-drift{from{transform:translate(-4px,-5px) rotate(-18deg)}to{transform:translate(4px,6px) rotate(24deg)}}
+@keyframes sc-breathe{50%{box-shadow:0 0 0 13px #ffffff33,0 8px 18px -10px #23404f99}}
+@keyframes sc-ripple{from{transform:scale(.3);opacity:1}to{transform:scale(3.4);opacity:0}}
+@keyframes sc-ring{50%{transform:scale(1.1)}}
+@keyframes sc-glow{0%{opacity:0;transform:scale(.4)}25%{opacity:1}100%{opacity:0;transform:scale(1.3)}}
+@keyframes sc-fade{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
+@keyframes sc-nudge{30%{transform:scale(1.16)}60%{transform:scale(.95)}}
+@keyframes sc-appear{from{opacity:0;transform:translateY(6px)}}
+@media (orientation:landscape) and (min-width:701px),(orientation:landscape) and (max-height:500px){
+  .poem-snow-game{max-width:1280px}
+  .poem-snow-game .sc-layout{grid-template-columns:minmax(0,1.75fr) minmax(250px,.9fr);grid-template-rows:minmax(0,1fr) auto auto minmax(0,1fr);column-gap:22px;row-gap:12px;align-items:center}
+  .poem-snow-game .sc-stage{grid-column:1;grid-row:1/5;width:min(100%,calc(100cqh * 16 / 9));align-self:center}
+  .poem-snow-game .sc-head{grid-column:2;grid-row:1;align-self:end;flex-direction:column;align-items:flex-start;gap:6px}
+  .poem-snow-game .sc-chip{order:-1}
+  .poem-snow-game .sc-card{grid-column:2;grid-row:2}
+  .poem-snow-game .sc-actionline{grid-column:2;grid-row:3}
+  .poem-snow-game .sc-feedback{grid-column:2;grid-row:4;align-self:start;min-height:0;font-size:18px;line-height:1.45}
+}
+@media (orientation:landscape) and (max-height:500px){
+  .poem-snow-game .sc-layout{grid-template-columns:min(calc(100cqh * 16 / 9),calc((100svh - 200px) * 16 / 9),58%) minmax(0,1fr);column-gap:16px;row-gap:5px}
+  .poem-snow-game .sc-stage{width:100%;border-radius:14px}
+  .poem-snow-game .sc-head{flex-direction:row;align-items:center;justify-content:space-between;gap:8px}
+  .poem-snow-game .sc-task{font-size:17px;line-height:1.35}
+  .poem-snow-game .sc-chip{order:1;font-size:14px;padding:2px 9px}
+  .poem-snow-game .sc-card{justify-content:flex-start;padding:5px 12px;gap:4px 10px;border-radius:14px}
+  .poem-snow-game .sc-count{display:flex;align-items:baseline;gap:6px;min-width:0;min-height:0;white-space:nowrap}
+  .poem-snow-game .sc-count small{font-size:14px}
+  .poem-snow-game .sc-count b{font-size:25px}
+  .poem-snow-game .sc-marks{grid-template-columns:repeat(5,22px);gap:3px 4px}
+  .poem-snow-game .sc-mark{width:22px;height:22px}
+  .poem-snow-game .sc-marks[data-kind="flurry"]{gap:5px}
+  .poem-snow-game .sc-pill{font-size:15px;padding:2px 8px}
+  .poem-snow-game .sc-actionline{justify-content:flex-start;gap:6px 12px}
+  .poem-snow-game .sc-verse{font-size:21px}
+  .poem-snow-game .sc-listen{min-height:44px;padding:6px 13px;font-size:17px;border-radius:13px}
+  .poem-snow-game .sc-listen svg{width:19px;height:19px}
+  .poem-snow-game .sc-feedback{font-size:15px;line-height:1.35;text-align:left}
+  .poem-snow-game .sc-loading{font-size:17px}
+}
+@media (max-width:700px){
+  .poem-snow-game .sc-layout{gap:10px}
+  .poem-snow-game .sc-stage{border-radius:16px}
+}
+@media (max-width:420px){
+  .poem-snow-game .sc-task{font-size:19px}
+  .poem-snow-game .sc-chip{font-size:15px;padding:3px 10px}
+  .poem-snow-game .sc-card{padding:8px 12px;gap:6px 12px}
+  .poem-snow-game .sc-count{min-height:62px}
+  .poem-snow-game .sc-count b{font-size:32px}
+  .poem-snow-game .sc-marks{grid-template-columns:repeat(5,28px);gap:6px}
+  .poem-snow-game .sc-mark{width:28px;height:28px}
+  .poem-snow-game .sc-pill{font-size:17px;padding:4px 8px}
+  .poem-snow-game .sc-marks[data-kind="flurry"]{gap:5px}
+  .poem-snow-game .sc-verse{font-size:25px;letter-spacing:.04em}
+  .poem-snow-game .sc-listen{font-size:18px;padding:8px 14px}
+  .poem-snow-game .sc-feedback{font-size:18px}
+  .poem-snow-game .sc-end{padding:6px 10px 7px;border-radius:10px}
+  .poem-snow-game .sc-sky-hint{padding:6px 15px}
+}
+@media (max-width:370px){
+  .poem-snow-game .sc-task{font-size:18px}
+  .poem-snow-game .sc-count{min-width:3.6em;min-height:55px}
+  .poem-snow-game .sc-count b{font-size:28px}
+  .poem-snow-game .sc-marks{grid-template-columns:repeat(5,25px);gap:5px}
+  .poem-snow-game .sc-mark{width:25px;height:25px}
+  .poem-snow-game .sc-verse{font-size:22px;letter-spacing:.02em}
+  .poem-snow-game .sc-listen{padding:8px 11px;font-size:17px}
+}
+.poem-snow-game.is-reduced .sc-fall i{animation:none;transform:translateY(var(--y))}
+.poem-snow-game.is-reduced .sc-flake svg,.poem-snow-game.is-reduced .sc-big-art svg,.poem-snow-game.is-reduced .sc-sky-hint,.poem-snow-game.is-reduced .sc-plum span,.poem-snow-game.is-reduced .sc-end,.poem-snow-game.is-reduced .sc-bigs.is-nudge .sc-big-art{animation:none!important}
+.poem-snow-game.is-reduced .sc-flake,.poem-snow-game.is-reduced .sc-flake.is-caught{transform:translate(-50%,-50%);transition:opacity .2s}
+.poem-snow-game.is-reduced .sc-big{transition:none}
+.poem-snow-game.is-reduced .sc-big-art,.poem-snow-game.is-reduced .sc-big.is-dragging .sc-big-art{transform:none;filter:none;transition:opacity .5s ease}
+.poem-snow-game.is-reduced .sc-ripple{display:none}
+.poem-snow-game.is-reduced .sc-plum.is-glow::after{animation:sc-fade 1.5s ease-out forwards;transform:none}
+.poem-snow-game.is-reduced .sc-scene,.poem-snow-game.is-reduced .sc-veil{transition-duration:.4s}
+@media (prefers-reduced-motion:reduce){
+  .poem-snow-game .sc-fall i{animation:none;transform:translateY(var(--y))}
+  .poem-snow-game .sc-flake svg,.poem-snow-game .sc-big-art svg,.poem-snow-game .sc-sky-hint,.poem-snow-game .sc-plum span,.poem-snow-game .sc-end,.poem-snow-game .sc-bigs.is-nudge .sc-big-art{animation:none!important}
+  .poem-snow-game .sc-ripple{display:none}
+  .poem-snow-game .sc-big{transition:none}
+}
+
+/* poem-games/rooster.css */
+.poem-rooster-game{--ink:#3d3125;--red:#a8432c;--soft:#76634d;--d:0;width:100%;max-width:760px;margin-inline:auto;align-self:start;display:grid;gap:12px;color:var(--ink);font-family:inherit;min-width:0}
+.poem-rooster-game *{box-sizing:border-box}
+.poem-rooster-game [hidden]{display:none!important}
+.poem-rooster-game button{font-family:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.poem-rooster-game button:disabled{cursor:default}
+.poem-rooster-game button:focus-visible,.poem-rooster-game .rr-range:focus-visible{outline:3px solid #de9b34;outline-offset:3px}
+.poem-rooster-game .rr-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.poem-rooster-game .rr-instruction{margin:0;min-width:0;font-size:clamp(19px,2.4vw,24px);font-weight:600;line-height:1.45;text-wrap:balance}
+.poem-rooster-game .rr-instruction span{display:inline-block}
+.poem-rooster-game .rr-progress{flex:none;padding:6px 14px;border-radius:999px;background:#fff7e8;border:1px solid #e6d2b0;color:#8a5a2b;font-weight:700;font-size:18px;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.poem-rooster-game .rr-stage{position:relative;isolation:isolate;container-type:inline-size;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#ebe2d1;border:1px solid #8b6c4a33;box-shadow:0 14px 28px -20px #5b3b1c80;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+.poem-rooster-game.is-look .rr-stage{cursor:pointer}
+.poem-rooster-game .rr-scene,.poem-rooster-game .rr-layer{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover;pointer-events:none;-webkit-user-drag:none}
+.poem-rooster-game .rr-day{transition:opacity .9s ease}
+.poem-rooster-game:not(.is-look) .rr-day{opacity:0}
+.poem-rooster-game .rr-sky{opacity:calc((var(--d) - .2) * 1.25);-webkit-mask-image:linear-gradient(180deg,#000 34%,transparent 47%),linear-gradient(90deg,transparent 42%,#000 57%);-webkit-mask-composite:source-in;mask-image:linear-gradient(180deg,#000 34%,transparent 47%),linear-gradient(90deg,transparent 42%,#000 57%);mask-composite:intersect}
+.poem-rooster-game .rr-warm{background:linear-gradient(200deg,transparent 30%,#ffb46a 72%,#ffd38c);mix-blend-mode:soft-light;opacity:calc(var(--d) * .75)}
+.poem-rooster-game .rr-dark{background:linear-gradient(180deg,#0e1533,#1c2750 58%,#283152);mix-blend-mode:multiply;opacity:calc((1 - var(--d)) * .8)}
+.poem-rooster-game .rr-stars{inset:0 0 54% 45%;width:auto;height:auto;opacity:calc(.95 - var(--d) * 1.7);background:
+  radial-gradient(circle at 8% 24%,#fffbe8 0 1.4px,transparent 2.6px),radial-gradient(circle at 19% 62%,#fffbe8 0 1px,transparent 2px),radial-gradient(circle at 27% 14%,#fffbe8 0 1.6px,transparent 3px),
+  radial-gradient(circle at 38% 40%,#fffbe8 0 1px,transparent 2px),radial-gradient(circle at 47% 9%,#fffbe8 0 1.2px,transparent 2.4px),radial-gradient(circle at 58% 55%,#fffbe8 0 1.4px,transparent 2.6px),
+  radial-gradient(circle at 66% 30%,#fffbe8 0 1px,transparent 2px),radial-gradient(circle at 84% 12%,#fffbe8 0 1.6px,transparent 3px),radial-gradient(circle at 91% 46%,#fffbe8 0 1.1px,transparent 2.2px),
+  radial-gradient(circle at 74% 70%,#fffbe8 0 .9px,transparent 1.8px),radial-gradient(circle at 33% 80%,#fffbe8 0 .9px,transparent 1.8px)}
+.poem-rooster-game .rr-moon{position:absolute;left:73%;top:8%;width:4.4cqi;height:4.4cqi;border-radius:50%;box-shadow:inset -1.2cqi .5cqi 0 0 #f8efcf;filter:drop-shadow(0 0 1cqi #f8efcf99);transform:translateY(calc(var(--d) * 9cqi)) rotate(-18deg);opacity:calc(1 - var(--d) * 1.5);pointer-events:none}
+.poem-rooster-game .rr-sunclip{position:absolute;left:0;right:0;top:0;height:44.6%;overflow:hidden;pointer-events:none}
+.poem-rooster-game .rr-sun{position:absolute;left:88.4%;top:calc(100% + 3cqi - var(--d) * 3.7cqi);width:3.6cqi;height:3.6cqi;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#fffbe9 0 30%,#ffd67c 62%,#f6a54d);box-shadow:0 0 2.2cqi .8cqi #ffd27a99;opacity:calc(var(--d) * 1.4)}
+.poem-rooster-game .rr-glow{position:absolute;left:88.4%;top:44%;width:80cqi;height:50cqi;transform:translate(-50%,-50%);background:radial-gradient(closest-side,#ffd9a0d0,#ffb07a50 45%,transparent);mix-blend-mode:screen;opacity:calc(var(--d) * .7);pointer-events:none}
+.poem-rooster-game .rr-dawn{opacity:0;transition:opacity 1.4s ease}
+.poem-rooster-game.is-open .rr-dawn{opacity:1}
+.poem-rooster-game .rr-light{position:absolute;left:var(--x);top:var(--y);width:var(--s);aspect-ratio:1.5;transform:translate(-50%,-50%) scale(.6);border-radius:50%;background:radial-gradient(closest-side,#fff0c0,#ffc36a99 40%,transparent);mix-blend-mode:screen;opacity:0;transition:opacity .8s ease,transform .8s ease;pointer-events:none}
+.poem-rooster-game .rr-light.is-on{opacity:.85;transform:translate(-50%,-50%) scale(1)}
+.poem-rooster-game .rr-rings{position:absolute;z-index:3;left:41%;top:4.5%;width:9cqi;height:9cqi;overflow:visible;pointer-events:none;opacity:0}
+.poem-rooster-game .rr-rings path{fill:none;stroke:#7c3317;stroke-width:3.6;stroke-linecap:round;filter:drop-shadow(0 0 1.6px #fff6dc) drop-shadow(0 0 3px #fff6dc)}
+.poem-rooster-game.is-crowing .rr-rings{opacity:1}
+.poem-rooster-game.is-crowing .rr-rings path{animation:rr-ring 1.1s ease-out 2 both}
+.poem-rooster-game.is-crowing .rr-rings path:nth-child(2){animation-delay:.14s}
+.poem-rooster-game.is-crowing .rr-rings path:nth-child(3){animation-delay:.28s}
+@keyframes rr-ring{0%{opacity:0;transform:translateX(-4px)}35%{opacity:1}100%{opacity:0;transform:translateX(7px)}}
+.poem-rooster-game .rr-hush{position:absolute;z-index:4;left:43%;top:10%;padding:.3cqi 1.8cqi .9cqi;border-radius:2.2cqi;background:#fffaf0ec;box-shadow:0 .5cqi 1.4cqi #0b123355;font-family:var(--sans);font-size:clamp(16px,3.4cqi,30px);font-weight:800;line-height:1;color:#5a4a3a;letter-spacing:.08em;opacity:0;transform:scale(.7);transform-origin:0 100%;transition:opacity .25s ease,transform .25s ease;pointer-events:none}
+.poem-rooster-game .rr-hush::before{content:'';position:absolute;left:-.8cqi;bottom:.6cqi;border-style:solid;border-width:.8cqi 1.4cqi .8cqi 0;border-color:transparent #fffaf0ec transparent transparent}
+.poem-rooster-game .rr-hush.is-on{opacity:1;transform:none}
+.poem-rooster-game .rr-sunzone{position:absolute;z-index:3;left:46%;right:0;top:0;bottom:16%;display:none;touch-action:none;cursor:ns-resize}
+.poem-rooster-game.is-dawn .rr-sunzone{display:block}
+.poem-rooster-game .rr-pull{position:absolute;right:2.4cqi;top:58%;transform:translateY(-50%);display:flex;align-items:center;gap:.8cqi;padding:.7cqi 1.8cqi;border-radius:999px;background:#fff8e8ea;color:#7a4a1e;font-family:var(--sans);font-size:clamp(14px,2.3cqi,20px);font-weight:700;line-height:1.2;white-space:nowrap;box-shadow:0 .5cqi 1.6cqi #0b123366}
+.poem-rooster-game .rr-pull i{width:0;height:0;border-style:solid;border-width:0 .9cqi 1.3cqi;border-color:transparent transparent #e2913a}
+.poem-rooster-game:not(.is-reduced) .rr-pull{animation:rr-bob 1.8s ease-in-out infinite}
+@keyframes rr-bob{50%{transform:translateY(calc(-50% - .8cqi))}}
+
+.poem-rooster-game .rr-spot{position:absolute;z-index:4;left:var(--x);top:var(--y);width:var(--w);height:var(--h);min-width:44px;min-height:44px;transform:translate(-50%,-50%);padding:0;margin:0;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer}
+.poem-rooster-game .rr-spot svg{position:absolute;inset:-9%;width:118%;height:118%;overflow:visible;pointer-events:none}
+.poem-rooster-game .rr-spot path{fill:none;stroke:#b4472f;stroke-width:3;stroke-linecap:round;stroke-dasharray:1 1;stroke-dashoffset:1;opacity:.92;filter:drop-shadow(0 1px 0 #fffbf2aa)}
+.poem-rooster-game .rr-spot.is-found path{stroke-dashoffset:0;transition:stroke-dashoffset .8s ease}
+.poem-rooster-game .rr-spot:focus-visible{outline:3px dashed #f2b450;outline-offset:3px}
+.poem-rooster-game .rr-spot.is-hint::after{content:'';position:absolute;inset:-4%;border-radius:50%;box-shadow:0 0 0 3px #fff6dcd0,0 0 2.4cqi 1cqi #f6c76a;animation:rr-breathe 1.8s ease-in-out infinite}
+@keyframes rr-breathe{50%{opacity:.35;transform:scale(1.06)}}
+.poem-rooster-game .rr-chip{position:absolute;z-index:5;left:var(--x);top:var(--y);display:grid;gap:.25cqi;padding:.8cqi 1.8cqi 1cqi;border-radius:1.6cqi;background:#fffaf1ee;border:1px solid #d8bf9a;box-shadow:0 .6cqi 1.8cqi -.6cqi #5b3b1c66;font-family:var(--sans);line-height:1.25;pointer-events:none;opacity:0;transform:translateY(.8cqi) scale(.92);transform-origin:0 50%;transition:opacity .35s ease,transform .35s ease}
+.poem-rooster-game .rr-chip.is-on{opacity:1;transform:none}
+.poem-rooster-game .rr-chip::before{content:'';position:absolute;left:-1cqi;top:50%;width:1.8cqi;height:1.8cqi;background:#fffaf1;border-left:1px solid #d8bf9a;border-bottom:1px solid #d8bf9a;transform:translateY(-50%) rotate(45deg)}
+.poem-rooster-game .rr-chip b{font-size:clamp(15px,3.1cqi,28px);color:var(--red);letter-spacing:.08em}
+.poem-rooster-game .rr-chip small{font-size:clamp(14px,1.9cqi,17px);color:#6d5a44;font-weight:600}
+@container (max-width:470px){.poem-rooster-game .rr-chip small{display:none}.poem-rooster-game .rr-chip{padding:.8cqi 2.2cqi}}
+.poem-rooster-game .rr-caption{position:absolute;z-index:5;right:2.2cqi;bottom:2.2cqi;padding:1cqi 2.4cqi;border-radius:1.8cqi;background:#fff8ebe6;border:1px solid #e3c79c;color:#8a3a22;font-family:var(--sans);font-size:clamp(16px,3.3cqi,32px);font-weight:700;letter-spacing:.14em;line-height:1.3;box-shadow:0 .6cqi 2cqi -.8cqi #5b3b1c66;opacity:0;transform:translateY(1cqi);transition:opacity .6s ease .2s,transform .6s ease .2s;pointer-events:none}
+.poem-rooster-game.is-done .rr-caption{opacity:1;transform:none}
+.poem-rooster-game .rr-loading{position:absolute;inset:0;z-index:8;display:grid;align-content:center;justify-items:center;gap:14px;padding:20px;background:#f6f0e4eb;font-size:20px;line-height:1.5;text-align:center;color:var(--ink)}
+.poem-rooster-game .rr-loading button{min-height:48px;padding:10px 22px;border:1px solid #c7a77d;border-radius:14px;background:#fffdf8;color:var(--ink);font-size:20px;font-weight:600;cursor:pointer}
+
+.poem-rooster-game .rr-panel{display:grid;gap:12px;align-content:start;min-width:0}
+.poem-rooster-game .rr-clues{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0;padding:0;list-style:none}
+.poem-rooster-game .rr-clue{display:flex;align-items:center;gap:12px;min-width:0;padding:10px 12px;border-radius:18px;background:#fffdf8;border:1.5px dashed #dcc9a8;transition:border-color .3s,background .3s}
+.poem-rooster-game .rr-clue.is-found{border-style:solid;border-color:#ddb083;background:#fff5e4}
+.poem-rooster-game .rr-thumb{position:relative;flex:none;width:62px;height:62px;border-radius:14px;overflow:hidden;background:var(--rr-scene2) var(--thumb) no-repeat,#ece3d2;box-shadow:inset 0 0 0 1px #8b6c4a26}
+.poem-rooster-game .rr-thumb::after{content:'?';position:absolute;inset:0;display:grid;place-items:center;font-size:30px;font-weight:700;color:#8a6f4f;background:#f8f1e3d0;-webkit-backdrop-filter:blur(3px) grayscale(1);backdrop-filter:blur(3px) grayscale(1)}
+.poem-rooster-game .rr-clue.is-found .rr-thumb::after{content:none}
+.poem-rooster-game .rr-clue span{min-width:0}
+.poem-rooster-game .rr-clue b{display:block;font-size:22px;line-height:1.25;color:#6b5a48}
+.poem-rooster-game .rr-clue.is-found b{color:var(--red);letter-spacing:.06em}
+.poem-rooster-game .rr-clue small{display:block;font-size:16px;line-height:1.35;color:var(--soft);font-weight:600}
+.poem-rooster-game .rr-next{min-height:56px;padding:10px 20px;border:0;border-radius:18px;background:linear-gradient(180deg,#44528a,#2d3765);color:#fff8e8;font-size:21px;font-weight:700;cursor:pointer;box-shadow:0 4px 0 #1f2749}
+.poem-rooster-game .rr-skybar{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:999px;background:linear-gradient(90deg,#e3e2ef,#fbefdc);border:1px solid #dacdb7}
+.poem-rooster-game .rr-step{flex:none;width:52px;height:52px;padding:0;border-radius:50%;border:1.5px solid #d6c3a3;background:#fffdf8;display:grid;place-items:center;cursor:pointer;box-shadow:0 3px 0 #eadcc4}
+.poem-rooster-game .rr-step:disabled{opacity:.45;box-shadow:none}
+.poem-rooster-game .rr-step i{display:block}
+.poem-rooster-game .rr-step.is-moon i{width:24px;height:24px;border-radius:50%;box-shadow:inset -7px 3px 0 0 #6b679e;transform:rotate(-15deg)}
+.poem-rooster-game .rr-step.is-sun i{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle,#ffeaa8,#f5a640);box-shadow:0 0 0 4px #f8c66a55,0 0 0 8px #f8c66a22}
+.poem-rooster-game .rr-range{flex:1;min-width:0;height:52px;margin:0;padding:0;background:transparent;-webkit-appearance:none;appearance:none;cursor:pointer;border-radius:999px}
+.poem-rooster-game .rr-range::-webkit-slider-runnable-track{height:14px;border-radius:999px;background:linear-gradient(90deg,#27304f,#5d5a8a 38%,#e7a25e 78%,#f8d27a)}
+.poem-rooster-game .rr-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:46px;height:46px;margin-top:-16px;border-radius:50%;border:3px solid #fffaf0;background:radial-gradient(circle at 42% 38%,#fffbe6,#ffd36e 45%,#f19a3c);box-shadow:0 3px 8px #7a3f1366,0 0 0 6px #f7c25a40}
+.poem-rooster-game .rr-range::-moz-range-track{height:14px;border-radius:999px;background:linear-gradient(90deg,#27304f,#5d5a8a 38%,#e7a25e 78%,#f8d27a)}
+.poem-rooster-game .rr-range::-moz-range-thumb{width:40px;height:40px;border-radius:50%;border:3px solid #fffaf0;background:radial-gradient(circle at 42% 38%,#fffbe6,#ffd36e 45%,#f19a3c);box-shadow:0 3px 8px #7a3f1366,0 0 0 6px #f7c25a40}
+.poem-rooster-game .rr-range:disabled{opacity:.6;cursor:default}
+.poem-rooster-game .rr-crow{display:flex;align-items:center;justify-content:center;gap:12px;min-height:64px;padding:10px 20px;border-radius:20px;border:1.5px solid #c9b79b;background:#f3eee5;color:#6b5a48;cursor:pointer;box-shadow:0 4px 0 #ddd0bb;transition:background .4s,color .4s,box-shadow .4s,border-color .4s}
+.poem-rooster-game .rr-crow span{font-size:26px;font-weight:800;letter-spacing:.14em;line-height:1.2}
+.poem-rooster-game .rr-crow small{font-size:16px;font-weight:600;opacity:.85}
+.poem-rooster-game.is-bright .rr-crow{background:linear-gradient(180deg,#d4573a,#b3432b);border-color:#a23a24;color:#fff8ec;box-shadow:0 4px 0 #8c2f1c,0 0 0 6px #f6b75a44}
+.poem-rooster-game.is-bright:not(.is-reduced) .rr-crow{animation:rr-call 1.8s ease-in-out infinite}
+@keyframes rr-call{50%{box-shadow:0 4px 0 #8c2f1c,0 0 0 12px #f6b75a1c}}
+.poem-rooster-game .rr-lane{position:relative;overflow:hidden;border-radius:16px;aspect-ratio:900/292;background:linear-gradient(180deg,#f6d5a3,#fbeedb 75%);border:1px solid #dcc8a6}
+.poem-rooster-game .rr-lane::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#1b2346,#3a4068 75%);opacity:calc(1 - var(--d));pointer-events:none}
+.poem-rooster-game .rr-lane-art{position:absolute;left:0;right:0;bottom:0;aspect-ratio:900/280;filter:brightness(calc(.5 + var(--d) * .5)) saturate(calc(.55 + var(--d) * .45))}
+.poem-rooster-game .rr-lane-img{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+.poem-rooster-game .rr-door{position:absolute;left:var(--x);top:var(--y);width:var(--w);height:var(--h);perspective:220px;transition:box-shadow .8s ease}
+.poem-rooster-game .rr-door.is-open{box-shadow:inset 0 5px 6px -2px #7a4a1e66,inset 0 0 8px #c9873a55}
+.poem-rooster-game .rr-leaf{position:absolute;top:0;bottom:0;width:50.5%;background:var(--rr-door,linear-gradient(#8f4c2f,#7a3f27)) 0 0/200% 100% no-repeat,#8a4a2e;filter:saturate(.78) brightness(.96);transition:transform 1s cubic-bezier(.3,.7,.25,1),filter 1s ease}
+.poem-rooster-game .rr-door.is-open .rr-leaf{filter:saturate(.7) brightness(.66)}
+.poem-rooster-game .rr-leaf.is-l{left:0;transform-origin:0 50%}
+.poem-rooster-game .rr-leaf.is-r{right:0;background-position:100% 0,0 0;transform-origin:100% 50%}
+.poem-rooster-game .rr-door.is-open .rr-leaf.is-l{transform:rotateY(-66deg)}
+.poem-rooster-game .rr-door.is-open .rr-leaf.is-r{transform:rotateY(66deg)}
+.poem-rooster-game .rr-spill{position:absolute;left:-55%;right:-55%;bottom:-16%;height:30%;border-radius:50%;background:radial-gradient(closest-side,#ffd58acc,#ffd58a00);opacity:0;transition:opacity .8s ease .25s}
+.poem-rooster-game .rr-door.is-open .rr-spill{opacity:1}
+
+.poem-rooster-game .rr-actionline{display:flex;align-items:center;justify-content:space-between;gap:10px 14px;flex-wrap:wrap}
+.poem-rooster-game .rr-method{font-size:18px;color:var(--soft);font-weight:600;line-height:1.4}
+.poem-rooster-game .rr-audio{display:inline-flex;align-items:center;gap:9px;min-height:52px;padding:10px 20px;border-radius:16px;border:1.5px solid #cfa77a;background:#fffaf1;color:#7a3c22;font-size:20px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 #ead8bd}
+.poem-rooster-game .rr-audio::before{content:'';width:0;height:0;border-style:solid;border-width:8px 0 8px 12px;border-color:transparent transparent transparent currentColor}
+.poem-rooster-game .rr-feedback{margin:0;min-height:3em;font-size:20px;line-height:1.5;text-align:center;color:#5b4a38;text-wrap:pretty}
+
+@media (min-width:701px) and (orientation:landscape){
+  .poem-rooster-game{grid-template-columns:minmax(0,1.45fr) minmax(260px,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;align-items:start;column-gap:22px}
+  .poem-rooster-game .rr-stage{grid-column:1;grid-row:1/5;align-self:start;width:min(100%,calc(100cqh * 16 / 9))}
+  .poem-rooster-game .rr-head,.poem-rooster-game .rr-panel,.poem-rooster-game .rr-actionline,.poem-rooster-game .rr-feedback{grid-column:2}
+  .poem-rooster-game .rr-head{grid-row:1;align-self:start}
+  .poem-rooster-game .rr-panel{grid-row:2;align-self:center}
+  .poem-rooster-game .rr-actionline{grid-row:3}
+  .poem-rooster-game .rr-feedback{grid-row:4;text-align:left}
+  .poem-rooster-game .rr-clues{grid-template-columns:1fr}
+}
+@media (min-width:900px) and (min-height:620px) and (orientation:landscape){
+  .poem-rooster-game .rr-stage{align-self:center}
+  .poem-rooster-game .rr-instruction{font-size:27px}
+  .poem-rooster-game .rr-progress{font-size:21px;padding:8px 16px}
+  .poem-rooster-game .rr-clue b{font-size:25px}
+  .poem-rooster-game .rr-clue small{font-size:18px}
+  .poem-rooster-game .rr-thumb{width:72px;height:72px}
+  .poem-rooster-game .rr-next{min-height:66px;font-size:24px}
+  .poem-rooster-game .rr-crow{min-height:74px}
+  .poem-rooster-game .rr-crow span{font-size:30px}
+  .poem-rooster-game .rr-method{font-size:20px}
+  .poem-rooster-game .rr-audio{font-size:22px;min-height:58px}
+  .poem-rooster-game .rr-feedback{font-size:22px}
+}
+@media (orientation:landscape) and (max-height:500px){
+  .poem-rooster-game{gap:8px;column-gap:16px}
+  .poem-rooster-game .rr-stage{position:sticky;top:0;z-index:1}
+  .poem-rooster-game .rr-instruction{font-size:18px}
+  .poem-rooster-game .rr-progress{font-size:15px;padding:4px 10px}
+  .poem-rooster-game .rr-panel{gap:8px}
+  .poem-rooster-game .rr-clue{padding:6px 10px;gap:10px}
+  .poem-rooster-game .rr-thumb{width:46px;height:46px;border-radius:11px}
+  .poem-rooster-game .rr-clue b{font-size:19px}
+  .poem-rooster-game .rr-clue small{font-size:14px}
+  .poem-rooster-game .rr-next{min-height:48px;font-size:18px}
+  .poem-rooster-game .rr-skybar{padding:2px 6px}
+  .poem-rooster-game .rr-step{width:46px;height:46px}
+  .poem-rooster-game .rr-range{height:46px}
+  .poem-rooster-game .rr-crow{min-height:50px;padding:6px 14px}
+  .poem-rooster-game .rr-crow span{font-size:22px}
+  .poem-rooster-game .rr-crow small{font-size:14px}
+  .poem-rooster-game .rr-method{display:none}
+  .poem-rooster-game .rr-actionline{justify-content:flex-start}
+  .poem-rooster-game .rr-audio{min-height:46px;font-size:17px;padding:6px 14px}
+  .poem-rooster-game .rr-feedback{font-size:16px;line-height:1.4;min-height:2.8em}
+}
+@media (min-width:560px) and (orientation:portrait),(min-width:560px) and (max-width:700px){
+  .poem-rooster-game.is-dawn .rr-panel{grid-template-columns:minmax(0,1fr) auto}
+  .poem-rooster-game .rr-lane{grid-column:1/-1}
+}
+@media (max-width:700px){
+  .poem-rooster-game .rr-stage{border-radius:16px}
+}
+@media (max-width:420px){
+  .poem-rooster-game{gap:10px}
+  .poem-rooster-game .rr-instruction{font-size:19px}
+  .poem-rooster-game .rr-progress{font-size:16px;padding:5px 11px}
+  .poem-rooster-game .rr-clues{grid-template-columns:1fr;gap:8px}
+  .poem-rooster-game .rr-clue{gap:9px;padding:8px 10px;border-radius:16px}
+  .poem-rooster-game .rr-thumb{width:48px;height:48px;border-radius:11px}
+  .poem-rooster-game .rr-clue b{font-size:20px}
+  .poem-rooster-game .rr-clue small{font-size:15px}
+  .poem-rooster-game .rr-skybar{gap:6px;padding:4px 6px}
+  .poem-rooster-game .rr-step{width:48px;height:48px}
+  .poem-rooster-game .rr-crow span{font-size:24px}
+  .poem-rooster-game .rr-method{font-size:16px}
+  .poem-rooster-game .rr-audio{font-size:18px;padding:8px 16px}
+  .poem-rooster-game .rr-feedback{font-size:18px}
+}
+@media (max-width:370px){
+  .poem-rooster-game .rr-instruction{font-size:17px}
+  .poem-rooster-game .rr-crow small{display:none}
+  .poem-rooster-game .rr-method{display:none}
+  .poem-rooster-game .rr-actionline{justify-content:center}
+}
+.poem-rooster-game.is-reduced *,.poem-rooster-game.is-reduced *::before,.poem-rooster-game.is-reduced *::after{transition:none!important;animation:none!important}
+@media (prefers-reduced-motion:reduce){.poem-rooster-game *,.poem-rooster-game *::before,.poem-rooster-game *::after{transition:none!important;animation:none!important}}
+
+/* poem-games/seven-steps.css */
+.poem-seven-steps{--ss-ink:#294c3b;--ss-soft:#5f7566;--ss-paper:#fffdf7;--ss-line:#dcd8c8;--ss-gold:#e3a548;--ss-fire:#c9673a;display:block;width:100%;max-width:900px;margin-inline:auto;align-self:start;align-self:safe center;color:var(--ss-ink);font-family:var(--sans);min-width:0}
+.poem-seven-steps *{box-sizing:border-box}
+.poem-seven-steps [hidden]{display:none!important}
+.poem-seven-steps button{font-family:inherit;color:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.poem-seven-steps button:focus-visible{outline:3px solid #de9b34;outline-offset:3px}
+.poem-seven-steps .ss-layout{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "stage" "side";gap:12px;height:100%;align-content:center}
+.poem-seven-steps .ss-head{grid-area:head;display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.poem-seven-steps .ss-instruction{margin:0;font-size:clamp(19px,2.4vw,24px);font-weight:650;line-height:1.42}
+.poem-seven-steps .ss-instruction span{display:inline-block}
+.poem-seven-steps .ss-progress{flex:none;min-width:66px;padding:5px 12px;border-radius:18px;background:#edf3e7;color:#3c6447;font-size:18px;font-weight:600;text-align:center;font-variant-numeric:tabular-nums}
+.poem-seven-steps.is-done .ss-progress{background:#f6e5c8;color:#8a4f24}
+
+/* Stage: the three scene paintings stay 16:9; every overlay is placed in % of that box. */
+.poem-seven-steps .ss-stage{grid-area:stage;position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#e9e2d2;border:1px solid #d6d2c1;box-shadow:0 6px 20px #2c443114;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.poem-seven-steps .ss-scene,.poem-seven-steps .ss-hintplant{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none}
+.poem-seven-steps .ss-scene-2,.poem-seven-steps .ss-scene-3{opacity:0;transition:opacity 1.1s ease}
+.poem-seven-steps .ss-scene.is-on{opacity:1}
+.poem-seven-steps .ss-patch{position:absolute;left:var(--l);top:var(--t);width:var(--w);height:auto;opacity:0;pointer-events:none;transition:opacity .9s ease .35s;-webkit-user-drag:none}
+.poem-seven-steps .ss-patch.is-on{opacity:1;transition:none}
+.poem-seven-steps .ss-hintplant{opacity:0;transition:opacity .8s ease;-webkit-mask-image:radial-gradient(ellipse 21% 32% at 41% 26%,#000 52%,transparent 100%);mask-image:radial-gradient(ellipse 21% 32% at 41% 26%,#000 52%,transparent 100%)}
+.poem-seven-steps .ss-hintplant.is-on{opacity:.34}
+.poem-seven-steps .ss-glow{position:absolute;left:29%;top:88%;width:34%;height:34%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,#ffb35a70,#ff8a3a2c 55%,transparent);mix-blend-mode:screen;opacity:0;pointer-events:none;transition:opacity 1.2s ease}
+.poem-seven-steps .ss-glow.is-on{opacity:1;animation:ss-flicker 2.4s ease-in-out 1.2s 6 alternate}
+.poem-seven-steps .ss-tear{position:absolute;left:var(--x);top:var(--y);z-index:2;width:3.1%;min-width:13px;transform:translate(-50%,-50%) translateY(-8px);opacity:0;pointer-events:none;transition:opacity .35s ease,transform .7s cubic-bezier(.3,.7,.4,1);filter:drop-shadow(0 1px 1px #24403555)}
+.poem-seven-steps .ss-tear.is-on{opacity:1;transform:translate(-50%,-50%)}
+.poem-seven-steps .ss-tear svg,.poem-seven-steps .ss-sob-icons svg{display:block;width:100%;height:auto;fill:#d8eef4;stroke:#5c8fa3;stroke-width:1.4}
+.poem-seven-steps .ss-shine{fill:none;stroke:#fff;stroke-width:1.6;stroke-linecap:round}
+.poem-seven-steps .ss-token{position:absolute;left:var(--x);top:var(--y);z-index:3;display:grid;place-items:center;width:clamp(30px,6.4%,52px);aspect-ratio:1;transform:translate(-50%,-50%) scale(.6);border-radius:50%;background:#fffaf0f2;border:2px solid #b5523b;color:#9a3f2c;font-size:clamp(16px,2.6vw,26px);font-weight:700;line-height:1;box-shadow:0 3px 8px #3b2a1a38;opacity:0;pointer-events:none;transition:opacity .35s ease,transform .45s cubic-bezier(.3,1.4,.5,1),left 1s ease,top 1s ease}
+.poem-seven-steps .ss-token.is-on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.poem-seven-steps[data-step="6"] .ss-token,.poem-seven-steps[data-step="7"] .ss-token{opacity:1;transform:translate(-50%,-50%) scale(.92)}
+.poem-seven-steps .ss-fx{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden}
+
+/* Drop targets: soft ink rings with a paper label, only shown when they are useful. */
+.poem-seven-steps .ss-target{position:absolute;left:var(--x);top:var(--y);z-index:5;width:var(--w);height:var(--h);min-width:46px;min-height:46px;transform:translate(-50%,-50%);padding:0;border:2.5px dashed #fffaeef2;border-radius:50%;background:radial-gradient(closest-side,#fff8e42e,#fff8e412 70%,transparent);box-shadow:0 0 0 2px #4a332066,inset 0 0 0 2px #4a33204d,0 0 14px 4px #fff4d633;cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s}
+.poem-seven-steps .ss-target>span{position:absolute;left:50%;top:var(--ly,0%);transform:translate(-50%,-50%);padding:3px 11px;border-radius:999px;background:#fffaf0f0;color:#2d4a3c;font-size:clamp(14px,1.9vw,18px);font-weight:650;line-height:1.35;white-space:nowrap;box-shadow:0 2px 6px #2a1d1033}
+.poem-seven-steps .ss-target-stove{--ly:50%}
+.poem-seven-steps .ss-target-root{--ly:118%;border-style:solid;border-color:#fff6dfd9;background:#fffaf033}
+.poem-seven-steps .ss-target-root svg{position:absolute;left:50%;top:50%;width:62%;transform:translate(-50%,-50%);fill:none;stroke:#7a5532;stroke-width:2.6;stroke-linecap:round}
+.poem-seven-steps .ss-target.is-calling{border-color:#ffe2a4;animation:ss-call 1.6s ease-in-out infinite}
+.poem-seven-steps .ss-target.is-over,.poem-seven-steps .ss-target:hover:not(:disabled){border-style:solid;border-color:#ffd27a;background:radial-gradient(closest-side,#fff3c94d,#ffe6a01f 70%,transparent);box-shadow:0 0 0 4px #ffcf7366,0 0 22px 8px #ffd98a55}
+.poem-seven-steps .ss-target:disabled{cursor:default}
+.poem-seven-steps[data-step="4"] .ss-target-pot>span{--ly:0%}
+.poem-seven-steps .ss-caption{position:absolute;right:3.5%;top:5%;z-index:6;display:flex;flex-direction:column;gap:2px;padding:9px 16px;border-radius:14px;background:#fefbf0e6;color:#315240;font-size:clamp(17px,2.6vw,27px);font-weight:650;line-height:1.45;letter-spacing:.12em;box-shadow:0 4px 14px #2a1d1026;pointer-events:none;animation:ss-rise .7s ease both}
+.poem-seven-steps .ss-loading{position:absolute;inset:0;z-index:9;display:grid;align-content:center;justify-items:center;gap:14px;padding:20px;background:#f5f2eae8;font-size:20px;line-height:1.5;text-align:center}
+.poem-seven-steps .ss-loading button{min-height:48px;padding:10px 22px;border:1px solid #97ad9b;border-radius:14px;background:#fffefa;font-weight:600;font-size:19px;cursor:pointer}
+
+/* Spawned motion (never created when reducedMotion is on). */
+.poem-seven-steps .ss-bean{position:absolute;left:var(--x);top:24%;width:2.3%;min-width:7px;aspect-ratio:1.15;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f6e2b0,#d4a85e 60%,#a87a3c);box-shadow:0 1px 1px #5a3d1a55;opacity:0;animation:ss-fall .8s cubic-bezier(.5,0,.8,.6) var(--d) both}
+.poem-seven-steps .ss-pour{position:absolute;left:63%;top:31%;width:17%;transform-origin:85% 70%;animation:ss-pour 1.4s ease both}
+.poem-seven-steps .ss-pour img,.poem-seven-steps .ss-push img{display:block;width:100%;height:auto}
+.poem-seven-steps .ss-drip{position:absolute;left:var(--x);top:71.5%;width:.7%;min-width:4px;aspect-ratio:.7;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:#e9dcc0;box-shadow:inset -1px -1px 0 #b39a6e88;opacity:0;animation:ss-drip .9s ease-in var(--d) 3}
+.poem-seven-steps .ss-push{position:absolute;left:44%;top:84%;width:17%;animation:ss-push 1.2s ease both}
+.poem-seven-steps .ss-gudu{position:absolute;left:var(--x);top:var(--y);transform:translate(-50%,-50%);padding:1px 8px;border-radius:999px;background:#fffaf0dd;color:#5c4126;font-size:clamp(14px,1.8vw,18px);font-style:normal;font-weight:700;letter-spacing:.06em;animation:ss-gudu 1.2s ease-out both}
+
+/* Side panel: footprints, materials, action line and feedback. */
+.poem-seven-steps .ss-side{grid-area:side;display:flex;flex-direction:column;gap:12px;min-width:0}
+.poem-seven-steps .ss-walk{--at:0;position:relative;display:grid;grid-template-columns:repeat(9,minmax(0,1fr));align-items:end;justify-items:center;padding:36px 4px 6px;border-radius:18px;background:linear-gradient(#fbf7ec,#f3eedf);border:1px solid #e3dccb}
+.poem-seven-steps .ss-walk::before{content:'';position:absolute;left:8%;right:8%;bottom:9px;height:2px;border-radius:2px;background:repeating-linear-gradient(90deg,#c9bfa6 0 6px,transparent 6px 12px)}
+.poem-seven-steps .ss-foot{width:min(22px,64%);display:block;transform:translateY(-3px) rotate(-8deg);transition:transform .4s ease}
+.poem-seven-steps .ss-foot.is-right{transform:translateY(3px) scaleX(-1) rotate(-8deg)}
+.poem-seven-steps .ss-foot:nth-child(1){grid-column:2}
+.poem-seven-steps .ss-foot svg{display:block;width:100%;height:auto;fill:#d8d0bd;transition:fill .45s ease,filter .45s ease}
+.poem-seven-steps .ss-foot.is-lit svg{fill:#2f5443;filter:drop-shadow(0 0 4px #f2c76d)}
+.poem-seven-steps .ss-seal{display:grid;place-items:center;width:min(34px,90%);aspect-ratio:1;border-radius:7px;border:2px solid #c9b8a0;color:#b9ab95;font-size:18px;line-height:1;font-weight:700;transition:background .4s,color .4s,border-color .4s}
+.poem-seven-steps .ss-seal.is-lit{background:#b5523b;border-color:#9a3f2c;color:#fff7ea;box-shadow:0 2px 6px #9a3f2c55}
+.poem-seven-steps .ss-walker{position:absolute;top:3px;left:calc((var(--at) + .5) * (100% - 8px) / 9 + 4px);width:32px;height:32px;transform:translateX(-50%);border-radius:50%;overflow:hidden;border:2px solid #fff;background:#efe6d3;box-shadow:0 2px 6px #2a1d1040;transition:left .7s cubic-bezier(.4,1.3,.5,1)}
+.poem-seven-steps .ss-walker img{width:100%;height:100%;object-fit:cover;object-position:50% 14%;display:block}
+.poem-seven-steps .ss-tray{display:flex;flex-wrap:wrap;justify-content:center;align-items:stretch;gap:10px;min-height:66px}
+.poem-seven-steps .ss-item{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:66px;flex:1 1 150px;max-width:240px;padding:6px 14px;border:1.5px solid var(--ss-line);border-radius:18px;background:var(--ss-paper);font-size:19px;font-weight:650;line-height:1.25;cursor:pointer;box-shadow:0 3px 0 #e6e1d2;transition:border-color .2s,background .2s,box-shadow .2s,opacity .2s,transform .2s;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.poem-seven-steps .ss-item span{white-space:nowrap}
+.poem-seven-steps .ss-item img{display:block;height:50px;width:auto;max-width:86px;object-fit:contain;pointer-events:none;-webkit-user-drag:none;filter:drop-shadow(0 2px 2px #3b2a1a2e)}
+.poem-seven-steps .ss-item.is-draggable{touch-action:none;cursor:grab}
+.poem-seven-steps .ss-item[aria-pressed=true]{border-color:#c98b3a;background:#fff3d9;box-shadow:0 0 0 4px #e3a54870,0 3px 0 #ead7b4;transform:translateY(-2px)}
+.poem-seven-steps .ss-item:hover:not(:disabled){border-color:#b9c7b1}
+.poem-seven-steps .ss-item.is-source{opacity:.45}
+.poem-seven-steps .ss-item:disabled{cursor:default}
+.poem-seven-steps .ss-item.is-used{opacity:.5;background:#f2efe6;box-shadow:none}
+.poem-seven-steps .ss-chip{flex:0 1 170px;gap:6px}
+.poem-seven-steps .ss-item.ss-chip img{height:40px;max-width:64px}
+.poem-seven-steps .ss-chip b{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:2px solid #b5523b;color:#9a3f2c;background:#fffaf0;font-size:25px;line-height:1}
+.poem-seven-steps .ss-sobs{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 14px;border-radius:16px;background:#f3f5ee;font-size:18px;font-weight:600;color:var(--ss-soft)}
+.poem-seven-steps .ss-sob-icons{display:flex;gap:6px}
+.poem-seven-steps .ss-sob-icons i{width:20px;opacity:.35;filter:grayscale(1);transition:opacity .3s,filter .3s}
+.poem-seven-steps .ss-sob-icons i.is-on{opacity:1;filter:none}
+.poem-seven-steps .ss-kin{width:100%;display:grid;gap:8px;text-align:center}
+.poem-seven-steps .ss-kin div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.poem-seven-steps .ss-kin button{min-height:58px;padding:8px 6px;border:1.5px solid var(--ss-line);border-radius:16px;background:var(--ss-paper);font-size:22px;font-weight:650;letter-spacing:.08em;cursor:pointer;box-shadow:0 3px 0 #e6e1d2}
+.poem-seven-steps .ss-kin button:hover:not(:disabled){border-color:#c98b3a;background:#fff6e2}
+.poem-seven-steps .ss-kin button:disabled{cursor:default;opacity:.7}
+.poem-seven-steps .ss-summary{width:100%;padding:12px 16px;border-radius:16px;background:#fbf4e4;border:1px solid #ecdcbc;text-align:center}
+.poem-seven-steps .ss-summary b{display:block;font-size:21px;letter-spacing:.1em;color:#7b3e22}
+.poem-seven-steps .ss-summary p{margin:6px 0 0;font-size:17px;line-height:1.55;color:#4b5f50;text-align:left}
+.poem-seven-steps .ss-actionline{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.poem-seven-steps .ss-method{font-size:17px;line-height:1.4;color:var(--ss-soft)}
+.poem-seven-steps .ss-audio{flex:none;display:inline-flex;align-items:center;gap:7px;min-height:48px;padding:8px 16px;border:1px solid #b9cbae;border-radius:999px;background:#fffef7;color:#356148;font-size:18px;font-weight:600;cursor:pointer}
+.poem-seven-steps .ss-audio svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.poem-seven-steps .ss-audio svg path:first-child{fill:currentColor}
+.poem-seven-steps .ss-feedback{margin:0;min-height:3em;font-size:18px;line-height:1.5;color:#4a6a59;text-align:center;text-wrap:pretty}
+.poem-seven-steps .ss-ghost{position:fixed;left:0;top:0;z-index:80;width:112px;transform:translate(-50%,-62%) rotate(-6deg);pointer-events:none;filter:drop-shadow(0 8px 10px #2a1d1045)}
+.poem-seven-steps .ss-ghost img{display:block;width:100%;height:auto}
+.poem-seven-steps .ss-ghost b{display:grid;place-items:center;width:56px;height:56px;margin:auto;border-radius:50%;border:2px solid #b5523b;background:#fffaf0;color:#9a3f2c;font-size:30px}
+.poem-seven-steps.is-readonly .ss-actionline .ss-method{visibility:hidden}
+
+@keyframes ss-call{50%{box-shadow:0 0 0 4px #ffd27a59,0 0 20px 8px #ffd98a4d}}
+@keyframes ss-flicker{from{opacity:.75}to{opacity:1}}
+@keyframes ss-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes ss-fall{0%{opacity:0;top:22%}15%{opacity:1}80%{opacity:1}100%{opacity:0;top:50%}}
+@keyframes ss-pour{0%{opacity:0;transform:rotate(0)}20%{opacity:1}55%{transform:rotate(-28deg)}85%{opacity:1}100%{opacity:0;transform:rotate(-28deg)}}
+@keyframes ss-drip{0%{opacity:0;top:71.5%}20%{opacity:.95}100%{opacity:0;top:80%}}
+@keyframes ss-push{0%{opacity:0;transform:translateX(30%)}25%{opacity:1}80%{opacity:1;transform:translateX(-60%) scale(.9)}100%{opacity:0;transform:translateX(-70%) scale(.85)}}
+@keyframes ss-gudu{0%{opacity:0;transform:translate(-50%,-30%) scale(.8)}25%{opacity:1;transform:translate(-50%,-60%) scale(1)}100%{opacity:0;transform:translate(-50%,-150%)}}
+
+/* Landscape: picture on the left, the walk and the materials on the right. */
+@media (orientation:landscape) and (min-width:701px),(orientation:landscape) and (max-height:500px){
+ .poem-seven-steps{max-width:1280px}
+ .poem-seven-steps .ss-layout{grid-template-columns:minmax(0,1.75fr) minmax(290px,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"stage head" "stage side";column-gap:22px;row-gap:12px;align-items:center}
+ .poem-seven-steps .ss-stage{width:min(100%,calc((100cqh - 24px) * 16 / 9));align-self:center}
+ .poem-seven-steps .ss-head{align-self:end}
+ .poem-seven-steps .ss-side{align-self:start}
+}
+@media (orientation:landscape) and (min-width:1100px) and (min-height:700px){
+ .poem-seven-steps .ss-instruction{font-size:26px}
+ .poem-seven-steps .ss-item{min-height:76px;font-size:21px}
+ .poem-seven-steps .ss-item img{height:60px;max-width:100px}
+ .poem-seven-steps .ss-item.ss-chip img{height:48px;max-width:76px}
+ .poem-seven-steps .ss-feedback{font-size:20px}
+ .poem-seven-steps .ss-walk{padding-top:48px}
+ .poem-seven-steps .ss-walker{width:42px;height:42px}
+ .poem-seven-steps .ss-foot{width:min(27px,64%)}
+ .poem-seven-steps .ss-seal{width:min(40px,90%);font-size:21px}
+}
+@media (orientation:portrait) and (min-width:701px){
+ .poem-seven-steps .ss-walk{padding-top:46px}
+ .poem-seven-steps .ss-walker{width:40px;height:40px}
+ .poem-seven-steps .ss-foot{width:min(27px,64%)}
+ .poem-seven-steps .ss-seal{width:min(40px,90%);font-size:21px}
+ .poem-seven-steps .ss-item{min-height:74px;font-size:21px}
+ .poem-seven-steps .ss-item img{height:58px;max-width:100px}
+ .poem-seven-steps .ss-item.ss-chip img{height:50px;max-width:80px}
+ .poem-seven-steps .ss-chip{flex-basis:200px}
+}
+/* Short phone landscape: the host gives the game only ~180px of height, so the picture
+   takes the full height and the right column packs the walk, materials and feedback. */
+@media (orientation:landscape) and (max-height:500px){
+ .poem-seven-steps .ss-layout{grid-template-columns:min(calc((100cqh - 2px) * 16 / 9),56%) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);column-gap:12px;row-gap:5px;align-items:start}
+ .poem-seven-steps .ss-stage{width:100%;border-radius:12px}
+ .poem-seven-steps .ss-head{gap:8px;align-self:start}
+ .poem-seven-steps .ss-instruction{font-size:17px;line-height:1.3}
+ .poem-seven-steps .ss-progress{min-width:50px;padding:2px 8px;font-size:15px}
+ .poem-seven-steps .ss-side{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"walk walk" "tray audio" "fb fb";gap:5px 8px;align-items:center}
+ .poem-seven-steps .ss-walk{grid-area:walk;min-height:30px;padding:3px 2px;align-items:center;border-radius:12px}
+ .poem-seven-steps .ss-walk::before{bottom:5px}
+ .poem-seven-steps .ss-walker{top:50%;width:24px;height:24px;transform:translate(-50%,-50%)}
+ .poem-seven-steps .ss-foot{width:min(14px,60%)}
+ .poem-seven-steps .ss-seal{width:min(23px,90%);font-size:14px;border-radius:5px}
+ .poem-seven-steps .ss-tray{grid-area:tray;gap:6px;min-height:46px}
+ .poem-seven-steps .ss-item{min-height:46px;max-width:200px;padding:3px 10px;font-size:16px;border-radius:13px;gap:6px;flex-basis:110px}
+ .poem-seven-steps .ss-item img{height:34px;max-width:58px}
+ .poem-seven-steps .ss-chip b{width:36px;height:36px;font-size:20px}
+ .poem-seven-steps .ss-item.ss-chip img{height:26px;max-width:44px}
+ .poem-seven-steps .ss-sobs{padding:4px 10px;font-size:15px;gap:8px}
+ .poem-seven-steps .ss-sob-icons i{width:15px}
+ .poem-seven-steps .ss-kin div{gap:6px}
+ .poem-seven-steps .ss-kin button{min-height:46px;font-size:18px}
+ .poem-seven-steps .ss-summary{padding:5px 10px;border-radius:12px}
+ .poem-seven-steps .ss-summary b{display:none}
+ .poem-seven-steps .ss-summary p{margin:0;font-size:14px;line-height:1.45}
+ .poem-seven-steps .ss-actionline{display:contents}
+ .poem-seven-steps .ss-method{display:none}
+ .poem-seven-steps .ss-audio{grid-area:audio;min-height:44px;padding:4px 11px;gap:5px;font-size:15px}
+ .poem-seven-steps .ss-audio svg{width:19px;height:19px}
+ .poem-seven-steps .ss-feedback{grid-area:fb;min-height:2.8em;font-size:15px;line-height:1.4;text-align:left}
+ .poem-seven-steps .ss-target>span{font-size:14px;padding:1px 7px}
+ .poem-seven-steps .ss-token{font-size:17px}
+ .poem-seven-steps .ss-caption{right:3%;top:4%;gap:0;padding:4px 8px;border-radius:9px;font-size:14px;line-height:1.4;letter-spacing:.04em}
+ .poem-seven-steps.is-done .ss-walk{display:none}
+ .poem-seven-steps.is-done .ss-side{grid-template-areas:"tray tray" "fb audio"}
+}
+@media (max-width:420px){
+ .poem-seven-steps .ss-layout{gap:10px}
+ .poem-seven-steps .ss-instruction{font-size:19px}
+ .poem-seven-steps .ss-progress{min-width:56px;padding:4px 8px;font-size:16px}
+ .poem-seven-steps .ss-stage{border-radius:15px}
+ .poem-seven-steps .ss-side{gap:10px}
+ .poem-seven-steps .ss-item{flex-basis:140px;padding:6px 10px;font-size:18px;gap:6px}
+ .poem-seven-steps .ss-item img{height:44px;max-width:70px}
+ .poem-seven-steps .ss-method{font-size:15px}
+ .poem-seven-steps .ss-audio{padding:7px 12px;font-size:17px}
+ .poem-seven-steps .ss-feedback{font-size:17px;text-align:left}
+ .poem-seven-steps .ss-target>span{font-size:14px;padding:2px 8px}
+ .poem-seven-steps .ss-caption{padding:5px 9px;border-radius:10px;letter-spacing:.06em}
+}
+@media (max-width:370px){
+ .poem-seven-steps .ss-item{flex-direction:column;gap:2px;padding:5px 6px;font-size:16px}
+ .poem-seven-steps .ss-item.ss-chip{flex-direction:row;gap:4px}
+ .poem-seven-steps .ss-item img{height:38px}
+ .poem-seven-steps .ss-kin button{font-size:19px;letter-spacing:0}
+ .poem-seven-steps .ss-walker{width:26px;height:26px}
+}
+.poem-seven-steps.is-reduced .ss-scene,.poem-seven-steps.is-reduced .ss-patch,.poem-seven-steps.is-reduced .ss-tear,.poem-seven-steps.is-reduced .ss-token,.poem-seven-steps.is-reduced .ss-glow,.poem-seven-steps.is-reduced .ss-hintplant,.poem-seven-steps.is-reduced .ss-walker,.poem-seven-steps.is-reduced .ss-foot svg,.poem-seven-steps.is-reduced .ss-seal{transition:none}
+.poem-seven-steps.is-reduced .ss-glow,.poem-seven-steps.is-reduced .ss-target,.poem-seven-steps.is-reduced .ss-caption{animation:none}
+@media (prefers-reduced-motion:reduce){
+ .poem-seven-steps .ss-scene,.poem-seven-steps .ss-patch,.poem-seven-steps .ss-tear,.poem-seven-steps .ss-token,.poem-seven-steps .ss-glow,.poem-seven-steps .ss-hintplant,.poem-seven-steps .ss-walker,.poem-seven-steps .ss-foot svg,.poem-seven-steps .ss-seal{transition:none}
+ .poem-seven-steps .ss-glow,.poem-seven-steps .ss-target,.poem-seven-steps .ss-caption,.poem-seven-steps .ss-fx *{animation:none}
+ .poem-seven-steps .ss-fx{display:none}
+}
+
+/* poem-games/couplet.css */
+/* 對仗對對碰 (絕句). The root stays a block (the quiz shell styles holder>section); .cp-layout is the grid.
+   Tile sizes come from --cp-fs / --cp-h; .is-long shrinks three-character words, .is-final compacts the finished board. */
+.poem-couplet-game{--cp-fs:25px;--cp-h:56px;--cp-seal:14px;position:relative;display:block;width:100%;max-width:760px;margin-inline:auto;align-self:start;align-self:safe center;min-width:0;color:#2f4a3c;font-family:var(--sans,sans-serif)}
+.poem-couplet-game .cp-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;height:100%;min-width:0}
+.poem-couplet-game.is-final{--cp-k:.86}
+.poem-couplet-game *{box-sizing:border-box}
+.poem-couplet-game [hidden]{display:none!important}
+.poem-couplet-game button{font-family:var(--sans,sans-serif);-webkit-tap-highlight-color:transparent}
+.poem-couplet-game .cp-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.poem-couplet-game .cp-head p{margin:0;min-width:0;font-size:21px;font-weight:600;line-height:1.4}
+.poem-couplet-game .cp-count{flex:none;padding:3px 13px;border:1px solid #e3d3b0;border-radius:999px;background:#fbf3e1;color:#7d5d36;font-size:17px;font-weight:600;line-height:1.5;font-variant-numeric:tabular-nums;white-space:nowrap}
+.poem-couplet-game .cp-stage{position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border:1px solid #cdbf9f;border-radius:20px;background:#efe6d3;box-shadow:0 12px 26px -20px #5a4626a6}
+.poem-couplet-game .cp-pic{position:absolute;inset:0}
+.poem-couplet-game .cp-scene{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .9s ease;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
+.poem-couplet-game .cp-scene.is-on{opacity:1}
+.poem-couplet-game .cp-piece{-webkit-mask-image:radial-gradient(var(--rx) var(--ry) at var(--mx) var(--my),#000 66%,#0000 100%);mask-image:radial-gradient(var(--rx) var(--ry) at var(--mx) var(--my),#000 66%,#0000 100%)}
+.poem-couplet-game .cp-glows{position:absolute;inset:0;z-index:2;pointer-events:none}
+.poem-couplet-game .cp-glow{position:absolute;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,#fff8dc99,#ffeeb84d 55%,#ffeeb800);opacity:0;animation:poem-couplet-glow 3.2s ease forwards}
+.poem-couplet-game .cp-glow::after{content:"";position:absolute;inset:0;border:2px solid #fff3cad9;border-radius:50%;box-shadow:0 0 0 1.5px #dba54a59,0 0 18px 4px #ffe6a0b3,inset 0 0 18px 3px #ffeab399;filter:blur(1px)}
+@keyframes poem-couplet-glow{0%{opacity:0;scale:.82}16%{opacity:1;scale:1}76%{opacity:1}100%{opacity:0}}
+.poem-couplet-game .cp-loading{position:absolute;inset:0;z-index:5;display:grid;align-content:center;justify-items:center;gap:14px;padding:20px;background:#f5f2eae8;color:#3c5646;font-size:20px;line-height:1.5;text-align:center}
+.poem-couplet-game .cp-loading button{min-height:48px;padding:9px 22px;border:1px solid #b9b08f;border-radius:14px;background:#fffdf5;color:#2f4a3c;font-size:19px;font-weight:600;line-height:1.2;cursor:pointer}
+.poem-couplet-game .cp-panel{display:grid;gap:12px;min-width:0}
+.poem-couplet-game .cp-board{display:grid;gap:10px;min-width:0}
+.poem-couplet-game .cp-block{position:relative;display:grid;grid-template-columns:22px repeat(4,minmax(0,1fr));grid-template-rows:auto auto auto;column-gap:8px;row-gap:4px;padding:10px 12px 12px 8px;border:1px solid #e2d4b4;border-radius:18px;background:linear-gradient(180deg,#fffcf4,#fbf2df);box-shadow:0 2px 0 #ece1c8}
+.poem-couplet-game .cp-col{display:contents}
+.poem-couplet-game .cp-col>*{grid-column:var(--c)}
+.poem-couplet-game .cp-label{grid-column:1;align-self:center;justify-self:center;writing-mode:vertical-rl;color:#94724a;font-size:14px;font-weight:600;line-height:1;letter-spacing:.14em}
+.poem-couplet-game .cp-label-up,.poem-couplet-game .cp-up{grid-row:1}
+.poem-couplet-game .cp-seal{grid-row:2}
+.poem-couplet-game .cp-label-down,.poem-couplet-game .cp-slot{grid-row:3}
+.poem-couplet-game .cp-tile,.poem-couplet-game .cp-slot{min-width:0;min-height:max(44px,calc(var(--cp-h) * var(--cp-k,1)));padding:5px 2px;border-radius:13px;font-size:calc(var(--cp-fs) * var(--cp-k,1));font-weight:600;line-height:1.15;white-space:nowrap}
+.poem-couplet-game .is-long{font-size:calc(var(--cp-fs) * var(--cp-k,1) * var(--cp-l,.84));letter-spacing:-.03em}
+.poem-couplet-game .cp-tile{position:relative;border:1.5px solid #d9cba8;background:#fffdf7;color:#2f4a3c;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 3px 0 #e7dabb;transition:background .18s,border-color .18s,box-shadow .18s,color .18s}
+.poem-couplet-game .cp-tile:hover:not(:disabled){border-color:#c9a865;background:#fffaf0}
+.poem-couplet-game .cp-tile:active:not(:disabled){translate:0 2px;box-shadow:0 1px 0 #e7dabb}
+.poem-couplet-game .cp-tile:disabled{opacity:1;cursor:default}
+.poem-couplet-game .cp-tile[aria-pressed=true]{border-color:#c4772f;background:#fff0d6;box-shadow:0 0 0 3px #e9a64f59,0 3px 0 #e2c48f}
+.poem-couplet-game .cp-tile:focus-visible,.poem-couplet-game .cp-actions button:focus-visible,.poem-couplet-game .cp-loading button:focus-visible{outline:3px solid #de9b34;outline-offset:3px}
+.poem-couplet-game .cp-tile.is-hinted{border-color:#d9a03f;box-shadow:0 0 0 4px #f3c96b70,0 3px 0 #e7cf9d;animation:poem-couplet-hint 1.3s ease-in-out 2}
+.poem-couplet-game .cp-tile.is-wrong{animation:poem-couplet-shake .46s ease}
+.poem-couplet-game .cp-tile.is-dragging{z-index:20;scale:1.06;cursor:grabbing;transition:none;box-shadow:0 14px 24px -10px #4a36189e,0 0 0 3px #e9a64f59}
+.poem-couplet-game .cp-col.is-matched .cp-up{border-color:#bccdab;background:#f1f5e8;color:#2a5440;box-shadow:0 2px 0 #d7e2c8}
+.poem-couplet-game .cp-slot{display:grid;place-items:center;border:1.5px dashed #cdbd98;background:#f6eedb99;color:#2a5440;transition:background .2s,border-color .2s}
+.poem-couplet-game .cp-slot b{font-weight:inherit;visibility:hidden}
+.poem-couplet-game .cp-col.is-matched .cp-slot{border-style:solid;border-color:#bccdab;background:#f1f5e8;box-shadow:0 2px 0 #d7e2c8}
+.poem-couplet-game .cp-col.is-matched .cp-slot b{visibility:visible}
+.poem-couplet-game .cp-col.is-target .cp-slot,.poem-couplet-game .cp-col.is-over .cp-slot{border-color:#c4772f;background:#fff0d6}
+.poem-couplet-game .cp-col.is-over .cp-up{border-color:#c4772f}
+.poem-couplet-game .cp-seal{justify-self:center;align-self:center;width:0;min-height:18px;border-left:2px dotted #d3c29b;color:#0000;font-size:0}
+.poem-couplet-game .cp-col.is-matched .cp-seal{width:auto;max-width:100%;min-height:0;padding:1px 4px;border:1.5px solid #c8644b;border-radius:6px;background:#fff7ef;color:#a5432e;font-size:var(--cp-seal);font-weight:600;line-height:1.25;text-align:center;word-break:keep-all;box-shadow:inset 0 0 0 2px #fff7ef,inset 0 0 0 3px #e9b3a2}
+.poem-couplet-game .cp-col.is-new .cp-slot{animation:poem-couplet-pop .5s ease}
+.poem-couplet-game .cp-col.is-new .cp-seal{animation:poem-couplet-stamp .45s .12s ease both}
+.poem-couplet-game .cp-block[data-reciting=up] .cp-up,.poem-couplet-game .cp-block[data-reciting=down] .cp-slot{border-color:#d9a24c;background:#fff0d2;box-shadow:0 2px 0 #ecd29f}
+.poem-couplet-game .cp-tray{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:10px 12px;border-radius:18px;background:#f1e7d1b3;box-shadow:inset 0 1px 3px #8a6a3a1f}
+.poem-couplet-game .cp-down{border-color:#dcc8a2;background:#fffaf1;box-shadow:0 3px 0 #e2d0ab,0 7px 12px -9px #6a4c2380;rotate:-1.2deg}
+.poem-couplet-game .cp-down:nth-child(even){rotate:1deg}
+.poem-couplet-game .cp-down.is-used{border:1.5px dashed #d6c6a2;background:#0000;color:#0000;box-shadow:none;rotate:0deg}
+.poem-couplet-game .cp-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.poem-couplet-game .cp-actions button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:9px 18px;border:1.5px solid #cdbf9d;border-radius:16px;background:#fffdf5;color:#3d5a45;font-size:20px;font-weight:600;line-height:1.2;cursor:pointer;touch-action:manipulation;box-shadow:0 2px 0 #e6dbc2}
+.poem-couplet-game .cp-actions svg{width:22px;height:22px;flex:none}
+.poem-couplet-game .cp-actions .cp-next{border-color:#446d50;background:#446d50;color:#fffdf1;box-shadow:0 2px 0 #2f5139}
+.poem-couplet-game .cp-actions button:disabled{opacity:.6}
+.poem-couplet-game .cp-feedback{margin:0;min-height:3em;color:#4b6553;font-size:19px;line-height:1.5;text-align:center;text-wrap:pretty}
+@keyframes poem-couplet-shake{20%{translate:-5px 0}40%{translate:5px 0}60%{translate:-3px 0}80%{translate:2px 0}}
+@keyframes poem-couplet-hint{50%{box-shadow:0 0 0 8px #f3c96b30,0 3px 0 #e7cf9d}}
+@keyframes poem-couplet-pop{0%{scale:.86}60%{scale:1.06}100%{scale:1}}
+@keyframes poem-couplet-stamp{0%{opacity:0;scale:1.7}100%{opacity:1;scale:1}}
+.poem-couplet-game.is-settling *,.poem-couplet-game.is-reduced-motion *{transition:none!important}
+.poem-couplet-game.is-reduced-motion *{animation:none!important}
+.poem-couplet-game.is-reduced-motion .cp-glow{opacity:1}
+@media(prefers-reduced-motion:reduce){.poem-couplet-game *{transition:none!important;animation:none!important}.poem-couplet-game .cp-glow{opacity:1}}
+@media(max-width:700px){
+ .poem-couplet-game{--cp-l:.9}
+ .poem-couplet-game .cp-layout{gap:10px}
+ .poem-couplet-game.is-final{--cp-k:.84}
+ .poem-couplet-game .cp-panel{gap:10px}
+ .poem-couplet-game .cp-board{gap:8px}
+ .poem-couplet-game.is-final .cp-block{padding-block:6px 8px;row-gap:3px}
+ .poem-couplet-game .cp-feedback{min-height:0;font-size:18px}
+}
+@media(max-width:420px){
+ .poem-couplet-game{--cp-fs:22px;--cp-h:52px}
+ .poem-couplet-game .cp-head{gap:8px}
+ .poem-couplet-game .cp-head p{font-size:19px}
+ .poem-couplet-game .cp-count{font-size:16px;padding-inline:10px}
+ .poem-couplet-game .cp-stage{border-radius:16px}
+ .poem-couplet-game .cp-block{grid-template-columns:16px repeat(4,minmax(0,1fr));column-gap:6px;padding:8px 8px 10px 5px;border-radius:16px}
+ .poem-couplet-game .cp-label{letter-spacing:.08em}
+ .poem-couplet-game .cp-tile,.poem-couplet-game .cp-slot{border-radius:12px}
+ .poem-couplet-game .cp-col.is-matched .cp-seal{padding-inline:3px}
+ .poem-couplet-game .cp-tray{gap:8px;padding:8px}
+ .poem-couplet-game .cp-actions button{min-height:50px;font-size:19px;padding-inline:15px}
+}
+@media(max-width:370px){
+ .poem-couplet-game{--cp-fs:20px}
+ .poem-couplet-game .cp-head p{font-size:18px}
+ .poem-couplet-game .cp-block{grid-template-columns:15px repeat(4,minmax(0,1fr));column-gap:4px;padding-inline:3px 5px}
+ .poem-couplet-game .cp-col.is-matched .cp-seal{padding-inline:2px}
+ .poem-couplet-game .cp-tray{gap:6px;padding:7px}
+}
+/* Tablets and wide landscape: picture on the left, the couplet board on the right. */
+@media(min-width:701px) and (orientation:landscape),(orientation:landscape) and (max-height:500px){
+ .poem-couplet-game{--cp-fs:24px;--cp-h:54px;max-width:none}
+ .poem-couplet-game .cp-layout{grid-template-columns:minmax(0,1.2fr) minmax(330px,1fr);grid-template-rows:auto minmax(0,1fr);column-gap:24px;row-gap:12px;align-items:start}
+ .poem-couplet-game.is-final{--cp-k:.82}
+ .poem-couplet-game .cp-stage{grid-column:1;grid-row:1/3;align-self:center;width:min(100%,calc(100cqh * 16 / 9))}
+ .poem-couplet-game .cp-head{grid-column:2;grid-row:1}
+ .poem-couplet-game .cp-head p{font-size:21px}
+ .poem-couplet-game .cp-panel{grid-column:2;grid-row:2;align-content:start}
+ .poem-couplet-game.is-final .cp-block{padding-block:6px 8px;row-gap:3px}
+ .poem-couplet-game .cp-feedback{min-height:0;font-size:18px;text-align:left}
+ .poem-couplet-game .cp-actions{justify-content:flex-start}
+}
+@media(min-width:900px) and (min-height:620px) and (orientation:landscape){
+ .poem-couplet-game{--cp-fs:clamp(24px,3.4vh,29px);--cp-h:clamp(54px,7.8vh,66px);--cp-seal:clamp(14px,1.9vh,16px)}
+ .poem-couplet-game .cp-head p{font-size:clamp(21px,2.9vh,26px)}
+ .poem-couplet-game .cp-count{font-size:clamp(17px,2.3vh,19px)}
+ .poem-couplet-game .cp-panel{gap:clamp(10px,1.7vh,16px)}
+ .poem-couplet-game .cp-actions button{min-height:clamp(50px,6.8vh,58px);font-size:clamp(19px,2.6vh,22px)}
+ .poem-couplet-game .cp-feedback{font-size:clamp(18px,2.5vh,21px)}
+}
+@media(orientation:landscape) and (max-height:500px){
+ .poem-couplet-game{--cp-fs:20px;--cp-h:44px}
+ .poem-couplet-game .cp-layout{row-gap:8px;column-gap:16px}
+ .poem-couplet-game.is-final{--cp-k:1}
+ .poem-couplet-game .cp-head p{font-size:17px;line-height:1.35}
+ .poem-couplet-game .cp-count{font-size:15px;padding-inline:9px}
+ .poem-couplet-game .cp-stage{position:sticky;top:0;z-index:1;align-self:start;border-radius:14px}
+ .poem-couplet-game .cp-panel,.poem-couplet-game .cp-board{gap:8px}
+ .poem-couplet-game .cp-block,.poem-couplet-game.is-final .cp-block{grid-template-columns:15px repeat(4,minmax(0,1fr));column-gap:6px;row-gap:2px;padding:6px 8px 7px 4px;border-radius:14px}
+ .poem-couplet-game .cp-label{letter-spacing:.04em}
+ .poem-couplet-game .cp-tile,.poem-couplet-game .cp-slot{padding-block:3px;border-radius:11px}
+ .poem-couplet-game .cp-seal{min-height:12px}
+ .poem-couplet-game .cp-col.is-matched .cp-seal{padding:0 3px}
+ .poem-couplet-game .cp-tray{gap:7px;padding:6px 8px;border-radius:14px}
+ .poem-couplet-game .cp-actions button{min-height:44px;padding:6px 14px;font-size:17px;border-radius:13px}
+ .poem-couplet-game .cp-actions svg{width:19px;height:19px}
+ .poem-couplet-game .cp-feedback{font-size:16px;line-height:1.4}
+}
+/* Portrait tablets keep the picture, board and buttons inside the play area. */
+@media(min-width:701px) and (orientation:portrait){
+ .poem-couplet-game{--cp-fs:28px;--cp-h:62px;--cp-seal:15px}
+ .poem-couplet-game.is-final{--cp-k:.8}
+ .poem-couplet-game .cp-stage{width:min(100%,calc((100cqh - 440px) * 16 / 9))}
+ .poem-couplet-game .cp-head p{font-size:24px}
+ .poem-couplet-game .cp-feedback{font-size:20px;min-height:0}
+}
+
+/* poem-games/shoe-market.css */
+.poem-shoe-game{--sm-ink:#34433a;--sm-mute:#6b6650;--sm-red:#b3442e;--sm-green:#4d6c4c;--sm-wood:#7b5934;--sm-edge:#e2d0aa;width:100%;max-width:1120px;margin-inline:auto;min-width:0;color:var(--sm-ink);font-family:inherit;display:flex;flex-direction:column;justify-content:center}
+.poem-shoe-game *{box-sizing:border-box}
+.poem-shoe-game [hidden]{display:none!important}
+.poem-shoe-game button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.poem-shoe-game button:disabled{cursor:default;opacity:1}
+.poem-shoe-game button:focus-visible{outline:3px solid #c48a3c;outline-offset:3px}
+.poem-shoe-game img{user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
+.poem-shoe-game .sm-frame{display:grid;grid-template-areas:"head" "stage" "side";gap:12px;min-width:0}
+.poem-shoe-game .sm-head{grid-area:head;display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.poem-shoe-game .sm-say{margin:0;font-size:clamp(18px,2.3vw,23px);font-weight:650;line-height:1.45;text-wrap:pretty}
+.poem-shoe-game :is(.sm-say,.sm-moral>p,.sm-moral>small,.sm-feedback) span{display:inline-block}
+.poem-shoe-game .sm-progress{flex:none;min-width:62px;padding:5px 11px;border-radius:18px;background:#f2e7cf;color:var(--sm-wood);font-size:18px;font-weight:600;text-align:center;font-variant-numeric:tabular-nums}
+
+/* Picture stage: the four user paintings cross-fade; overlays sit on painted objects. */
+.poem-shoe-game .sm-stage{grid-area:stage;position:relative;isolation:isolate;container-type:inline-size;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:20px;background:#eadcbf;border:1px solid #dccaa4;box-shadow:0 8px 24px #4b361a14;font-family:var(--sans)}
+.poem-shoe-game .sm-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .7s ease;pointer-events:none}
+.poem-shoe-game .sm-scene.is-on{opacity:1}
+.poem-shoe-game .sm-patch{position:absolute;left:23.0625%;top:50.667%;width:19.3125%;height:7.889%;opacity:0;transition:opacity .9s ease;pointer-events:none;z-index:1}
+.poem-shoe-game .sm-patch.is-on{opacity:1}
+.poem-shoe-game .sm-prints{position:absolute;left:38.6%;top:82.6%;width:19%;height:17%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,#fff7d895,#fff4cc3a 62%,transparent);opacity:0;transition:opacity .6s;pointer-events:none;z-index:1}
+.poem-shoe-game .sm-mark{position:absolute;left:36.75%;top:53.67%;width:clamp(9px,1.5cqi,15px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 35%,#e4775f,#a5321f 72%);box-shadow:0 0 0 2px #fff5e2c0,0 2px 3px #0005;transform:translate(-50%,-50%);opacity:0;transition:opacity .5s .5s;pointer-events:none;z-index:2}
+.poem-shoe-game .sm-mark::after{content:'';position:absolute;left:44%;top:78%;width:2px;height:130%;border-radius:2px;background:#a5321f;transform:rotate(16deg);transform-origin:top}
+.poem-shoe-game .sm-prints.is-on,.poem-shoe-game .sm-mark.is-on{opacity:1}
+.poem-shoe-game .sm-seat,.poem-shoe-game .sm-knock{position:absolute;z-index:4;transform:translate(-50%,-50%);min-width:44px;min-height:44px;padding:0;border:2px dashed #fff8e2;background:#fff4d02e;box-shadow:0 0 0 1px #7b593440,0 0 22px #fff3c770;transition:background .25s,box-shadow .25s}
+.poem-shoe-game .sm-seat{left:33%;top:54.5%;width:31%;height:15%;border-radius:46%}
+.poem-shoe-game .sm-knock{left:80.5%;top:37%;width:22%;height:34%;border-radius:18px;display:grid;place-items:center}
+.poem-shoe-game .sm-seat span,.poem-shoe-game .sm-knock span{padding:.25em .7em;border-radius:12px;background:#fffaf0ee;color:#6b4a2b;font-size:clamp(14px,2.6cqi,18px);font-weight:650;white-space:nowrap;box-shadow:0 2px 6px #3b2a1426}
+.poem-shoe-game .sm-knock span{padding-inline:.5em}
+.poem-shoe-game .sm-seat span{position:absolute;left:50%;top:-5px;transform:translate(-50%,-100%)}
+.poem-shoe-game .sm-seat:not(:disabled),.poem-shoe-game .sm-knock:not(:disabled){animation:sm-call 2.4s ease-in-out infinite}
+.poem-shoe-game .sm-seat.is-ready,.poem-shoe-game .sm-seat.is-over,.poem-shoe-game .sm-seat:hover:not(:disabled),.poem-shoe-game .sm-knock:hover:not(:disabled){background:#fff3c85e;border-style:solid;box-shadow:0 0 0 3px #fff8e2b0,0 0 28px #ffeeb0}
+.poem-shoe-game .sm-sign{position:absolute;left:80.5%;top:34%;z-index:3;transform:translate(-50%,-50%) rotate(-3deg);padding:.3em .7em .3em .9em;font-size:clamp(14px,3.6cqi,28px);font-weight:700;letter-spacing:.22em;color:#6d3a22;background:linear-gradient(#f4e5c4,#e5cc9b);border:1px solid #b88b55;border-radius:6px;box-shadow:0 5px 12px #2a180a45;opacity:0;transition:opacity .4s;pointer-events:none}
+.poem-shoe-game .sm-sign.is-on{opacity:1}
+.poem-shoe-game .sm-bubble{position:absolute;z-index:5;margin:0;padding:.42em .78em;border-radius:14px;background:#fffaf0f2;border:1px solid #e4d2ad;color:#3e3224;font-size:clamp(14px,2.9cqi,22px);font-weight:650;line-height:1.3;white-space:nowrap;box-shadow:0 4px 12px #3b2a1426;opacity:0;transform:translateY(6px);transition:opacity .4s ease,transform .4s ease;pointer-events:none}
+.poem-shoe-game .sm-bubble.is-on{opacity:1;transform:none}
+.poem-shoe-game .sm-bubble::after{content:'';position:absolute;width:11px;height:11px;background:#fffaf0;border:1px solid #e4d2ad;border-top:0;border-left:0}
+.poem-shoe-game .is-forgot{right:57%;top:5%}.poem-shoe-game .is-forgot::after{right:-6px;top:58%;transform:rotate(-45deg)}
+.poem-shoe-game .is-seller{right:16%;top:17%}.poem-shoe-game .is-seller::after{right:-6px;top:24%;transform:rotate(-45deg)}
+.poem-shoe-game .is-ask{left:5%;top:10%}.poem-shoe-game .is-ask::after{right:22%;bottom:-6px;transform:rotate(45deg)}
+.poem-shoe-game .is-stubborn{left:69%;top:36%}.poem-shoe-game .is-stubborn::after{left:-6px;top:30%;transform:rotate(135deg)}
+/* Tagging board: two cropped story pictures (home, market) with dashed drop spots on painted objects.
+   A canvas is the whole 1600x900 scene scaled so that --cw source px fill the pane, shifted by --cx/--cy. */
+.poem-shoe-game .sm-board{position:absolute;inset:0;z-index:6;background:#eadcbf;opacity:0;visibility:hidden;transition:opacity .5s,visibility 0s .5s}
+.poem-shoe-game .sm-board.is-on{opacity:1;visibility:visible;transition:opacity .5s}
+.poem-shoe-game .sm-pane{position:absolute;top:0;height:100%;overflow:hidden;container:sm-pane/size}
+.poem-shoe-game .sm-pane.is-home{left:0;width:58%;--cx:110;--cy:90;--cw:835}
+.poem-shoe-game .sm-pane.is-market{left:58%;width:42%;--cx:928;--cy:0;--cw:672}
+.poem-shoe-game .sm-pane.is-market::before{content:'';position:absolute;left:0;top:0;bottom:0;z-index:4;width:4px;background:#f6ecd6;box-shadow:0 0 6px #3b2a1440;pointer-events:none}
+.poem-shoe-game .sm-canvas{position:absolute;left:0;top:0;width:calc(100% * 1600 / var(--cw));aspect-ratio:16/9;translate:calc(-100% * var(--cx) / 1600) calc(-100% * var(--cy) / 900)}
+.poem-shoe-game .sm-pic{display:block;width:100%;height:100%;pointer-events:none}
+.poem-shoe-game .sm-place{position:absolute;bottom:8px;left:12px;z-index:5;padding:2px 10px;border-radius:12px;background:#fffaf0e6;color:#6b4a2b;font-size:14px;font-weight:700;letter-spacing:.12em;box-shadow:0 2px 6px #3b2a1426;pointer-events:none}
+.poem-shoe-game .sm-spot{--px:calc(100cqw / var(--cw));position:absolute;z-index:2;min-width:44px;min-height:44px;padding:0;border:0;border-radius:14px;background:none;transform:translate(-50%,-50%);touch-action:manipulation}
+.poem-shoe-game .sm-spot[data-sm-spot=ruler]{z-index:3}
+.poem-shoe-game .sm-spot svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;fill:#fff4d014;stroke:#fff8e2;stroke-width:2.5;stroke-dasharray:8 6;stroke-linejoin:round;filter:drop-shadow(0 0 2px #3b2a14b0);transition:fill .2s,stroke .2s}
+.poem-shoe-game .sm-spot svg *{vector-effect:non-scaling-stroke}
+.poem-shoe-game .sm-spot:focus-visible{outline-offset:-3px}
+.poem-shoe-game.is-picking .sm-spot:not(:disabled) svg{fill:#fff4d03a;animation:sm-glow 1.8s ease-in-out infinite}
+.poem-shoe-game .sm-spot.is-over svg{fill:#fff3c870;stroke-dasharray:none;stroke-width:3.5}
+@media (hover:hover){.poem-shoe-game .sm-spot:hover:not(:disabled) svg{fill:#fff3c870;stroke-dasharray:none;stroke-width:3.5}}
+.poem-shoe-game .sm-spot.is-hint svg{stroke:#ffd76a;stroke-width:4.5;stroke-dasharray:none;fill:#ffe08a50;animation:sm-glow .9s ease-in-out infinite}
+.poem-shoe-game .sm-spot.is-no svg{stroke:#f3a58e;fill:#b3442e33;stroke-dasharray:none}
+.poem-shoe-game .sm-spot.is-no{animation:sm-shake .45s ease}
+.poem-shoe-game .sm-spot.is-filled{pointer-events:none}
+.poem-shoe-game .sm-spot.is-filled svg{fill:none;stroke:#e9f4dc;stroke-dasharray:none;stroke-width:2;opacity:.85;animation:none}
+/* The foot spot is a small picture of the measuring, reusing the measure-step art. */
+.poem-shoe-game .sm-vig{left:3%;top:4%;width:40%;aspect-ratio:1600/860;transform:none;z-index:3;border-radius:12px;border:2.5px dashed #fff8e2;background:radial-gradient(120% 95% at 38% 30%,#fffbf2,#f0e2c4);box-shadow:0 0 0 1px #7b593450,0 6px 14px #3b2a1440;transition:border-color .2s,box-shadow .2s}
+.poem-shoe-game .sm-vig-art{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}
+.poem-shoe-game .sm-vig-foot{position:absolute;left:0;top:-20.93%;width:75%;height:105.465%}
+.poem-shoe-game .sm-vig-ruler{position:absolute;left:6.5%;top:84.77%;width:91%;height:10.78%;filter:drop-shadow(0 1px 1px #4b361a40)}
+.poem-shoe-game .sm-vig-art::after{content:'';position:absolute;left:74.94%;top:5%;bottom:12%;border-left:2px dashed #b3442eb0}
+.poem-shoe-game .sm-vig-art i{position:absolute;left:74.94%;top:90.14%;width:9px;height:9px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 35% 35%,#e4775f,#a5321f 72%);box-shadow:0 0 0 2px #fff7e6}
+.poem-shoe-game.is-picking .sm-vig:not(:disabled){animation:sm-call 1.8s ease-in-out infinite}
+.poem-shoe-game .sm-vig.is-over{border-style:solid;box-shadow:0 0 0 3px #fff8e2b0,0 0 24px #ffeeb0}
+@media (hover:hover){.poem-shoe-game .sm-vig:hover:not(:disabled){border-style:solid;box-shadow:0 0 0 3px #fff8e2b0,0 0 24px #ffeeb0}}
+.poem-shoe-game .sm-vig.is-hint{border:3.5px solid #ffd76a;animation:sm-call .9s ease-in-out infinite}
+.poem-shoe-game .sm-vig.is-no{border-color:#e9a08a}
+.poem-shoe-game .sm-vig.is-filled{border:2px solid #cfe6b8}
+/* A pinned tag pops in next to its spot. The phrase line only shows when the pane is tall enough. */
+.poem-shoe-game .sm-pin{position:absolute;z-index:4;display:grid;justify-items:center;gap:2px;pointer-events:none;opacity:0;scale:.5;transition:opacity .2s,scale .4s cubic-bezier(.3,1.7,.5,1)}
+.poem-shoe-game .is-filled>.sm-pin{opacity:1;scale:1}
+.poem-shoe-game .sm-chip{display:flex;align-items:baseline;gap:.28em;padding:.16em .6em .2em;border-radius:10px;background:#fffaf0f5;border:2px solid #c9a46a;color:#4a3420;font-size:15px;font-weight:650;line-height:1.3;white-space:nowrap;box-shadow:0 3px 8px #2a180a50}
+.poem-shoe-game .sm-pin.is-du .sm-chip{border-color:#8fae7c}
+.poem-shoe-game .sm-chip b{font-size:1.3em;line-height:1;color:var(--sm-red)}
+.poem-shoe-game .sm-chip i{font-style:normal;font-weight:500;color:#8a6a45}
+.poem-shoe-game .sm-pin small{display:none;padding:.1em .55em;border-radius:8px;background:#3b2a14d0;color:#fffaf0;font-size:14px;line-height:1.4;white-space:nowrap}
+.poem-shoe-game .sm-pin small b{color:#ffc95c;font-weight:800}
+@container sm-pane (min-height:270px){.poem-shoe-game .sm-pin small{display:block}}
+.poem-shoe-game [data-sm-spot=foot]>.sm-pin{left:calc(100% + 6px);top:50%;translate:0 -50%;justify-items:start}
+.poem-shoe-game [data-sm-spot=ruler]>.sm-pin{left:50%;bottom:calc(50% + var(--px) * 34 + 3px);translate:-50% 0}
+.poem-shoe-game [data-sm-spot=seat]>.sm-pin{left:30%;top:88%;translate:-50% 0}
+.poem-shoe-game [data-sm-spot=stall]>.sm-pin{left:62%;bottom:92%;translate:-50% 0}
+.poem-shoe-game .sm-loading{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;text-align:center;background:#f7f0dfe8;color:#5b5140;font-size:19px}
+.poem-shoe-game .sm-loading button{min-height:48px;padding:8px 20px;border:1px solid #cdb98f;border-radius:16px;background:#fffaf0;font-size:19px;color:#5b4126}
+
+/* Work panel */
+.poem-shoe-game .sm-side{grid-area:side;display:flex;flex-direction:column;gap:10px;min-width:0}
+.poem-shoe-game .sm-panel{display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:20px;background:#fbf5e6;border:1px solid #ecdfc2;min-width:0}
+.poem-shoe-game .sm-text{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 12px}
+.poem-shoe-game .sm-line{margin:0;flex:1 1 240px;font-size:clamp(18px,2vw,21px);line-height:1.6;letter-spacing:.03em;color:#3c4537;text-wrap:pretty}
+.poem-shoe-game .sm-line b{color:var(--sm-red);font-weight:700}
+.poem-shoe-game .sm-line span{white-space:nowrap}
+.poem-shoe-game .sm-gloss{display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:5px 13px;border-radius:22px;border:1px solid #e0cba2;background:#fffaf0;color:#5d4429;font-size:17px;box-shadow:0 2px 0 #eadcbc}
+.poem-shoe-game .sm-gloss b{font-size:23px;line-height:1;color:var(--sm-red)}
+.poem-shoe-game .sm-gloss i{font-style:normal;color:#8a6a45}
+.poem-shoe-game .sm-gloss svg{width:19px;height:19px;flex:none;color:#8a6a45}
+.poem-shoe-game .sm-measure,.poem-shoe-game .sm-fit{position:relative;width:100%;max-width:560px;align-self:center;overflow:hidden;border-radius:16px;border:1px solid #eadbbb;background:radial-gradient(120% 95% at 38% 30%,#fffbf2,#f0e2c4)}
+.poem-shoe-game .sm-measure::before,.poem-shoe-game .sm-fit::before{content:'';position:absolute;inset:0 0 auto;height:24%;z-index:1;pointer-events:none;background:linear-gradient(#fcf6ea,#fcf6ea00)}
+.poem-shoe-game .sm-measure{--knot:40%;aspect-ratio:1600/860}
+.poem-shoe-game .sm-measure .sm-foot{position:absolute;left:0;top:-20.93%;width:75%;height:105.465%;pointer-events:none}
+.poem-shoe-game .sm-guide{position:absolute;left:var(--knot);top:5%;bottom:12%;z-index:2;border-left:2px dashed #b3442eb0;transform:translateX(-1px);pointer-events:none}
+.poem-shoe-game .sm-track{position:absolute;left:0;right:0;top:72%;bottom:0;z-index:3;touch-action:none;cursor:pointer}
+.poem-shoe-game .sm-ruler{position:absolute;left:6.5%;width:91%;top:45.6%;height:38.5%;pointer-events:none;filter:drop-shadow(0 2px 2px #4b361a40)}
+.poem-shoe-game .sm-heel{position:absolute;left:7.75%;top:40%;height:50%;border-left:2px solid #5d4429;pointer-events:none}
+.poem-shoe-game .sm-knot{position:absolute;left:var(--knot);top:64.8%;width:44px;height:44px;transform:translate(-50%,-50%);padding:0;border:0;border-radius:50%;background:transparent;display:grid;place-items:center;touch-action:none;cursor:grab}
+.poem-shoe-game .sm-knot i{position:relative;width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#e4775f,#a5321f 72%);box-shadow:0 0 0 3px #fff7e6,0 3px 6px #0005}
+.poem-shoe-game .sm-knot i::before,.poem-shoe-game .sm-knot i::after{content:'';position:absolute;left:46%;top:82%;width:2px;height:14px;border-radius:2px;background:#a5321f;transform:rotate(22deg);transform-origin:top}
+.poem-shoe-game .sm-knot i::after{transform:rotate(-14deg)}
+.poem-shoe-game .sm-card{position:relative;display:grid;justify-items:center;gap:8px;width:min(100%,460px);align-self:center;padding:18px 18px 10px;border-radius:18px;border:1.5px solid var(--sm-edge);background:#fffaf0;box-shadow:0 4px 0 #e8dbbd;touch-action:none;transition:transform .2s,box-shadow .2s}
+.poem-shoe-game .sm-rule{position:relative;display:block;width:100%}
+.poem-shoe-game .sm-rule img{display:block;width:100%;height:auto;pointer-events:none;filter:drop-shadow(0 2px 2px #4b361a40)}
+.poem-shoe-game .sm-rule i{position:absolute;left:75.2%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 35% 35%,#e4775f,#a5321f 72%);box-shadow:0 0 0 2px #fff7e6,0 2px 4px #0005}
+.poem-shoe-game .sm-card>span:last-child{font-size:17px;color:var(--sm-wood);font-weight:600}
+.poem-shoe-game .sm-card[aria-pressed=true]{border-color:var(--sm-green);box-shadow:0 0 0 3px #b9cfa9,0 8px 16px #3b2a1426;transform:translateY(-3px)}
+.poem-shoe-game .is-dragging{position:relative;z-index:40;transition:none!important;cursor:grabbing;box-shadow:0 12px 26px #3b2a1445!important;opacity:.94}
+.poem-shoe-game .sm-ask{display:grid;gap:10px}
+.poem-shoe-game .sm-ask p{margin:0;font-size:19px;font-weight:600;text-align:center}
+.poem-shoe-game .sm-ask div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.poem-shoe-game .sm-ask button{min-height:58px;padding:10px 12px;border-radius:16px;border:1.5px solid #dccaa2;background:#fffaf0;color:#4a3a26;font-size:20px;font-weight:650;line-height:1.3;box-shadow:0 3px 0 #e6d8b8}
+.poem-shoe-game .sm-ask button:hover:not(:disabled){background:#fff4dc}
+.poem-shoe-game .sm-ask button.is-picked{background:#eef3e4;border-color:var(--sm-green);color:#2f5134}
+.poem-shoe-game .sm-ask button:disabled:not(.is-picked){opacity:.55}
+.poem-shoe-game .sm-fitting{display:grid;gap:10px}
+.poem-shoe-game .sm-fit{justify-self:center;aspect-ratio:1600/950;transition:box-shadow .2s}
+.poem-shoe-game .sm-fit.is-over{box-shadow:0 0 0 3px #e4c68a}
+.poem-shoe-game .sm-fit .sm-foot{position:absolute;left:0;top:-18.947%;width:75%;height:95.474%;pointer-events:none}
+.poem-shoe-game .sm-ground{position:absolute;left:5%;width:72%;top:73%;height:7%;border-radius:50%;background:radial-gradient(closest-side,#5a3f2036,transparent);pointer-events:none;transition:top .35s}
+.poem-shoe-game .sm-worn{position:absolute;left:6.383%;top:43.711%;width:73.336%;height:51.19%;opacity:0;transform:translateY(-5%);transition:opacity .35s,transform .35s;pointer-events:none}
+.poem-shoe-game .sm-fit:not([data-size=none]) .sm-worn{opacity:1;transform:none}
+.poem-shoe-game .sm-fit[data-size=small] .sm-worn{left:19.911%;top:50.884%;width:57.202%;height:39.928%}
+.poem-shoe-game .sm-fit[data-size=big] .sm-worn{left:6.041%;top:35.559%;width:91.67%;height:63.988%}
+.poem-shoe-game .sm-fit[data-size=right] .sm-ground{top:91%}
+.poem-shoe-game .sm-fit[data-size=small] .sm-ground{top:87%;left:16%;width:62%}
+.poem-shoe-game .sm-fit[data-size=big] .sm-ground{top:95%;width:92%}
+.poem-shoe-game .sm-tray{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.poem-shoe-game .sm-tray button{position:relative;display:flex;align-items:flex-end;justify-content:center;min-height:70px;padding:28px 8px 10px;border-radius:16px;border:1.5px solid var(--sm-edge);background:#fffaf0;box-shadow:0 3px 0 #e8dcc0;touch-action:none}
+.poem-shoe-game .sm-tray img{display:block;height:auto;pointer-events:none;filter:drop-shadow(0 2px 2px #3b2a1430)}
+.poem-shoe-game .sm-tray .is-big img{width:100%}.poem-shoe-game .sm-tray .is-right img{width:80%}.poem-shoe-game .sm-tray .is-small img{width:62%}
+.poem-shoe-game .sm-tray span{position:absolute;left:9px;top:5px;font-size:16px;font-weight:700;color:var(--sm-wood)}
+.poem-shoe-game .sm-tray button:hover:not(:disabled){background:#fff4dc}
+.poem-shoe-game .sm-tray button.is-on{border-color:var(--sm-green);background:#eef3e4;box-shadow:0 0 0 3px #b9cfa9}
+.poem-shoe-game .sm-tags{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.poem-shoe-game .sm-tags button{position:relative;display:grid;place-items:center;min-height:62px;padding:8px 10px 8px 24px;border-radius:8px 16px 16px 8px;border:1.5px solid #dcc296;background:#fffaf0;color:#4a3420;box-shadow:0 3px 0 #e6d8b8;touch-action:none;transition:transform .2s,box-shadow .2s,background .2s}
+.poem-shoe-game .sm-tags button::before{content:'';position:absolute;left:10px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:#e9dcc0;box-shadow:inset 0 1px 2px #0003}
+.poem-shoe-game .sm-tags .is-du{background:#f4f6ec;border-color:#b5c6a0}
+.poem-shoe-game .sm-tags button:hover:not(:disabled){background:#fff4dc}
+.poem-shoe-game .sm-tags .sm-face,.poem-shoe-game .sm-tags .sm-used{grid-area:1/1}
+.poem-shoe-game .sm-face{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;column-gap:.35em;font-size:19px;font-weight:650;line-height:1.3}
+.poem-shoe-game .sm-face b{font-size:27px;line-height:1;color:var(--sm-red)}
+.poem-shoe-game .sm-face i{font-style:normal;font-weight:500;font-size:17px;color:#8a6a45}
+.poem-shoe-game .sm-used{visibility:hidden;font-size:17px;font-weight:600;letter-spacing:.04em;color:#5f7a52}
+.poem-shoe-game .sm-used b{color:var(--sm-red)}
+.poem-shoe-game .sm-tags button.is-used{border-style:dashed;background:transparent;box-shadow:none}
+.poem-shoe-game .sm-tags button.is-used::before{visibility:hidden}
+.poem-shoe-game .is-used .sm-face{visibility:hidden}.poem-shoe-game .is-used .sm-used{visibility:visible}
+.poem-shoe-game .sm-tags button[aria-pressed=true]{border-color:var(--sm-green);background:#eef3e4;box-shadow:0 0 0 3px #b9cfa9;transform:translateY(-3px)}
+.poem-shoe-game .sm-tags button.is-return{z-index:40;animation:sm-return .36s cubic-bezier(.3,1.35,.5,1)}
+.poem-shoe-game .sm-feedback b{color:var(--sm-red)}
+.poem-shoe-game .sm-moral{display:grid;justify-items:center;gap:8px;padding:4px;text-align:center}
+.poem-shoe-game .sm-moral>img{width:min(68%,300px);height:auto;filter:drop-shadow(0 2px 2px #4b361a40)}
+.poem-shoe-game .sm-moral>b{font-size:24px;letter-spacing:.12em;color:#6d3a22}
+.poem-shoe-game .sm-moral>p{margin:0;font-size:20px;line-height:1.55;text-wrap:balance}
+.poem-shoe-game .sm-moral>small{font-size:16px;line-height:1.55;color:var(--sm-mute);text-wrap:pretty}
+.poem-shoe-game .sm-bonus{display:grid;gap:6px;width:100%;margin-top:4px;padding-top:10px;border-top:1px dashed #dccaa4}
+.poem-shoe-game .sm-bonus>p{margin:0;font-size:16px;color:var(--sm-mute)}
+.poem-shoe-game .sm-flips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.poem-shoe-game .sm-flip{min-height:66px;padding:0;border:0;background:none;perspective:600px}
+.poem-shoe-game .sm-flip-in{display:grid;height:100%;transform-style:preserve-3d;transition:transform .5s ease}
+.poem-shoe-game .sm-flip.is-flipped .sm-flip-in{transform:rotateY(180deg)}
+.poem-shoe-game .sm-front,.poem-shoe-game .sm-back{grid-area:1/1;display:grid;place-items:center;align-content:center;gap:1px;padding:6px 8px;border-radius:14px;border:1.5px solid #dcc296;background:#fffaf0;box-shadow:0 3px 0 #e6d8b8;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.poem-shoe-game .sm-back{transform:rotateY(180deg);background:#eef3e4;border-color:#a9c098}
+.poem-shoe-game .sm-flip b{font-size:25px;line-height:1.1;color:var(--sm-red)}
+.poem-shoe-game .sm-back>span{font-size:18px;font-weight:600}
+.poem-shoe-game .sm-back>span b{margin-inline:.2em}
+.poem-shoe-game .sm-flip small{font-size:15px;line-height:1.35;color:#6b5a40}
+.poem-shoe-game .sm-flip small b{font-size:inherit}
+.poem-shoe-game .sm-flip:hover:not(:disabled) .sm-front{background:#fff4dc}
+.poem-shoe-game .sm-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.poem-shoe-game .sm-actions button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:10px 18px;border-radius:16px;border:1px solid #d9c7a0;background:#fffaf0;color:#4a3a26;font-size:20px;font-weight:600}
+.poem-shoe-game .sm-actions svg{width:22px;height:22px;flex:none}
+.poem-shoe-game .sm-actions .sm-next{background:var(--sm-green);border-color:var(--sm-green);color:#fffdf2}
+.poem-shoe-game .sm-actions button:disabled,.poem-shoe-game .sm-gloss:disabled{opacity:.6}
+.poem-shoe-game .sm-feedback{margin:0;min-height:2.9em;font-size:18px;line-height:1.5;text-align:center;color:#5d5a45;text-wrap:pretty}
+.poem-shoe-game .is-wiggle{animation:sm-wiggle .45s ease}
+@keyframes sm-call{50%{box-shadow:0 0 0 4px #fff8e2a8,0 0 30px #ffeeb0}}
+@keyframes sm-wiggle{25%{translate:-5px 0}75%{translate:5px 0}}
+@keyframes sm-shake{25%{translate:-4px 0}75%{translate:4px 0}}
+@keyframes sm-glow{50%{filter:drop-shadow(0 0 7px #ffeeb0) drop-shadow(0 0 2px #3b2a14b0)}}
+@keyframes sm-return{from{translate:var(--dx) var(--dy)}}
+
+@media (min-width:701px) and (orientation:landscape){
+  .poem-shoe-game .sm-frame{grid-template-columns:minmax(0,1.3fr) minmax(300px,1fr);grid-template-areas:"head head" "stage side";column-gap:22px;align-items:start}
+  .poem-shoe-game .sm-side{gap:8px}
+  .poem-shoe-game .sm-text{justify-content:flex-start}
+}
+@media (max-width:700px){
+  .poem-shoe-game .sm-frame{gap:10px}
+  .poem-shoe-game .sm-panel{padding:12px;gap:10px}
+}
+@media (max-width:420px){
+  .poem-shoe-game .sm-say{font-size:18px}
+  .poem-shoe-game .sm-progress{min-width:54px;padding:4px 8px;font-size:16px}
+  .poem-shoe-game .sm-stage{border-radius:15px}
+  .poem-shoe-game .sm-panel{padding:10px;border-radius:16px}
+  .poem-shoe-game .sm-line{font-size:18px;flex-basis:100%;text-align:center}
+  .poem-shoe-game .sm-gloss{font-size:16px}
+  .poem-shoe-game .sm-ask button{font-size:19px;padding:8px}
+  .poem-shoe-game .sm-actions button{flex:1;font-size:19px;padding:8px 12px}
+  .poem-shoe-game .sm-feedback{font-size:17px}
+  .poem-shoe-game .sm-tags{gap:8px}
+  .poem-shoe-game .sm-tags button{min-height:58px;padding:6px 6px 6px 20px}
+  .poem-shoe-game .sm-tags button::before{left:7px}
+  .poem-shoe-game .sm-face{font-size:18px}.poem-shoe-game .sm-face b{font-size:24px}.poem-shoe-game .sm-face i{font-size:16px}
+  .poem-shoe-game .sm-used{font-size:16px;letter-spacing:0}
+}
+@media (max-width:370px){
+  .poem-shoe-game .sm-say{font-size:17px}
+  .poem-shoe-game .sm-line{font-size:17px}
+  .poem-shoe-game .sm-tray{gap:7px}
+}
+@media (max-width:600px) and (orientation:portrait){
+  /* Narrow portrait: the two pictures stack so each crop stays big enough to aim at. */
+  .poem-shoe-game:is([data-stage=tag],[data-stage=done]) .sm-stage{aspect-ratio:16/18}
+  .poem-shoe-game .sm-pane.is-home{width:100%;height:55%;--cx:30;--cy:120;--cw:960}
+  .poem-shoe-game .sm-pane.is-market{left:0;top:55%;width:100%;height:45%;--cx:640;--cy:110;--cw:960}
+  .poem-shoe-game .sm-pane.is-market::before{right:0;bottom:auto;width:auto;height:4px}
+  .poem-shoe-game .sm-vig{width:36%}
+}
+@media (orientation:landscape) and (max-height:500px){
+  /* Short landscape phones: buttons + feedback go under the picture so each column fits the height. */
+  .poem-shoe-game .sm-frame{grid-template-columns:minmax(0,1.08fr) minmax(250px,1fr);grid-template-areas:"stage head" "stage panel" "act panel" "fb panel";grid-template-rows:auto auto auto 1fr;column-gap:14px;row-gap:6px;align-items:start}
+  .poem-shoe-game .sm-side{display:contents}.poem-shoe-game .sm-panel{grid-area:panel}.poem-shoe-game .sm-actions{grid-area:act}.poem-shoe-game .sm-feedback{grid-area:fb}
+  .poem-shoe-game .sm-stage{border-radius:14px}
+  .poem-shoe-game .sm-say{font-size:16px;line-height:1.35}
+  .poem-shoe-game .sm-progress{min-width:50px;padding:3px 8px;font-size:15px}
+  .poem-shoe-game .sm-panel{padding:8px;gap:7px;border-radius:14px}
+  .poem-shoe-game .sm-text{gap:4px 8px;justify-content:flex-start}
+  .poem-shoe-game .sm-line{flex-basis:100%;font-size:15px;line-height:1.45}
+  .poem-shoe-game .sm-gloss{font-size:14px;padding:3px 10px}.poem-shoe-game .sm-gloss b{font-size:19px}
+  .poem-shoe-game .sm-measure{max-width:340px}
+  .poem-shoe-game .sm-card{padding:12px 12px 6px;gap:4px;width:min(100%,330px)}
+  .poem-shoe-game .sm-ask p{font-size:16px}.poem-shoe-game .sm-ask button{min-height:48px;font-size:17px;padding:6px}
+  .poem-shoe-game .sm-fitting{grid-template-columns:minmax(0,1fr) 96px;align-items:center;gap:8px}
+  .poem-shoe-game .sm-tray{grid-template-columns:1fr;gap:6px}
+  .poem-shoe-game .sm-tray button{min-height:46px;align-items:center;padding:5px 6px 5px 26px}.poem-shoe-game .sm-tray span{font-size:15px;top:50%;left:8px;transform:translateY(-50%)}
+  .poem-shoe-game .sm-tags{gap:6px}
+  .poem-shoe-game .sm-tags button{min-height:48px;padding:4px 6px 4px 20px}.poem-shoe-game .sm-tags button::before{left:7px}
+  .poem-shoe-game .sm-face{font-size:16px}.poem-shoe-game .sm-face b{font-size:21px}.poem-shoe-game .sm-face i{font-size:15px}.poem-shoe-game .sm-used{font-size:15px;letter-spacing:0}
+  .poem-shoe-game .sm-bonus{gap:4px;padding-top:6px;margin-top:2px}.poem-shoe-game .sm-bonus>p{font-size:14px}
+  .poem-shoe-game .sm-flips{gap:6px}.poem-shoe-game .sm-flip{min-height:52px}.poem-shoe-game .sm-flip b{font-size:20px}.poem-shoe-game .sm-back>span{font-size:16px}.poem-shoe-game .sm-flip small{font-size:14px}
+  .poem-shoe-game .sm-moral{gap:4px}.poem-shoe-game .sm-moral>img{display:none}.poem-shoe-game .sm-moral>b{font-size:19px}.poem-shoe-game .sm-moral>p{font-size:16px}.poem-shoe-game .sm-moral>small{font-size:14px}
+  .poem-shoe-game .sm-actions button{min-height:46px;font-size:17px;padding:6px 14px}
+  .poem-shoe-game .sm-feedback{font-size:15px;min-height:0;line-height:1.4}
+}
+.poem-shoe-game.is-reduced *,.poem-shoe-game.is-reduced *::before,.poem-shoe-game.is-reduced *::after{transition:none!important;animation:none!important}
+@media (prefers-reduced-motion:reduce){.poem-shoe-game *,.poem-shoe-game *::before,.poem-shoe-game *::after{transition:none!important;animation:none!important}}
+
+/* poem-games/guest.css */
+.poem-guest-game{--gk-ink:#294c3b;--gk-soft:#5f7566;--gk-paper:#fffdf7;--gk-line:#dcd8c8;--gk-gold:#e3a548;display:block;width:100%;max-width:880px;margin-inline:auto;color:var(--gk-ink);font-family:var(--sans);min-width:0}
+.poem-guest-game *{box-sizing:border-box}
+.poem-guest-game [hidden]{display:none!important}
+.poem-guest-game button{font-family:inherit;color:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.poem-guest-game button:disabled{opacity:1}
+.poem-guest-game img{max-width:none}
+.poem-guest-game button:focus-visible{outline:3px solid #de9b34;outline-offset:3px}
+.poem-guest-game .gk-layout{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "stage" "side";gap:12px;height:100%;align-content:center}
+.poem-guest-game .gk-head{grid-area:head;display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.poem-guest-game .gk-instruction{margin:0;font-size:clamp(19px,2.4vw,24px);font-weight:650;line-height:1.42;text-wrap:balance}
+.poem-guest-game .gk-progress{flex:none;min-width:66px;padding:5px 12px;border-radius:18px;background:#edf3e7;color:#3c6447;font-size:18px;font-weight:600;text-align:center;font-variant-numeric:tabular-nums}
+.poem-guest-game.is-done .gk-progress{background:#f6e5c8;color:#8a4f24}
+
+/* Stage: three 16:9 scene paintings; every overlay sits in % of the painting. */
+.poem-guest-game .gk-stage{grid-area:stage;position:relative;isolation:isolate;container-type:inline-size;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#e9e2d2;border:1px solid #d6d2c1;box-shadow:0 6px 20px #2c443114;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.poem-guest-game .gk-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;pointer-events:none;-webkit-user-drag:none;transition:opacity .9s ease}
+.poem-guest-game .gk-scene.is-on{opacity:1}
+.poem-guest-game .gk-layer{position:absolute;inset:0;z-index:2;visibility:hidden;opacity:0;transition:opacity .5s ease,visibility 0s linear .5s}
+.poem-guest-game .gk-layer.is-on{visibility:visible;opacity:1;transition:opacity .6s ease .25s,visibility 0s}
+.poem-guest-game .gk-layer img{-webkit-user-drag:none;pointer-events:none}
+
+/* Fallen petals on the flower path. */
+.poem-guest-game .gk-pile{position:absolute;left:var(--x);top:var(--y);z-index:3;width:max(44px,9.5%);min-height:44px;aspect-ratio:100/56;padding:0;border:0;border-radius:40%;background:none;transform:translate(-50%,-50%);touch-action:none;cursor:pointer;transition:transform .2s ease,opacity .2s ease}
+.poem-guest-game .gk-pile svg{display:block;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 1px 1px #6b4a3a40)}
+.poem-guest-game .gk-pile:hover:not(:disabled){transform:translate(-50%,-50%) scale(1.06)}
+.poem-guest-game .gk-pile:disabled{cursor:default}
+.poem-guest-game .gk-pile::before{content:'';position:absolute;z-index:-1;inset:-8% -4%;border-radius:50%;background:radial-gradient(closest-side,#fffbeccc,#fff6dc80 55%,#fff6dc00);opacity:.25;pointer-events:none}
+.poem-guest-game .gk-pile:not(:disabled)::before{animation:gk-breathe 2.4s ease-in-out infinite}
+.poem-guest-game .gk-pile.is-swept{pointer-events:none;opacity:0;transform:translate(calc(-50% + var(--fx,60px)),calc(-50% + var(--fy,-20px))) rotate(24deg) scale(.7);transition:transform .6s cubic-bezier(.2,.7,.3,1),opacity .6s ease}
+.poem-guest-game .gk-gap{position:absolute;left:23.125%;top:46.667%;width:10%;height:32.444%;pointer-events:none}
+.poem-guest-game .gk-broom{position:absolute;z-index:4;left:calc(var(--bx,28.4%) - 2.8%);top:calc(var(--by,76.7%) - 28.9%);width:5.6%;height:28.9%;transform:rotate(var(--br,-13deg));transform-origin:50% 100%;pointer-events:none;transition:left .22s ease,top .22s ease,transform .22s ease}
+.poem-guest-game .gk-broom img{display:block;width:100%;height:100%;filter:drop-shadow(1px 2px 1px #3b2a1a40)}
+.poem-guest-game .gk-broom.is-active{pointer-events:auto;touch-action:none;cursor:grab}
+.poem-guest-game .gk-broom.is-active::before{content:'';position:absolute;inset:-6% -60%}
+.poem-guest-game .gk-broom.is-held{cursor:grabbing;transition:left .05s linear,top .05s linear,transform .12s ease}
+.poem-guest-game .gk-broom.is-held img{filter:drop-shadow(2px 6px 4px #3b2a1a55)}
+
+/* 蓬門: a closed reed door laid over the painted open one. */
+.poem-guest-game .gk-door{position:absolute;left:29.6%;top:33%;z-index:2;width:17.8%;height:38.5%;padding:0;border:0;border-radius:6px;background:none;perspective:700px;cursor:pointer;visibility:visible;transition:visibility 0s linear 1.2s}
+.poem-guest-game .gk-door:disabled{cursor:default}
+.poem-guest-game .gk-leaf{position:absolute;top:0;bottom:0;left:0;width:50.5%;overflow:hidden;transform-origin:0 50%;transition:transform 1s cubic-bezier(.4,.1,.3,1),opacity .5s ease .65s}
+.poem-guest-game .gk-leaf+.gk-leaf{left:auto;right:0;transform-origin:100% 50%}
+.poem-guest-game .gk-leaf img{position:absolute;top:0;left:0;width:198%;height:100%;filter:drop-shadow(0 3px 3px #2c1f1240)}
+.poem-guest-game .gk-leaf+.gk-leaf img{left:auto;right:0}
+.poem-guest-game .gk-door.is-cue{animation:gk-glow 1.8s ease-in-out infinite}
+.poem-guest-game .gk-door.is-cue::after{content:'蓬門';position:absolute;left:50%;top:-2%;transform:translate(-50%,-100%);padding:2px 12px;border-radius:999px;background:#fffaf0f2;color:#5c4126;font-size:clamp(14px,2.3cqw,18px);font-weight:700;letter-spacing:.12em;white-space:nowrap;box-shadow:0 2px 6px #2a1d1033}
+.poem-guest-game .gk-door:hover.is-cue .gk-leaf:first-child{transform:rotateY(-12deg)}
+.poem-guest-game .gk-door:hover.is-cue .gk-leaf+.gk-leaf{transform:rotateY(12deg)}
+.poem-guest-game .gk-door.is-open{visibility:hidden;pointer-events:none}
+.poem-guest-game .gk-door.is-open .gk-leaf{opacity:0;transform:rotateY(-80deg)}
+.poem-guest-game .gk-door.is-open .gk-leaf+.gk-leaf{transform:rotateY(80deg)}
+
+/* Hand-made overlays: glow rings, paper tags, speech bubbles. */
+.poem-guest-game .gk-spot{position:absolute;left:var(--x);top:var(--y);z-index:5;width:var(--w);min-width:48px;aspect-ratio:1;transform:translate(-50%,-50%);padding:0;border:2.5px dashed #fffaeef2;border-radius:50%;background:radial-gradient(closest-side,#fff8e436,#fff8e414 70%,transparent);box-shadow:0 0 0 2px #4a332066,inset 0 0 0 2px #4a33204d,0 0 14px 4px #fff4d633;cursor:pointer;animation:gk-call 1.7s ease-in-out infinite;transition:border-color .2s,background .2s}
+.poem-guest-game .gk-spot:hover{border-style:solid;border-color:#ffd27a;background:radial-gradient(closest-side,#fff3c955,#ffe6a022 70%,transparent)}
+.poem-guest-game .gk-spot>span,.poem-guest-game .gk-mark>b{position:absolute;left:50%;top:0;transform:translate(-50%,-115%);padding:2px 11px;border-radius:999px;background:#fffaf0f2;color:#2d4a3c;font-size:clamp(14px,2.3cqw,18px);font-weight:700;line-height:1.4;letter-spacing:.06em;white-space:nowrap;box-shadow:0 2px 6px #2a1d1033;pointer-events:none}
+.poem-guest-game .gk-mark{position:absolute;left:var(--x);top:var(--y);z-index:3;width:var(--w);aspect-ratio:var(--a,1);transform:translate(-50%,-50%) scale(.85);border-radius:50%;border:2px solid #ffe3a6e6;background:radial-gradient(closest-side,#fff1c240,transparent);box-shadow:0 0 16px 5px #ffdb8a66,inset 0 0 10px #fff3d066;opacity:0;pointer-events:none;transition:opacity .5s ease,transform .5s cubic-bezier(.3,1.4,.5,1)}
+.poem-guest-game .gk-mark.is-on{opacity:1;transform:translate(-50%,-50%)}
+.poem-guest-game .gk-mark>b{top:100%;transform:translate(-50%,5px);color:#7b3e22}
+.poem-guest-game .gk-mark[data-gk-mark=wine]>b{top:0;transform:translate(-50%,-112%)}
+.poem-guest-game .gk-glow{position:absolute;left:var(--x);top:var(--y);z-index:3;width:var(--w);aspect-ratio:1;transform:translate(-50%,-50%) scale(.6);border-radius:50%;background:radial-gradient(closest-side,#fff8dc00 34%,#fff0c0e6 54%,#ffd36a99 72%,#ffd36a00);opacity:0;pointer-events:none}
+.poem-guest-game .gk-glow::after{content:'';position:absolute;left:72%;top:8%;width:30%;aspect-ratio:1;background:#fffbe8;clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);filter:drop-shadow(0 0 2px #ffd36a)}
+.poem-guest-game.is-toast .gk-glow{animation:gk-cheers 1.6s ease-out var(--d) both}
+.poem-guest-game .gk-bubble{position:absolute;left:var(--x);top:var(--y);z-index:6;max-width:44%;padding:5px 13px;border-radius:16px;background:#fffaf0f5;color:#3b2c1c;font-size:clamp(14px,2.6cqw,21px);font-weight:700;line-height:1.4;white-space:nowrap;box-shadow:0 3px 10px #2a1d1033;transform:translate(-50%,-100%) scale(.6);transform-origin:50% 120%;opacity:0;pointer-events:none;transition:opacity .3s ease,transform .4s cubic-bezier(.3,1.5,.5,1)}
+.poem-guest-game .gk-bubble::after{content:'';position:absolute;left:50%;top:calc(100% - 1px);width:12px;height:9px;transform:translateX(-50%);background:inherit;clip-path:polygon(0 0,100% 0,40% 100%)}
+.poem-guest-game .gk-bubble.is-on{opacity:1;transform:translate(-50%,-100%)}
+.poem-guest-game .gk-end{position:absolute;right:3.5%;top:5%;z-index:6;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 16px;border-radius:14px;background:#fefbf0e8;color:#315240;box-shadow:0 4px 14px #2a1d1026;pointer-events:none;opacity:0;transform:translateY(8px);transition:opacity .7s ease 1.2s,transform .7s ease 1.2s}
+.poem-guest-game .gk-end b{font-size:clamp(16px,3cqw,28px);letter-spacing:.16em;color:#7b3e22}
+.poem-guest-game .gk-end small{font-size:clamp(14px,1.9cqw,17px);font-weight:600;letter-spacing:.04em}
+.poem-guest-game .gk-end.is-on{opacity:1;transform:none}
+@container (max-width:520px){.poem-guest-game .gk-end{right:2.5%;top:3.5%;padding:3px 12px}.poem-guest-game .gk-end small{display:none}}
+.poem-guest-game .gk-loading{position:absolute;inset:0;z-index:9;display:grid;align-content:center;justify-items:center;gap:14px;padding:20px;background:#f4f0dfeb;font-size:20px;line-height:1.5;text-align:center}
+.poem-guest-game .gk-loading button{min-height:48px;padding:10px 22px;border:1px solid #97ad9b;border-radius:14px;background:#fffefa;font-weight:600;font-size:19px;cursor:pointer}
+
+/* Side panel: verse, choices, action line, feedback. */
+.poem-guest-game .gk-side{grid-area:side;display:flex;flex-direction:column;gap:12px;min-width:0}
+.poem-guest-game .gk-verse{margin:0;padding:10px 14px;border:1px solid #dce5ce;border-radius:16px;background:#f3f6e9;color:#93a596;font-size:clamp(21px,2.6vw,25px);font-weight:600;line-height:1.5;letter-spacing:.1em;text-align:center}
+.poem-guest-game .gk-verse span{display:inline-block;transition:color .4s}
+.poem-guest-game .gk-verse .is-done{color:#3d6a52}
+.poem-guest-game .gk-verse .is-now{color:#294c3b;background:linear-gradient(transparent 62%,#f2d58f99 62%)}
+.poem-guest-game .gk-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.poem-guest-game .gk-choice{position:relative;display:grid;justify-items:center;align-content:center;gap:4px;min-width:0;min-height:120px;padding:8px 8px 10px;border:1.5px solid var(--gk-line);border-radius:18px;background:var(--gk-paper);font-size:19px;font-weight:650;line-height:1.3;cursor:pointer;box-shadow:0 3px 0 #e6e1d2;transition:border-color .2s,background .2s,opacity .3s,filter .3s,transform .2s}
+.poem-guest-game .gk-choice img{display:block;width:100%;height:clamp(64px,10vw,96px);object-fit:contain;pointer-events:none;-webkit-user-drag:none;filter:drop-shadow(0 3px 3px #3b2a1a2e)}
+.poem-guest-game .gk-choice:hover:not(:disabled){border-color:#c98b3a;background:#fff6e2;transform:translateY(-2px)}
+.poem-guest-game .gk-choice:disabled{cursor:default}
+.poem-guest-game .gk-choice.is-right{border-color:#6f9a6d;background:#f1f7ea;box-shadow:0 0 0 3px #a9c9a040,0 3px 0 #d4e3cd}
+.poem-guest-game .gk-choice.is-right::after{content:'✓';position:absolute;right:8px;top:6px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#4f7d58;color:#fff;font-size:18px;font-weight:700}
+.poem-guest-game .gk-choice.is-wrong{opacity:.55;filter:grayscale(.5);box-shadow:none}
+.poem-guest-game .gk-choice.is-shake{animation:gk-shake .45s ease}
+.poem-guest-game .gk-summary{padding:12px 16px;border-radius:16px;background:#fbf3e2;border:1px solid #ecdcbc;text-align:center}
+.poem-guest-game .gk-summary b{display:block;font-size:21px;letter-spacing:.12em;color:#7b3e22}
+.poem-guest-game .gk-summary p{margin:6px 0 0;font-size:17px;line-height:1.6;color:#4b5f50;text-align:left}
+.poem-guest-game .gk-actionline{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.poem-guest-game .gk-primary{flex:1 1 150px;min-height:52px;padding:10px 20px;border:0;border-radius:16px;background:#446d50;color:#fff!important;font-size:20px;font-weight:650;letter-spacing:.06em;cursor:pointer;box-shadow:0 3px 0 #2f4f39;transition:background .2s,transform .1s}
+.poem-guest-game .gk-primary:hover:not(:disabled,.is-busy){background:#3a5f45}
+.poem-guest-game .gk-primary:active:not(:disabled,.is-busy){transform:translateY(2px);box-shadow:0 1px 0 #2f4f39}
+.poem-guest-game .gk-primary.is-next{background:#b8743a;box-shadow:0 3px 0 #8a5426}
+.poem-guest-game .gk-primary.is-next:hover:not(:disabled,.is-busy){background:#a6662f}
+.poem-guest-game .gk-primary:disabled,.poem-guest-game .gk-primary.is-busy{opacity:.5;cursor:default}
+.poem-guest-game .gk-listen{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:52px;margin-left:auto;padding:8px 18px;border:1px solid #b9cbae;border-radius:999px;background:#fffef7;color:#356148!important;font-size:18px;font-weight:600;cursor:pointer}
+.poem-guest-game .gk-listen svg{width:22px;height:22px;flex:none;stroke-linecap:round;stroke-linejoin:round}
+.poem-guest-game .gk-listen svg path{fill:none}
+.poem-guest-game .gk-listen:disabled,.poem-guest-game .gk-listen.is-busy{opacity:.7;cursor:default}
+.poem-guest-game .gk-feedback{margin:0;min-height:3em;font-size:19px;line-height:1.5;color:#55715a;text-align:center;text-wrap:pretty}
+
+@keyframes gk-call{50%{box-shadow:0 0 0 4px #ffd27a59,0 0 20px 8px #ffd98a4d,inset 0 0 0 2px #4a33204d}}
+@keyframes gk-glow{0%,100%{filter:drop-shadow(0 0 0 #ffe2a400)}50%{filter:drop-shadow(0 0 7px #ffe2a4)}}
+@keyframes gk-breathe{50%{opacity:1}}
+@keyframes gk-shake{20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}}
+@keyframes gk-cheers{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}35%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}100%{opacity:.75;transform:translate(-50%,-50%) scale(1)}}
+
+/* Landscape: picture on the left, verse and choices on the right. */
+@media (orientation:landscape) and (min-width:701px),(orientation:landscape) and (max-height:500px){
+ .poem-guest-game{max-width:1280px}
+ .poem-guest-game .gk-layout{grid-template-columns:minmax(0,1.7fr) minmax(270px,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"stage head" "stage side";column-gap:22px;row-gap:12px;align-items:center}
+ .poem-guest-game .gk-stage{width:min(100%,calc((100cqh - 24px) * 16 / 9));align-self:start}
+ .poem-guest-game .gk-head{align-self:end;align-items:flex-start}
+ .poem-guest-game .gk-side{align-self:start}
+ .poem-guest-game .gk-choice img{height:clamp(56px,7.5vw,92px)}
+}
+@media (orientation:landscape) and (min-width:1100px) and (min-height:700px){
+ .poem-guest-game .gk-instruction{font-size:26px}
+ .poem-guest-game .gk-feedback{font-size:20px}
+}
+@media (orientation:landscape) and (max-height:500px){
+ .poem-guest-game .gk-layout{grid-template-columns:minmax(0,1.45fr) minmax(250px,1fr);column-gap:14px;row-gap:6px}
+ .poem-guest-game .gk-stage{border-radius:14px;width:min(100%,calc((100cqh - 8px) * 16 / 9))}
+ .poem-guest-game .gk-head{gap:8px}
+ .poem-guest-game .gk-instruction{font-size:17px;line-height:1.35}
+ .poem-guest-game .gk-progress{min-width:52px;padding:3px 8px;font-size:15px}
+ .poem-guest-game .gk-side{gap:6px}
+ .poem-guest-game .gk-verse{padding:4px 8px;font-size:17px;letter-spacing:.04em;border-radius:12px}
+ .poem-guest-game .gk-choices{gap:6px}
+ .poem-guest-game .gk-choice{min-height:0;padding:4px 4px 6px;font-size:15px;border-radius:14px;gap:2px}
+ .poem-guest-game .gk-choice img{height:46px}
+ .poem-guest-game .gk-choice.is-right::after{width:22px;height:22px;font-size:14px;right:4px;top:4px}
+ .poem-guest-game .gk-summary{padding:6px 10px}.poem-guest-game .gk-summary b{font-size:16px}.poem-guest-game .gk-summary p{font-size:14px;line-height:1.45;margin-top:2px}
+ .poem-guest-game .gk-primary{min-height:44px;padding:5px 12px;font-size:17px;flex-basis:100px}
+ .poem-guest-game .gk-listen{min-height:44px;padding:5px 12px;font-size:15px}
+ .poem-guest-game .gk-feedback{font-size:15px;line-height:1.4;min-height:2.8em;text-align:left}
+}
+@media (max-width:420px){
+ .poem-guest-game .gk-layout{gap:10px}
+ .poem-guest-game .gk-instruction{font-size:19px;min-height:2.84em}
+ .poem-guest-game .gk-progress{min-width:56px;padding:4px 8px;font-size:16px}
+ .poem-guest-game .gk-stage{border-radius:15px}
+ .poem-guest-game .gk-side{gap:10px}
+ .poem-guest-game .gk-verse{font-size:21px;letter-spacing:.04em;padding:8px 10px}
+ .poem-guest-game .gk-choice{min-height:108px;font-size:18px}
+ .poem-guest-game .gk-primary{font-size:19px;padding:10px 14px}
+ .poem-guest-game .gk-listen{padding:8px 14px;font-size:17px}
+ .poem-guest-game .gk-feedback{font-size:17px;text-align:left}
+ .poem-guest-game .gk-end{padding:4px 9px;border-radius:10px}
+}
+@media (max-width:370px){
+ .poem-guest-game .gk-verse{font-size:19px;letter-spacing:0}
+ .poem-guest-game .gk-choice{font-size:16px}
+ .poem-guest-game .gk-listen span{font-size:16px}
+}
+.poem-guest-game.is-reduced .gk-scene,.poem-guest-game.is-reduced .gk-layer,.poem-guest-game.is-reduced .gk-leaf,.poem-guest-game.is-reduced .gk-door,.poem-guest-game.is-reduced .gk-broom,.poem-guest-game.is-reduced .gk-pile,.poem-guest-game.is-reduced .gk-mark,.poem-guest-game.is-reduced .gk-bubble,.poem-guest-game.is-reduced .gk-end,.poem-guest-game.is-reduced .gk-verse span,.poem-guest-game.is-reduced .gk-choice{transition:none}
+.poem-guest-game.is-reduced .gk-spot,.poem-guest-game.is-reduced .gk-door,.poem-guest-game.is-reduced .gk-choice,.poem-guest-game.is-reduced .gk-pile::before{animation:none}
+.poem-guest-game.is-reduced .gk-pile:not(:disabled)::before{opacity:.7}
+.poem-guest-game.is-reduced.is-toast .gk-glow{animation:none;opacity:.8;transform:translate(-50%,-50%)}
+@media (prefers-reduced-motion:reduce){
+ .poem-guest-game .gk-scene,.poem-guest-game .gk-layer,.poem-guest-game .gk-leaf,.poem-guest-game .gk-door,.poem-guest-game .gk-broom,.poem-guest-game .gk-pile,.poem-guest-game .gk-mark,.poem-guest-game .gk-bubble,.poem-guest-game .gk-end{transition:none}
+ .poem-guest-game .gk-spot,.poem-guest-game .gk-door,.poem-guest-game .gk-choice,.poem-guest-game .gk-pile::before{animation:none}
+ .poem-guest-game .gk-pile:not(:disabled)::before{opacity:.7}
+ .poem-guest-game.is-toast .gk-glow{animation:none;opacity:.8;transform:translate(-50%,-50%)}
+}
+
 /* challenge-game-integration.css */
 /* Practice opens directly at its next question. The poem game is question one. */
 .workspace .challenge-type-microgame{padding:12px 18px;overflow:hidden}
