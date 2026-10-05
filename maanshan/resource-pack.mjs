@@ -13,7 +13,7 @@
 // everything. Nothing about the pupil is sent or stored; the cache holds
 // public teaching material only, and files of several grades can share it.
 import {orderRoutes, rememberRoute, rememberedRoute} from './media-route.mjs?v=20260923-school23';
-import {publicImagesReady} from './media-images.mjs?v=20261005-school41';
+import {publicImagesReady} from './media-images.mjs?v=20261006-school42';
 
 export const APP_ROOT = new URL('./', import.meta.url);
 export const MANIFEST_URL = new URL('pack-manifest.json', APP_ROOT);

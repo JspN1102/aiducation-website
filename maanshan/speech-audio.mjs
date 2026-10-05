@@ -1,4 +1,4 @@
-import { SPEECH_AUDIO_FILES } from './media/speech/index.mjs?v=20261005-school41';
+import { SPEECH_AUDIO_FILES } from './media/speech/index.mjs?v=20261006-school42';
 import { getRecitationTextURL } from './recitation-audio.mjs?v=20261005-school40';
 
 export function getSpeechAudioURL(text) {

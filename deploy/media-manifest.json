@@ -615,6 +615,51 @@
       "objectCacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "source": "/maanshan/media/hua-ji/game/night-head.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/41122811217ccd7780eb/maanshan/media/hua-ji/game/night-head.webp",
+      "bytes": 10880,
+      "sha256": "41122811217ccd7780eb045a9aaac91541feec1f6ca9cd3460b89ebca38eeae1",
+      "md5": "5535254794e1aedc869e7b519759053f",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/game/rooster-plate.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2d27f1988d76e17350cd/maanshan/media/hua-ji/game/rooster-plate.webp",
+      "bytes": 39202,
+      "sha256": "2d27f1988d76e17350cd1afce820caa11fa50afaab65ce1be919f65ebbd0ade4",
+      "md5": "ccfdb50a57fdc77094a14de363de4e2d",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/game/rooster-walk.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/919a06892c29b0646a37/maanshan/media/hua-ji/game/rooster-walk.webp",
+      "bytes": 46270,
+      "sha256": "919a06892c29b0646a37eaa05c054f796aabd3db5d344b14457d591cca419281",
+      "md5": "78fabc34d9029bcc85d5cc35ae88a397",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/game/roosters.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/f8ad0233113d436a8e5b/maanshan/media/hua-ji/game/roosters.webp",
+      "bytes": 36396,
+      "sha256": "f8ad0233113d436a8e5b0ff2cf13e84d78ebb4181ef7de40a3d7601b0fbd851e",
+      "md5": "327ad891b1fe0baeff705ba5564115ef",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/hua-ji/game/villagers.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/fbf7fced2685b6337198/maanshan/media/hua-ji/game/villagers.webp",
+      "bytes": 35516,
+      "sha256": "fbf7fced2685b6337198b7a544d9be0824bf3a51f27016df6878fdb0ab1d4d9a",
+      "md5": "4bf4b8fcce4e85df3e78aa305b4d23d2",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "source": "/maanshan/media/hua-ji/poster.webp",
       "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/5502509317690368b7cd/maanshan/media/hua-ji/poster.webp",
       "bytes": 65750,
@@ -737,6 +782,195 @@
       "bytes": 91560,
       "sha256": "6d0df4446859206d8679a099b6c70622946d8c48ade73f44a5cbc01d6c569180",
       "md5": "b061d3e1a30cd9f0c6e54474a238ed58",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/boat.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4f2b41a5dc71da548a6b/maanshan/media/jue-ju/game/boat.webp",
+      "bytes": 44420,
+      "sha256": "4f2b41a5dc71da548a6bb508688642b0bcb266334a4c7eb5dc3b7541ef5cede3",
+      "md5": "e89d89669fcf95d83cc02ac4d435238e",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/brush.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/8499d689312f203aba83/maanshan/media/jue-ju/game/brush.webp",
+      "bytes": 5098,
+      "sha256": "8499d689312f203aba836820ae095f574b426a40c7040b6e8a5c50e978a2f959",
+      "md5": "ce74fb7002b89629172477df508d59a8",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/egret-0.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/f03fdae50b1b0b767d43/maanshan/media/jue-ju/game/egret-0.webp",
+      "bytes": 11996,
+      "sha256": "f03fdae50b1b0b767d43d4ff7ca34a5a387f1aa5d4f9dfd028bb68bae5cb7c18",
+      "md5": "790451ba8997733b949c31fc6116ad34",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/egret-1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2587aa70fd30a17ca5bf/maanshan/media/jue-ju/game/egret-1.webp",
+      "bytes": 11852,
+      "sha256": "2587aa70fd30a17ca5bfc401ac27459c903d532c541c990827525aa1daa0b05b",
+      "md5": "5a4adb3a6d6fb7aeda07db8527373cb3",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/egret-2.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/30f74385544019e8759f/maanshan/media/jue-ju/game/egret-2.webp",
+      "bytes": 15398,
+      "sha256": "30f74385544019e8759f75152de2c08231aa6d26fb2a0d66b61895684a11b763",
+      "md5": "4226840b54bc580164e50e6a1b23ef21",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/egret-3.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4b1213fd73bc79725d87/maanshan/media/jue-ju/game/egret-3.webp",
+      "bytes": 6086,
+      "sha256": "4b1213fd73bc79725d87efe8b2b3ebca745e7569093e55aef5c4565fa7923f46",
+      "md5": "283386c1f9b9fe2298f747a4f7ef2b68",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/egret-fly-0.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2c6eead83ed47b136398/maanshan/media/jue-ju/game/egret-fly-0.webp",
+      "bytes": 4000,
+      "sha256": "2c6eead83ed47b136398c2ebc9a78d8492c3978e6f0ecb991d7e7fd86a9f3140",
+      "md5": "49acf8ff4a6e2255a641541d3977abc6",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/egret-fly-1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/04762e3f862af7b04324/maanshan/media/jue-ju/game/egret-fly-1.webp",
+      "bytes": 2790,
+      "sha256": "04762e3f862af7b04324349341bed10e8d818163089b622ca41656dfae75521f",
+      "md5": "a4bd218717954e92b1216bc76bc00b95",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/egret-fly-2.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/d09529ef9ce421503d0a/maanshan/media/jue-ju/game/egret-fly-2.webp",
+      "bytes": 2266,
+      "sha256": "d09529ef9ce421503d0ab19454dd83c60f107b98e4d581a6df817a8566643bd0",
+      "md5": "8c573e76f645e5361c6957cd95d36f44",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/egret-fly-3.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/838c191be1516a2f0b66/maanshan/media/jue-ju/game/egret-fly-3.webp",
+      "bytes": 658,
+      "sha256": "838c191be1516a2f0b66e7ffa4e51de53f12d5bfe28027be9b1a80611483b648",
+      "md5": "3bab9b801fc16adfe2329ae15e6c02c4",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/oriole-a.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/f6b3ae684a4149b589f9/maanshan/media/jue-ju/game/oriole-a.webp",
+      "bytes": 5358,
+      "sha256": "f6b3ae684a4149b589f96766a4036bbfd84e21a28449bbb01f98fb00255720b0",
+      "md5": "66f041f4adc1de7c8d6af1edc2f15a8d",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/oriole-b.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/b9b90b7668a1147c5461/maanshan/media/jue-ju/game/oriole-b.webp",
+      "bytes": 5530,
+      "sha256": "b9b90b7668a1147c5461cea562364fa0fd36a7979ac4817ab24faae855215e9d",
+      "md5": "58717b921741b9278ab25f8ef5477581",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/oriole-fly-a.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/268fb0c22ff67a5017ba/maanshan/media/jue-ju/game/oriole-fly-a.webp",
+      "bytes": 13238,
+      "sha256": "268fb0c22ff67a5017ba535acf19d1d697cf603a537bd8fec67c2e8a3eb3d6ae",
+      "md5": "2c37c217d7d801a6010de10506a9e02e",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/oriole-fly-b.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/c1615f62173f08cecae9/maanshan/media/jue-ju/game/oriole-fly-b.webp",
+      "bytes": 15920,
+      "sha256": "c1615f62173f08cecae9362c90b47dcbd68d9d00ebd7dc8330e5bdb8de566c64",
+      "md5": "ccc94a343d33c2b0199cf44afe41bf8f",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/oriole-gap.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/1387f9f9b941c46dfcf5/maanshan/media/jue-ju/game/oriole-gap.webp",
+      "bytes": 14120,
+      "sha256": "1387f9f9b941c46dfcf592e909cbf3835fb2896a25d3bba58ed2c73923004a80",
+      "md5": "88d5fb60ef60ee07d95b8e2f5f8f7f36",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/pale-rest.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/3c48af39788e9732ae3e/maanshan/media/jue-ju/game/pale-rest.webp",
+      "bytes": 117918,
+      "sha256": "3c48af39788e9732ae3e3a0d8067ba99d1765658977fefcbafffdfd96f3354b6",
+      "md5": "05ecaf02f1d5c3b113d7a197e1d1791b",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/pale-willow.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/3d3b6010cbd570b4b666/maanshan/media/jue-ju/game/pale-willow.webp",
+      "bytes": 90828,
+      "sha256": "3d3b6010cbd570b4b666bf6d56c1134f16085045fdf660a5a8df4326c2333f5e",
+      "md5": "71f130f73678385e327aeeee215e0b99",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/post.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/1c8530e3979af75ec15c/maanshan/media/jue-ju/game/post.webp",
+      "bytes": 8726,
+      "sha256": "1c8530e3979af75ec15c37680f4f238aa53973b8f85e6d0a19e097d09b6742ea",
+      "md5": "32e188801f6e92816b9835285b8bca77",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/shutter-l.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4139aed5f09650841cd0/maanshan/media/jue-ju/game/shutter-l.webp",
+      "bytes": 20356,
+      "sha256": "4139aed5f09650841cd00a7cd5f54b235a417f60497a11736d9a273ae4adefe4",
+      "md5": "47b6d066d769da955422c79b3e91c5ce",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/shutter-r.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/900ce9bb3b9669114649/maanshan/media/jue-ju/game/shutter-r.webp",
+      "bytes": 20042,
+      "sha256": "900ce9bb3b9669114649eadcbb4f5d42cfc7eea9f72d84d659a28435401bfcd1",
+      "md5": "e7d050678534454c0e3a9d18e8b521de",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/jue-ju/game/window-frame.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/a853f8ab21fad807ee3a/maanshan/media/jue-ju/game/window-frame.webp",
+      "bytes": 34394,
+      "sha256": "a853f8ab21fad807ee3a150b1e9369df214beed184a42d6fd959cf6b47344162",
+      "md5": "3bf4780c246f606583961577caaf97e8",
       "contentType": "image/webp",
       "objectCacheControl": "public, max-age=31536000, immutable"
     },

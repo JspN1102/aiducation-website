@@ -2608,6 +2608,56 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-snow-game .sc-listen[aria-busy="true"]{opacity:1;background:#e9f0f4}
 .poem-snow-game .sc-feedback{margin:0;min-height:2.9em;font-size:19px;line-height:1.45;text-align:center;color:#3d596a;text-wrap:pretty}
 .poem-snow-game.is-instant *,.poem-snow-game.is-instant *::before{transition:none!important}
+/* Round 4: the poem board. Cells come from the stage width; the gap shrinks so four rows always fit its 16:9 height. */
+.poem-snow-game[data-stage="seek"] .sc-veil,.poem-snow-game[data-stage="done"] .sc-veil{background:radial-gradient(120% 100% at 50% 50%,#ffffffb8 30%,#f2f6f8d9 100%)}
+.poem-snow-game[data-stage="done"] .sc-fall{z-index:5}
+.poem-snow-game .sc-poem{--sc-cell:clamp(44px,11.6cqw,96px);--sc-gap:max(0px,min(1.6cqw,(56.25cqw - 4 * var(--sc-cell)) / 4));position:absolute;inset:0;z-index:4;display:grid;align-content:center;justify-content:center;gap:var(--sc-gap)}
+.poem-snow-game .sc-row{display:grid;grid-template-columns:repeat(7,var(--sc-cell));border-radius:calc(var(--sc-cell) * .28);transition:background-color .35s,box-shadow .35s}
+.poem-snow-game .sc-row.is-reading{background:#fde9b0c9;box-shadow:0 0 0 3px #e8c57a8c}
+.poem-snow-game .sc-tile{position:relative;width:var(--sc-cell);height:var(--sc-cell);margin:0;padding:0;border:0;border-radius:24%;background:transparent;color:var(--sc-ink);cursor:pointer;touch-action:manipulation}
+.poem-snow-game .sc-tile:disabled{cursor:default;opacity:1}
+.poem-snow-game .sc-tile:focus-visible{z-index:2;outline-offset:-1px}
+.poem-snow-game[data-stage="seek"] .sc-tile{animation:sc-pop .5s cubic-bezier(.3,1.4,.5,1) calc(var(--n) * 22ms) both}
+.poem-snow-game .sc-face{position:absolute;inset:max(2px,6%);display:grid;place-items:center;border-radius:22%;background:#fffdf8f5;border:1.5px solid #c6d4dc;box-shadow:0 2px 0 #d2dde4,0 6px 12px -8px #23404f80;transition:background-color .3s,border-color .3s,transform .15s}
+.poem-snow-game .sc-face::before{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(110deg,#fff0 35%,#ffffff 50%,#fff0 65%) no-repeat;background-size:260% 100%;background-position:130% 0;opacity:0;pointer-events:none}
+.poem-snow-game .sc-tile:hover:not(:disabled) .sc-face{border-color:#97afbe;transform:translateY(-1px)}
+.poem-snow-game .sc-tile:active:not(:disabled) .sc-face{transform:translateY(1px);box-shadow:0 1px 0 #d2dde4}
+.poem-snow-game .sc-char{position:relative;z-index:1;font-family:var(--serif);font-size:calc(var(--sc-cell) * .54);font-weight:700;line-height:1}
+.poem-snow-game .sc-tile.is-seen .sc-face{background:#ebf3f7f5;border-color:#b3c8d4}
+.poem-snow-game .sc-tile.is-seen .sc-face::after{content:"";position:absolute;right:9%;bottom:10%;width:max(6px,15%);height:max(6px,15%);border-radius:50% 0 50% 50%;transform:rotate(-45deg);background:#93bfd8}
+.poem-snow-game .sc-tile.is-shimmer .sc-face::before{animation:sc-shimmer .75s ease-out}
+.poem-snow-game .sc-poem.is-nudge .sc-tile:not(.is-seen) .sc-char{animation:sc-nudge .8s ease}
+.poem-snow-game .sc-melt,.poem-snow-game .sc-cap{position:absolute;right:-9%;top:-13%;z-index:3;width:44%;height:44%;pointer-events:none}
+.poem-snow-game .sc-melt svg,.poem-snow-game .sc-cap svg{display:block;width:100%;height:100%;overflow:visible}
+.poem-snow-game .sc-melt{animation:sc-melt 1.1s ease-in forwards}
+.poem-snow-game .sc-cap{opacity:0}
+.poem-snow-game[data-stage="done"] .sc-cap{opacity:1}
+.poem-snow-game[data-stage="done"] .sc-tile.is-seen .sc-face{background:#fffdf8f5;border-color:#c6d4dc}
+.poem-snow-game[data-stage="done"] .sc-face::after,.poem-snow-game[data-stage="done"] .sc-tile.is-seen .sc-face::after{content:"";position:absolute;left:3%;right:3%;top:-9%;bottom:auto;width:auto;height:30%;border-radius:45% 45% 0 0/90% 90% 0 0;transform:none;transform-origin:50% 100%;background:radial-gradient(ellipse 22% 50% at 17% 50%,#fff 95%,#fff0),radial-gradient(ellipse 26% 56% at 48% 44%,#fff 95%,#fff0),radial-gradient(ellipse 22% 48% at 80% 52%,#fff 95%,#fff0),linear-gradient(#fff,#fff) 50% 0/100% 50% no-repeat;filter:drop-shadow(0 1.5px 0 #b5c8d3)}
+.poem-snow-game.is-celebrate .sc-cap{animation:sc-settle 1.5s cubic-bezier(.3,.6,.4,1) calc(var(--k) * 1ms) both}
+.poem-snow-game.is-celebrate .sc-face{animation:sc-frost 1.2s ease calc(var(--k) * 1ms + 700ms) both}
+.poem-snow-game.is-celebrate .sc-face::after{animation:sc-pile .9s ease-out calc(var(--k) * 1ms + 500ms) both}
+.poem-snow-game .sc-ask{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px 12px;min-width:0;padding:10px 14px;border-radius:18px;background:var(--sc-paper);border:1px solid var(--sc-line);box-shadow:0 3px 0 #e5ebee}
+.poem-snow-game .sc-ask.is-pulse{animation:sc-call 1.2s ease}
+.poem-snow-game .sc-want{display:grid;justify-items:center;line-height:1.1;padding-right:2px}
+.poem-snow-game .sc-want small{font-size:14px;font-weight:600;color:var(--sc-soft);letter-spacing:.04em;white-space:nowrap}
+.poem-snow-game .sc-want b{font-family:var(--serif);font-size:clamp(34px,4.4vw,42px);font-weight:700;color:#3f7ea4}
+.poem-snow-game .sc-want.is-pulse b{animation:sc-nudge .6s ease 2}
+.poem-snow-game .sc-answer{min-height:56px;min-width:84px;padding:8px 18px;border:2px solid #b7cad5;border-radius:16px;background:#fff;color:var(--sc-ink);font-family:inherit;font-size:22px;font-weight:700;line-height:1.2;white-space:nowrap;cursor:pointer;box-shadow:0 4px 0 #cddae2;transition:transform .12s,box-shadow .12s,background-color .2s,border-color .2s}
+.poem-snow-game .sc-answer:hover:not(:disabled){background:#f2f8fb;border-color:#8eaec1}
+.poem-snow-game .sc-answer:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 #cddae2}
+.poem-snow-game .sc-answer:disabled{cursor:default;opacity:.6}
+.poem-snow-game .sc-count b.is-seal{display:grid;place-items:center;width:1.45em;height:1.45em;margin-top:3px;border-radius:12px;background:var(--sc-plum);color:#fffdf8;font-size:clamp(30px,3.6vw,36px);letter-spacing:0;transform:rotate(-5deg);box-shadow:inset 0 0 0 3px #fffdf84d,0 3px 0 #8e3d46}
+.poem-snow-game.is-celebrate .sc-count b.is-seal{animation:sc-stamp .6s cubic-bezier(.3,1.5,.5,1) 1.1s both}
+.poem-snow-game .sc-marks[data-kind="done"]{display:block}
+.poem-snow-game .sc-wonder{display:grid;gap:2px;font-family:var(--serif);font-size:clamp(20px,2.4vw,24px);font-weight:700;line-height:1.35;letter-spacing:.03em;color:var(--sc-ink)}
+.poem-snow-game .sc-wonder span{white-space:nowrap}
+.poem-snow-game .sc-task.has-poet{display:flex;align-items:center;gap:12px}
+.poem-snow-game .sc-task .sc-say{display:block}
+.poem-snow-game .sc-task.has-poet .sc-say{position:relative;padding:6px 13px;border-radius:14px;background:var(--sc-paper);border:1px solid var(--sc-line)}
+.poem-snow-game .sc-task.has-poet .sc-say::before{content:"";position:absolute;left:-7px;top:50%;width:12px;height:12px;margin-top:-6px;background:inherit;border-left:1px solid var(--sc-line);border-bottom:1px solid var(--sc-line);transform:rotate(45deg)}
+.poem-snow-game .sc-poet{position:relative;flex:none;width:52px;height:52px;border-radius:50%;overflow:hidden;background:#e8eff3;box-shadow:0 0 0 2px #fff,0 0 0 3px #c6d4dc}
+.poem-snow-game .sc-poet img{position:absolute;width:220%;max-width:none;height:auto;left:-48.6%;top:-23.4%}
 @keyframes sc-fall{from{transform:translate3d(0,-4%,0)}to{transform:translate3d(var(--w),101%,0)}}
 @keyframes sc-drift{from{transform:translate(-4px,-5px) rotate(-18deg)}to{transform:translate(4px,6px) rotate(24deg)}}
 @keyframes sc-breathe{50%{box-shadow:0 0 0 13px #ffffff33,0 8px 18px -10px #23404f99}}
@@ -2617,13 +2667,24 @@ dialog h2{font-size:26px;line-height:1.4}
 @keyframes sc-fade{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
 @keyframes sc-nudge{30%{transform:scale(1.16)}60%{transform:scale(.95)}}
 @keyframes sc-appear{from{opacity:0;transform:translateY(6px)}}
+@keyframes sc-pop{from{opacity:0;transform:scale(.6)}}
+@keyframes sc-shimmer{0%{opacity:1;background-position:130% 0}100%{opacity:1;background-position:-30% 0}}
+@keyframes sc-melt{0%{opacity:0;transform:scale(.4) rotate(0deg)}22%{opacity:1;transform:scale(1.05) rotate(30deg)}60%{opacity:.85;transform:translateY(25%) scale(.6) rotate(60deg)}100%{opacity:0;transform:translateY(110%) scale(.12) rotate(80deg)}}
+@keyframes sc-settle{0%{opacity:0;transform:translate(-40%,-170%) rotate(-100deg) scale(.6)}35%{opacity:1}100%{opacity:1;transform:none}}
+@keyframes sc-frost{40%{background-color:#ffffff;box-shadow:0 0 0 3px #ffffffd0,0 0 16px 4px #ffffffc0}}
+@keyframes sc-call{25%,60%{box-shadow:0 0 0 5px #e8c57a99,0 3px 0 #e5ebee}}
+@keyframes sc-pile{from{opacity:0;transform:scaleY(0)}}
+@keyframes sc-stamp{from{opacity:0;transform:rotate(-5deg) scale(1.8)}to{opacity:1;transform:rotate(-5deg)}}
 @media (orientation:landscape) and (min-width:701px),(orientation:landscape) and (max-height:500px){
   .poem-snow-game{max-width:1280px}
   .poem-snow-game .sc-layout{grid-template-columns:minmax(0,1.75fr) minmax(250px,.9fr);grid-template-rows:minmax(0,1fr) auto auto minmax(0,1fr);column-gap:22px;row-gap:12px;align-items:center}
   .poem-snow-game .sc-stage{grid-column:1;grid-row:1/5;width:min(100%,calc(100cqh * 16 / 9));align-self:center}
   .poem-snow-game .sc-head{grid-column:2;grid-row:1;align-self:end;flex-direction:column;align-items:flex-start;gap:6px}
   .poem-snow-game .sc-chip{order:-1}
-  .poem-snow-game .sc-card{grid-column:2;grid-row:2}
+  .poem-snow-game .sc-card,.poem-snow-game .sc-ask{grid-column:2;grid-row:2}
+  .poem-snow-game .sc-want{flex-basis:100%;display:flex;align-items:baseline;justify-content:center;gap:10px}
+  .poem-snow-game .sc-task.has-poet{font-size:20px;gap:10px}
+  .poem-snow-game .sc-poet{width:44px;height:44px}
   .poem-snow-game .sc-actionline{grid-column:2;grid-row:3}
   .poem-snow-game .sc-feedback{grid-column:2;grid-row:4;align-self:start;min-height:0;font-size:18px;line-height:1.45}
 }
@@ -2647,6 +2708,16 @@ dialog h2{font-size:26px;line-height:1.4}
   .poem-snow-game .sc-listen svg{width:19px;height:19px}
   .poem-snow-game .sc-feedback{font-size:15px;line-height:1.35;text-align:left}
   .poem-snow-game .sc-loading{font-size:17px}
+  .poem-snow-game .sc-ask{justify-content:flex-start;flex-wrap:nowrap;padding:5px 10px;gap:8px;border-radius:14px}
+  .poem-snow-game .sc-want{flex-basis:auto;gap:5px}
+  .poem-snow-game .sc-want b{font-size:26px}
+  .poem-snow-game .sc-answer{min-height:44px;min-width:60px;padding:4px 12px;font-size:18px;border-radius:13px;box-shadow:0 3px 0 #cddae2}
+  .poem-snow-game .sc-count b.is-seal{font-size:24px;border-radius:9px;margin-top:0}
+  .poem-snow-game .sc-wonder{display:block;font-size:16px;line-height:1.3}
+  .poem-snow-game .sc-wonder span{white-space:normal}
+  .poem-snow-game .sc-task.has-poet{font-size:17px}
+  .poem-snow-game .sc-task.has-poet .sc-say{padding:0;border:0;background:none}
+  .poem-snow-game .sc-task.has-poet .sc-say::before,.poem-snow-game .sc-task .sc-poet{display:none}
 }
 @media (max-width:700px){
   .poem-snow-game .sc-layout{gap:10px}
@@ -2667,6 +2738,13 @@ dialog h2{font-size:26px;line-height:1.4}
   .poem-snow-game .sc-feedback{font-size:18px}
   .poem-snow-game .sc-end{padding:6px 10px 7px;border-radius:10px}
   .poem-snow-game .sc-sky-hint{padding:6px 15px}
+  .poem-snow-game .sc-ask{padding:8px 10px;gap:8px}
+  .poem-snow-game .sc-want b{font-size:32px}
+  .poem-snow-game .sc-answer{min-width:68px;padding:8px 12px;font-size:20px}
+  .poem-snow-game .sc-wonder{font-size:19px}
+  .poem-snow-game .sc-poet{width:46px;height:46px}
+  .poem-snow-game .sc-task.has-poet{gap:10px}
+  .poem-snow-game .sc-task.has-poet .sc-say{padding:5px 10px}
 }
 @media (max-width:370px){
   .poem-snow-game .sc-task{font-size:18px}
@@ -2676,6 +2754,8 @@ dialog h2{font-size:26px;line-height:1.4}
   .poem-snow-game .sc-mark{width:25px;height:25px}
   .poem-snow-game .sc-verse{font-size:22px;letter-spacing:.02em}
   .poem-snow-game .sc-listen{padding:8px 11px;font-size:17px}
+  .poem-snow-game .sc-answer{min-width:56px;padding:8px 10px;font-size:18px}
+  .poem-snow-game .sc-want b{font-size:28px}
 }
 .poem-snow-game.is-reduced .sc-fall i{animation:none;transform:translateY(var(--y))}
 .poem-snow-game.is-reduced .sc-flake svg,.poem-snow-game.is-reduced .sc-big-art svg,.poem-snow-game.is-reduced .sc-sky-hint,.poem-snow-game.is-reduced .sc-plum span,.poem-snow-game.is-reduced .sc-end,.poem-snow-game.is-reduced .sc-bigs.is-nudge .sc-big-art{animation:none!important}
@@ -2685,11 +2765,18 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-snow-game.is-reduced .sc-ripple{display:none}
 .poem-snow-game.is-reduced .sc-plum.is-glow::after{animation:sc-fade 1.5s ease-out forwards;transform:none}
 .poem-snow-game.is-reduced .sc-scene,.poem-snow-game.is-reduced .sc-veil{transition-duration:.4s}
+.poem-snow-game.is-reduced .sc-tile,.poem-snow-game.is-reduced .sc-face,.poem-snow-game.is-reduced .sc-face::before,.poem-snow-game.is-reduced .sc-face::after,.poem-snow-game.is-reduced .sc-char,.poem-snow-game.is-reduced .sc-cap,.poem-snow-game.is-reduced .sc-ask,.poem-snow-game.is-reduced .sc-want b,.poem-snow-game.is-reduced .sc-count b.is-seal{animation:none!important}
+.poem-snow-game.is-reduced .sc-melt{display:none}
+.poem-snow-game.is-reduced .sc-ask.is-pulse{box-shadow:0 0 0 4px #e8c57a99,0 3px 0 #e5ebee}
+.poem-snow-game.is-reduced .sc-tile.is-shimmer .sc-face{background:#ffffff;border-color:#97afbe}
+.poem-snow-game.is-reduced .sc-want.is-pulse b{text-decoration:underline 3px #e8c57a;text-underline-offset:4px}
 @media (prefers-reduced-motion:reduce){
   .poem-snow-game .sc-fall i{animation:none;transform:translateY(var(--y))}
   .poem-snow-game .sc-flake svg,.poem-snow-game .sc-big-art svg,.poem-snow-game .sc-sky-hint,.poem-snow-game .sc-plum span,.poem-snow-game .sc-end,.poem-snow-game .sc-bigs.is-nudge .sc-big-art{animation:none!important}
   .poem-snow-game .sc-ripple{display:none}
   .poem-snow-game .sc-big{transition:none}
+  .poem-snow-game .sc-tile,.poem-snow-game .sc-face,.poem-snow-game .sc-face::before,.poem-snow-game .sc-face::after,.poem-snow-game .sc-char,.poem-snow-game .sc-cap,.poem-snow-game .sc-ask,.poem-snow-game .sc-want b,.poem-snow-game .sc-count b.is-seal{animation:none!important}
+  .poem-snow-game .sc-melt{display:none}
 }
 
 /* poem-games/rooster.css */
@@ -2704,7 +2791,7 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-rooster-game .rr-instruction span{display:inline-block}
 .poem-rooster-game .rr-progress{flex:none;padding:6px 14px;border-radius:999px;background:#fff7e8;border:1px solid #e6d2b0;color:#8a5a2b;font-weight:700;font-size:18px;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap}
 
-.poem-rooster-game .rr-stage{position:relative;isolation:isolate;container-type:inline-size;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#ebe2d1;border:1px solid #8b6c4a33;box-shadow:0 14px 28px -20px #5b3b1c80;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+.poem-rooster-game .rr-stage{position:relative;isolation:isolate;container-type:inline-size;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;overflow:clip;border-radius:20px;background:#ebe2d1;border:1px solid #8b6c4a33;box-shadow:0 14px 28px -20px #5b3b1c80;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
 .poem-rooster-game.is-look .rr-stage{cursor:pointer}
 .poem-rooster-game .rr-scene,.poem-rooster-game .rr-layer{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover;pointer-events:none;-webkit-user-drag:none}
 .poem-rooster-game .rr-day{transition:opacity .9s ease}
@@ -2723,6 +2810,42 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-rooster-game .rr-glow{position:absolute;left:88.4%;top:44%;width:80cqi;height:50cqi;transform:translate(-50%,-50%);background:radial-gradient(closest-side,#ffd9a0d0,#ffb07a50 45%,transparent);mix-blend-mode:screen;opacity:calc(var(--d) * .7);pointer-events:none}
 .poem-rooster-game .rr-dawn{opacity:0;transition:opacity 1.4s ease}
 .poem-rooster-game.is-open .rr-dawn{opacity:1}
+.poem-rooster-game .rr-veil{background:linear-gradient(180deg,#26305a,#1d2547);mix-blend-mode:multiply;opacity:0;transition:opacity .9s ease}
+.poem-rooster-game.is-open .rr-veil{opacity:calc((1 - var(--o)) * .3)}
+.poem-rooster-game .rr-walk{position:absolute;left:var(--l);top:var(--t);width:var(--bw);height:var(--bh);display:none;pointer-events:none;-webkit-user-drag:none}
+.poem-rooster-game.is-look.is-strut .rr-walk{display:block}
+.poem-rooster-game .rr-cock{transform-origin:62% 100%}
+.poem-rooster-game.is-strut-in .rr-cock{animation:rr-strut-in 2.9s linear both}
+.poem-rooster-game.is-strut-show .rr-cock{animation:rr-strut-show 1.5s ease-in-out both}
+.poem-rooster-game.is-strut-in .rr-spot,.poem-rooster-game.is-strut-in .rr-chip{opacity:0;pointer-events:none}
+@keyframes rr-strut-in{
+  0%{opacity:0;transform:translateX(-100%) scale(.84)}
+  6%{opacity:1}
+  13%{transform:translateX(-84%) translateY(-3.2%) scale(.86) rotate(-2.5deg)}
+  22%{transform:translateX(-70%) scale(.88) rotate(1deg)}
+  31%{transform:translateX(-56%) translateY(-3.2%) scale(.9) rotate(-2.5deg)}
+  40%{transform:translateX(-43%) scale(.92) rotate(1deg)}
+  49%{transform:translateX(-31%) translateY(-3.2%) scale(.94) rotate(-2.5deg)}
+  58%{transform:translateX(-20%) scale(.96) rotate(1deg)}
+  67%{transform:translateX(-11%) translateY(-2.6%) scale(.98) rotate(-2deg)}
+  76%{transform:translateX(-4%) rotate(.6deg)}
+  84%{transform:translateY(-1.6%) rotate(-1.2deg) scale(1.02)}
+  92%{transform:scale(1.015,.99)}
+  100%{opacity:1;transform:none}}
+@keyframes rr-strut-show{
+  20%{transform:translateY(-2.6%) rotate(-2.2deg)}
+  40%{transform:translateX(1.4%) rotate(.8deg)}
+  60%{transform:translateX(2.4%) translateY(-2.6%) rotate(-2.2deg)}
+  80%{transform:translateX(1%) rotate(.6deg)}}
+.poem-rooster-game .rr-nhole,.poem-rooster-game .rr-nhead{position:absolute;left:30.625%;top:7.778%;width:13.4375%;height:23.889%;display:none;background:var(--rr-nhead) 0 0/200% 100% no-repeat;pointer-events:none}
+.poem-rooster-game .rr-nhead{background-position:100% 0;transform-origin:48.8% 79.1%}
+.poem-rooster-game.is-dawn.is-shake .rr-nhole,.poem-rooster-game.is-dawn.is-shake .rr-nhead{display:block}
+.poem-rooster-game.is-dawn.is-shake .rr-nhead{animation:rr-no 1.1s ease-in-out both}
+@keyframes rr-no{15%{transform:rotate(-8deg)}35%{transform:rotate(7deg)}55%{transform:rotate(-6deg)}75%{transform:rotate(4deg)}}
+.poem-rooster-game .rr-shakes{position:absolute;z-index:3;left:28%;top:5%;width:19%;height:26%;overflow:visible;opacity:0;pointer-events:none}
+.poem-rooster-game .rr-shakes path{fill:none;stroke:#fff6dc;stroke-width:3;stroke-linecap:round;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 2px #0b1233)}
+.poem-rooster-game.is-dawn.is-shake .rr-shakes{animation:rr-flash 1.1s ease both}
+@keyframes rr-flash{0%,100%{opacity:0}20%,75%{opacity:.95}}
 .poem-rooster-game .rr-light{position:absolute;left:var(--x);top:var(--y);width:var(--s);aspect-ratio:1.5;transform:translate(-50%,-50%) scale(.6);border-radius:50%;background:radial-gradient(closest-side,#fff0c0,#ffc36a99 40%,transparent);mix-blend-mode:screen;opacity:0;transition:opacity .8s ease,transform .8s ease;pointer-events:none}
 .poem-rooster-game .rr-light.is-on{opacity:.85;transform:translate(-50%,-50%) scale(1)}
 .poem-rooster-game .rr-rings{position:absolute;z-index:3;left:41%;top:4.5%;width:9cqi;height:9cqi;overflow:visible;pointer-events:none;opacity:0}
@@ -2732,9 +2855,12 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-rooster-game.is-crowing .rr-rings path:nth-child(2){animation-delay:.14s}
 .poem-rooster-game.is-crowing .rr-rings path:nth-child(3){animation-delay:.28s}
 @keyframes rr-ring{0%{opacity:0;transform:translateX(-4px)}35%{opacity:1}100%{opacity:0;transform:translateX(7px)}}
-.poem-rooster-game .rr-hush{position:absolute;z-index:4;left:43%;top:10%;padding:.3cqi 1.8cqi .9cqi;border-radius:2.2cqi;background:#fffaf0ec;box-shadow:0 .5cqi 1.4cqi #0b123355;font-family:var(--sans);font-size:clamp(16px,3.4cqi,30px);font-weight:800;line-height:1;color:#5a4a3a;letter-spacing:.08em;opacity:0;transform:scale(.7);transform-origin:0 100%;transition:opacity .25s ease,transform .25s ease;pointer-events:none}
-.poem-rooster-game .rr-hush::before{content:'';position:absolute;left:-.8cqi;bottom:.6cqi;border-style:solid;border-width:.8cqi 1.4cqi .8cqi 0;border-color:transparent #fffaf0ec transparent transparent}
+.poem-rooster-game .rr-hush{position:absolute;z-index:4;left:46.5%;top:8%;display:grid;gap:.3em;padding:.55em .8em .6em;border-radius:.8em;background:#fffaf0f0;box-shadow:0 .5cqi 1.4cqi #0b123355;font-family:var(--sans);font-size:clamp(15px,2.8cqi,26px);font-weight:800;line-height:1.15;color:#5a4a3a;letter-spacing:.06em;white-space:nowrap;opacity:0;transform:scale(.7);transform-origin:0 100%;transition:opacity .25s ease,transform .25s cubic-bezier(.3,1.5,.5,1);pointer-events:none}
+.poem-rooster-game .rr-hush b:last-child{color:#a8432c}
+.poem-rooster-game .rr-hush::before{content:'';position:absolute;left:-.55em;bottom:.9em;border-style:solid;border-width:.4em .6em .4em 0;border-color:transparent #fffaf0f0 transparent transparent}
 .poem-rooster-game .rr-hush.is-on{opacity:1;transform:none}
+.poem-rooster-game .rr-tap{position:absolute;z-index:3;inset:0;display:none}
+.poem-rooster-game.is-look .rr-tap{display:block}
 .poem-rooster-game .rr-sunzone{position:absolute;z-index:3;left:46%;right:0;top:0;bottom:16%;display:none;touch-action:none;cursor:ns-resize}
 .poem-rooster-game.is-dawn .rr-sunzone{display:block}
 .poem-rooster-game .rr-pull{position:absolute;right:2.4cqi;top:58%;transform:translateY(-50%);display:flex;align-items:center;gap:.8cqi;padding:.7cqi 1.8cqi;border-radius:999px;background:#fff8e8ea;color:#7a4a1e;font-family:var(--sans);font-size:clamp(14px,2.3cqi,20px);font-weight:700;line-height:1.2;white-space:nowrap;box-shadow:0 .5cqi 1.6cqi #0b123366}
@@ -2744,10 +2870,12 @@ dialog h2{font-size:26px;line-height:1.4}
 
 .poem-rooster-game .rr-spot{position:absolute;z-index:4;left:var(--x);top:var(--y);width:var(--w);height:var(--h);min-width:44px;min-height:44px;transform:translate(-50%,-50%);padding:0;margin:0;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer}
 .poem-rooster-game .rr-spot svg{position:absolute;inset:-9%;width:118%;height:118%;overflow:visible;pointer-events:none}
+.poem-rooster-game .rr-spot.is-top{top:auto;bottom:calc(100% - var(--y));height:max(6.75cqi,44px);min-width:60px;transform:translateX(-50%);border-radius:50% 50% 40% 40%}
+.poem-rooster-game .rr-spot.is-top svg{top:auto;bottom:-10%;height:calc(6.75cqi * 1.2)}
 .poem-rooster-game .rr-spot path{fill:none;stroke:#b4472f;stroke-width:3;stroke-linecap:round;stroke-dasharray:1 1;stroke-dashoffset:1;opacity:.92;filter:drop-shadow(0 1px 0 #fffbf2aa)}
 .poem-rooster-game .rr-spot.is-found path{stroke-dashoffset:0;transition:stroke-dashoffset .8s ease}
 .poem-rooster-game .rr-spot:focus-visible{outline:3px dashed #f2b450;outline-offset:3px}
-.poem-rooster-game .rr-spot.is-hint::after{content:'';position:absolute;inset:-4%;border-radius:50%;box-shadow:0 0 0 3px #fff6dcd0,0 0 2.4cqi 1cqi #f6c76a;animation:rr-breathe 1.8s ease-in-out infinite}
+.poem-rooster-game .rr-spot.is-hint::after{content:'';position:absolute;inset:-4%;border-radius:50%;box-shadow:0 0 0 3px #fff6dcd0,0 0 2.4cqi 1cqi #f6c76a;animation:rr-breathe 1.8s ease-in-out infinite;pointer-events:none}
 @keyframes rr-breathe{50%{opacity:.35;transform:scale(1.06)}}
 .poem-rooster-game .rr-chip{position:absolute;z-index:5;left:var(--x);top:var(--y);display:grid;gap:.25cqi;padding:.8cqi 1.8cqi 1cqi;border-radius:1.6cqi;background:#fffaf1ee;border:1px solid #d8bf9a;box-shadow:0 .6cqi 1.8cqi -.6cqi #5b3b1c66;font-family:var(--sans);line-height:1.25;pointer-events:none;opacity:0;transform:translateY(.8cqi) scale(.92);transform-origin:0 50%;transition:opacity .35s ease,transform .35s ease}
 .poem-rooster-game .rr-chip.is-on{opacity:1;transform:none}
@@ -2755,7 +2883,9 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-rooster-game .rr-chip b{font-size:clamp(15px,3.1cqi,28px);color:var(--red);letter-spacing:.08em}
 .poem-rooster-game .rr-chip small{font-size:clamp(14px,1.9cqi,17px);color:#6d5a44;font-weight:600}
 @container (max-width:470px){.poem-rooster-game .rr-chip small{display:none}.poem-rooster-game .rr-chip{padding:.8cqi 2.2cqi}}
-.poem-rooster-game .rr-caption{position:absolute;z-index:5;right:2.2cqi;bottom:2.2cqi;padding:1cqi 2.4cqi;border-radius:1.8cqi;background:#fff8ebe6;border:1px solid #e3c79c;color:#8a3a22;font-family:var(--sans);font-size:clamp(16px,3.3cqi,32px);font-weight:700;letter-spacing:.14em;line-height:1.3;box-shadow:0 .6cqi 2cqi -.8cqi #5b3b1c66;opacity:0;transform:translateY(1cqi);transition:opacity .6s ease .2s,transform .6s ease .2s;pointer-events:none}
+.poem-rooster-game .rr-caption{position:absolute;z-index:5;right:2.2cqi;top:2.2cqi;display:grid;justify-items:end;gap:.2em;padding:1cqi 2.4cqi 1.2cqi;border-radius:1.8cqi;background:#fff8ebe8;border:1px solid #e3c79c;color:#8a3a22;font-family:var(--sans);line-height:1.25;box-shadow:0 .6cqi 2cqi -.8cqi #5b3b1c66;opacity:0;transform:translateY(-1cqi);transition:opacity .6s ease .2s,transform .6s ease .2s;pointer-events:none}
+.poem-rooster-game .rr-caption b{font-size:clamp(15px,3cqi,30px);letter-spacing:.06em;white-space:nowrap}
+.poem-rooster-game .rr-caption small{font-size:clamp(14px,2.1cqi,20px);font-weight:700;color:#8a6a48;letter-spacing:.14em}
 .poem-rooster-game.is-done .rr-caption{opacity:1;transform:none}
 .poem-rooster-game .rr-loading{position:absolute;inset:0;z-index:8;display:grid;align-content:center;justify-items:center;gap:14px;padding:20px;background:#f6f0e4eb;font-size:20px;line-height:1.5;text-align:center;color:var(--ink)}
 .poem-rooster-game .rr-loading button{min-height:48px;padding:10px 22px;border:1px solid #c7a77d;border-radius:14px;background:#fffdf8;color:var(--ink);font-size:20px;font-weight:600;cursor:pointer}
@@ -2772,6 +2902,7 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-rooster-game .rr-clue.is-found b{color:var(--red);letter-spacing:.06em}
 .poem-rooster-game .rr-clue small{display:block;font-size:16px;line-height:1.35;color:var(--soft);font-weight:600}
 .poem-rooster-game .rr-next{min-height:56px;padding:10px 20px;border:0;border-radius:18px;background:linear-gradient(180deg,#44528a,#2d3765);color:#fff8e8;font-size:21px;font-weight:700;cursor:pointer;box-shadow:0 4px 0 #1f2749}
+.poem-rooster-game .rr-next.is-wait{background:#d9cfbf;color:#5d4a36;box-shadow:0 4px 0 #b7a78f;cursor:default}
 .poem-rooster-game .rr-skybar{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:999px;background:linear-gradient(90deg,#e3e2ef,#fbefdc);border:1px solid #dacdb7}
 .poem-rooster-game .rr-step{flex:none;width:52px;height:52px;padding:0;border-radius:50%;border:1.5px solid #d6c3a3;background:#fffdf8;display:grid;place-items:center;cursor:pointer;box-shadow:0 3px 0 #eadcc4}
 .poem-rooster-game .rr-step:disabled{opacity:.45;box-shadow:none}
@@ -2790,7 +2921,7 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-rooster-game.is-bright .rr-crow{background:linear-gradient(180deg,#d4573a,#b3432b);border-color:#a23a24;color:#fff8ec;box-shadow:0 4px 0 #8c2f1c,0 0 0 6px #f6b75a44}
 .poem-rooster-game.is-bright:not(.is-reduced) .rr-crow{animation:rr-call 1.8s ease-in-out infinite}
 @keyframes rr-call{50%{box-shadow:0 4px 0 #8c2f1c,0 0 0 12px #f6b75a1c}}
-.poem-rooster-game .rr-lane{position:relative;overflow:hidden;border-radius:16px;aspect-ratio:900/292;background:linear-gradient(180deg,#f6d5a3,#fbeedb 75%);border:1px solid #dcc8a6}
+.poem-rooster-game .rr-lane{position:relative;overflow:hidden;overflow:clip;container-type:inline-size;border-radius:16px;aspect-ratio:900/360;background:linear-gradient(180deg,#f6d5a3,#fbeedb 75%);border:1px solid #dcc8a6}
 .poem-rooster-game .rr-lane::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#1b2346,#3a4068 75%);opacity:calc(1 - var(--d));pointer-events:none}
 .poem-rooster-game .rr-lane-art{position:absolute;left:0;right:0;bottom:0;aspect-ratio:900/280;filter:brightness(calc(.5 + var(--d) * .5)) saturate(calc(.55 + var(--d) * .45))}
 .poem-rooster-game .rr-lane-img{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
@@ -2804,6 +2935,35 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-rooster-game .rr-door.is-open .rr-leaf.is-r{transform:rotateY(66deg)}
 .poem-rooster-game .rr-spill{position:absolute;left:-55%;right:-55%;bottom:-16%;height:30%;border-radius:50%;background:radial-gradient(closest-side,#ffd58acc,#ffd58a00);opacity:0;transition:opacity .8s ease .25s}
 .poem-rooster-game .rr-door.is-open .rr-spill{opacity:1}
+.poem-rooster-game.is-open:not(.is-done) .rr-door:not(.is-open)::after{content:'';position:absolute;inset:-4% -9%;border-radius:8px;box-shadow:0 0 0 2px #fff3d0e6,0 0 12px 4px #f6c76acc;animation:rr-breathe 1.8s ease-in-out calc(var(--i) * .2s) infinite;pointer-events:none}
+.poem-rooster-game .rr-folk{position:absolute;left:7%;right:7%;bottom:1%;height:90%;background:var(--rr-folk) calc(var(--f) * 100% / 3) 100%/400% 100% no-repeat;transform-origin:50% 100%;opacity:0;transform:translateY(12%) scale(.92);transition:opacity .4s ease .35s,transform .55s cubic-bezier(.3,1.5,.5,1) .35s}
+.poem-rooster-game .rr-door.is-open .rr-folk{opacity:1;transform:none}
+.poem-rooster-game .rr-door.is-new .rr-folk{animation:rr-wave .9s ease-in-out 1s 2}
+@keyframes rr-wave{30%{transform:translateY(-4%) rotate(-3deg)}70%{transform:translateY(-1%) rotate(2deg)}}
+.poem-rooster-game .rr-win{position:absolute;left:var(--x);top:var(--y);width:5.6%;height:19%;transform:translate(-50%,-50%);border-radius:30%;background:radial-gradient(closest-side,#ffeab0 35%,#ffc8664d 72%,transparent);mix-blend-mode:screen;opacity:0;transition:opacity .8s ease .3s;pointer-events:none}
+.poem-rooster-game .rr-win.is-on{opacity:1}
+.poem-rooster-game .rr-perch{position:absolute;left:var(--x);top:var(--y);width:8.3%;aspect-ratio:133/150;transform:translate(-50%,-100%);pointer-events:none}
+.poem-rooster-game .rr-hop{display:block;width:100%;height:100%;opacity:0;transform:translateY(30%) scale(.8);transform-origin:50% 100%;transition:opacity .3s ease .45s,transform .5s cubic-bezier(.3,1.6,.5,1) .45s}
+.poem-rooster-game .rr-perch.is-on .rr-hop{opacity:1;transform:none}
+.poem-rooster-game .rr-chick{display:block;width:100%;height:100%;background:var(--rr-chick) calc(var(--f) * 100% / 3) 100%/400% 100% no-repeat;transform-origin:50% 100%;filter:drop-shadow(0 1px 1px #3d312566)}
+.poem-rooster-game .rr-perch.is-crow .rr-chick{animation:rr-chirp .9s ease-in-out}
+@keyframes rr-chirp{20%{transform:rotate(calc(var(--k) * 8deg)) scale(1.06,1.08)}40%{transform:rotate(calc(var(--k) * 3deg))}60%{transform:rotate(calc(var(--k) * 9deg)) scale(1.06,1.08)}}
+.poem-rooster-game .rr-oo{position:absolute;z-index:2;left:var(--x);top:var(--y);padding:.2em .55em .28em;border-radius:1em;background:#fffaf0f4;border:1.5px solid #e2b77a;color:#a8432c;font-family:var(--sans);font-size:clamp(14px,3cqi,19px);font-weight:800;line-height:1.15;letter-spacing:.04em;white-space:nowrap;box-shadow:0 2px 6px #5b3b1c40;opacity:0;transform:translate(0,-50%) scale(.6);transform-origin:0 50%;transition:opacity .2s ease,transform .3s cubic-bezier(.3,1.6,.5,1);pointer-events:none}
+.poem-rooster-game .rr-oo.is-left{transform:translate(-100%,-50%) scale(.6);transform-origin:100% 50%}
+.poem-rooster-game .rr-oo.is-on{opacity:1;transform:translate(0,-50%)}
+.poem-rooster-game .rr-oo.is-left.is-on{transform:translate(-100%,-50%)}
+.poem-rooster-game .rr-house{position:absolute;z-index:3;left:var(--x);width:var(--w);top:4%;bottom:6%;margin:0;padding:0;border:0;border-radius:12px;background:transparent;cursor:pointer}
+.poem-rooster-game .rr-house:disabled{cursor:default}
+.poem-rooster-game .rr-house:focus-visible{outline:3px solid #de9b34;outline-offset:-4px}
+.poem-rooster-game .rr-count{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.poem-rooster-game .rr-count li{position:relative;display:grid;place-items:center;min-height:42px;padding:4px 6px;border-radius:12px;border:1.5px dashed #d8c3a0;background:#fffdf8;color:#ad9a82;font-size:16px;font-weight:800;letter-spacing:.1em;line-height:1.2;white-space:nowrap;transition:background .4s,border-color .4s,color .4s}
+.poem-rooster-game .rr-count li:nth-child(2){font-size:17px}
+.poem-rooster-game .rr-count li:nth-child(3){font-size:19px}
+.poem-rooster-game .rr-count li:nth-child(4){font-size:21px}
+.poem-rooster-game .rr-count li+li::before{content:'';position:absolute;left:-5px;top:50%;width:6px;height:6px;border-top:2px solid #d8b98c;border-right:2px solid #d8b98c;transform:translate(-50%,-50%) rotate(45deg)}
+.poem-rooster-game .rr-count li.is-on{border-style:solid;border-color:#dc9d55;background:linear-gradient(180deg,#fff3d6,#ffdfa4);color:#8a3a22}
+.poem-rooster-game .rr-count li.is-new{animation:rr-pop .6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes rr-pop{0%{transform:scale(.7)}100%{transform:none}}
 
 .poem-rooster-game .rr-actionline{display:flex;align-items:center;justify-content:space-between;gap:10px 14px;flex-wrap:wrap}
 .poem-rooster-game .rr-method{font-size:18px;color:var(--soft);font-weight:600;line-height:1.4}
@@ -2820,6 +2980,7 @@ dialog h2{font-size:26px;line-height:1.4}
   .poem-rooster-game .rr-actionline{grid-row:3}
   .poem-rooster-game .rr-feedback{grid-row:4;text-align:left}
   .poem-rooster-game .rr-clues{grid-template-columns:1fr}
+  .poem-rooster-game.is-dawn .rr-lane{display:none}
 }
 @media (min-width:900px) and (min-height:620px) and (orientation:landscape){
   .poem-rooster-game .rr-stage{align-self:center}
@@ -2856,10 +3017,13 @@ dialog h2{font-size:26px;line-height:1.4}
   .poem-rooster-game .rr-actionline{justify-content:flex-start}
   .poem-rooster-game .rr-audio{min-height:46px;font-size:17px;padding:6px 14px}
   .poem-rooster-game .rr-feedback{font-size:16px;line-height:1.4;min-height:2.8em}
+  .poem-rooster-game.is-dawn .rr-lane{display:none}
+  .poem-rooster-game .rr-count{gap:6px}
+  .poem-rooster-game .rr-count li{min-height:36px;padding:2px 4px}
 }
 @media (min-width:560px) and (orientation:portrait),(min-width:560px) and (max-width:700px){
   .poem-rooster-game.is-dawn .rr-panel{grid-template-columns:minmax(0,1fr) auto}
-  .poem-rooster-game .rr-lane{grid-column:1/-1}
+  .poem-rooster-game .rr-lane,.poem-rooster-game .rr-count{grid-column:1/-1}
 }
 @media (max-width:700px){
   .poem-rooster-game .rr-stage{border-radius:16px}
@@ -2879,6 +3043,8 @@ dialog h2{font-size:26px;line-height:1.4}
   .poem-rooster-game .rr-method{font-size:16px}
   .poem-rooster-game .rr-audio{font-size:18px;padding:8px 16px}
   .poem-rooster-game .rr-feedback{font-size:18px}
+  .poem-rooster-game .rr-count{gap:7px}
+  .poem-rooster-game .rr-count li{letter-spacing:.04em}
 }
 @media (max-width:370px){
   .poem-rooster-game .rr-instruction{font-size:17px}
@@ -2887,7 +3053,9 @@ dialog h2{font-size:26px;line-height:1.4}
   .poem-rooster-game .rr-actionline{justify-content:center}
 }
 .poem-rooster-game.is-reduced *,.poem-rooster-game.is-reduced *::before,.poem-rooster-game.is-reduced *::after{transition:none!important;animation:none!important}
-@media (prefers-reduced-motion:reduce){.poem-rooster-game *,.poem-rooster-game *::before,.poem-rooster-game *::after{transition:none!important;animation:none!important}}
+.poem-rooster-game.is-reduced .rr-walk,.poem-rooster-game.is-reduced .rr-nhole,.poem-rooster-game.is-reduced .rr-nhead,.poem-rooster-game.is-reduced .rr-shakes{display:none!important}
+@media (prefers-reduced-motion:reduce){.poem-rooster-game *,.poem-rooster-game *::before,.poem-rooster-game *::after{transition:none!important;animation:none!important}
+  .poem-rooster-game .rr-walk,.poem-rooster-game .rr-nhole,.poem-rooster-game .rr-nhead,.poem-rooster-game .rr-shakes{display:none!important}}
 
 /* poem-games/seven-steps.css */
 .poem-seven-steps{--ss-ink:#294c3b;--ss-soft:#5f7566;--ss-paper:#fffdf7;--ss-line:#dcd8c8;--ss-gold:#e3a548;--ss-fire:#c9673a;display:block;width:100%;max-width:900px;margin-inline:auto;align-self:start;align-self:safe center;color:var(--ss-ink);font-family:var(--sans);min-width:0}
@@ -3098,153 +3266,243 @@ dialog h2{font-size:26px;line-height:1.4}
 }
 
 /* poem-games/couplet.css */
-/* 對仗對對碰 (絕句). The root stays a block (the quiz shell styles holder>section); .cp-layout is the grid.
-   Tile sizes come from --cp-fs / --cp-h; .is-long shrinks three-character words, .is-final compacts the finished board. */
-.poem-couplet-game{--cp-fs:25px;--cp-h:56px;--cp-seal:14px;position:relative;display:block;width:100%;max-width:760px;margin-inline:auto;align-self:start;align-self:safe center;min-width:0;color:#2f4a3c;font-family:var(--sans,sans-serif)}
-.poem-couplet-game .cp-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;height:100%;min-width:0}
-.poem-couplet-game.is-final{--cp-k:.86}
+.poem-couplet-game{--pc-ink:#294c3b;--pc-soft:#5f7566;--pc-paper:#fffdf7;--pc-line:#dcd8c8;display:block;width:100%;max-width:880px;margin-inline:auto;color:var(--pc-ink);font-family:var(--sans);min-width:0}
 .poem-couplet-game *{box-sizing:border-box}
 .poem-couplet-game [hidden]{display:none!important}
-.poem-couplet-game button{font-family:var(--sans,sans-serif);-webkit-tap-highlight-color:transparent}
-.poem-couplet-game .cp-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
-.poem-couplet-game .cp-head p{margin:0;min-width:0;font-size:21px;font-weight:600;line-height:1.4}
-.poem-couplet-game .cp-count{flex:none;padding:3px 13px;border:1px solid #e3d3b0;border-radius:999px;background:#fbf3e1;color:#7d5d36;font-size:17px;font-weight:600;line-height:1.5;font-variant-numeric:tabular-nums;white-space:nowrap}
-.poem-couplet-game .cp-stage{position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border:1px solid #cdbf9f;border-radius:20px;background:#efe6d3;box-shadow:0 12px 26px -20px #5a4626a6}
-.poem-couplet-game .cp-pic{position:absolute;inset:0}
-.poem-couplet-game .cp-scene{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .9s ease;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
-.poem-couplet-game .cp-scene.is-on{opacity:1}
-.poem-couplet-game .cp-piece{-webkit-mask-image:radial-gradient(var(--rx) var(--ry) at var(--mx) var(--my),#000 66%,#0000 100%);mask-image:radial-gradient(var(--rx) var(--ry) at var(--mx) var(--my),#000 66%,#0000 100%)}
-.poem-couplet-game .cp-glows{position:absolute;inset:0;z-index:2;pointer-events:none}
-.poem-couplet-game .cp-glow{position:absolute;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,#fff8dc99,#ffeeb84d 55%,#ffeeb800);opacity:0;animation:poem-couplet-glow 3.2s ease forwards}
-.poem-couplet-game .cp-glow::after{content:"";position:absolute;inset:0;border:2px solid #fff3cad9;border-radius:50%;box-shadow:0 0 0 1.5px #dba54a59,0 0 18px 4px #ffe6a0b3,inset 0 0 18px 3px #ffeab399;filter:blur(1px)}
-@keyframes poem-couplet-glow{0%{opacity:0;scale:.82}16%{opacity:1;scale:1}76%{opacity:1}100%{opacity:0}}
-.poem-couplet-game .cp-loading{position:absolute;inset:0;z-index:5;display:grid;align-content:center;justify-items:center;gap:14px;padding:20px;background:#f5f2eae8;color:#3c5646;font-size:20px;line-height:1.5;text-align:center}
-.poem-couplet-game .cp-loading button{min-height:48px;padding:9px 22px;border:1px solid #b9b08f;border-radius:14px;background:#fffdf5;color:#2f4a3c;font-size:19px;font-weight:600;line-height:1.2;cursor:pointer}
-.poem-couplet-game .cp-panel{display:grid;gap:12px;min-width:0}
-.poem-couplet-game .cp-board{display:grid;gap:10px;min-width:0}
-.poem-couplet-game .cp-block{position:relative;display:grid;grid-template-columns:22px repeat(4,minmax(0,1fr));grid-template-rows:auto auto auto;column-gap:8px;row-gap:4px;padding:10px 12px 12px 8px;border:1px solid #e2d4b4;border-radius:18px;background:linear-gradient(180deg,#fffcf4,#fbf2df);box-shadow:0 2px 0 #ece1c8}
-.poem-couplet-game .cp-col{display:contents}
-.poem-couplet-game .cp-col>*{grid-column:var(--c)}
-.poem-couplet-game .cp-label{grid-column:1;align-self:center;justify-self:center;writing-mode:vertical-rl;color:#94724a;font-size:14px;font-weight:600;line-height:1;letter-spacing:.14em}
-.poem-couplet-game .cp-label-up,.poem-couplet-game .cp-up{grid-row:1}
-.poem-couplet-game .cp-seal{grid-row:2}
-.poem-couplet-game .cp-label-down,.poem-couplet-game .cp-slot{grid-row:3}
-.poem-couplet-game .cp-tile,.poem-couplet-game .cp-slot{min-width:0;min-height:max(44px,calc(var(--cp-h) * var(--cp-k,1)));padding:5px 2px;border-radius:13px;font-size:calc(var(--cp-fs) * var(--cp-k,1));font-weight:600;line-height:1.15;white-space:nowrap}
-.poem-couplet-game .is-long{font-size:calc(var(--cp-fs) * var(--cp-k,1) * var(--cp-l,.84));letter-spacing:-.03em}
-.poem-couplet-game .cp-tile{position:relative;border:1.5px solid #d9cba8;background:#fffdf7;color:#2f4a3c;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 3px 0 #e7dabb;transition:background .18s,border-color .18s,box-shadow .18s,color .18s}
-.poem-couplet-game .cp-tile:hover:not(:disabled){border-color:#c9a865;background:#fffaf0}
-.poem-couplet-game .cp-tile:active:not(:disabled){translate:0 2px;box-shadow:0 1px 0 #e7dabb}
-.poem-couplet-game .cp-tile:disabled{opacity:1;cursor:default}
-.poem-couplet-game .cp-tile[aria-pressed=true]{border-color:#c4772f;background:#fff0d6;box-shadow:0 0 0 3px #e9a64f59,0 3px 0 #e2c48f}
-.poem-couplet-game .cp-tile:focus-visible,.poem-couplet-game .cp-actions button:focus-visible,.poem-couplet-game .cp-loading button:focus-visible{outline:3px solid #de9b34;outline-offset:3px}
-.poem-couplet-game .cp-tile.is-hinted{border-color:#d9a03f;box-shadow:0 0 0 4px #f3c96b70,0 3px 0 #e7cf9d;animation:poem-couplet-hint 1.3s ease-in-out 2}
-.poem-couplet-game .cp-tile.is-wrong{animation:poem-couplet-shake .46s ease}
-.poem-couplet-game .cp-tile.is-dragging{z-index:20;scale:1.06;cursor:grabbing;transition:none;box-shadow:0 14px 24px -10px #4a36189e,0 0 0 3px #e9a64f59}
-.poem-couplet-game .cp-col.is-matched .cp-up{border-color:#bccdab;background:#f1f5e8;color:#2a5440;box-shadow:0 2px 0 #d7e2c8}
-.poem-couplet-game .cp-slot{display:grid;place-items:center;border:1.5px dashed #cdbd98;background:#f6eedb99;color:#2a5440;transition:background .2s,border-color .2s}
-.poem-couplet-game .cp-slot b{font-weight:inherit;visibility:hidden}
-.poem-couplet-game .cp-col.is-matched .cp-slot{border-style:solid;border-color:#bccdab;background:#f1f5e8;box-shadow:0 2px 0 #d7e2c8}
-.poem-couplet-game .cp-col.is-matched .cp-slot b{visibility:visible}
-.poem-couplet-game .cp-col.is-target .cp-slot,.poem-couplet-game .cp-col.is-over .cp-slot{border-color:#c4772f;background:#fff0d6}
-.poem-couplet-game .cp-col.is-over .cp-up{border-color:#c4772f}
-.poem-couplet-game .cp-seal{justify-self:center;align-self:center;width:0;min-height:18px;border-left:2px dotted #d3c29b;color:#0000;font-size:0}
-.poem-couplet-game .cp-col.is-matched .cp-seal{width:auto;max-width:100%;min-height:0;padding:1px 4px;border:1.5px solid #c8644b;border-radius:6px;background:#fff7ef;color:#a5432e;font-size:var(--cp-seal);font-weight:600;line-height:1.25;text-align:center;word-break:keep-all;box-shadow:inset 0 0 0 2px #fff7ef,inset 0 0 0 3px #e9b3a2}
-.poem-couplet-game .cp-col.is-new .cp-slot{animation:poem-couplet-pop .5s ease}
-.poem-couplet-game .cp-col.is-new .cp-seal{animation:poem-couplet-stamp .45s .12s ease both}
-.poem-couplet-game .cp-block[data-reciting=up] .cp-up,.poem-couplet-game .cp-block[data-reciting=down] .cp-slot{border-color:#d9a24c;background:#fff0d2;box-shadow:0 2px 0 #ecd29f}
-.poem-couplet-game .cp-tray{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:10px 12px;border-radius:18px;background:#f1e7d1b3;box-shadow:inset 0 1px 3px #8a6a3a1f}
-.poem-couplet-game .cp-down{border-color:#dcc8a2;background:#fffaf1;box-shadow:0 3px 0 #e2d0ab,0 7px 12px -9px #6a4c2380;rotate:-1.2deg}
-.poem-couplet-game .cp-down:nth-child(even){rotate:1deg}
-.poem-couplet-game .cp-down.is-used{border:1.5px dashed #d6c6a2;background:#0000;color:#0000;box-shadow:none;rotate:0deg}
-.poem-couplet-game .cp-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
-.poem-couplet-game .cp-actions button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:9px 18px;border:1.5px solid #cdbf9d;border-radius:16px;background:#fffdf5;color:#3d5a45;font-size:20px;font-weight:600;line-height:1.2;cursor:pointer;touch-action:manipulation;box-shadow:0 2px 0 #e6dbc2}
-.poem-couplet-game .cp-actions svg{width:22px;height:22px;flex:none}
-.poem-couplet-game .cp-actions .cp-next{border-color:#446d50;background:#446d50;color:#fffdf1;box-shadow:0 2px 0 #2f5139}
-.poem-couplet-game .cp-actions button:disabled{opacity:.6}
-.poem-couplet-game .cp-feedback{margin:0;min-height:3em;color:#4b6553;font-size:19px;line-height:1.5;text-align:center;text-wrap:pretty}
-@keyframes poem-couplet-shake{20%{translate:-5px 0}40%{translate:5px 0}60%{translate:-3px 0}80%{translate:2px 0}}
-@keyframes poem-couplet-hint{50%{box-shadow:0 0 0 8px #f3c96b30,0 3px 0 #e7cf9d}}
-@keyframes poem-couplet-pop{0%{scale:.86}60%{scale:1.06}100%{scale:1}}
-@keyframes poem-couplet-stamp{0%{opacity:0;scale:1.7}100%{opacity:1;scale:1}}
-.poem-couplet-game.is-settling *,.poem-couplet-game.is-reduced-motion *{transition:none!important}
-.poem-couplet-game.is-reduced-motion *{animation:none!important}
-.poem-couplet-game.is-reduced-motion .cp-glow{opacity:1}
-@media(prefers-reduced-motion:reduce){.poem-couplet-game *{transition:none!important;animation:none!important}.poem-couplet-game .cp-glow{opacity:1}}
-@media(max-width:700px){
- .poem-couplet-game{--cp-l:.9}
- .poem-couplet-game .cp-layout{gap:10px}
- .poem-couplet-game.is-final{--cp-k:.84}
- .poem-couplet-game .cp-panel{gap:10px}
- .poem-couplet-game .cp-board{gap:8px}
- .poem-couplet-game.is-final .cp-block{padding-block:6px 8px;row-gap:3px}
- .poem-couplet-game .cp-feedback{min-height:0;font-size:18px}
+.poem-couplet-game button{font-family:inherit;color:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.poem-couplet-game button:disabled{opacity:1}
+.poem-couplet-game img{max-width:none}
+.poem-couplet-game button:focus-visible{outline:3px solid #de9b34;outline-offset:3px}
+.poem-couplet-game .pc-layout{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "stage" "side";gap:12px;height:100%;align-content:center}
+.poem-couplet-game .pc-head{grid-area:head;display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.poem-couplet-game .pc-instruction{margin:0;min-height:2.84em;font-size:clamp(19px,2.4vw,24px);font-weight:650;line-height:1.42;text-wrap:balance}
+.poem-couplet-game .pc-progress{flex:none;min-width:66px;padding:5px 12px;border-radius:18px;background:#edf3e7;color:#3c6447;font-size:18px;font-weight:600;text-align:center;font-variant-numeric:tabular-nums}
+.poem-couplet-game.is-done .pc-progress{background:#f6e5c8;color:#8a4f24}
+
+/* Stage: one 1600×900 painting (the "world") that gains a line of the poem each round; overlays sit in % of it and 1cqw = 16 painting px. */
+.poem-couplet-game .pc-stage{grid-area:stage;position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#e9e2d2;border:1px solid #d6d2c1;box-shadow:0 6px 20px #2c443114;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.poem-couplet-game .pc-world{position:absolute;top:0;left:0;width:100%;height:100%;container-type:inline-size;overflow:hidden}
+.poem-couplet-game.is-live[data-round="0"] .pc-world{touch-action:none;cursor:crosshair}
+.poem-couplet-game.is-live[data-round="2"] .pc-world{touch-action:none}
+.poem-couplet-game .pc-world img{-webkit-user-drag:none;pointer-events:none}
+.poem-couplet-game .pc-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .9s ease}
+.poem-couplet-game .pc-scene.is-on{opacity:1}
+.poem-couplet-game .pc-gap{position:absolute;left:25.9375%;top:17.333%;width:16.75%;height:23.889%}
+.poem-couplet-game .pc-pale,.poem-couplet-game .pc-canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none;transition:opacity .9s ease}
+.poem-couplet-game .pc-pale.is-on,.poem-couplet-game .pc-canvas.is-on{opacity:1}
+.poem-couplet-game .pc-haze{position:absolute;left:48%;top:28%;width:52%;height:42%;border-radius:50%;background:radial-gradient(closest-side,#f7f5efe6,#f3f0e6b3 55%,#f3f0e600);opacity:0;pointer-events:none;transition:opacity .8s ease}
+.poem-couplet-game .pc-haze.is-on{opacity:1;animation:poem-couplet-drift 6s ease-in-out infinite}
+
+/* Round 1: the brush, the orioles flying in and singing. */
+.poem-couplet-game .pc-brush{position:absolute;left:var(--bx,21%);top:var(--by,86%);width:1.6cqw;height:18.96cqw;transform:translate(-50%,-100%) rotate(var(--br,24deg));transform-origin:50% 100%;pointer-events:none;transition:left .35s ease,top .35s ease,transform .35s ease,opacity .5s ease,visibility 0s}
+.poem-couplet-game .pc-brush img{display:block;width:100%;height:100%;filter:drop-shadow(2px 3px 2px #3b2a1a55)}
+.poem-couplet-game .pc-brush.is-held{transition:opacity .5s ease}
+.poem-couplet-game .pc-fly{position:absolute;left:var(--x);top:var(--y);width:9.4cqw;height:auto;transform:translate(-50%,-50%);opacity:0}
+.poem-couplet-game.is-arriving .pc-fly{animation:poem-couplet-arrive 1.45s cubic-bezier(.3,.6,.4,1) var(--d) both}
+.poem-couplet-game .pc-bird{position:absolute;padding:0;border:0;background:none;cursor:pointer}
+.poem-couplet-game .pc-bird::before{content:'';position:absolute;left:50%;top:50%;width:max(100%,48px);height:max(100%,48px);transform:translate(-50%,-50%);border-radius:50%}
+.poem-couplet-game .pc-bird img{display:block;width:100%;height:100%;filter:drop-shadow(0 0 0 #fff0)}
+.poem-couplet-game .pc-bird:disabled{cursor:default}
+.poem-couplet-game .pc-bird.is-away{visibility:hidden;opacity:0;pointer-events:none}
+.poem-couplet-game .pc-bird.is-cue img{animation:poem-couplet-glow 1.8s ease-in-out infinite}
+.poem-couplet-game .pc-bird.is-sing img{animation:poem-couplet-sing .9s ease-out}
+.poem-couplet-game .pc-chirp{position:absolute;left:50%;bottom:92%;padding:2px 10px;border-radius:14px;background:#fffaf0f5;color:#7b4a12;font-size:clamp(14px,1.6cqw,19px);font-weight:700;line-height:1.4;white-space:nowrap;box-shadow:0 2px 6px #2a1d1033;transform:translate(-50%,0) scale(.6);opacity:0;pointer-events:none}
+.poem-couplet-game .pc-bird.is-sing .pc-chirp{animation:poem-couplet-chirp .9s ease-out}
+
+/* Round 2: egrets on the river bank fly up into the dashed line in the sky. */
+.poem-couplet-game .pc-flock{position:absolute;inset:0;pointer-events:none;transition:transform 1.2s cubic-bezier(.3,.7,.3,1),opacity .5s ease,visibility 0s}
+.poem-couplet-game .pc-flock.is-low{transform:translate(-2%,6%)}
+.poem-couplet-game .pc-flock svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.poem-couplet-game .pc-flock polyline{fill:none;stroke:#fffdf4d9;stroke-width:2.5;stroke-dasharray:3 9;stroke-linecap:round;vector-effect:non-scaling-stroke;transition:opacity .5s}
+.poem-couplet-game .pc-flock:not(.is-low) polyline{opacity:0}
+.poem-couplet-game .pc-slot{position:absolute;left:var(--x);top:var(--y);width:max(var(--w),26px);height:max(var(--h),26px);transform:translate(-50%,-50%);border:2.5px dashed #fffdf4;border-radius:40%;background:#ffffff2e;box-shadow:0 0 0 1.5px #3d556659;transition:opacity .3s}
+.poem-couplet-game .pc-slot.is-full{opacity:0}
+.poem-couplet-game .pc-flock.is-cue .pc-slot:not(.is-full){animation:poem-couplet-call 1.6s ease-in-out infinite}
+.poem-couplet-game .pc-slotimg{position:absolute;opacity:0}
+.poem-couplet-game .pc-slotimg.is-on{opacity:1}
+.poem-couplet-game .pc-slotimg.is-in{animation:poem-couplet-flyin .8s cubic-bezier(.3,.6,.35,1) both}
+.poem-couplet-game .pc-egret{position:absolute;padding:0;border:0;background:none;transform:translate(calc(-50% + var(--dx,0px)),calc(-100% + var(--dy,0px)));touch-action:none;cursor:grab;transition:transform .3s cubic-bezier(.3,1.3,.5,1),filter .2s}
+.poem-couplet-game .pc-egret::before{content:'';position:absolute;left:50%;top:50%;width:max(100%,48px);height:max(100%,48px);transform:translate(-50%,-50%)}
+.poem-couplet-game .pc-egret img{display:block;width:100%;height:100%;filter:drop-shadow(0 2px 2px #2c3f4a40)}
+.poem-couplet-game .pc-egret:not(:disabled) img{animation:poem-couplet-glow 2.4s ease-in-out infinite}
+.poem-couplet-game .pc-egret:hover:not(:disabled){filter:brightness(1.06)}
+.poem-couplet-game .pc-egret.is-held{z-index:4;cursor:grabbing;transition:none}
+.poem-couplet-game .pc-egret.is-held img{animation:none;filter:drop-shadow(3px 10px 6px #2c3f4a55)}
+.poem-couplet-game .pc-egret:disabled{cursor:default}
+
+/* Round 3: a window to push open and slide like a viewfinder until it "holds" the snowy 西嶺 (窗含). */
+.poem-couplet-game .pc-lens{position:absolute;inset:0;width:100%;height:100%;opacity:0;visibility:hidden;clip-path:inset(calc(var(--wy)*1% - 16.62%) calc(91.21% - var(--wx)*1%) calc(83.46% - var(--wy)*1%) calc(var(--wx)*1% - 8.65%));transition:opacity .5s ease,visibility 0s linear .5s}
+.poem-couplet-game .pc-lens.is-on{opacity:1;visibility:visible;transition:opacity .5s ease,visibility 0s}
+.poem-couplet-game .pc-window{position:absolute;left:calc(var(--wx)*1% - 11%);top:calc(var(--wy)*1% - 20.62%);width:22%;height:41.24%;padding:0;border:0;border-radius:6px;background:none;perspective:900px;touch-action:none;cursor:grab;transition:opacity .5s ease,visibility 0s}
+.poem-couplet-game .pc-window:disabled{cursor:default}
+.poem-couplet-game .pc-window:not(.is-open){cursor:pointer}
+.poem-couplet-game .pc-window.is-held{cursor:grabbing}
+.poem-couplet-game .pc-frame{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 6px 8px #2c1f1255)}
+.poem-couplet-game .pc-shutter{position:absolute;top:9.7%;height:80.4%;width:39.65%;transition:transform 1s cubic-bezier(.4,.1,.3,1),opacity .4s ease .7s}
+.poem-couplet-game .pc-shutter[data-side=l]{left:10.68%;transform-origin:0 50%}
+.poem-couplet-game .pc-shutter[data-side=r]{left:50.33%;transform-origin:100% 50%}
+.poem-couplet-game .pc-shutter img{display:block;width:100%;height:100%}
+.poem-couplet-game .pc-window:not(.is-open):not(:disabled){animation:poem-couplet-glow 1.8s ease-in-out infinite}
+.poem-couplet-game .pc-window:not(.is-open):hover:not(:disabled) [data-side=l]{transform:rotateY(-14deg)}
+.poem-couplet-game .pc-window:not(.is-open):hover:not(:disabled) [data-side=r]{transform:rotateY(14deg)}
+.poem-couplet-game .pc-window.is-open [data-side=l]{transform:rotateY(-72deg);opacity:0}
+.poem-couplet-game .pc-window.is-open [data-side=r]{transform:rotateY(72deg);opacity:0}
+.poem-couplet-game .pc-glow{position:absolute;left:73.2%;top:35.5%;width:13%;aspect-ratio:1;transform:translate(-50%,-50%) scale(.6);border-radius:50%;background:radial-gradient(closest-side,#ffffffcc,#fff8e080 45%,#fff8e000);opacity:0;pointer-events:none;transition:opacity .6s ease .3s,transform .9s ease .3s}
+.poem-couplet-game .pc-glow.is-on{opacity:1;transform:translate(-50%,-50%)}
+
+/* Round 4: row the boat in along the dashed route, then pull its rope to the post (泊). */
+.poem-couplet-game .pc-route{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none;transition:opacity .5s ease}
+.poem-couplet-game .pc-route.is-on{opacity:1}
+.poem-couplet-game .pc-route path{fill:none;stroke:#fffdf4e6;stroke-width:3;stroke-dasharray:4 10;stroke-linecap:round;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 1px #2c3f4a99)}
+.poem-couplet-game .pc-boat{position:absolute;left:var(--bx,88.75%);top:var(--by,75.1%);width:calc(23.75cqw*var(--bs,.09));height:calc(17.22cqw*var(--bs,.09));padding:0;border:0;background:none;transform:translate(-50%,-100%);touch-action:none;cursor:grab;transition:opacity .5s ease,visibility 0s}
+.poem-couplet-game .pc-boat::before{content:'';position:absolute;left:50%;top:50%;width:max(100%,52px);height:max(100%,52px);transform:translate(-50%,-50%);border-radius:30%}
+.poem-couplet-game .pc-boat img{display:block;width:100%;height:100%;filter:drop-shadow(0 3px 3px #1d2b3355)}
+.poem-couplet-game .pc-boat:not(:disabled)::after{content:'';position:absolute;left:50%;top:50%;width:max(130%,60px);height:max(130%,60px);transform:translate(-50%,-50%);border:2.5px dashed #fffdf4;border-radius:50%;pointer-events:none;animation:poem-couplet-call 1.7s ease-in-out infinite}
+.poem-couplet-game .pc-boat.is-held{cursor:grabbing}
+.poem-couplet-game .pc-boat:disabled{cursor:default}
+.poem-couplet-game .pc-post{position:absolute;left:94.06%;top:82.2%;width:3.3cqw;height:9.375cqw;padding:0;border:0;background:none;transform:translateX(-50%);cursor:pointer;transition:opacity .5s ease,visibility 0s}
+.poem-couplet-game .pc-post::before{content:'';position:absolute;left:50%;top:50%;width:max(100%,48px);height:max(100%,48px);transform:translate(-50%,-50%)}
+.poem-couplet-game .pc-post img{display:block;width:100%;height:100%;filter:drop-shadow(1px 3px 2px #1d2b3355)}
+.poem-couplet-game .pc-post:disabled{cursor:default}
+.poem-couplet-game .pc-rope{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none;transition:opacity .4s ease}
+.poem-couplet-game .pc-rope.is-on{opacity:1}
+.poem-couplet-game .pc-rope path{fill:none;stroke:#8a6a3c;stroke-width:4;stroke-linecap:round;vector-effect:non-scaling-stroke;filter:drop-shadow(0 1px 0 #3b2a1a80)}
+.poem-couplet-game .pc-knob{position:absolute;left:86.125%;top:88.11%;width:48px;height:48px;padding:0;border:3px solid #fffaf0;border-radius:50%;background:radial-gradient(circle at 40% 35%,#c49a5e,#8a6a3c 70%);box-shadow:0 2px 6px #2a1d1066;transform:translate(-50%,-50%);touch-action:none;cursor:grab;animation:poem-couplet-call 1.7s ease-in-out infinite;transition:opacity .4s ease,visibility 0s}
+.poem-couplet-game .pc-knob::after{content:'';position:absolute;inset:11px;border:3px solid #fffaf0cc;border-radius:50%}
+.poem-couplet-game .pc-knob.is-held{cursor:grabbing;animation:none}
+
+/* Marks: glow rings, paper tags and colour badges. */
+.poem-couplet-game .pc-ring{position:absolute;left:var(--x);top:var(--y);width:var(--w);aspect-ratio:var(--a,1);transform:translate(-50%,-50%) rotate(var(--r,0deg)) scale(.85);border-radius:50%;border:2.5px dashed #fffaeef2;background:radial-gradient(closest-side,#fff8e400,#fff8e426);box-shadow:0 0 0 2px #4a332040,0 0 16px 5px #ffdb8a55;opacity:0;pointer-events:none;transition:opacity .5s ease,transform .5s cubic-bezier(.3,1.4,.5,1)}
+.poem-couplet-game .pc-ring.is-on{opacity:1;transform:translate(-50%,-50%) rotate(var(--r,0deg));animation:poem-couplet-call 1.8s ease-in-out infinite}
+.poem-couplet-game .pc-tag{position:absolute;left:var(--x);top:var(--y);padding:2px 11px;border-radius:999px;background:#fffaf0f2;color:#7b3e22;font-size:clamp(14px,1.75cqw,20px);font-weight:700;line-height:1.4;letter-spacing:.06em;white-space:nowrap;box-shadow:0 2px 6px #2a1d1033;transform:translate(-50%,-50%) scale(.75);opacity:0;pointer-events:none;transition:opacity .3s ease,transform .3s ease}
+.poem-couplet-game .pc-tag.is-on{opacity:1;transform:translate(-50%,-50%);transition:opacity .45s ease var(--d),transform .55s cubic-bezier(.3,1.5,.5,1) var(--d)}
+@container (max-width:440px){.poem-couplet-game .pc-tag .pc-more{display:none}}
+.poem-couplet-game .pc-badge{position:absolute;left:var(--x);top:var(--y);display:grid;place-items:center;width:clamp(30px,3.4cqw,46px);aspect-ratio:1;border-radius:50%;background:var(--bg);color:var(--fg);border:2.5px solid #fffaf0;box-shadow:0 2px 6px #2a1d1055;font-size:clamp(16px,2cqw,24px);font-weight:700;transform:translate(-50%,-50%) scale(.4);opacity:0;pointer-events:none;transition:opacity .3s ease,transform .3s ease}
+.poem-couplet-game .pc-badge.is-on{opacity:1;transform:translate(-50%,-50%);transition:opacity .4s ease var(--d),transform .5s cubic-bezier(.3,1.6,.5,1) var(--d)}
+.poem-couplet-game .pc-loading{position:absolute;inset:0;z-index:9;display:grid;align-content:center;justify-items:center;gap:14px;padding:20px;background:#f4f0dfeb;font-size:20px;line-height:1.5;text-align:center}
+.poem-couplet-game .pc-loading button{min-height:48px;padding:10px 22px;border:1px solid #97ad9b;border-radius:14px;background:#fffefa;font-weight:600;font-size:19px;cursor:pointer}
+/* Elements that belong to another round fade out (kept after the element rules so it wins). */
+.poem-couplet-game .is-off{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .5s ease,visibility 0s linear .5s}
+
+/* Side panel: the four lines, the action line and feedback. */
+.poem-couplet-game .pc-side{grid-area:side;display:flex;flex-direction:column;gap:12px;min-width:0;container:pc-side/inline-size}
+.poem-couplet-game .pc-verse{display:grid;grid-template-columns:repeat(2,max-content);grid-template-rows:repeat(2,auto);grid-auto-flow:column;justify-content:center;column-gap:22px;row-gap:2px;margin:0;padding:8px 12px;border:1px solid #dce5ce;border-radius:16px;background:#f3f6e9}
+.poem-couplet-game .pc-line{position:relative;display:flex;margin:0;padding:0 4px;border-radius:10px;color:#3d6a52;font-size:clamp(19px,2.6vw,24px);font-weight:600;line-height:1.55;transition:background .3s}
+.poem-couplet-game .pc-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.poem-couplet-game .pc-ch{display:inline-block;width:1.08em;text-align:center;border-radius:5px;transition:color .5s ease,background .5s ease}
+.poem-couplet-game .pc-line:not(.is-done) .pc-ch{color:transparent;background:linear-gradient(transparent 82%,#c9d2bb 82%,#c9d2bb 88%,transparent 88%) center/78% 100% no-repeat}
+.poem-couplet-game .pc-line.is-now{background:#fbf3d9}
+.poem-couplet-game .pc-line.is-now:not(.is-done) .pc-ch{background-image:linear-gradient(transparent 82%,#dcb76a 82%,#dcb76a 88%,transparent 88%)}
+.poem-couplet-game .pc-line.is-done .pc-ch:nth-child(3){transition-delay:.06s}.poem-couplet-game .pc-line.is-done .pc-ch:nth-child(4){transition-delay:.12s}.poem-couplet-game .pc-line.is-done .pc-ch:nth-child(5){transition-delay:.18s}.poem-couplet-game .pc-line.is-done .pc-ch:nth-child(6){transition-delay:.24s}.poem-couplet-game .pc-line.is-done .pc-ch:nth-child(7){transition-delay:.3s}.poem-couplet-game .pc-line.is-done .pc-ch:nth-child(8){transition-delay:.36s}
+.poem-couplet-game .pc-line.is-reading{color:#294c3b;background:#f2d58f80}
+/* Finale: matching words of each couplet share a tint (對仗) and shimmer twice. */
+.poem-couplet-game.is-done .pc-ch[data-p="0"]{background:#f6d98a66}
+.poem-couplet-game.is-done .pc-ch[data-p="1"]{background:#bfe0c47a}
+.poem-couplet-game.is-done .pc-ch[data-p="2"]{background:#f2b8a066}
+.poem-couplet-game.is-done .pc-ch[data-p="3"]{background:#b9d3ef80}
+.poem-couplet-game.is-done .pc-ch{animation:poem-couplet-shimmer 1.1s ease-in-out .9s 2}
+.poem-couplet-game.is-done .pc-ch[data-p="1"]{animation-delay:1.15s}
+.poem-couplet-game.is-done .pc-ch[data-p="2"]{animation-delay:1.4s}
+.poem-couplet-game.is-done .pc-ch[data-p="3"]{animation-delay:1.65s}
+.poem-couplet-game .pc-pair{margin:-4px 0 0;font-size:14px;line-height:1.45;color:#6b7d6f;text-align:center}
+.poem-couplet-game .pc-actionline{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.poem-couplet-game .pc-primary{flex:1 1 150px;min-height:52px;padding:10px 20px;border:0;border-radius:16px;background:#446d50;color:#fff!important;font-size:20px;font-weight:650;letter-spacing:.06em;cursor:pointer;box-shadow:0 3px 0 #2f4f39;transition:background .2s,transform .1s}
+.poem-couplet-game .pc-primary:hover:not(:disabled,.is-busy){background:#3a5f45}
+.poem-couplet-game .pc-primary:active:not(:disabled,.is-busy){transform:translateY(2px);box-shadow:0 1px 0 #2f4f39}
+.poem-couplet-game .pc-primary.is-next{background:#b8743a;box-shadow:0 3px 0 #8a5426}
+.poem-couplet-game .pc-primary.is-next:hover:not(:disabled,.is-busy){background:#a6662f}
+.poem-couplet-game .pc-primary:disabled,.poem-couplet-game .pc-primary.is-busy{opacity:.5;cursor:default}
+.poem-couplet-game .pc-notes{display:flex;gap:8px;flex:none}
+.poem-couplet-game .pc-note{width:52px;height:52px;padding:0;border:1.5px solid #d9c9a6;border-radius:50%;background:#fffaf0;color:#7b3e22!important;font-size:23px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 #e6dcc4;transition:background .2s,border-color .2s,transform .1s}
+.poem-couplet-game .pc-note:hover{border-color:#c98b3a;background:#fff2d6}
+.poem-couplet-game .pc-note[aria-pressed=true]{background:#b8743a;border-color:#b8743a;color:#fff!important;box-shadow:0 3px 0 #8a5426}
+.poem-couplet-game .pc-listen{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:52px;margin-left:auto;padding:8px 18px;border:1px solid #b9cbae;border-radius:999px;background:#fffef7;color:#356148!important;font-size:18px;font-weight:600;cursor:pointer}
+.poem-couplet-game .pc-listen svg{width:22px;height:22px;flex:none;stroke-linecap:round;stroke-linejoin:round}
+.poem-couplet-game .pc-listen svg path{fill:none}
+.poem-couplet-game .pc-listen.is-busy{opacity:.7;cursor:default}
+.poem-couplet-game .pc-feedback{margin:0;min-height:3em;font-size:19px;line-height:1.5;color:#55715a;text-align:center;text-wrap:pretty}
+
+@keyframes poem-couplet-call{50%{box-shadow:0 0 0 4px #ffd27a59,0 0 22px 8px #ffd98a59}}
+@keyframes poem-couplet-glow{0%,100%{filter:drop-shadow(0 0 0 #fff2c000)}50%{filter:drop-shadow(0 0 6px #fff2c0) drop-shadow(0 0 2px #ffd36a)}}
+@keyframes poem-couplet-arrive{0%{opacity:0;transform:translate(calc(-50% + var(--fx)),calc(-50% + var(--fy))) scale(.7) rotate(-8deg)}15%{opacity:1}70%{transform:translate(calc(-50% + 1cqw),calc(-50% - 2cqw)) scale(1.05) rotate(4deg)}100%{opacity:1;transform:translate(-50%,-50%)}}
+@keyframes poem-couplet-flyin{0%{opacity:.3;transform:translate(var(--fx),var(--fy)) scale(.8)}40%{opacity:1}100%{opacity:1;transform:none}}
+@keyframes poem-couplet-sing{0%,100%{transform:none}20%{transform:translateY(-6%) rotate(-5deg)}45%{transform:translateY(0) rotate(4deg)}65%{transform:translateY(-4%) rotate(-3deg)}}
+@keyframes poem-couplet-chirp{0%{opacity:0;transform:translate(-50%,10%) scale(.6)}25%,75%{opacity:1;transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,-30%) scale(1)}}
+@keyframes poem-couplet-shimmer{50%{box-shadow:0 0 0 2px #fffaf0,0 0 12px 3px #f2c75c99}}
+@keyframes poem-couplet-drift{50%{transform:translateX(-2%) scale(1.04)}}
+
+/* Landscape: picture on the left, verse and actions on the right. */
+@media (orientation:landscape) and (min-width:701px),(orientation:landscape) and (max-height:500px){
+ .poem-couplet-game{max-width:1280px}
+ .poem-couplet-game .pc-layout{grid-template-columns:minmax(0,1.7fr) minmax(270px,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"stage head" "stage side";column-gap:22px;row-gap:12px;align-items:center}
+ .poem-couplet-game .pc-stage{width:min(100%,calc((100cqh - 24px) * 16 / 9));align-self:start}
+ .poem-couplet-game .pc-head{align-self:end;align-items:flex-start}
+ .poem-couplet-game .pc-side{align-self:start}
+ .poem-couplet-game .pc-verse{grid-template-columns:max-content;grid-template-rows:none;grid-auto-flow:row;row-gap:0;padding:8px 14px}
+ .poem-couplet-game .pc-line{font-size:clamp(17px,1.9vw,25px)}
 }
-@media(max-width:420px){
- .poem-couplet-game{--cp-fs:22px;--cp-h:52px}
- .poem-couplet-game .cp-head{gap:8px}
- .poem-couplet-game .cp-head p{font-size:19px}
- .poem-couplet-game .cp-count{font-size:16px;padding-inline:10px}
- .poem-couplet-game .cp-stage{border-radius:16px}
- .poem-couplet-game .cp-block{grid-template-columns:16px repeat(4,minmax(0,1fr));column-gap:6px;padding:8px 8px 10px 5px;border-radius:16px}
- .poem-couplet-game .cp-label{letter-spacing:.08em}
- .poem-couplet-game .cp-tile,.poem-couplet-game .cp-slot{border-radius:12px}
- .poem-couplet-game .cp-col.is-matched .cp-seal{padding-inline:3px}
- .poem-couplet-game .cp-tray{gap:8px;padding:8px}
- .poem-couplet-game .cp-actions button{min-height:50px;font-size:19px;padding-inline:15px}
+@media (orientation:landscape) and (min-width:1100px) and (min-height:700px){
+ .poem-couplet-game .pc-instruction{font-size:26px}
+ .poem-couplet-game .pc-feedback{font-size:20px}
 }
-@media(max-width:370px){
- .poem-couplet-game{--cp-fs:20px}
- .poem-couplet-game .cp-head p{font-size:18px}
- .poem-couplet-game .cp-block{grid-template-columns:15px repeat(4,minmax(0,1fr));column-gap:4px;padding-inline:3px 5px}
- .poem-couplet-game .cp-col.is-matched .cp-seal{padding-inline:2px}
- .poem-couplet-game .cp-tray{gap:6px;padding:7px}
+/* A narrow side column keeps the four note chips and 聽全詩 on one line. */
+@container pc-side (max-width:360px){
+ .poem-couplet-game .pc-notes{gap:6px}
+ .poem-couplet-game .pc-note{width:46px;height:46px;font-size:21px}
+ .poem-couplet-game .pc-listen{padding:8px 13px;font-size:17px}
 }
-/* Tablets and wide landscape: picture on the left, the couplet board on the right. */
-@media(min-width:701px) and (orientation:landscape),(orientation:landscape) and (max-height:500px){
- .poem-couplet-game{--cp-fs:24px;--cp-h:54px;max-width:none}
- .poem-couplet-game .cp-layout{grid-template-columns:minmax(0,1.2fr) minmax(330px,1fr);grid-template-rows:auto minmax(0,1fr);column-gap:24px;row-gap:12px;align-items:start}
- .poem-couplet-game.is-final{--cp-k:.82}
- .poem-couplet-game .cp-stage{grid-column:1;grid-row:1/3;align-self:center;width:min(100%,calc(100cqh * 16 / 9))}
- .poem-couplet-game .cp-head{grid-column:2;grid-row:1}
- .poem-couplet-game .cp-head p{font-size:21px}
- .poem-couplet-game .cp-panel{grid-column:2;grid-row:2;align-content:start}
- .poem-couplet-game.is-final .cp-block{padding-block:6px 8px;row-gap:3px}
- .poem-couplet-game .cp-feedback{min-height:0;font-size:18px;text-align:left}
- .poem-couplet-game .cp-actions{justify-content:flex-start}
+@media (orientation:landscape) and (max-height:500px){
+ .poem-couplet-game .pc-layout{grid-template-columns:minmax(0,1.45fr) minmax(250px,1fr);column-gap:14px;row-gap:4px}
+ .poem-couplet-game .pc-stage{border-radius:14px;width:min(100%,calc((100cqh - 8px) * 16 / 9))}
+ .poem-couplet-game .pc-head{gap:8px}
+ .poem-couplet-game .pc-instruction{min-height:2.7em;font-size:17px;line-height:1.35}
+ .poem-couplet-game .pc-progress{min-width:52px;padding:3px 8px;font-size:15px}
+ .poem-couplet-game .pc-side{gap:4px}
+ .poem-couplet-game .pc-verse{padding:3px 8px;border-radius:12px}
+ .poem-couplet-game .pc-line{font-size:17px;line-height:1.45}
+ .poem-couplet-game:not(.is-done) .pc-line:not(.is-now){display:none}
+ .poem-couplet-game.is-done .pc-verse{grid-template-columns:repeat(2,max-content);grid-template-rows:repeat(2,auto);grid-auto-flow:column;column-gap:10px}
+ .poem-couplet-game.is-done .pc-line{font-size:15px;padding:0 2px}
+ .poem-couplet-game.is-done .pc-instruction{min-height:0}
+ .poem-couplet-game.is-done .pc-progress{display:none}
+ .poem-couplet-game .pc-pair{display:none}
+ .poem-couplet-game .pc-primary{min-height:44px;padding:5px 12px;font-size:17px;flex-basis:100px}
+ .poem-couplet-game .pc-note{width:44px;height:44px;font-size:19px}
+ .poem-couplet-game .pc-notes{gap:6px}
+ .poem-couplet-game .pc-listen{min-height:44px;padding:5px 12px;font-size:15px}
+ .poem-couplet-game .pc-feedback{font-size:15px;line-height:1.4;min-height:2.8em;text-align:left}
 }
-@media(min-width:900px) and (min-height:620px) and (orientation:landscape){
- .poem-couplet-game{--cp-fs:clamp(24px,3.4vh,29px);--cp-h:clamp(54px,7.8vh,66px);--cp-seal:clamp(14px,1.9vh,16px)}
- .poem-couplet-game .cp-head p{font-size:clamp(21px,2.9vh,26px)}
- .poem-couplet-game .cp-count{font-size:clamp(17px,2.3vh,19px)}
- .poem-couplet-game .cp-panel{gap:clamp(10px,1.7vh,16px)}
- .poem-couplet-game .cp-actions button{min-height:clamp(50px,6.8vh,58px);font-size:clamp(19px,2.6vh,22px)}
- .poem-couplet-game .cp-feedback{font-size:clamp(18px,2.5vh,21px)}
+/* Phones held upright: a 4:3 window onto the painting that pans to each round's part of the picture. */
+@media (orientation:portrait) and (max-width:700px){
+ .poem-couplet-game .pc-stage{aspect-ratio:4/3}
+ .poem-couplet-game .pc-world{width:133.333%;left:calc(var(--pan,0) * -33.333%);transition:left .8s cubic-bezier(.4,.1,.3,1)}
 }
-@media(orientation:landscape) and (max-height:500px){
- .poem-couplet-game{--cp-fs:20px;--cp-h:44px}
- .poem-couplet-game .cp-layout{row-gap:8px;column-gap:16px}
- .poem-couplet-game.is-final{--cp-k:1}
- .poem-couplet-game .cp-head p{font-size:17px;line-height:1.35}
- .poem-couplet-game .cp-count{font-size:15px;padding-inline:9px}
- .poem-couplet-game .cp-stage{position:sticky;top:0;z-index:1;align-self:start;border-radius:14px}
- .poem-couplet-game .cp-panel,.poem-couplet-game .cp-board{gap:8px}
- .poem-couplet-game .cp-block,.poem-couplet-game.is-final .cp-block{grid-template-columns:15px repeat(4,minmax(0,1fr));column-gap:6px;row-gap:2px;padding:6px 8px 7px 4px;border-radius:14px}
- .poem-couplet-game .cp-label{letter-spacing:.04em}
- .poem-couplet-game .cp-tile,.poem-couplet-game .cp-slot{padding-block:3px;border-radius:11px}
- .poem-couplet-game .cp-seal{min-height:12px}
- .poem-couplet-game .cp-col.is-matched .cp-seal{padding:0 3px}
- .poem-couplet-game .cp-tray{gap:7px;padding:6px 8px;border-radius:14px}
- .poem-couplet-game .cp-actions button{min-height:44px;padding:6px 14px;font-size:17px;border-radius:13px}
- .poem-couplet-game .cp-actions svg{width:19px;height:19px}
- .poem-couplet-game .cp-feedback{font-size:16px;line-height:1.4}
+@media (max-width:420px){
+ .poem-couplet-game .pc-layout{gap:10px}
+ .poem-couplet-game .pc-instruction{font-size:19px}
+ .poem-couplet-game .pc-progress{min-width:56px;padding:4px 8px;font-size:16px}
+ .poem-couplet-game .pc-stage{border-radius:15px}
+ .poem-couplet-game .pc-side{gap:10px}
+ .poem-couplet-game .pc-verse{column-gap:12px;padding:6px 8px}
+ .poem-couplet-game .pc-line{font-size:19px;padding:0 2px}
+ .poem-couplet-game .pc-primary{font-size:19px;padding:10px 14px}
+ .poem-couplet-game .pc-notes{gap:6px}
+ .poem-couplet-game .pc-note{width:48px;height:48px;font-size:21px}
+ .poem-couplet-game .pc-listen{padding:8px 14px;font-size:17px}
+ .poem-couplet-game .pc-feedback{font-size:17px;text-align:left}
 }
-/* Portrait tablets keep the picture, board and buttons inside the play area. */
-@media(min-width:701px) and (orientation:portrait){
- .poem-couplet-game{--cp-fs:28px;--cp-h:62px;--cp-seal:15px}
- .poem-couplet-game.is-final{--cp-k:.8}
- .poem-couplet-game .cp-stage{width:min(100%,calc((100cqh - 440px) * 16 / 9))}
- .poem-couplet-game .cp-head p{font-size:24px}
- .poem-couplet-game .cp-feedback{font-size:20px;min-height:0}
+@media (max-width:370px){
+ .poem-couplet-game .pc-line{font-size:17px}
+ .poem-couplet-game .pc-listen span{font-size:16px}
+}
+/* Reduced motion: everything jumps to its end state; cues keep a still glow instead of pulsing. */
+.poem-couplet-game.is-reduced *,.poem-couplet-game.is-reduced *::before,.poem-couplet-game.is-reduced *::after{animation:none!important;transition:none!important}
+.poem-couplet-game.is-reduced .pc-bird.is-cue img,.poem-couplet-game.is-reduced .pc-egret:not(:disabled) img,.poem-couplet-game.is-reduced .pc-window:not(.is-open):not(:disabled){filter:drop-shadow(0 0 5px #fff2c0) drop-shadow(0 0 2px #ffd36a)}
+.poem-couplet-game.is-reduced .pc-bird.is-sing .pc-chirp{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){
+ .poem-couplet-game *,.poem-couplet-game *::before,.poem-couplet-game *::after{animation:none!important;transition:none!important}
+ .poem-couplet-game .pc-bird.is-cue img,.poem-couplet-game .pc-egret:not(:disabled) img,.poem-couplet-game .pc-window:not(.is-open):not(:disabled){filter:drop-shadow(0 0 5px #fff2c0) drop-shadow(0 0 2px #ffd36a)}
+ .poem-couplet-game .pc-bird.is-sing .pc-chirp{opacity:1;transform:translate(-50%,0)}
 }
 
 /* poem-games/shoe-market.css */
@@ -3258,7 +3516,7 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-shoe-game .sm-frame{display:grid;grid-template-areas:"head" "stage" "side";gap:12px;min-width:0}
 .poem-shoe-game .sm-head{grid-area:head;display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
 .poem-shoe-game .sm-say{margin:0;font-size:clamp(18px,2.3vw,23px);font-weight:650;line-height:1.45;text-wrap:pretty}
-.poem-shoe-game :is(.sm-say,.sm-moral,.sm-feedback) span{display:inline-block}
+.poem-shoe-game :is(.sm-say,.sm-moral>p,.sm-moral>small,.sm-feedback) span{display:inline-block}
 .poem-shoe-game .sm-progress{flex:none;min-width:62px;padding:5px 11px;border-radius:18px;background:#f2e7cf;color:var(--sm-wood);font-size:18px;font-weight:600;text-align:center;font-variant-numeric:tabular-nums}
 
 /* Picture stage: the four user paintings cross-fade; overlays sit on painted objects. */
@@ -3288,10 +3546,57 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-shoe-game .is-seller{right:16%;top:17%}.poem-shoe-game .is-seller::after{right:-6px;top:24%;transform:rotate(-45deg)}
 .poem-shoe-game .is-ask{left:5%;top:10%}.poem-shoe-game .is-ask::after{right:22%;bottom:-6px;transform:rotate(45deg)}
 .poem-shoe-game .is-stubborn{left:69%;top:36%}.poem-shoe-game .is-stubborn::after{left:-6px;top:30%;transform:rotate(135deg)}
-.poem-shoe-game .sm-tag{position:absolute;left:var(--x);top:var(--y);z-index:5;display:flex;align-items:baseline;gap:.32em;padding:.28em .62em;border-radius:12px;background:#fffaf0ee;border:1px solid #e0c99c;color:#5a3e22;font-size:clamp(14px,2.5cqi,19px);font-weight:600;white-space:nowrap;box-shadow:0 3px 9px #3b2a1430;opacity:0;transform:translate(-50%,-50%) scale(.85);transition:opacity .4s,transform .4s;pointer-events:none}
-.poem-shoe-game .sm-tag.is-on{opacity:1;transform:translate(-50%,-50%)}
-.poem-shoe-game .sm-tag b{font-size:1.3em;color:var(--sm-red)}
-.poem-shoe-game .sm-tag i{font-style:normal;font-weight:500;color:#8a6a45}
+/* Tagging board: two cropped story pictures (home, market) with dashed drop spots on painted objects.
+   A canvas is the whole 1600x900 scene scaled so that --cw source px fill the pane, shifted by --cx/--cy. */
+.poem-shoe-game .sm-board{position:absolute;inset:0;z-index:6;background:#eadcbf;opacity:0;visibility:hidden;transition:opacity .5s,visibility 0s .5s}
+.poem-shoe-game .sm-board.is-on{opacity:1;visibility:visible;transition:opacity .5s}
+.poem-shoe-game .sm-pane{position:absolute;top:0;height:100%;overflow:hidden;container:sm-pane/size}
+.poem-shoe-game .sm-pane.is-home{left:0;width:58%;--cx:110;--cy:90;--cw:835}
+.poem-shoe-game .sm-pane.is-market{left:58%;width:42%;--cx:928;--cy:0;--cw:672}
+.poem-shoe-game .sm-pane.is-market::before{content:'';position:absolute;left:0;top:0;bottom:0;z-index:4;width:4px;background:#f6ecd6;box-shadow:0 0 6px #3b2a1440;pointer-events:none}
+.poem-shoe-game .sm-canvas{position:absolute;left:0;top:0;width:calc(100% * 1600 / var(--cw));aspect-ratio:16/9;translate:calc(-100% * var(--cx) / 1600) calc(-100% * var(--cy) / 900)}
+.poem-shoe-game .sm-pic{display:block;width:100%;height:100%;pointer-events:none}
+.poem-shoe-game .sm-place{position:absolute;bottom:8px;left:12px;z-index:5;padding:2px 10px;border-radius:12px;background:#fffaf0e6;color:#6b4a2b;font-size:14px;font-weight:700;letter-spacing:.12em;box-shadow:0 2px 6px #3b2a1426;pointer-events:none}
+.poem-shoe-game .sm-spot{--px:calc(100cqw / var(--cw));position:absolute;z-index:2;min-width:44px;min-height:44px;padding:0;border:0;border-radius:14px;background:none;transform:translate(-50%,-50%);touch-action:manipulation}
+.poem-shoe-game .sm-spot[data-sm-spot=ruler]{z-index:3}
+.poem-shoe-game .sm-spot svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;fill:#fff4d014;stroke:#fff8e2;stroke-width:2.5;stroke-dasharray:8 6;stroke-linejoin:round;filter:drop-shadow(0 0 2px #3b2a14b0);transition:fill .2s,stroke .2s}
+.poem-shoe-game .sm-spot svg *{vector-effect:non-scaling-stroke}
+.poem-shoe-game .sm-spot:focus-visible{outline-offset:-3px}
+.poem-shoe-game.is-picking .sm-spot:not(:disabled) svg{fill:#fff4d03a;animation:sm-glow 1.8s ease-in-out infinite}
+.poem-shoe-game .sm-spot.is-over svg{fill:#fff3c870;stroke-dasharray:none;stroke-width:3.5}
+@media (hover:hover){.poem-shoe-game .sm-spot:hover:not(:disabled) svg{fill:#fff3c870;stroke-dasharray:none;stroke-width:3.5}}
+.poem-shoe-game .sm-spot.is-hint svg{stroke:#ffd76a;stroke-width:4.5;stroke-dasharray:none;fill:#ffe08a50;animation:sm-glow .9s ease-in-out infinite}
+.poem-shoe-game .sm-spot.is-no svg{stroke:#f3a58e;fill:#b3442e33;stroke-dasharray:none}
+.poem-shoe-game .sm-spot.is-no{animation:sm-shake .45s ease}
+.poem-shoe-game .sm-spot.is-filled{pointer-events:none}
+.poem-shoe-game .sm-spot.is-filled svg{fill:none;stroke:#e9f4dc;stroke-dasharray:none;stroke-width:2;opacity:.85;animation:none}
+/* The foot spot is a small picture of the measuring, reusing the measure-step art. */
+.poem-shoe-game .sm-vig{left:3%;top:4%;width:40%;aspect-ratio:1600/860;transform:none;z-index:3;border-radius:12px;border:2.5px dashed #fff8e2;background:radial-gradient(120% 95% at 38% 30%,#fffbf2,#f0e2c4);box-shadow:0 0 0 1px #7b593450,0 6px 14px #3b2a1440;transition:border-color .2s,box-shadow .2s}
+.poem-shoe-game .sm-vig-art{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}
+.poem-shoe-game .sm-vig-foot{position:absolute;left:0;top:-20.93%;width:75%;height:105.465%}
+.poem-shoe-game .sm-vig-ruler{position:absolute;left:6.5%;top:84.77%;width:91%;height:10.78%;filter:drop-shadow(0 1px 1px #4b361a40)}
+.poem-shoe-game .sm-vig-art::after{content:'';position:absolute;left:74.94%;top:5%;bottom:12%;border-left:2px dashed #b3442eb0}
+.poem-shoe-game .sm-vig-art i{position:absolute;left:74.94%;top:90.14%;width:9px;height:9px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 35% 35%,#e4775f,#a5321f 72%);box-shadow:0 0 0 2px #fff7e6}
+.poem-shoe-game.is-picking .sm-vig:not(:disabled){animation:sm-call 1.8s ease-in-out infinite}
+.poem-shoe-game .sm-vig.is-over{border-style:solid;box-shadow:0 0 0 3px #fff8e2b0,0 0 24px #ffeeb0}
+@media (hover:hover){.poem-shoe-game .sm-vig:hover:not(:disabled){border-style:solid;box-shadow:0 0 0 3px #fff8e2b0,0 0 24px #ffeeb0}}
+.poem-shoe-game .sm-vig.is-hint{border:3.5px solid #ffd76a;animation:sm-call .9s ease-in-out infinite}
+.poem-shoe-game .sm-vig.is-no{border-color:#e9a08a}
+.poem-shoe-game .sm-vig.is-filled{border:2px solid #cfe6b8}
+/* A pinned tag pops in next to its spot. The phrase line only shows when the pane is tall enough. */
+.poem-shoe-game .sm-pin{position:absolute;z-index:4;display:grid;justify-items:center;gap:2px;pointer-events:none;opacity:0;scale:.5;transition:opacity .2s,scale .4s cubic-bezier(.3,1.7,.5,1)}
+.poem-shoe-game .is-filled>.sm-pin{opacity:1;scale:1}
+.poem-shoe-game .sm-chip{display:flex;align-items:baseline;gap:.28em;padding:.16em .6em .2em;border-radius:10px;background:#fffaf0f5;border:2px solid #c9a46a;color:#4a3420;font-size:15px;font-weight:650;line-height:1.3;white-space:nowrap;box-shadow:0 3px 8px #2a180a50}
+.poem-shoe-game .sm-pin.is-du .sm-chip{border-color:#8fae7c}
+.poem-shoe-game .sm-chip b{font-size:1.3em;line-height:1;color:var(--sm-red)}
+.poem-shoe-game .sm-chip i{font-style:normal;font-weight:500;color:#8a6a45}
+.poem-shoe-game .sm-pin small{display:none;padding:.1em .55em;border-radius:8px;background:#3b2a14d0;color:#fffaf0;font-size:14px;line-height:1.4;white-space:nowrap}
+.poem-shoe-game .sm-pin small b{color:#ffc95c;font-weight:800}
+@container sm-pane (min-height:270px){.poem-shoe-game .sm-pin small{display:block}}
+.poem-shoe-game [data-sm-spot=foot]>.sm-pin{left:calc(100% + 6px);top:50%;translate:0 -50%;justify-items:start}
+.poem-shoe-game [data-sm-spot=ruler]>.sm-pin{left:50%;bottom:calc(50% + var(--px) * 34 + 3px);translate:-50% 0}
+.poem-shoe-game [data-sm-spot=seat]>.sm-pin{left:30%;top:88%;translate:-50% 0}
+.poem-shoe-game [data-sm-spot=stall]>.sm-pin{left:62%;bottom:92%;translate:-50% 0}
 .poem-shoe-game .sm-loading{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;text-align:center;background:#f7f0dfe8;color:#5b5140;font-size:19px}
 .poem-shoe-game .sm-loading button{min-height:48px;padding:8px 20px;border:1px solid #cdb98f;border-radius:16px;background:#fffaf0;font-size:19px;color:#5b4126}
 
@@ -3351,27 +3656,42 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-shoe-game .sm-tray span{position:absolute;left:9px;top:5px;font-size:16px;font-weight:700;color:var(--sm-wood)}
 .poem-shoe-game .sm-tray button:hover:not(:disabled){background:#fff4dc}
 .poem-shoe-game .sm-tray button.is-on{border-color:var(--sm-green);background:#eef3e4;box-shadow:0 0 0 3px #b9cfa9}
-.poem-shoe-game .sm-sort{display:grid;gap:12px}
-.poem-shoe-game .sm-cards,.poem-shoe-game .sm-bins{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-.poem-shoe-game .sm-cards button{min-height:54px;padding:8px 10px;border-radius:14px;border:1.5px solid var(--sm-edge);background:#fffaf0;color:#3d3a2c;font-size:21px;font-weight:600;letter-spacing:.06em;box-shadow:0 3px 0 #e6d8b8;touch-action:none;transition:transform .2s,box-shadow .2s}
-.poem-shoe-game .sm-cards b,.poem-shoe-game .sm-bins b{color:var(--sm-red)}
-.poem-shoe-game .sm-cards button[aria-pressed=true]{border-color:var(--sm-green);background:#eef3e4;box-shadow:0 0 0 3px #b9cfa9;transform:translateY(-2px)}
-.poem-shoe-game .sm-cards button.is-used{border-style:dashed;background:transparent;box-shadow:none;color:#a99c80}
-.poem-shoe-game .sm-cards button.is-used b{color:inherit}
-.poem-shoe-game .sm-bins button{display:grid;align-content:start;justify-items:center;gap:1px;min-height:86px;padding:8px 6px;border-radius:16px;border:2px dashed #d6c39b;background:#f9f0dc;color:#4c3d29;line-height:1.3;transition:background .2s,border-color .2s}
-.poem-shoe-game .sm-bins .is-du{background:#eff1e6;border-color:#c3cdb0}
-.poem-shoe-game .sm-bins span{font-size:18px;font-weight:600}
-.poem-shoe-game .sm-bins span b{font-size:25px}
-.poem-shoe-game .sm-bins small{font-size:16px;color:#6b5a40}
-.poem-shoe-game .sm-bins em{font-style:normal;font-size:16px;font-weight:600;letter-spacing:.04em;color:#2f5134}
-.poem-shoe-game .sm-bins button.is-filled{border-style:solid;border-color:#9fb98f}
-.poem-shoe-game .sm-bins button.is-ready{border-color:#c48a3c}
-.poem-shoe-game .sm-bins button.is-over{background:#fff3d2;border-color:#c48a3c;border-style:solid}
+.poem-shoe-game .sm-tags{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.poem-shoe-game .sm-tags button{position:relative;display:grid;place-items:center;min-height:62px;padding:8px 10px 8px 24px;border-radius:8px 16px 16px 8px;border:1.5px solid #dcc296;background:#fffaf0;color:#4a3420;box-shadow:0 3px 0 #e6d8b8;touch-action:none;transition:transform .2s,box-shadow .2s,background .2s}
+.poem-shoe-game .sm-tags button::before{content:'';position:absolute;left:10px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:#e9dcc0;box-shadow:inset 0 1px 2px #0003}
+.poem-shoe-game .sm-tags .is-du{background:#f4f6ec;border-color:#b5c6a0}
+.poem-shoe-game .sm-tags button:hover:not(:disabled){background:#fff4dc}
+.poem-shoe-game .sm-tags .sm-face,.poem-shoe-game .sm-tags .sm-used{grid-area:1/1}
+.poem-shoe-game .sm-face{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;column-gap:.35em;font-size:19px;font-weight:650;line-height:1.3}
+.poem-shoe-game .sm-face b{font-size:27px;line-height:1;color:var(--sm-red)}
+.poem-shoe-game .sm-face i{font-style:normal;font-weight:500;font-size:17px;color:#8a6a45}
+.poem-shoe-game .sm-used{visibility:hidden;font-size:17px;font-weight:600;letter-spacing:.04em;color:#5f7a52}
+.poem-shoe-game .sm-used b{color:var(--sm-red)}
+.poem-shoe-game .sm-tags button.is-used{border-style:dashed;background:transparent;box-shadow:none}
+.poem-shoe-game .sm-tags button.is-used::before{visibility:hidden}
+.poem-shoe-game .is-used .sm-face{visibility:hidden}.poem-shoe-game .is-used .sm-used{visibility:visible}
+.poem-shoe-game .sm-tags button[aria-pressed=true]{border-color:var(--sm-green);background:#eef3e4;box-shadow:0 0 0 3px #b9cfa9;transform:translateY(-3px)}
+.poem-shoe-game .sm-tags button.is-return{z-index:40;animation:sm-return .36s cubic-bezier(.3,1.35,.5,1)}
+.poem-shoe-game .sm-feedback b{color:var(--sm-red)}
 .poem-shoe-game .sm-moral{display:grid;justify-items:center;gap:8px;padding:4px;text-align:center}
-.poem-shoe-game .sm-moral img{width:min(68%,300px);height:auto;filter:drop-shadow(0 2px 2px #4b361a40)}
-.poem-shoe-game .sm-moral b{font-size:24px;letter-spacing:.12em;color:#6d3a22}
-.poem-shoe-game .sm-moral p{margin:0;font-size:20px;line-height:1.55;text-wrap:balance}
-.poem-shoe-game .sm-moral small{font-size:16px;line-height:1.55;color:var(--sm-mute);text-wrap:pretty}
+.poem-shoe-game .sm-moral>img{width:min(68%,300px);height:auto;filter:drop-shadow(0 2px 2px #4b361a40)}
+.poem-shoe-game .sm-moral>b{font-size:24px;letter-spacing:.12em;color:#6d3a22}
+.poem-shoe-game .sm-moral>p{margin:0;font-size:20px;line-height:1.55;text-wrap:balance}
+.poem-shoe-game .sm-moral>small{font-size:16px;line-height:1.55;color:var(--sm-mute);text-wrap:pretty}
+.poem-shoe-game .sm-bonus{display:grid;gap:6px;width:100%;margin-top:4px;padding-top:10px;border-top:1px dashed #dccaa4}
+.poem-shoe-game .sm-bonus>p{margin:0;font-size:16px;color:var(--sm-mute)}
+.poem-shoe-game .sm-flips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.poem-shoe-game .sm-flip{min-height:66px;padding:0;border:0;background:none;perspective:600px}
+.poem-shoe-game .sm-flip-in{display:grid;height:100%;transform-style:preserve-3d;transition:transform .5s ease}
+.poem-shoe-game .sm-flip.is-flipped .sm-flip-in{transform:rotateY(180deg)}
+.poem-shoe-game .sm-front,.poem-shoe-game .sm-back{grid-area:1/1;display:grid;place-items:center;align-content:center;gap:1px;padding:6px 8px;border-radius:14px;border:1.5px solid #dcc296;background:#fffaf0;box-shadow:0 3px 0 #e6d8b8;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.poem-shoe-game .sm-back{transform:rotateY(180deg);background:#eef3e4;border-color:#a9c098}
+.poem-shoe-game .sm-flip b{font-size:25px;line-height:1.1;color:var(--sm-red)}
+.poem-shoe-game .sm-back>span{font-size:18px;font-weight:600}
+.poem-shoe-game .sm-back>span b{margin-inline:.2em}
+.poem-shoe-game .sm-flip small{font-size:15px;line-height:1.35;color:#6b5a40}
+.poem-shoe-game .sm-flip small b{font-size:inherit}
+.poem-shoe-game .sm-flip:hover:not(:disabled) .sm-front{background:#fff4dc}
 .poem-shoe-game .sm-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .poem-shoe-game .sm-actions button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:10px 18px;border-radius:16px;border:1px solid #d9c7a0;background:#fffaf0;color:#4a3a26;font-size:20px;font-weight:600}
 .poem-shoe-game .sm-actions svg{width:22px;height:22px;flex:none}
@@ -3381,6 +3701,9 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-shoe-game .is-wiggle{animation:sm-wiggle .45s ease}
 @keyframes sm-call{50%{box-shadow:0 0 0 4px #fff8e2a8,0 0 30px #ffeeb0}}
 @keyframes sm-wiggle{25%{translate:-5px 0}75%{translate:5px 0}}
+@keyframes sm-shake{25%{translate:-4px 0}75%{translate:4px 0}}
+@keyframes sm-glow{50%{filter:drop-shadow(0 0 7px #ffeeb0) drop-shadow(0 0 2px #3b2a14b0)}}
+@keyframes sm-return{from{translate:var(--dx) var(--dy)}}
 
 @media (min-width:701px) and (orientation:landscape){
   .poem-shoe-game .sm-frame{grid-template-columns:minmax(0,1.3fr) minmax(300px,1fr);grid-template-areas:"head head" "stage side";column-gap:22px;align-items:start}
@@ -3399,17 +3722,26 @@ dialog h2{font-size:26px;line-height:1.4}
   .poem-shoe-game .sm-line{font-size:18px;flex-basis:100%;text-align:center}
   .poem-shoe-game .sm-gloss{font-size:16px}
   .poem-shoe-game .sm-ask button{font-size:19px;padding:8px}
-  .poem-shoe-game .sm-cards button{font-size:19px;letter-spacing:.03em}
-  .poem-shoe-game .sm-bins button{min-height:80px}
   .poem-shoe-game .sm-actions button{flex:1;font-size:19px;padding:8px 12px}
   .poem-shoe-game .sm-feedback{font-size:17px}
+  .poem-shoe-game .sm-tags{gap:8px}
+  .poem-shoe-game .sm-tags button{min-height:58px;padding:6px 6px 6px 20px}
+  .poem-shoe-game .sm-tags button::before{left:7px}
+  .poem-shoe-game .sm-face{font-size:18px}.poem-shoe-game .sm-face b{font-size:24px}.poem-shoe-game .sm-face i{font-size:16px}
+  .poem-shoe-game .sm-used{font-size:16px;letter-spacing:0}
 }
 @media (max-width:370px){
   .poem-shoe-game .sm-say{font-size:17px}
   .poem-shoe-game .sm-line{font-size:17px}
-  .poem-shoe-game .sm-ask button,.poem-shoe-game .sm-cards button{font-size:18px}
   .poem-shoe-game .sm-tray{gap:7px}
-  .poem-shoe-game .sm-bins span{font-size:16px}
+}
+@media (max-width:600px) and (orientation:portrait){
+  /* Narrow portrait: the two pictures stack so each crop stays big enough to aim at. */
+  .poem-shoe-game:is([data-stage=tag],[data-stage=done]) .sm-stage{aspect-ratio:16/18}
+  .poem-shoe-game .sm-pane.is-home{width:100%;height:55%;--cx:30;--cy:120;--cw:960}
+  .poem-shoe-game .sm-pane.is-market{left:0;top:55%;width:100%;height:45%;--cx:640;--cy:110;--cw:960}
+  .poem-shoe-game .sm-pane.is-market::before{right:0;bottom:auto;width:auto;height:4px}
+  .poem-shoe-game .sm-vig{width:36%}
 }
 @media (orientation:landscape) and (max-height:500px){
   /* Short landscape phones: buttons + feedback go under the picture so each column fits the height. */
@@ -3428,10 +3760,12 @@ dialog h2{font-size:26px;line-height:1.4}
   .poem-shoe-game .sm-fitting{grid-template-columns:minmax(0,1fr) 96px;align-items:center;gap:8px}
   .poem-shoe-game .sm-tray{grid-template-columns:1fr;gap:6px}
   .poem-shoe-game .sm-tray button{min-height:46px;align-items:center;padding:5px 6px 5px 26px}.poem-shoe-game .sm-tray span{font-size:15px;top:50%;left:8px;transform:translateY(-50%)}
-  .poem-shoe-game .sm-sort{gap:7px}.poem-shoe-game .sm-cards,.poem-shoe-game .sm-bins{gap:6px}
-  .poem-shoe-game .sm-cards button{min-height:44px;font-size:17px;padding:4px 6px}
-  .poem-shoe-game .sm-bins button{min-height:58px;padding:4px}.poem-shoe-game .sm-bins span{font-size:15px}.poem-shoe-game .sm-bins span b{font-size:19px}.poem-shoe-game .sm-bins small,.poem-shoe-game .sm-bins em{font-size:14px}
-  .poem-shoe-game .sm-moral{gap:4px}.poem-shoe-game .sm-moral img{width:50%}.poem-shoe-game .sm-moral b{font-size:19px}.poem-shoe-game .sm-moral p{font-size:16px}.poem-shoe-game .sm-moral small{font-size:14px}
+  .poem-shoe-game .sm-tags{gap:6px}
+  .poem-shoe-game .sm-tags button{min-height:48px;padding:4px 6px 4px 20px}.poem-shoe-game .sm-tags button::before{left:7px}
+  .poem-shoe-game .sm-face{font-size:16px}.poem-shoe-game .sm-face b{font-size:21px}.poem-shoe-game .sm-face i{font-size:15px}.poem-shoe-game .sm-used{font-size:15px;letter-spacing:0}
+  .poem-shoe-game .sm-bonus{gap:4px;padding-top:6px;margin-top:2px}.poem-shoe-game .sm-bonus>p{font-size:14px}
+  .poem-shoe-game .sm-flips{gap:6px}.poem-shoe-game .sm-flip{min-height:52px}.poem-shoe-game .sm-flip b{font-size:20px}.poem-shoe-game .sm-back>span{font-size:16px}.poem-shoe-game .sm-flip small{font-size:14px}
+  .poem-shoe-game .sm-moral{gap:4px}.poem-shoe-game .sm-moral>img{display:none}.poem-shoe-game .sm-moral>b{font-size:19px}.poem-shoe-game .sm-moral>p{font-size:16px}.poem-shoe-game .sm-moral>small{font-size:14px}
   .poem-shoe-game .sm-actions button{min-height:46px;font-size:17px;padding:6px 14px}
   .poem-shoe-game .sm-feedback{font-size:15px;min-height:0;line-height:1.4}
 }

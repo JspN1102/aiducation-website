@@ -1,5 +1,5 @@
-import {imageAsset} from './media-images.mjs?v=20261005-school41';
-import {fetchImage} from './image-loader.mjs?v=20261005-school41';
+import {imageAsset} from './media-images.mjs?v=20261006-school42';
+import {fetchImage} from './image-loader.mjs?v=20261006-school42';
 const FONT_NAME = 'PoetryCardSerif';
 const fontLoads = new WeakMap();
 let nextCardId = 0;

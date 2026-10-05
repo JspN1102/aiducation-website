@@ -9,7 +9,7 @@
 // Nothing about the pupil is sent or stored.
 import {FONT_ASSETS} from './media-fonts.mjs?v=20260929-hk1';
 import {orderRoutes, rememberRoute, rememberedRoute} from './media-route.mjs?v=20260923-school23';
-import {publicImagesReady} from './media-images.mjs?v=20261005-school41';
+import {publicImagesReady} from './media-images.mjs?v=20261006-school42';
 
 export const HEDGE_MS = 3000;
 export const FONTS = Object.freeze([

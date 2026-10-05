@@ -1,5 +1,5 @@
 import {createGameImageLoader} from './image-ready.mjs?v=20260922-school11';
-import {imageAsset} from '../media-images.mjs?v=20261005-school41';
+import {imageAsset} from '../media-images.mjs?v=20261006-school42';
 import {createProcessResearch} from './research.mjs?v=20260920a';
 const file = path => new URL(imageAsset(`media/${path}`), import.meta.url).href;
 const LINES = ['頭上紅冠不用裁','滿身雪白走將來','平生不敢輕言語','一叫千門萬戶開'];
