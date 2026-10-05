@@ -9,7 +9,7 @@
 .poem-rooster-game .rr-instruction span{display:inline-block}
 .poem-rooster-game .rr-progress{flex:none;padding:6px 14px;border-radius:999px;background:#fff7e8;border:1px solid #e6d2b0;color:#8a5a2b;font-weight:700;font-size:18px;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap}
 
-.poem-rooster-game .rr-stage{position:relative;isolation:isolate;container-type:inline-size;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#ebe2d1;border:1px solid #8b6c4a33;box-shadow:0 14px 28px -20px #5b3b1c80;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+.poem-rooster-game .rr-stage{position:relative;isolation:isolate;container-type:inline-size;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;overflow:clip;border-radius:20px;background:#ebe2d1;border:1px solid #8b6c4a33;box-shadow:0 14px 28px -20px #5b3b1c80;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
 .poem-rooster-game.is-look .rr-stage{cursor:pointer}
 .poem-rooster-game .rr-scene,.poem-rooster-game .rr-layer{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover;pointer-events:none;-webkit-user-drag:none}
 .poem-rooster-game .rr-day{transition:opacity .9s ease}
@@ -28,6 +28,42 @@
 .poem-rooster-game .rr-glow{position:absolute;left:88.4%;top:44%;width:80cqi;height:50cqi;transform:translate(-50%,-50%);background:radial-gradient(closest-side,#ffd9a0d0,#ffb07a50 45%,transparent);mix-blend-mode:screen;opacity:calc(var(--d) * .7);pointer-events:none}
 .poem-rooster-game .rr-dawn{opacity:0;transition:opacity 1.4s ease}
 .poem-rooster-game.is-open .rr-dawn{opacity:1}
+.poem-rooster-game .rr-veil{background:linear-gradient(180deg,#26305a,#1d2547);mix-blend-mode:multiply;opacity:0;transition:opacity .9s ease}
+.poem-rooster-game.is-open .rr-veil{opacity:calc((1 - var(--o)) * .3)}
+.poem-rooster-game .rr-walk{position:absolute;left:var(--l);top:var(--t);width:var(--bw);height:var(--bh);display:none;pointer-events:none;-webkit-user-drag:none}
+.poem-rooster-game.is-look.is-strut .rr-walk{display:block}
+.poem-rooster-game .rr-cock{transform-origin:62% 100%}
+.poem-rooster-game.is-strut-in .rr-cock{animation:rr-strut-in 2.9s linear both}
+.poem-rooster-game.is-strut-show .rr-cock{animation:rr-strut-show 1.5s ease-in-out both}
+.poem-rooster-game.is-strut-in .rr-spot,.poem-rooster-game.is-strut-in .rr-chip{opacity:0;pointer-events:none}
+@keyframes rr-strut-in{
+  0%{opacity:0;transform:translateX(-100%) scale(.84)}
+  6%{opacity:1}
+  13%{transform:translateX(-84%) translateY(-3.2%) scale(.86) rotate(-2.5deg)}
+  22%{transform:translateX(-70%) scale(.88) rotate(1deg)}
+  31%{transform:translateX(-56%) translateY(-3.2%) scale(.9) rotate(-2.5deg)}
+  40%{transform:translateX(-43%) scale(.92) rotate(1deg)}
+  49%{transform:translateX(-31%) translateY(-3.2%) scale(.94) rotate(-2.5deg)}
+  58%{transform:translateX(-20%) scale(.96) rotate(1deg)}
+  67%{transform:translateX(-11%) translateY(-2.6%) scale(.98) rotate(-2deg)}
+  76%{transform:translateX(-4%) rotate(.6deg)}
+  84%{transform:translateY(-1.6%) rotate(-1.2deg) scale(1.02)}
+  92%{transform:scale(1.015,.99)}
+  100%{opacity:1;transform:none}}
+@keyframes rr-strut-show{
+  20%{transform:translateY(-2.6%) rotate(-2.2deg)}
+  40%{transform:translateX(1.4%) rotate(.8deg)}
+  60%{transform:translateX(2.4%) translateY(-2.6%) rotate(-2.2deg)}
+  80%{transform:translateX(1%) rotate(.6deg)}}
+.poem-rooster-game .rr-nhole,.poem-rooster-game .rr-nhead{position:absolute;left:30.625%;top:7.778%;width:13.4375%;height:23.889%;display:none;background:var(--rr-nhead) 0 0/200% 100% no-repeat;pointer-events:none}
+.poem-rooster-game .rr-nhead{background-position:100% 0;transform-origin:48.8% 79.1%}
+.poem-rooster-game.is-dawn.is-shake .rr-nhole,.poem-rooster-game.is-dawn.is-shake .rr-nhead{display:block}
+.poem-rooster-game.is-dawn.is-shake .rr-nhead{animation:rr-no 1.1s ease-in-out both}
+@keyframes rr-no{15%{transform:rotate(-8deg)}35%{transform:rotate(7deg)}55%{transform:rotate(-6deg)}75%{transform:rotate(4deg)}}
+.poem-rooster-game .rr-shakes{position:absolute;z-index:3;left:28%;top:5%;width:19%;height:26%;overflow:visible;opacity:0;pointer-events:none}
+.poem-rooster-game .rr-shakes path{fill:none;stroke:#fff6dc;stroke-width:3;stroke-linecap:round;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 2px #0b1233)}
+.poem-rooster-game.is-dawn.is-shake .rr-shakes{animation:rr-flash 1.1s ease both}
+@keyframes rr-flash{0%,100%{opacity:0}20%,75%{opacity:.95}}
 .poem-rooster-game .rr-light{position:absolute;left:var(--x);top:var(--y);width:var(--s);aspect-ratio:1.5;transform:translate(-50%,-50%) scale(.6);border-radius:50%;background:radial-gradient(closest-side,#fff0c0,#ffc36a99 40%,transparent);mix-blend-mode:screen;opacity:0;transition:opacity .8s ease,transform .8s ease;pointer-events:none}
 .poem-rooster-game .rr-light.is-on{opacity:.85;transform:translate(-50%,-50%) scale(1)}
 .poem-rooster-game .rr-rings{position:absolute;z-index:3;left:41%;top:4.5%;width:9cqi;height:9cqi;overflow:visible;pointer-events:none;opacity:0}
@@ -37,9 +73,12 @@
 .poem-rooster-game.is-crowing .rr-rings path:nth-child(2){animation-delay:.14s}
 .poem-rooster-game.is-crowing .rr-rings path:nth-child(3){animation-delay:.28s}
 @keyframes rr-ring{0%{opacity:0;transform:translateX(-4px)}35%{opacity:1}100%{opacity:0;transform:translateX(7px)}}
-.poem-rooster-game .rr-hush{position:absolute;z-index:4;left:43%;top:10%;padding:.3cqi 1.8cqi .9cqi;border-radius:2.2cqi;background:#fffaf0ec;box-shadow:0 .5cqi 1.4cqi #0b123355;font-family:var(--sans);font-size:clamp(16px,3.4cqi,30px);font-weight:800;line-height:1;color:#5a4a3a;letter-spacing:.08em;opacity:0;transform:scale(.7);transform-origin:0 100%;transition:opacity .25s ease,transform .25s ease;pointer-events:none}
-.poem-rooster-game .rr-hush::before{content:'';position:absolute;left:-.8cqi;bottom:.6cqi;border-style:solid;border-width:.8cqi 1.4cqi .8cqi 0;border-color:transparent #fffaf0ec transparent transparent}
+.poem-rooster-game .rr-hush{position:absolute;z-index:4;left:46.5%;top:8%;display:grid;gap:.3em;padding:.55em .8em .6em;border-radius:.8em;background:#fffaf0f0;box-shadow:0 .5cqi 1.4cqi #0b123355;font-family:var(--sans);font-size:clamp(15px,2.8cqi,26px);font-weight:800;line-height:1.15;color:#5a4a3a;letter-spacing:.06em;white-space:nowrap;opacity:0;transform:scale(.7);transform-origin:0 100%;transition:opacity .25s ease,transform .25s cubic-bezier(.3,1.5,.5,1);pointer-events:none}
+.poem-rooster-game .rr-hush b:last-child{color:#a8432c}
+.poem-rooster-game .rr-hush::before{content:'';position:absolute;left:-.55em;bottom:.9em;border-style:solid;border-width:.4em .6em .4em 0;border-color:transparent #fffaf0f0 transparent transparent}
 .poem-rooster-game .rr-hush.is-on{opacity:1;transform:none}
+.poem-rooster-game .rr-tap{position:absolute;z-index:3;inset:0;display:none}
+.poem-rooster-game.is-look .rr-tap{display:block}
 .poem-rooster-game .rr-sunzone{position:absolute;z-index:3;left:46%;right:0;top:0;bottom:16%;display:none;touch-action:none;cursor:ns-resize}
 .poem-rooster-game.is-dawn .rr-sunzone{display:block}
 .poem-rooster-game .rr-pull{position:absolute;right:2.4cqi;top:58%;transform:translateY(-50%);display:flex;align-items:center;gap:.8cqi;padding:.7cqi 1.8cqi;border-radius:999px;background:#fff8e8ea;color:#7a4a1e;font-family:var(--sans);font-size:clamp(14px,2.3cqi,20px);font-weight:700;line-height:1.2;white-space:nowrap;box-shadow:0 .5cqi 1.6cqi #0b123366}
@@ -49,10 +88,12 @@
 
 .poem-rooster-game .rr-spot{position:absolute;z-index:4;left:var(--x);top:var(--y);width:var(--w);height:var(--h);min-width:44px;min-height:44px;transform:translate(-50%,-50%);padding:0;margin:0;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer}
 .poem-rooster-game .rr-spot svg{position:absolute;inset:-9%;width:118%;height:118%;overflow:visible;pointer-events:none}
+.poem-rooster-game .rr-spot.is-top{top:auto;bottom:calc(100% - var(--y));height:max(6.75cqi,44px);min-width:60px;transform:translateX(-50%);border-radius:50% 50% 40% 40%}
+.poem-rooster-game .rr-spot.is-top svg{top:auto;bottom:-10%;height:calc(6.75cqi * 1.2)}
 .poem-rooster-game .rr-spot path{fill:none;stroke:#b4472f;stroke-width:3;stroke-linecap:round;stroke-dasharray:1 1;stroke-dashoffset:1;opacity:.92;filter:drop-shadow(0 1px 0 #fffbf2aa)}
 .poem-rooster-game .rr-spot.is-found path{stroke-dashoffset:0;transition:stroke-dashoffset .8s ease}
 .poem-rooster-game .rr-spot:focus-visible{outline:3px dashed #f2b450;outline-offset:3px}
-.poem-rooster-game .rr-spot.is-hint::after{content:'';position:absolute;inset:-4%;border-radius:50%;box-shadow:0 0 0 3px #fff6dcd0,0 0 2.4cqi 1cqi #f6c76a;animation:rr-breathe 1.8s ease-in-out infinite}
+.poem-rooster-game .rr-spot.is-hint::after{content:'';position:absolute;inset:-4%;border-radius:50%;box-shadow:0 0 0 3px #fff6dcd0,0 0 2.4cqi 1cqi #f6c76a;animation:rr-breathe 1.8s ease-in-out infinite;pointer-events:none}
 @keyframes rr-breathe{50%{opacity:.35;transform:scale(1.06)}}
 .poem-rooster-game .rr-chip{position:absolute;z-index:5;left:var(--x);top:var(--y);display:grid;gap:.25cqi;padding:.8cqi 1.8cqi 1cqi;border-radius:1.6cqi;background:#fffaf1ee;border:1px solid #d8bf9a;box-shadow:0 .6cqi 1.8cqi -.6cqi #5b3b1c66;font-family:var(--sans);line-height:1.25;pointer-events:none;opacity:0;transform:translateY(.8cqi) scale(.92);transform-origin:0 50%;transition:opacity .35s ease,transform .35s ease}
 .poem-rooster-game .rr-chip.is-on{opacity:1;transform:none}
@@ -60,7 +101,9 @@
 .poem-rooster-game .rr-chip b{font-size:clamp(15px,3.1cqi,28px);color:var(--red);letter-spacing:.08em}
 .poem-rooster-game .rr-chip small{font-size:clamp(14px,1.9cqi,17px);color:#6d5a44;font-weight:600}
 @container (max-width:470px){.poem-rooster-game .rr-chip small{display:none}.poem-rooster-game .rr-chip{padding:.8cqi 2.2cqi}}
-.poem-rooster-game .rr-caption{position:absolute;z-index:5;right:2.2cqi;bottom:2.2cqi;padding:1cqi 2.4cqi;border-radius:1.8cqi;background:#fff8ebe6;border:1px solid #e3c79c;color:#8a3a22;font-family:var(--sans);font-size:clamp(16px,3.3cqi,32px);font-weight:700;letter-spacing:.14em;line-height:1.3;box-shadow:0 .6cqi 2cqi -.8cqi #5b3b1c66;opacity:0;transform:translateY(1cqi);transition:opacity .6s ease .2s,transform .6s ease .2s;pointer-events:none}
+.poem-rooster-game .rr-caption{position:absolute;z-index:5;right:2.2cqi;top:2.2cqi;display:grid;justify-items:end;gap:.2em;padding:1cqi 2.4cqi 1.2cqi;border-radius:1.8cqi;background:#fff8ebe8;border:1px solid #e3c79c;color:#8a3a22;font-family:var(--sans);line-height:1.25;box-shadow:0 .6cqi 2cqi -.8cqi #5b3b1c66;opacity:0;transform:translateY(-1cqi);transition:opacity .6s ease .2s,transform .6s ease .2s;pointer-events:none}
+.poem-rooster-game .rr-caption b{font-size:clamp(15px,3cqi,30px);letter-spacing:.06em;white-space:nowrap}
+.poem-rooster-game .rr-caption small{font-size:clamp(14px,2.1cqi,20px);font-weight:700;color:#8a6a48;letter-spacing:.14em}
 .poem-rooster-game.is-done .rr-caption{opacity:1;transform:none}
 .poem-rooster-game .rr-loading{position:absolute;inset:0;z-index:8;display:grid;align-content:center;justify-items:center;gap:14px;padding:20px;background:#f6f0e4eb;font-size:20px;line-height:1.5;text-align:center;color:var(--ink)}
 .poem-rooster-game .rr-loading button{min-height:48px;padding:10px 22px;border:1px solid #c7a77d;border-radius:14px;background:#fffdf8;color:var(--ink);font-size:20px;font-weight:600;cursor:pointer}
@@ -77,6 +120,7 @@
 .poem-rooster-game .rr-clue.is-found b{color:var(--red);letter-spacing:.06em}
 .poem-rooster-game .rr-clue small{display:block;font-size:16px;line-height:1.35;color:var(--soft);font-weight:600}
 .poem-rooster-game .rr-next{min-height:56px;padding:10px 20px;border:0;border-radius:18px;background:linear-gradient(180deg,#44528a,#2d3765);color:#fff8e8;font-size:21px;font-weight:700;cursor:pointer;box-shadow:0 4px 0 #1f2749}
+.poem-rooster-game .rr-next.is-wait{background:#d9cfbf;color:#5d4a36;box-shadow:0 4px 0 #b7a78f;cursor:default}
 .poem-rooster-game .rr-skybar{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:999px;background:linear-gradient(90deg,#e3e2ef,#fbefdc);border:1px solid #dacdb7}
 .poem-rooster-game .rr-step{flex:none;width:52px;height:52px;padding:0;border-radius:50%;border:1.5px solid #d6c3a3;background:#fffdf8;display:grid;place-items:center;cursor:pointer;box-shadow:0 3px 0 #eadcc4}
 .poem-rooster-game .rr-step:disabled{opacity:.45;box-shadow:none}
@@ -95,7 +139,7 @@
 .poem-rooster-game.is-bright .rr-crow{background:linear-gradient(180deg,#d4573a,#b3432b);border-color:#a23a24;color:#fff8ec;box-shadow:0 4px 0 #8c2f1c,0 0 0 6px #f6b75a44}
 .poem-rooster-game.is-bright:not(.is-reduced) .rr-crow{animation:rr-call 1.8s ease-in-out infinite}
 @keyframes rr-call{50%{box-shadow:0 4px 0 #8c2f1c,0 0 0 12px #f6b75a1c}}
-.poem-rooster-game .rr-lane{position:relative;overflow:hidden;border-radius:16px;aspect-ratio:900/292;background:linear-gradient(180deg,#f6d5a3,#fbeedb 75%);border:1px solid #dcc8a6}
+.poem-rooster-game .rr-lane{position:relative;overflow:hidden;overflow:clip;container-type:inline-size;border-radius:16px;aspect-ratio:900/360;background:linear-gradient(180deg,#f6d5a3,#fbeedb 75%);border:1px solid #dcc8a6}
 .poem-rooster-game .rr-lane::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#1b2346,#3a4068 75%);opacity:calc(1 - var(--d));pointer-events:none}
 .poem-rooster-game .rr-lane-art{position:absolute;left:0;right:0;bottom:0;aspect-ratio:900/280;filter:brightness(calc(.5 + var(--d) * .5)) saturate(calc(.55 + var(--d) * .45))}
 .poem-rooster-game .rr-lane-img{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
@@ -109,6 +153,35 @@
 .poem-rooster-game .rr-door.is-open .rr-leaf.is-r{transform:rotateY(66deg)}
 .poem-rooster-game .rr-spill{position:absolute;left:-55%;right:-55%;bottom:-16%;height:30%;border-radius:50%;background:radial-gradient(closest-side,#ffd58acc,#ffd58a00);opacity:0;transition:opacity .8s ease .25s}
 .poem-rooster-game .rr-door.is-open .rr-spill{opacity:1}
+.poem-rooster-game.is-open:not(.is-done) .rr-door:not(.is-open)::after{content:'';position:absolute;inset:-4% -9%;border-radius:8px;box-shadow:0 0 0 2px #fff3d0e6,0 0 12px 4px #f6c76acc;animation:rr-breathe 1.8s ease-in-out calc(var(--i) * .2s) infinite;pointer-events:none}
+.poem-rooster-game .rr-folk{position:absolute;left:7%;right:7%;bottom:1%;height:90%;background:var(--rr-folk) calc(var(--f) * 100% / 3) 100%/400% 100% no-repeat;transform-origin:50% 100%;opacity:0;transform:translateY(12%) scale(.92);transition:opacity .4s ease .35s,transform .55s cubic-bezier(.3,1.5,.5,1) .35s}
+.poem-rooster-game .rr-door.is-open .rr-folk{opacity:1;transform:none}
+.poem-rooster-game .rr-door.is-new .rr-folk{animation:rr-wave .9s ease-in-out 1s 2}
+@keyframes rr-wave{30%{transform:translateY(-4%) rotate(-3deg)}70%{transform:translateY(-1%) rotate(2deg)}}
+.poem-rooster-game .rr-win{position:absolute;left:var(--x);top:var(--y);width:5.6%;height:19%;transform:translate(-50%,-50%);border-radius:30%;background:radial-gradient(closest-side,#ffeab0 35%,#ffc8664d 72%,transparent);mix-blend-mode:screen;opacity:0;transition:opacity .8s ease .3s;pointer-events:none}
+.poem-rooster-game .rr-win.is-on{opacity:1}
+.poem-rooster-game .rr-perch{position:absolute;left:var(--x);top:var(--y);width:8.3%;aspect-ratio:133/150;transform:translate(-50%,-100%);pointer-events:none}
+.poem-rooster-game .rr-hop{display:block;width:100%;height:100%;opacity:0;transform:translateY(30%) scale(.8);transform-origin:50% 100%;transition:opacity .3s ease .45s,transform .5s cubic-bezier(.3,1.6,.5,1) .45s}
+.poem-rooster-game .rr-perch.is-on .rr-hop{opacity:1;transform:none}
+.poem-rooster-game .rr-chick{display:block;width:100%;height:100%;background:var(--rr-chick) calc(var(--f) * 100% / 3) 100%/400% 100% no-repeat;transform-origin:50% 100%;filter:drop-shadow(0 1px 1px #3d312566)}
+.poem-rooster-game .rr-perch.is-crow .rr-chick{animation:rr-chirp .9s ease-in-out}
+@keyframes rr-chirp{20%{transform:rotate(calc(var(--k) * 8deg)) scale(1.06,1.08)}40%{transform:rotate(calc(var(--k) * 3deg))}60%{transform:rotate(calc(var(--k) * 9deg)) scale(1.06,1.08)}}
+.poem-rooster-game .rr-oo{position:absolute;z-index:2;left:var(--x);top:var(--y);padding:.2em .55em .28em;border-radius:1em;background:#fffaf0f4;border:1.5px solid #e2b77a;color:#a8432c;font-family:var(--sans);font-size:clamp(14px,3cqi,19px);font-weight:800;line-height:1.15;letter-spacing:.04em;white-space:nowrap;box-shadow:0 2px 6px #5b3b1c40;opacity:0;transform:translate(0,-50%) scale(.6);transform-origin:0 50%;transition:opacity .2s ease,transform .3s cubic-bezier(.3,1.6,.5,1);pointer-events:none}
+.poem-rooster-game .rr-oo.is-left{transform:translate(-100%,-50%) scale(.6);transform-origin:100% 50%}
+.poem-rooster-game .rr-oo.is-on{opacity:1;transform:translate(0,-50%)}
+.poem-rooster-game .rr-oo.is-left.is-on{transform:translate(-100%,-50%)}
+.poem-rooster-game .rr-house{position:absolute;z-index:3;left:var(--x);width:var(--w);top:4%;bottom:6%;margin:0;padding:0;border:0;border-radius:12px;background:transparent;cursor:pointer}
+.poem-rooster-game .rr-house:disabled{cursor:default}
+.poem-rooster-game .rr-house:focus-visible{outline:3px solid #de9b34;outline-offset:-4px}
+.poem-rooster-game .rr-count{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.poem-rooster-game .rr-count li{position:relative;display:grid;place-items:center;min-height:42px;padding:4px 6px;border-radius:12px;border:1.5px dashed #d8c3a0;background:#fffdf8;color:#ad9a82;font-size:16px;font-weight:800;letter-spacing:.1em;line-height:1.2;white-space:nowrap;transition:background .4s,border-color .4s,color .4s}
+.poem-rooster-game .rr-count li:nth-child(2){font-size:17px}
+.poem-rooster-game .rr-count li:nth-child(3){font-size:19px}
+.poem-rooster-game .rr-count li:nth-child(4){font-size:21px}
+.poem-rooster-game .rr-count li+li::before{content:'';position:absolute;left:-5px;top:50%;width:6px;height:6px;border-top:2px solid #d8b98c;border-right:2px solid #d8b98c;transform:translate(-50%,-50%) rotate(45deg)}
+.poem-rooster-game .rr-count li.is-on{border-style:solid;border-color:#dc9d55;background:linear-gradient(180deg,#fff3d6,#ffdfa4);color:#8a3a22}
+.poem-rooster-game .rr-count li.is-new{animation:rr-pop .6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes rr-pop{0%{transform:scale(.7)}100%{transform:none}}
 
 .poem-rooster-game .rr-actionline{display:flex;align-items:center;justify-content:space-between;gap:10px 14px;flex-wrap:wrap}
 .poem-rooster-game .rr-method{font-size:18px;color:var(--soft);font-weight:600;line-height:1.4}
@@ -125,6 +198,7 @@
   .poem-rooster-game .rr-actionline{grid-row:3}
   .poem-rooster-game .rr-feedback{grid-row:4;text-align:left}
   .poem-rooster-game .rr-clues{grid-template-columns:1fr}
+  .poem-rooster-game.is-dawn .rr-lane{display:none}
 }
 @media (min-width:900px) and (min-height:620px) and (orientation:landscape){
   .poem-rooster-game .rr-stage{align-self:center}
@@ -161,10 +235,13 @@
   .poem-rooster-game .rr-actionline{justify-content:flex-start}
   .poem-rooster-game .rr-audio{min-height:46px;font-size:17px;padding:6px 14px}
   .poem-rooster-game .rr-feedback{font-size:16px;line-height:1.4;min-height:2.8em}
+  .poem-rooster-game.is-dawn .rr-lane{display:none}
+  .poem-rooster-game .rr-count{gap:6px}
+  .poem-rooster-game .rr-count li{min-height:36px;padding:2px 4px}
 }
 @media (min-width:560px) and (orientation:portrait),(min-width:560px) and (max-width:700px){
   .poem-rooster-game.is-dawn .rr-panel{grid-template-columns:minmax(0,1fr) auto}
-  .poem-rooster-game .rr-lane{grid-column:1/-1}
+  .poem-rooster-game .rr-lane,.poem-rooster-game .rr-count{grid-column:1/-1}
 }
 @media (max-width:700px){
   .poem-rooster-game .rr-stage{border-radius:16px}
@@ -184,6 +261,8 @@
   .poem-rooster-game .rr-method{font-size:16px}
   .poem-rooster-game .rr-audio{font-size:18px;padding:8px 16px}
   .poem-rooster-game .rr-feedback{font-size:18px}
+  .poem-rooster-game .rr-count{gap:7px}
+  .poem-rooster-game .rr-count li{letter-spacing:.04em}
 }
 @media (max-width:370px){
   .poem-rooster-game .rr-instruction{font-size:17px}
@@ -192,4 +271,6 @@
   .poem-rooster-game .rr-actionline{justify-content:center}
 }
 .poem-rooster-game.is-reduced *,.poem-rooster-game.is-reduced *::before,.poem-rooster-game.is-reduced *::after{transition:none!important;animation:none!important}
-@media (prefers-reduced-motion:reduce){.poem-rooster-game *,.poem-rooster-game *::before,.poem-rooster-game *::after{transition:none!important;animation:none!important}}
+.poem-rooster-game.is-reduced .rr-walk,.poem-rooster-game.is-reduced .rr-nhole,.poem-rooster-game.is-reduced .rr-nhead,.poem-rooster-game.is-reduced .rr-shakes{display:none!important}
+@media (prefers-reduced-motion:reduce){.poem-rooster-game *,.poem-rooster-game *::before,.poem-rooster-game *::after{transition:none!important;animation:none!important}
+  .poem-rooster-game .rr-walk,.poem-rooster-game .rr-nhole,.poem-rooster-game .rr-nhead,.poem-rooster-game .rr-shakes{display:none!important}}
