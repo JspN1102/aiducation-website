@@ -106,7 +106,7 @@ let styleReady = Promise.resolve();
 function ensureStyle() {
   if (document.querySelector('link[data-school-auth-style]')) return styleReady;
   const link = document.createElement('link');
-  link.rel = 'stylesheet'; link.href = 'school-session.css?v=20261003-school38';
+  link.rel = 'stylesheet'; link.href = 'school-session.css?v=20261005-school39';
   link.dataset.schoolAuthStyle = 'true';
   // An unstyled login form must not flash; a stylesheet that never answers
   // still lets the form appear after a short wait.
