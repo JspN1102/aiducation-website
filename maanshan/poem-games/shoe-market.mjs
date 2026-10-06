@@ -6,7 +6,7 @@ const art=name=>file(`zheng-ren-mai-lu/game/${name}.webp`),scene=n=>file(`zheng-
 const LINES=['鄭人有且置履者，先自度其足而置之其坐','至之市，而忘操之，已得履，乃曰：「吾忘持度。」','反歸取之，及反，市罷，遂不得履','人曰：「何不試之以足？」曰：「寧信度，無自信也。」'];
 const KNOW='鄭國人寧可相信量好的尺碼，也不相信自己的腳；做事要從實際出發，懂得變通。';
 const cl=t=>t.replace(/(?:「[^」]*」|[^，。：；？！「])+[，。：；？！]*/g,m=>`<span>${m}</span>`);
-const ALTS=['鄭人家中：坐榻的席子上放著一把尺，地上有腳印，他正走出門去市集。','熱鬧的市集鞋攤：鄭人拿著鞋子，才想起尺碼留在家裏。','黃昏，市集散了，鞋店關上木板，鄭人舉著尺子趕回來。','路人指著自己的腳，鄭人仍然舉著尺子。'];
+const ALTS=['鄭人家中：坐榻的席子上放着一把尺，地上有腳印，他正走出門去市集。','熱鬧的市集鞋攤：鄭人拿着鞋子，才想起尺碼留在家裏。','黃昏，市集散了，鞋店關上木板，鄭人舉着尺子趕回來。','路人指着自己的腳，鄭人仍然舉着尺子。'];
 // scene, official line, progress step, header, line card, gloss [char, pinyin, meaning]
 const VIEW={
   measure:{scene:1,line:0,step:1,text:'鄭人有且置履者，先自<b>度</b>其足',gloss:['度','duó','量一量']},
@@ -17,8 +17,8 @@ const VIEW={
   done:{scene:4,line:3,step:3,say:'剛剛好！用腳一試就知道。'}
 };
 const STAGES=Object.keys(VIEW),STEP={measure:'measure',placed:'measure',market:'story',closed:'story',try:'try',done:'try'};
-const INTRO={market:'「吾忘持度」：他想對一對尺碼，才發現尺碼留在家裏的座位上！',closed:'「市罷，遂不得履」：他拿著尺碼趕回來，市集已經散了，買不到鞋子。',try:'路人說：「何不試之以足？」幫他用腳試一試：點一下鞋子，或把鞋子拖到腳上。'};
-const HEEL=14.09,TOE=85.82,ZONE=9,PEN=50;
+const INTRO={market:'「吾忘持度」：他想對一對尺碼，才發現尺碼留在家裏的座位上！',closed:'「市罷，遂不得履」：他拿着尺碼趕回來，市集已經散了，買不到鞋子。',try:'路人說：「何不試之以足？」幫他用腳試一試：點一下鞋子，或把鞋子拖到腳上。'};
+const HEEL=14.09,TOE=85.82,ZONE={heel:9,toe:14},PEN=50;
 const AIM=['先自度其足：先量腳跟。','先自度其足：再量腳尖。'];
 const HOW=['把尺上的紅點挪到發亮的腳跟，點一下。也可以直接點腳跟。','記下腳跟了！再把紅點挪到腳尖（腳趾最前面），點一下。'];
 const SHOES=[{id:'big',label:'甲'},{id:'small',label:'乙'},{id:'right',label:'丙'}];
@@ -45,11 +45,12 @@ export function mountShoeMarket(holder,{initialState,readOnly=false,playAudio,on
   const doc=holder.ownerDocument,view=doc.defaultView,abort=new view.AbortController(),timers=new Set(),heard=new Set();
   const loadImages=createGameImageLoader({signal:abort.signal});
   let {stage,marks,size}=restore(initialState);
-  if(readOnly){stage='done';marks=2;size='right';}
+  // Finished only counts once the platform has the answer (readOnly); a finished draft without one resumes at the try-on.
+  if(readOnly){stage='done';marks=2;size='right';}else if(stage==='done'){stage='try';size=null;}
   let kbUser=false,dead=false,ready=false,solved=false,reported=stage==='done',pen=marks===1?HEEL:PEN,miss=0,hold=false,flying=false,flyEl=null;
-  let drag=null,suppress={until:0,x:0,y:0},loadId=0,audio=null,lastProgress=-1;
+  let drag=null,suppress={until:0,x:0,y:0},loadId=0,audio=null,lastProgress=-1,fold=null;
   const demoed=new Set(),research=createProcessResearch(onResearch,{prefix:'game.shoe',alive:()=>!dead});
-  const root=doc.createElement('section');root.className='poem-shoe-game';root.setAttribute('aria-label','鄭人買鞋記');
+  const uid=`sm-keys-${Math.random().toString(36).slice(2,8)}`,root=doc.createElement('section');root.className='poem-shoe-game';root.setAttribute('aria-label','鄭人買鞋記');
   if(reducedMotion)root.classList.add('is-reduced');
   root.innerHTML=`<div class="sm-frame"><header class="sm-head"><p class="sm-say"></p><span class="sm-progress"></span></header>
   <div class="sm-stage" aria-busy="true">
@@ -65,13 +66,13 @@ export function mountShoeMarket(holder,{initialState,readOnly=false,playAudio,on
       <span class="sm-aim is-heel" aria-hidden="true"><i></i><b>腳跟</b></span><span class="sm-aim is-toe" aria-hidden="true"><i></i><b>腳尖</b></span>
       <span class="sm-guide" aria-hidden="true"></span><img class="sm-ruler" src="${art('ruler')}" alt="" draggable="false"><span class="sm-cord" aria-hidden="true"></span>
       <span class="sm-dot is-heel" aria-hidden="true"><b>腳跟</b></span><span class="sm-dot is-toe" aria-hidden="true"><b>腳尖</b></span><span class="sm-got" aria-hidden="true">量好了！</span>
-      <button type="button" class="sm-pen" data-sm-pen role="slider" aria-valuemin="0" aria-valuemax="100"><i></i></button></div>
+      <button type="button" class="sm-pen" data-sm-pen role="slider" aria-valuemin="2" aria-valuemax="98" aria-describedby="${uid}"><i></i></button><span class="sm-sr" id="${uid}">用左右方向鍵移動紅點，按 Enter 記下。</span></div>
     <div class="sm-fitting" hidden><div class="sm-fit" data-sm-fit data-size="none"><span class="sm-ground" aria-hidden="true"></span>
       <img class="sm-in" src="${art('bu-lu')}" alt="" draggable="false"><img class="sm-foot" src="${art('foot')}" alt="鄭人自己的腳" draggable="false"><img class="sm-out" src="${art('bu-lu-front')}" alt="" draggable="false">
       <span class="sm-ring" aria-hidden="true"></span><p class="sm-cap" aria-hidden="true"></p></div>
       <div class="sm-tray">${SHOES.map(s=>`<button type="button" class="is-${s.id}" data-sm-shoe="${s.id}" data-sm-drag="shoe" aria-label="${s.label}：用腳試穿這雙鞋"><img src="${art('bu-lu')}" alt="" draggable="false"><span>${s.label}</span></button>`).join('')}</div></div>
-    <div class="sm-moral" hidden><b>寓意</b><p>${cl('腳就在自己身上，一試就知道合不合腳。')}</p><strong>${cl('做事要從實際出發，懂得變通。')}</strong>
-      <small><span>「<b>度</b>」duó：量一量（先自度其足）</span><span>「<b>度</b>」dù：量好的尺碼（吾忘持度）</span></small></div>
+    <div class="sm-moral" hidden><b>寓意</b><p>${cl('可是鄭人說「寧信度」：寧可信量好的尺碼，也不信自己的腳，結果沒買到鞋。')}</p><strong>${cl('做事要從實際出發，懂得變通。')}</strong>
+      <small>「<b>度</b>」duó 量一量<i aria-hidden="true">｜</i>dù 尺碼</small></div>
   </div>
   <div class="sm-actions"><button type="button" class="sm-listen" data-sm-listen>${voice}<span>聽這句詩</span></button><button type="button" class="sm-next" data-sm-next hidden></button></div>
   <p class="sm-feedback" role="status" aria-live="polite"></p></div></div>`;
@@ -100,8 +101,9 @@ export function mountShoeMarket(holder,{initialState,readOnly=false,playAudio,on
   }
   function autoLine(n){if(heard.has(n)||!available())return;heard.add(n);speak({text:LINES[n]},false);}
   // The red marker slides along the ruler; it counts as on the heel (or toe) inside a generous zone that grows after each miss.
-  const zone=()=>Math.min(22,ZONE+miss*4),near=()=>marks?pen>=TOE-zone():pen<=HEEL+zone();
-  function where(){const z=zone();return Math.abs(pen-HEEL)<=z?'在腳跟':Math.abs(pen-TOE)<=z?'在腳尖':pen<HEEL?'在腳跟後面':pen>TOE?'在腳尖前面':'在腳的中間';}
+  // The toe zone starts further back because the toes are long: any tap on the toes counts.
+  const zone=k=>Math.min(22,ZONE[k]+miss*4),atHeel=()=>pen<=HEEL+zone('heel'),atToe=()=>pen>=TOE-zone('toe'),near=()=>marks?atToe():atHeel();
+  function where(){return atHeel()?'在腳跟':atToe()?'在腳尖':'在腳的中間';}
   function setPen(v){
     pen=Math.max(2,Math.min(98,v));const m=q('.sm-measure'),end=marks===2?TOE:pen,p=q('[data-sm-pen]');
     m.style.setProperty('--pen',`${pen}%`);m.style.setProperty('--a',`${Math.min(HEEL,end)}%`);m.style.setProperty('--b',`${Math.max(HEEL,end)}%`);
@@ -149,20 +151,33 @@ export function mountShoeMarket(holder,{initialState,readOnly=false,playAudio,on
       marks=2;pen=TOE;stage='placed';hold=true;tone('win');save();render();replay(q('.sm-got'),'is-pop',600);
       tell('量好了：從腳跟到腳尖，就是這麼長！這就是他的「度」（尺碼）。');prepFly();later(flyRuler,reducedMotion?900:1500);return;
     }
-    const toeFirst=heel&&pen>=TOE-zone();miss++;
+    // Tapping the heel again (a double tap) is not a mistake: just point on to the toe.
+    if(!heel&&atHeel()){tone('soft');setPen(HEEL);replay(q('.sm-aim.is-toe'),'is-nudge',700);tell('腳跟已經記下了。現在去腳尖：右邊腳趾最前面。');return;}
+    const toeFirst=heel&&atToe();miss++;
     research.answer('measure',heel?(toeFirst?'toe-first':'heel-far'):'toe-short',false);tone('soft');
     const k=heel?'heel':'toe';if(miss>=2&&!demoed.has(k)){demoed.add(k);research.hint('measure','demo');}
     render();replay(q(`.sm-aim.is-${k}`),'is-nudge',700);
     tell((heel?(toeFirst?'這裏是腳尖。要先量腳跟：腳跟在腳的最後面（左邊）。':'這裏還不是腳跟。腳跟在腳的最後面，左邊圓圓的地方。')
-      :pen<=HEEL+zone()?'腳跟已經記下了。現在去腳尖：右邊腳趾最前面。':'還沒到腳尖。腳尖在腳趾最前面，再往右挪一點。')+(miss>=2?'點發亮的圓圈就可以。':''));
+      :'還沒到腳尖。腳尖在腳趾最前面，再往右挪一點。')+(miss>=2?'點發亮的圓圈就可以。':''));
+  }
+  // Touching the red dot where it rests is the natural first move, so it only wakes the dot and points at the target.
+  function lift(){
+    if(!can('measure')||marks>=2)return;
+    research.action('measure','pick');tone('tock');replay(q('[data-sm-pen]'),'is-lift',600);
+    tell(marks?'紅點準備好了！把它拖到發亮的腳尖，或直接點一下腳尖。':'紅點準備好了！把它拖到發亮的腳跟，或直接點一下腳跟。');
   }
   // 而置之其坐: the marked ruler flies from the work panel onto the seat in the home picture, then the painted ruler shows.
   function flyRuler(){
     const from=q('.sm-ruler').getBoundingClientRect(),sr=q('.sm-stage').getBoundingClientRect(),rr=root.getBoundingClientRect();
     hold=false;flying=true;render();
     const land=()=>{if(flyEl&&!reducedMotion){const el=flyEl;el.animate?.([{opacity:1},{opacity:0}],{duration:800,fill:'forwards'});later(()=>el.remove(),820);}else flyEl?.remove();
-      flyEl=null;flying=false;research.action('measure','seat');tone('tock');render();autoLine(0);focusOn('[data-sm-next]');
-      tell('「而置之其坐」：量好的尺碼放在座位上了。他高高興興出門買鞋。');};
+      flyEl=null;research.action('measure','seat');tone('tock');tell('「而置之其坐」：量好的尺碼放在座位上了。他高高興興出門買鞋。');
+      // The empty measuring picture folds away smoothly instead of making the page jump.
+      const m=q('.sm-measure'),h=m.offsetHeight,settle=()=>{fold?.cancel();fold=null;flying=false;render();autoLine(0);focusOn('[data-sm-next]');};
+      if(reducedMotion||!h||typeof m.animate!=='function')return settle();
+      const gap=parseFloat(view.getComputedStyle(m.parentElement).rowGap)||0;
+      fold=m.animate([{height:`${h}px`,opacity:1,marginBottom:'0px'},{height:'0px',opacity:0,marginBottom:`${-gap}px`}],{duration:450,easing:'ease-in-out',fill:'forwards'});
+      later(settle,470);};
     if(reducedMotion||!from.width||!sr.width||typeof root.animate!=='function')return land();
     const img=flyEl||prepFly();
     Object.assign(img.style,{left:`${from.left-rr.left}px`,top:`${from.top-rr.top}px`,width:`${from.width}px`,height:`${from.height}px`,visibility:''});
@@ -176,7 +191,7 @@ export function mountShoeMarket(holder,{initialState,readOnly=false,playAudio,on
     const img=doc.createElement('img');img.className='sm-fly';img.alt='';img.draggable=false;Object.assign(img.style,{visibility:'hidden',left:'0',top:'0',width:'1px',height:'1px'});img.src=art('ruler');
     root.append(img);flyEl=img;img.decode?.().catch(()=>{});return img;
   }
-  function clearFly(){root.querySelectorAll('.sm-fly').forEach(el=>el.remove());flyEl=null;hold=false;flying=false;}
+  function clearFly(){root.querySelectorAll('.sm-fly').forEach(el=>el.remove());fold?.cancel();fold=null;flyEl=null;hold=false;flying=false;}
   function tryOn(id){
     if(!can('try'))return;
     if(size===id){tell(FEEL[id]);return;}
@@ -209,14 +224,15 @@ export function mountShoeMarket(holder,{initialState,readOnly=false,playAudio,on
     if(drag||!el||!available()||e.button>0||e.isPrimary===false)return;
     const kind=el.dataset.smDrag;
     if(kind==='pen'?stage!=='measure'||marks>=2:el.disabled)return;
-    drag={el,kind,id:e.pointerId,x:e.clientX,y:e.clientY,moved:false,start:pen};
+    const onPen=kind==='pen'&&!!e.target.closest('[data-sm-pen]');
+    drag={el,kind,id:e.pointerId,x:e.clientX,y:e.clientY,moved:false,start:pen,onPen,off:onPen?penFrom(e.clientX)-pen:0,far:0};
     try{el.setPointerCapture(e.pointerId);}catch{}
-    if(kind==='pen'){if(e.pointerType==='mouse'&&e.cancelable)e.preventDefault();setPen(penFrom(e.clientX));}
+    if(kind==='pen'){if(e.pointerType==='mouse'&&e.cancelable)e.preventDefault();if(!onPen)setPen(penFrom(e.clientX));}
   }
   function move(e){
     if(!drag||e.pointerId!==drag.id)return;
-    if(drag.kind==='pen'){if(e.cancelable)e.preventDefault();setPen(penFrom(e.clientX));return;}
     const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+    if(drag.kind==='pen'){if(e.cancelable)e.preventDefault();drag.far=Math.max(drag.far,Math.hypot(dx,dy));setPen(penFrom(e.clientX)-drag.off);return;}
     if(!drag.moved&&Math.hypot(dx,dy)<8)return;
     drag.moved=true;if(e.cancelable)e.preventDefault();
     drag.el.classList.add('is-dragging');drag.el.style.translate=`${dx}px ${dy}px`;
@@ -225,7 +241,7 @@ export function mountShoeMarket(holder,{initialState,readOnly=false,playAudio,on
   function up(e){
     if(!drag||e.pointerId!==drag.id)return;
     const d=endDrag();
-    if(d.kind==='pen'){if(e.type==='pointerup'){hush(e);mark();}else setPen(d.start);return;}
+    if(d.kind==='pen'){if(e.type!=='pointerup')setPen(d.start);else{hush(e);if(d.onPen&&d.far<8&&!near())lift();else mark();}return;}
     if(!d.moved||e.type!=='pointerup')return;
     hush(e);
     if(inside(q('[data-sm-fit]'),e.clientX,e.clientY))tryOn(d.el.dataset.smShoe);else if(can('try'))tell('把鞋子拖到腳上，或者點一下鞋子。');
@@ -238,7 +254,7 @@ export function mountShoeMarket(holder,{initialState,readOnly=false,playAudio,on
   root.addEventListener('keydown',e=>{
     if(!e.altKey&&!e.ctrlKey&&!e.metaKey)kbUser=true;
     if(!e.target.closest?.('[data-sm-pen]')||!can('measure')||marks>=2)return;
-    const n=e.shiftKey?5:1,step={ArrowRight:n,ArrowUp:n,ArrowLeft:-n,ArrowDown:-n,PageUp:5,PageDown:-5}[e.key];
+    const n=e.shiftKey?1:5,step={ArrowRight:n,ArrowUp:n,ArrowLeft:-n,ArrowDown:-n,PageUp:10,PageDown:-10}[e.key];
     if(step){e.preventDefault();setPen(pen+step);}else if(e.key==='Home'){e.preventDefault();setPen(2);}else if(e.key==='End'){e.preventDefault();setPen(98);}
   },{signal:abort.signal});
   root.addEventListener('click',e=>{
