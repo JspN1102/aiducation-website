@@ -2,6 +2,8 @@
 
 The `yong-xue`, `hua-ji`, `qi-bu-shi`, `jue-ju`, `zheng-ren-mai-lu` and `ke-zhi` folders were made for AIDUCATION on 2026-10-05 for the second round of six poems. They are shown only to the accounts that load `poems-preview.json`.
 
+On 2026-10-06 the `yong-xue`, `hua-ji` and `qi-bu-shi` folders (grades 1-3) were removed from the platform, because grades 1-3 have no AR activity. Their records below and in `preview-manifest-20261005.json` are kept as provenance; the files are no longer deployed and are kept in the project's local backup.
+
 ## Scene pictures
 
 Each `scene.webp` is a crop of one of the illustrations supplied by the school for the poem (the last picture of the poem, or the one that shows the observed object most clearly). They were cropped and re-encoded locally; nothing was added or redrawn.

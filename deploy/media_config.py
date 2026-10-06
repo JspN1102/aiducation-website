@@ -28,11 +28,11 @@ VERSION_TAG = '20260923-school23'
 PACK_CACHE = 'maanshan-pack-v1'
 PACK_SCOPE = 'deploy/pack-scope.json'
 # Poems 7-12 are shown to two preview teacher accounts only, so pupils' packs
-# and the session's route probe leave their media out.
+# and the session's route probe leave their media out. Only poems 10-12
+# (grades 4-6) have AR folders; grades 1-3 have no AR.
 PREVIEW_MEDIA = tuple('/maanshan/media/' + folder + '/' for folder in (
     'yong-xue', 'hua-ji', 'qi-bu-shi', 'jue-ju', 'zheng-ren-mai-lu', 'ke-zhi', 'recitations/round2-20261005',
-    'exploration/yong-xue', 'exploration/hua-ji', 'exploration/qi-bu-shi', 'exploration/jue-ju',
-    'exploration/zheng-ren-mai-lu', 'exploration/ke-zhi'))
+    'exploration/jue-ju', 'exploration/zheng-ren-mai-lu', 'exploration/ke-zhi'))
 
 
 def group_id(members):

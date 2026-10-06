@@ -7,7 +7,7 @@ const source=fs.readFileSync(path.join(root,'scripts/build-maanshan-css.cjs'),'u
 const cssFiles=[...source.match(/const files = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map(m=>m[1]);
 const css=cssFiles.map(file=>fs.readFileSync(path.join(root,'maanshan',file),'utf8')).join('\n');
 const poems=JSON.parse(fs.readFileSync(path.join(root,'maanshan/poems.json'),'utf8')).poems;
-// Preview poems 7-12 (grades 1-6) open the model at every grade.
+// Preview poems 10-12 (grades 4-6) open the model; grades 1-3 have no AR.
 const previewPoems=JSON.parse(fs.readFileSync(path.join(root,'maanshan/poems-preview.json'),'utf8')).poems;
 // The public COS copies are answered from the same local files, so both model
 // routes are exercised without any network access.
@@ -74,7 +74,7 @@ async function setup(width,height){
 async function verifyModels(){
   const {page,context,mount}=await setup(1180,820);
   try{
-    for(const poem of [...poems.filter(p=>p.grade>=4),...previewPoems]){
+    for(const poem of [...poems,...previewPoems].filter(p=>p.grade>=4)){
       await mount(poem);check(poem.slug+' model remains lazy',await page.locator('canvas').count()===0);
       await page.locator('[data-explore=ar]').click();await page.locator('.explore.is-model').waitFor({timeout:25000});
       await page.waitForFunction(()=>window.drawCalls>0);
@@ -95,7 +95,7 @@ async function verifyModels(){
       await page.evaluate(()=>{window.savedCanvas=document.querySelector('canvas');window.lost=0;savedCanvas.addEventListener('webglcontextlost',()=>window.lost++);activity.destroy();});
       await page.waitForFunction(()=>window.lost>0);check(poem.slug+' leaving disposes the GPU context',await page.locator('canvas').count()===0);
     }
-    for(const poem of poems.filter(p=>p.grade<=3)){await mount(poem);check(poem.slug+' retains the lower-grade rule',await page.locator('.explore-unavailable').count()===1&&await page.locator('[data-explore=ar],canvas').count()===0);}
+    for(const poem of [...poems,...previewPoems].filter(p=>p.grade<=3)){await mount(poem);check(poem.slug+' retains the lower-grade rule',await page.locator('.explore-unavailable').count()===1&&await page.locator('[data-explore=ar],canvas').count()===0);}
     // One failing route is invisible to the child: the other copy answers at once.
     const glbHosts=[];let failures=1;await page.route('**/*.glb*',route=>{glbHosts.push(new URL(route.request().url()).origin);return failures-- >0?route.fulfill({status:503,body:''}):route.fallback();});
     await mount(poems[3]);await page.locator('[data-explore=ar]').click();await page.locator('.explore.is-model').waitFor({timeout:25000});

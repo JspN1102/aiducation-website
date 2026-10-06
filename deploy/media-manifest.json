@@ -246,24 +246,6 @@
       "objectCacheControl": "public, max-age=31536000, immutable"
     },
     {
-      "source": "/maanshan/media/exploration/hua-ji/model-20261005.glb",
-      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/a00cacc41d4d51782d5c/maanshan/media/exploration/hua-ji/model-20261005.glb",
-      "bytes": 2276952,
-      "sha256": "a00cacc41d4d51782d5c82dbdf63f4026fabafff56da64e39791d55515c58bc4",
-      "md5": "21386674dc2a1896ec3111aa5962610c",
-      "contentType": "model/gltf-binary",
-      "objectCacheControl": "public, max-age=31536000, immutable"
-    },
-    {
-      "source": "/maanshan/media/exploration/hua-ji/scene.webp",
-      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/dd93a2766c07d24eb871/maanshan/media/exploration/hua-ji/scene.webp",
-      "bytes": 176256,
-      "sha256": "dd93a2766c07d24eb8713250ced076a76a85128fa510beb24b31ccd0dcc7a094",
-      "md5": "e463a131c81c4353eb6786d628987ac9",
-      "contentType": "image/webp",
-      "objectCacheControl": "public, max-age=31536000, immutable"
-    },
-    {
       "source": "/maanshan/media/exploration/jue-ju/model-20261005.glb",
       "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/8cbd250cedaee29ece33/maanshan/media/exploration/jue-ju/model-20261005.glb",
       "bytes": 2583860,
@@ -300,24 +282,6 @@
       "objectCacheControl": "public, max-age=31536000, immutable"
     },
     {
-      "source": "/maanshan/media/exploration/qi-bu-shi/model-20261005.glb",
-      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/31ee40817206b1d18262/maanshan/media/exploration/qi-bu-shi/model-20261005.glb",
-      "bytes": 2209564,
-      "sha256": "31ee40817206b1d18262a1667ac3b377593115bba16f303aa0156710f5ce8c5d",
-      "md5": "e7228cea419d0b8679f908e1c7458ca9",
-      "contentType": "model/gltf-binary",
-      "objectCacheControl": "public, max-age=31536000, immutable"
-    },
-    {
-      "source": "/maanshan/media/exploration/qi-bu-shi/scene.webp",
-      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/e76e8ae27e5ee08e2390/maanshan/media/exploration/qi-bu-shi/scene.webp",
-      "bytes": 268062,
-      "sha256": "e76e8ae27e5ee08e2390dec0cba6807a8b90ffd52b6c8d4036a40068f0a5b655",
-      "md5": "df97ca67a41c6b1e269f0b517a7ae0d5",
-      "contentType": "image/webp",
-      "objectCacheControl": "public, max-age=31536000, immutable"
-    },
-    {
       "source": "/maanshan/media/exploration/ti-xi-lin-bi/model.glb",
       "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/fa9753ea598a3522da9b/maanshan/media/exploration/ti-xi-lin-bi/model.glb",
       "bytes": 2144372,
@@ -341,24 +305,6 @@
       "bytes": 405496,
       "sha256": "972fdcbb06d70b22a14042b3b072e38b31de9dbafc0fbdd019d7cc85e3b63dea",
       "md5": "6916cc2fd412f745f7c34f2f7f73c054",
-      "contentType": "image/webp",
-      "objectCacheControl": "public, max-age=31536000, immutable"
-    },
-    {
-      "source": "/maanshan/media/exploration/yong-xue/model-20261005.glb",
-      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/5d60f2b6baa25a900724/maanshan/media/exploration/yong-xue/model-20261005.glb",
-      "bytes": 2402208,
-      "sha256": "5d60f2b6baa25a9007242858d03ede13a101a590b9ca52336d253e5295086d09",
-      "md5": "b3a5d4299d2584e8f996c23087c8d458",
-      "contentType": "model/gltf-binary",
-      "objectCacheControl": "public, max-age=31536000, immutable"
-    },
-    {
-      "source": "/maanshan/media/exploration/yong-xue/scene.webp",
-      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/103471057064705b5fd1/maanshan/media/exploration/yong-xue/scene.webp",
-      "bytes": 319720,
-      "sha256": "103471057064705b5fd16e81cd80be54752e968411b3827c68e45ff0178939db",
-      "md5": "1e3ea18f1357b043e973ac470cc4e476",
       "contentType": "image/webp",
       "objectCacheControl": "public, max-age=31536000, immutable"
     },

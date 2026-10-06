@@ -43,12 +43,14 @@ export function disposeObject(root) {
  * {poemId, observations, version, completedAt}; it is never an assessment score.
  */
 export function mountExploration(container, {poem, speakWord, onComplete, onResearch, modelTimeoutMs = MODEL_LOAD_TIMEOUT_MS} = {}) {
-  const content = EXPLORATION_CONTENT[poem?.slug];
-  if (!container || !content) throw new Error('Unknown poem exploration');
-  if (Number(poem.grade) <= 3) {
+  if (!container) throw new Error('Unknown poem exploration');
+  // Grades 1-3 have no AR content, so the notice comes before the lookup.
+  if (Number(poem?.grade) <= 3) {
     container.innerHTML = '<p class="explore-unavailable" role="status">這個年級不設 AR 體驗，請返回學習路線。</p>';
     return {destroy(){container.replaceChildren();}};
   }
+  const content = EXPLORATION_CONTENT[poem?.slug];
+  if (!content) throw new Error('Unknown poem exploration');
   const assetBase = new URL(`./media/exploration/${poem.slug}/`, import.meta.url);
   const assetURL = name => {
     const url = new URL(name, assetBase);

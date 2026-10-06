@@ -1,53 +1,6 @@
 // Observation prompts are grounded in the selected poem; they are not speech scores.
 export const EXPLORATION_CONTENT = Object.freeze({
-  'yong-e': {
-    object: '白鵝', motif: 'goose', scene: '清波上的白鵝',
-    initialView: [1, .28, .16],
-    alt: '白鵝在清澈的水上游動，紅掌在水下撥出波紋。',
-    finish: '看顏色，也看動作，白鵝就從詩裏游出來了。',
-    observations: [
-      {title: '找一找，誰在撥水？', verse: '紅掌撥清波', word: ['掌', 'zhǎng'],
-        guide: '找找身體下方的腳掌。牠怎樣撥水呢？', inspect: 'detail', clue: '「紅掌」是紅色的腳掌，用來撥水。',
-        question: '白鵝用甚麼撥水？', choices: ['紅紅的腳掌', '白白的羽毛'], answer: 0,
-        feedback: '紅掌一撥，清清的水就漾起波紋。'},
-      {title: '看看白鵝的脖子', verse: '曲項向天歌', word: ['曲', 'qū'],
-        guide: '轉到側面，沿着白鵝的長脖子看一看。', inspect: 'side', clue: '從頭沿着脖子往下看，留意彎曲的線條。',
-        question: '「曲項」是甚麼樣子？', choices: ['把頭藏起來', '彎着脖子'], answer: 1,
-        feedback: '「曲」是彎曲，「項」是脖子。白鵝彎着脖子，向天鳴叫。'}
-    ]
-  },
-  'zeng-wang-lun': {
-    object: '小舟', motif: 'boat', scene: '桃花潭上的送別',
-    alt: '木舟停在桃花潭的岸邊，潭水與春日山色相映。',
-    finish: '小舟將要離岸，一首送別的歌，把朋友的深情留下來。',
-    observations: [
-      {title: '小舟要出發了', verse: '李白乘舟將欲行', word: ['舟', 'zhōu'],
-        guide: '轉轉小舟，看看船身和船裏的空間。', inspect: 'top', clue: '「舟」就是船；想像李白坐進小舟，準備離岸。',
-        question: '這一句寫李白準備怎樣離開？', choices: ['騎馬離開', '乘船離開'], answer: 1,
-        feedback: '「舟」就是船；「將欲行」告訴我們，他正要出發。'},
-      {title: '聽見岸上的歌', verse: '忽聞岸上踏歌聲', word: ['踏', 'tà'],
-        guide: '回到畫面，找找小舟停靠的岸邊。', inspect: 'picture', clue: '想像你坐在舟上，朝岸邊揮手道別。',
-        question: '送別的歌聲從哪裏傳來？', choices: ['岸上', '水底'], answer: 0,
-        feedback: '岸上的踏歌聲，是朋友的送別。「踏歌」是一邊踏着節拍，一邊唱歌。'}
-    ]
-  },
-  'ti-xi-lin-bi': {
-    object: '山嶺', motif: 'mountain', scene: '換個角度看山',
-    assetVersion: '20260914-restored',
-    initialView: [1, .32, 0],
-    alt: '雲霧間連綿的山嶺與高聳的山峯，呈現不同方向的山形。',
-    finish: '同一座山，換個位置就有新發現。看事情也可以多找幾個角度。',
-    observations: [
-      {title: '換個方向，有何不同？', verse: '橫看成嶺側成峯', word: ['側', 'cè'],
-        guide: '用手指轉轉山，從不同方向比較山的輪廓。', inspect: 'front', clue: '換一邊看，試着用手指描出山的外形。',
-        question: '詩人換了方向，看見甚麼變化？', choices: ['山的形狀看起來不同', '山真的移到別處了'], answer: 0,
-        feedback: '橫看是連綿的山嶺，側看是突起的山峯。觀察方向改變，眼前的山形也不同。'},
-      {title: '走出山中，再想一想', verse: '只緣身在此山中', word: ['緣', 'yuán'],
-        guide: '先放大看局部，再縮小看看整座山。', inspect: 'near', clue: '只看眼前的一小部分，能知道整座山的樣子嗎？',
-        question: '為甚麼難看清廬山的全貌？', choices: ['山沒有任何形狀', '自己身在山中'], answer: 1,
-        feedback: '「只緣」是只因為。身在山中，眼前能看見的只是山的一部分。'}
-    ]
-  },
+  // Grades 1-3 have no AR exploration, so they have no entry here.
   'bo-chuan-gua-zhou': {
     object: '江岸', motif: 'moon', scene: '春風又到江南岸',
     assetVersion: '20260919b', modelFile: 'model-20260919b.glb',
@@ -100,58 +53,7 @@ export const EXPLORATION_CONTENT = Object.freeze({
         feedback: '細雨輕輕滋潤大地。「潤如酥」寫出了早春小雨的細膩與柔和。'}
     ]
   },
-  // Preview poems 7-12: shown only to accounts that load poems-preview.json.
-  'yong-xue': {
-    object: '白梅', motif: 'snow', scene: '飛入梅花都不見',
-    assetVersion: '20261005', modelFile: 'model-20261005.glb',
-    initialView: [1, .3, .2], viewDistance: .75,
-    alt: '積雪的石頭上長出一枝白梅，枝頭開滿白色的梅花，花和枝上都蓋着白雪。',
-    finish: '雪是白的，梅花也是白的。雪花飛進梅花裏，就分不出來了。',
-    observations: [
-      {title: '一片一片數雪花', verse: '一片兩片三四片', word: ['片', 'piàn'],
-        guide: '轉一轉，看看枝頭和石頭上的白雪。', inspect: 'side', clue: '詩裏沒有一個「雪」字，可是每一句都在寫雪花。',
-        question: '「一片兩片三四片」數的是甚麼？', choices: ['飄下來的雪花', '樹上的葉子'], answer: 0,
-        feedback: '詩人一片一片地數雪花。全詩沒有「雪」字，卻句句寫雪。'},
-      {title: '雪花去哪裏了？', verse: '飛入梅花都不見', word: ['梅', 'méi'],
-        guide: '靠近一點，看看白白的梅花和白白的雪。', inspect: 'detail', clue: '梅花是白色的，雪花也是白色的。',
-        question: '雪花飛進梅花裏，為甚麼看不見了？', choices: ['雪花飛走了', '雪和梅花一樣白，分不出來'], answer: 1,
-        feedback: '白雪落在白梅上，顏色一樣，所以「都不見」了。'}
-    ]
-  },
-  'hua-ji': {
-    object: '公雞', motif: 'rooster', scene: '滿身雪白走將來',
-    assetVersion: '20261005', modelFile: 'model-20261005.glb',
-    initialView: [1, .3, .55], viewDistance: .75,
-    alt: '一隻全身雪白的大公雞，頭上長着鮮紅的雞冠，正抬起腳向前走。',
-    finish: '紅冠白羽，昂首走來；公雞一叫，千家萬戶都開門了。',
-    observations: [
-      {title: '頭上紅紅的是甚麼？', verse: '頭上紅冠不用裁', word: ['裁', 'cái'],
-        guide: '轉一轉，看看公雞頭頂紅紅的雞冠。', inspect: 'detail', clue: '「裁」是用剪刀剪。雞冠是天生的，又紅又有齒。',
-        question: '「不用裁」是甚麼意思？', choices: ['紅冠天生就有，不用剪', '要用剪刀剪出紅冠'], answer: 0,
-        feedback: '公雞的紅冠是天生的，不用剪裁，就像戴着一頂紅帽子。'},
-      {title: '公雞怎樣走來？', verse: '滿身雪白走將來', word: ['將', 'jiāng'],
-        guide: '從遠一點看整隻公雞，看看牠的羽毛和腳步。', inspect: 'far', clue: '「雪白」是像雪一樣白；「走將來」是走過來。',
-        question: '「滿身雪白」寫出公雞的甚麼？', choices: ['公雞身上落滿了雪', '全身羽毛像雪一樣白'], answer: 1,
-        feedback: '「雪白」寫羽毛的顏色，不是真的雪。公雞全身雪白，神氣地走過來。'}
-    ]
-  },
-  'qi-bu-shi': {
-    object: '灶和釜', motif: 'beans', scene: '萁在釜下燃',
-    assetVersion: '20261005', modelFile: 'model-20261005.glb',
-    initialView: [1, .42, .5], viewDistance: .7,
-    alt: '泥砌的土灶上架着一口大鐵鍋，鍋裏煮着豆子，灶口下燒着一束豆萁。',
-    finish: '豆和萁本是同一條根長出來的。詩人借煮豆，勸兄弟不要互相傷害。',
-    observations: [
-      {title: '灶下燒的是甚麼？', verse: '萁在釜下燃', word: ['萁', 'qí'],
-        guide: '轉到灶口那一面，看看火裏燒的東西。', inspect: 'side', clue: '「萁」是豆子的莖稈，曬乾可以當柴燒；「釜」是古時的鍋。',
-        question: '「萁在釜下燃」，燒的是甚麼？', choices: ['木柴和煤炭', '豆子的莖稈'], answer: 1,
-        feedback: '豆萁在鍋下燃燒，鍋裏煮的正是豆子。'},
-      {title: '鍋裏的豆子怎麼了？', verse: '豆在釜中泣', word: ['泣', 'qì'],
-        guide: '從上面看看鍋裏的豆子。', inspect: 'top', clue: '「泣」是小聲地哭。豆子會哭嗎？詩人把豆子當成人來寫。',
-        question: '詩人為甚麼說豆子在「泣」？', choices: ['被同根的萁煎煮，好像傷心地哭', '豆子煮得太好吃了'], answer: 0,
-        feedback: '這是擬人的寫法：豆和萁同根生，萁卻燒豆，豆子傷心地哭，比喻兄弟相逼。'}
-    ]
-  },
+  // Preview poems 10-12 (grades 4-6): shown only to accounts that load poems-preview.json.
   'jue-ju': {
     object: '草堂春景', motif: 'oriole', scene: '窗含西嶺千秋雪',
     assetVersion: '20261005', modelFile: 'model-20261005.glb',

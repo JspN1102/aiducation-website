@@ -57,13 +57,11 @@ def main():
     verify_audio_groups(ROOT, media)
     media_config = build_media_config(media)
     omit = set(media_config.get('excludedFiles', [])) | obsolete_audio_files(ROOT)
-    # The recital buttons, old 3D mascot and lower-grade models (no AR below
-    # grade 4) are not used by this platform. The older mountain, river and
-    # field models remain the assessment viewer's models.
+    # The recital buttons and old 3D mascot are not used by this platform.
+    # The older mountain, river and field models remain the assessment
+    # viewer's models.
     unused = {'maanshan/media/shishi/model.glb', 'maanshan/media/shishi/guide-v2.glb',
-              'maanshan/media/challenges/sound-pod-v1.glb',
-              'maanshan/media/exploration/yong-e/model.glb',
-              'maanshan/media/exploration/zeng-wang-lun/model.glb'}
+              'maanshan/media/challenges/sound-pod-v1.glb'}
     # Every deployed 3D model also needs its verified COS copy: the page hedges
     # between the two routes, so a model with one route would fail alone.
     published_models = {model['source'].lstrip('/') for model in media_config['models']}

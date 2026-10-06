@@ -51,14 +51,14 @@ def audio_fixture():
 
 class MediaConfigTests(unittest.TestCase):
     # Every model the pages load: exploration viewers (grades 4-6 and the
-    # preview poems 7-12), the assessment viewer's older models, the mountain
-    # game and the living field.
+    # preview poems 10-12; grades 1-3 have no AR), the assessment viewer's
+    # older models, the mountain game and the living field.
     PAGE_MODELS = ['exploration/bo-chuan-gua-zhou/model-20260919b.glb', 'exploration/bo-chuan-gua-zhou/model.glb',
                    'exploration/gui-yuan-tian-ju/model-20260920a.glb', 'exploration/gui-yuan-tian-ju/model.glb',
                    'exploration/ti-xi-lin-bi/model.glb', 'exploration/zao-chun/model-20260919b.glb',
                    'exploration/zao-chun/model.glb', 'living-scenes/bean-v1.glb', 'living-scenes/grass-v1.glb'] + [
                    'exploration/' + slug + '/model-20261005.glb' for slug in
-                   ('yong-xue', 'hua-ji', 'qi-bu-shi', 'jue-ju', 'zheng-ren-mai-lu', 'ke-zhi')]
+                   ('jue-ju', 'zheng-ren-mai-lu', 'ke-zhi')]
 
     def test_repository_manifest_gives_every_published_file_two_routes(self):
         root = Path(__file__).parent.parent
@@ -74,6 +74,9 @@ class MediaConfigTests(unittest.TestCase):
         self.assertEqual([m['source'] for m in config['models']], by_type('model/gltf-binary'))
         for name in self.PAGE_MODELS:
             self.assertIn('/maanshan/media/' + name, [m['source'] for m in config['models']])
+        # Grades 1-3 have no AR, so none of their observation models is published.
+        for slug in ('yong-e', 'zeng-wang-lun', 'yong-xue', 'hua-ji', 'qi-bu-shi'):
+            self.assertFalse([m for m in config['models'] if '/exploration/' + slug + '/' in m['source']], slug)
         images = [i['source'] for i in config['images']]
         self.assertEqual(images, by_type('image/webp'))
         poems = json.loads((root / 'maanshan/poems.json').read_text(encoding='utf-8'))['poems']
@@ -282,7 +285,7 @@ class MediaConfigTests(unittest.TestCase):
         manifest, _ = fixture(image=True)
         data = b'preview poem picture, smaller'
         manifest['assets'] += [entry('/maanshan/media/yong-xue/preview-1.webp', data),
-                               entry('/maanshan/media/exploration/yong-xue/scene.webp', data + b' scene'),
+                               entry('/maanshan/media/exploration/jue-ju/scene.webp', data + b' scene'),
                                entry('/maanshan/media/recitations/round2-20261005/p7-line1.mp3', data,
                                      group='recitations/round2-20261005')]
         pack = json.loads(media_config.build_pack_manifest(manifest))
