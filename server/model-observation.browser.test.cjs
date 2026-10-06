@@ -81,7 +81,7 @@ async function verifyModels(){
       check(poem.slug+' model shown without camera/native AR',await page.evaluate(()=>!cameraRequests&&!xrRequests&&!document.querySelector('video,.explore-ar-overlay')));
       check(poem.slug+' model entry makes way for gesture controls',!await page.locator('[data-explore=ar]').isVisible()&&await page.locator('.explore-model-hint').isVisible());
       const pixel=await page.locator('canvas').evaluate(canvas=>({width:canvas.width,height:canvas.height,cssWidth:canvas.getBoundingClientRect().width}));
-      check(poem.slug+' retina buffer remains bounded',pixel.width/pixel.cssWidth>1.8&&pixel.width*pixel.height<=2400001);
+      check(poem.slug+' retina buffer remains bounded',pixel.width/pixel.cssWidth>1.8&&pixel.width*pixel.height<=3000001);
       await page.waitForTimeout(180);const idle=await page.evaluate(()=>drawCalls);await page.waitForTimeout(200);
       check(poem.slug+' idle viewer does not render continuously',await page.evaluate(()=>drawCalls)===idle);
       await touch(page,context);check(poem.slug+' touch rotates the model',await page.evaluate(()=>events.some(e=>e.interaction==='camera_rotate')));

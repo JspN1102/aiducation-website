@@ -1,6 +1,7 @@
 import copy
 import hashlib
 import json
+import re
 from pathlib import Path
 import tempfile
 import unittest
@@ -50,15 +51,40 @@ def audio_fixture():
 
 
 class MediaConfigTests(unittest.TestCase):
-    # Every model the pages load: exploration viewers (grades 4-6 and the
-    # preview poems 10-12; grades 1-3 have no AR), the assessment viewer's
-    # older models, the mountain game and the living field.
+    # Every published model the pages load: exploration viewers (grades 4-6 and
+    # the preview poems 10-12; grades 1-3 have no AR), the assessment viewer's
+    # older models, the mountain game and the living field. The 2026-10-05 jue-ju
+    # and ke-zhi copies still ship beside their 2026-10-06 replacements.
     PAGE_MODELS = ['exploration/bo-chuan-gua-zhou/model-20260919b.glb', 'exploration/bo-chuan-gua-zhou/model.glb',
                    'exploration/gui-yuan-tian-ju/model-20260920a.glb', 'exploration/gui-yuan-tian-ju/model.glb',
                    'exploration/ti-xi-lin-bi/model.glb', 'exploration/zao-chun/model-20260919b.glb',
                    'exploration/zao-chun/model.glb', 'living-scenes/bean-v1.glb', 'living-scenes/grass-v1.glb'] + [
                    'exploration/' + slug + '/model-20261005.glb' for slug in
                    ('jue-ju', 'zheng-ren-mai-lu', 'ke-zhi')]
+    # Models the pages already load that still wait for their COS copy (the
+    # 2026-10-06 sharper re-exports). package-vercel.py refuses to package a GLB
+    # without a COS mapping. Whoever publishes them moves them into PAGE_MODELS
+    # in the same commit; the test below fails once they are in the manifest.
+    PENDING_COS_MODELS = ['exploration/' + slug + '/model-20261006.glb' for slug in
+                          ('jue-ju', 'ke-zhi')]
+
+    def test_every_exploration_model_is_published_or_listed_as_pending(self):
+        root = Path(__file__).parent.parent
+        manifest = json.loads((root / 'deploy/media-manifest.json').read_text(encoding='utf-8'))
+        published = {asset['source'] for asset in manifest['assets'] if asset['contentType'] == 'model/gltf-binary'}
+        loaded, slug = [], None
+        for line in (root / 'maanshan/exploration-data.mjs').read_text(encoding='utf-8').splitlines():
+            start = re.match(r"^  '([a-z0-9-]+)': \{", line)
+            slug = start.group(1) if start else slug
+            model = re.search(r"modelFile: '([a-z0-9.-]+\.glb)'", line)
+            if model:
+                loaded.append('exploration/' + slug + '/' + model.group(1))
+        self.assertGreaterEqual(len(loaded), 6)
+        for name in loaded:
+            self.assertIn(name, self.PAGE_MODELS + self.PENDING_COS_MODELS)
+        for name in self.PENDING_COS_MODELS:
+            self.assertTrue((root / 'maanshan/media' / name).is_file(), name)
+            self.assertNotIn('/maanshan/media/' + name, published, 'published: move it into PAGE_MODELS')
 
     def test_repository_manifest_gives_every_published_file_two_routes(self):
         root = Path(__file__).parent.parent

@@ -10,6 +10,22 @@ test('model drawing buffers preserve retina detail within the pixel budget', asy
   assert.equal(modelPixelRatio(700, 500, 1), 1);
   const ratio = modelPixelRatio(1600, 1000, 3);
   assert(ratio > 1);assert(1600 * 1000 * ratio * ratio <= 2400001);
+  // The exploration viewer's 3.0 MP budget keeps an expanded 820x1180 iPad stage
+  // (780x908 CSS) at the full 2x; the shared 2.4 MP default would drop it to 1.84x.
+  assert(modelPixelRatio(780, 908, 2) < 1.9);
+  assert.equal(modelPixelRatio(780, 908, 2, 3000000), 2);
+  const viewerRatio = modelPixelRatio(1146, 815, 2, 3000000);
+  assert(viewerRatio > 1.6 && viewerRatio < 2);assert(1146 * 815 * viewerRatio * viewerRatio <= 3000001);
+  assert.equal(modelPixelRatio(728, 752, 2, 3000000), modelPixelRatio(728, 752, 2));
+  // 3x phones keep 2x under the shared default, and only the viewer's own
+  // maxRatio lets their stages (362x243 normal, 402x660 expanded) render at 3x.
+  assert.equal(modelPixelRatio(362, 243, 3, 3000000), 2);
+  assert.equal(modelPixelRatio(362, 243, 3, 3000000, 3), 3);
+  assert.equal(modelPixelRatio(402, 660, 3, 3000000, 3), 3);
+  assert.equal(modelPixelRatio(362, 243, 2.75, 3000000, 3), 2.75);
+  assert.equal(modelPixelRatio(700, 500, 2, 3000000, 3), 2);
+  const phoneRatio = modelPixelRatio(800, 600, 3, 3000000, 3);
+  assert(phoneRatio > 2 && phoneRatio < 3);assert(800 * 600 * phoneRatio * phoneRatio <= 3000001);
 });
 
 test('all selected observation models are bounded self-contained GLBs', async () => {

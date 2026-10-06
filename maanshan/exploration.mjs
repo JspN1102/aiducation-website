@@ -333,6 +333,18 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
   };
 }
 
+// Drawing-buffer limits of this viewer (the shared defaults are 2.4 MP and 2x).
+// The 3.0 MP budget raises the cap for the expanded stage (放大觀察), so most
+// 10- to 11-inch iPads stay at or near 2x instead of a resampled, softer
+// picture; 12.9-inch iPads settle below 2x. 3x phones may use their full ratio
+// within the same budget instead of having a 2x picture upscaled. Measured in
+// the app at full-screen sizes (Safari toolbars make real stages smaller):
+// iPads 0.9-2.0 MP normal and 2.2-3.0 MP expanded, 3x phones 0.7-1.0 MP normal
+// and at most about 2.4 MP expanded. With 4x MSAA a device pixel costs roughly
+// 44 bytes, so no stage needs more than about 130 MB, and only expanded iPad
+// stages pass the shared 2.4 MP (by at most about 26 MB).
+const VIEWER_MAX_PIXELS = 3000000, VIEWER_MAX_RATIO = 3;
+
 export function createViewer({THREE, OrbitControls, gltf, holder, stage, content, onInteract, onInteractionEnd, onContextLost}) {
   let renderer;
   const lightRendering = matchMedia('(pointer: coarse), (max-width: 1100px)').matches;
@@ -359,6 +371,7 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
   model.position.sub(originalBounds.getCenter(new THREE.Vector3()));
   wrapper.add(model);
   wrapper.scale.setScalar(2.6 / longest);
+  const textures = new Set();
   model.traverse(node => {
     if (!node.isMesh) return;
     node.castShadow = true;
@@ -367,10 +380,16 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
       // Keep each asset's PBR maps and material response. Anisotropy preserves
       // wood grain, feathers and soil detail when children inspect an angle.
       for (const value of Object.values(material || {})) {
-        if (value?.isTexture) value.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+        if (value?.isTexture) {value.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); textures.add(value);}
       }
     }
   });
+  // Upload every map now, then close the decoded ImageBitmaps: once a map is on
+  // the GPU its CPU copy is never read again (a 3072px colour map is 36 MB),
+  // which matters on iPads where the tab and the GPU share memory. A lost
+  // context never re-uploads: both callers destroy the viewer instead.
+  textures.forEach(texture => renderer.initTexture(texture));
+  textures.forEach(texture => texture.source?.data?.close?.());
   scene.add(wrapper);
   scene.add(new THREE.HemisphereLight(0xfffaf2, 0x92a59b, 1.7));
   const sunlight = new THREE.DirectionalLight(0xfff3df, 2.8);
@@ -442,7 +461,7 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
     controls.maxDistance = baseDistance * 1.9;
     const direction = camera.position.clone().sub(controls.target).normalize();
     setView(direction.lengthSq() ? direction : normalDirection, baseDistance * THREE.MathUtils.clamp(ratio, .52, 1.9), false);
-    renderer.setPixelRatio(modelPixelRatio(width, height));
+    renderer.setPixelRatio(modelPixelRatio(width, height, undefined, VIEWER_MAX_PIXELS, VIEWER_MAX_RATIO));
     renderer.setSize(width, height, false);
     requestRender();
   };
