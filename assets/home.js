@@ -19,7 +19,7 @@
   $$('a', menu).forEach(function (a) { a.addEventListener('click', closeMenu); });
   doc.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
 
-  var navTargets = ['platform', 'film', 'village', 'team', 'partners', 'contact'].map(function (id) {
+  var navTargets = ['team', 'platform', 'film', 'village', 'partners', 'contact'].map(function (id) {
     return { el: doc.getElementById(id), link: $('a[href="#' + id + '"]', menu) };
   });
 
@@ -43,8 +43,32 @@
 
   /* ---------------- scroll-linked bits ---------------- */
   var scrubSpans = $$('[data-scrub] span');
-  var vHero = $('.v-hero');
   var ticking = false;
+
+  /* village reel: pinned horizontal scroll on wide screens (html.reel-on), native swipe strip otherwise */
+  var reel = $('#reel'), track = reel && $('.reel-track', reel), rbar = reel && $('.reel-bar span', reel), dist = 0;
+  function layoutReel() {
+    if (!reel) return;
+    var on = !reduce && win.innerWidth >= 900 && win.innerHeight >= 560;
+    root.classList.toggle('reel-on', on);
+    track.style.transform = '';
+    dist = 0;
+    if (on) {
+      var last = track.lastElementChild, pr = parseFloat(win.getComputedStyle(track).paddingRight) || 0;
+      dist = Math.max(0, Math.round(last.offsetLeft + last.offsetWidth + pr - track.clientWidth));
+      reel.style.height = (win.innerHeight + dist) + 'px';
+    } else {
+      reel.style.height = '';
+      if (rbar) rbar.style.transform = '';
+    }
+  }
+  function updateReel(vh) {
+    if (!dist) return;
+    var r = reel.getBoundingClientRect(), span = reel.offsetHeight - vh;
+    var p = span > 0 ? clamp(-r.top / span, 0, 1) : 0;
+    track.style.transform = 'translate3d(' + (-p * dist).toFixed(1) + 'px,0,0)';
+    if (rbar) rbar.style.transform = 'scaleX(' + p.toFixed(4) + ')';
+  }
   function onScroll() {
     var vh = win.innerHeight, y = win.pageYOffset;
     nav.classList.toggle('is-scrolled', y > 8);
@@ -54,11 +78,7 @@
         s.classList.toggle('is-on', s.getBoundingClientRect().top < vh * 0.72);
       });
     }
-    // village hero zoom
-    if (vHero && !reduce) {
-      var r = vHero.getBoundingClientRect();
-      vHero.style.setProperty('--vp', clamp((vh - r.top) / (vh + r.height), 0, 1).toFixed(3));
-    }
+    updateReel(vh);
     // active nav
     var line = vh * 0.4, cur = null;
     navTargets.forEach(function (t) {
@@ -70,8 +90,18 @@
     ticking = false;
   }
   win.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
-  win.addEventListener('resize', onScroll);
+  var reelT = 0, reelW = win.innerWidth, reelH = win.innerHeight;
+  win.addEventListener('resize', function () {
+    clearTimeout(reelT);
+    reelT = setTimeout(function () {
+      // ignore pure mobile URL-bar height jitter; recompute on real size changes
+      if (win.innerWidth === reelW && Math.abs(win.innerHeight - reelH) < 90 && !root.classList.contains('reel-on')) return;
+      reelW = win.innerWidth; reelH = win.innerHeight;
+      layoutReel(); onScroll();
+    }, 120);
+  });
   if (reduce) scrubSpans.forEach(function (s) { s.classList.add('is-on'); });
+  layoutReel();
   onScroll();
 
   /* ---------------- stats count-up ---------------- */
@@ -122,26 +152,81 @@
     video.addEventListener('ended', function () { film.classList.remove('is-playing'); video.controls = false; playBtn.focus({ preventScroll: true }); });
   }
 
-  /* ---------------- 詩詩 bubble ---------------- */
-  var bubble = $('.bubble'), shishiBtn = $('.shishi__btn');
-  if (bubble && shishiBtn) {
-    var lines = bubble.getAttribute('data-lines').split('|'), li = 0, timer = null, shishiVisible = false;
-    var nextLine = function (user) {
+  /* ---------------- 詩詩 (platform 2D art + gesture animations) ---------------- */
+  var bubble = $('.bubble'), shishiBtn = $('.shishi__btn'), art = $('.shishi__art'), shStill = art && $('.shishi__still', art);
+  if (bubble && shishiBtn && art && shStill) {
+    // Gesture WebPs play once (loop=1). A fresh URL per play restarts them: object URLs over http(s),
+    // a cache-busted file URL when opened from disk (fetch() cannot read file://).
+    var G = { wave: { src: art.getAttribute('data-wave'), ms: 2000 }, book: { src: art.getAttribute('data-book'), ms: 4000 } };
+    var useBlob = /^https?:$/.test(location.protocol) && !!win.fetch && !!(win.URL && URL.createObjectURL);
+    var blobs = {}, seq = 0, token = 0, cur = null, endT = 0, autoT = 0, autoN = 0, near = false, inView = false;
+    var lines = bubble.getAttribute('data-lines').split('|'), li = 0, lineT = 0;
+    var getBlob = function (kind) {
+      if (!useBlob) return Promise.resolve(null);
+      if (!blobs[kind]) {
+        blobs[kind] = fetch(G[kind].src).then(function (r) { if (!r.ok) throw new Error(r.status); return r.blob(); })
+          .catch(function () { useBlob = false; blobs[kind] = null; return null; });
+      }
+      return blobs[kind];
+    };
+    var preload = function () { getBlob('wave'); getBlob('book'); };
+    var stopG = function () {
+      token++; clearTimeout(endT);
+      if (cur) { if (cur.img.parentNode) cur.img.parentNode.removeChild(cur.img); if (cur.url) URL.revokeObjectURL(cur.url); cur = null; }
+      shStill.style.visibility = ''; art.removeAttribute('data-g');
+    };
+    var play = function (kind) {
+      if (reduce || doc.hidden) return;
+      stopG();
+      var my = token;
+      getBlob(kind).then(function (blob) {
+        if (my !== token) return;
+        var url = blob ? URL.createObjectURL(blob) : null;
+        var img = new Image(256, 376);
+        img.alt = ''; img.className = 'shishi__g'; img.decoding = 'async';
+        img.src = url || (G[kind].src + '?play=' + (++seq));
+        cur = { img: img, url: url };
+        var show = function () {
+          if (my !== token) return;
+          art.appendChild(img); shStill.style.visibility = 'hidden'; art.setAttribute('data-g', kind);
+          endT = setTimeout(function () { if (my === token) stopG(); }, G[kind].ms);
+        };
+        (img.decode ? img.decode() : Promise.resolve()).then(show, function () { if (my === token) stopG(); });
+      });
+    };
+    var schedule = function (first) {
+      clearTimeout(autoT);
+      if (reduce || !inView) return;
+      autoT = setTimeout(function () {
+        if (inView && !doc.hidden && !art.hasAttribute('data-g')) { autoN++; play(autoN % 3 === 0 ? 'book' : 'wave'); }
+        schedule(false);
+      }, first ? 700 : 6500);
+    };
+    var nextLine = function () {
       li = (li + 1) % lines.length;
       bubble.classList.add('is-swap');
       setTimeout(function () { bubble.textContent = lines[li]; bubble.classList.remove('is-swap'); }, reduce ? 0 : 260);
-      if (user) {
-        bubble.setAttribute('aria-live', 'polite');
-        shishiBtn.classList.remove('is-wave'); void shishiBtn.offsetWidth; shishiBtn.classList.add('is-wave');
-      }
     };
-    shishiBtn.addEventListener('click', function () { nextLine(true); restart(); });
-    var restart = function () {
-      clearInterval(timer);
-      if (!reduce && shishiVisible) timer = setInterval(function () { nextLine(false); }, 4200);
+    var lineLoop = function () {
+      clearInterval(lineT);
+      if (!reduce && inView) lineT = setInterval(nextLine, 4200);
     };
+    shishiBtn.addEventListener('click', function () {
+      bubble.setAttribute('aria-live', 'polite');
+      nextLine(); lineLoop();
+      play('book'); schedule(false);
+    });
+    doc.addEventListener('visibilitychange', function () { if (doc.hidden) stopG(); });
     if ('IntersectionObserver' in win) {
-      new IntersectionObserver(function (es) { shishiVisible = es[0].isIntersecting; restart(); }).observe(shishiBtn);
+      new IntersectionObserver(function (es) {
+        if (es[0].isIntersecting && !near) { near = true; if (!reduce) preload(); }
+      }, { rootMargin: '600px 0px' }).observe(shishiBtn);
+      new IntersectionObserver(function (es) {
+        var was = inView; inView = es[0].isIntersecting;
+        if (inView && !was) schedule(true);
+        if (!inView) { clearTimeout(autoT); stopG(); }
+        lineLoop();
+      }, { threshold: 0.35 }).observe(shishiBtn);
     }
   }
 
