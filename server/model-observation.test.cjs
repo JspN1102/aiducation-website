@@ -22,18 +22,17 @@ test('all selected observation models are bounded self-contained GLBs', async ()
   }
 });
 
-test('grades 1-3 have no AR exploration entry or preview AR folder', async () => {
+test('grades 1-3 have no AR exploration entry or AR file', async () => {
   const {EXPLORATION_CONTENT} = await import('../maanshan/exploration-data.mjs');
   const read = file => JSON.parse(fs.readFileSync(path.join(__dirname,'../maanshan',file),'utf8')).poems;
   const lower = [...read('poems.json'),...read('poems-preview.json')].filter(poem=>Number(poem.grade)<=3);
   assert.equal(lower.length,6);
   for (const poem of lower) {
     assert.equal(EXPLORATION_CONTENT[poem.slug],undefined,poem.slug);
-    // ti-xi-lin-bi keeps its model.glb because the mountain game (not AR) loads it.
-    assert(!fs.existsSync(path.join(__dirname,'../maanshan/media/exploration',poem.slug,'model.glb')) || poem.slug==='ti-xi-lin-bi',poem.slug);
-  }
-  for (const slug of ['yong-xue','hua-ji','qi-bu-shi']) {
-    assert(!fs.existsSync(path.join(__dirname,'../maanshan/media/exploration',slug)),slug);
+    // No AR model or scene picture is left. ti-xi-lin-bi keeps only its
+    // model.glb, because the mountain game (not AR) loads it.
+    const folder=path.join(__dirname,'../maanshan/media/exploration',poem.slug);
+    assert.deepEqual(fs.existsSync(folder)?fs.readdirSync(folder):[],poem.slug==='ti-xi-lin-bi'?['model.glb']:[],poem.slug);
   }
 });
 

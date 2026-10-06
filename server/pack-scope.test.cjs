@@ -71,6 +71,23 @@ test('each kind of file goes to the grade that uses it', async () => {
   assert.equal(classify('media/speech/not-in-any-index.mp3'), null);
 });
 
+test('grade 1-3 packs carry no AR picture, and their quiz never asks for one', async () => {
+  const {CHALLENGE_SETS} = await import('../maanshan/challenge-data.mjs');
+  const lower = (await scope.loadCatalogue()).filter(poem => poem.grade <= 3);
+  assert.equal(lower.length, 3);
+  for (const poem of lower) {
+    // Only the 題西林壁 mountain game's model (not AR) stays under media/exploration.
+    assert.deepEqual(packed().filter(file => file.startsWith('media/exploration/' + poem.slug + '/')),
+      poem.slug === 'ti-xi-lin-bi' ? ['media/exploration/ti-xi-lin-bi/model.glb'] : [], poem.slug);
+    // challenge.mjs shows media/exploration/<slug>/scene.webp only for a placing
+    // item without a card picture; 詠鵝 draws its own goose instead.
+    const set = CHALLENGE_SETS[poem.slug];
+    const placing = [...set.items, ...(set.bank || [])].filter(item => !['sound', 'dictation', 'microgame', 'scene-builder'].includes(item.type));
+    assert.ok(placing.length > 0, poem.slug);
+    for (const item of placing) assert.ok(poem.slug === 'yong-e' || item.cards?.some(card => card.image), poem.slug + ' ' + item.id);
+  }
+});
+
 test('the stored scope file is current', async () => {
   const {text} = await scope.build();
   assert.equal(fs.readFileSync(path.join(root, 'deploy/pack-scope.json'), 'utf8'), text);

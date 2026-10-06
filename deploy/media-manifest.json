@@ -291,24 +291,6 @@
       "objectCacheControl": "public, max-age=31536000, immutable"
     },
     {
-      "source": "/maanshan/media/exploration/ti-xi-lin-bi/scene.webp",
-      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/c0acc99d64e145277366/maanshan/media/exploration/ti-xi-lin-bi/scene.webp",
-      "bytes": 343440,
-      "sha256": "c0acc99d64e145277366e852e50ea01e46433c9fc40772aa3b897062364ed2dc",
-      "md5": "e9a256558f52685a2b5c60474a48dedb",
-      "contentType": "image/webp",
-      "objectCacheControl": "public, max-age=31536000, immutable"
-    },
-    {
-      "source": "/maanshan/media/exploration/yong-e/scene.webp",
-      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/972fdcbb06d70b22a140/maanshan/media/exploration/yong-e/scene.webp",
-      "bytes": 405496,
-      "sha256": "972fdcbb06d70b22a14042b3b072e38b31de9dbafc0fbdd019d7cc85e3b63dea",
-      "md5": "6916cc2fd412f745f7c34f2f7f73c054",
-      "contentType": "image/webp",
-      "objectCacheControl": "public, max-age=31536000, immutable"
-    },
-    {
       "source": "/maanshan/media/exploration/zao-chun/model-20260919b.glb",
       "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/d026e39e93b3b8000955/maanshan/media/exploration/zao-chun/model-20260919b.glb",
       "bytes": 1719700,
@@ -332,15 +314,6 @@
       "bytes": 362934,
       "sha256": "1b1dd8eff456334ad656bfe41bf1d5855f8b77657e58117a904b7280e5ed787e",
       "md5": "df31bef5a027db9da576a43e266e0e74",
-      "contentType": "image/webp",
-      "objectCacheControl": "public, max-age=31536000, immutable"
-    },
-    {
-      "source": "/maanshan/media/exploration/zeng-wang-lun/scene.webp",
-      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/87a202a2cdac682a97e7/maanshan/media/exploration/zeng-wang-lun/scene.webp",
-      "bytes": 385754,
-      "sha256": "87a202a2cdac682a97e74f80cd272758478b8ad6e0e133ee6e5f729b4f82fa1b",
-      "md5": "29ffca058975a494d6665662d398dfb8",
       "contentType": "image/webp",
       "objectCacheControl": "public, max-age=31536000, immutable"
     },

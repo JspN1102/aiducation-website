@@ -1,8 +1,8 @@
 {
  "schemaVersion": 1,
- "version": "7092868f39f6dfd0045f",
+ "version": "3d20fcec7ca176df98d9",
  "cache": "maanshan-pack-v1",
- "totalBytes": 219534677,
+ "totalBytes": 218399987,
  "assets": [
   {
    "path": "media/bo-chuan-gua-zhou/animation-20260917.mp4",
@@ -279,26 +279,6 @@
    ]
   },
   {
-   "path": "media/exploration/ti-xi-lin-bi/scene.webp",
-   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/c0acc99d64e145277366/maanshan/media/exploration/ti-xi-lin-bi/scene.webp",
-   "bytes": 343440,
-   "sha256": "c0acc99d64e145277366e852e50ea01e46433c9fc40772aa3b897062364ed2dc",
-   "type": "image/webp",
-   "grades": [
-    3
-   ]
-  },
-  {
-   "path": "media/exploration/yong-e/scene.webp",
-   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/972fdcbb06d70b22a140/maanshan/media/exploration/yong-e/scene.webp",
-   "bytes": 405496,
-   "sha256": "972fdcbb06d70b22a14042b3b072e38b31de9dbafc0fbdd019d7cc85e3b63dea",
-   "type": "image/webp",
-   "grades": [
-    1
-   ]
-  },
-  {
    "path": "media/exploration/zao-chun/model-20260919b.glb",
    "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/d026e39e93b3b8000955/maanshan/media/exploration/zao-chun/model-20260919b.glb",
    "bytes": 1719700,
@@ -326,16 +306,6 @@
    "type": "image/webp",
    "grades": [
     6
-   ]
-  },
-  {
-   "path": "media/exploration/zeng-wang-lun/scene.webp",
-   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/87a202a2cdac682a97e7/maanshan/media/exploration/zeng-wang-lun/scene.webp",
-   "bytes": 385754,
-   "sha256": "87a202a2cdac682a97e74f80cd272758478b8ad6e0e133ee6e5f729b4f82fa1b",
-   "type": "image/webp",
-   "grades": [
-    2
    ]
   },
   {
