@@ -915,7 +915,7 @@ function preloadActivityModules(activity,slug) {
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
   preloadActivityModules('quiz',poem?.slug);
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20261006-school43'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20261006-school45'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,

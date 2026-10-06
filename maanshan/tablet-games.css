@@ -17,7 +17,7 @@
  .workspace.view-quiz .challenge-header .challenge-eyebrow{font-size:18px;letter-spacing:0}
  .workspace.view-quiz .challenge-count{font-size:24px}
  .workspace.view-quiz .challenge-body{container:tablet-play / size;min-width:0;min-height:0;overflow:auto;justify-content:safe center}
- .workspace.view-quiz .challenge-game-holder{height:100%;display:grid;align-items:center;min-height:0}
+ .workspace.view-quiz .challenge-game-holder{height:100%;display:grid;align-items:safe center;min-height:0}
  .workspace.view-quiz .challenge-type-microgame .challenge-body{display:flex}
  .workspace.view-quiz .challenge-footer{margin-top:8px;padding-top:8px;gap:10px 18px;min-height:54px;flex-wrap:nowrap}
  .workspace.view-quiz .challenge-footer-actions{width:auto;margin-inline:0;flex:none;gap:10px;padding:0}

@@ -17,17 +17,20 @@ const VIEW={
   done:{scene:4,line:3,step:3,say:'剛剛好！用腳一試就知道。'}
 };
 const STAGES=Object.keys(VIEW),STEP={measure:'measure',placed:'measure',market:'story',closed:'story',try:'try',done:'try'};
-const INTRO={market:'「吾忘持度」：他想對一對尺碼，才發現尺碼留在家裏的座位上！',closed:'「市罷，遂不得履」：他拿着尺碼趕回來，市集已經散了，買不到鞋子。',try:'路人說：「何不試之以足？」幫他用腳試一試：點一下鞋子，或把鞋子拖到腳上。'};
+const INTRO={market:'「吾忘持度」：他想對一對尺碼，才發現尺碼留在家裏的座位上！',closed:'「市罷，遂不得履」：他拿着尺碼趕回來，市集已經散了，買不到鞋子。',try:'路人說：「何不試之以足？」幫他用腳一雙一雙試：先點第 1 雙鞋，或把它拖到腳上。'};
 const HEEL=14.09,TOE=85.82,ZONE={heel:9,toe:14},PEN=50;
 const AIM=['先自度其足：先量腳跟。','先自度其足：再量腳尖。'];
 const HOW=['把尺上的紅點挪到發亮的腳跟，點一下。也可以直接點腳跟。','記下腳跟了！再把紅點挪到腳尖（腳趾最前面），點一下。'];
-const SHOES=[{id:'big',label:'甲'},{id:'small',label:'乙'},{id:'right',label:'丙'}];
+// The shoes are tried strictly in this order: 1 is too big, 2 too small, and only 3 fits, so a child sees why the first two fail.
+const SHOES=[{id:'big',tag:'太大'},{id:'small',tag:'太小'},{id:'right',tag:'剛好'}];
 const CAP={small:'太小了，腳跟露出來',big:'太大了，會掉',right:'剛剛好！'};
-const FEEL={small:'太小了：腳趾擠住，腳跟露在鞋子外面。換一雙試試。',big:'太大了：腳跟後面空出一大截，一走就會掉。換一雙試試。',right:'剛剛好！腳跟和腳趾都包住了。用腳一試，就知道合不合腳。'};
+const FEEL={big:'第 1 雙太大了：腳跟後面空出一大截，一走就會掉。再試第 2 雙。',small:'第 2 雙太小了：腳趾擠住，腳跟露在鞋子外面。再試第 3 雙。',right:'第 3 雙剛剛好！腳跟和腳趾都包住了。用腳一試，就知道合不合腳。'};
+// The shoe last tried tells how far along the row the child is (size null: none yet).
+const tried=size=>SHOES.findIndex(s=>s.id===size)+1;
 const NEXT={placed:'去市集',market:'回家取尺碼',closed:'後來呢？'};
 const voice='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m10 5-5 4H2v6h3l5 4ZM14 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg>';
 const plain=v=>v&&typeof v==='object'&&!Array.isArray(v);
-// Version 3 keeps {stage, marks, size}. Older saves (v1 sorted sentence cards, v2 tagged pictures) resume at the
+// Version 3 keeps {stage, marks, size}; size is the shoe last tried, so it also marks the place in the 1-2-3 row. Older saves (v1 sorted sentence cards, v2 tagged pictures) resume at the
 // matching story point; a finished one stays finished, and an unfinished tagging step resumes at the try-on.
 function restore(s){
   const out={stage:'measure',marks:0,size:null};
@@ -70,7 +73,7 @@ export function mountShoeMarket(holder,{initialState,readOnly=false,playAudio,on
     <div class="sm-fitting" hidden><div class="sm-fit" data-sm-fit data-size="none"><span class="sm-ground" aria-hidden="true"></span>
       <img class="sm-in" src="${art('bu-lu')}" alt="" draggable="false"><img class="sm-foot" src="${art('foot')}" alt="鄭人自己的腳" draggable="false"><img class="sm-out" src="${art('bu-lu-front')}" alt="" draggable="false">
       <span class="sm-ring" aria-hidden="true"></span><p class="sm-cap" aria-hidden="true"></p></div>
-      <div class="sm-tray">${SHOES.map(s=>`<button type="button" class="is-${s.id}" data-sm-shoe="${s.id}" data-sm-drag="shoe" aria-label="${s.label}：用腳試穿這雙鞋"><img src="${art('bu-lu')}" alt="" draggable="false"><span>${s.label}</span></button>`).join('')}</div></div>
+      <div class="sm-tray">${SHOES.map((s,i)=>`<button type="button" class="is-${s.id}" data-sm-shoe="${s.id}" data-sm-drag="shoe"><img src="${art('bu-lu')}" alt="" draggable="false"><span class="sm-no" aria-hidden="true">${i+1}</span><em class="sm-tag" aria-hidden="true">${s.tag}</em></button>`).join('')}</div></div>
     <div class="sm-moral" hidden><b>寓意</b><p>${cl('可是鄭人說「寧信度」：寧可信量好的尺碼，也不信自己的腳，結果沒買到鞋。')}</p><strong>${cl('做事要從實際出發，懂得變通。')}</strong>
       <small>「<b>度</b>」duó 量一量<i aria-hidden="true">｜</i>dù 尺碼</small></div>
   </div>
@@ -132,7 +135,12 @@ export function mountShoeMarket(holder,{initialState,readOnly=false,playAudio,on
     const m=q('.sm-measure');m.hidden=!show;m.dataset.marks=String(marks);m.classList.toggle('is-flying',flying);q('[data-sm-pen]').disabled=!on||stage!=='measure'||marks>=2;setPen(pen);
     const fit=q('.sm-fit');q('.sm-fitting').hidden=!['try','done'].includes(stage);fit.dataset.size=size||'none';q('.sm-cap').textContent=CAP[size]||'';
     q('.sm-tray').hidden=stage==='done';
-    qa('[data-sm-shoe]').forEach(b=>{b.disabled=!on||stage!=='try';b.classList.toggle('is-on',b.dataset.smShoe===size);b.setAttribute('aria-pressed',String(b.dataset.smShoe===size));});
+    // Shoes already tried stay greyed with their verdict; later ones wait (dimmed, still tappable for a reminder); only the next one is live.
+    const done=tried(size);
+    qa('[data-sm-shoe]').forEach((b,i)=>{const n=i+1,turn=n<=done?'tried':n===done+1?'next':'wait';
+      b.disabled=!on||stage!=='try'||turn==='tried';b.dataset.turn=turn;b.classList.toggle('is-on',b.dataset.smShoe===size);
+      b.setAttribute('aria-disabled',String(turn==='wait'));b.setAttribute('aria-pressed',String(b.dataset.smShoe===size));
+      b.setAttribute('aria-label',`第 ${n} 雙鞋：${turn==='tried'?`試過了，${SHOES[i].tag}`:turn==='next'?'用腳試穿這雙鞋':`等一等，先試第 ${done+1} 雙`}`);});
     q('.sm-moral').hidden=stage!=='done';
     const next=q('[data-sm-next]');next.hidden=readOnly||solved||!NEXT[stage]||hold||flying;next.disabled=!on;
     next.innerHTML=`${NEXT[stage]||'下一步'} <span aria-hidden="true">→</span>`;
@@ -140,7 +148,7 @@ export function mountShoeMarket(holder,{initialState,readOnly=false,playAudio,on
   }
   // Move focus only for keyboard users, so pointer users never see a ring that looks like a hint.
   function focusOn(sel){if(kbUser)q(sel)?.focus({preventScroll:true});}
-  function focusFirst(){focusOn({measure:'[data-sm-pen]',placed:'[data-sm-next]',market:'[data-sm-next]',closed:'[data-sm-next]',try:'[data-sm-shoe]',done:'[data-sm-listen]'}[stage]);}
+  function focusFirst(){focusOn({measure:'[data-sm-pen]',placed:'[data-sm-next]',market:'[data-sm-next]',closed:'[data-sm-next]',try:'[data-sm-shoe][data-turn=next]',done:'[data-sm-listen]'}[stage]);}
   function go(next,message){stage=next;save();render();present();focusFirst();tell(message??INTRO[next]??'');}
   function mark(){
     if(!can('measure')||marks>=2)return;
@@ -194,9 +202,14 @@ export function mountShoeMarket(holder,{initialState,readOnly=false,playAudio,on
   function clearFly(){root.querySelectorAll('.sm-fly').forEach(el=>el.remove());fold?.cancel();fold=null;flyEl=null;hold=false;flying=false;}
   function tryOn(id){
     if(!can('try'))return;
-    if(size===id){tell(FEEL[id]);return;}
-    research.answer('try',id,id==='right');size=id;
-    if(id!=='right'){tone('soft');save();render();replay(q('.sm-fit'),'is-drop',500);tell(FEEL[id]);return;}
+    const n=tried(size)+1,want=SHOES[n-1]?.id;
+    if(!want||tried(id)<n){if(size)tell(FEEL[size]);return;}
+    // Shoes go strictly 1, 2, 3: a later shoe only points back at the one whose turn it is.
+    if(id!==want){research.action('try','wait');tone('soft');replay(q(`[data-sm-shoe=${want}]`),'is-nudge',700);tell(`要一雙一雙按次序試：先試第 ${n} 雙。`);return;}
+    size=id;
+    // The first two are steps of the story, not mistakes: they show what "too big" and "too small" look like.
+    if(id!=='right'){research.action('try',id);tone('soft');save();render();replay(q('.sm-fit'),'is-drop',500);tell(FEEL[id]);focusFirst();return;}
+    research.answer('try',id,true);
     tone('win');stage='done';save();render();replay(q('.sm-fit'),'is-drop',500);tell(FEEL.right);focusFirst();
     if(!reported){reported=true;research.complete();onComplete?.({correct:true,response:state(),knowledge:KNOW});}
   }
@@ -223,7 +236,7 @@ export function mountShoeMarket(holder,{initialState,readOnly=false,playAudio,on
     const el=e.target.closest?.('[data-sm-drag]');
     if(drag||!el||!available()||e.button>0||e.isPrimary===false)return;
     const kind=el.dataset.smDrag;
-    if(kind==='pen'?stage!=='measure'||marks>=2:el.disabled)return;
+    if(kind==='pen'?stage!=='measure'||marks>=2:el.disabled||el.dataset.turn!=='next')return;
     const onPen=kind==='pen'&&!!e.target.closest('[data-sm-pen]');
     drag={el,kind,id:e.pointerId,x:e.clientX,y:e.clientY,moved:false,start:pen,onPen,off:onPen?penFrom(e.clientX)-pen:0,far:0};
     try{el.setPointerCapture(e.pointerId);}catch{}
@@ -283,7 +296,7 @@ export function mountShoeMarket(holder,{initialState,readOnly=false,playAudio,on
     showSolution(){
       if(dead||solved)return;endDrag();timers.forEach(id=>view.clearTimeout(id));timers.clear();clearFly();
       research.hint('game','reveal');solved=true;reported=true;stage='done';marks=2;size='right';render();
-      tell('從腳跟量到腳尖，就是腳的尺碼（度）。路人說「何不試之以足」：用腳一試，丙這雙剛剛好。做事要從實際出發，懂得變通。');
+      tell('從腳跟量到腳尖，就是腳的尺碼（度）。路人說「何不試之以足」：一雙一雙用腳試，第 3 雙剛剛好。做事要從實際出發，懂得變通。');
     },
     reset(){
       if(dead||readOnly)return;endDrag();research.reset();timers.forEach(id=>view.clearTimeout(id));timers.clear();clearFly();

@@ -13,7 +13,7 @@ const loaders={
  'hua-ji':()=>import('./rooster.mjs?v=20261006-school43').then(m=>m.mountRooster),
  'qi-bu-shi':()=>import('./seven-steps.mjs?v=20261006-school43').then(m=>m.mountSevenSteps),
  'jue-ju':()=>import('./couplet.mjs?v=20261006-school43').then(m=>m.mountCouplet),
- 'zheng-ren-mai-lu':()=>import('./shoe-market.mjs?v=20261006-school43').then(m=>m.mountShoeMarket),
+ 'zheng-ren-mai-lu':()=>import('./shoe-market.mjs?v=20261006-school45').then(m=>m.mountShoeMarket),
  'ke-zhi':()=>import('./guest.mjs?v=20261006-school43').then(m=>m.mountGuest)
 };
 export function mountPoemGame(holder,{slug,...options}={}){

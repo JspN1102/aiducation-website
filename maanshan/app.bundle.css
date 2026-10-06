@@ -3624,7 +3624,7 @@ dialog h2{font-size:26px;line-height:1.4}
 }
 
 /* poem-games/shoe-market.css */
-.poem-shoe-game{--sm-ink:#34433a;--sm-mute:#6b6650;--sm-red:#b3442e;--sm-green:#4d6c4c;--sm-wood:#7b5934;--sm-edge:#e2d0aa;--sm-gold:#e9a93a;position:relative;width:100%;max-width:1120px;margin-inline:auto;min-width:0;color:var(--sm-ink);font-family:var(--sans);display:flex;flex-direction:column;justify-content:center}
+.poem-shoe-game{--sm-ink:#34433a;--sm-mute:#6b6650;--sm-red:#b3442e;--sm-green:#4d6c4c;--sm-wood:#7b5934;--sm-edge:#e2d0aa;--sm-gold:#e9a93a;position:relative;width:100%;max-width:1120px;margin-inline:auto;min-width:0;color:var(--sm-ink);font-family:var(--sans);display:flex;flex-direction:column;justify-content:safe center}
 .poem-shoe-game *{box-sizing:border-box}
 .poem-shoe-game [hidden]{display:none!important}
 .poem-shoe-game button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
@@ -3737,9 +3737,22 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-shoe-game .sm-tray button{position:relative;display:flex;align-items:flex-end;justify-content:center;min-height:76px;padding:30px 8px 10px;border-radius:16px;border:1.5px solid var(--sm-edge);background:#fffaf0;box-shadow:0 3px 0 #e8dcc0;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
 .poem-shoe-game .sm-tray img{display:block;height:auto;pointer-events:none;filter:drop-shadow(0 2px 2px #3b2a1430)}
 .poem-shoe-game .sm-tray .is-big img{width:92%}.poem-shoe-game .sm-tray .is-right img{width:72%}.poem-shoe-game .sm-tray .is-small img{width:54%}
-.poem-shoe-game .sm-tray span{position:absolute;left:10px;top:5px;font-size:18px;font-weight:700;color:var(--sm-wood)}
-@media (hover:hover){.poem-shoe-game .sm-tray button:hover:not(:disabled){background:#fff4dc}}
-.poem-shoe-game .sm-tray button.is-on{border-color:#c98a6e;background:#fbeee6}
+.poem-shoe-game .sm-no{position:absolute;left:7px;top:6px;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#f2e7cf;color:var(--sm-wood);font-size:18px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.poem-shoe-game .sm-tag{position:absolute;right:6px;top:6px;padding:.05em .45em;border-radius:9px;border:1.5px solid #d99a8a;background:#fbe9e4;color:#8c2f1d;font-size:14px;font-style:normal;font-weight:800;line-height:1.35;display:none}
+/* Strict order 1, 2, 3: the live shoe glows, the waiting ones are dimmed, the tried ones keep their verdict. */
+.poem-shoe-game .sm-tray button[data-turn=next]{border-color:var(--sm-gold);background:#fff7e3;box-shadow:0 3px 0 #e8dcc0,0 0 0 3px #f6dc9c;animation:sm-turn 1.8s ease-in-out infinite}
+.poem-shoe-game .sm-tray button[data-turn=next] .sm-no{background:var(--sm-gold);color:#fffdf2}
+.poem-shoe-game .sm-tray button[data-turn=wait]{border-style:dashed;background:#f7f1e4;box-shadow:none;cursor:default}
+/* Only the live shoe can be dragged; a finger sliding over the others scrolls the page as usual. */
+.poem-shoe-game .sm-tray button:not([data-turn=next]){touch-action:pan-y}
+.poem-shoe-game .sm-tray button[data-turn=wait] img{opacity:.35;filter:grayscale(.7)}
+.poem-shoe-game .sm-tray button[data-turn=wait] .sm-no{background:#ebe3d2;color:#9a8b70}
+.poem-shoe-game .sm-tray button[data-turn=tried]{background:#f5efe2;box-shadow:none;cursor:default}
+.poem-shoe-game .sm-tray button[data-turn=tried] img{opacity:.55}
+.poem-shoe-game .sm-tray button[data-turn=tried] .sm-tag{display:block}
+@media (hover:hover){.poem-shoe-game .sm-tray button[data-turn=next]:hover:not(:disabled){background:#fff1d0}}
+.poem-shoe-game .sm-tray button.is-on{border-color:#c98a6e;border-style:solid;background:#fbeee6}
+.poem-shoe-game .sm-tray button.is-nudge{animation:sm-nudge .7s ease}
 .poem-shoe-game .is-dragging{z-index:40;transition:none!important;cursor:grabbing;box-shadow:0 12px 26px #3b2a1445!important;opacity:.94}
 
 /* Ending */
@@ -3761,11 +3774,37 @@ dialog h2{font-size:26px;line-height:1.4}
 @keyframes sm-pop{40%{scale:1.3}}
 @keyframes sm-lift{35%{scale:1.3;box-shadow:0 0 0 3px #fff7e6,0 0 0 8px #e9a93a99,0 3px 8px #0006}}
 @keyframes sm-drop{from{translate:0 -14%;opacity:.2}}
+@keyframes sm-turn{50%{box-shadow:0 3px 0 #e8dcc0,0 0 0 5px #f3cf7a,0 0 16px #ffe08a}}
 
-@media (min-width:701px) and (orientation:landscape){
-  .poem-shoe-game .sm-frame{grid-template-columns:minmax(0,1.3fr) minmax(300px,1fr);grid-template-areas:"head head" "stage side";column-gap:22px;align-items:start}
-  .poem-shoe-game .sm-side{gap:8px}
+/* Tablets: every picture is capped by the play-area height (cqh of the tablet-play container), so the whole game,
+   its buttons and feedback fit on screen in every step instead of growing the page. */
+@media (min-width:701px) and (orientation:landscape) and (min-height:501px){
+  /* The picture, its buttons and the feedback share the left column; the work panel fills the right one. */
+  .poem-shoe-game .sm-frame{grid-template-columns:minmax(0,1.3fr) minmax(300px,1fr);grid-template-areas:"head head" "stage panel" "act panel" "fb panel";grid-template-rows:auto auto auto 1fr;column-gap:22px;row-gap:10px;align-items:start}
+  .poem-shoe-game .sm-side{display:contents}.poem-shoe-game .sm-panel{grid-area:panel}.poem-shoe-game .sm-actions{grid-area:act}.poem-shoe-game .sm-feedback{grid-area:fb;min-height:0}
+  .poem-shoe-game .sm-stage{justify-self:center;width:min(100%,calc((100cqh - 186px) * 16 / 9))}
   .poem-shoe-game .sm-text{justify-content:flex-start}
+  .poem-shoe-game .sm-measure{width:min(100%,calc((100cqh - 190px) * 1000 / 640))}
+  .poem-shoe-game .sm-fit{width:min(100%,calc((100cqh - 264px) * 1350 / 770))}
+  .poem-shoe-game[data-stage=done] .sm-fit{width:min(100%,calc((100cqh - 310px) * 1350 / 770))}
+}
+@media (min-width:701px) and (orientation:portrait){
+  /* Picture on top, work panel under it, then the buttons beside the feedback; the stage and the work picture split
+     the height that is left, and the shoes stand in a column beside the foot. */
+  .poem-shoe-game .sm-frame{grid-template-columns:auto minmax(0,1fr);grid-template-areas:"head head" "stage stage" "panel panel" "act fb";gap:10px 16px}
+  .poem-shoe-game .sm-side{display:contents}.poem-shoe-game .sm-panel{grid-area:panel}.poem-shoe-game .sm-actions{grid-area:act;flex-wrap:nowrap;align-self:center}
+  .poem-shoe-game .sm-feedback{grid-area:fb;align-self:center;min-height:2.9em;text-align:left}
+  .poem-shoe-game .sm-stage{justify-self:center;width:min(100%,calc((100cqh - 250px) * .55 * 16 / 9))}
+  .poem-shoe-game .sm-measure{width:min(100%,calc((100cqh - 250px) * .45 * 1000 / 640))}
+  .poem-shoe-game .sm-fitting{grid-template-columns:minmax(0,1fr) 150px;align-items:center;gap:12px}
+  .poem-shoe-game .sm-fit{width:min(100%,calc((100cqh - 250px) * .45 * 1350 / 770))}
+  .poem-shoe-game .sm-tray{grid-template-columns:1fr;gap:8px}
+  .poem-shoe-game .sm-tray button{min-height:74px;padding:8px 8px 8px 42px;align-items:center}
+  .poem-shoe-game .sm-tray .sm-no{top:50%;transform:translateY(-50%)}
+  .poem-shoe-game .sm-tray .sm-tag{top:auto;bottom:5px}
+  /* Ending: the fitted shoe beside the moral. */
+  .poem-shoe-game[data-stage=done] .sm-panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);align-items:center}
+  .poem-shoe-game[data-stage=done] .sm-fitting{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:700px){
   .poem-shoe-game .sm-frame{gap:10px}
@@ -3807,7 +3846,8 @@ dialog h2{font-size:26px;line-height:1.4}
   .poem-shoe-game .sm-fit{max-width:330px}
   .poem-shoe-game[data-stage=done] .sm-fit{max-width:250px}
   .poem-shoe-game .sm-tray{grid-template-columns:1fr;gap:6px}
-  .poem-shoe-game .sm-tray button{min-height:48px;align-items:center;padding:5px 6px 5px 28px}.poem-shoe-game .sm-tray span{font-size:16px;top:50%;left:9px;transform:translateY(-50%)}
+  .poem-shoe-game .sm-tray button{min-height:48px;align-items:center;padding:5px 6px 5px 30px}.poem-shoe-game .sm-tray .sm-no{width:24px;height:24px;font-size:15px;top:50%;left:4px;transform:translateY(-50%)}
+  .poem-shoe-game .sm-tray .sm-tag{top:auto;bottom:2px;right:3px}
   .poem-shoe-game .sm-moral{gap:3px;padding:7px 8px}.poem-shoe-game .sm-moral>b{font-size:17px}.poem-shoe-game .sm-moral p{font-size:15px}.poem-shoe-game .sm-moral strong{font-size:16px}.poem-shoe-game .sm-moral small{font-size:14px;padding-top:4px}
   .poem-shoe-game .sm-actions button{min-height:46px;font-size:17px;padding:6px 14px}
   .poem-shoe-game .sm-feedback{font-size:15px;min-height:0;line-height:1.4}
@@ -4481,7 +4521,7 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace.view-quiz .challenge-header .challenge-eyebrow{font-size:18px;letter-spacing:0}
  .workspace.view-quiz .challenge-count{font-size:24px}
  .workspace.view-quiz .challenge-body{container:tablet-play / size;min-width:0;min-height:0;overflow:auto;justify-content:safe center}
- .workspace.view-quiz .challenge-game-holder{height:100%;display:grid;align-items:center;min-height:0}
+ .workspace.view-quiz .challenge-game-holder{height:100%;display:grid;align-items:safe center;min-height:0}
  .workspace.view-quiz .challenge-type-microgame .challenge-body{display:flex}
  .workspace.view-quiz .challenge-footer{margin-top:8px;padding-top:8px;gap:10px 18px;min-height:54px;flex-wrap:nowrap}
  .workspace.view-quiz .challenge-footer-actions{width:auto;margin-inline:0;flex:none;gap:10px;padding:0}
