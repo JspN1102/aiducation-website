@@ -1,9 +1,9 @@
-import {imageAsset} from './media-images.mjs?v=20261006-school45';
+import {imageAsset} from './media-images.mjs?v=20261007-school46';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261006-school43';
 import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20261006-school43';
 import {mountChallengeWriting} from './challenge-writing.mjs?v=20260929-hk1';
 import {mountChallengeModel} from './challenge-model.mjs?v=20261006-school43';
-import {mountLivingField} from './living-field.mjs?v=20261006-school43';
+import {mountLivingField} from './living-field.mjs?v=20261007-school46';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const COMPACT_PROMPTS = {
@@ -30,23 +30,56 @@ const COMPACT_PROMPTS = {
 };
 const prompt = item => COMPACT_PROMPTS[item.id] || item.prompt;
 const KIND = {sound:'聽音小鋪', dictation:'描紅與聽寫', microgame:'詩裏玩一玩', match:'動手解詩', sequence:'故事排一排', 'scene-builder':'種一片詩田'};
-// 聽音選擇題的答題形式只在這裏決定：第一期六首（id 1-6）是「小醫生問診」，
-// 第二期六首（id 7-12）是「警察抓犯人」。題目、答案和記錄都不受影響。
+// 聽音選擇題的答題形式只在這裏決定，題目、答案、計分和記錄都不受影響。
+// 四種形式：警察抓犯人、小醫生問診、海灘尋寶（開寶箱）、超市採購。
+// 每個年級有兩首詩：第一期（id 1-6）和第二期（id 7-12，SOUND_ROUND_TWO）。按一輪裏有幾題聽音選擇題 n、
+// 這題是其中第幾題 i（由 0 起）決定：
+//   n=1：第一期抓犯人，第二期問診；
+//   n=2：第一期 [抓犯人, 問診]，第二期 [開寶箱, 購物]；
+//   n=3：第一期 [抓犯人, 問診, 開寶箱]，第二期 [抓犯人, 問診, 購物]；
+//   n≥4：兩期都依次 [抓犯人, 問診, 開寶箱, 購物]。
+// 一輪的題目次序在開始時已存進記錄（itemIds），重新載入不會變；錯題重做沿用原來那一輪的次序，
+// 所以同一題重做時仍是同一個形式。找不到這題時：第一期抓犯人，第二期開寶箱。
+// scene is the question picture; a right answer fades in solved, a wrong or skipped one fades in missed.
 const SOUND_ROUND_TWO = new Set(['yong-xue', 'hua-ji', 'qi-bu-shi', 'jue-ju', 'zheng-ren-mai-lu', 'ke-zhi']);
 const SOUND_FORMS = {
-  clinic: {id:'clinic', kind:'小醫生問診', scene:'media/challenges/clinic-v1.webp', solved:'media/challenges/clinic-well-v1.webp', cast:'media/challenges/clinic-bottles-v1.webp',
+  clinic: {id:'clinic', kind:'小醫生問診', scene:'media/challenges/clinic-v1.webp', solved:'media/challenges/clinic-well-v1.webp', missed:'media/challenges/clinic-cry-v1.webp', cast:'media/challenges/clinic-bottles-v1.webp',
     cue:'問一問，聽一聽', again:'再點一次，再聽一聽', listen:'問診：點一點，聽題目聲音', listenAgain:'再點一次，再聽題目聲音',
     instruction:'先問診聽一聽，再選一種藥。', group:'選一種藥', start:'先點上面問診，聽一聽，再選藥。', ready:'聽好了，選一種藥。',
     retry:'聲音還沒播完，請再點一次問診。', submit:'開藥', right:'藥開對了，好起來了！', wrong:'差一點，一起看看。'},
-  police: {id:'police', kind:'警察抓犯人', scene:'media/challenges/police-v1.webp', solved:'media/challenges/police-caught-v1.webp', cast:'media/challenges/police-lineup-v1.webp',
+  police: {id:'police', kind:'警察抓犯人', scene:'media/challenges/police-v1.webp', solved:'media/challenges/police-caught-v1.webp', missed:'media/challenges/police-sad-v1.webp', cast:'media/challenges/police-lineup-v1.webp',
     cue:'聽聽線索', again:'再點一次，再聽線索', listen:'點對講機，聽線索聲音', listenAgain:'再點對講機，再聽一次線索',
     instruction:'先聽線索，再找出犯人。', group:'找出犯人', start:'先點對講機聽線索，再找犯人。', ready:'聽好了，找出犯人。',
-    retry:'聲音還沒播完，請再點對講機聽一次。', submit:'就是他！', right:'抓到了！就是他！', wrong:'不是他，一起看看。'}
+    retry:'聲音還沒播完，請再點對講機聽一次。', submit:'就是他！', right:'抓到了！就是他！', wrong:'不是他，一起看看。'},
+  // 只有一個寶箱有寶藏（正確答案），其餘都是彈簧陷阱。
+  chest: {id:'chest', kind:'海灘尋寶', scene:'media/challenges/chest-v1.webp', solved:'media/challenges/chest-found-v1.webp', missed:'media/challenges/chest-trap-v1.webp', cast:'media/challenges/chest-boxes-v1.webp',
+    cue:'貝殼聽一聽', again:'再點一次，再聽貝殼', listen:'點貝殼，聽題目聲音', listenAgain:'再點貝殼，再聽一次',
+    instruction:'先聽貝殼，再選一個寶箱。', group:'選一個寶箱', start:'先點貝殼聽一聽，再選寶箱。', ready:'聽好了，選一個寶箱。',
+    retry:'聲音還沒播完，請再點一次貝殼。', submit:'打開寶箱', right:'找到寶藏了！', wrong:'是陷阱！一起看看。'},
+  shop: {id:'shop', kind:'超市採購', scene:'media/challenges/shop-v1.webp', solved:'media/challenges/shop-happy-v1.webp', missed:'media/challenges/shop-sad-v1.webp', cast:'media/challenges/shop-goods-v1.webp',
+    cue:'聽聽購物單', again:'再點一次，再聽購物單', listen:'點購物單，聽題目聲音', listenAgain:'再點購物單，再聽一次',
+    instruction:'先聽購物單，再選一樣貨品。', group:'選一樣貨品', start:'先點購物單聽一聽，再選貨品。', ready:'聽好了，選一樣貨品。',
+    retry:'聲音還沒播完，請再點一次購物單。', submit:'買這個', right:'買對了，謝謝你！', wrong:'買錯了，一起看看。'}
 };
-export const soundForm = poem => SOUND_FORMS[SOUND_ROUND_TWO.has(poem?.slug) ? 'police' : 'clinic'];
+const SOUND_ORDER = Object.freeze({1:[['police'],['clinic']], 2:[['police','clinic'],['chest','shop']], 3:[['police','clinic','chest'],['police','clinic','shop']]});
+// Pure rule: which form the index-th of count listening questions in a round uses.
+export function soundFormId(roundTwo, count, index) {
+  if (!Number.isInteger(count) || !Number.isInteger(index) || index < 0 || index >= count) return roundTwo ? 'chest' : 'police';
+  return count >= 4 ? ['police', 'clinic', 'chest', 'shop'][index % 4] : SOUND_ORDER[count][roundTwo ? 1 : 0][index];
+}
+// roundIds: the round's item ids in their saved order (attempt.itemIds; for 錯題重做 the source round's).
+// Without them the poem's canonical item list is used.
+export const soundForm = (poem, item, roundIds) => {
+  const set = CHALLENGE_SETS[poem?.slug], bank = set ? set.bank || set.items : [];
+  const ids = (Array.isArray(roundIds) && roundIds.length ? roundIds : (set?.items || []).map(value => value.id))
+    .filter(id => bank.some(value => value.id === id && value.type === 'sound'));
+  return SOUND_FORMS[soundFormId(SOUND_ROUND_TWO.has(poem?.slug), ids.length, ids.indexOf(item?.id))];
+};
 const markIcon = {
   clinic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5.5 12.5 4.2 4.2 8.8-9.4"/></svg>',
-  police:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6.5" cy="16" r="4"/><circle cx="17.5" cy="16" r="4"/><path d="M6.5 12V8.6a1.6 1.6 0 0 1 1.6-1.6h1.4m8 5V8.6A1.6 1.6 0 0 0 15.9 7h-1.4m-4.5 0h4"/></svg>'
+  police:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6.5" cy="16" r="4"/><circle cx="17.5" cy="16" r="4"/><path d="M6.5 12V8.6a1.6 1.6 0 0 1 1.6-1.6h1.4m8 5V8.6A1.6 1.6 0 0 0 15.9 7h-1.4m-4.5 0h4"/></svg>',
+  chest:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10l4 5.5L12 20 3 9.5Z"/><path d="M3 9.5h18M9.5 4 8 9.5l4 10.5 4-10.5L14.5 4"/></svg>',
+  shop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8.5h14l-1.2 11.5H6.2Z"/><path d="M9 11V7a3 3 0 0 1 6 0v4"/></svg>'
 };
 const soundIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m10 5-5 4H2v6h3l5 4ZM14 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg>';
 const tone = shape => shape ? `<svg class="challenge-tone" viewBox="0 0 70 35" aria-hidden="true"><path d="${{level:'M8 10H62', rising:'M8 28 62 6', dipping:'M8 13 32 29 62 6', falling:'M8 6 62 28'}[shape]}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>` : '';
@@ -66,6 +99,8 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
   const flushDraft = () => {if(draftTimer!==null){clearTimeout(draftTimer);draftTimer=null;save();}};
   const ordered = item => (attempt.orders[item.id] || []).map(id => (item.options || item.cards).find(card => card.id === id));
   const currentAnswer = () => attempt?.answers[screen];
+  // The form follows the round's saved order; a 錯題重做 round keeps the form of the round it came from.
+  const formOf = item => soundForm(poem, item, attempt.mode === 'review' ? attempt.sourceAttempt?.itemIds : attempt.itemIds);
   let itemPresentedAt = performance.now();
   function researchContext(){
     const item=items[screen];
@@ -145,7 +180,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const locked = !!answer;
     const active = () => !dead && epoch === gameEpoch && generation === renderGeneration;
     try {
-      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20261006-school45');
+      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20261007-school46');
       if (!active()) return;
       let completionReceived = false;
       const mounted = mountPoemGame(holder, {slug: poem.slug, initialState: state, readOnly: locked,
@@ -172,11 +207,11 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     }
   }
   function header(item) {
-    return `<header class="challenge-header"><div><span class="challenge-eyebrow">${attempt.mode==='review'?'錯題重做':attempt.mode==='advanced'?'高階挑戰':item.type==='sound'?soundForm(poem).kind:KIND[item.type]}</span><span class="challenge-count">${screen+1}<small> / ${items.length}</small></span></div><div class="challenge-steps" aria-label="第 ${screen+1} 題，共 ${items.length} 題">${items.map((_,i)=>`<i class="${i<screen?'done':i===screen?'current':''}"></i>`).join('')}</div></header>`;
+    return `<header class="challenge-header"><div><span class="challenge-eyebrow">${attempt.mode==='review'?'錯題重做':attempt.mode==='advanced'?'高階挑戰':item.type==='sound'?formOf(item).kind:KIND[item.type]}</span><span class="challenge-count">${screen+1}<small> / ${items.length}</small></span></div><div class="challenge-steps" aria-label="第 ${screen+1} 題，共 ${items.length} 題">${items.map((_,i)=>`<i class="${i<screen?'done':i===screen?'current':''}"></i>`).join('')}</div></header>`;
   }
   function soundBody(item) {
-    const form=soundForm(poem);
-    return `<div class="sound-case is-${form.id}" data-sound-form="${form.id}"><button type="button" class="sound-case-scene" data-ch="listen" aria-label="${form.listen}" draggable="false"><img class="sound-case-picture" src="${esc(imageAsset(form.scene))}" alt="" draggable="false"><img class="sound-case-picture is-after" src="${esc(imageAsset(form.solved))}" alt="" draggable="false"><span class="sound-case-cue">${soundIcon}<span class="sound-case-cue-text">${form.cue}</span></span></button><div class="sound-case-work"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><p class="challenge-instruction">${form.instruction}</p><div class="sound-case-options" role="group" aria-label="${form.group}">${ordered(item).map((option,index)=>`<button type="button" class="sound-case-option" data-ch="choose" data-option="${option.id}" aria-pressed="false" disabled><span class="sound-case-figure"><span class="sound-case-art is-cell-${index%4}" aria-hidden="true"><img src="${esc(imageAsset(form.cast))}" alt="" draggable="false"></span><span class="sound-case-tag">${tone(option.contour)}<span>${esc(option.label)}</span></span><span class="sound-case-mark" aria-hidden="true">${markIcon[form.id]}</span></span></button>`).join('')}</div><p class="challenge-audio-status" role="status" aria-live="polite">${form.start}</p></div></div>`;
+    const form=formOf(item);
+    return `<div class="sound-case is-${form.id}" data-sound-form="${form.id}"><button type="button" class="sound-case-scene" data-ch="listen" aria-label="${form.listen}" draggable="false"><img class="sound-case-picture" src="${esc(imageAsset(form.scene))}" alt="" draggable="false"><img class="sound-case-picture is-after" src="${esc(imageAsset(form.solved))}" alt="" draggable="false"><img class="sound-case-picture is-missed-pic" src="${esc(imageAsset(form.missed))}" alt="" draggable="false"><span class="sound-case-cue">${soundIcon}<span class="sound-case-cue-text">${form.cue}</span></span></button><div class="sound-case-work"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><p class="challenge-instruction">${form.instruction}</p><div class="sound-case-options" role="group" aria-label="${form.group}">${ordered(item).map((option,index)=>`<button type="button" class="sound-case-option" data-ch="choose" data-option="${option.id}" aria-pressed="false" disabled><span class="sound-case-figure"><span class="sound-case-art is-cell-${index%4}" aria-hidden="true"><img src="${esc(imageAsset(form.cast))}" alt="" draggable="false"></span><span class="sound-case-tag">${tone(option.contour)}<span>${esc(option.label)}</span></span><span class="sound-case-mark" aria-hidden="true">${markIcon[form.id]}</span></span></button>`).join('')}</div><p class="challenge-audio-status" role="status" aria-live="polite">${form.start}</p></div></div>`;
   }
   function writingBody(item) {
     return `<div class="challenge-writing-layout"><div class="challenge-writing-heading"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><div class="challenge-writing-prompts"><button class="challenge-listen" data-ch="listen">${soundIcon}<span>聽詞語</span></button><button type="button" class="challenge-strokes" data-cw="strokes"><span>看筆順</span></button></div><p class="challenge-audio-status" role="status"></p><div class="cw-review" hidden></div></div><div class="challenge-writing-holder"></div></div>`;
@@ -276,10 +311,10 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     if (dead || generation !== renderGeneration || playback !== audioGeneration) return;
     playing = false;button?.classList.remove('is-playing');button?.removeAttribute('aria-busy');
     if (success) heard = true;
-    if (status) status.textContent = success ? item.type==='sound'?soundForm(poem).ready:'聽到了，可以寫字，也可以再聽一次。' : item.type==='dictation'?'聲音暫時未能播放，可以先寫字，稍後再聽。':heard?'這次未播完，可以再聽一次，或照剛才的聲音選答案。':soundForm(poem).retry;
+    if (status) status.textContent = success ? item.type==='sound'?formOf(item).ready:'聽到了，可以寫字，也可以再聽一次。' : item.type==='dictation'?'聲音暫時未能播放，可以先寫字，稍後再聽。':heard?'這次未播完，可以再聽一次，或照剛才的聲音選答案。':formOf(item).retry;
     if(success&&item.type==='sound'){
-      button?.setAttribute('aria-label',soundForm(poem).listenAgain);
-      const note=q('.sound-case-cue-text');if(note)note.textContent=soundForm(poem).again;
+      button?.setAttribute('aria-label',formOf(item).listenAgain);
+      const note=q('.sound-case-cue-text');if(note)note.textContent=formOf(item).again;
     }
     if (item.type === 'sound') updateSound();
   }
@@ -287,7 +322,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     if (!heard || currentAnswer()||!items[screen].options.some(option=>option.id===id)) return;
     selected=id;updateSound();
     const option=items[screen].options.find(value=>value.id===id),status=q('.challenge-audio-status');
-    if(status)status.textContent=`已選「${option.label}」，點「${soundForm(poem).submit}」。`;
+    if(status)status.textContent=`已選「${option.label}」，點「${formOf(items[screen]).submit}」。`;
   }
   function updateSound() {
     const answer=currentAnswer(),stage=q('.sound-case');
@@ -297,7 +332,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
       button.disabled=!heard||!!answer;button.setAttribute('aria-pressed',String(button.dataset.option===selected));
       button.classList.toggle('is-correct',!!answer && button.dataset.option===items[screen].answerId);
     });
-    const submitButton=q('[data-ch="submit"]');if(submitButton){submitButton.disabled=!heard||!selected||!!answer;submitButton.textContent=soundForm(poem).submit;}
+    const submitButton=q('[data-ch="submit"]');if(submitButton){submitButton.disabled=!heard||!selected||!!answer;submitButton.textContent=formOf(items[screen]).submit;}
     if(answer){const status=q('.sound-case .challenge-audio-status');if(status)status.textContent='';}
   }
   function place(slot) {
@@ -347,7 +382,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     q('[data-ch="skip"]').hidden=true;q('[data-ch="submit"]').hidden=true;
     const next=q('[data-ch="next"]');next.hidden=false;
     next.textContent=screen===items.length-1?'查看成果':'下一題 →';
-    q('.challenge-feedback').innerHTML=`<strong>${correct?item.type==='microgame'?'完成啦！':item.type==='sound'?soundForm(poem).right:'你找到了！':answer.status==='skipped'?item.type==='microgame'?'這次先收好，下次再玩。':'一起學一學':item.type==='sound'?soundForm(poem).wrong:'差一點，一起看看。'}</strong>${['dictation','microgame'].includes(item.type)?'':`<p>${esc(item.explanation)}</p>`}${!correct && !['dictation','sound'].includes(item.type)?`<button class="challenge-text-button" data-ch="show-solution">${item.type==='microgame'?'看看小提示':'看看怎樣放'}</button>`:''}`;
+    q('.challenge-feedback').innerHTML=`<strong>${correct?item.type==='microgame'?'完成啦！':item.type==='sound'?formOf(item).right:'你找到了！':answer.status==='skipped'?item.type==='microgame'?'這次先收好，下次再玩。':'一起學一學':item.type==='sound'?formOf(item).wrong:'差一點，一起看看。'}</strong>${['dictation','microgame'].includes(item.type)?'':`<p>${esc(item.explanation)}</p>`}${!correct && !['dictation','sound'].includes(item.type)?`<button class="challenge-text-button" data-ch="show-solution">${item.type==='microgame'?'看看小提示':'看看怎樣放'}</button>`:''}`;
     q('.challenge-footer').classList.add('has-feedback');
     if(item.type==='dictation' && answer.status==='skipped' && !writing?.getResult?.()) {
       writing?.destroy();q('.challenge-writing-holder').inert=false;

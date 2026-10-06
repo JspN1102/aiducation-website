@@ -9,7 +9,7 @@
 // for text the main subset already covers (the ranges leave those out).
 // Like the main fonts, a slice comes from the route the session favours and
 // falls back to the other copy. Nothing about the pupil is sent or stored.
-import {FONT_SLICES} from './font-slices.mjs?v=20261006-school45';
+import {FONT_SLICES} from './font-slices.mjs?v=20261007-school46';
 import {orderRoutes} from './media-route.mjs?v=20260923-school23';
 
 export const EXTENSION_FAMILIES = Object.freeze({sans: 'Noto Sans HK', serif: 'Noto Serif HK'});

@@ -1,5 +1,5 @@
-import {imageAsset} from './media-images.mjs?v=20261006-school45';
-import {fetchImage} from './image-loader.mjs?v=20261006-school43';
+import {imageAsset} from './media-images.mjs?v=20261007-school46';
+import {fetchImage} from './image-loader.mjs?v=20261007-school46';
 const FONT_NAME = 'PoetryCardSerif';
 const fontLoads = new WeakMap();
 let nextCardId = 0;
@@ -7,7 +7,7 @@ const WIDTH = 1800, HEIGHT = 1440;
 
 function loadFont(document) {
   if (!fontLoads.has(document)) {
-    const source = new URL('./vendor/fonts/noto-serif-hk.woff2?v=ebaf3d4705', import.meta.url);
+    const source = new URL('./vendor/fonts/noto-serif-hk.woff2?v=96a12cf65f', import.meta.url);
     const face = new document.defaultView.FontFace(FONT_NAME, `url("${source.href}")`, {weight: '400 700'});
     const promise = face.load().then(font => {document.fonts.add(font);return font;}).catch(error => {
       fontLoads.delete(document);

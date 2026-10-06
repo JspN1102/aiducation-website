@@ -1,8 +1,8 @@
 {
  "schemaVersion": 1,
- "version": "db3dce439cbfb8b88deb",
+ "version": "cdec657face7e7bf3bc6",
  "cache": "maanshan-pack-v1",
- "totalBytes": 219027597,
+ "totalBytes": 219712293,
  "assets": [
   {
    "path": "media/bo-chuan-gua-zhou/animation-20260917.mp4",
@@ -145,10 +145,45 @@
    ]
   },
   {
+   "path": "media/challenges/chest-boxes-v1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/a64eccda63259b1912f6/maanshan/media/challenges/chest-boxes-v1.webp",
+   "bytes": 62842,
+   "sha256": "a64eccda63259b1912f6c4609a8746a113768ac50ed7961ca5473101e7382088",
+   "type": "image/webp"
+  },
+  {
+   "path": "media/challenges/chest-found-v1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/e62bca5b7fdd3d2729b6/maanshan/media/challenges/chest-found-v1.webp",
+   "bytes": 78320,
+   "sha256": "e62bca5b7fdd3d2729b6096dac2081676252295dce784873de4a7d30a79ce55b",
+   "type": "image/webp"
+  },
+  {
+   "path": "media/challenges/chest-trap-v1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2e9a30bb3dbe7e44ad16/maanshan/media/challenges/chest-trap-v1.webp",
+   "bytes": 65402,
+   "sha256": "2e9a30bb3dbe7e44ad169f92f984788242b8bb7b09a1a4cb41ac302ae3989911",
+   "type": "image/webp"
+  },
+  {
+   "path": "media/challenges/chest-v1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/b78a5d18cda49d96b022/maanshan/media/challenges/chest-v1.webp",
+   "bytes": 83650,
+   "sha256": "b78a5d18cda49d96b02289bf593b2a9b1d81b95103be6d139777062dcc86bcc5",
+   "type": "image/webp"
+  },
+  {
    "path": "media/challenges/clinic-bottles-v1.webp",
    "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/97d30a06f741e26e8858/maanshan/media/challenges/clinic-bottles-v1.webp",
    "bytes": 46856,
    "sha256": "97d30a06f741e26e88582a4ed6c85bc3dbc9506c0c6e06e03487bd277226ef5f",
+   "type": "image/webp"
+  },
+  {
+   "path": "media/challenges/clinic-cry-v1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/f9d485663cff03ae0ebe/maanshan/media/challenges/clinic-cry-v1.webp",
+   "bytes": 48454,
+   "sha256": "f9d485663cff03ae0ebef3cec4ca956d0f540c576efbcfdee1c1b1fcfbe432ad",
    "type": "image/webp"
   },
   {
@@ -190,10 +225,45 @@
    "type": "image/webp"
   },
   {
+   "path": "media/challenges/police-sad-v1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/bdd9af863007e6fcca70/maanshan/media/challenges/police-sad-v1.webp",
+   "bytes": 59296,
+   "sha256": "bdd9af863007e6fcca708c4790a8af605b22451f21f154a84c54bcabcef17991",
+   "type": "image/webp"
+  },
+  {
    "path": "media/challenges/police-v1.webp",
    "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/0213a404645eafe469ab/maanshan/media/challenges/police-v1.webp",
    "bytes": 86508,
    "sha256": "0213a404645eafe469abc9e4cde2509fc5b82e9626e6722c1dabf296bcd69eca",
+   "type": "image/webp"
+  },
+  {
+   "path": "media/challenges/shop-goods-v1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2faded2545e208f0313b/maanshan/media/challenges/shop-goods-v1.webp",
+   "bytes": 45386,
+   "sha256": "2faded2545e208f0313b0e37a6a52c170c5187c469aeeaf85bc2f4c5859d39c6",
+   "type": "image/webp"
+  },
+  {
+   "path": "media/challenges/shop-happy-v1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/03e4bf2c876e9065bf9f/maanshan/media/challenges/shop-happy-v1.webp",
+   "bytes": 77104,
+   "sha256": "03e4bf2c876e9065bf9f64f84dddc40fc27e2fd88e363ecc65d76514a6bdc77d",
+   "type": "image/webp"
+  },
+  {
+   "path": "media/challenges/shop-sad-v1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/25527928924d7620597c/maanshan/media/challenges/shop-sad-v1.webp",
+   "bytes": 76958,
+   "sha256": "25527928924d7620597c0a14a9a990601e2fa18916dde803cca9535bdaad6334",
+   "type": "image/webp"
+  },
+  {
+   "path": "media/challenges/shop-v1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/22f013e109b95726940c/maanshan/media/challenges/shop-v1.webp",
+   "bytes": 84228,
+   "sha256": "22f013e109b95726940c1b69d7e2a168f9e25a82a4b819308d9d88d53c4af068",
    "type": "image/webp"
   },
   {
@@ -5997,9 +6067,9 @@
   },
   {
    "path": "vendor/fonts/noto-sans-hk.woff2",
-   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/7cb87d951bffefce7682/maanshan/vendor/fonts/noto-sans-hk.woff2",
-   "bytes": 487136,
-   "sha256": "7cb87d951bffefce76823d77afb198d4bd6fc046c5779a7b7ecbb3115437deee",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/069357c0c5df74342147/maanshan/vendor/fonts/noto-sans-hk.woff2",
+   "bytes": 486932,
+   "sha256": "069357c0c5df7434214705bec90b0a3c995e0393d7b9f0744e58c5bd80d513ca",
    "type": "font/woff2"
   },
   {
@@ -6011,9 +6081,9 @@
   },
   {
    "path": "vendor/fonts/noto-serif-hk.woff2",
-   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ebaf3d470540e94b89fd/maanshan/vendor/fonts/noto-serif-hk.woff2",
-   "bytes": 664176,
-   "sha256": "ebaf3d470540e94b89fdd16c828c93865f6590456a91587c278ac8b6e36e0ea0",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/96a12cf65fdee112f350/maanshan/vendor/fonts/noto-serif-hk.woff2",
+   "bytes": 667436,
+   "sha256": "96a12cf65fdee112f35088ebb8020003f76421520ce6b63f0ca3acb29009222b",
    "type": "font/woff2"
   },
   {

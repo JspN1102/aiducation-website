@@ -1,4 +1,4 @@
-import {mountShishiSprite} from './shishi-sprite.mjs?v=20261006-school43';
+import {mountShishiSprite} from './shishi-sprite.mjs?v=20261007-school46';
 
 // This welcome has its own sprite and guide; it never opens the poet chat.
 export function mountLibraryShishi(host,{canPlay=()=>true}={}){

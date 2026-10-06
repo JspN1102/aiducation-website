@@ -10,14 +10,14 @@
 // names) come from the on-demand extension (font-extension.mjs), whose small
 // slices download only when a page shows one of their characters.
 // Nothing about the pupil is sent or stored.
-import {FONT_ASSETS} from './media-fonts.mjs?v=20261006-school45';
+import {FONT_ASSETS} from './media-fonts.mjs?v=20261007-school46';
 import {orderRoutes, rememberRoute, rememberedRoute} from './media-route.mjs?v=20260923-school23';
-import {publicImagesReady} from './media-images.mjs?v=20261006-school45';
+import {publicImagesReady} from './media-images.mjs?v=20261007-school46';
 
 export const HEDGE_MS = 3000;
 export const FONTS = Object.freeze([
-  {family: 'Noto Serif HK', path: '/maanshan/vendor/fonts/noto-serif-hk.woff2', version: 'ebaf3d4705'},
-  {family: 'Noto Sans HK', path: '/maanshan/vendor/fonts/noto-sans-hk.woff2', version: '7cb87d951b'}
+  {family: 'Noto Serif HK', path: '/maanshan/vendor/fonts/noto-serif-hk.woff2', version: '96a12cf65f'},
+  {family: 'Noto Sans HK', path: '/maanshan/vendor/fonts/noto-sans-hk.woff2', version: '069357c0c5'}
 ]);
 
 // Ordered routes for one font file. The local copy keeps the cache-busting
@@ -78,7 +78,7 @@ export async function installFonts({fonts = FONTS, doc = globalThis.document, ex
   // The extension's faces are added at once but load nothing until needed;
   // its ranges leave out every character of the main fonts.
   if (extension) {
-    import('./font-extension.mjs?v=20261006-school43')
+    import('./font-extension.mjs?v=20261007-school46')
       .then(module => module.installFontExtension({doc, remote: FONT_ASSETS}))
       .catch(() => { /* the system font covers what the extension would */ });
   }
