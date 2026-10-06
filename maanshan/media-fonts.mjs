@@ -31,7 +31,7 @@ export const FONT_ASSETS = Object.freeze({
   "/maanshan/vendor/fonts/noto-sans-hk-ext-29.woff2": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/b27d8a39c84d97e88916/maanshan/vendor/fonts/noto-sans-hk-ext-29.woff2",
   "/maanshan/vendor/fonts/noto-sans-hk-ext-30.woff2": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/47a86ddb608728c8e3dd/maanshan/vendor/fonts/noto-sans-hk-ext-30.woff2",
   "/maanshan/vendor/fonts/noto-sans-hk-variants.woff2": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/712b7534c82c8e2584fb/maanshan/vendor/fonts/noto-sans-hk-variants.woff2",
-  "/maanshan/vendor/fonts/noto-sans-hk.woff2": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/d9bbbd265d15c90c709d/maanshan/vendor/fonts/noto-sans-hk.woff2",
+  "/maanshan/vendor/fonts/noto-sans-hk.woff2": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/7cb87d951bffefce7682/maanshan/vendor/fonts/noto-sans-hk.woff2",
   "/maanshan/vendor/fonts/noto-serif-hk-ext-01.woff2": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/16e46f7967914a577e40/maanshan/vendor/fonts/noto-serif-hk-ext-01.woff2",
   "/maanshan/vendor/fonts/noto-serif-hk-ext-02.woff2": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/1ff3903eadb76c97a643/maanshan/vendor/fonts/noto-serif-hk-ext-02.woff2",
   "/maanshan/vendor/fonts/noto-serif-hk-ext-03.woff2": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4df5a740eafe29c2c6db/maanshan/vendor/fonts/noto-serif-hk-ext-03.woff2",
@@ -63,7 +63,7 @@ export const FONT_ASSETS = Object.freeze({
   "/maanshan/vendor/fonts/noto-serif-hk-ext-29.woff2": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/72e56a552128b9d8df04/maanshan/vendor/fonts/noto-serif-hk-ext-29.woff2",
   "/maanshan/vendor/fonts/noto-serif-hk-ext-30.woff2": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/0be0cb3d729c2e73435b/maanshan/vendor/fonts/noto-serif-hk-ext-30.woff2",
   "/maanshan/vendor/fonts/noto-serif-hk-variants.woff2": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ccd23ddb0e2687a3564b/maanshan/vendor/fonts/noto-serif-hk-variants.woff2",
-  "/maanshan/vendor/fonts/noto-serif-hk.woff2": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/25d3a7b03aa89f5987cc/maanshan/vendor/fonts/noto-serif-hk.woff2",
+  "/maanshan/vendor/fonts/noto-serif-hk.woff2": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ebaf3d470540e94b89fd/maanshan/vendor/fonts/noto-serif-hk.woff2",
   "/maanshan/vendor/fonts/school-pinyin-400.woff2": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4c0dc07e58072e53a42e/maanshan/vendor/fonts/school-pinyin-400.woff2",
   "/maanshan/vendor/fonts/school-pinyin-700.woff2": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/0db66e6e94fc64984d0b/maanshan/vendor/fonts/school-pinyin-700.woff2"
 });

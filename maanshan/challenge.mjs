@@ -1,4 +1,4 @@
-import {imageAsset} from './media-images.mjs?v=20261006-school43';
+import {imageAsset} from './media-images.mjs?v=20261006-school45';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261006-school43';
 import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20261006-school43';
 import {mountChallengeWriting} from './challenge-writing.mjs?v=20260929-hk1';

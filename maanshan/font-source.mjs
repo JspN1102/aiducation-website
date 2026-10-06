@@ -10,14 +10,14 @@
 // names) come from the on-demand extension (font-extension.mjs), whose small
 // slices download only when a page shows one of their characters.
 // Nothing about the pupil is sent or stored.
-import {FONT_ASSETS} from './media-fonts.mjs?v=20261006-school43';
+import {FONT_ASSETS} from './media-fonts.mjs?v=20261006-school45';
 import {orderRoutes, rememberRoute, rememberedRoute} from './media-route.mjs?v=20260923-school23';
-import {publicImagesReady} from './media-images.mjs?v=20261006-school43';
+import {publicImagesReady} from './media-images.mjs?v=20261006-school45';
 
 export const HEDGE_MS = 3000;
 export const FONTS = Object.freeze([
-  {family: 'Noto Serif HK', path: '/maanshan/vendor/fonts/noto-serif-hk.woff2', version: '25d3a7b03a'},
-  {family: 'Noto Sans HK', path: '/maanshan/vendor/fonts/noto-sans-hk.woff2', version: 'd9bbbd265d'}
+  {family: 'Noto Serif HK', path: '/maanshan/vendor/fonts/noto-serif-hk.woff2', version: 'ebaf3d4705'},
+  {family: 'Noto Sans HK', path: '/maanshan/vendor/fonts/noto-sans-hk.woff2', version: '7cb87d951b'}
 ]);
 
 // Ordered routes for one font file. The local copy keeps the cache-busting

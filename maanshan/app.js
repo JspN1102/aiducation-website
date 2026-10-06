@@ -1,4 +1,4 @@
-import {imageAsset} from './media-images.mjs?v=20261006-school43';
+import {imageAsset} from './media-images.mjs?v=20261006-school45';
 import {manageAnimationSource} from './animation-source.mjs?v=20261005-school41';
 import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260929-parts1';
 import {mountStage, getScenePreview, preloadScene, addScenePreviews} from './scene-stage.mjs?v=20261006-school43';

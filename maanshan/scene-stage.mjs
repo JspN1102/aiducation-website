@@ -1,4 +1,4 @@
-import {imageAsset} from './media-images.mjs?v=20261006-school43';
+import {imageAsset} from './media-images.mjs?v=20261006-school45';
 import {loadTeachingImage} from './image-loader.mjs?v=20261006-school43';
 const mountedStages = new WeakMap();
 const decodedSources = new Map();

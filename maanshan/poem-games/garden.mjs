@@ -1,5 +1,5 @@
 import {createGameImageLoader} from './image-ready.mjs?v=20260922-school11';
-import {imageAsset} from '../media-images.mjs?v=20261006-school43';
+import {imageAsset} from '../media-images.mjs?v=20261006-school45';
 import {createProcessResearch} from './research.mjs?v=20260920a';
 const file = path => new URL(imageAsset(`media/${path}`), import.meta.url).href;
 const plants = [

@@ -1,4 +1,4 @@
-import {imageAsset} from './media-images.mjs?v=20261006-school43';
+import {imageAsset} from './media-images.mjs?v=20261006-school45';
 import {fetchImage} from './image-loader.mjs?v=20261006-school43';
 const stillURL=new URL(imageAsset('media/shishi/guide-still-20260919a.webp'),import.meta.url).href;
 const gestures={wave:{url:new URL('./media/shishi/guide-wave-20260919a.webp',import.meta.url).href,duration:2000},book:{url:new URL('./media/shishi/guide-book-20260919a.webp',import.meta.url).href,duration:4000}};
