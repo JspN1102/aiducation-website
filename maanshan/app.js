@@ -3,8 +3,8 @@ import {manageAnimationSource} from './animation-source.mjs?v=20261005-school41'
 import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260929-parts1';
 import {mountStage, getScenePreview, preloadScene, addScenePreviews} from './scene-stage.mjs?v=20261006-school43';
 import {configurePronunciation, getPronunciationPractice, syllableParts, toneName} from './pronunciation.mjs?v=20260929-parts1';
-import {getWordAudioURL} from './word-audio.mjs?v=20261006-school43';
-import {getSpeechAudioURL} from './speech-audio.mjs?v=20261006-school43';
+import {getWordAudioURL} from './word-audio.mjs?v=20261006-school45';
+import {getSpeechAudioURL} from './speech-audio.mjs?v=20261006-school45';
 import {getRecitationAudioURL,getRecitationSequence} from './recitation-audio.mjs?v=20261005-school40';
 import {schoolTtsURL,schoolTtsRemote} from './school-audio-url.mjs?v=20260930-school29';
 import {mountShishi} from './shishi.mjs?v=20261006-school43';
@@ -877,6 +877,29 @@ async function playChallengeAudio(target,auditFields={}) {
   if(version!==speechVersion||route!==routeVersion)return false;
   stopTransient();return played;
 }
+// A sound or dictation question fetches its recording while the pupil reads the prompt (and the next
+// question's too), so the first tap plays at once. Speech with no recording is synthesised ahead the
+// same way: speechSource keeps the result for the tap. Only the route the player tries first is warmed.
+const prefetchedAudio=new Set();
+function warmAudio(url){
+  const first=(publishedSpeech.has(url)?orderRoutes(url,publishedSpeech.get(url)):audioCandidates(url))[0]?.url;
+  if(!first||prefetchedAudio.has(first))return;
+  if(prefetchedAudio.size>=120)prefetchedAudio.delete(prefetchedAudio.values().next().value);
+  prefetchedAudio.add(first);
+  fetch(first,{mode:'no-cors',credentials:'include'}).then(response=>response.blob()).catch(()=>prefetchedAudio.delete(first));
+}
+function prefetchChallengeAudio(targets){
+  for(const target of Array.isArray(targets)?targets:[targets]){
+    try{
+      const text=target&&(target.text||target.char);
+      if(typeof text!=='string'||!text)continue;
+      const official=getRecitationSequence(text);
+      const url=official?official[0]:target.text?getSpeechAudioURL(text):getWordAudioURL(target.char,target.pinyin);
+      if(url){warmAudio(url);continue;}
+      speechSource(text,{markup:challengeMarkup(target)}).then(source=>{if(typeof source==='string')warmAudio(source);}).catch(()=>{});
+    }catch{}
+  }
+}
 async function loadActivity(name,load) {
   const holder=$('#view'),version=routeVersion,generation=++activityLoad;
   const active=()=>version===routeVersion&&generation===activityLoad&&holder.isConnected;
@@ -924,7 +947,7 @@ async function renderQuiz() {
     onComplete:summary=>{research.emit('activity_end',{poemId:p.id,activity:'challenge',attemptId:summary.attemptId,itemId:'p'+p.id+'.challenge',context:{mode:summary.mode||'standard'},result:{status:'completed',score:null,correct:null},metrics:{itemCount:summary.total}});if(!school.enabled)queueReading(p);},
     onResearch:(type,fields)=>research.emit(type,{...fields,poemId:p.id}),
     onAnswer:answer=>{if(!school.enabled)return;queueMicrotask(()=>queueReading(p));const audit={...research.context({...answer}),poemId:p.id};if(!answerOutbox.enqueue({poemId:p.id,itemId:answer.itemId,status:answer.status,response:answer.response||{},researchContext:audit}))research.emit('error',{poemId:p.id,activity:answer.activity,attemptId:answer.attemptId,itemId:answer.itemId,error:{code:'storage_unavailable',retryable:false}});},
-    playAudio:playChallengeAudio,stopAudio:stopMedia,prewarm:prewarmAssessment,
+    playAudio:playChallengeAudio,prefetchAudio:prefetchChallengeAudio,stopAudio:stopMedia,prewarm:prewarmAssessment,
     recognize:(ink,context)=>api('/api/handwriting',{ink,poemId:p.id,...(collectResearch?{researchContext:research.context(context)}:{})},16000)});
 }
 async function renderExploration(){

@@ -248,6 +248,35 @@ class MediaConfigTests(unittest.TestCase):
             self.assertIn('location = ' + entry_['source'] + ' { add_header Cache-Control "no-cache"; return 307 ' + entry_['destination'] + '; }',
                           media_config.build_nginx_config(manifest))
 
+    def test_round_two_readings_ship_with_their_index_until_published(self):
+        root = Path(__file__).parent.parent
+        name = media_config.ROUND2_TTS
+        folder = root / 'maanshan/media' / name
+        source = (folder / 'index.mjs').read_text(encoding='utf-8')
+        referenced = set(re.findall(r'"([a-f0-9]{20}-f403001-20260921(?:natural1|complete1)\.mp3)"', source))
+        clips = {path.name for path in folder.glob('*.mp3')}
+        # Every reading the index names is here, and nothing else is.
+        self.assertGreater(len(referenced), 150)
+        self.assertEqual(referenced, clips)
+        # Poems 7-12 only: kept out of pupils' packs, and never omitted from the package.
+        self.assertIn('/maanshan/media/' + name + '/', media_config.PREVIEW_MEDIA)
+        self.assertFalse([path for path in media_config.obsolete_audio_files(root) if '/' + name + '/' in path])
+        # Not a COS group yet; once published, the group must hold every clip.
+        manifest = json.loads((root / 'deploy/media-manifest.json').read_text(encoding='utf-8'))
+        published = {Path(asset['source']).name for asset in manifest['assets']
+                     if asset['source'].startswith('/maanshan/media/' + name + '/')}
+        self.assertIn(published, (set(), clips))
+        # The published folders keep precedence: the round-two index adds keys only.
+        own = media_config.audio_indexes(root)
+        for folder_name, export in (('words', 'ROUND2_WORD_AUDIO_FILES'), ('speech', 'ROUND2_SPEECH_AUDIO_FILES')):
+            index = (root / 'maanshan/media' / folder_name / 'index.mjs').read_text(encoding='utf-8')
+            existing = json.loads(index[index.index('{'):index.rindex('}') + 1])
+            block = re.search(export + r' = Object\.freeze\((\{.*?\})\);', source, re.DOTALL)
+            added = json.loads(block.group(1))
+            self.assertTrue(added)
+            self.assertFalse(set(added) & set(existing), folder_name)
+            self.assertFalse(set(added.values()) & own[folder_name], folder_name)
+
     def test_audio_groups_must_cover_every_referenced_and_recitation_clip(self):
         manifest, clips = audio_fixture()
         with tempfile.TemporaryDirectory() as temporary:
