@@ -5,19 +5,19 @@ const file = path => new URL(imageAsset(`media/${path}`), import.meta.url).href;
 const art = name => file(`qi-bu-shi/game/${name}.webp`), scene = n => file(`qi-bu-shi/scene-${n}.webp`);
 // Seven untimed actions; each lights one of 曹植's seven footprints. Coordinates are % of the 1600×900 scenes.
 // Step s6 zooms into scene-3, where the user's painting grows one bean plant out of the steam: tap its root and light
-// runs up to the 萁 (stalk) and the 豆 (pods). ZOOM maps a scene % to the zoomed stage: ((x-l)*s, y*s).
+// runs up to the 萁 (stalk) and the 豆 (pods). The zoom lives in CSS (--zs/--zl on the stage, smaller on big stages
+// so the painting stays sharp); the seals and the root ring are given in scene % and follow it.
 const steps = [
   {id:'s1',verse:'煮豆持作羹',task:'把一籃黃豆放進釜裏，煮豆子。',method:'可以拖過去，也可以先點黃豆，再點釜。'},
   {id:'s2',verse:'漉豉以為汁',task:'把豆湯倒進竹篩，濾出豆汁。',method:'可以拖過去，也可以先點豆湯，再點竹篩。'},
   {id:'s3',verse:'萁在釜下燃',task:'「萁」是甚麼？選一捆來燒火。',method:'點一捆柴。',options:['stalks','firewood']},
   {id:'s4',verse:'萁在釜下燃',task:'萁在釜下燃：豆萁要放在哪裏？',method:'把豆萁拖過去，或點「釜中」「釜下」。'},
   {id:'s5',verse:'豆在釜中泣',task:'點一點釜中的豆子，聽聽它們。',method:'點三下釜中的豆子。'},
-  {id:'s6',verse:'本是同根生',task:'豆和萁從哪裏長出來？點一點豆苗的根。',method:'點一下畫裏發亮的「根」。'},
+  {id:'s6',verse:'本是同根生',task:'豆和萁從哪裏長出來？',method:'點一點豆苗的根。'},
   {id:'s7',verse:'相煎何太急',task:'豆和萁同一條根，比喻誰呢？',method:'點一個答案。',options:['brothers','friends','neighbours']}
 ];
 const items = {basket:{name:'一籃黃豆',img:'bean-basket'},ladle:{name:'一瓢豆湯',img:'gourd-ladle'},stalks:{name:'豆子的莖',img:'bean-stalks'},firewood:{name:'木柴',img:'firewood'}};
-const ZOOM = {l:11.25,s:1.6}, zoomed = (x,y) => [+((x-ZOOM.l)*ZOOM.s).toFixed(2),+(y*ZOOM.s).toFixed(2)];
-const targets = {pot:{x:34,y:51.6,w:31,h:15},strainer:{x:71.4,y:64.4,w:25,h:17},stove:{x:29.2,y:90.5,w:21,h:16},root:{x:43.8,y:72.5,w:19,h:21}};
+const targets = {pot:{x:34,y:51.6,w:31,h:15},strainer:{x:71.4,y:64.4,w:25,h:17},stove:{x:29.2,y:90.5,w:21,h:16},root:{x:38.63,y:45.31,w:11.88,h:13.13}};
 const tags = {qi:{x:29.6,y:23.5,name:'萁',say:'這是「萁」，就是豆子的莖。往下看，它連着甚麼？'},dou:{x:52.4,y:22,name:'豆',say:'這是「豆」，長在豆莢裏。它從哪裏長出來？往下找。'}};
 // Light paths traced over scene-3's plant (1600×900 px): roots, stem, the pod branches (豆) and the dry stalk branches (萁).
 const veins = [['M619 362C604 378 584 392 556 404S526 418 512 430',0],['M619 362C612 388 606 412 600 446',0],['M619 362C634 380 656 394 690 404S716 420 726 432',0],['M619 362C626 392 638 418 652 446',.05],['M619 362C598 372 576 380 548 384',.05],
@@ -46,7 +46,7 @@ export function mountSevenSteps(holder,{initialState,readOnly=false,playAudio,on
   const uidv=`ss${++uid}`;
   const spoken=new Set(),research=createProcessResearch(onResearch,{prefix:'game.steps',alive:()=>!dead});
   const root=doc.createElement('section');root.className=`poem-seven-steps${reducedMotion?' is-reduced':''}`;root.setAttribute('aria-label','七步成詩');
-  const pos=(t,k)=>`--x:${t.x}%;--y:${t.y}%;--w:${t.w}%;--h:${t.h}%`,tagPos=t=>{const [zx,zy]=zoomed(t.x,t.y);return `--x:${t.x}%;--y:${t.y}%;--zx:${zx}%;--zy:${zy}%`;};
+  const pos=(t,k)=>`--x:${t.x}%;--y:${t.y}%;--w:${t.w}%;--h:${t.h}%`,tagPos=t=>`--x:${t.x}%;--y:${t.y}%`;
   root.innerHTML=`<div class="ss-layout">
     <div class="ss-head"><p class="ss-instruction"></p><span class="ss-progress"></span></div>
     <div class="ss-stage" aria-busy="true">
@@ -75,7 +75,7 @@ export function mountSevenSteps(holder,{initialState,readOnly=false,playAudio,on
       <div class="ss-tray" role="group" aria-label="材料和答案">
         ${['basket','ladle','stalks','firewood'].map(k=>`<button type="button" class="ss-item" data-ss-item="${k}" hidden><img src="${art(items[k].img)}" alt="" draggable="false"><span>${items[k].name}</span></button>`).join('')}
         <div class="ss-sobs" hidden><span class="ss-sob-icons">${tears.map(()=>`<i>${drop}</i>`).join('')}</span><span class="ss-sob-text"></span></div>
-        <div class="ss-family" hidden aria-hidden="true"><span class="ss-fam"><img src="${art('bean-basket')}" alt="" draggable="false"><b>豆</b></span><i class="ss-fam-line"></i><span class="ss-fam-root"><b>根</b><em>？</em></span><i class="ss-fam-line is-right"></i><span class="ss-fam"><b>萁</b><img src="${art('bean-stalks')}" alt="" draggable="false"></span></div>
+        <div class="ss-family" hidden aria-hidden="true"><span class="ss-fam"><img src="${art('bean-stalks')}" alt="" draggable="false"><b data-ss-fam="qi">萁</b></span><i class="ss-fam-line"></i><span class="ss-fam-root"><b>根</b><em>？</em></span><i class="ss-fam-line is-right"></i><span class="ss-fam"><b data-ss-fam="dou">豆</b><img src="${art('bean-basket')}" alt="" draggable="false"></span></div>
         <div class="ss-kin" role="group" aria-label="豆和萁比喻誰" hidden><div>${kin.map(c=>`<button type="button" data-ss-kin="${c.id}">${c.name}</button>`).join('')}</div></div>
         <div class="ss-summary" hidden><b>本是同根生，相煎何太急</b><p>${knowledge}</p></div>
       </div>
@@ -126,7 +126,7 @@ export function mountSevenSteps(holder,{initialState,readOnly=false,playAudio,on
   function stopIdle(){if(idleId){view.clearTimeout(idleId);timers.delete(idleId);idleId=0;}}
   function waitRoot(ms=4000){
     stopIdle();if(!live()||step!==5||rooted)return;
-    idleId=later(()=>{idleId=0;if(!live()||step!==5||rooted)return;q('.ss-target-root').classList.add('is-hint');research.hint('s6','idle');
+    idleId=later(()=>{idleId=0;if(!live()||step!==5||rooted)return;q('.ss-target-root').classList.add('is-hint');research.hint('s6','demo');
       idleId=later(()=>{idleId=0;if(live()&&step===5&&!rooted)tell('看看豆苗最下面：一絲絲白色的，就是根。點一下。');},4000);},ms);
   }
   function findRoot(){
@@ -134,11 +134,13 @@ export function mountSevenSteps(holder,{initialState,readOnly=false,playAudio,on
     research.action('s6','root');rooted=true;stopIdle();q('.ss-target-root').classList.remove('is-hint');render();tone('ok');
     tell('看！光從根走上來，走到萁，也走到豆。');
     later(()=>{if(live()&&step===5)speak('本是同根生',true);},reducedMotion?0:1500);
-    later(()=>{if(!live()||step!==5)return;rooted=false;advance('豆和萁本來長在同一棵豆苗上，從同一條根長出來。現在，萁卻在釜下燒着豆。','本是同根生');},reducedMotion?1800:4000);
+    later(()=>{if(!live()||step!==5)return;rooted=false;advance('豆和萁本來長在同一棵豆苗上，從同一條根長出來。現在，萁卻在釜下燒着豆。','本是同根生');
+      spawn('ss-flare',`--x:${targets.stove.x}%;--y:${targets.stove.y-1.5}%`,'<b>萁</b>',5200);},reducedMotion?1800:4000);
   }
-  function missRoot(tag){
-    if(!live()||step!==5||rooted||Date.now()<lockUntil)return;research.hint('s6',tag?`tag.${tag}`:'miss');tone('soft');
-    tell(tag?tags[tag].say:'根在豆苗最下面，就在釜上面那一團白色的鬚。點一下。');q('.ss-target-root').classList.add('is-hint');waitRoot(6000);
+  // A miss on the picture explains where the root is; a tap on the side card only points back to the picture.
+  function missRoot(tag,card){
+    if(!live()||step!==5||rooted||Date.now()<lockUntil)return;research.action('s6',card?'card':tag?`tag.${tag}`:'miss');research.hint('s6',card?'demo':'explanation');tone('soft');
+    tell(card?'答案在畫裏：點一點豆苗下面發亮的根。':tag?tags[tag].say:'根在豆苗最下面，就在釜上面那一團白色的鬚。點一下。');q('.ss-target-root').classList.add('is-hint');waitRoot(6000);
   }
   function tone(kind){
     if(dead)return;try{ctx??=new(view.AudioContext||view.webkitAudioContext)();if(ctx.state==='suspended')void ctx.resume().catch(()=>{});
@@ -203,8 +205,11 @@ export function mountSevenSteps(holder,{initialState,readOnly=false,playAudio,on
   }
   // Pointer drag with a floating copy; taps fall through to click (select, then target).
   function targetAt(x,y){return qa('[data-ss-target]').find(el=>{if(el.hidden||el.disabled)return false;const r=el.getBoundingClientRect(),pad=14;return x>=r.left-pad&&x<=r.right+pad&&y>=r.top-pad&&y<=r.bottom+pad;})||null;}
-  function endDrag(){const d=drag;drag=null;if(!d)return null;d.ghost?.remove();d.over?.classList.remove('is-over');d.item.classList.remove('is-source');try{d.item.releasePointerCapture(d.id);}catch{}return d;}
+  function endDrag(){const d=drag;drag=null;if(!d)return null;d.ghost?.remove();d.over?.classList.remove('is-over');d.item?.classList.remove('is-source');try{d.item?.releasePointerCapture(d.id);}catch{}return d;}
   function down(e){
+    // s6: children who slide a seal (or a finger) onto the root ring are answered too; a plain tap stays a click.
+    if(step===5&&!drag&&!(e.button>0)&&e.isPrimary!==false&&live()&&!rooted&&e.target.closest?.('.ss-stage,[data-ss-fam]')){
+      drag={id:e.pointerId,item:null,key:null,x:e.clientX,y:e.clientY,moved:false,ghost:null,over:null,root:!!e.target.closest('.ss-target-root'),tag:e.target.closest('[data-ss-token],[data-ss-fam]')};return;}
     const item=e.target.closest?.('[data-ss-item]');
     if(!item||drag||item.disabled||e.button>0||e.isPrimary===false||!live()||!draggable(item.dataset.ssItem))return;
     drag={id:e.pointerId,item,key:item.dataset.ssItem,x:e.clientX,y:e.clientY,moved:false,ghost:null,over:null};
@@ -214,6 +219,7 @@ export function mountSevenSteps(holder,{initialState,readOnly=false,playAudio,on
     if(!drag||e.pointerId!==drag.id)return;
     if(!drag.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<8)return;
     if(e.cancelable)e.preventDefault();
+    if(!drag.item){drag.moved=true;const over=targetAt(e.clientX,e.clientY);if(over!==drag.over){drag.over?.classList.remove('is-over');over?.classList.add('is-over');drag.over=over;}return;}
     if(!drag.moved){drag.moved=true;selected=drag.key;render();drag.item.classList.add('is-source');const g=doc.createElement('div');g.className='ss-ghost';g.setAttribute('aria-hidden','true');
       g.innerHTML=`<img src="${art(items[drag.key].img)}" alt="">`;root.append(g);drag.ghost=g;}
     drag.ghost.style.left=`${e.clientX}px`;drag.ghost.style.top=`${e.clientY}px`;
@@ -223,7 +229,8 @@ export function mountSevenSteps(holder,{initialState,readOnly=false,playAudio,on
     if(!drag||e.pointerId!==drag.id)return;
     const d=endDrag();if(!d.moved)return;suppressUntil=Date.now()+450;
     const t=e.type==='pointerup'?targetAt(e.clientX,e.clientY):null;
-    if(t)act(d.key,t.dataset.ssTarget);else if(e.type==='pointerup'){research.hint(steps[step].id,'missed_drop');tell('放到發亮的圈圈上就可以了。');}
+    if(!d.item){if(e.type!=='pointerup')return;if(d.root||t)findRoot();else if(d.tag)missRoot(d.tag.dataset.ssToken||d.tag.dataset.ssFam);else missRoot();return;}
+    if(t)act(d.key,t.dataset.ssTarget);else if(e.type==='pointerup'){research.action(steps[step].id,'drop.miss');research.hint(steps[step].id,'explanation');tell('放到發亮的圈圈上就可以了。');}
     if(live()&&step<7&&selected===d.key&&!t){selected=null;render();}
   }
   async function load(){
@@ -249,7 +256,8 @@ export function mountSevenSteps(holder,{initialState,readOnly=false,playAudio,on
     const item=t.closest('[data-ss-item]');if(item){pickItem(item.dataset.ssItem);return;}
     const target=t.closest('[data-ss-target]');if(target){hitTarget(target.dataset.ssTarget);return;}
     const choice=t.closest('[data-ss-kin]');if(choice){answerKin(choice.dataset.ssKin);return;}
-    if(step===5&&t.closest('.ss-stage,.ss-family'))missRoot(t.closest('[data-ss-token]')?.dataset.ssToken);
+    if(step===5&&t.closest('.ss-stage'))missRoot(t.closest('[data-ss-token]')?.dataset.ssToken);
+    else if(step===5&&t.closest('.ss-family'))missRoot(null,true);
   },opt);
   root.addEventListener('keydown',e=>{keyboard=true;
     if(e.key==='Escape'&&selected&&live()){selected=null;render();tell('放下了。想再拿，就點一下。');return;}

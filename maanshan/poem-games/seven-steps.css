@@ -11,10 +11,13 @@
 .poem-seven-steps.is-done .ss-progress{background:#f6e5c8;color:#8a4f24}
 
 /* Stage: the three scene paintings stay 16:9; every overlay is placed in % of that box. */
-.poem-seven-steps .ss-stage{grid-area:stage;position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#e9e2d2;border:1px solid #d6d2c1;box-shadow:0 6px 20px #2c443114;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-/* s6 camera: zooms into scene-3's bean plant. translate = -ZOOM.l*ZOOM.s, scale = ZOOM.s (seven-steps.mjs). */
+.poem-seven-steps .ss-stage{--zs:1.6;--zl:11.25;container-type:inline-size;grid-area:stage;position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#e9e2d2;border:1px solid #d6d2c1;box-shadow:0 6px 20px #2c443114;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+/* s6 camera: zooms into scene-3's bean plant. --zs = scale, --zl = scene % hidden on the left. Big stages (iPad
+   portrait, desktop) zoom a little less (1.45×) so the 1600px painting is not blown up as far past its own resolution. */
 .poem-seven-steps .ss-cam{position:absolute;inset:0;transform-origin:0 0;transition:transform 1.6s cubic-bezier(.45,.05,.25,1)}
-.poem-seven-steps[data-step="5"] .ss-cam{transform:translate(-18%,0) scale(1.6)}
+.poem-seven-steps[data-step="5"] .ss-cam{transform:translate(calc(var(--zl) * var(--zs) * -1%),0) scale(var(--zs))}
+.poem-seven-steps[data-step="5"] :is(.ss-token,.ss-target-root){touch-action:none}
+@container (min-width:640px){.poem-seven-steps .ss-stage>*{--zs:1.45;--zl:8}}
 .poem-seven-steps .ss-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none}
 .poem-seven-steps .ss-scene-2,.poem-seven-steps .ss-scene-3{opacity:0;transition:opacity 1.1s ease}
 .poem-seven-steps .ss-scene.is-on{opacity:1}
@@ -26,11 +29,11 @@
 .poem-seven-steps .ss-tear.is-on{opacity:1;transform:translate(-50%,-50%)}
 .poem-seven-steps .ss-tear svg,.poem-seven-steps .ss-sob-icons svg{display:block;width:100%;height:auto;fill:#d8eef4;stroke:#5c8fa3;stroke-width:1.4}
 .poem-seven-steps .ss-shine{fill:none;stroke:#fff;stroke-width:1.6;stroke-linecap:round}
-/* 豆 / 萁 name seals ride on the plant: zoomed spots in s6 (--zx/--zy), the full scene afterwards; left/top use the camera's timing. */
+/* 豆 / 萁 name seals ride on the plant: zoomed spots in s6, the full scene afterwards; left/top use the camera's timing. */
 .poem-seven-steps .ss-token{position:absolute;left:var(--x);top:var(--y);z-index:3;display:grid;place-items:center;width:clamp(30px,5.8%,50px);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:#fffaf0f2;border:2px solid #b5523b;color:#9a3f2c;font-size:clamp(16px,2.4vw,25px);font-weight:700;line-height:1;box-shadow:0 3px 8px #3b2a1a38;opacity:0;pointer-events:none;transition:opacity .5s ease,left 1.6s cubic-bezier(.45,.05,.25,1),top 1.6s cubic-bezier(.45,.05,.25,1),width 1.6s cubic-bezier(.45,.05,.25,1),font-size 1.6s cubic-bezier(.45,.05,.25,1)}
 .poem-seven-steps .ss-token[data-ss-token="qi"]{--td:.75s}
 .poem-seven-steps .ss-token[data-ss-token="dou"]{--td:1.25s}
-.poem-seven-steps[data-step="5"] .ss-token{left:var(--zx);top:var(--zy);width:clamp(38px,7%,62px);font-size:clamp(19px,2.9vw,31px);opacity:1;pointer-events:auto;cursor:pointer;transition:opacity .6s ease 1.1s,left 1.6s cubic-bezier(.45,.05,.25,1),top 1.6s cubic-bezier(.45,.05,.25,1),width 1.6s cubic-bezier(.45,.05,.25,1),font-size 1.6s cubic-bezier(.45,.05,.25,1)}
+.poem-seven-steps[data-step="5"] .ss-token{left:calc((var(--x) - var(--zl) * 1%) * var(--zs));top:calc(var(--y) * var(--zs));width:clamp(38px,7%,62px);font-size:clamp(19px,2.9vw,31px);opacity:1;pointer-events:auto;cursor:pointer;transition:opacity .6s ease 1.1s,left 1.6s cubic-bezier(.45,.05,.25,1),top 1.6s cubic-bezier(.45,.05,.25,1),width 1.6s cubic-bezier(.45,.05,.25,1),font-size 1.6s cubic-bezier(.45,.05,.25,1)}
 .poem-seven-steps[data-step="6"] .ss-token,.poem-seven-steps[data-step="7"] .ss-token{opacity:1}
 .poem-seven-steps.is-rooted .ss-token{background:#fff3cc;border-color:#cf8a2c;color:#86460f;box-shadow:0 0 0 4px #ffd87a8c,0 0 20px 7px #ffd98aa6;transition:background .45s ease var(--td),border-color .45s ease var(--td),color .45s ease var(--td),box-shadow .45s ease var(--td);animation:ss-pop .55s ease var(--td) both}
 
@@ -47,12 +50,15 @@
 .poem-seven-steps[data-step="6"] .ss-veins path,.poem-seven-steps[data-step="7"] .ss-veins path{stroke-dashoffset:0}
 .poem-seven-steps[data-step="6"] .ss-halo,.poem-seven-steps[data-step="7"] .ss-halo{opacity:.75}
 .poem-seven-steps .ss-fx{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden}
+.poem-seven-steps .ss-flare{position:absolute;left:var(--x);top:var(--y);width:23%;height:22%;transform:translate(-50%,-50%);border-radius:50%;border:3px solid #ffe2a4;background:radial-gradient(closest-side,#ffe9b040,#ffd98a14 70%,transparent);box-shadow:0 0 0 3px #ffcf7366,0 0 26px 10px #ffd98a59;opacity:0;animation:ss-flare 3.4s ease 1.5s both}
+.poem-seven-steps .ss-flare::before{content:'';position:absolute;inset:-4px;border-radius:50%;border:3px solid #ffe2a4;opacity:0;animation:ss-ripple 1.6s ease-out 1.9s 2}
+.poem-seven-steps .ss-flare b{position:absolute;left:100%;top:12%;display:grid;place-items:center;width:clamp(28px,22%,44px);aspect-ratio:1;transform:translate(-30%,-50%);border-radius:50%;background:#fff3cc;border:2px solid #cf8a2c;color:#86460f;font-size:clamp(15px,2.2vw,22px);font-weight:700;line-height:1;box-shadow:0 0 0 3px #ffd87a8c,0 3px 8px #3b2a1a38}
 
 /* Drop targets: soft ink rings with a paper label, only shown when they are useful. */
 .poem-seven-steps .ss-target{position:absolute;left:var(--x);top:var(--y);z-index:5;width:var(--w);height:var(--h);min-width:46px;min-height:46px;transform:translate(-50%,-50%);padding:0;border:2.5px dashed #fffaeef2;border-radius:50%;background:radial-gradient(closest-side,#fff8e42e,#fff8e412 70%,transparent);box-shadow:0 0 0 2px #4a332066,inset 0 0 0 2px #4a33204d,0 0 14px 4px #fff4d633;cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s}
 .poem-seven-steps .ss-target>span{position:absolute;left:50%;top:var(--ly,0%);transform:translate(-50%,-50%);padding:3px 11px;border-radius:999px;background:#fffaf0f0;color:#2d4a3c;font-size:clamp(14px,1.9vw,18px);font-weight:650;line-height:1.35;white-space:nowrap;box-shadow:0 2px 6px #2a1d1033}
 .poem-seven-steps .ss-target-stove{--ly:50%}
-.poem-seven-steps .ss-target-root{border-width:3px;background:radial-gradient(closest-side,#fff8e24d,#fff8e214 70%,transparent)}
+.poem-seven-steps .ss-target-root{left:calc((var(--x) - var(--zl) * 1%) * var(--zs));top:calc(var(--y) * var(--zs));width:calc(var(--w) * var(--zs));height:calc(var(--h) * var(--zs));border-width:3px;background:radial-gradient(closest-side,#fff8e24d,#fff8e214 70%,transparent)}
 .poem-seven-steps .ss-target-root>span{left:100%;top:50%;transform:translate(-22%,-50%);padding:4px 14px;font-size:clamp(16px,2.2vw,21px)}
 .poem-seven-steps .ss-target.is-calling{border-color:#ffe2a4;animation:ss-call 1.6s ease-in-out infinite}
 .poem-seven-steps .ss-target.is-over,.poem-seven-steps .ss-target:hover:not(:disabled){border-style:solid;border-color:#ffd27a;background:radial-gradient(closest-side,#fff3c94d,#ffe6a01f 70%,transparent);box-shadow:0 0 0 4px #ffcf7366,0 0 22px 8px #ffd98a55}
@@ -65,7 +71,7 @@
 .poem-seven-steps.is-rooted .ss-target-root{opacity:1;border-style:solid;border-color:#ffe08a;background:radial-gradient(closest-side,#fff3c466,#fff3c41c 70%,transparent);box-shadow:0 0 0 3px #ffd27a80,0 0 30px 12px #ffd98a80;animation:none}
 .poem-seven-steps.is-rooted .ss-target-root>span{background:#fff3cc;color:#86460f}
 .poem-seven-steps .ss-caption{position:absolute;right:3.5%;top:5%;z-index:6;display:flex;flex-direction:column;gap:2px;padding:9px 16px;border-radius:14px;background:#fefbf0e6;color:#315240;font-size:clamp(17px,2.6vw,27px);font-weight:650;line-height:1.45;letter-spacing:.12em;box-shadow:0 4px 14px #2a1d1026;pointer-events:none;animation:ss-rise .7s ease both}
-.poem-seven-steps.is-rooted .ss-caption{animation-delay:1.5s;letter-spacing:.18em;font-size:clamp(19px,2.9vw,30px)}
+.poem-seven-steps.is-rooted .ss-caption{animation-delay:1.5s;letter-spacing:.14em;font-size:18px;font-size:clamp(15px,4.5cqw,30px)}
 .poem-seven-steps .ss-loading{position:absolute;inset:0;z-index:9;display:grid;align-content:center;justify-items:center;gap:14px;padding:20px;background:#f5f2eae8;font-size:20px;line-height:1.5;text-align:center}
 .poem-seven-steps .ss-loading button{min-height:48px;padding:10px 22px;border:1px solid #97ad9b;border-radius:14px;background:#fffefa;font-weight:600;font-size:19px;cursor:pointer}
 
@@ -99,15 +105,16 @@
 .poem-seven-steps .ss-item:hover:not(:disabled){border-color:#b9c7b1}
 .poem-seven-steps .ss-item.is-source{opacity:.45}
 .poem-seven-steps .ss-item:disabled{cursor:default}
-.poem-seven-steps .ss-item.is-used{opacity:.5;background:#f2efe6;box-shadow:none}
-/* s6 side card: the beans of step 1 and the stalks of step 4 meet at one root. Decorative; the picture is the target. */
-.poem-seven-steps .ss-family{display:flex;align-items:flex-start;justify-content:center;width:100%;max-width:440px;padding:10px 14px 12px;border-radius:16px;background:#f6f2e6;border:1px solid #e8e0cc}
+/* s6 side card, laid out like the painting (萁 left, 豆 right): both meet at one root. Decorative; the picture is the
+   target. Same height as the tray on the other steps, so nothing below it jumps. */
+.poem-seven-steps .ss-family{display:flex;align-items:flex-start;justify-content:center;width:100%;max-width:440px;height:66px;padding:6px 14px;border-radius:16px;background:#f6f2e6;border:1px solid #e8e0cc}
 .poem-seven-steps .ss-fam{display:flex;align-items:center;gap:6px;flex:none}
 .poem-seven-steps .ss-fam img{display:block;height:40px;width:auto;max-width:66px;object-fit:contain;filter:drop-shadow(0 2px 2px #3b2a1a2e)}
-.poem-seven-steps .ss-fam b,.poem-seven-steps .ss-fam-root{display:grid;place-items:center;width:40px;height:40px;flex:none;border-radius:50%;border:2px solid #b5523b;color:#9a3f2c;background:#fffaf0;font-size:22px;font-weight:700;line-height:1}
+.poem-seven-steps .ss-fam b,.poem-seven-steps .ss-fam-root{display:grid;place-items:center;width:38px;height:38px;flex:none;border-radius:50%;border:2px solid #b5523b;color:#9a3f2c;background:#fffaf0;font-size:21px;font-weight:700;line-height:1}
+.poem-seven-steps .ss-fam b[data-ss-fam]{touch-action:none}
 .poem-seven-steps .ss-fam-line{flex:1 1 30px;min-width:16px;max-width:64px;height:0;margin-top:20px;border-top:2.5px dashed #cdbfa3;transform-origin:0 0;transform:rotate(16deg);transition:border-color .5s ease 1s}
 .poem-seven-steps .ss-fam-line.is-right{transform-origin:100% 0;transform:rotate(-16deg)}
-.poem-seven-steps .ss-fam-root{width:46px;height:46px;margin-top:22px;border:2px dashed #c9b8a0;color:#a99a83;background:#fffdf6;transition:background .5s ease 1s,border-color .5s ease 1s,color .5s ease 1s,box-shadow .5s ease 1s}
+.poem-seven-steps .ss-fam-root{width:40px;height:40px;margin-top:14px;border:2px solid #e4dac6;color:#ab9c84;background:#efe9da;box-shadow:inset 0 1px 3px #6b573a1f;transition:background .5s ease 1s,border-color .5s ease 1s,color .5s ease 1s,box-shadow .5s ease 1s}
 .poem-seven-steps .ss-fam-root b{display:none}
 .poem-seven-steps .ss-fam-root em{font-style:normal}
 .poem-seven-steps.is-rooted .ss-fam-line{border-top-style:solid;border-color:#e3a548}
@@ -140,6 +147,7 @@
 
 @keyframes ss-ripple{from{transform:scale(1);opacity:.95}to{transform:scale(1.55);opacity:0}}
 @keyframes ss-appear{from{opacity:0}to{opacity:1}}
+@keyframes ss-flare{0%{opacity:0}18%{opacity:1}75%{opacity:1}100%{opacity:0}}
 @keyframes ss-pop{0%{transform:translate(-50%,-50%) scale(1)}45%{transform:translate(-50%,-50%) scale(1.22)}100%{transform:translate(-50%,-50%) scale(1)}}
 @keyframes ss-call{50%{box-shadow:0 0 0 4px #ffd27a59,0 0 20px 8px #ffd98a4d}}
 @keyframes ss-flicker{from{opacity:.75}to{opacity:1}}
@@ -162,6 +170,8 @@
  .poem-seven-steps .ss-instruction{font-size:26px}
  .poem-seven-steps .ss-item{min-height:76px;font-size:21px}
  .poem-seven-steps .ss-item img{height:60px;max-width:100px}
+ .poem-seven-steps .ss-tray{min-height:76px}
+ .poem-seven-steps .ss-family{height:76px;padding-block:11px}
  .poem-seven-steps .ss-feedback{font-size:20px}
  .poem-seven-steps .ss-walk{padding-top:48px}
  .poem-seven-steps .ss-walker{width:42px;height:42px}
@@ -175,7 +185,10 @@
  .poem-seven-steps .ss-seal{width:min(40px,90%);font-size:21px}
  .poem-seven-steps .ss-item{min-height:74px;font-size:21px}
  .poem-seven-steps .ss-item img{height:58px;max-width:100px}
- .poem-seven-steps .ss-fam img{height:52px;max-width:84px}
+ .poem-seven-steps .ss-tray{min-height:74px}
+ .poem-seven-steps .ss-family{height:74px;padding-block:10px}
+ .poem-seven-steps .ss-fam img{height:46px;max-width:76px}
+ .poem-seven-steps .ss-fam-line{margin-top:23px}
 }
 /* Short phone landscape: the host gives the game only ~180px of height, so the picture
    takes the full height and the right column packs the walk, materials and feedback. */
@@ -194,11 +207,11 @@
  .poem-seven-steps .ss-tray{grid-area:tray;gap:6px;min-height:46px}
  .poem-seven-steps .ss-item{min-height:46px;max-width:200px;padding:3px 10px;font-size:16px;border-radius:13px;gap:6px;flex-basis:110px}
  .poem-seven-steps .ss-item img{height:34px;max-width:58px}
- .poem-seven-steps .ss-family{min-width:0;padding:4px 6px 6px;border-radius:12px}
+ .poem-seven-steps .ss-family{min-width:0;height:46px;padding:3px 6px;border-radius:12px}
  .poem-seven-steps .ss-fam{gap:3px}
  .poem-seven-steps .ss-fam img{height:22px;max-width:34px}
- .poem-seven-steps .ss-fam b{width:30px;height:30px;font-size:17px}
- .poem-seven-steps .ss-fam-root{width:34px;height:34px;margin-top:12px;font-size:17px}
+ .poem-seven-steps .ss-fam b{width:28px;height:28px;font-size:16px}
+ .poem-seven-steps .ss-fam-root{width:30px;height:30px;margin-top:10px;font-size:16px}
  .poem-seven-steps .ss-fam-line{min-width:8px;margin-top:14px}
  .poem-seven-steps .ss-sobs{padding:4px 10px;font-size:15px;gap:8px}
  .poem-seven-steps .ss-sob-icons i{width:15px}
