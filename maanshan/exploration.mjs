@@ -331,6 +331,15 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
   };
 }
 
+// Drawing-buffer budget of this viewer in device pixels (the shared default is
+// 2.4 MP). The normal stage is already at the full 2x on every iPad; 3.0 MP
+// lets the expanded stage of 10.2- to 11-inch iPads (810x1080 to 834x1194)
+// also stay at 2x instead of a resampled, softer 1.82-1.96x, and only 12.9-inch
+// iPads (4 GB and more) still reach the budget. With 4x MSAA a device pixel
+// costs roughly 44 bytes, so the extra 0.6 MP is at most about 26 MB, and only
+// while expanded; 9.7-inch 2 GB iPads (768x1024) never reach either budget.
+const VIEWER_MAX_PIXELS = 3000000;
+
 export function createViewer({THREE, OrbitControls, gltf, holder, stage, content, onInteract, onInteractionEnd, onContextLost}) {
   let renderer;
   const lightRendering = matchMedia('(pointer: coarse), (max-width: 1100px)').matches;
@@ -357,6 +366,7 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
   model.position.sub(originalBounds.getCenter(new THREE.Vector3()));
   wrapper.add(model);
   wrapper.scale.setScalar(2.6 / longest);
+  const textures = new Set();
   model.traverse(node => {
     if (!node.isMesh) return;
     node.castShadow = true;
@@ -365,10 +375,16 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
       // Keep each asset's PBR maps and material response. Anisotropy preserves
       // wood grain, feathers and soil detail when children inspect an angle.
       for (const value of Object.values(material || {})) {
-        if (value?.isTexture) value.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+        if (value?.isTexture) {value.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); textures.add(value);}
       }
     }
   });
+  // Upload every map now, then close the decoded ImageBitmaps: once a map is on
+  // the GPU its CPU copy is never read again (a 3072px colour map is 36 MB),
+  // which matters on iPads where the tab and the GPU share memory. A lost
+  // context never re-uploads: both callers destroy the viewer instead.
+  textures.forEach(texture => renderer.initTexture(texture));
+  textures.forEach(texture => texture.source?.data?.close?.());
   scene.add(wrapper);
   scene.add(new THREE.HemisphereLight(0xfffaf2, 0x92a59b, 1.7));
   const sunlight = new THREE.DirectionalLight(0xfff3df, 2.8);
@@ -440,7 +456,7 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
     controls.maxDistance = baseDistance * 1.9;
     const direction = camera.position.clone().sub(controls.target).normalize();
     setView(direction.lengthSq() ? direction : normalDirection, baseDistance * THREE.MathUtils.clamp(ratio, .52, 1.9), false);
-    renderer.setPixelRatio(modelPixelRatio(width, height));
+    renderer.setPixelRatio(modelPixelRatio(width, height, undefined, VIEWER_MAX_PIXELS));
     renderer.setSize(width, height, false);
     requestRender();
   };

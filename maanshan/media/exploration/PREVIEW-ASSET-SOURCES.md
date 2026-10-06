@@ -14,6 +14,16 @@ The web versions (`model-20261005.glb`) were simplified with glTF-Transform from
 
 Sizes, SHA-256 hashes, triangle counts and the source model hashes are recorded in `preview-manifest-20261005.json`. Prompts, reference pictures, unmodified source GLBs, generation receipts and optimisation logs are kept in the local `maanshan-work/round2-ar-20261005` source folder. Account keys, task IDs and signed resource URLs are excluded.
 
+### Sharper versions (`model-20261006.glb`, 2026-10-06)
+
+`jue-ju`, `zheng-ren-mai-lu` and `ke-zhi` were re-exported from the same unmodified Tripo source GLBs because the 1024-pixel colour textures looked soft when zoomed. No new generation was made. All source triangles are kept and positions are quantized with `KHR_mesh_quantization`. The colour texture is 3072 pixels (WebP quality 90). The metallic-roughness texture is 1024 pixels (WebP quality 88), and the normal texture is 1024 pixels lossless WebP (`EXT_texture_webp`). There is no Draco, meshopt or KTX2. Each file passes the Khronos glTF validator with 0 errors. The 2026-10-05 files are kept unchanged.
+
+| Folder | Bytes | SHA-256 | Triangles | Source SHA-256 |
+| --- | ---: | --- | ---: | --- |
+| `jue-ju` | 3,993,048 | `5b238377c2defb0d90e05867ce07bcbc4f74c153d28a07ab113192dc12723ad8` | 77,959 | `1c759d73028fe08209938a2d1a22da4dff40a25e4cfd382a654d61d89ef566e3` |
+| `zheng-ren-mai-lu` | 4,213,036 | `bcfc0fae5093a6dcbef4388a16d7924d41871dc641f6735411bde8f7fc95ee4d` | 76,557 | `30d156bcf9d18af8c2bab9925331eaae6acb9c9604244571ffa1b7a334e403f4` |
+| `ke-zhi` | 4,116,416 | `2006a8f9f2435b468809e9c0581cbe4a19c02f8c2d6874a9ef1dfccdcccb36c4` | 71,621 | `4233da511e9bb4bb63b961055c9cff2a7271b20201953f86fdeaada4bebdd6a1` |
+
 ## Source and rights record
 
 The models and reference pictures are newly AI-generated project assets. Provider account terms apply; no Creative Commons, open-source or public-domain licence is asserted. The scene pictures remain the school's supplied material.
