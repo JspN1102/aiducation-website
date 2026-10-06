@@ -20,10 +20,34 @@ const COMPACT_PROMPTS = {
   'g5-m1':'詩裏的野草和豆苗長得怎樣？',
   'g6-s1':'只聽聲音，找出聲母。',
   'g6-s2':'再聽一次，找出聲母。',
-  'g6-m1':'哪張是近看？哪張是遠看？'
+  'g6-m1':'哪張是近看？哪張是遠看？',
+  'p7-s2':'再聽一個字，這個字是第幾聲？',
+  'p9-s1':'聽開頭，找聲母。',
+  'p10-s2':'「三國」的「國」，韻母是哪一個？',
+  'p11-s1':'只靠耳朵，找出這個字的聲母。',
+  'p11-s2':'留意字音的開頭，這次聽到哪個聲母？',
+  'p12-s2':'再分辨一次，這次聽到哪個聲母？'
 };
 const prompt = item => COMPACT_PROMPTS[item.id] || item.prompt;
 const KIND = {sound:'聽音小鋪', dictation:'描紅與聽寫', microgame:'詩裏玩一玩', match:'動手解詩', sequence:'故事排一排', 'scene-builder':'種一片詩田'};
+// 聽音選擇題的答題形式只在這裏決定：第一期六首（id 1-6）是「小醫生問診」，
+// 第二期六首（id 7-12）是「警察抓犯人」。題目、答案和記錄都不受影響。
+const SOUND_ROUND_TWO = new Set(['yong-xue', 'hua-ji', 'qi-bu-shi', 'jue-ju', 'zheng-ren-mai-lu', 'ke-zhi']);
+const SOUND_FORMS = {
+  clinic: {id:'clinic', kind:'小醫生問診', scene:'media/challenges/clinic-v1.webp', solved:'media/challenges/clinic-well-v1.webp', cast:'media/challenges/clinic-bottles-v1.webp',
+    cue:'問一問，聽一聽', again:'再點一次，再聽一聽', listen:'問診：點一點，聽題目聲音', listenAgain:'再點一次，再聽題目聲音',
+    instruction:'先問診聽一聽，再選一種藥。', group:'選一種藥', start:'先點上面問診，聽一聽，再選藥。', ready:'聽好了，選一種藥。',
+    retry:'聲音還沒播完，請再點一次問診。', submit:'開藥', right:'藥開對了，好起來了！', wrong:'差一點，一起看看。'},
+  police: {id:'police', kind:'警察抓犯人', scene:'media/challenges/police-v1.webp', solved:'media/challenges/police-caught-v1.webp', cast:'media/challenges/police-lineup-v1.webp',
+    cue:'聽聽線索', again:'再點一次，再聽線索', listen:'點對講機，聽線索聲音', listenAgain:'再點對講機，再聽一次線索',
+    instruction:'先聽線索，再找出犯人。', group:'找出犯人', start:'先點對講機聽線索，再找犯人。', ready:'聽好了，找出犯人。',
+    retry:'聲音還沒播完，請再點對講機聽一次。', submit:'就是他！', right:'抓到了！就是他！', wrong:'不是他，一起看看。'}
+};
+export const soundForm = poem => SOUND_FORMS[SOUND_ROUND_TWO.has(poem?.slug) ? 'police' : 'clinic'];
+const markIcon = {
+  clinic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5.5 12.5 4.2 4.2 8.8-9.4"/></svg>',
+  police:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6.5" cy="16" r="4"/><circle cx="17.5" cy="16" r="4"/><path d="M6.5 12V8.6a1.6 1.6 0 0 1 1.6-1.6h1.4m8 5V8.6A1.6 1.6 0 0 0 15.9 7h-1.4m-4.5 0h4"/></svg>'
+};
 const soundIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m10 5-5 4H2v6h3l5 4ZM14 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg>';
 const tone = shape => shape ? `<svg class="challenge-tone" viewBox="0 0 70 35" aria-hidden="true"><path d="${{level:'M8 10H62', rising:'M8 28 62 6', dipping:'M8 13 32 29 62 6', falling:'M8 6 62 28'}[shape]}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>` : '';
 const makeURL = path => new URL(path, import.meta.url).href;
@@ -148,10 +172,11 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     }
   }
   function header(item) {
-    return `<header class="challenge-header"><div><span class="challenge-eyebrow">${attempt.mode==='review'?'錯題重做':attempt.mode==='advanced'?'高階挑戰':KIND[item.type]}</span><span class="challenge-count">${screen+1}<small> / ${items.length}</small></span></div><div class="challenge-steps" aria-label="第 ${screen+1} 題，共 ${items.length} 題">${items.map((_,i)=>`<i class="${i<screen?'done':i===screen?'current':''}"></i>`).join('')}</div></header>`;
+    return `<header class="challenge-header"><div><span class="challenge-eyebrow">${attempt.mode==='review'?'錯題重做':attempt.mode==='advanced'?'高階挑戰':item.type==='sound'?soundForm(poem).kind:KIND[item.type]}</span><span class="challenge-count">${screen+1}<small> / ${items.length}</small></span></div><div class="challenge-steps" aria-label="第 ${screen+1} 題，共 ${items.length} 題">${items.map((_,i)=>`<i class="${i<screen?'done':i===screen?'current':''}"></i>`).join('')}</div></header>`;
   }
   function soundBody(item) {
-    return `<div class="challenge-sound-layout"><div class="challenge-sound-stage is-walnut-market"><img class="challenge-market" src="${esc(imageAsset('media/challenges/sound-market-v1.webp'))}" alt="" draggable="false"><button type="button" class="challenge-sound-token is-walnut" data-ch="listen" aria-label="點核桃，聽題目聲音" draggable="false"><img src="${esc(imageAsset('media/challenges/sound-pod-v1.webp'))}" alt="" draggable="false">${soundIcon}</button><p class="challenge-stage-note">點核桃，聽一聽</p></div><div class="challenge-sound-work"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><p class="challenge-instruction">先聽一聽，再點答案。</p><div class="challenge-shelves" role="group" aria-label="點選一個答案">${ordered(item).map(option=>`<button type="button" class="challenge-shelf" data-ch="choose" data-option="${option.id}" aria-pressed="false" disabled>${tone(option.contour)}<span>${esc(option.label)}</span><i aria-hidden="true"></i></button>`).join('')}</div><p class="challenge-audio-status" role="status" aria-live="polite">先點核桃聽聲音，再點答案。</p></div></div>`;
+    const form=soundForm(poem);
+    return `<div class="sound-case is-${form.id}" data-sound-form="${form.id}"><button type="button" class="sound-case-scene" data-ch="listen" aria-label="${form.listen}" draggable="false"><img class="sound-case-picture" src="${esc(imageAsset(form.scene))}" alt="" draggable="false"><img class="sound-case-picture is-after" src="${esc(imageAsset(form.solved))}" alt="" draggable="false"><span class="sound-case-cue">${soundIcon}<span class="sound-case-cue-text">${form.cue}</span></span></button><div class="sound-case-work"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><p class="challenge-instruction">${form.instruction}</p><div class="sound-case-options" role="group" aria-label="${form.group}">${ordered(item).map((option,index)=>`<button type="button" class="sound-case-option" data-ch="choose" data-option="${option.id}" aria-pressed="false" disabled><span class="sound-case-figure"><span class="sound-case-art is-cell-${index%4}" aria-hidden="true"><img src="${esc(imageAsset(form.cast))}" alt="" draggable="false"></span><span class="sound-case-tag">${tone(option.contour)}<span>${esc(option.label)}</span></span><span class="sound-case-mark" aria-hidden="true">${markIcon[form.id]}</span></span></button>`).join('')}</div><p class="challenge-audio-status" role="status" aria-live="polite">${form.start}</p></div></div>`;
   }
   function writingBody(item) {
     return `<div class="challenge-writing-layout"><div class="challenge-writing-heading"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><div class="challenge-writing-prompts"><button class="challenge-listen" data-ch="listen">${soundIcon}<span>聽詞語</span></button><button type="button" class="challenge-strokes" data-cw="strokes"><span>看筆順</span></button></div><p class="challenge-audio-status" role="status"></p><div class="cw-review" hidden></div></div><div class="challenge-writing-holder"></div></div>`;
@@ -250,10 +275,10 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     if (dead || generation !== renderGeneration || playback !== audioGeneration) return;
     playing = false;button?.classList.remove('is-playing');button?.removeAttribute('aria-busy');
     if (success) heard = true;
-    if (status) status.textContent = success ? item.type==='sound'?'聽好了，點選一個答案。':'聽到了，可以寫字，也可以再聽一次。' : item.type==='dictation'?'聲音暫時未能播放，可以先寫字，稍後再聽。':heard?'這次未播完，可以再聽一次，或照剛才的聲音選答案。':'聲音還沒播完，請再點核桃聽一次。';
+    if (status) status.textContent = success ? item.type==='sound'?soundForm(poem).ready:'聽到了，可以寫字，也可以再聽一次。' : item.type==='dictation'?'聲音暫時未能播放，可以先寫字，稍後再聽。':heard?'這次未播完，可以再聽一次，或照剛才的聲音選答案。':soundForm(poem).retry;
     if(success&&item.type==='sound'){
-      button?.setAttribute('aria-label','再點核桃，聽一次聲音');
-      const note=q('.challenge-stage-note');if(note)note.textContent='再點一次，再聽一聽';
+      button?.setAttribute('aria-label',soundForm(poem).listenAgain);
+      const note=q('.sound-case-cue-text');if(note)note.textContent=soundForm(poem).again;
     }
     if (item.type === 'sound') updateSound();
   }
@@ -261,15 +286,18 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     if (!heard || currentAnswer()||!items[screen].options.some(option=>option.id===id)) return;
     selected=id;updateSound();
     const option=items[screen].options.find(value=>value.id===id),status=q('.challenge-audio-status');
-    if(status)status.textContent=`已選「${option.label}」，點「選好了」。`;
+    if(status)status.textContent=`已選「${option.label}」，點「${soundForm(poem).submit}」。`;
   }
   function updateSound() {
-    const answer=currentAnswer();
+    const answer=currentAnswer(),stage=q('.sound-case');
+    stage?.classList.toggle('is-heard',heard);stage?.classList.toggle('is-answered',!!answer);
+    stage?.classList.toggle('is-solved',answer?.status==='correct');stage?.classList.toggle('is-missed',!!answer&&answer.status!=='correct');
     container.querySelectorAll('[data-option]').forEach(button=>{
       button.disabled=!heard||!!answer;button.setAttribute('aria-pressed',String(button.dataset.option===selected));
       button.classList.toggle('is-correct',!!answer && button.dataset.option===items[screen].answerId);
     });
-    const submitButton=q('[data-ch="submit"]');if(submitButton){submitButton.disabled=!heard||!selected||!!answer;submitButton.textContent='選好了';}
+    const submitButton=q('[data-ch="submit"]');if(submitButton){submitButton.disabled=!heard||!selected||!!answer;submitButton.textContent=soundForm(poem).submit;}
+    if(answer){const status=q('.sound-case .challenge-audio-status');if(status)status.textContent='';}
   }
   function place(slot) {
     if (!selected || currentAnswer()) return;
@@ -318,7 +346,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     q('[data-ch="skip"]').hidden=true;q('[data-ch="submit"]').hidden=true;
     const next=q('[data-ch="next"]');next.hidden=false;
     next.textContent=screen===items.length-1?'查看成果':'下一題 →';
-    q('.challenge-feedback').innerHTML=`<strong>${correct?item.type==='microgame'?'完成啦！':'你找到了！':answer.status==='skipped'?item.type==='microgame'?'這次先收好，下次再玩。':'一起學一學':'差一點，一起看看。'}</strong>${['dictation','microgame'].includes(item.type)?'':`<p>${esc(item.explanation)}</p>`}${!correct && !['dictation','sound'].includes(item.type)?`<button class="challenge-text-button" data-ch="show-solution">${item.type==='microgame'?'看看小提示':'看看怎樣放'}</button>`:''}`;
+    q('.challenge-feedback').innerHTML=`<strong>${correct?item.type==='microgame'?'完成啦！':item.type==='sound'?soundForm(poem).right:'你找到了！':answer.status==='skipped'?item.type==='microgame'?'這次先收好，下次再玩。':'一起學一學':item.type==='sound'?soundForm(poem).wrong:'差一點，一起看看。'}</strong>${['dictation','microgame'].includes(item.type)?'':`<p>${esc(item.explanation)}</p>`}${!correct && !['dictation','sound'].includes(item.type)?`<button class="challenge-text-button" data-ch="show-solution">${item.type==='microgame'?'看看小提示':'看看怎樣放'}</button>`:''}`;
     q('.challenge-footer').classList.add('has-feedback');
     if(item.type==='dictation' && answer.status==='skipped' && !writing?.getResult?.()) {
       writing?.destroy();q('.challenge-writing-holder').inert=false;

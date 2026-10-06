@@ -1,8 +1,8 @@
 {
  "schemaVersion": 1,
- "version": "e05a7d1f5d86d29b550b",
+ "version": "441a3cd369b7962e8a1f",
  "cache": "maanshan-pack-v1",
- "totalBytes": 218602423,
+ "totalBytes": 219020481,
  "assets": [
   {
    "path": "media/bo-chuan-gua-zhou/animation-20260917.mp4",
@@ -145,6 +145,27 @@
    ]
   },
   {
+   "path": "media/challenges/clinic-bottles-v1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/97d30a06f741e26e8858/maanshan/media/challenges/clinic-bottles-v1.webp",
+   "bytes": 46856,
+   "sha256": "97d30a06f741e26e88582a4ed6c85bc3dbc9506c0c6e06e03487bd277226ef5f",
+   "type": "image/webp"
+  },
+  {
+   "path": "media/challenges/clinic-v1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2a8ab638745031c7b0e3/maanshan/media/challenges/clinic-v1.webp",
+   "bytes": 83704,
+   "sha256": "2a8ab638745031c7b0e312e816c7628089103da519c2ab7c5089aeb246b7d23b",
+   "type": "image/webp"
+  },
+  {
+   "path": "media/challenges/clinic-well-v1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/90399d9ed1f4ccd69d09/maanshan/media/challenges/clinic-well-v1.webp",
+   "bytes": 56964,
+   "sha256": "90399d9ed1f4ccd69d09f1dcf8befd4b53fe4552c2d8564f6623eed9f7376bc7",
+   "type": "image/webp"
+  },
+  {
    "path": "media/challenges/field-soil-v1.webp",
    "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/6e1b347c402b19dcad15/maanshan/media/challenges/field-soil-v1.webp",
    "bytes": 104608,
@@ -153,6 +174,27 @@
    "grades": [
     5
    ]
+  },
+  {
+   "path": "media/challenges/police-caught-v1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/163faaa039e91e7ee293/maanshan/media/challenges/police-caught-v1.webp",
+   "bytes": 87978,
+   "sha256": "163faaa039e91e7ee293ada5941f803e5e97920576e26e5fffa1c29256870b68",
+   "type": "image/webp"
+  },
+  {
+   "path": "media/challenges/police-lineup-v1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/575c05c0d96d87a020ff/maanshan/media/challenges/police-lineup-v1.webp",
+   "bytes": 56048,
+   "sha256": "575c05c0d96d87a020ff9325e45a65b96d7efc9eb3e3fa4bcb5c87f63f4352b1",
+   "type": "image/webp"
+  },
+  {
+   "path": "media/challenges/police-v1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/0213a404645eafe469ab/maanshan/media/challenges/police-v1.webp",
+   "bytes": 86508,
+   "sha256": "0213a404645eafe469abc9e4cde2509fc5b82e9626e6722c1dabf296bcd69eca",
+   "type": "image/webp"
   },
   {
    "path": "media/challenges/sound-market-v1.webp",

@@ -53,11 +53,77 @@
       "alphaMin": 0,
       "alphaMax": 255,
       "transparentFraction": 0.4660652424942263
+    },
+    {
+      "file": "clinic-v1.webp",
+      "bytes": 83704,
+      "sha256": "2a8ab638745031c7b0e312e816c7628089103da519c2ab7c5089aeb246b7d23b",
+      "width": 1152,
+      "height": 768,
+      "alphaMin": 255,
+      "alphaMax": 255,
+      "transparentFraction": 0.0
+    },
+    {
+      "file": "clinic-well-v1.webp",
+      "bytes": 56964,
+      "sha256": "90399d9ed1f4ccd69d09f1dcf8befd4b53fe4552c2d8564f6623eed9f7376bc7",
+      "width": 1152,
+      "height": 768,
+      "alphaMin": 255,
+      "alphaMax": 255,
+      "transparentFraction": 0.0
+    },
+    {
+      "file": "clinic-bottles-v1.webp",
+      "bytes": 46856,
+      "sha256": "97d30a06f741e26e88582a4ed6c85bc3dbc9506c0c6e06e03487bd277226ef5f",
+      "width": 1020,
+      "height": 480,
+      "alphaMin": 0,
+      "alphaMax": 255,
+      "transparentFraction": 0.19053513071895425
+    },
+    {
+      "file": "police-v1.webp",
+      "bytes": 86508,
+      "sha256": "0213a404645eafe469abc9e4cde2509fc5b82e9626e6722c1dabf296bcd69eca",
+      "width": 1152,
+      "height": 768,
+      "alphaMin": 255,
+      "alphaMax": 255,
+      "transparentFraction": 0.0
+    },
+    {
+      "file": "police-caught-v1.webp",
+      "bytes": 87978,
+      "sha256": "163faaa039e91e7ee293ada5941f803e5e97920576e26e5fffa1c29256870b68",
+      "width": 1152,
+      "height": 768,
+      "alphaMin": 255,
+      "alphaMax": 255,
+      "transparentFraction": 0.0
+    },
+    {
+      "file": "police-lineup-v1.webp",
+      "bytes": 56048,
+      "sha256": "575c05c0d96d87a020ff9325e45a65b96d7efc9eb3e3fa4bcb5c87f63f4352b1",
+      "width": 1020,
+      "height": 472,
+      "alphaMin": 255,
+      "alphaMax": 255,
+      "transparentFraction": 0.0
     }
   ],
   "rightsRecord": "AI-generated project assets. No third-party reference artworks supplied. Provider account terms apply; no Creative Commons or public-domain licence asserted.",
   "sourcePrompts": [
     "market-prompt.txt",
-    "sound-pod-prompt.txt"
+    "sound-pod-prompt.txt",
+    "clinic.txt",
+    "clinic-well.txt",
+    "bottles.txt",
+    "police.txt",
+    "police-caught.txt",
+    "lineup.txt"
   ]
 }
