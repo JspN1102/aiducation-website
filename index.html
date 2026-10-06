@@ -48,6 +48,7 @@ ol,ul{list-style:none}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .nb{display:inline-block}
+.nw{white-space:nowrap}
 
 /* ---------- nav ---------- */
 .nav{position:fixed;inset:0 0 auto;z-index:50;font-family:var(--f-d);transition:background .4s,box-shadow .4s,backdrop-filter .4s}
@@ -143,7 +144,7 @@ p,li,figcaption{text-wrap:pretty}
 .pillar p.pillar__n{display:inline-block;margin-top:0;font-size:clamp(34px,3.2vw,46px);font-weight:700;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .pillar h3{margin-top:16px;font-size:clamp(22px,1.9vw,26px);font-weight:650;letter-spacing:-.005em;line-height:1.3}
 .pillar .en{display:block;margin-top:2px;font-size:14px}
-.pillar p{margin-top:12px;color:var(--ink2);font-size:16px;line-height:1.75}
+.pillar p{word-break:keep-all;overflow-wrap:anywhere;margin-top:12px;color:var(--ink2);font-size:16px;line-height:1.75}
 .origin{margin-top:44px;font-size:14px;color:var(--ink3);display:flex;gap:10px;align-items:center}
 .origin::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--grad);flex:none}
 
@@ -161,6 +162,7 @@ p,li,figcaption{text-wrap:pretty}
 .bubble.is-swap{opacity:0;transform:translateY(6px)}
 .shishi__tag{margin-top:6px;text-align:center;font-size:13px;color:var(--ink3)}
 .shishi__tag b{color:var(--ink);font-weight:600}
+.shishi__tag .en{display:block;margin-top:2px}
 
 /* ---------- film ---------- */
 .film{margin-top:clamp(56px,7vw,96px)}
@@ -206,7 +208,7 @@ p,li,figcaption{text-wrap:pretty}
 .step__k span{padding-bottom:.9em;font-size:13px;font-weight:500;letter-spacing:.14em;color:var(--ink3);font-variant-numeric:tabular-nums}
 .step h3{margin-top:18px;font-size:clamp(28px,2.7vw,40px);font-weight:650;letter-spacing:-.015em;line-height:1.2}
 .step .en{margin-top:6px;font-size:16px}
-.step p.d{margin-top:18px;color:var(--ink2);max-width:26em}
+.step p.d{word-break:keep-all;overflow-wrap:anywhere;margin-top:18px;color:var(--ink2);max-width:26em}
 .step__note{margin-top:14px;font-size:13px;color:var(--ink3)}
 .step__img{display:none}
 
@@ -215,7 +217,7 @@ p,li,figcaption{text-wrap:pretty}
 .poets__head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:20px clamp(28px,5vw,80px);align-items:end;padding:0 clamp(24px,4.4vw,64px)}
 .poets__title{margin-top:22px;font-size:clamp(34px,4vw,58px);font-weight:650;line-height:1.1;letter-spacing:-.02em}
 .poets__head .en{display:block;margin-top:10px;font-size:clamp(16px,1.4vw,19px)}
-.poets__copy{font-size:clamp(19px,1.75vw,25px);font-weight:550;line-height:1.6;letter-spacing:-.005em}
+.poets__copy{word-break:keep-all;font-size:clamp(19px,1.75vw,25px);font-weight:550;line-height:1.6;letter-spacing:-.005em}
 .roll{margin-top:clamp(36px,4.6vw,60px);display:grid;gap:clamp(6px,1vw,14px)}
 .roll__row{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent)}
 .roll__track{display:flex;width:max-content;animation:roll 70s linear infinite}
@@ -245,7 +247,7 @@ p,li,figcaption{text-wrap:pretty}
 .tech__grid li:hover{transform:translateY(-4px);box-shadow:inset 0 0 0 1px var(--line),0 30px 60px -36px rgba(47,107,255,.4)}
 .tech__grid small{display:block;font-size:11.5px;font-weight:600;letter-spacing:.2em;color:var(--ink4)}
 .tech__grid b{display:block;margin-top:14px;font-size:clamp(23px,2.1vw,30px);font-weight:700;line-height:1.25;letter-spacing:-.01em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;width:fit-content}
-.tech__grid p{margin-top:12px;font-size:16px;font-weight:550;line-height:1.65;color:var(--ink)}
+.tech__grid p{word-break:keep-all;overflow-wrap:anywhere;margin-top:12px;font-size:16px;font-weight:550;line-height:1.65;color:var(--ink)}
 
 /* ---------- village ---------- */
 .village{padding-top:clamp(40px,6vw,96px);background:linear-gradient(180deg,var(--bg) 0,#F4F2F7 50%,var(--bg) 100%)}
@@ -276,9 +278,10 @@ p,li,figcaption{text-wrap:pretty}
   html:not(.reel-on) .panel{width:auto;aspect-ratio:3/2}
   html:not(.reel-on) .panel:first-child{grid-column:1/-1;aspect-ratio:16/8}
 }
-.reel-on .reel-pin{position:sticky;top:0;height:100vh;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding-top:56px}
+.reel-on .reel{margin-top:0}
+.reel-on .reel-pin{position:sticky;top:0;height:100vh;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding-top:64px}
 .reel-on .reel-track{overflow:visible;scroll-snap-type:none;gap:24px;padding:0 max(var(--gut),calc((100vw - var(--max))/2));will-change:transform}
-.reel-on .panel{width:min(64vw,calc((100vh - 210px)*1.5),1000px);aspect-ratio:3/2;border-radius:28px;box-shadow:0 50px 90px -50px rgba(30,40,90,.55),0 0 0 1px var(--line)}
+.reel-on .panel{width:min(74vw,calc((100vh - 180px)*1.5),1120px);aspect-ratio:3/2;border-radius:28px;box-shadow:0 36px 64px -40px rgba(30,40,90,.5),0 0 0 1px var(--line)}
 .reel-on .panel figcaption{left:34px;right:34px;bottom:30px}
 .reel-on .panel p{font-size:16px}
 .reel-on .panel .label{top:20px;right:20px}
@@ -288,6 +291,7 @@ p,li,figcaption{text-wrap:pretty}
 .v-facts li{padding:26px 28px;border-radius:24px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line)}
 .v-facts h3{font-size:19px;font-weight:600}
 .v-facts p{margin-top:8px;font-size:15px;color:var(--ink2);line-height:1.7}
+.reel-on .v-facts{margin-top:clamp(16px,2vw,32px)}
 .road{margin-top:clamp(56px,7vw,96px)}
 .road__head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px 24px}
 .road__head h3{font-size:clamp(22px,2vw,28px);font-weight:600}
@@ -376,7 +380,7 @@ p,li,figcaption{text-wrap:pretty}
   .pillar,.pillar+.pillar{padding:24px 0 4px;border-left:0}
   .pillar+.pillar{border-top:1px solid var(--line)}
   .p-head{grid-template-columns:1fr}
-  .shishi{width:200px;justify-self:end;margin-top:8px;padding-top:58px}
+  .shishi{width:220px;justify-self:center;margin-top:8px;padding-top:58px}
   .poets__head{grid-template-columns:1fr}
   .more{grid-template-columns:1fr}
   .tech__grid{grid-template-columns:repeat(2,1fr)}
@@ -400,7 +404,8 @@ p,li,figcaption{text-wrap:pretty}
 }
 @media (max-width:560px){
   .contact__card .h-xl{font-size:38px}
-  .bubble{left:auto;right:0;max-width:none;white-space:nowrap;font-size:14px;padding:10px 15px}
+  .bubble{left:50%;right:auto;translate:-50% 0;max-width:none;white-space:nowrap;font-size:14px;padding:10px 15px}
+  .br-d{display:none}
   .member{display:grid;grid-template-columns:72px minmax(0,1fr);column-gap:18px;align-items:center;padding:24px 22px}
   .member img{width:72px;height:72px;grid-row:span 2}
   .member h3{margin-top:0;font-size:20px}
@@ -504,11 +509,11 @@ p,li,figcaption{text-wrap:pretty}
     <h2 class="sr" id="about-title">關於 AIDUCATION</h2>
     <p class="statement" data-scrub><span>我們是一支由教育學者與工程師組成的團隊。</span><span>我們相信，AI 不只是批改作業的工具——</span><span>它能讓孩子開口讀詩、走進詩裡，</span><span>愛上自己的語言與文化。</span></p>
     <p class="statement-en en" lang="en" data-reveal>We are educators and engineers building AI that helps children read classical poems aloud, step inside them, and fall in love with their own language and culture.</p>
-    <p class="pillars-lead" data-reveal>融合 <span class="grad">AR、數字人、大語言模型與具身智能</span>，<span class="nb">打造下一代沉浸式中文教育。</span></p>
+    <p class="pillars-lead" data-reveal>融合 <span class="grad">AR、數字人、<span class="nw">大語言模型與具身智能</span></span>，<span class="nb">打造下一代沉浸式中文教育。</span></p>
     <div class="pillars">
-      <div class="pillar" data-reveal><p class="pillar__n">01</p><h3>AR × 3D 沉浸詩境<span class="en" lang="en">Immersive AR &amp; 3D</span></h3><p>AR 古詩教具與 100+ 個可旋轉的 3D 詩境，把詩中山水搬到孩子眼前——讀詩，就是走進詩裡。</p></div>
-      <div class="pillar" data-reveal><p class="pillar__n">02</p><h3>AI 數字人 × 大語言模型<span class="en" lang="en">Digital humans × LLMs</span></h3><p>自研 AI Agent 驅動學習向導詩詩與 500+ 位 AI 詩人：聽得懂、答得出、會追問，一對一陪每個孩子學。</p></div>
-      <div class="pillar" data-reveal><p class="pillar__n">03</p><h3>具身智能<span class="en" lang="en">Embodied intelligence</span></h3><p>聽、說、寫、動，多模態感知孩子的每一次開口、每一筆書寫、每一個動作——AI 走出螢幕，走進課室。</p></div>
+      <div class="pillar" data-reveal><p class="pillar__n">01</p><h3>AR × 3D 沉浸詩境<span class="en" lang="en">Immersive AR &amp; 3D</span></h3><p>AR 古詩教具與 <span class="nw">100+ 個可旋轉的 3D 詩境</span>，把詩中山水搬到孩子眼前——<span class="nw">讀詩，就是走進詩裡。</span></p></div>
+      <div class="pillar" data-reveal><p class="pillar__n">02</p><h3>AI 數字人 × 大語言模型<span class="en" lang="en">Digital humans × LLMs</span></h3><p>自研 AI Agent 驅動學習向導詩詩與 <span class="nw">500+ 位 AI 詩人</span>：聽得懂、答得出、會追問，<span class="nw">一對一陪每個孩子學。</span></p></div>
+      <div class="pillar" data-reveal><p class="pillar__n">03</p><h3>具身智能<span class="en" lang="en">Embodied intelligence</span></h3><p>聽、說、寫、動，多模態感知孩子的每一次開口、每一筆書寫、每一個動作——<span class="nw">AI 走出螢幕，走進課室。</span></p></div>
     </div>
     <p class="origin" data-reveal>源自 AR 多語古詩教具研究，支援普通話、粵語、葡語及英語。</p>
   </div>
@@ -585,7 +590,7 @@ p,li,figcaption{text-wrap:pretty}
         </li>
         <li class="step">
           <p class="step__k" aria-hidden="true"><b>讀</b><span>02 / 07</span></p><h3>AI 朗讀評測</h3><p class="en" lang="en">AI read-aloud assessment</p>
-          <p class="d">逐字診斷聲母、韻母、聲調，即時評分，還會告訴孩子這個字「聽起來像」哪個音。</p>
+          <p class="d">逐字診斷聲母、韻母、聲調，即時評分，還會告訴孩子這個字<span class="nw">「聽起來像」</span>哪個音。</p>
           <div class="step__img"><div class="device"><div class="device__screen"><img src="assets/img/p-pronunciation-report-1180.webp" width="1180" height="820" loading="lazy" decoding="async" alt="朗讀評測結果：整句得分與每個字的分數，標出聲母和聲調錯誤"></div></div></div>
         </li>
         <li class="step">
@@ -595,22 +600,22 @@ p,li,figcaption{text-wrap:pretty}
         </li>
         <li class="step">
           <p class="step__k" aria-hidden="true"><b>境</b><span>04 / 07</span></p><h3>3D 詩境</h3><p class="en" lang="en">3D poem worlds</p>
-          <p class="d">把詩中的風景變成可旋轉、縮放的 3D 場景。打開杜甫《客至》，茅屋、蓬門、花徑與「舍南舍北皆春水」就在指尖轉動，一看就懂。</p>
+          <p class="d">把詩中的風景變成可旋轉、縮放的 3D 場景。打開杜甫<span class="nw">《客至》</span>，茅屋、蓬門、花徑與<span class="nw">「舍南舍北皆春水」</span>就在指尖轉動，一看就懂。</p>
           <div class="step__img"><div class="device"><div class="device__screen"><img src="assets/img/p-3d-model-cottage-1180.webp" width="1180" height="820" loading="lazy" decoding="async" alt="3D 詩境：杜甫《客至》的茅屋小院立體模型，春水環繞，可拖動旋轉、縮放"></div></div></div>
         </li>
         <li class="step">
           <p class="step__k" aria-hidden="true"><b>玩</b><span>05 / 07</span></p><h3>古詩小遊戲</h3><p class="en" lang="en">Hands-on poem games</p>
-          <p class="d">讀《詠雪》，就在漫天飛雪裡數雪花：點一片，數一片，「一片兩片三四片」跟着亮起來。200+ 款動手小遊戲，邊玩邊記，不靠死背。</p>
+          <p class="d">讀《詠雪》，就在漫天飛雪裡數雪花：點一片，數一片，<span class="nw">「一片兩片三四片」</span>跟着亮起來。200+ 款動手小遊戲，邊玩邊記，不靠死背。</p>
           <div class="step__img"><div class="device"><div class="device__screen"><img src="assets/img/p-game-snow-1180.webp" width="1180" height="820" loading="lazy" decoding="async" alt="古詩小遊戲《詠雪》數雪花：點雪花逐片計數，已數到六片"></div></div></div>
         </li>
         <li class="step">
           <p class="step__k" aria-hidden="true"><b>寫</b><span>06 / 07</span></p><h3>筆順・描紅・聽寫</h3><p class="en" lang="en">Stroke, trace, dictate</p>
-          <p class="d">先看筆順示範，再跟着淡紅色描紅，最後獨立聽寫。AI 手寫辨認逐筆判斷，寫對一筆就有回饋。</p>
+          <p class="d">先看筆順示範，再跟着淡紅色描紅，最後獨立聽寫。<span class="nw">AI 手寫辨認</span>逐筆判斷，寫對一筆就有回饋。</p>
           <div class="step__img"><div class="device"><div class="device__screen"><img src="assets/img/p-tracing-dictation-1180.webp" width="1180" height="820" loading="lazy" decoding="async" alt="描紅練習：跟着淡紅色筆畫書寫「船」字"></div></div></div>
         </li>
         <li class="step">
           <p class="step__k" aria-hidden="true"><b>教</b><span>07 / 07</span></p><h3>教師後台與 AI 教研報告</h3><p class="en" lang="en">Teacher dashboard and AI reports</p>
-          <p class="d">全班朗讀分布與逐字熱圖，低於 80 分自動標紅；一鍵匯出 Excel，以及由 AIDUCATION 自研 AI Agent 撰寫的教研報告。</p>
+          <p class="d">全班朗讀分布與逐字熱圖，低於 80 分自動標紅；一鍵匯出 Excel，以及由 AIDUCATION <span class="nw">自研 AI Agent</span> 撰寫的教研報告。</p>
           <p class="step__note">示範畫面使用模擬數據</p>
           <div class="step__img"><div class="device"><div class="device__screen"><img class="is-tall" src="assets/img/p-teacher-dashboard-1180.webp" width="1180" height="1360" loading="lazy" decoding="async" alt="教師後台：全班朗讀分布與逐字分數熱圖（模擬數據）"></div></div></div>
         </li>
@@ -624,7 +629,7 @@ p,li,figcaption{text-wrap:pretty}
           <h3 class="poets__title">與詩人對話</h3>
           <span class="en" lang="en">Talk with the poets</span>
         </div>
-        <p class="poets__copy" data-reveal>有無數位 AI 詩人陪孩子聊詩、解惑；回答會朗讀出來，還能一起創作一首新詩。</p>
+        <p class="poets__copy" data-reveal><span class="nw">有無數位 AI 詩人</span><span class="nw">陪孩子聊詩、解惑；</span><br class="br-d"><span class="nw">回答會朗讀出來，</span><span class="nw">還能一起創作一首新詩。</span></p>
       </div>
       <div class="roll" data-reveal>
         <p class="sr">可以對話的 AI 詩人包括李白、杜甫、王維、白居易、李商隱、蘇軾、李清照、陸游、陶淵明、孟浩然、杜牧、王昌齡、屈原、曹植、王之渙、賀知章、辛棄疾、柳宗元、劉禹錫、王安石、楊萬里、范仲淹、歐陽修、岑參、駱賓王、韓愈、鄭板橋、納蘭性德……數之不盡。</p>
@@ -645,12 +650,12 @@ p,li,figcaption{text-wrap:pretty}
         <p class="en" lang="en">Self-developed AI agents, industry-grade speech assessment and state-of-the-art voice, handwriting and 3D engines.</p>
       </div>
       <ul class="tech__grid">
-        <li data-reveal><small>AGENT</small><b>自研 AI Agent</b><p>自主規劃、調用工具、分析全班數據，一鍵生成教研報告——會思考的 AI 助教。</p></li>
+        <li data-reveal><small>AGENT</small><b>自研 AI Agent</b><p>自主規劃、調用工具、分析全班數據，一鍵生成教研報告——<span class="nw">會思考的 AI 助教。</span></p></li>
         <li data-reveal><small>SPEECH</small><b>業界級語音評測引擎</b><p>逐字、逐音素診斷聲母、韻母、聲調，精準指出每一個讀錯的音。</p></li>
         <li data-reveal><small>VISION</small><b>AI 像素級手寫辨認</b><p>逐筆追蹤筆順與筆畫軌跡，像素級比對，寫錯一筆，即時提示。</p></li>
-        <li data-reveal><small>VOICE</small><b>最先進的 TTS 語音模型</b><p>1萬+ 段標準普通話朗讀，字正腔圓、抑揚有致，媲美專業播音。</p></li>
-        <li data-reveal><small>LLM</small><b>大語言模型</b><p>驅動 500+ 位 AI 詩人，各有性格、詩風與時代，有問必答，出口成詩。</p></li>
-        <li data-reveal><small>REAL-TIME 3D</small><b>實時 3D 渲染</b><p>100+ 個 3D 詩境在瀏覽器即開即轉，iPad 上同樣流暢。</p></li>
+        <li data-reveal><small>VOICE</small><b>最先進的 TTS 語音模型</b><p><span class="nw">1萬+ 段</span>標準普通話朗讀，字正腔圓、抑揚有致，媲美專業播音。</p></li>
+        <li data-reveal><small>LLM</small><b>大語言模型</b><p>驅動 <span class="nw">500+ 位 AI 詩人</span>，各有性格、詩風與時代，有問必答，出口成詩。</p></li>
+        <li data-reveal><small>REAL-TIME 3D</small><b>實時 3D 渲染</b><p><span class="nw">100+ 個 3D 詩境</span>在瀏覽器即開即轉，<span class="nw">iPad 上同樣流暢。</span></p></li>
       </ul>
     </div>  </div>
 </section>
@@ -672,11 +677,11 @@ p,li,figcaption{text-wrap:pretty}
   <div class="reel" id="reel">
     <div class="reel-pin">
       <ol class="reel-track" aria-label="文化村概念圖">
-        <li class="panel"><figure><img src="assets/img/v-hero-1200.webp" srcset="assets/img/v-hero-1200.webp 1200w, assets/img/v-hero-1600.webp 1600w" sizes="(min-width:900px) 64vw, 84vw" width="1600" height="900" loading="lazy" decoding="async" alt="概念圖：黃昏時分的江南水鄉，拱橋、垂柳與烏篷船，孩子在花坡上放燕子風箏"><figcaption><span class="panel__n">01 / 05</span><h3>漫步水鄉</h3><p>拱橋、垂柳、烏篷船——從村口出發，一路走進經典。</p></figcaption></figure><span class="label">概念圖</span></li>
-        <li class="panel"><figure><img src="assets/img/v-geese-1200.webp" srcset="assets/img/v-geese-760.webp 760w, assets/img/v-geese-1200.webp 1200w, assets/img/v-geese-1600.webp 1600w" sizes="(min-width:900px) 64vw, 84vw" width="1600" height="1067" loading="lazy" decoding="async" alt="概念圖：孩子坐在溪邊石階，看白鵝在碧水中游，柳枝上停着黃鸝"><figcaption><span class="panel__n">02 / 05</span><h3>走進詩畫</h3><p>白鵝、黃鸝、白鷺——詩句裡的風景，一幕幕來到眼前。</p></figcaption></figure><span class="label">概念圖</span></li>
-        <li class="panel"><figure><img src="assets/img/v-workshop-1200.webp" srcset="assets/img/v-workshop-760.webp 760w, assets/img/v-workshop-1200.webp 1200w, assets/img/v-workshop-1600.webp 1600w" sizes="(min-width:900px) 64vw, 84vw" width="1600" height="1067" loading="lazy" decoding="async" alt="概念圖：午後的製燈工坊，孩子捧起一盞剛做好的梅花紙燈"><figcaption><span class="panel__n">03 / 05</span><h3>煙火日常</h3><p>泡茶、種菜、製燈，在手作裡認識生活。</p></figcaption></figure><span class="label">概念圖</span></li>
-        <li class="panel"><figure><img src="assets/img/v-market-1200.webp" srcset="assets/img/v-market-760.webp 760w, assets/img/v-market-1200.webp 1200w, assets/img/v-market-1600.webp 1600w" sizes="(min-width:900px) 64vw, 84vw" width="1600" height="1067" loading="lazy" decoding="async" alt="概念圖：春日早晨的老街市集，兩個孩子牽手奔向攤檔"><figcaption><span class="panel__n">04 / 05</span><h3>村中尋趣</h3><p>觀察地標、親手拓印，下載屬於自己的紀念小箋。</p></figcaption></figure><span class="label">概念圖</span></li>
-        <li class="panel"><figure><img src="assets/img/v-festival-1200.webp" srcset="assets/img/v-festival-760.webp 760w, assets/img/v-festival-1200.webp 1200w, assets/img/v-festival-1600.webp 1600w" sizes="(min-width:900px) 64vw, 84vw" width="1600" height="1067" loading="lazy" decoding="async" alt="概念圖：花燈節夜晚，祖孫倚在茶樓欄杆，看滿河蓮花燈流向拱橋"><figcaption><span class="panel__n">05 / 05</span><h3>成長印記</h3><p>收集印記、完成送禮任務、自製明信片，帶走自己的成長卷。</p></figcaption></figure><span class="label">概念圖</span></li>
+        <li class="panel"><figure><img src="assets/img/v-hero-1200.webp" srcset="assets/img/v-hero-1200.webp 1200w, assets/img/v-hero-1600.webp 1600w" sizes="(min-width:900px) 74vw, 84vw" width="1600" height="900" loading="lazy" decoding="async" alt="概念圖：黃昏時分的江南水鄉，拱橋、垂柳與烏篷船，孩子在花坡上放燕子風箏"><figcaption><span class="panel__n">01 / 05</span><h3>漫步水鄉</h3><p>拱橋、垂柳、烏篷船——從村口出發，一路走進經典。</p></figcaption></figure><span class="label">概念圖</span></li>
+        <li class="panel"><figure><img src="assets/img/v-geese-1200.webp" srcset="assets/img/v-geese-760.webp 760w, assets/img/v-geese-1200.webp 1200w, assets/img/v-geese-1600.webp 1600w" sizes="(min-width:900px) 74vw, 84vw" width="1600" height="1067" loading="lazy" decoding="async" alt="概念圖：孩子坐在溪邊石階，看白鵝在碧水中游，柳枝上停着黃鸝"><figcaption><span class="panel__n">02 / 05</span><h3>走進詩畫</h3><p>白鵝、黃鸝、白鷺——詩句裡的風景，一幕幕來到眼前。</p></figcaption></figure><span class="label">概念圖</span></li>
+        <li class="panel"><figure><img src="assets/img/v-workshop-1200.webp" srcset="assets/img/v-workshop-760.webp 760w, assets/img/v-workshop-1200.webp 1200w, assets/img/v-workshop-1600.webp 1600w" sizes="(min-width:900px) 74vw, 84vw" width="1600" height="1067" loading="lazy" decoding="async" alt="概念圖：午後的製燈工坊，孩子捧起一盞剛做好的梅花紙燈"><figcaption><span class="panel__n">03 / 05</span><h3>煙火日常</h3><p>泡茶、種菜、製燈，在手作裡認識生活。</p></figcaption></figure><span class="label">概念圖</span></li>
+        <li class="panel"><figure><img src="assets/img/v-market-1200.webp" srcset="assets/img/v-market-760.webp 760w, assets/img/v-market-1200.webp 1200w, assets/img/v-market-1600.webp 1600w" sizes="(min-width:900px) 74vw, 84vw" width="1600" height="1067" loading="lazy" decoding="async" alt="概念圖：春日早晨的老街市集，兩個孩子牽手奔向攤檔"><figcaption><span class="panel__n">04 / 05</span><h3>村中尋趣</h3><p>觀察地標、親手拓印，下載屬於自己的紀念小箋。</p></figcaption></figure><span class="label">概念圖</span></li>
+        <li class="panel"><figure><img src="assets/img/v-festival-1200.webp" srcset="assets/img/v-festival-760.webp 760w, assets/img/v-festival-1200.webp 1200w, assets/img/v-festival-1600.webp 1600w" sizes="(min-width:900px) 74vw, 84vw" width="1600" height="1067" loading="lazy" decoding="async" alt="概念圖：花燈節夜晚，祖孫倚在茶樓欄杆，看滿河蓮花燈流向拱橋"><figcaption><span class="panel__n">05 / 05</span><h3>成長印記</h3><p>收集印記、完成送禮任務、自製明信片，帶走自己的成長卷。</p></figcaption></figure><span class="label">概念圖</span></li>
       </ol>
       <div class="reel-bar" aria-hidden="true"><span></span></div>
     </div>
@@ -687,7 +692,7 @@ p,li,figcaption{text-wrap:pretty}
       <li data-reveal><h3>會說話的村莊</h3><p>村民用普通話和粵語開口說話，還會遇上說英語的旅人；詩句皆有配樂朗誦。</p></li>
     </ul>
     <div class="road" data-reveal>
-      <div class="road__head"><h3>發展藍圖<span class="en" lang="en"> · Roadmap</span></h3><p>15 篇經典（12 首古詩＋3 篇文言文），串成 5 段連續場景</p></div>
+      <div class="road__head"><h3>發展藍圖<span class="en" lang="en"> · Roadmap</span></h3><p>15 篇經典古詩文，串成 5 段連續場景</p></div>
       <ol>
         <li><b>01</b><span>村口春景</span></li>
         <li><b>02</b><span>田園人家</span></li>
