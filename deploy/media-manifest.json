@@ -129,6 +129,42 @@
       "objectCacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "source": "/maanshan/media/challenges/chest-boxes-v1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/a64eccda63259b1912f6/maanshan/media/challenges/chest-boxes-v1.webp",
+      "bytes": 62842,
+      "sha256": "a64eccda63259b1912f6c4609a8746a113768ac50ed7961ca5473101e7382088",
+      "md5": "1a8ffe7219a001532674906ffc639e80",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/challenges/chest-found-v1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/e62bca5b7fdd3d2729b6/maanshan/media/challenges/chest-found-v1.webp",
+      "bytes": 78320,
+      "sha256": "e62bca5b7fdd3d2729b6096dac2081676252295dce784873de4a7d30a79ce55b",
+      "md5": "834343128ed408e7ea465e3c7a6c5e40",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/challenges/chest-trap-v1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2e9a30bb3dbe7e44ad16/maanshan/media/challenges/chest-trap-v1.webp",
+      "bytes": 65402,
+      "sha256": "2e9a30bb3dbe7e44ad169f92f984788242b8bb7b09a1a4cb41ac302ae3989911",
+      "md5": "7f4ffba6e53dc7b166dc9ff88e8c4ddf",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/challenges/chest-v1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/b78a5d18cda49d96b022/maanshan/media/challenges/chest-v1.webp",
+      "bytes": 83650,
+      "sha256": "b78a5d18cda49d96b02289bf593b2a9b1d81b95103be6d139777062dcc86bcc5",
+      "md5": "0556ce1724a6bcd3046c234da5bd436d",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "source": "/maanshan/media/challenges/clinic-bottles-v1.webp",
       "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/97d30a06f741e26e8858/maanshan/media/challenges/clinic-bottles-v1.webp",
       "bytes": 46856,
@@ -206,6 +242,42 @@
       "bytes": 86508,
       "sha256": "0213a404645eafe469abc9e4cde2509fc5b82e9626e6722c1dabf296bcd69eca",
       "md5": "3f25381fdfa042ca9e86f31056147b63",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/challenges/shop-goods-v1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2faded2545e208f0313b/maanshan/media/challenges/shop-goods-v1.webp",
+      "bytes": 45386,
+      "sha256": "2faded2545e208f0313b0e37a6a52c170c5187c469aeeaf85bc2f4c5859d39c6",
+      "md5": "4396356743d7184fcc743fcf68ba961a",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/challenges/shop-happy-v1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/03e4bf2c876e9065bf9f/maanshan/media/challenges/shop-happy-v1.webp",
+      "bytes": 77104,
+      "sha256": "03e4bf2c876e9065bf9f64f84dddc40fc27e2fd88e363ecc65d76514a6bdc77d",
+      "md5": "dac45f2cf0e8152927f3d8b11b1e9d9b",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/challenges/shop-sad-v1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/25527928924d7620597c/maanshan/media/challenges/shop-sad-v1.webp",
+      "bytes": 76958,
+      "sha256": "25527928924d7620597c0a14a9a990601e2fa18916dde803cca9535bdaad6334",
+      "md5": "46b715e7c0dc53692c13e72ad8a0b5c2",
+      "contentType": "image/webp",
+      "objectCacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "source": "/maanshan/media/challenges/shop-v1.webp",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/22f013e109b95726940c/maanshan/media/challenges/shop-v1.webp",
+      "bytes": 84228,
+      "sha256": "22f013e109b95726940c1b69d7e2a168f9e25a82a4b819308d9d88d53c4af068",
+      "md5": "99c4d0162596bfe475f99d1c04fc3983",
       "contentType": "image/webp",
       "objectCacheControl": "public, max-age=31536000, immutable"
     },
@@ -8193,10 +8265,10 @@
     },
     {
       "source": "/maanshan/vendor/fonts/noto-sans-hk.woff2",
-      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/7cb87d951bffefce7682/maanshan/vendor/fonts/noto-sans-hk.woff2",
-      "bytes": 487136,
-      "sha256": "7cb87d951bffefce76823d77afb198d4bd6fc046c5779a7b7ecbb3115437deee",
-      "md5": "08446a800e93abdbe916acff84fb836c",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/069357c0c5df74342147/maanshan/vendor/fonts/noto-sans-hk.woff2",
+      "bytes": 486932,
+      "sha256": "069357c0c5df7434214705bec90b0a3c995e0393d7b9f0744e58c5bd80d513ca",
+      "md5": "3acdbf034c1329a4fa7c8713175d427e",
       "contentType": "font/woff2",
       "objectCacheControl": "public, max-age=31536000, immutable"
     },
@@ -8481,10 +8553,10 @@
     },
     {
       "source": "/maanshan/vendor/fonts/noto-serif-hk.woff2",
-      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ebaf3d470540e94b89fd/maanshan/vendor/fonts/noto-serif-hk.woff2",
-      "bytes": 664176,
-      "sha256": "ebaf3d470540e94b89fdd16c828c93865f6590456a91587c278ac8b6e36e0ea0",
-      "md5": "22c689555188ad84a8fccb4ee499ed68",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/96a12cf65fdee112f350/maanshan/vendor/fonts/noto-serif-hk.woff2",
+      "bytes": 667436,
+      "sha256": "96a12cf65fdee112f35088ebb8020003f76421520ce6b63f0ca3acb29009222b",
+      "md5": "77c8bc388a90dcf0773365e0e54b274f",
       "contentType": "font/woff2",
       "objectCacheControl": "public, max-age=31536000, immutable"
     },

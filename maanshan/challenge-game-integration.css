@@ -52,3 +52,7 @@
  .workspace .challenge-type-microgame .farewell-story{gap:18px}
  .workspace .challenge-type-microgame .fs-stage{aspect-ratio:4/3}
 }
+/* 跳過 is a small text link in the bottom-right corner of every question: it shares the action row (after 放好了), never gets a centred row of its own. */
+.workspace .challenge-shell .challenge-footer .challenge-footer-actions{flex-direction:row;flex-wrap:nowrap;justify-content:flex-end;align-items:center;margin-left:auto;margin-right:0}
+.workspace .challenge-shell .challenge-footer .challenge-footer-actions>[data-ch=skip]{order:2;flex:none;font-size:15px!important;line-height:1.2;min-height:36px;min-width:44px;padding:4px 2px 4px 8px;margin:0}
+@media(max-width:700px){.workspace .challenge-shell .challenge-footer .challenge-footer-actions>[data-ch=skip]{font-size:14px!important}}

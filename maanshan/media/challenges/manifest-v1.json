@@ -133,6 +133,86 @@
       "alphaMin": 255,
       "alphaMax": 255,
       "transparentFraction": 0.0
+    },
+    {
+      "file": "chest-v1.webp",
+      "bytes": 83650,
+      "sha256": "b78a5d18cda49d96b02289bf593b2a9b1d81b95103be6d139777062dcc86bcc5",
+      "width": 1152,
+      "height": 768,
+      "alphaMin": 255,
+      "alphaMax": 255,
+      "transparentFraction": 0.0
+    },
+    {
+      "file": "chest-found-v1.webp",
+      "bytes": 78320,
+      "sha256": "e62bca5b7fdd3d2729b6096dac2081676252295dce784873de4a7d30a79ce55b",
+      "width": 1152,
+      "height": 768,
+      "alphaMin": 255,
+      "alphaMax": 255,
+      "transparentFraction": 0.0
+    },
+    {
+      "file": "chest-trap-v1.webp",
+      "bytes": 65402,
+      "sha256": "2e9a30bb3dbe7e44ad169f92f984788242b8bb7b09a1a4cb41ac302ae3989911",
+      "width": 1152,
+      "height": 768,
+      "alphaMin": 255,
+      "alphaMax": 255,
+      "transparentFraction": 0.0
+    },
+    {
+      "file": "chest-boxes-v1.webp",
+      "bytes": 62842,
+      "sha256": "a64eccda63259b1912f6c4609a8746a113768ac50ed7961ca5473101e7382088",
+      "width": 1116,
+      "height": 270,
+      "alphaMin": 0,
+      "alphaMax": 255,
+      "transparentFraction": 0.14794902429311033
+    },
+    {
+      "file": "shop-v1.webp",
+      "bytes": 84228,
+      "sha256": "22f013e109b95726940c1b69d7e2a168f9e25a82a4b819308d9d88d53c4af068",
+      "width": 1152,
+      "height": 768,
+      "alphaMin": 255,
+      "alphaMax": 255,
+      "transparentFraction": 0.0
+    },
+    {
+      "file": "shop-happy-v1.webp",
+      "bytes": 77104,
+      "sha256": "03e4bf2c876e9065bf9f64f84dddc40fc27e2fd88e363ecc65d76514a6bdc77d",
+      "width": 1152,
+      "height": 768,
+      "alphaMin": 255,
+      "alphaMax": 255,
+      "transparentFraction": 0.0
+    },
+    {
+      "file": "shop-sad-v1.webp",
+      "bytes": 76958,
+      "sha256": "25527928924d7620597c0a14a9a990601e2fa18916dde803cca9535bdaad6334",
+      "width": 1152,
+      "height": 768,
+      "alphaMin": 255,
+      "alphaMax": 255,
+      "transparentFraction": 0.0
+    },
+    {
+      "file": "shop-goods-v1.webp",
+      "bytes": 45386,
+      "sha256": "2faded2545e208f0313b0e37a6a52c170c5187c469aeeaf85bc2f4c5859d39c6",
+      "width": 1048,
+      "height": 660,
+      "alphaMin": 255,
+      "alphaMax": 255,
+      "transparentFraction": 0.0
     }
   ],
   "rightsRecord": "AI-generated project assets. No third-party reference artworks supplied. Provider account terms apply; no Creative Commons or public-domain licence asserted.",
@@ -146,6 +226,14 @@
     "police-caught.txt",
     "lineup.txt",
     "clinic-cry.txt",
-    "police-sad.txt"
+    "police-sad.txt",
+    "chest.txt",
+    "chest-found.txt",
+    "chest-trap.txt",
+    "chests.txt",
+    "shop.txt",
+    "shop-happy.txt",
+    "shop-sad.txt",
+    "goods.txt"
   ]
 }
