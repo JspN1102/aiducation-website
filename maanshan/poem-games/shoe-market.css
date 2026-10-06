@@ -1,4 +1,4 @@
-.poem-shoe-game{--sm-ink:#34433a;--sm-mute:#6b6650;--sm-red:#b3442e;--sm-green:#4d6c4c;--sm-wood:#7b5934;--sm-edge:#e2d0aa;width:100%;max-width:1120px;margin-inline:auto;min-width:0;color:var(--sm-ink);font-family:inherit;display:flex;flex-direction:column;justify-content:center}
+.poem-shoe-game{--sm-ink:#34433a;--sm-mute:#6b6650;--sm-red:#b3442e;--sm-green:#4d6c4c;--sm-wood:#7b5934;--sm-edge:#e2d0aa;--sm-gold:#e9a93a;position:relative;width:100%;max-width:1120px;margin-inline:auto;min-width:0;color:var(--sm-ink);font-family:var(--sans);display:flex;flex-direction:column;justify-content:center}
 .poem-shoe-game *{box-sizing:border-box}
 .poem-shoe-game [hidden]{display:none!important}
 .poem-shoe-game button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
@@ -8,194 +8,129 @@
 .poem-shoe-game .sm-frame{display:grid;grid-template-areas:"head" "stage" "side";gap:12px;min-width:0}
 .poem-shoe-game .sm-head{grid-area:head;display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
 .poem-shoe-game .sm-say{margin:0;font-size:clamp(18px,2.3vw,23px);font-weight:650;line-height:1.45;text-wrap:pretty}
-.poem-shoe-game :is(.sm-say,.sm-moral>p,.sm-moral>small,.sm-feedback) span{display:inline-block}
+.poem-shoe-game :is(.sm-say,.sm-moral p,.sm-moral strong,.sm-feedback) span{display:inline-block}
 .poem-shoe-game .sm-progress{flex:none;min-width:62px;padding:5px 11px;border-radius:18px;background:#f2e7cf;color:var(--sm-wood);font-size:18px;font-weight:600;text-align:center;font-variant-numeric:tabular-nums}
 
-/* Picture stage: the four user paintings cross-fade; overlays sit on painted objects. */
-.poem-shoe-game .sm-stage{grid-area:stage;position:relative;isolation:isolate;container-type:inline-size;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:20px;background:#eadcbf;border:1px solid #dccaa4;box-shadow:0 8px 24px #4b361a14;font-family:var(--sans)}
+/* Picture stage: the four story paintings cross-fade; small overlays sit on painted objects. */
+.poem-shoe-game .sm-stage{grid-area:stage;position:relative;isolation:isolate;container-type:inline-size;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:20px;background:#eadcbf;border:1px solid #dccaa4;box-shadow:0 8px 24px #4b361a14}
 .poem-shoe-game .sm-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .7s ease;pointer-events:none}
 .poem-shoe-game .sm-scene.is-on{opacity:1}
-.poem-shoe-game .sm-patch{position:absolute;left:23.0625%;top:50.667%;width:19.3125%;height:7.889%;opacity:0;transition:opacity .9s ease;pointer-events:none;z-index:1}
+.poem-shoe-game .sm-patch{position:absolute;left:23.0625%;top:50.667%;width:19.3125%;height:7.889%;opacity:0;transition:opacity .8s ease;pointer-events:none;z-index:1}
 .poem-shoe-game .sm-patch.is-on{opacity:1}
-.poem-shoe-game .sm-prints{position:absolute;left:38.6%;top:82.6%;width:19%;height:17%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,#fff7d895,#fff4cc3a 62%,transparent);opacity:0;transition:opacity .6s;pointer-events:none;z-index:1}
-.poem-shoe-game .sm-mark{position:absolute;left:36.75%;top:53.67%;width:clamp(9px,1.5cqi,15px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 35%,#e4775f,#a5321f 72%);box-shadow:0 0 0 2px #fff5e2c0,0 2px 3px #0005;transform:translate(-50%,-50%);opacity:0;transition:opacity .5s .5s;pointer-events:none;z-index:2}
-.poem-shoe-game .sm-mark::after{content:'';position:absolute;left:44%;top:78%;width:2px;height:130%;border-radius:2px;background:#a5321f;transform:rotate(16deg);transform-origin:top}
-.poem-shoe-game .sm-prints.is-on,.poem-shoe-game .sm-mark.is-on{opacity:1}
-.poem-shoe-game .sm-seat,.poem-shoe-game .sm-knock{position:absolute;z-index:4;transform:translate(-50%,-50%);min-width:44px;min-height:44px;padding:0;border:2px dashed #fff8e2;background:#fff4d02e;box-shadow:0 0 0 1px #7b593440,0 0 22px #fff3c770;transition:background .25s,box-shadow .25s}
-.poem-shoe-game .sm-seat{left:33%;top:54.5%;width:31%;height:15%;border-radius:46%}
-.poem-shoe-game .sm-knock{left:80.5%;top:37%;width:22%;height:34%;border-radius:18px;display:grid;place-items:center}
-.poem-shoe-game .sm-seat span,.poem-shoe-game .sm-knock span{padding:.25em .7em;border-radius:12px;background:#fffaf0ee;color:#6b4a2b;font-size:clamp(14px,2.6cqi,18px);font-weight:650;white-space:nowrap;box-shadow:0 2px 6px #3b2a1426}
-.poem-shoe-game .sm-knock span{padding-inline:.5em}
-.poem-shoe-game .sm-seat span{position:absolute;left:50%;top:-5px;transform:translate(-50%,-100%)}
-.poem-shoe-game .sm-seat:not(:disabled),.poem-shoe-game .sm-knock:not(:disabled){animation:sm-call 2.4s ease-in-out infinite}
-.poem-shoe-game .sm-seat.is-ready,.poem-shoe-game .sm-seat.is-over,.poem-shoe-game .sm-seat:hover:not(:disabled),.poem-shoe-game .sm-knock:hover:not(:disabled){background:#fff3c85e;border-style:solid;box-shadow:0 0 0 3px #fff8e2b0,0 0 28px #ffeeb0}
-.poem-shoe-game .sm-sign{position:absolute;left:80.5%;top:34%;z-index:3;transform:translate(-50%,-50%) rotate(-3deg);padding:.3em .7em .3em .9em;font-size:clamp(14px,3.6cqi,28px);font-weight:700;letter-spacing:.22em;color:#6d3a22;background:linear-gradient(#f4e5c4,#e5cc9b);border:1px solid #b88b55;border-radius:6px;box-shadow:0 5px 12px #2a180a45;opacity:0;transition:opacity .4s;pointer-events:none}
+.poem-shoe-game .sm-mark{position:absolute;left:32.7%;top:49%;z-index:3;width:max-content;font-size:clamp(14px,2.4cqi,18px);transform:translate(-50%,-100%);opacity:0;transition:opacity .4s;pointer-events:none}
+.poem-shoe-game .sm-mark b{display:block;padding:.2em .65em;border-radius:10px;background:#fffaf0f2;border:1.5px solid var(--sm-gold);color:#6b4a2b;font-size:1em;font-weight:700;white-space:nowrap;box-shadow:0 3px 8px #3b2a1430}
+.poem-shoe-game .sm-mark::after{content:'';position:absolute;left:50%;top:100%;width:10px;height:10px;margin:-6px 0 0 -5px;background:#fffaf0;border:1.5px solid var(--sm-gold);border-top:0;border-left:0;transform:rotate(45deg)}
+.poem-shoe-game .sm-mark.is-on{opacity:1}
+.poem-shoe-game .sm-sign{position:absolute;left:80.5%;top:34%;z-index:3;transform:translate(-50%,-50%) rotate(-3deg);padding:.3em .7em .3em .9em;font-family:var(--serif);font-size:clamp(14px,3.6cqi,28px);font-weight:700;letter-spacing:.22em;color:#6d3a22;background:linear-gradient(#f4e5c4,#e5cc9b);border:1px solid #b88b55;border-radius:6px;box-shadow:0 5px 12px #2a180a45;opacity:0;transition:opacity .4s;pointer-events:none}
 .poem-shoe-game .sm-sign.is-on{opacity:1}
-.poem-shoe-game .sm-bubble{position:absolute;z-index:5;margin:0;padding:.42em .78em;border-radius:14px;background:#fffaf0f2;border:1px solid #e4d2ad;color:#3e3224;font-size:clamp(14px,2.9cqi,22px);font-weight:650;line-height:1.3;white-space:nowrap;box-shadow:0 4px 12px #3b2a1426;opacity:0;transform:translateY(6px);transition:opacity .4s ease,transform .4s ease;pointer-events:none}
+.poem-shoe-game .sm-bubble{position:absolute;z-index:5;margin:0;padding:.42em .78em;border-radius:14px;background:#fffaf0f2;border:1px solid #e4d2ad;color:#3e3224;font-family:var(--serif);font-size:clamp(14px,2.9cqi,22px);font-weight:700;line-height:1.3;white-space:nowrap;box-shadow:0 4px 12px #3b2a1426;opacity:0;transform:translateY(6px);transition:opacity .4s ease,transform .4s ease;pointer-events:none}
 .poem-shoe-game .sm-bubble.is-on{opacity:1;transform:none}
 .poem-shoe-game .sm-bubble::after{content:'';position:absolute;width:11px;height:11px;background:#fffaf0;border:1px solid #e4d2ad;border-top:0;border-left:0}
 .poem-shoe-game .is-forgot{right:57%;top:5%}.poem-shoe-game .is-forgot::after{right:-6px;top:58%;transform:rotate(-45deg)}
-.poem-shoe-game .is-seller{right:16%;top:17%}.poem-shoe-game .is-seller::after{right:-6px;top:24%;transform:rotate(-45deg)}
 .poem-shoe-game .is-ask{left:5%;top:10%}.poem-shoe-game .is-ask::after{right:22%;bottom:-6px;transform:rotate(45deg)}
 .poem-shoe-game .is-stubborn{left:69%;top:36%}.poem-shoe-game .is-stubborn::after{left:-6px;top:30%;transform:rotate(135deg)}
-/* Tagging board: two cropped story pictures (home, market) with dashed drop spots on painted objects.
-   A canvas is the whole 1600x900 scene scaled so that --cw source px fill the pane, shifted by --cx/--cy. */
-.poem-shoe-game .sm-board{position:absolute;inset:0;z-index:6;background:#eadcbf;opacity:0;visibility:hidden;transition:opacity .5s,visibility 0s .5s}
-.poem-shoe-game .sm-board.is-on{opacity:1;visibility:visible;transition:opacity .5s}
-.poem-shoe-game .sm-pane{position:absolute;top:0;height:100%;overflow:hidden;container:sm-pane/size}
-.poem-shoe-game .sm-pane.is-home{left:0;width:58%;--cx:110;--cy:90;--cw:835}
-.poem-shoe-game .sm-pane.is-market{left:58%;width:42%;--cx:928;--cy:0;--cw:672}
-.poem-shoe-game .sm-pane.is-market::before{content:'';position:absolute;left:0;top:0;bottom:0;z-index:4;width:4px;background:#f6ecd6;box-shadow:0 0 6px #3b2a1440;pointer-events:none}
-.poem-shoe-game .sm-canvas{position:absolute;left:0;top:0;width:calc(100% * 1600 / var(--cw));aspect-ratio:16/9;translate:calc(-100% * var(--cx) / 1600) calc(-100% * var(--cy) / 900)}
-.poem-shoe-game .sm-pic{display:block;width:100%;height:100%;pointer-events:none}
-.poem-shoe-game .sm-place{position:absolute;bottom:8px;left:12px;z-index:5;padding:2px 10px;border-radius:12px;background:#fffaf0e6;color:#6b4a2b;font-size:14px;font-weight:700;letter-spacing:.12em;box-shadow:0 2px 6px #3b2a1426;pointer-events:none}
-.poem-shoe-game .sm-spot{--px:calc(100cqw / var(--cw));position:absolute;z-index:2;min-width:44px;min-height:44px;padding:0;border:0;border-radius:14px;background:none;transform:translate(-50%,-50%);touch-action:manipulation}
-.poem-shoe-game .sm-spot[data-sm-spot=ruler]{z-index:3}
-.poem-shoe-game .sm-spot svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;fill:#fff4d014;stroke:#fff8e2;stroke-width:2.5;stroke-dasharray:8 6;stroke-linejoin:round;filter:drop-shadow(0 0 2px #3b2a14b0);transition:fill .2s,stroke .2s}
-.poem-shoe-game .sm-spot svg *{vector-effect:non-scaling-stroke}
-.poem-shoe-game .sm-spot:focus-visible{outline-offset:-3px}
-.poem-shoe-game.is-picking .sm-spot:not(:disabled) svg{fill:#fff4d03a;animation:sm-glow 1.8s ease-in-out infinite}
-.poem-shoe-game .sm-spot.is-over svg{fill:#fff3c870;stroke-dasharray:none;stroke-width:3.5}
-@media (hover:hover){.poem-shoe-game .sm-spot:hover:not(:disabled) svg{fill:#fff3c870;stroke-dasharray:none;stroke-width:3.5}}
-.poem-shoe-game .sm-spot.is-hint svg{stroke:#ffd76a;stroke-width:4.5;stroke-dasharray:none;fill:#ffe08a50;animation:sm-glow .9s ease-in-out infinite}
-.poem-shoe-game .sm-spot.is-no svg{stroke:#f3a58e;fill:#b3442e33;stroke-dasharray:none}
-.poem-shoe-game .sm-spot.is-no{animation:sm-shake .45s ease}
-.poem-shoe-game .sm-spot.is-filled{pointer-events:none}
-.poem-shoe-game .sm-spot.is-filled svg{fill:none;stroke:#e9f4dc;stroke-dasharray:none;stroke-width:2;opacity:.85;animation:none}
-/* The foot spot is a small picture of the measuring, reusing the measure-step art. */
-.poem-shoe-game .sm-vig{left:3%;top:4%;width:40%;aspect-ratio:1600/860;transform:none;z-index:3;border-radius:12px;border:2.5px dashed #fff8e2;background:radial-gradient(120% 95% at 38% 30%,#fffbf2,#f0e2c4);box-shadow:0 0 0 1px #7b593450,0 6px 14px #3b2a1440;transition:border-color .2s,box-shadow .2s}
-.poem-shoe-game .sm-vig-art{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}
-.poem-shoe-game .sm-vig-foot{position:absolute;left:0;top:-20.93%;width:75%;height:105.465%}
-.poem-shoe-game .sm-vig-ruler{position:absolute;left:6.5%;top:84.77%;width:91%;height:10.78%;filter:drop-shadow(0 1px 1px #4b361a40)}
-.poem-shoe-game .sm-vig-art::after{content:'';position:absolute;left:74.94%;top:5%;bottom:12%;border-left:2px dashed #b3442eb0}
-.poem-shoe-game .sm-vig-art i{position:absolute;left:74.94%;top:90.14%;width:9px;height:9px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 35% 35%,#e4775f,#a5321f 72%);box-shadow:0 0 0 2px #fff7e6}
-.poem-shoe-game.is-picking .sm-vig:not(:disabled){animation:sm-call 1.8s ease-in-out infinite}
-.poem-shoe-game .sm-vig.is-over{border-style:solid;box-shadow:0 0 0 3px #fff8e2b0,0 0 24px #ffeeb0}
-@media (hover:hover){.poem-shoe-game .sm-vig:hover:not(:disabled){border-style:solid;box-shadow:0 0 0 3px #fff8e2b0,0 0 24px #ffeeb0}}
-.poem-shoe-game .sm-vig.is-hint{border:3.5px solid #ffd76a;animation:sm-call .9s ease-in-out infinite}
-.poem-shoe-game .sm-vig.is-no{border-color:#e9a08a}
-.poem-shoe-game .sm-vig.is-filled{border:2px solid #cfe6b8}
-/* A pinned tag pops in next to its spot. The phrase line only shows when the pane is tall enough. */
-.poem-shoe-game .sm-pin{position:absolute;z-index:4;display:grid;justify-items:center;gap:2px;pointer-events:none;opacity:0;scale:.5;transition:opacity .2s,scale .4s cubic-bezier(.3,1.7,.5,1)}
-.poem-shoe-game .is-filled>.sm-pin{opacity:1;scale:1}
-.poem-shoe-game .sm-chip{display:flex;align-items:baseline;gap:.28em;padding:.16em .6em .2em;border-radius:10px;background:#fffaf0f5;border:2px solid #c9a46a;color:#4a3420;font-size:15px;font-weight:650;line-height:1.3;white-space:nowrap;box-shadow:0 3px 8px #2a180a50}
-.poem-shoe-game .sm-pin.is-du .sm-chip{border-color:#8fae7c}
-.poem-shoe-game .sm-chip b{font-size:1.3em;line-height:1;color:var(--sm-red)}
-.poem-shoe-game .sm-chip i{font-style:normal;font-weight:500;color:#8a6a45}
-.poem-shoe-game .sm-pin small{display:none;padding:.1em .55em;border-radius:8px;background:#3b2a14d0;color:#fffaf0;font-size:14px;line-height:1.4;white-space:nowrap}
-.poem-shoe-game .sm-pin small b{color:#ffc95c;font-weight:800}
-@container sm-pane (min-height:270px){.poem-shoe-game .sm-pin small{display:block}}
-.poem-shoe-game [data-sm-spot=foot]>.sm-pin{left:calc(100% + 6px);top:50%;translate:0 -50%;justify-items:start}
-.poem-shoe-game [data-sm-spot=ruler]>.sm-pin{left:50%;bottom:calc(50% + var(--px) * 34 + 3px);translate:-50% 0}
-.poem-shoe-game [data-sm-spot=seat]>.sm-pin{left:30%;top:88%;translate:-50% 0}
-.poem-shoe-game [data-sm-spot=stall]>.sm-pin{left:62%;bottom:92%;translate:-50% 0}
 .poem-shoe-game .sm-loading{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;text-align:center;background:#f7f0dfe8;color:#5b5140;font-size:19px}
 .poem-shoe-game .sm-loading button{min-height:48px;padding:8px 20px;border:1px solid #cdb98f;border-radius:16px;background:#fffaf0;font-size:19px;color:#5b4126}
+/* The marked ruler flies from the measuring picture onto the seat (而置之其坐). */
+.poem-shoe-game .sm-fly{position:absolute;z-index:50;margin:0;pointer-events:none;filter:drop-shadow(0 6px 8px #3b2a1450)}
 
 /* Work panel */
 .poem-shoe-game .sm-side{grid-area:side;display:flex;flex-direction:column;gap:10px;min-width:0}
 .poem-shoe-game .sm-panel{display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:20px;background:#fbf5e6;border:1px solid #ecdfc2;min-width:0}
 .poem-shoe-game .sm-text{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 12px}
-.poem-shoe-game .sm-line{margin:0;flex:1 1 240px;font-size:clamp(18px,2vw,21px);line-height:1.6;letter-spacing:.03em;color:#3c4537;text-wrap:pretty}
+.poem-shoe-game .sm-line{margin:0;flex:1 1 240px;font-family:var(--serif);font-size:clamp(18px,2vw,21px);line-height:1.6;letter-spacing:.03em;color:#3c4537;text-wrap:pretty}
 .poem-shoe-game .sm-line b{color:var(--sm-red);font-weight:700}
 .poem-shoe-game .sm-line span{white-space:nowrap}
 .poem-shoe-game .sm-gloss{display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:5px 13px;border-radius:22px;border:1px solid #e0cba2;background:#fffaf0;color:#5d4429;font-size:17px;box-shadow:0 2px 0 #eadcbc}
-.poem-shoe-game .sm-gloss b{font-size:23px;line-height:1;color:var(--sm-red)}
+.poem-shoe-game .sm-gloss b{font-family:var(--serif);font-size:23px;line-height:1;color:var(--sm-red)}
 .poem-shoe-game .sm-gloss i{font-style:normal;color:#8a6a45}
 .poem-shoe-game .sm-gloss svg{width:19px;height:19px;flex:none;color:#8a6a45}
-.poem-shoe-game .sm-measure,.poem-shoe-game .sm-fit{position:relative;width:100%;max-width:560px;align-self:center;overflow:hidden;border-radius:16px;border:1px solid #eadbbb;background:radial-gradient(120% 95% at 38% 30%,#fffbf2,#f0e2c4)}
-.poem-shoe-game .sm-measure::before,.poem-shoe-game .sm-fit::before{content:'';position:absolute;inset:0 0 auto;height:24%;z-index:1;pointer-events:none;background:linear-gradient(#fcf6ea,#fcf6ea00)}
-.poem-shoe-game .sm-measure{--knot:40%;aspect-ratio:1600/860}
-.poem-shoe-game .sm-measure .sm-foot{position:absolute;left:0;top:-20.93%;width:75%;height:105.465%;pointer-events:none}
-.poem-shoe-game .sm-guide{position:absolute;left:var(--knot);top:5%;bottom:12%;z-index:2;border-left:2px dashed #b3442eb0;transform:translateX(-1px);pointer-events:none}
-.poem-shoe-game .sm-track{position:absolute;left:0;right:0;top:72%;bottom:0;z-index:3;touch-action:none;cursor:pointer}
-.poem-shoe-game .sm-ruler{position:absolute;left:6.5%;width:91%;top:45.6%;height:38.5%;pointer-events:none;filter:drop-shadow(0 2px 2px #4b361a40)}
-.poem-shoe-game .sm-heel{position:absolute;left:7.75%;top:40%;height:50%;border-left:2px solid #5d4429;pointer-events:none}
-.poem-shoe-game .sm-knot{position:absolute;left:var(--knot);top:64.8%;width:44px;height:44px;transform:translate(-50%,-50%);padding:0;border:0;border-radius:50%;background:transparent;display:grid;place-items:center;touch-action:none;cursor:grab}
-.poem-shoe-game .sm-knot i{position:relative;width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#e4775f,#a5321f 72%);box-shadow:0 0 0 3px #fff7e6,0 3px 6px #0005}
-.poem-shoe-game .sm-knot i::before,.poem-shoe-game .sm-knot i::after{content:'';position:absolute;left:46%;top:82%;width:2px;height:14px;border-radius:2px;background:#a5321f;transform:rotate(22deg);transform-origin:top}
-.poem-shoe-game .sm-knot i::after{transform:rotate(-14deg)}
-.poem-shoe-game .sm-card{position:relative;display:grid;justify-items:center;gap:8px;width:min(100%,460px);align-self:center;padding:18px 18px 10px;border-radius:18px;border:1.5px solid var(--sm-edge);background:#fffaf0;box-shadow:0 4px 0 #e8dbbd;touch-action:none;transition:transform .2s,box-shadow .2s}
-.poem-shoe-game .sm-rule{position:relative;display:block;width:100%}
-.poem-shoe-game .sm-rule img{display:block;width:100%;height:auto;pointer-events:none;filter:drop-shadow(0 2px 2px #4b361a40)}
-.poem-shoe-game .sm-rule i{position:absolute;left:75.2%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 35% 35%,#e4775f,#a5321f 72%);box-shadow:0 0 0 2px #fff7e6,0 2px 4px #0005}
-.poem-shoe-game .sm-card>span:last-child{font-size:17px;color:var(--sm-wood);font-weight:600}
-.poem-shoe-game .sm-card[aria-pressed=true]{border-color:var(--sm-green);box-shadow:0 0 0 3px #b9cfa9,0 8px 16px #3b2a1426;transform:translateY(-3px)}
-.poem-shoe-game .is-dragging{position:relative;z-index:40;transition:none!important;cursor:grabbing;box-shadow:0 12px 26px #3b2a1445!important;opacity:.94}
-.poem-shoe-game .sm-ask{display:grid;gap:10px}
-.poem-shoe-game .sm-ask p{margin:0;font-size:19px;font-weight:600;text-align:center}
-.poem-shoe-game .sm-ask div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.poem-shoe-game .sm-ask button{min-height:58px;padding:10px 12px;border-radius:16px;border:1.5px solid #dccaa2;background:#fffaf0;color:#4a3a26;font-size:20px;font-weight:650;line-height:1.3;box-shadow:0 3px 0 #e6d8b8}
-.poem-shoe-game .sm-ask button:hover:not(:disabled){background:#fff4dc}
-.poem-shoe-game .sm-ask button.is-picked{background:#eef3e4;border-color:var(--sm-green);color:#2f5134}
-.poem-shoe-game .sm-ask button:disabled:not(.is-picked){opacity:.55}
+.poem-shoe-game :is(.sm-measure,.sm-fit){position:relative;container-type:inline-size;width:100%;max-width:560px;align-self:center;overflow:hidden;border-radius:16px;border:1px solid #eadbbb;background:radial-gradient(120% 95% at 38% 30%,#fffbf2,#f0e2c4)}
+.poem-shoe-game :is(.sm-measure,.sm-fit)::before{content:'';position:absolute;inset:0 0 auto;height:22%;z-index:1;pointer-events:none;background:linear-gradient(#fcf6ea,#fcf6ea00)}
+.poem-shoe-game .sm-measure .sm-foot,.poem-shoe-game .sm-fit img{position:absolute;max-width:none;pointer-events:none}
+
+/* Measuring: the red marker slides along the ruler under the foot. Tap at the heel, then at the toe tip. */
+.poem-shoe-game .sm-measure{--pen:50%;--a:14%;--b:14%;aspect-ratio:1000/640;touch-action:pan-y;cursor:pointer;user-select:none;-webkit-user-select:none}
+.poem-shoe-game .sm-measure .sm-foot{left:6%;top:-24.44%;width:80%;height:94.44%}
+.poem-shoe-game .sm-ruler{position:absolute;left:5%;top:71%;width:90%;height:8.94%;pointer-events:none;filter:drop-shadow(0 2px 2px #4b361a40)}
+.poem-shoe-game .sm-aim{position:absolute;z-index:3;width:12.5%;aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none;display:none}
+.poem-shoe-game .sm-aim.is-heel{left:14.09%;top:55.6%}.poem-shoe-game .sm-aim.is-toe{left:85.82%;top:55%}
+.poem-shoe-game .sm-measure[data-marks="0"] .sm-aim.is-heel,.poem-shoe-game .sm-measure[data-marks="1"] .sm-aim.is-toe{display:block}
+.poem-shoe-game .sm-aim i{position:absolute;inset:0;border-radius:50%;border:3px dashed var(--sm-gold);background:radial-gradient(closest-side,#ffe9a866,#ffe9a81c 70%,transparent);box-shadow:0 0 0 2px #fff8e2a0;animation:sm-ring 1.8s ease-in-out infinite}
+.poem-shoe-game .sm-aim b{position:absolute;left:50%;bottom:calc(100% + 3px);transform:translateX(-50%);padding:.12em .55em;border-radius:10px;background:#fffaf0f2;border:1.5px solid var(--sm-gold);color:#6b4a2b;font-size:clamp(14px,3.6cqi,18px);font-weight:700;line-height:1.35;white-space:nowrap;box-shadow:0 2px 6px #3b2a1428}
+.poem-shoe-game .sm-measure.is-near .sm-aim i{border-style:solid;border-color:#d98f1d;background:radial-gradient(closest-side,#ffd76a88,#ffd76a33 70%,transparent);box-shadow:0 0 0 3px #fff8e2,0 0 18px #ffd76a}
+.poem-shoe-game.is-help .sm-aim i{border-width:4px;border-style:solid;box-shadow:0 0 0 3px #fff8e2,0 0 22px #ffcf5a}
+.poem-shoe-game .sm-aim.is-nudge i{animation:sm-nudge .7s ease}
+.poem-shoe-game .sm-guide{position:absolute;left:var(--pen);top:12%;height:59%;z-index:2;border-left:2px dashed #b3442ea0;transform:translateX(-1px);pointer-events:none}
+.poem-shoe-game .sm-measure.is-near .sm-guide{border-left:3px solid #d98f1d;transform:translateX(-1.5px)}
+.poem-shoe-game .sm-measure:not([data-marks="0"]):not([data-marks="1"]) .sm-guide{display:none}
+.poem-shoe-game .sm-cord{position:absolute;left:var(--a);width:calc(var(--b) - var(--a));top:73.6%;height:3.7%;z-index:2;border-radius:3px;background:#c4513acc;box-shadow:0 0 0 1px #fff7e6a0;pointer-events:none;display:none}
+.poem-shoe-game .sm-measure:not([data-marks="0"]) .sm-cord{display:block}
+.poem-shoe-game .sm-dot{position:absolute;top:75.45%;z-index:3;width:0;height:0;pointer-events:none;display:none}
+.poem-shoe-game .sm-dot.is-heel{left:14.09%}.poem-shoe-game .sm-dot.is-toe{left:85.82%}
+.poem-shoe-game .sm-measure:not([data-marks="0"]) .sm-dot.is-heel,.poem-shoe-game .sm-measure[data-marks="2"] .sm-dot.is-toe{display:block}
+.poem-shoe-game .sm-dot::before{content:'';position:absolute;left:-1.5px;top:-21cqi;width:3px;height:23cqi;border-radius:2px;background:var(--sm-red)}
+.poem-shoe-game .sm-dot::after{content:'';position:absolute;left:-8px;top:-8px;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#e4775f,#a5321f 72%);box-shadow:0 0 0 3px #fff7e6,0 2px 4px #0005}
+.poem-shoe-game .sm-dot b{position:absolute;top:13px;left:0;transform:translateX(-50%);padding:.05em .5em;border-radius:9px;background:var(--sm-red);color:#fffaf0;font-size:clamp(14px,3.2cqi,16px);font-weight:700;line-height:1.4;white-space:nowrap}
+.poem-shoe-game .sm-dot.is-heel b{transform:translateX(-30%)}.poem-shoe-game .sm-dot.is-toe b{transform:translateX(-70%)}
+.poem-shoe-game .sm-dot.is-pop::after{animation:sm-pop .5s ease}
+.poem-shoe-game .sm-got{position:absolute;left:72%;top:17%;z-index:4;transform:translate(-50%,-50%);padding:.2em .8em;border-radius:14px;background:#eef3e4;border:2px solid var(--sm-green);color:#2f5134;font-size:clamp(16px,4.4cqi,22px);font-weight:800;white-space:nowrap;box-shadow:0 3px 8px #3b2a1428;pointer-events:none;display:none}
+.poem-shoe-game .sm-measure[data-marks="2"] .sm-got{display:block}
+.poem-shoe-game .sm-got.is-pop{animation:sm-pop .5s ease}
+.poem-shoe-game .sm-pen{position:absolute;left:var(--pen);top:75.45%;z-index:5;width:52px;height:52px;margin:0;padding:0;transform:translate(-50%,-50%);border:0;border-radius:50%;background:transparent;display:grid;place-items:center;touch-action:none;cursor:grab}
+.poem-shoe-game .sm-pen i{width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#e4775f,#a5321f 72%);box-shadow:0 0 0 3px #fff7e6,0 3px 6px #0006;transition:box-shadow .2s}
+.poem-shoe-game .sm-measure.is-near .sm-pen i{box-shadow:0 0 0 3px #fff7e6,0 0 0 6px #e9a93a,0 3px 8px #0006}
+.poem-shoe-game .sm-pen:focus-visible{outline-offset:0}
+.poem-shoe-game .sm-pen:disabled{display:none}
+.poem-shoe-game .sm-measure.is-flying :is(.sm-ruler,.sm-cord,.sm-dot,.sm-got){visibility:hidden}
+
+/* Trying on: the shoe is two layers (back with lining, front without) so the foot sits inside it. */
 .poem-shoe-game .sm-fitting{display:grid;gap:10px}
-.poem-shoe-game .sm-fit{justify-self:center;aspect-ratio:1600/950;transition:box-shadow .2s}
-.poem-shoe-game .sm-fit.is-over{box-shadow:0 0 0 3px #e4c68a}
-.poem-shoe-game .sm-fit .sm-foot{position:absolute;left:0;top:-18.947%;width:75%;height:95.474%;pointer-events:none}
-.poem-shoe-game .sm-ground{position:absolute;left:5%;width:72%;top:73%;height:7%;border-radius:50%;background:radial-gradient(closest-side,#5a3f2036,transparent);pointer-events:none;transition:top .35s}
-.poem-shoe-game .sm-worn{position:absolute;left:6.383%;top:43.711%;width:73.336%;height:51.19%;opacity:0;transform:translateY(-5%);transition:opacity .35s,transform .35s;pointer-events:none}
-.poem-shoe-game .sm-fit:not([data-size=none]) .sm-worn{opacity:1;transform:none}
-.poem-shoe-game .sm-fit[data-size=small] .sm-worn{left:19.911%;top:50.884%;width:57.202%;height:39.928%}
-.poem-shoe-game .sm-fit[data-size=big] .sm-worn{left:6.041%;top:35.559%;width:91.67%;height:63.988%}
-.poem-shoe-game .sm-fit[data-size=right] .sm-ground{top:91%}
-.poem-shoe-game .sm-fit[data-size=small] .sm-ground{top:87%;left:16%;width:62%}
-.poem-shoe-game .sm-fit[data-size=big] .sm-ground{top:95%;width:92%}
+.poem-shoe-game .sm-fit{justify-self:center;aspect-ratio:1350/770;transition:box-shadow .2s}
+.poem-shoe-game .sm-fit.is-over{box-shadow:0 0 0 4px #e4c68a,0 0 18px #ffe7a8}
+.poem-shoe-game .sm-fit .sm-foot{left:18.2%;top:-17.05%;width:72%;height:95.38%}
+.poem-shoe-game .sm-fit :is(.sm-in,.sm-out){left:23.7%;top:27.27%;width:73.93%;height:65.58%;opacity:0}
+.poem-shoe-game .sm-fit:not([data-size=none]) :is(.sm-in,.sm-out){opacity:1}
+.poem-shoe-game .sm-fit[data-size=small] :is(.sm-in,.sm-out){left:33.45%;top:37.45%;width:59.14%;height:52.47%}
+.poem-shoe-game .sm-fit[data-size=big] :is(.sm-in,.sm-out){left:2.54%;top:14.55%;width:92.41%;height:81.98%}
+.poem-shoe-game .sm-fit.is-drop :is(.sm-in,.sm-out){animation:sm-drop .45s ease-out}
+.poem-shoe-game .sm-ground{position:absolute;left:22%;width:68%;top:75%;height:7%;border-radius:50%;background:radial-gradient(closest-side,#5a3f2038,transparent);pointer-events:none}
+.poem-shoe-game .sm-fit[data-size=right] .sm-ground{top:88.5%;left:23%;width:74%}
+.poem-shoe-game .sm-fit[data-size=small] .sm-ground{top:85.5%;left:32%;width:61%}
+.poem-shoe-game .sm-fit[data-size=big] .sm-ground{top:92.5%;left:2%;width:94%}
+.poem-shoe-game .sm-ring{position:absolute;z-index:3;border-radius:50%;border:3px dashed var(--sm-red);transform:translate(-50%,-50%);pointer-events:none;display:none}
+.poem-shoe-game .sm-fit[data-size=small] .sm-ring{display:block;left:28.9%;top:58%;width:13.5%;height:38%}
+.poem-shoe-game .sm-fit[data-size=big] .sm-ring{display:block;left:17.5%;top:31%;width:21%;height:31%}
+.poem-shoe-game .sm-fit[data-size=right] .sm-ring{display:block;left:27.4%;top:57%;width:13.3%;height:40%;border-color:var(--sm-green);border-style:solid}
+.poem-shoe-game .sm-cap{position:absolute;right:3.5%;top:6%;z-index:4;margin:0;padding:.2em .75em;border-radius:12px;background:#fffaf0f2;border:2px solid var(--sm-red);color:#8c2f1d;font-size:clamp(14px,4cqi,21px);font-weight:800;line-height:1.35;white-space:nowrap;box-shadow:0 3px 8px #3b2a1428;pointer-events:none}
+.poem-shoe-game .sm-fit[data-size=none] .sm-cap{display:none}
+.poem-shoe-game .sm-fit[data-size=right] .sm-cap{border-color:var(--sm-green);background:#eef3e4;color:#2f5134}
 .poem-shoe-game .sm-tray{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.poem-shoe-game .sm-tray button{position:relative;display:flex;align-items:flex-end;justify-content:center;min-height:70px;padding:28px 8px 10px;border-radius:16px;border:1.5px solid var(--sm-edge);background:#fffaf0;box-shadow:0 3px 0 #e8dcc0;touch-action:none}
+.poem-shoe-game .sm-tray button{position:relative;display:flex;align-items:flex-end;justify-content:center;min-height:76px;padding:30px 8px 10px;border-radius:16px;border:1.5px solid var(--sm-edge);background:#fffaf0;box-shadow:0 3px 0 #e8dcc0;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
 .poem-shoe-game .sm-tray img{display:block;height:auto;pointer-events:none;filter:drop-shadow(0 2px 2px #3b2a1430)}
-.poem-shoe-game .sm-tray .is-big img{width:100%}.poem-shoe-game .sm-tray .is-right img{width:80%}.poem-shoe-game .sm-tray .is-small img{width:62%}
-.poem-shoe-game .sm-tray span{position:absolute;left:9px;top:5px;font-size:16px;font-weight:700;color:var(--sm-wood)}
-.poem-shoe-game .sm-tray button:hover:not(:disabled){background:#fff4dc}
-.poem-shoe-game .sm-tray button.is-on{border-color:var(--sm-green);background:#eef3e4;box-shadow:0 0 0 3px #b9cfa9}
-.poem-shoe-game .sm-tags{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.poem-shoe-game .sm-tags button{position:relative;display:grid;place-items:center;min-height:62px;padding:8px 10px 8px 24px;border-radius:8px 16px 16px 8px;border:1.5px solid #dcc296;background:#fffaf0;color:#4a3420;box-shadow:0 3px 0 #e6d8b8;touch-action:none;transition:transform .2s,box-shadow .2s,background .2s}
-.poem-shoe-game .sm-tags button::before{content:'';position:absolute;left:10px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:#e9dcc0;box-shadow:inset 0 1px 2px #0003}
-.poem-shoe-game .sm-tags .is-du{background:#f4f6ec;border-color:#b5c6a0}
-.poem-shoe-game .sm-tags button:hover:not(:disabled){background:#fff4dc}
-.poem-shoe-game .sm-tags .sm-face,.poem-shoe-game .sm-tags .sm-used{grid-area:1/1}
-.poem-shoe-game .sm-face{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;column-gap:.35em;font-size:19px;font-weight:650;line-height:1.3}
-.poem-shoe-game .sm-face b{font-size:27px;line-height:1;color:var(--sm-red)}
-.poem-shoe-game .sm-face i{font-style:normal;font-weight:500;font-size:17px;color:#8a6a45}
-.poem-shoe-game .sm-used{visibility:hidden;font-size:17px;font-weight:600;letter-spacing:.04em;color:#5f7a52}
-.poem-shoe-game .sm-used b{color:var(--sm-red)}
-.poem-shoe-game .sm-tags button.is-used{border-style:dashed;background:transparent;box-shadow:none}
-.poem-shoe-game .sm-tags button.is-used::before{visibility:hidden}
-.poem-shoe-game .is-used .sm-face{visibility:hidden}.poem-shoe-game .is-used .sm-used{visibility:visible}
-.poem-shoe-game .sm-tags button[aria-pressed=true]{border-color:var(--sm-green);background:#eef3e4;box-shadow:0 0 0 3px #b9cfa9;transform:translateY(-3px)}
-.poem-shoe-game .sm-tags button.is-return{z-index:40;animation:sm-return .36s cubic-bezier(.3,1.35,.5,1)}
-.poem-shoe-game .sm-feedback b{color:var(--sm-red)}
-.poem-shoe-game .sm-moral{display:grid;justify-items:center;gap:8px;padding:4px;text-align:center}
-.poem-shoe-game .sm-moral>img{width:min(68%,300px);height:auto;filter:drop-shadow(0 2px 2px #4b361a40)}
-.poem-shoe-game .sm-moral>b{font-size:24px;letter-spacing:.12em;color:#6d3a22}
-.poem-shoe-game .sm-moral>p{margin:0;font-size:20px;line-height:1.55;text-wrap:balance}
-.poem-shoe-game .sm-moral>small{font-size:16px;line-height:1.55;color:var(--sm-mute);text-wrap:pretty}
-.poem-shoe-game .sm-bonus{display:grid;gap:6px;width:100%;margin-top:4px;padding-top:10px;border-top:1px dashed #dccaa4}
-.poem-shoe-game .sm-bonus>p{margin:0;font-size:16px;color:var(--sm-mute)}
-.poem-shoe-game .sm-flips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.poem-shoe-game .sm-flip{min-height:66px;padding:0;border:0;background:none;perspective:600px}
-.poem-shoe-game .sm-flip-in{display:grid;height:100%;transform-style:preserve-3d;transition:transform .5s ease}
-.poem-shoe-game .sm-flip.is-flipped .sm-flip-in{transform:rotateY(180deg)}
-.poem-shoe-game .sm-front,.poem-shoe-game .sm-back{grid-area:1/1;display:grid;place-items:center;align-content:center;gap:1px;padding:6px 8px;border-radius:14px;border:1.5px solid #dcc296;background:#fffaf0;box-shadow:0 3px 0 #e6d8b8;backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.poem-shoe-game .sm-back{transform:rotateY(180deg);background:#eef3e4;border-color:#a9c098}
-.poem-shoe-game .sm-flip b{font-size:25px;line-height:1.1;color:var(--sm-red)}
-.poem-shoe-game .sm-back>span{font-size:18px;font-weight:600}
-.poem-shoe-game .sm-back>span b{margin-inline:.2em}
-.poem-shoe-game .sm-flip small{font-size:15px;line-height:1.35;color:#6b5a40}
-.poem-shoe-game .sm-flip small b{font-size:inherit}
-.poem-shoe-game .sm-flip:hover:not(:disabled) .sm-front{background:#fff4dc}
+.poem-shoe-game .sm-tray .is-big img{width:100%}.poem-shoe-game .sm-tray .is-right img{width:80%}.poem-shoe-game .sm-tray .is-small img{width:64%}
+.poem-shoe-game .sm-tray span{position:absolute;left:10px;top:5px;font-family:var(--serif);font-size:18px;font-weight:700;color:var(--sm-wood)}
+@media (hover:hover){.poem-shoe-game .sm-tray button:hover:not(:disabled){background:#fff4dc}}
+.poem-shoe-game .sm-tray button.is-on{border-color:#c98a6e;background:#fbeee6}
+.poem-shoe-game .is-dragging{z-index:40;transition:none!important;cursor:grabbing;box-shadow:0 12px 26px #3b2a1445!important;opacity:.94}
+
+/* Ending */
+.poem-shoe-game .sm-moral{display:grid;justify-items:center;gap:6px;padding:12px 12px 10px;border-radius:16px;background:#fffaf0;border:1.5px solid var(--sm-edge);text-align:center}
+.poem-shoe-game .sm-moral>b{font-family:var(--serif);font-size:22px;letter-spacing:.16em;color:#6d3a22}
+.poem-shoe-game .sm-moral p{margin:0;font-size:19px;line-height:1.5;text-wrap:balance}
+.poem-shoe-game .sm-moral strong{font-size:20px;line-height:1.5;color:var(--sm-green);text-wrap:balance}
+.poem-shoe-game .sm-moral small{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 14px;margin-top:2px;padding-top:7px;border-top:1px dashed #dccaa4;font-size:16px;line-height:1.5;color:var(--sm-mute)}
+.poem-shoe-game .sm-moral small b{font-family:var(--serif);color:var(--sm-red)}
 .poem-shoe-game .sm-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .poem-shoe-game .sm-actions button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:10px 18px;border-radius:16px;border:1px solid #d9c7a0;background:#fffaf0;color:#4a3a26;font-size:20px;font-weight:600}
 .poem-shoe-game .sm-actions svg{width:22px;height:22px;flex:none}
 .poem-shoe-game .sm-actions .sm-next{background:var(--sm-green);border-color:var(--sm-green);color:#fffdf2}
 .poem-shoe-game .sm-actions button:disabled,.poem-shoe-game .sm-gloss:disabled{opacity:.6}
 .poem-shoe-game .sm-feedback{margin:0;min-height:2.9em;font-size:18px;line-height:1.5;text-align:center;color:#5d5a45;text-wrap:pretty}
-.poem-shoe-game .is-wiggle{animation:sm-wiggle .45s ease}
-@keyframes sm-call{50%{box-shadow:0 0 0 4px #fff8e2a8,0 0 30px #ffeeb0}}
-@keyframes sm-wiggle{25%{translate:-5px 0}75%{translate:5px 0}}
-@keyframes sm-shake{25%{translate:-4px 0}75%{translate:4px 0}}
-@keyframes sm-glow{50%{filter:drop-shadow(0 0 7px #ffeeb0) drop-shadow(0 0 2px #3b2a14b0)}}
-@keyframes sm-return{from{translate:var(--dx) var(--dy)}}
+@keyframes sm-ring{50%{transform:scale(1.1);box-shadow:0 0 0 2px #fff8e2a0,0 0 16px #ffe08a}}
+@keyframes sm-nudge{20%{translate:-5px 0}40%{translate:5px 0}60%{translate:-3px 0}80%{translate:3px 0}}
+@keyframes sm-pop{40%{scale:1.3}}
+@keyframes sm-drop{from{translate:0 -14%;opacity:.2}}
 
 @media (min-width:701px) and (orientation:landscape){
   .poem-shoe-game .sm-frame{grid-template-columns:minmax(0,1.3fr) minmax(300px,1fr);grid-template-areas:"head head" "stage side";column-gap:22px;align-items:start}
@@ -213,27 +148,17 @@
   .poem-shoe-game .sm-panel{padding:10px;border-radius:16px}
   .poem-shoe-game .sm-line{font-size:18px;flex-basis:100%;text-align:center}
   .poem-shoe-game .sm-gloss{font-size:16px}
-  .poem-shoe-game .sm-ask button{font-size:19px;padding:8px}
+  .poem-shoe-game .sm-tray{gap:8px}
+  .poem-shoe-game .sm-tray button{min-height:68px;padding:28px 6px 8px}
+  .poem-shoe-game .sm-moral p{font-size:18px}.poem-shoe-game .sm-moral strong{font-size:19px}.poem-shoe-game .sm-moral small{font-size:15px}
   .poem-shoe-game .sm-actions button{flex:1;font-size:19px;padding:8px 12px}
   .poem-shoe-game .sm-feedback{font-size:17px}
-  .poem-shoe-game .sm-tags{gap:8px}
-  .poem-shoe-game .sm-tags button{min-height:58px;padding:6px 6px 6px 20px}
-  .poem-shoe-game .sm-tags button::before{left:7px}
-  .poem-shoe-game .sm-face{font-size:18px}.poem-shoe-game .sm-face b{font-size:24px}.poem-shoe-game .sm-face i{font-size:16px}
-  .poem-shoe-game .sm-used{font-size:16px;letter-spacing:0}
 }
 @media (max-width:370px){
   .poem-shoe-game .sm-say{font-size:17px}
   .poem-shoe-game .sm-line{font-size:17px}
-  .poem-shoe-game .sm-tray{gap:7px}
-}
-@media (max-width:600px) and (orientation:portrait){
-  /* Narrow portrait: the two pictures stack so each crop stays big enough to aim at. */
-  .poem-shoe-game:is([data-stage=tag],[data-stage=done]) .sm-stage{aspect-ratio:16/18}
-  .poem-shoe-game .sm-pane.is-home{width:100%;height:55%;--cx:30;--cy:120;--cw:960}
-  .poem-shoe-game .sm-pane.is-market{left:0;top:55%;width:100%;height:45%;--cx:640;--cy:110;--cw:960}
-  .poem-shoe-game .sm-pane.is-market::before{right:0;bottom:auto;width:auto;height:4px}
-  .poem-shoe-game .sm-vig{width:36%}
+  .poem-shoe-game .sm-tray{gap:6px}
+  .poem-shoe-game .sm-pen{width:46px;height:46px}
 }
 @media (orientation:landscape) and (max-height:500px){
   /* Short landscape phones: buttons + feedback go under the picture so each column fits the height. */
@@ -246,18 +171,14 @@
   .poem-shoe-game .sm-text{gap:4px 8px;justify-content:flex-start}
   .poem-shoe-game .sm-line{flex-basis:100%;font-size:15px;line-height:1.45}
   .poem-shoe-game .sm-gloss{font-size:14px;padding:3px 10px}.poem-shoe-game .sm-gloss b{font-size:19px}
-  .poem-shoe-game .sm-measure{max-width:340px}
-  .poem-shoe-game .sm-card{padding:12px 12px 6px;gap:4px;width:min(100%,330px)}
-  .poem-shoe-game .sm-ask p{font-size:16px}.poem-shoe-game .sm-ask button{min-height:48px;font-size:17px;padding:6px}
-  .poem-shoe-game .sm-fitting{grid-template-columns:minmax(0,1fr) 96px;align-items:center;gap:8px}
+  .poem-shoe-game .sm-measure{max-width:330px}
+  .poem-shoe-game .sm-fitting{grid-template-columns:minmax(0,1fr) 92px;align-items:center;gap:8px}
+  .poem-shoe-game[data-stage=done] .sm-fitting{grid-template-columns:minmax(0,1fr)}
+  .poem-shoe-game .sm-fit{max-width:330px}
+  .poem-shoe-game[data-stage=done] .sm-fit{max-width:250px}
   .poem-shoe-game .sm-tray{grid-template-columns:1fr;gap:6px}
-  .poem-shoe-game .sm-tray button{min-height:46px;align-items:center;padding:5px 6px 5px 26px}.poem-shoe-game .sm-tray span{font-size:15px;top:50%;left:8px;transform:translateY(-50%)}
-  .poem-shoe-game .sm-tags{gap:6px}
-  .poem-shoe-game .sm-tags button{min-height:48px;padding:4px 6px 4px 20px}.poem-shoe-game .sm-tags button::before{left:7px}
-  .poem-shoe-game .sm-face{font-size:16px}.poem-shoe-game .sm-face b{font-size:21px}.poem-shoe-game .sm-face i{font-size:15px}.poem-shoe-game .sm-used{font-size:15px;letter-spacing:0}
-  .poem-shoe-game .sm-bonus{gap:4px;padding-top:6px;margin-top:2px}.poem-shoe-game .sm-bonus>p{font-size:14px}
-  .poem-shoe-game .sm-flips{gap:6px}.poem-shoe-game .sm-flip{min-height:52px}.poem-shoe-game .sm-flip b{font-size:20px}.poem-shoe-game .sm-back>span{font-size:16px}.poem-shoe-game .sm-flip small{font-size:14px}
-  .poem-shoe-game .sm-moral{gap:4px}.poem-shoe-game .sm-moral>img{display:none}.poem-shoe-game .sm-moral>b{font-size:19px}.poem-shoe-game .sm-moral>p{font-size:16px}.poem-shoe-game .sm-moral>small{font-size:14px}
+  .poem-shoe-game .sm-tray button{min-height:48px;align-items:center;padding:5px 6px 5px 28px}.poem-shoe-game .sm-tray span{font-size:16px;top:50%;left:9px;transform:translateY(-50%)}
+  .poem-shoe-game .sm-moral{gap:3px;padding:7px 8px}.poem-shoe-game .sm-moral>b{font-size:17px}.poem-shoe-game .sm-moral p{font-size:15px}.poem-shoe-game .sm-moral strong{font-size:16px}.poem-shoe-game .sm-moral small{font-size:14px;padding-top:4px}
   .poem-shoe-game .sm-actions button{min-height:46px;font-size:17px;padding:6px 14px}
   .poem-shoe-game .sm-feedback{font-size:15px;min-height:0;line-height:1.4}
 }
