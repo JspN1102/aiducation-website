@@ -1,5 +1,5 @@
 import {createGameImageLoader} from './image-ready.mjs?v=20260922-school11';
-import {imageAsset} from '../media-images.mjs?v=20261006-school42';
+import {imageAsset} from '../media-images.mjs?v=20261006-school43';
 import {createProcessResearch} from './research.mjs?v=20260920a';
 const file = path => new URL(imageAsset(`media/${path}`), import.meta.url).href;
 const art = name => file(`jue-ju/game/${name}.webp`);
@@ -394,6 +394,7 @@ export function mountCouplet(holder,{initialState,readOnly=false,playAudio,onSta
   else if(round===1&&(el=t.closest?.('[data-pc-egret]'))&&!el.disabled)kind='egret';
   else if(round===2&&(el=t.closest?.('[data-pc-window]'))&&!el.disabled)kind=win===0?'shutter':'window';
   else if(round===2&&win===1&&!btn&&inWorld){kind='tap';el=world;}
+  else if(round===2&&win===0&&!btn&&inWorld){missed();tell('窗子在畫中間，點一下把窗推開。');return;}
   else if(round===3&&boat<1&&inWorld&&(!btn||btn===boatEl)){kind='boat';el=btn||world;}
   if(!kind)return;
   if(e.cancelable)e.preventDefault();
@@ -430,7 +431,8 @@ export function mountCouplet(holder,{initialState,readOnly=false,playAudio,onSta
    if(tap){rowTo(boat+ROW,'row');return;}if(!up){render();save();return;}
    if(boat>=.9||d.goal>=.9){research.action('boat','drag');rowTo(1);return;}
    if(d.best<d.d0-10||boat>d.t0+.01){research.action('boat','drag');const to=Math.max(d.goal,d.t0+ROW);boatEl.classList.add('is-rowing');plop();animate(450,(a=>k=>setBoat(a+(to-a)*k))(boat),()=>{boatEl.classList.remove('is-rowing');if(boat>=.97){arrive();return;}render();save();arm();tell(boat<.5?'划呀划！船跟着箭頭前進。':'快到門前了！再划一下。');});return;}
-   research.answer('boat','miss',false);missed();render();save();tell('跟着箭頭，把船往門前發光的圈圈划。');
+   // Any other drag still rows: the boat only ever follows the arrows, so children never get stuck on direction.
+   research.answer('boat','miss',false);rowTo(boat+ROW);
   }
  }
  function release(e){

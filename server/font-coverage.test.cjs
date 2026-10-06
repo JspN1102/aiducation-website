@@ -184,3 +184,15 @@ test('every font URL carries the version of the file it names', () => {
   }
   assert.ok(count >= 15, 'font references found: ' + count);
 });
+
+test('the shipped app.bundle.css carries the same font faces as styles.css', () => {
+  // index.html loads only the bundle, so a skipped rebuild would keep old font
+  // versions and unicode-ranges while every source stylesheet looks right.
+  const faces = css => [...css.matchAll(/@font-face\{[^}]*\}/g)].map(match => match[0]);
+  const source = faces(fs.readFileSync(path.join(root, 'maanshan/styles.css'), 'utf8'));
+  const bundle = new Set(faces(fs.readFileSync(path.join(root, 'maanshan/app.bundle.css'), 'utf8')));
+  assert.ok(source.length >= 4, 'styles.css font faces: ' + source.length);
+  for (const face of source) assert.ok(bundle.has(face), 'app.bundle.css lacks ' + face.slice(0, 120));
+  const check = require('node:child_process').spawnSync(process.execPath, [path.join(root, 'scripts/build-maanshan-css.cjs'), '--check'], {encoding: 'utf8'});
+  assert.equal(check.status, 0, check.stderr);
+});

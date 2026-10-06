@@ -1,8 +1,8 @@
 {
  "schemaVersion": 1,
- "version": "3d20fcec7ca176df98d9",
+ "version": "e05a7d1f5d86d29b550b",
  "cache": "maanshan-pack-v1",
- "totalBytes": 218399987,
+ "totalBytes": 218602423,
  "assets": [
   {
    "path": "media/bo-chuan-gua-zhou/animation-20260917.mp4",
@@ -5948,30 +5948,30 @@
   },
   {
    "path": "vendor/fonts/noto-sans-hk-variants.woff2",
-   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/38f517e51a8a25aff1e3/maanshan/vendor/fonts/noto-sans-hk-variants.woff2",
-   "bytes": 10972,
-   "sha256": "38f517e51a8a25aff1e330bd28b1509a1379819671c9562a116d6a879123d0c4",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/712b7534c82c8e2584fb/maanshan/vendor/fonts/noto-sans-hk-variants.woff2",
+   "bytes": 16632,
+   "sha256": "712b7534c82c8e2584fbbb00e7aa6e329827ee70d1863af4825f94c02d6099e2",
    "type": "font/woff2"
   },
   {
    "path": "vendor/fonts/noto-sans-hk.woff2",
-   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/1dfcba192871af35da75/maanshan/vendor/fonts/noto-sans-hk.woff2",
-   "bytes": 403276,
-   "sha256": "1dfcba192871af35da759ccb087449e09e7d452f92f86a83ae11cbe2435c4b7b",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/d9bbbd265d15c90c709d/maanshan/vendor/fonts/noto-sans-hk.woff2",
+   "bytes": 482532,
+   "sha256": "d9bbbd265d15c90c709d8df85ef0b0c4646c176264fdb529bbe3f97c15b3bd79",
    "type": "font/woff2"
   },
   {
    "path": "vendor/fonts/noto-serif-hk-variants.woff2",
-   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/a9e02af4d66dfc7ef15d/maanshan/vendor/fonts/noto-serif-hk-variants.woff2",
-   "bytes": 12992,
-   "sha256": "a9e02af4d66dfc7ef15d78030bd9e32698857786af27ae1919cf816f72fa1388",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ccd23ddb0e2687a3564b/maanshan/vendor/fonts/noto-serif-hk-variants.woff2",
+   "bytes": 21052,
+   "sha256": "ccd23ddb0e2687a3564bbbdd3fb1919e3ae281be7cea72f4a177ecdc794ccfe4",
    "type": "font/woff2"
   },
   {
    "path": "vendor/fonts/noto-serif-hk.woff2",
-   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/3de831b6e9955fdd9e28/maanshan/vendor/fonts/noto-serif-hk.woff2",
-   "bytes": 552204,
-   "sha256": "3de831b6e9955fdd9e282aff42e1a8ce50db70b0d7effda39553551863718c92",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/25d3a7b03aa89f5987cc/maanshan/vendor/fonts/noto-serif-hk.woff2",
+   "bytes": 661664,
+   "sha256": "25d3a7b03aa89f5987cce933dd82c670d46b029b2dee9db5f14cb5962880c811",
    "type": "font/woff2"
   },
   {

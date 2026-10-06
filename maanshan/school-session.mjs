@@ -1,5 +1,5 @@
 import {TERMS_VERSION, termsConfirmationMarkup, bindTermsConfirmation} from './platform-terms.mjs?v=20260930-school27';
-import {mountShishiSprite} from './shishi-sprite.mjs?v=20261006-school42';
+import {mountShishiSprite} from './shishi-sprite.mjs?v=20261006-school43';
 import {readOnlyJSON} from './read-only-json.mjs?v=20260922-school15';
 import {SHOWCASE} from './showcase.mjs?v=20260930-school30';
 import {animationCandidates, manageAnimationSource} from './animation-source.mjs?v=20261005-school41';

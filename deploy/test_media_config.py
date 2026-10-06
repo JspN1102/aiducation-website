@@ -60,13 +60,13 @@ class MediaConfigTests(unittest.TestCase):
                    'exploration/ti-xi-lin-bi/model.glb', 'exploration/zao-chun/model-20260919b.glb',
                    'exploration/zao-chun/model.glb', 'living-scenes/bean-v1.glb', 'living-scenes/grass-v1.glb'] + [
                    'exploration/' + slug + '/model-20261005.glb' for slug in
-                   ('jue-ju', 'zheng-ren-mai-lu', 'ke-zhi')]
+                   ('jue-ju', 'zheng-ren-mai-lu', 'ke-zhi')] + [
+                   'exploration/' + slug + '/model-20261006.glb' for slug in ('jue-ju', 'ke-zhi')]
     # Models the pages already load that still wait for their COS copy (the
     # 2026-10-06 sharper re-exports). package-vercel.py refuses to package a GLB
     # without a COS mapping. Whoever publishes them moves them into PAGE_MODELS
     # in the same commit; the test below fails once they are in the manifest.
-    PENDING_COS_MODELS = ['exploration/' + slug + '/model-20261006.glb' for slug in
-                          ('jue-ju', 'ke-zhi')]
+    PENDING_COS_MODELS = []
 
     def test_every_exploration_model_is_published_or_listed_as_pending(self):
         root = Path(__file__).parent.parent
