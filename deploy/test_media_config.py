@@ -322,6 +322,18 @@ class MediaConfigTests(unittest.TestCase):
         self.assertIn('/maanshan/media/yong-xue/preview-1.webp', [image['source'] for image in config['images']])
         self.assertIn('recitations/round2-20261005', config['audioGroups'])
 
+    def test_font_extension_slices_stay_out_of_packs_but_keep_their_public_copy(self):
+        manifest, _ = fixture(font=True)
+        main = '/maanshan/vendor/fonts/noto-sans-hk.woff2'
+        slices = ['/maanshan/vendor/fonts/noto-sans-hk-ext-01.woff2', '/maanshan/vendor/fonts/noto-serif-hk-ext-30.woff2']
+        manifest['assets'] += [entry(main, b'main font')] + [entry(source, source.encode()) for source in slices]
+        pack = json.loads(media_config.build_pack_manifest(manifest))
+        self.assertEqual(sorted(asset['path'] for asset in pack['assets']),
+                         ['vendor/fonts/noto-sans-hk.woff2', 'vendor/fonts/serif.woff2'])
+        fonts = media_config.build_font_module(manifest)
+        for source in [main] + slices:
+            self.assertIn(source, fonts)
+
     def test_pack_scope_file_is_validated(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

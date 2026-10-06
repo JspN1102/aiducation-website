@@ -7,7 +7,7 @@ const WIDTH = 1800, HEIGHT = 1440;
 
 function loadFont(document) {
   if (!fontLoads.has(document)) {
-    const source = new URL('./vendor/fonts/noto-serif-hk.woff2?v=20260929-hk1', import.meta.url);
+    const source = new URL('./vendor/fonts/noto-serif-hk.woff2?v=d0f785bc35', import.meta.url);
     const face = new document.defaultView.FontFace(FONT_NAME, `url("${source.href}")`, {weight: '400 700'});
     const promise = face.load().then(font => {document.fonts.add(font);return font;}).catch(error => {
       fontLoads.delete(document);

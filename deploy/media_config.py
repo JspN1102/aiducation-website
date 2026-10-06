@@ -33,6 +33,9 @@ PACK_SCOPE = 'deploy/pack-scope.json'
 PREVIEW_MEDIA = tuple('/maanshan/media/' + folder + '/' for folder in (
     'yong-xue', 'hua-ji', 'qi-bu-shi', 'jue-ju', 'zheng-ren-mai-lu', 'ke-zhi', 'recitations/round2-20261005',
     'exploration/jue-ju', 'exploration/zheng-ren-mai-lu', 'exploration/ke-zhi'))
+# The fonts' on-demand extension slices (maanshan/font-extension.mjs): a page
+# fetches one only when it shows one of its characters, so packs leave them out.
+EXTENSION_FONT = re.compile(r'/maanshan/vendor/fonts/noto-(?:sans|serif)-hk-ext-\d+\.woff2\Z')
 
 
 def group_id(members):
@@ -207,6 +210,8 @@ def pack_entries(manifest):
         if asset['source'].startswith('/maanshan/media/guide/'):
             continue
         if asset['source'].startswith(PREVIEW_MEDIA):
+            continue
+        if EXTENSION_FONT.match(asset['source']):
             continue
         entries.append({'path': asset['source'][len('/maanshan/'):], 'remote': asset['destination'],
                         'bytes': asset['bytes'], 'sha256': asset['sha256'], 'type': asset['contentType']})

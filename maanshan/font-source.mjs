@@ -6,6 +6,9 @@
 // cancelled, and a route that won after the other failed is remembered for
 // the session. The small variant subsets stay in the stylesheet. Text shows in
 // the system font until a copy arrives, exactly as font-display: swap did.
+// Characters the platform's files do not use (AI replies, speech-to-text,
+// names) come from the on-demand extension (font-extension.mjs), whose small
+// slices download only when a page shows one of their characters.
 // Nothing about the pupil is sent or stored.
 import {FONT_ASSETS} from './media-fonts.mjs?v=20260929-hk1';
 import {orderRoutes, rememberRoute, rememberedRoute} from './media-route.mjs?v=20260923-school23';
@@ -13,8 +16,8 @@ import {publicImagesReady} from './media-images.mjs?v=20261006-school42';
 
 export const HEDGE_MS = 3000;
 export const FONTS = Object.freeze([
-  {family: 'Noto Serif HK', path: '/maanshan/vendor/fonts/noto-serif-hk.woff2', version: '20260929-hk1'},
-  {family: 'Noto Sans HK', path: '/maanshan/vendor/fonts/noto-sans-hk.woff2', version: '20260929-hk1'}
+  {family: 'Noto Serif HK', path: '/maanshan/vendor/fonts/noto-serif-hk.woff2', version: 'd0f785bc35'},
+  {family: 'Noto Sans HK', path: '/maanshan/vendor/fonts/noto-sans-hk.woff2', version: 'bc4544be05'}
 ]);
 
 // Ordered routes for one font file. The local copy keeps the cache-busting
@@ -66,12 +69,19 @@ export function fetchFont(font, {signal, hedgeMs = HEDGE_MS, candidates = fontCa
   });
 }
 
-// Install both fonts. A font that cannot be fetched from either host leaves
-// the page on the system font; nothing else depends on it.
-export async function installFonts({fonts = FONTS, doc = globalThis.document} = {}) {
+// Install both fonts and the extension. A font that cannot be fetched from
+// either host leaves the page on the system font; nothing else depends on it.
+export async function installFonts({fonts = FONTS, doc = globalThis.document, extension = true} = {}) {
   if (!doc?.fonts?.add || typeof FontFace !== 'function') return [];
   // Without session memory, the reachability probe decides the first route.
   if (!rememberedRoute()) await publicImagesReady.catch(() => false);
+  // The extension's faces are added at once but load nothing until needed;
+  // its ranges leave out every character of the main fonts.
+  if (extension) {
+    import('./font-extension.mjs?v=20261006-hk2')
+      .then(module => module.installFontExtension({doc, remote: FONT_ASSETS}))
+      .catch(() => { /* the system font covers what the extension would */ });
+  }
   return Promise.all(fonts.map(async font => {
     try {
       const {buffer, route} = await fetchFont(font);
