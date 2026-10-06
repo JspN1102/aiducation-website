@@ -1,0 +1,101 @@
+/* Listening choice forms: round one is the little doctor's clinic (medicine bottles),
+   round two is the police line-up (suspects holding placards).
+   The case fills the challenge body; its container units size the scene and the
+   answer cards so every question fits without page scrolling. */
+.challenge-shell .sound-case{--gap:12px;--pad:6px;--cell:255/480;flex:1 1 auto;min-height:0;width:100%;max-width:1080px;margin:0 auto;container:sound-case / size;display:grid;grid-template-columns:minmax(0,43fr) minmax(0,57fr);align-items:center;column-gap:clamp(20px,3.6vw,44px)}
+.challenge-shell .sound-case.is-police{--cell:255/472}
+.challenge-shell .sound-case-scene{position:relative;display:block;justify-self:center;width:min(100%,96cqh);aspect-ratio:1/1;padding:0;border:0;border-radius:26px;overflow:hidden;background:#f3ead6;box-shadow:0 12px 28px rgba(84,66,34,.16);cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.sound-case-picture{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 40%;pointer-events:none;-webkit-user-drag:none;user-select:none;transition:opacity .45s ease}
+.sound-case-picture.is-after{opacity:0}
+.sound-case.is-solved .sound-case-picture.is-after{opacity:1}
+.sound-case-cue{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:9px;min-height:50px;max-width:calc(100% - 20px);padding:7px 18px 7px 8px;border-radius:999px;background:rgba(255,252,243,.95);color:#2f5a49;font:600 17px/1.25 var(--sans);white-space:nowrap;box-shadow:0 6px 16px rgba(70,56,30,.2);pointer-events:none}
+.sound-case-cue svg{flex:none;width:36px;height:36px;padding:7px;border-radius:50%;background:#3e7160;color:#fffdf4}
+.is-police .sound-case-cue{color:#29406b}.is-police .sound-case-cue svg{background:#2f4a7a}
+.sound-case:not(.is-heard):not(.is-answered) .sound-case-cue{animation:sound-case-call 1.6s ease-in-out infinite}
+.sound-case-scene.is-playing .sound-case-cue svg{animation:sound-case-beat .6s ease-in-out infinite alternate}
+.sound-case-scene:active .sound-case-cue{transform:translateX(-50%) scale(.97)}
+.sound-case.is-solved .sound-case-scene{box-shadow:0 0 0 4px rgba(116,176,118,.45),0 12px 28px rgba(84,66,34,.16)}
+.is-police.is-solved .sound-case-scene{box-shadow:0 0 0 4px rgba(242,190,70,.55),0 12px 28px rgba(84,66,34,.16)}
+@keyframes sound-case-call{0%,100%{box-shadow:0 6px 16px rgba(70,56,30,.2),0 0 0 0 rgba(62,113,96,.42)}55%{box-shadow:0 6px 16px rgba(70,56,30,.2),0 0 0 12px rgba(62,113,96,0)}}
+@keyframes sound-case-beat{to{transform:scale(1.12)}}
+
+.sound-case-work{min-width:0;display:flex;flex-direction:column;justify-content:center}
+.workspace .challenge-shell .sound-case .challenge-prompt{margin:0 0 4px}
+.workspace .challenge-shell .sound-case .challenge-instruction{margin:0 0 14px;font-size:15px}
+.workspace .challenge-shell .sound-case .challenge-audio-status{display:block;min-height:28px;margin:12px 0 0;font-size:16px;line-height:1.5}
+.sound-case-options{--n:4;--w:min(calc((54cqw - (var(--n) - 1) * var(--gap)) / var(--n) - 2 * var(--pad) - 4px),calc(54cqh / 1.88),170px);display:flex;justify-content:flex-start;align-items:flex-end;gap:var(--gap);padding-top:8px}
+.sound-case-options:has(>:nth-child(3):last-child){--n:3}.sound-case-options:has(>:nth-child(2):last-child){--n:2}
+.challenge-shell .sound-case-option{position:relative;flex:none;display:block;width:calc(var(--w) + 2 * var(--pad) + 4px);min-width:56px;padding:var(--pad);border:2px solid #eadfca;border-radius:18px;background:#fffaf0;color:#2c4a3f;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;transition:transform .18s ease,border-color .18s ease,background-color .18s ease,box-shadow .18s ease,opacity .18s ease}
+.challenge-shell .sound-case-option:disabled{cursor:default}
+.sound-case-figure{position:relative;display:block;width:100%;aspect-ratio:var(--cell);container-type:inline-size}
+.sound-case-art{position:absolute;inset:0;overflow:hidden;border-radius:12px}
+.sound-case-art img{position:absolute;top:0;left:0;width:400%;max-width:none;height:100%;pointer-events:none;-webkit-user-drag:none;user-select:none}
+.sound-case-art.is-cell-1 img{left:-100%}.sound-case-art.is-cell-2 img{left:-200%}.sound-case-art.is-cell-3 img{left:-300%}
+.sound-case-tag{position:absolute;left:15%;right:15%;top:42%;bottom:17%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3cqi;font:600 clamp(13px,21cqi,40px)/1.1 var(--sans);text-align:center;letter-spacing:0;color:#2c4a3f;overflow:hidden}
+.sound-case-tag>span{max-width:100%;overflow-wrap:anywhere}
+.sound-case-tag .challenge-tone{flex:none;width:58cqi;height:29cqi;color:#5c8a69}
+.sound-case-tag:has(.challenge-tone)>span{font-size:clamp(11px,17cqi,30px)}
+.is-police .sound-case-tag{left:15%;right:15%;top:48%;bottom:27%;gap:1cqi;padding:0 2px;border:1px solid #e3d5bb;border-radius:4px;background:#fffbf3;box-shadow:0 1px 3px rgba(70,50,24,.18);color:#2f3240;font-size:clamp(12px,19cqi,36px)}
+.is-police .sound-case-tag .challenge-tone{width:42cqi;height:19cqi;color:#4a628f}
+.is-police .sound-case-tag:has(.challenge-tone)>span{font-size:clamp(10px,15cqi,26px)}
+.sound-case-mark{position:absolute;top:-10px;right:-10px;z-index:2;display:none;place-items:center;width:40px;height:40px;border-radius:50%;background:#3e7f5c;color:#fff;box-shadow:0 4px 10px rgba(30,60,40,.3)}
+.sound-case-mark svg{width:24px;height:24px}
+.is-police .sound-case-mark{top:-12px;right:auto;left:50%;transform:translateX(-50%);width:auto;height:auto;min-height:32px;gap:4px;padding:3px 11px 3px 7px;border-radius:999px;background:#2f4a7a;font:700 14px/1 var(--sans);white-space:nowrap;grid-auto-flow:column}
+.is-police .sound-case-mark svg{width:22px;height:22px}
+.is-police.is-solved .sound-case-mark::after{content:"抓到了"}
+.is-police.is-missed .sound-case-mark::after{content:"是他"}
+
+.sound-case:not(.is-heard):not(.is-answered) .sound-case-option{opacity:.72}
+.challenge-shell .sound-case-option[aria-pressed="true"]{border-color:#4f8a66;background:#eaf2e2;transform:translateY(-6px);box-shadow:0 10px 18px rgba(50,80,60,.18)}
+.challenge-shell .is-police .sound-case-option[aria-pressed="true"]{border-color:#d9a52c;background:#fff3d2;box-shadow:0 0 0 4px rgba(244,196,72,.32),0 10px 18px rgba(80,60,20,.2)}
+.is-police .sound-case-option[aria-pressed="true"] .sound-case-art::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 72% 52% at 50% 32%,rgba(255,238,170,.42),transparent 72%)}
+.sound-case.is-answered .sound-case-option:not(.is-correct){opacity:.55}
+.sound-case.is-missed .sound-case-option[aria-pressed="true"]:not(.is-correct){border-color:#d6cdbb;background:#f3f0e8;box-shadow:none;filter:grayscale(.45)}
+.challenge-shell .sound-case-option.is-correct{opacity:1;border-color:#4f8a66;background:#e3efd9}
+.challenge-shell .is-police .sound-case-option.is-correct{border-color:#2f4a7a;background:#e6ebf5}
+.sound-case-option.is-correct .sound-case-mark{display:grid}
+.sound-case.is-solved .sound-case-option.is-correct .sound-case-mark{animation:sound-case-pop .45s ease-out}
+.is-police.is-solved .sound-case-option.is-correct .sound-case-mark{animation-name:sound-case-pop-centred}
+@keyframes sound-case-pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.15);opacity:1}100%{transform:scale(1)}}
+@keyframes sound-case-pop-centred{0%{transform:translateX(-50%) scale(.3);opacity:0}70%{transform:translateX(-50%) scale(1.15);opacity:1}100%{transform:translateX(-50%) scale(1)}}
+
+/* Tablet portrait: a wide scene above the question. */
+@media (min-width:701px) and (orientation:portrait){
+  .challenge-shell .sound-case{grid-template-columns:minmax(0,1fr);align-content:center;row-gap:22px}
+  .challenge-shell .sound-case-scene{width:100%;height:34cqh;aspect-ratio:auto}
+  .sound-case-picture{object-position:50% 32%}
+  .sound-case-work{align-items:center;text-align:center}
+  .sound-case-options{--w:min(calc((100cqw - (var(--n) - 1) * var(--gap)) / var(--n) - 2 * var(--pad) - 4px),calc(32cqh / 1.88),190px);justify-content:center}
+}
+/* Phones: the scene takes the height the cards leave free, so the patient or officer
+   stays visible above the listen pill instead of a blank gap under the cards. */
+@media (max-width:700px){
+  .challenge-shell .sound-case{--gap:8px;--pad:3px;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;align-content:stretch;row-gap:10px}
+  .challenge-shell .sound-case-scene{width:100%;height:auto;min-height:0;align-self:stretch;aspect-ratio:auto;border-radius:18px}
+  .sound-case-picture{object-position:50% 38%}
+  .sound-case-cue{bottom:8px;min-height:44px;gap:7px;padding:5px 14px 5px 6px;font-size:15px}
+  .sound-case-cue svg{width:32px;height:32px;padding:6px}
+  .sound-case-work{align-items:center;text-align:center}
+  .workspace .challenge-shell .sound-case .challenge-prompt{font-size:20px;line-height:1.4}
+  .workspace .challenge-shell .sound-case .challenge-instruction{display:none}
+  .workspace .challenge-shell .sound-case .challenge-audio-status{min-height:22px;margin-top:8px;font-size:14px;text-align:center}
+  .sound-case-options{--w:min(calc((100cqw - (var(--n) - 1) * var(--gap)) / var(--n) - 2 * var(--pad) - 4px),calc(38cqh / 1.88),150px);justify-content:center;padding-top:10px}
+  .sound-case-tag{left:12%;right:12%;font-size:clamp(14px,25cqi,40px)}
+  .sound-case-tag .challenge-tone{width:52cqi;height:22cqi}
+  .sound-case-tag:has(.challenge-tone)>span{font-size:clamp(12px,20cqi,30px)}
+  .is-police .sound-case-tag{left:10%;right:10%;font-size:clamp(13px,23cqi,36px)}
+  .is-police .sound-case-tag .challenge-tone{width:40cqi;height:15cqi}
+  .is-police .sound-case-tag:has(.challenge-tone)>span{font-size:clamp(11px,17cqi,26px)}
+  .is-police .sound-case-mark{top:-10px;min-height:26px;padding:2px 8px 2px 5px;font-size:12px}.is-police .sound-case-mark svg{width:18px;height:18px}
+  .challenge-shell .sound-case-option{border-radius:14px}
+  .sound-case-art{border-radius:10px}
+  .sound-case-mark{top:-8px;right:-8px;width:32px;height:32px}.sound-case-mark svg{width:20px;height:20px}
+}
+@media (max-height:560px) and (orientation:landscape){
+  .workspace .challenge-shell .sound-case .challenge-instruction{display:none}
+  .sound-case-cue{bottom:8px;min-height:44px;font-size:15px}
+}
+@media (prefers-reduced-motion:reduce){
+  .sound-case *,.sound-case *::after{animation:none!important;transition:none!important}
+  .challenge-shell .sound-case-option[aria-pressed="true"]{transform:none}
+}

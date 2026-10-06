@@ -38,7 +38,7 @@ async function draw(page){const canvas=page.locator('.cw-board canvas');await ca
 async function assessed(page){await page.waitForFunction(()=>document.querySelector('.challenge-writing')?.getAttribute('aria-busy')==='false'&&document.querySelector('.challenge-writing')?.classList.contains('is-answered'));}
 (async()=>{
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const origin='http://127.0.0.1:'+server.address().port;
- try{for(const engine of ['chromium','webkit']){
+ try{for(const engine of (process.env.PLAYWRIGHT_ENGINES||'chromium,webkit').split(',')){
   const browser=await(engine==='chromium'?chromium.launch({channel:'msedge',headless:true}):webkit.launch({headless:true}));
   try{
    for(const viewport of [{width:390,height:844},{width:1024,height:768},{width:1280,height:800}]){
@@ -48,15 +48,15 @@ async function assessed(page){await page.waitForFunction(()=>document.querySelec
     await page.evaluate(()=>{const hint=document.querySelector('[data-ch=skip]');hint.click();});
     check(label+' directly clicking the hidden old hint cannot submit or reveal an answer',await page.evaluate(()=>submissions.length===0&&!document.querySelector('[data-option][aria-pressed="true"]')));
     check(label+' initial answer choices wait for completed audio',await options.evaluateAll(values=>values.every(el=>el.disabled)));
-    check(label+' no dragging instructions and native clickable walnut',await page.evaluate(()=>!document.querySelector('.challenge-sound-layout').textContent.includes('拖')&&document.querySelector('.challenge-sound-token').draggable===false&&getComputedStyle(document.querySelector('.challenge-sound-token')).cursor==='pointer'));
+    check(label+' no dragging instructions and a native clickable patient',await page.evaluate(()=>{const scene=document.querySelector('.sound-case [data-ch=listen]');return !document.querySelector('.sound-case').textContent.includes('拖')&&!document.body.textContent.includes('核桃')&&scene.draggable===false&&getComputedStyle(scene).cursor==='pointer';}));
     await page.locator('[data-ch=listen]').tap();check(label+' choices remain disabled during audio',await options.evaluateAll(values=>values.every(el=>el.disabled)));
     await page.evaluate(()=>resolveAudio(false));await page.waitForFunction(()=>!document.querySelector('[data-ch=listen]').hasAttribute('aria-busy'));check(label+' failed audio cannot unlock choices',await options.evaluateAll(values=>values.every(el=>el.disabled)));
     await page.locator('[data-ch=listen]').tap();await page.evaluate(()=>resolveAudio(true));await page.waitForFunction(()=>!document.querySelector('[data-option]').disabled);
     const token=await page.locator('[data-ch=listen]').boundingBox(),target=await options.first().boundingBox();
     await page.mouse.move(token.x+token.width/2,token.y+token.height/2);await page.mouse.down();await page.mouse.move(target.x+target.width/2,target.y+target.height/2,{steps:8});await page.mouse.up();
-    check(label+' dragging walnut neither moves token nor chooses answer',await page.evaluate(()=>!document.querySelector('[data-option][aria-pressed="true"]')&&!document.querySelector('.challenge-sound-token').style.translate));
+    check(label+' dragging the patient neither moves it nor chooses an answer',await page.evaluate(()=>{const scene=document.querySelector('[data-ch=listen]');return !document.querySelector('[data-option][aria-pressed="true"]')&&!scene.style.translate&&!scene.style.transform;}));
     await options.first().tap();check(label+' tapping choice has clear selection',await options.first().getAttribute('aria-pressed')==='true'&&await page.locator('.challenge-audio-status').textContent().then(v=>v.includes('已選')));
-    check(label+' all choices meet touch target size',await options.evaluateAll(values=>values.every(el=>{const b=el.getBoundingClientRect();return b.width>=44&&b.height>=44;})));
+    check(label+' all choices meet touch target size',await options.evaluateAll(values=>values.every(el=>{const b=el.getBoundingClientRect();return b.width>=56&&b.height>=56;})));
     await page.locator('[data-ch=submit]').tap();check(label+' confirm records exactly one answer',await page.evaluate(()=>submissions.length===1));check(label+' no browser errors',errors.length===0);await context.close();
    }
    {
