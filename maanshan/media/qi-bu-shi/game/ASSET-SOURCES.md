@@ -32,9 +32,9 @@ The source scene file itself was not modified.
 
 | File | Size | Where it is used |
 |---|---|---|
-| `bean-basket.webp` | 473×282 | 一籃黃豆 at step 1, and the art on the 豆 card at step 6. |
+| `bean-basket.webp` | 473×282 | 一籃黃豆 at step 1, and the 豆 end of the 豆—根—萁 card under the stage at step 6. |
 | `gourd-ladle.webp` | 553×237 | 一瓢豆湯 at step 2, and the pouring animation. |
-| `bean-stalks.webp` | 560×254 | 豆子的莖／豆萁 at steps 3–4, the push-into-the-stove animation, and the art on the 萁 card at step 6. |
+| `bean-stalks.webp` | 560×254 | 豆子的莖／豆萁 at steps 3–4, the push-into-the-stove animation, and the 萁 end of the 豆—根—萁 card at step 6. |
 | `firewood.webp` | 560×271 | 木柴, the wrong fuel choice at step 3. |
 
 How these were made:
@@ -47,6 +47,13 @@ How these were made:
   tied bundle of split firewood. No text, no shadows.
 - The green was keyed out and the green spill removed. Each object was cropped and scaled to at
   most 560 px, then saved as RGBA WebP at quality 88.
+
+## Step 6 (本是同根生) uses no new art
+
+Step 6 zooms the camera into the user's `scene-3.webp` (the bean plant above the 釜). The pulsing
+root ring, the 豆／萁 seals and the gold light that runs from the root up to the stalks and pods are
+drawn in CSS and an inline SVG inside `seven-steps.mjs`. No image was generated or edited for this
+step, so the file list below is unchanged.
 
 ## Licence
 
