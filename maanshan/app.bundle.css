@@ -5237,11 +5237,12 @@ html[data-showcase] .site-header{display:none}
   .sound-case-work{align-items:center;text-align:center}
   .sound-case-options{--w:min(calc((100cqw - (var(--n) - 1) * var(--gap)) / var(--n) - 2 * var(--pad) - 4px),calc(32cqh / 1.88),190px);justify-content:center}
 }
-/* Phones: compact scene, four cards in one row. */
+/* Phones: the scene takes the height the cards leave free, so the patient or officer
+   stays visible above the listen pill instead of a blank gap under the cards. */
 @media (max-width:700px){
-  .challenge-shell .sound-case{--gap:8px;--pad:3px;grid-template-columns:minmax(0,1fr);align-content:start;row-gap:10px}
-  .challenge-shell .sound-case-scene{width:100%;height:27cqh;aspect-ratio:auto;border-radius:18px}
-  .sound-case-picture{object-position:50% 32%}
+  .challenge-shell .sound-case{--gap:8px;--pad:3px;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;align-content:stretch;row-gap:10px}
+  .challenge-shell .sound-case-scene{width:100%;height:auto;min-height:0;align-self:stretch;aspect-ratio:auto;border-radius:18px}
+  .sound-case-picture{object-position:50% 38%}
   .sound-case-cue{bottom:8px;min-height:44px;gap:7px;padding:5px 14px 5px 6px;font-size:15px}
   .sound-case-cue svg{width:32px;height:32px;padding:6px}
   .sound-case-work{align-items:center;text-align:center}
