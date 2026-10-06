@@ -27,12 +27,16 @@ MONTH = 'public, max-age=2592000'
 VERSION_TAG = '20260923-school23'
 PACK_CACHE = 'maanshan-pack-v1'
 PACK_SCOPE = 'deploy/pack-scope.json'
+# Poems 7-12's character and dictation-prompt readings (maanshan/word-audio.mjs and
+# speech-audio.mjs read its index after their own). Until the folder is published as
+# a COS group it ships on the deployment route only, like any unpublished file.
+ROUND2_TTS = 'round2-tts-20261006'
 # Poems 7-12 are shown to two preview teacher accounts only, so pupils' packs
 # and the session's route probe leave their media out. Only poems 10-12
 # (grades 4-6) have AR folders; grades 1-3 have no AR.
 PREVIEW_MEDIA = tuple('/maanshan/media/' + folder + '/' for folder in (
     'yong-xue', 'hua-ji', 'qi-bu-shi', 'jue-ju', 'zheng-ren-mai-lu', 'ke-zhi', 'recitations/round2-20261005',
-    'exploration/jue-ju', 'exploration/zheng-ren-mai-lu', 'exploration/ke-zhi'))
+    'exploration/jue-ju', 'exploration/zheng-ren-mai-lu', 'exploration/ke-zhi', ROUND2_TTS))
 # The fonts' on-demand extension slices (maanshan/font-extension.mjs): a page
 # fetches one only when it shows one of its characters, so packs leave them out.
 EXTENSION_FONT = re.compile(r'/maanshan/vendor/fonts/noto-(?:sans|serif)-hk-ext-\d+\.woff2\Z')

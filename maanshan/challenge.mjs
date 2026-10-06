@@ -28,7 +28,7 @@ const soundIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const tone = shape => shape ? `<svg class="challenge-tone" viewBox="0 0 70 35" aria-hidden="true"><path d="${{level:'M8 10H62', rising:'M8 28 62 6', dipping:'M8 13 32 29 62 6', falling:'M8 6 62 28'}[shape]}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>` : '';
 const makeURL = path => new URL(path, import.meta.url).href;
 
-export function mountChallenge(container, {poem, saved, onChange, onComplete, playAudio, stopAudio, recognize, prewarm = () => {}, onResearch = () => {}, onAnswer = () => {}, onCorrectionProgress = () => {}} = {}) {
+export function mountChallenge(container, {poem, saved, onChange, onComplete, playAudio, stopAudio, recognize, prewarm = () => {}, prefetchAudio = () => {}, onResearch = () => {}, onAnswer = () => {}, onCorrectionProgress = () => {}} = {}) {
   const set = CHALLENGE_SETS[poem.slug];
   if (!set) throw new Error('missing-challenge');
   let attempt = prepareAttempt(set, saved), dead = false, screen = attempt.cursor;
@@ -180,6 +180,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
   function showQuestion() {
     const item = items[screen];
     if (!item) {summary(); return;}
+    try {prefetchAudio([item.audio, items[screen + 1]?.audio].filter(Boolean));} catch {}
     writingTraced=currentAnswer()?.traceCompleted===true;
     itemPresentedAt=performance.now();audit('item_presented');
     heard = false; selected = null; placements = {}; density = {};
