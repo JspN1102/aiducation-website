@@ -127,7 +127,7 @@ const teacherEntry = () => isTeacher ? '<a class="teacher-entry" href="teacher.h
 if(isTeacher){$('#profile-open').insertAdjacentHTML('beforebegin',teacherEntry());}
 const poemMotif=(p=poem)=>'media/poetry-motifs/'+['goose','boat','mountain','moon','sprout','swallow','snow','rooster','beans','oriole','shoe','cup'][p.id-1]+'.svg';
 // Only poems with prepared AR scenes offer the exploration activity.
-const hasExplore=(p=poem)=>(p.grade>=4||p.preview===true)&&p.explore!==false;
+const hasExplore=(p=poem)=>p.grade>=4&&p.explore!==false;
 const link=(v='record',p=poem)=>`#${p.slug}/${v}`;
 const state=p=>{
   const old=saved[p.id];
