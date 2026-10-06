@@ -17,6 +17,15 @@ test('model drawing buffers preserve retina detail within the pixel budget', asy
   const viewerRatio = modelPixelRatio(1146, 815, 2, 3000000);
   assert(viewerRatio > 1.6 && viewerRatio < 2);assert(1146 * 815 * viewerRatio * viewerRatio <= 3000001);
   assert.equal(modelPixelRatio(728, 752, 2, 3000000), modelPixelRatio(728, 752, 2));
+  // 3x phones keep 2x under the shared default, and only the viewer's own
+  // maxRatio lets their stages (362x243 normal, 402x660 expanded) render at 3x.
+  assert.equal(modelPixelRatio(362, 243, 3, 3000000), 2);
+  assert.equal(modelPixelRatio(362, 243, 3, 3000000, 3), 3);
+  assert.equal(modelPixelRatio(402, 660, 3, 3000000, 3), 3);
+  assert.equal(modelPixelRatio(362, 243, 2.75, 3000000, 3), 2.75);
+  assert.equal(modelPixelRatio(700, 500, 2, 3000000, 3), 2);
+  const phoneRatio = modelPixelRatio(800, 600, 3, 3000000, 3);
+  assert(phoneRatio > 2 && phoneRatio < 3);assert(800 * 600 * phoneRatio * phoneRatio <= 3000001);
 });
 
 test('all selected observation models are bounded self-contained GLBs', async () => {

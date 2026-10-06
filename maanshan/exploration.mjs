@@ -331,14 +331,17 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
   };
 }
 
-// Drawing-buffer budget of this viewer in device pixels (the shared default is
-// 2.4 MP). The normal stage is already at the full 2x on every iPad; 3.0 MP
-// lets the expanded stage of 10.2- to 11-inch iPads (810x1080 to 834x1194)
-// also stay at 2x instead of a resampled, softer 1.82-1.96x, and only 12.9-inch
-// iPads (4 GB and more) still reach the budget. With 4x MSAA a device pixel
-// costs roughly 44 bytes, so the extra 0.6 MP is at most about 26 MB, and only
-// while expanded; 9.7-inch 2 GB iPads (768x1024) never reach either budget.
-const VIEWER_MAX_PIXELS = 3000000;
+// Drawing-buffer limits of this viewer (the shared defaults are 2.4 MP and 2x).
+// The 3.0 MP budget raises the cap for the expanded stage (放大觀察), so most
+// 10- to 11-inch iPads stay at or near 2x instead of a resampled, softer
+// picture; 12.9-inch iPads settle below 2x. 3x phones may use their full ratio
+// within the same budget instead of having a 2x picture upscaled. Measured in
+// the app at full-screen sizes (Safari toolbars make real stages smaller):
+// iPads 0.9-2.0 MP normal and 2.2-3.0 MP expanded, 3x phones 0.7-1.0 MP normal
+// and at most about 2.4 MP expanded. With 4x MSAA a device pixel costs roughly
+// 44 bytes, so no stage needs more than about 130 MB, and only expanded iPad
+// stages pass the shared 2.4 MP (by at most about 26 MB).
+const VIEWER_MAX_PIXELS = 3000000, VIEWER_MAX_RATIO = 3;
 
 export function createViewer({THREE, OrbitControls, gltf, holder, stage, content, onInteract, onInteractionEnd, onContextLost}) {
   let renderer;
@@ -456,7 +459,7 @@ export function createViewer({THREE, OrbitControls, gltf, holder, stage, content
     controls.maxDistance = baseDistance * 1.9;
     const direction = camera.position.clone().sub(controls.target).normalize();
     setView(direction.lengthSq() ? direction : normalDirection, baseDistance * THREE.MathUtils.clamp(ratio, .52, 1.9), false);
-    renderer.setPixelRatio(modelPixelRatio(width, height, undefined, VIEWER_MAX_PIXELS));
+    renderer.setPixelRatio(modelPixelRatio(width, height, undefined, VIEWER_MAX_PIXELS, VIEWER_MAX_RATIO));
     renderer.setSize(width, height, false);
     requestRender();
   };
