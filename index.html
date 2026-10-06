@@ -59,7 +59,9 @@ ol,ul{list-style:none}
 .nav__menu a:hover,.nav__menu a[aria-current="true"]{color:var(--ink)}
 .nav__menu a[aria-current="true"]::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1.5px;background:var(--grad);border-radius:2px}
 .nav__menu .nav__cta{padding:8px 16px;border-radius:999px;background:var(--ink);color:#fff}
-.nav__menu .nav__cta:hover{color:#fff;opacity:.88}
+.nav__menu .nav__cta:hover,.nav__menu .nav__cta[aria-current="true"]{color:#fff;opacity:.88}
+.nav__menu .nav__cta[aria-current="true"]{opacity:1}
+.nav__menu .nav__cta::after{display:none}
 .nav__toggle{display:none;width:44px;height:44px;margin-right:-10px;align-items:center;justify-content:center}
 .nav__toggle span{display:block;width:20px;height:1.5px;background:var(--ink);position:relative;transition:transform .3s}
 .nav__toggle span::before,.nav__toggle span::after{content:"";position:absolute;left:0;width:20px;height:1.5px;background:var(--ink);transition:transform .3s,top .3s}
@@ -130,6 +132,8 @@ html.js [data-reveal="clip"].is-in{clip-path:inset(0 0 0 0 round 28px)}
 .statement{margin-top:36px;max-width:22em;font-weight:550;font-size:clamp(28px,3.5vw,52px);line-height:1.38;letter-spacing:-.01em}
 html.js .statement span{color:#C9CDD5;transition:color .6s var(--ease)}
 html.js .statement span.is-on{color:var(--ink)}
+@media (min-width:901px){.statement span{display:block}}
+p,li,figcaption{text-wrap:pretty}
 .statement-en{margin-top:28px;max-width:44em;font-size:clamp(16px,1.3vw,19px);line-height:1.7}
 .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:clamp(56px,7vw,96px);border-top:1px solid var(--line2)}
 .pillar{padding:28px 32px 8px 0}
@@ -214,8 +218,8 @@ html.js .statement span.is-on{color:var(--ink)}
 .tech span{padding:7px 14px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line2);color:var(--ink2)}
 
 /* ---------- village ---------- */
-.village{background:linear-gradient(180deg,var(--bg) 0,#F4F2F7 50%,var(--bg) 100%)}
-.v-hero{position:relative;margin:clamp(36px,5vw,64px) auto 0;width:calc(100% - var(--gut)*2 + 40px);max-width:calc(var(--max) + 240px);aspect-ratio:16/9;max-height:86svh;border-radius:28px;overflow:hidden;background:#3a4a78;color:#fff}
+.village{padding-top:clamp(40px,6vw,96px);background:linear-gradient(180deg,var(--bg) 0,#F4F2F7 50%,var(--bg) 100%)}
+.v-hero{position:relative;margin:0 auto;width:calc(100% - var(--gut)*2 + 40px);max-width:calc(var(--max) + 240px);aspect-ratio:16/9;max-height:86svh;border-radius:28px;overflow:hidden;background:#3a4a78;color:#fff}
 .v-hero img{width:100%;height:100%;object-fit:cover;transform:scale(calc(1.08 - var(--vp,0)*.08));transform-origin:70% 50%;will-change:transform}
 .v-hero::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(14,20,48,.66) 0%,rgba(14,20,48,.34) 34%,rgba(14,20,48,0) 58%),linear-gradient(0deg,rgba(14,20,48,.42),transparent 34%)}
 .v-hero__copy{position:absolute;z-index:2;left:clamp(24px,5vw,72px);top:50%;transform:translateY(-50%);max-width:min(560px,52%)}
@@ -325,10 +329,10 @@ html.js .statement span.is-on{color:var(--ink)}
   .nav__menu a[aria-current="true"]::after{display:none}
   .nav__menu .nav__cta{margin-top:16px;text-align:center;border-bottom:0}
   .hero{min-height:auto}
-  .hero__grid{grid-template-columns:minmax(0,1fr);gap:0;padding-top:72px}
+  .hero__grid{grid-template-columns:minmax(0,1fr);gap:0;padding-top:70px}
   .hero__stagecol{order:-1}
-  .hero__stage{width:min(88vw,420px);max-height:none}
-  .glyph-ui{width:min(100%,420px);margin-top:0;margin-bottom:36px}
+  .hero__stage{width:min(70vw,360px);max-height:none}
+  .glyph-ui{width:min(100%,420px);margin-top:0;margin-bottom:22px}
   .display{margin-top:18px}
   .hero__foot{flex-direction:column;align-items:flex-start;padding-top:36px}
   .scrollcue{display:none}
@@ -372,6 +376,9 @@ html.js .statement span.is-on{color:var(--ink)}
   .more li{padding:22px 22px 24px}
   .more h3{margin-top:14px}
   .glyph-ui{gap:10px}
+  .hero__en{margin-top:12px;font-size:17px}
+  .hero__lede{margin-top:14px;font-size:15.5px;line-height:1.75}
+  .cta{margin-top:24px}
   .glyph-ui__py{display:none}
   .glyph-nav{gap:4px}
   .glyph-nav button{width:34px}
