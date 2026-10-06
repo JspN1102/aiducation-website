@@ -1,9 +1,9 @@
-import {imageAsset} from './media-images.mjs?v=20261006-school45';
+import {imageAsset} from './media-images.mjs?v=20261007-school46';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261006-school43';
 import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20261006-school43';
 import {mountChallengeWriting} from './challenge-writing.mjs?v=20260929-hk1';
 import {mountChallengeModel} from './challenge-model.mjs?v=20261006-school43';
-import {mountLivingField} from './living-field.mjs?v=20261006-school43';
+import {mountLivingField} from './living-field.mjs?v=20261007-school46';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const COMPACT_PROMPTS = {
@@ -32,13 +32,14 @@ const prompt = item => COMPACT_PROMPTS[item.id] || item.prompt;
 const KIND = {sound:'聽音小鋪', dictation:'描紅與聽寫', microgame:'詩裏玩一玩', match:'動手解詩', sequence:'故事排一排', 'scene-builder':'種一片詩田'};
 // 聽音選擇題的答題形式只在這裏決定：第一期六首（id 1-6）是「小醫生問診」，
 // 第二期六首（id 7-12）是「警察抓犯人」。題目、答案和記錄都不受影響。
+// scene is the question picture; a right answer fades in solved, a wrong or skipped one fades in missed (crying bunny / sad puppy).
 const SOUND_ROUND_TWO = new Set(['yong-xue', 'hua-ji', 'qi-bu-shi', 'jue-ju', 'zheng-ren-mai-lu', 'ke-zhi']);
 const SOUND_FORMS = {
-  clinic: {id:'clinic', kind:'小醫生問診', scene:'media/challenges/clinic-v1.webp', solved:'media/challenges/clinic-well-v1.webp', cast:'media/challenges/clinic-bottles-v1.webp',
+  clinic: {id:'clinic', kind:'小醫生問診', scene:'media/challenges/clinic-v1.webp', solved:'media/challenges/clinic-well-v1.webp', missed:'media/challenges/clinic-cry-v1.webp', cast:'media/challenges/clinic-bottles-v1.webp',
     cue:'問一問，聽一聽', again:'再點一次，再聽一聽', listen:'問診：點一點，聽題目聲音', listenAgain:'再點一次，再聽題目聲音',
     instruction:'先問診聽一聽，再選一種藥。', group:'選一種藥', start:'先點上面問診，聽一聽，再選藥。', ready:'聽好了，選一種藥。',
     retry:'聲音還沒播完，請再點一次問診。', submit:'開藥', right:'藥開對了，好起來了！', wrong:'差一點，一起看看。'},
-  police: {id:'police', kind:'警察抓犯人', scene:'media/challenges/police-v1.webp', solved:'media/challenges/police-caught-v1.webp', cast:'media/challenges/police-lineup-v1.webp',
+  police: {id:'police', kind:'警察抓犯人', scene:'media/challenges/police-v1.webp', solved:'media/challenges/police-caught-v1.webp', missed:'media/challenges/police-sad-v1.webp', cast:'media/challenges/police-lineup-v1.webp',
     cue:'聽聽線索', again:'再點一次，再聽線索', listen:'點對講機，聽線索聲音', listenAgain:'再點對講機，再聽一次線索',
     instruction:'先聽線索，再找出犯人。', group:'找出犯人', start:'先點對講機聽線索，再找犯人。', ready:'聽好了，找出犯人。',
     retry:'聲音還沒播完，請再點對講機聽一次。', submit:'就是他！', right:'抓到了！就是他！', wrong:'不是他，一起看看。'}
@@ -145,7 +146,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const locked = !!answer;
     const active = () => !dead && epoch === gameEpoch && generation === renderGeneration;
     try {
-      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20261006-school45');
+      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20261007-school46');
       if (!active()) return;
       let completionReceived = false;
       const mounted = mountPoemGame(holder, {slug: poem.slug, initialState: state, readOnly: locked,
@@ -176,7 +177,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
   }
   function soundBody(item) {
     const form=soundForm(poem);
-    return `<div class="sound-case is-${form.id}" data-sound-form="${form.id}"><button type="button" class="sound-case-scene" data-ch="listen" aria-label="${form.listen}" draggable="false"><img class="sound-case-picture" src="${esc(imageAsset(form.scene))}" alt="" draggable="false"><img class="sound-case-picture is-after" src="${esc(imageAsset(form.solved))}" alt="" draggable="false"><span class="sound-case-cue">${soundIcon}<span class="sound-case-cue-text">${form.cue}</span></span></button><div class="sound-case-work"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><p class="challenge-instruction">${form.instruction}</p><div class="sound-case-options" role="group" aria-label="${form.group}">${ordered(item).map((option,index)=>`<button type="button" class="sound-case-option" data-ch="choose" data-option="${option.id}" aria-pressed="false" disabled><span class="sound-case-figure"><span class="sound-case-art is-cell-${index%4}" aria-hidden="true"><img src="${esc(imageAsset(form.cast))}" alt="" draggable="false"></span><span class="sound-case-tag">${tone(option.contour)}<span>${esc(option.label)}</span></span><span class="sound-case-mark" aria-hidden="true">${markIcon[form.id]}</span></span></button>`).join('')}</div><p class="challenge-audio-status" role="status" aria-live="polite">${form.start}</p></div></div>`;
+    return `<div class="sound-case is-${form.id}" data-sound-form="${form.id}"><button type="button" class="sound-case-scene" data-ch="listen" aria-label="${form.listen}" draggable="false"><img class="sound-case-picture" src="${esc(imageAsset(form.scene))}" alt="" draggable="false"><img class="sound-case-picture is-after" src="${esc(imageAsset(form.solved))}" alt="" draggable="false"><img class="sound-case-picture is-missed-pic" src="${esc(imageAsset(form.missed))}" alt="" draggable="false"><span class="sound-case-cue">${soundIcon}<span class="sound-case-cue-text">${form.cue}</span></span></button><div class="sound-case-work"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><p class="challenge-instruction">${form.instruction}</p><div class="sound-case-options" role="group" aria-label="${form.group}">${ordered(item).map((option,index)=>`<button type="button" class="sound-case-option" data-ch="choose" data-option="${option.id}" aria-pressed="false" disabled><span class="sound-case-figure"><span class="sound-case-art is-cell-${index%4}" aria-hidden="true"><img src="${esc(imageAsset(form.cast))}" alt="" draggable="false"></span><span class="sound-case-tag">${tone(option.contour)}<span>${esc(option.label)}</span></span><span class="sound-case-mark" aria-hidden="true">${markIcon[form.id]}</span></span></button>`).join('')}</div><p class="challenge-audio-status" role="status" aria-live="polite">${form.start}</p></div></div>`;
   }
   function writingBody(item) {
     return `<div class="challenge-writing-layout"><div class="challenge-writing-heading"><h2 class="challenge-prompt" tabindex="-1">${esc(prompt(item))}</h2><div class="challenge-writing-prompts"><button class="challenge-listen" data-ch="listen">${soundIcon}<span>聽詞語</span></button><button type="button" class="challenge-strokes" data-cw="strokes"><span>看筆順</span></button></div><p class="challenge-audio-status" role="status"></p><div class="cw-review" hidden></div></div><div class="challenge-writing-holder"></div></div>`;

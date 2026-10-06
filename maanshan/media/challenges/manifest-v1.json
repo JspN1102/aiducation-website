@@ -113,6 +113,26 @@
       "alphaMin": 255,
       "alphaMax": 255,
       "transparentFraction": 0.0
+    },
+    {
+      "file": "clinic-cry-v1.webp",
+      "bytes": 48454,
+      "sha256": "f9d485663cff03ae0ebef3cec4ca956d0f540c576efbcfdee1c1b1fcfbe432ad",
+      "width": 1152,
+      "height": 768,
+      "alphaMin": 255,
+      "alphaMax": 255,
+      "transparentFraction": 0.0
+    },
+    {
+      "file": "police-sad-v1.webp",
+      "bytes": 59296,
+      "sha256": "bdd9af863007e6fcca708c4790a8af605b22451f21f154a84c54bcabcef17991",
+      "width": 1152,
+      "height": 768,
+      "alphaMin": 255,
+      "alphaMax": 255,
+      "transparentFraction": 0.0
     }
   ],
   "rightsRecord": "AI-generated project assets. No third-party reference artworks supplied. Provider account terms apply; no Creative Commons or public-domain licence asserted.",
@@ -124,6 +144,8 @@
     "bottles.txt",
     "police.txt",
     "police-caught.txt",
-    "lineup.txt"
+    "lineup.txt",
+    "clinic-cry.txt",
+    "police-sad.txt"
   ]
 }

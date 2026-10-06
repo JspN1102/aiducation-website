@@ -1,7 +1,7 @@
 import {TERMS_VERSION,termsConfirmationMarkup,bindTermsConfirmation} from './platform-terms.mjs?v=20260930-school27';
 // Pupils' names, AI summaries and replies can use characters the subset fonts
 // lack; the on-demand extension loads the matching slice of the same design.
-import('./font-extension.mjs?v=20261006-school43').then(module=>module.installFontExtension({families:{sans:'TeacherSans',serif:'TeacherSerif'}})).catch(()=>{});
+import('./font-extension.mjs?v=20261007-school46').then(module=>module.installFontExtension({families:{sans:'TeacherSans',serif:'TeacherSerif'}})).catch(()=>{});
 const DEMO=location.pathname.endsWith('/teacher-demo.html');
 const AUTH='/api/school-auth',ANALYTICS=DEMO?'/api/teacher-tools?tool=demo-data&kind=analytics':'/api/teacher-analytics';
 const analyticsQuery=params=>ANALYTICS+(DEMO?'&':'?')+params;

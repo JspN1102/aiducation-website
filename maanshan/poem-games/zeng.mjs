@@ -1,5 +1,5 @@
 import {createGameImageLoader} from './image-ready.mjs?v=20260922-school11';
-import {imageAsset} from '../media-images.mjs?v=20261006-school45';
+import {imageAsset} from '../media-images.mjs?v=20261007-school46';
 import {createProcessResearch} from './research.mjs?v=20260920a';
 const asset=name=>new URL(imageAsset(`media/poem-games/farewell/${name}`),import.meta.url).href;
 const chapters=[

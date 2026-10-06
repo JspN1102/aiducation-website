@@ -1,5 +1,5 @@
 import { SPEECH_AUDIO_FILES } from './media/speech/index.mjs?v=20261006-school43';
-import { ROUND2_SPEECH_AUDIO_FILES } from './media/round2-tts-20261006/index.mjs?v=20261006-school45';
+import { ROUND2_SPEECH_AUDIO_FILES } from './media/round2-tts-20261006/index.mjs?v=20261007-school46';
 import { getRecitationTextURL } from './recitation-audio.mjs?v=20261005-school40';
 
 export function getSpeechAudioURL(text) {

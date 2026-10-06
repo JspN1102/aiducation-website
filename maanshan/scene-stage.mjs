@@ -1,5 +1,5 @@
-import {imageAsset} from './media-images.mjs?v=20261006-school45';
-import {loadTeachingImage} from './image-loader.mjs?v=20261006-school43';
+import {imageAsset} from './media-images.mjs?v=20261007-school46';
+import {loadTeachingImage} from './image-loader.mjs?v=20261007-school46';
 const mountedStages = new WeakMap();
 const decodedSources = new Map();
 const MAX_CACHED_SOURCES = 8;

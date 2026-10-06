@@ -1,32 +1,32 @@
-import {imageAsset} from './media-images.mjs?v=20261006-school45';
+import {imageAsset} from './media-images.mjs?v=20261007-school46';
 import {manageAnimationSource} from './animation-source.mjs?v=20261005-school41';
 import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260929-parts1';
-import {mountStage, getScenePreview, preloadScene, addScenePreviews} from './scene-stage.mjs?v=20261006-school43';
+import {mountStage, getScenePreview, preloadScene, addScenePreviews} from './scene-stage.mjs?v=20261007-school46';
 import {configurePronunciation, getPronunciationPractice, syllableParts, toneName} from './pronunciation.mjs?v=20260929-parts1';
-import {getWordAudioURL} from './word-audio.mjs?v=20261006-school45';
-import {getSpeechAudioURL} from './speech-audio.mjs?v=20261006-school45';
+import {getWordAudioURL} from './word-audio.mjs?v=20261007-school46';
+import {getSpeechAudioURL} from './speech-audio.mjs?v=20261007-school46';
 import {getRecitationAudioURL,getRecitationSequence} from './recitation-audio.mjs?v=20261005-school40';
 import {schoolTtsURL,schoolTtsRemote} from './school-audio-url.mjs?v=20260930-school29';
-import {mountShishi} from './shishi.mjs?v=20261006-school43';
-import {mountLibraryShishi} from './library-shishi.mjs?v=20261006-school43';
+import {mountShishi} from './shishi.mjs?v=20261007-school46';
+import {mountLibraryShishi} from './library-shishi.mjs?v=20261007-school46';
 import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school9';
 import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school9';
 import {mountLessonMap} from './lesson-map.mjs?v=20261006-school43';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261006-school43';
 import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20261006-school43';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school22';
-import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20261006-school43';
+import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20261007-school46';
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
-import {requestJSON, requestChat} from './network.mjs?v=20261006-school43';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261006-school43';
-import {schoolSession} from './bootstrap.mjs?v=20261006-school43';
+import {requestJSON, requestChat} from './network.mjs?v=20261007-school46';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
+import {schoolSession} from './bootstrap.mjs?v=20261007-school46';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260922-school22';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school22';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school41';
 import {getPoetSuggestions, matchPoetPreset} from './poet-presets.mjs?v=20261005-school40';
 import {audioCandidates} from './audio-source.mjs?v=20261005-school40';
 import {rememberRoute,orderRoutes} from './media-route.mjs?v=20260923-school23';
-import {packState, onPackChange, resumeResourcePack, requestResourcePack, cancelResourcePack} from './resource-pack.mjs?v=20261006-school43';
+import {packState, onPackChange, resumeResourcePack, requestResourcePack, cancelResourcePack} from './resource-pack.mjs?v=20261007-school46';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -938,7 +938,7 @@ function preloadActivityModules(activity,slug) {
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
   preloadActivityModules('quiz',poem?.slug);
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20261006-school45'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20261007-school46'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,

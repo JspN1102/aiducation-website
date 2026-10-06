@@ -1,5 +1,5 @@
 import { WORD_AUDIO_FILES } from './media/words/index.mjs?v=20261006-school43';
-import { ROUND2_WORD_AUDIO_FILES } from './media/round2-tts-20261006/index.mjs?v=20261006-school45';
+import { ROUND2_WORD_AUDIO_FILES } from './media/round2-tts-20261006/index.mjs?v=20261007-school46';
 
 export function getWordAudioURL(char, pinyin) {
   if (typeof char !== 'string' || typeof pinyin !== 'string') return null;
