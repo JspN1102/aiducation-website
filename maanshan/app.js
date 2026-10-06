@@ -929,7 +929,7 @@ async function renderQuiz() {
 }
 async function renderExploration(){
   preloadActivityModules('explore');
-  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20261006-school43'));
+  const module=await loadActivity('畫中小發現',()=>import('./exploration.mjs?v=20261006-school44'));
   if(!module)return;
   const holder=$('#view');
   if(!holder||!poem)return;

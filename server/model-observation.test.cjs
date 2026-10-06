@@ -38,6 +38,38 @@ test('all selected observation models are bounded self-contained GLBs', async ()
   }
 });
 
+test('HD models fall back to a lite copy that every device can decode', async () => {
+  const {supportsHDModel} = await import('../maanshan/exploration.mjs');
+  const {EXPLORATION_CONTENT} = await import('../maanshan/exploration-data.mjs');
+  const json = file => {
+    const bytes=fs.readFileSync(path.join(__dirname,'../maanshan/media/exploration',file));
+    return JSON.parse(bytes.subarray(20,20+bytes.readUInt32LE(12)).toString('utf8'));
+  };
+  const lite = Object.entries(EXPLORATION_CONTENT).filter(([,content])=>content.liteModelFile);
+  assert.deepEqual(lite.map(([slug])=>slug).sort(),['jue-ju','ke-zhi']);
+  for (const [slug,content] of lite) {
+    assert.ok(content.liteAssetVersion,slug);
+    assert.ok((json(slug+'/'+content.modelFile).extensionsRequired||[]).includes('EXT_texture_webp'),slug);
+    // The lite copy needs no extension, so iOS 13 Safari and WebGL 1 can show it.
+    assert.deepEqual(json(slug+'/'+content.liteModelFile).extensionsRequired||[],[],slug);
+  }
+  const ua = (userAgent, extra={}) => supportsHDModel({userAgent, ...extra});
+  assert.equal(ua('Mozilla/5.0 (iPad; CPU OS 12_5_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.2 Mobile/15E148 Safari/604.1'), false);
+  assert.equal(ua('Mozilla/5.0 (iPhone; CPU iPhone OS 13_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.1'), false);
+  assert.equal(ua('Mozilla/5.0 (iPad; CPU OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1'), true);
+  assert.equal(ua('Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/126.0 Mobile/15E148 Safari/604.1'), true);
+  // iPadOS asking for the desktop site: the Safari version is the iPadOS version.
+  const desktop = v => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)'+(v?' Version/'+v:'')+' Safari/605.1.15';
+  assert.equal(ua(desktop('13.1.2'),{maxTouchPoints:5}), false);
+  assert.equal(ua(desktop('16.6'),{maxTouchPoints:5}), true);
+  assert.equal(ua(desktop(''),{maxTouchPoints:5}), false);
+  assert.equal(ua(desktop('13.1.2'),{maxTouchPoints:0}), true);
+  assert.equal(ua('Mozilla/5.0 (Linux; Android 9; SM-T295) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',{deviceMemory:1}), false);
+  assert.equal(ua('Mozilla/5.0 (Linux; Android 13; SM-X200) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',{deviceMemory:4}), true);
+  assert.equal(ua('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36 Edg/120.0'), true);
+  assert.equal(supportsHDModel(undefined), true);
+});
+
 test('grades 1-3 have no AR exploration entry or AR file', async () => {
   const {EXPLORATION_CONTENT} = await import('../maanshan/exploration-data.mjs');
   const read = file => JSON.parse(fs.readFileSync(path.join(__dirname,'../maanshan',file),'utf8')).poems;

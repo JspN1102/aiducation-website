@@ -57,6 +57,7 @@ export const EXPLORATION_CONTENT = Object.freeze({
   'jue-ju': {
     object: '草堂春景', motif: 'oriole', scene: '窗含西嶺千秋雪',
     assetVersion: '20261006', modelFile: 'model-20261006.glb',
+    liteAssetVersion: '20261005', liteModelFile: 'model-20261005.glb',
     initialView: [1, .4, .3], viewDistance: .68,
     alt: '草堂旁一棵翠綠的柳樹，枝上停着黃鸝；遠處是積雪的西嶺，門前江邊泊着一艘船。',
     finish: '近處有黃鸝翠柳，遠處有雪山和船；四句詩畫出一幅有遠有近的春景。',
@@ -91,6 +92,7 @@ export const EXPLORATION_CONTENT = Object.freeze({
   'ke-zhi': {
     object: '草堂', motif: 'cup', scene: '蓬門今始為君開',
     assetVersion: '20261006', modelFile: 'model-20261006.glb',
+    liteAssetVersion: '20261005', liteModelFile: 'model-20261005.glb',
     initialView: [1, .5, .2], viewDistance: .65,
     alt: '春水環繞的草堂，院子裏有花徑、竹籬笆和小桌，簡樸而清靜。',
     finish: '家貧菜少，卻真誠待客，還隔着籬笆請鄰翁同飲，主客情誼真摯。',

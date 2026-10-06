@@ -76,10 +76,9 @@ class MediaConfigTests(unittest.TestCase):
         for line in (root / 'maanshan/exploration-data.mjs').read_text(encoding='utf-8').splitlines():
             start = re.match(r"^  '([a-z0-9-]+)': \{", line)
             slug = start.group(1) if start else slug
-            model = re.search(r"modelFile: '([a-z0-9.-]+\.glb)'", line)
-            if model:
+            for model in re.finditer(r"[mM]odelFile: '([a-z0-9.-]+\.glb)'", line):
                 loaded.append('exploration/' + slug + '/' + model.group(1))
-        self.assertGreaterEqual(len(loaded), 6)
+        self.assertGreaterEqual(len(loaded), 8)
         for name in loaded:
             self.assertIn(name, self.PAGE_MODELS + self.PENDING_COS_MODELS)
         for name in self.PENDING_COS_MODELS:

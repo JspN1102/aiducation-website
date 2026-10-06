@@ -1,4 +1,4 @@
-import {EXPLORATION_CONTENT} from './exploration-data.mjs?v=20261006-school43';
+import {EXPLORATION_CONTENT} from './exploration-data.mjs?v=20261006-school44';
 import {createProcessResearch} from './poem-games/research.mjs?v=20260920a';
 import {modelPixelRatio} from './model-quality.mjs?v=20261006-school43';
 import {fetchModel, loadBudget, MODEL_LOAD_TIMEOUT_MS} from './model-source.mjs?v=20261006-school43';
@@ -16,6 +16,39 @@ const ICONS = {
   expand: '<path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/>',
   check: '<path d="m5 12 4 4L19 6"/>'
 };
+// The HD models (jue-ju, ke-zhi) carry 3072px WebP textures, about 60 MB once
+// decoded. iOS/iPadOS before 14 cannot decode WebP and older iPads are short
+// of memory, so they, and devices reporting under 2 GB, get the 1024px JPEG
+// copy (liteModelFile). An iPad asking for the desktop site reports
+// "Macintosh"; its Safari version is then the iPadOS version.
+export function supportsHDModel(nav = globalThis.navigator) {
+  const ua = String(nav?.userAgent || '');
+  let ios = ua.match(/\b(?:iPhone|iPad|iPod)\b.*? OS (\d+)[_.]/);
+  if (!ios && /Macintosh/.test(ua) && Number(nav?.maxTouchPoints) > 1) ios = ua.match(/Version\/(\d+)/) || [, 0];
+  if (ios) return Number(ios[1]) >= 14;
+  const memory = Number(nav?.deviceMemory);
+  return !(memory > 0 && memory < 2);
+}
+// Any other browser that cannot decode WebP is found before the HD download.
+let webpCheck = null;
+const decodesWebP = () => webpCheck ||= new Promise(resolve => {
+  if (typeof Image !== 'function') {resolve(false); return;}
+  const image = new Image();
+  image.onload = () => resolve(image.width === 1);
+  image.onerror = () => resolve(false);
+  image.src = 'data:image/webp;base64,UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA';
+});
+// GLTFLoader leaves a texture it cannot decode off the model instead of
+// failing, which would show a blank white model; treat that as a failed load.
+async function texturesDecoded(gltf) {
+  const textures = gltf.parser?.json?.textures || [];
+  const loaded = await Promise.all(textures.map((_, index) => gltf.parser.getDependency('texture', index).catch(() => null)));
+  return loaded.every(Boolean);
+}
+// A device that failed the HD copy once (could not decode it, or lost the
+// WebGL context showing it) gets the lite copy for the rest of the visit.
+let hdModelFailed = false;
+
 const icon = name => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ''}</svg>`;
 
 export function disposeObject(root) {
@@ -52,11 +85,14 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
   const content = EXPLORATION_CONTENT[poem?.slug];
   if (!content) throw new Error('Unknown poem exploration');
   const assetBase = new URL(`./media/exploration/${poem.slug}/`, import.meta.url);
-  const assetURL = name => {
+  const assetURL = (name, version = content.assetVersion) => {
     const url = new URL(name, assetBase);
-    if (content.assetVersion) url.searchParams.set('v', content.assetVersion);
+    if (version) url.searchParams.set('v', version);
     return url;
   };
+  const hdModel = {file: content.modelFile || 'model.glb', version: content.assetVersion, hd: Boolean(content.liteModelFile)};
+  const liteModel = content.liteModelFile ? {file: content.liteModelFile, version: content.liteAssetVersion} : null;
+  let shownModel = null;
   const imageURL = assetURL('scene.webp').href;
   let dead = false, observation = 0, correct = false, completed = false, notified = false;
   let mode = 'picture', loadGeneration = 0, pending = null, viewer = null;
@@ -204,20 +240,38 @@ export function mountExploration(container, {poem, speakWord, onComplete, onRese
       // and offered a retry, instead of the spinner silently disappearing.
       if (!current()) throw new DOMException('Aborted', 'AbortError');
       budget.touch();
-      // Deployed copy and public COS copy race; see model-source.mjs.
-      const buffer = await fetchModel(assetURL(content.modelFile || 'model.glb'), {signal: controller.signal, onProgress: budget.touch});
+      const useHD = !liteModel || (!hdModelFailed && supportsHDModel() && await decodesWebP());
       if (!current()) throw new DOMException('Aborted', 'AbortError');
-      parsed = await new Promise((resolve, reject) => {
-        new GLTFLoader().parse(buffer, '', gltf => {
-          if (!current()) {disposeObject(gltf.scene); reject(new DOMException('Aborted', 'AbortError'));}
-          else resolve(gltf);
-        }, reject);
-      });
+      const choices = useHD ? [hdModel, liteModel].filter(Boolean) : [liteModel];
+      for (const [index, choice] of choices.entries()) {
+        let buffer = null;
+        try {
+          // Deployed copy and public COS copy race; see model-source.mjs.
+          buffer = await fetchModel(assetURL(choice.file, choice.version), {signal: controller.signal, onProgress: budget.touch});
+          if (!current()) throw new DOMException('Aborted', 'AbortError');
+          const gltf = await new Promise((resolve, reject) => {
+            new GLTFLoader().parse(buffer, '', gltf => {
+              if (!current()) {disposeObject(gltf.scene); reject(new DOMException('Aborted', 'AbortError'));}
+              else resolve(gltf);
+            }, reject);
+          });
+          if (choice.hd && !(await texturesDecoded(gltf))) {disposeObject(gltf.scene); throw new Error('model-textures');}
+          parsed = gltf;
+          shownModel = choice;
+          break;
+        } catch (error) {
+          // An HD copy that downloaded but would not decode falls back to the
+          // lite copy at once; aborts, timeouts and the last choice still fail.
+          if (!current() || index === choices.length - 1) throw error;
+          if (buffer) hdModelFailed = true;
+          budget.touch();
+        }
+      }
       if (!current()) {disposeObject(parsed.scene); parsed = null; throw new DOMException('Aborted', 'AbortError');}
       viewer = createViewer({THREE, OrbitControls, gltf: parsed, holder: canvasHolder, stage, content,
         onInteract: clearPreset,
         onInteractionEnd: kind => research.action(researchStep(),kind,kind),
-        onContextLost: () => {if (!dead) {research.error('model','unsupported');showPicture(); announce('畫面已切回插畫，繼續找詩裏的線索吧。');}}
+        onContextLost: () => {if (shownModel?.hd) hdModelFailed = true; if (!dead) {research.error('model','unsupported');showPicture(); announce('畫面已切回插畫，繼續找詩裏的線索吧。');}}
       });
       parsed = null; // Viewer now owns all model resources.
       mode = 'model';

@@ -1,4 +1,4 @@
-import {createViewer, disposeObject} from './exploration.mjs?v=20261006-school43';
+import {createViewer, disposeObject} from './exploration.mjs?v=20261006-school44';
 import {fetchModel, loadBudget} from './model-source.mjs?v=20261006-school43';
 
 // Assessment viewer: no verse, vocabulary, answer caption or exploration hints.
