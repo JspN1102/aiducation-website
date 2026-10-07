@@ -69,6 +69,10 @@ class ChannelAgent extends http.Agent{
     const socket=Duplex.from({readable:stream,writable:stream});
     socket.ref=socket.unref=()=>socket;
     socket.on('error',()=>{});
+    // Channels are half-open: when the far side ends (its tunnel went away)
+    // the channel stays open and a request written into it is never answered.
+    // Close it at once, as a TCP socket would, so the pool forgets it.
+    socket.once('end',()=>socket.destroy());
     socket.once('close',()=>this.clearIdle(socket));
     settle(null,socket);
    });
