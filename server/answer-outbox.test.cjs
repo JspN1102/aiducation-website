@@ -82,3 +82,10 @@ test('learning reset stops answer retries without acknowledging or deleting hist
  queue.enqueue(f.input);await queue.flush();await queue.flush({force:true});
  assert.equal(calls,1);assert(queue.status().stopped);assert.equal(queue.status().pending,1);assert.equal(queue.status().held,0);assert.equal(f.memory.size,1);assert(statuses.includes('learning_reset'));
 });
+test('a paused outbox keeps answers queued without posting, then resumes',async()=>{
+ const {createAnswerOutbox}=await ready,f=fixture();let calls=0;
+ const q=createAnswerOutbox({...f.options,fetchImpl:async()=>{calls++;return {ok:true,status:200,json:async()=>({ok:true,researchRecorded:true})};}});
+ q.pause();q.enqueue(f.input);await q.flush({force:true});await q.flush({keepalive:true});
+ assert.equal(calls,0);assert.equal(q.status().pending,1);assert.equal(q.status().stopped,false);
+ q.resume();await q.flush({force:true});assert.equal(calls,1);assert.equal(q.status().pending,0);
+});

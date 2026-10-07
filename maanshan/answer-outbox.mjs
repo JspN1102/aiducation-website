@@ -5,7 +5,7 @@ export function createAnswerOutbox({actorId,csrfToken,learningEpoch,enabled=true
   uuid=()=>crypto.randomUUID(),now=Date.now,onStatus=()=>{}}={}){
   if(storage===undefined){try{storage=globalThis.localStorage;}catch{storage=null;}}
   enabled=Boolean(enabled&&actorId&&csrfToken);
-  let inFlight=null,stopped=false,retryAt=0,failures=0,lastStatus='pending',queue;
+  let inFlight=null,stopped=false,paused=false,retryAt=0,failures=0,lastStatus='pending',queue;
   const notify=value=>{lastStatus=value;try{onStatus(value,status());}catch{}};
   const status=()=>({...queue?.status(),enabled,stopped,retryAt,lastStatus});
   const isUuid=value=>typeof value==='string'&&/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(value);
@@ -27,7 +27,7 @@ export function createAnswerOutbox({actorId,csrfToken,learningEpoch,enabled=true
     const saved=queue.add(record);notify(saved?'queued':'queue_full');if(saved)void flush();return saved;
   }
   function flush({force=false,keepalive=false}={}){
-    if(!enabled||stopped)return;
+    if(!enabled||stopped||paused)return;
     if(inFlight)return inFlight;
     if(!force&&now()<retryAt)return;
     const selected=queue.recover().slice(0,keepalive?1:6);
@@ -54,5 +54,5 @@ export function createAnswerOutbox({actorId,csrfToken,learningEpoch,enabled=true
     }).finally(()=>{inFlight=null;});
     return inFlight;
   }
-  return {enqueue,flush,status,stop:()=>{stopped=true;}};
+  return {enqueue,flush,status,stop:()=>{stopped=true;},pause:()=>{paused=true;},resume:()=>{paused=false;}};
 }

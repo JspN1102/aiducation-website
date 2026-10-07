@@ -1264,9 +1264,12 @@ $('#account-logout').addEventListener('click',async event=>{
   const button=event.currentTarget;button.disabled=true;
   try{
     stopMedia();cancelRecording();
-    await Promise.race([Promise.allSettled([sync.flush(),recordings.flush(),research.flush({keepalive:true}),answerOutbox.flush({keepalive:true})]),new Promise(resolve=>setTimeout(resolve,2000))]);
+    await Promise.race([Promise.allSettled([sync.flush(),recordings.flush(),research.finish(),answerOutbox.flush({force:true})]),new Promise(resolve=>setTimeout(resolve,3000))]);
+    // After the session is revoked an upload can only fail with 401; anything
+    // still queued waits on this device for the pupil's next login.
+    research.pause();answerOutbox.pause();
     await logoutSchoolSession();
-  }catch{button.disabled=false;toast('暫時未能登出，請再試一次。');}
+  }catch{research.resume();answerOutbox.resume();button.disabled=false;toast('暫時未能登出，請再試一次。');}
 });
 $('#profile-poem').addEventListener('change',event=>renderProfileResult(event.target.value));
 $('#profile-results').addEventListener('click',event=>{

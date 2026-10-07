@@ -180,3 +180,22 @@ test('learning telemetry contract covers reading, dwell, animation, AR, practice
   for(const key of ['read:item_presented','listen:playback_started','listen:playback_ended','animation:activity_start','animation:playback_started','animation:playback_ended','animation:activity_end','explore:item_interacted','challenge:answer_submitted','writing:item_interacted','chat:attempt_started','chat:feedback_shown','chat:retry']) assert(observed.has(key),`missing ${key}`);
   assert.equal(JSON.stringify(sent).includes('conversation text'),false);
 });
+test('logout uploads the closing span while signed in, and the pause keeps pagehide from posting after revocation',async()=>{
+  const {createResearchTracker}=await moduleReady;let release,signedIn=true;const sent=[];
+  const f=fixture({fetchImpl:async(_url,options)=>{const body=JSON.parse(options.body);sent.push({signedIn,types:body.events.map(e=>e.type)});
+    if(sent.length===1)await new Promise(resolve=>release=resolve);
+    return signedIn?{ok:true,status:200,json:async()=>({accepted:true,batchId:body.batchId,eventIds:body.events.map(e=>e.eventId)})}:{ok:false,status:401,json:async()=>({code:'AUTH_REQUIRED'})};}});
+  const tracker=createResearchTracker(f.options);tracker.begin('read',1);
+  const running=tracker.flush();await Promise.resolve();
+  const finishing=tracker.finish();release();await running;await finishing;
+  assert.equal(sent.length,2);assert(sent[1].types.includes('activity_end'));assert.equal(tracker.status().pending,0);
+  tracker.pause();signedIn=false;tracker.leave();tracker.visibilityChanged(true);tracker.emit('item_presented',{itemId:'late'});await tracker.flush({force:true});
+  assert.equal(sent.length,2);assert.equal(tracker.status().stopped,false);assert.equal(tracker.status().pending,1);
+  tracker.resume();signedIn=true;await tracker.flush({force:true});assert.equal(sent.length,3);assert.equal(tracker.status().pending,0);
+});
+test('finish ignores retry backoff so the closing span is not left for pagehide',async()=>{
+  const {createResearchTracker}=await moduleReady;let fail=true,calls=0;
+  const f=fixture({fetchImpl:async(_url,options)=>{calls++;if(fail)throw new TypeError('offline');const body=JSON.parse(options.body);return {ok:true,status:200,json:async()=>({accepted:true,batchId:body.batchId,eventIds:body.events.map(e=>e.eventId)})};}});
+  const tracker=createResearchTracker(f.options);tracker.begin('read',1);await tracker.flush();assert(tracker.status().retryAt>0);
+  fail=false;await tracker.finish();assert.equal(calls,2);assert.equal(tracker.status().pending,0);
+});

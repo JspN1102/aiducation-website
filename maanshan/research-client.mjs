@@ -16,7 +16,7 @@ export function createResearchTracker({actorId, csrfToken, learningEpoch, storag
   const sessionId = uuid();
   let seq = 0, activity = 'navigation', poemId = null, started = monotonic(), accounted = started;
   let lastInteraction = started, activeMs = 0, inFlight = null, stopped = false, lost = 0, spanOpen = true;
-  let failures=0,retryAt=0,lastSyncedAt=null,lastStatus='pending',queue,batchCeiling=BATCH_SIZE;
+  let failures=0,retryAt=0,lastSyncedAt=null,lastStatus='pending',queue,batchCeiling=BATCH_SIZE,paused=false;
   function notify(state) {lastStatus=state;try{onStatus(state,status());}catch{}}
   function status(){return {...(queue?.status()||{pending:0,held:0,volatile:0,storageAvailable:Boolean(storage)}),lost,stopped,enabled,lastStatus,lastSyncedAt,retryAt};}
   if (!actorId || !csrfToken) enabled = false;
@@ -65,7 +65,7 @@ export function createResearchTracker({actorId, csrfToken, learningEpoch, storag
       ...(fields.context ? {context:fields.context} : {})};
   }
   function flush({keepalive = false, force = false} = {}) {
-    if (!enabled || stopped) return;
+    if (!enabled || stopped || paused) return;
     if (inFlight) return inFlight;
     if(!force&&now()<retryAt)return;
     const selected=queue.recover().slice(0,keepalive?BATCH_SIZE:BATCH_SIZE*MAX_BATCHES);
@@ -110,10 +110,17 @@ export function createResearchTracker({actorId, csrfToken, learningEpoch, storag
   }
   function closeSpan() { if (!spanOpen) return; emit('activity_end', {metrics:{elapsedMs:Math.min(21600000,Math.round(monotonic()-started))}}); spanOpen = false; }
   function leave() { closeSpan(); return flush({keepalive:true}); }
+  // Logout: close the open span and upload everything while the session still
+  // exists, after any upload already running (it holds an older snapshot).
+  async function finish() { closeSpan(); if (inFlight) await inFlight; return flush({force:true}); }
   function visibilityChanged(hidden) { if (hidden) { updateActive(true); void leave(); } else if (!spanOpen) { started = accounted = lastInteraction = monotonic(); spanOpen = true; emit('activity_start'); void flush(); } }
   function stop() { stopped = true; }
+  // While the session is being revoked nothing may upload; events stay queued
+  // on this device for the pupil's next login.
+  function pause() { paused = true; }
+  function resume() { paused = false; }
   emit('session_start');
-  return {emit, begin, touch, context, flush, leave, stop, visibilityChanged, sessionId,
+  return {emit, begin, touch, context, flush, leave, finish, stop, pause, resume, visibilityChanged, sessionId,
     status};
 }
 export function attachResearchLifecycle(tracker, scope = globalThis) {
