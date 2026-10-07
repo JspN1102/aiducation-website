@@ -38,7 +38,8 @@
 
 项目 ID：`prj_BXHyIePcHYn42fprA8v1zB2rvSF1`。
 团队 ID：`team_6bMNzzu5QidBaJlDV3R4icEd`。
-函数区域保持 `iad1`，学校数据库及业务处理仍在广州。部署元数据必须与打包配置一致；变更区域后须重新验证接口。香港、新加坡和东京候选链路虽有更低延迟，完整部署或并发检查仍出现连接失败，因此未切入正式学校域名。
+项目顶层 `regions` 保持 `iad1`；`school-gateway` 函数默认在 `hkg1`、只走香港中转，兄弟函数
+`school-gateway-us` 固定在 `iad1`（见下文“香港优先拓扑”）。学校数据库及业务处理仍在广州。部署元数据必须与打包配置一致；变更区域后须重新验证接口。香港、新加坡和东京候选区域的函数直连广州虽有更低延迟，完整部署或并发检查仍出现连接失败，因此 `hkg1` 函数从不直连广州。
 
 提交经过验证的修改后，使用新的隔离目录：
 
@@ -47,6 +48,8 @@ python deploy/package-vercel.py --destination C:/Users/Administrator/maanshan-wo
 Set-Location C:/Users/Administrator/maanshan-work/school-release-new
 vercel --prod --yes --scope jspn1102s-projects --local-config ./vercel.json
 ```
+
+`--primary-region` 默认 `hkg1`；回滚时用 `--primary-region iad1`（见下文“回滚”）。清单记录 `primaryRegion` 与 `apiFunctions: 2`。
 
 打包器把 14 个固定入口交给同一个 `school-gateway` 函数：`soe`、`tts`、`maanshan-chat`、`maanshan-report`、
 `maanshan-save`、`maanshan-data`、`handwriting`、`school-auth`、`research-events`、
@@ -68,10 +71,80 @@ vercel --prod --yes --scope jspn1102s-projects --local-config ./vercel.json
 `maanshan-relay-2222.service`，同一账号与公钥，主机指纹写在代码里）。香港无法主动连大陆，
 所以由广州 `maanshan-hk-tunnel.service`（账号 `maanshan-hktunnel`，`ssh -N -R
 127.0.0.1:3100:127.0.0.1:3100`，5 秒×3 心跳）主动连香港 22 端口的受限账号
-`maanshan-tunnel`（只许监听 `127.0.0.1:3100`），香港本机 3100 即广州应用。
-香港握手失败或隧道断开（通道被拒）时，未发出的请求改走广州直连，香港暂停 1 分钟起、
-最长 15 分钟后再试；已发出的请求一律不重发。响应头 `X-Relay-Route` 为 `hk` 或 `gz`。
-设置 `GUANGZHOU_RELAY_HONG_KONG=off` 并重新部署即全部改回直连。
+`maanshan-tunnel`，香港本机 3100 即广州应用。relay 按请求轮流使用香港本机 3100、3101、3102
+（同一 SSH 会话，各端口独立通道池）；直连广州仍只用 3100。三个端口应各由广州一条独立的反向隧道
+（`-R 127.0.0.1:310x:127.0.0.1:3100`，各自独立进程）提供。启用前须在香港确认 `maanshan-tunnel`
+允许监听 3101、3102，并确认香港 relay sshd 对 `maanshan-relay` 逐个放行三个端口（OpenSSH 不支持端口范围，
+`127.0.0.1:3100-3102` 写法无效）：authorized_keys 写 `permitopen="127.0.0.1:3100",permitopen="127.0.0.1:3101",permitopen="127.0.0.1:3102"`，
+或 sshd 配置写 `PermitOpen 127.0.0.1:3100 127.0.0.1:3101 127.0.0.1:3102`。
+缺少的端口会被反复标记故障，产生 `school_relay_port` 日志，但其余端口照常工作。
+
+端口规则：某端口拒绝通道（带 reason），或新通道在返回响应头前被关闭（监听已失效），
+该端口暂停 10 秒，同一会话立即换下一个端口。别的请求暂停的端口仍会按暂停最早结束的顺序再试一次，
+只有本请求自己在三个端口都被拒绝才算隧道全断（`HONG_KONG_TUNNEL_DOWN`）。SSH 会话本身断开或被放弃时，
+它的通道随之关闭，这不说明隧道故障：不标记端口、不暂停香港，请求在新会话上重连一次。
+会话空闲超过 20 秒后，下一个请求先用它上次的端口（保温请求维持的那条通道），之后照常轮换。
+完整模式（`iad1` 函数）下，香港不可用时未发出的请求改走广州直连：隧道全断后香港固定暂停 15 秒；
+SSH 连接或握手失败后暂停 30 秒起、每次翻倍、最长 5 分钟。每次暂停写一条 `school_relay_route`
+日志（含 `reason`、`pauseSeconds`）。
+
+重发规则：尚未分配通道（未向广州写入任何字节）时可换端口、改路或跳转。通道已打开后，
+只有 GET／HEAD 及后台入口（`school-recordings`、`research-events`、`maanshan-save`）在尚未收到响应头时
+可在另一端口重发一次（重发缓存的请求体），后台入口的重发要求广州能承受重复提交；
+`soe`、`speech-to-text`、`maanshan-chat`、`tts` 及其他 POST 一旦打开通道即不重发，失败返回 502。
+同一请求最多三次到达广州：hkg1 两个端口各一次，再以 `retry` 跳转到 iad1 直连一次（iad1 对 `retry` 跳转不再重发）。
+
+可观测性：响应头 `X-Relay-Route`（`hk`／`gz`）和 `X-Relay-Port`（实际端口）；经跳转的响应另带
+`X-Relay-Hop: iad1`，此时 Route／Port 是 iad1 实际所走路线。发往广州的请求带 `x-school-relay`
+（如 `hk:3101`、`gz:3100`，经跳转为 `hop-gz:3100`），广州 API 日志记录该标签。总耗时超过 5 秒或状态码
+≥500 时，函数日志写一行 `school_relay_slow`（入口、路线、端口、通道类别、状态、错误码、是否重发、
+跳转原因、各段耗时、字节数、区域），不含 IP、账号、Cookie、查询串或请求体。
+
+### 香港优先拓扑（hkg1 主函数 + iad1 兄弟函数）
+
+- `api/school-gateway.js`（`hkg1`，导出 `gatewayHongKong`）：14 个入口的重写目标，cron 也只打到它。
+  只走香港中转（握手超时 2.5 秒、开通道超时 2 秒），不直连广州。
+- `api/school-gateway-us.js`（固定 `iad1`，导出 `gatewayUs`）：完整模式（香港优先，失败改直连）。
+  它接收 hkg1 的签名跳转；不带跳转头的请求按原 gateway 处理。它没有 cron，跳转时可能遇到冷启动并新建 SSH 会话。
+- 跳转原因：`connect`（香港 SSH 连接／握手失败）、`tunnel`（三个端口都拒绝）、`breaker`（熔断期内）、
+  `off`（`GUANGZHOU_RELAY_HONG_KONG=off`）、`retry`（仅 GET／HEAD 及后台入口，换端口重发一次后仍在响应头前断开）。
+  `connect` 或 `tunnel` 后 hkg1 对香港固定熔断 10 秒（不翻倍），期间请求直接跳转，不碰香港。
+- 跳转地址：`https://<目标域名>/api/school-gateway-us/?__school_route=<入口>&<原查询串>`，原查询串中的
+  `x-vercel-*`、`_vercel*`（保护绕过、分享 Cookie 等平台保留参数）和 `__school_route` 不转发。
+  它沿用原方法、请求体和允许转发的请求头。跳转只用 55 秒总期限的剩余时间：连接失败返回 503，超时返回 504。
+- 目标域名按序选择（`VERCEL_URL` 是部署专属域名，开启 Deployment Protection 时会被拦截）：
+  1. 有 `VERCEL_AUTOMATION_BYPASS_SECRET`（在 Deployment Protection 中开启 Protection Bypass for Automation
+     后由 Vercel 注入）时用 `VERCEL_URL`，并带 `x-vercel-protection-bypass` 头，即同一版本的 iad1 函数。该值不写入日志或响应。
+  2. 否则 production（`VERCEL_ENV=production`）用公开域名 `mandarin.aiducation.asia`（不受 Deployment Protection 约束），
+     发布切换的片刻可能落到另一版本的 iad1 函数。
+  3. 否则（preview 且无 bypass）用 `VERCEL_URL`，该部署须未开启保护。都没有时返回 503 `ORIGIN_UNAVAILABLE`，
+     并写一行 `school_relay_hop_failed`（reason `no_host`）。
+- iad1 兄弟函数的每个应答都带 `x-school-sibling: 1`（签名被拒时为 `rejected`）。hkg1 收到不带此标记的应答
+  （保护登录页、重定向、函数缺失的 404 等平台页面）或被拒的应答，不转发其状态、头和 Cookie，向学生返回 503
+  `ORIGIN_UNAVAILABLE`，并写一行 `school_relay_hop_failed`（reason `platform` 或 `rejected`，含状态码）。
+  发布后冒烟测试：`/api/school-gateway-us/?__school_route=school-auth`（经上面选定的域名，需要时带 bypass 头）
+  的响应须带 `x-school-sibling: 1`，并检查日志中没有 `school_relay_hop_failed`。
+- hkg1 的跳转使用每个实例一个 keep-alive 连接池（上限与函数并发上限相同，48）。复用的空闲连接若恰好已被
+  边缘关闭（`ECONNRESET`／`EPIPE`，未收到响应头），用新连接重发一次。
+- 签名头 `x-school-hop: v1.<秒级时间戳>.<reason>.<base64url(客户端IP)>.<base64url(HMAC)>`：
+  - 密钥为 `sha256("maanshan-school-hop-v1\n" + GUANGZHOU_RELAY_PRIVATE_KEY)`，两个函数共用项目环境变量，无需新密钥。
+  - HMAC-SHA256 覆盖 `v1|ts|reason|ip|入口|方法`。
+  - iad1 用常量时间比较校验。时间差超过 120 秒，或入口、方法不符，即返回 403 `{"ok":false,"code":"BAD_HOP"}`，
+    日志 `school_relay_hop_rejected` 只含入口与原因；两边时钟偏差过大时会出现此 403（hkg1 转为 503 交给学生）。
+  - 校验通过后，签名中的 IP 作为 `x-real-ip`，不会再次跳转。任何 reason 的跳转在 iad1 都跳过香港，直连广州
+    （香港离 hkg1 约 1-2 ms、离 iad1 约 212 ms，hkg1 放弃香港的原因在 iad1 只会更慢）。
+  - 客户端自带的 `x-school-hop` 在 hkg1 一律丢弃并重新签名，不会转发给广州。
+- `GUANGZHOU_RELAY_HONG_KONG=off`：hkg1 的每个请求都跳到 iad1，iad1 再直连广州。这相当于整体改回直连，
+  但多一跳 hkg1→iad1。要去掉这一跳，见下面的回滚第 2 步。
+
+### 回滚
+
+1. 最快：在 Vercel 控制台对上一个 production 部署执行 Instant Rollback（或 `vercel rollback`），不需要重新打包。
+   回滚后 production 域名固定在该部署，之后的新部署不会自动接管；修复后须在控制台 Undo Rollback，
+   或 `vercel promote <部署URL>` 指定新的 production 部署。
+2. 保留新代码但不用 hkg1：用 `--primary-region iad1` 重新打包并发布。`school-gateway` 回到 iad1 完整模式
+   （香港优先，失败改直连），不再跳转；端口轮换与新的暂停规则仍然生效。
+3. 只停香港：设置 `GUANGZHOU_RELAY_HONG_KONG=off` 并重新部署。在 hkg1 下仍多一跳；与第 2 步合用即完全直连。
 
 服务器独立账号 `maanshan-relay` 仅能转发到 `127.0.0.1:3100`；
 无 shell、SFTP、PTY、远程转发、数据库端口或任意内网目标权限。

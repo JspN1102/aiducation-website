@@ -17,10 +17,16 @@ API_FILES = {'soe.js', 'tts.js', 'maanshan-chat.js', 'maanshan-report.js',
              'speech-to-text.js'}
 RELAY_FILE = 'api/_lib/guangzhou-relay.cjs'
 RELAY_RUNTIME = {RELAY_FILE, 'api/_lib/response-encoding.cjs'}
-# One shared function serves the fourteen fixed school endpoints.
+# One shared function serves the fourteen fixed school endpoints (its iad1
+# sibling only receives signed hops from it).
 # Guangzhou persists long report jobs and returns 202 for polling. Individual
 # relay requests still finish before Vercel's 60-second function deadline.
 FUNCTION_SECONDS = {name: 60 for name in API_FILES}
+# The primary gateway runs in hkg1 (Hong Kong relay only, hopping to its sibling
+# when Hong Kong is unusable) or, for a rollback, in iad1 with every route. The
+# sibling always runs in iad1 and keeps the direct Guangzhou route.
+GATEWAYS = {'hkg1': 'gatewayHongKong', 'iad1': 'gatewayUs'}
+SIBLING = 'api/school-gateway-us.js'
 
 
 def relay_entry(filename):
@@ -32,10 +38,21 @@ def relay_entry(filename):
             f"module.exports=(req,res)=>relay('{Path(filename).stem}',req,res);\n")
 
 
-def functions_config():
+def gateway_entries(primary_region='hkg1'):
+    """The two function entries; neither can name a route or a destination."""
+    if primary_region not in GATEWAYS:
+        raise ValueError('Unknown primary region.')
+    entry = "'use strict';\nmodule.exports=require('./_lib/guangzhou-relay.cjs').{};\n"
+    return {'api/school-gateway.js': entry.format(GATEWAYS[primary_region]), SIBLING: entry.format('gatewayUs')}
+
+
+def functions_config(primary_region='hkg1'):
     if set(FUNCTION_SECONDS) != API_FILES or len(API_FILES) != 14:
         raise RuntimeError('School relay endpoints and duration limits disagree.')
-    return {'api/school-gateway.js': {'maxDuration': 60}}
+    if primary_region not in GATEWAYS:
+        raise ValueError('Unknown primary region.')
+    return {'api/school-gateway.js': {'maxDuration': 60, 'regions': [primary_region]},
+            SIBLING: {'maxDuration': 60, 'regions': ['iad1']}}
 
 
 def main():
@@ -43,6 +60,8 @@ def main():
     parser.add_argument('--destination', required=True)
     parser.add_argument('--project-id', required=True)
     parser.add_argument('--team-id', required=True)
+    parser.add_argument('--primary-region', choices=sorted(GATEWAYS), default='hkg1',
+                        help='region of api/school-gateway.js (iad1 = rollback: every route, no hop)')
     args = parser.parse_args()
     if subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT).strip():
         raise RuntimeError('Commit the reviewed changes before packaging.')
@@ -105,10 +124,12 @@ def main():
             shutil.copyfile(source, target)
         copied.append({'path': target_relative, 'bytes': target.stat().st_size,
                        'sha256': hashlib.sha256(target.read_bytes()).hexdigest()})
-    gateway=destination/'api/school-gateway.js'
-    gateway.write_text("'use strict';\nmodule.exports=require('./_lib/guangzhou-relay.cjs').gateway;\n",encoding='utf-8')
-    copied.append({'path':'api/school-gateway.js','bytes':gateway.stat().st_size,'sha256':hashlib.sha256(gateway.read_bytes()).hexdigest()})
-    expected_runtime = RELAY_RUNTIME | {'api/school-gateway.js'}
+    entries = gateway_entries(args.primary_region)
+    for relative, content in entries.items():
+        gateway = destination / relative
+        gateway.write_text(content, encoding='utf-8')
+        copied.append({'path': relative, 'bytes': gateway.stat().st_size, 'sha256': hashlib.sha256(gateway.read_bytes()).hexdigest()})
+    expected_runtime = RELAY_RUNTIME | set(entries)
     packaged_runtime = {row['path'] for row in copied if row['path'].startswith('api/')}
     if packaged_runtime != expected_runtime:
         raise RuntimeError('The school relay runtime is incomplete; commit all reviewed relay files.')
@@ -123,7 +144,7 @@ def main():
     config = {
         'trailingSlash': True,
         'regions': ['iad1'],
-        'functions': functions_config(),
+        'functions': functions_config(args.primary_region),
         'rewrites': [{'source':'/api/'+Path(name).stem+'/', 'destination':'/api/school-gateway/?__school_route='+Path(name).stem} for name in sorted(API_FILES)],
         # A pupil opening the page after a quiet spell otherwise waits for a new
         # Guangzhou SSH session (about 4 s from Hong Kong instead of 1-2 s). The
@@ -165,7 +186,8 @@ def main():
                'dualRouteVideos': len(published), 'dualRouteModels': models,
                'dualRouteFiles': dual, 'publishedFiles': len(published_files),
                'companyProjectUnchanged': True,
-               'apiRuntime': 'guangzhou-ssh-relay', 'apiFunctions': 1}
+               'apiRuntime': 'guangzhou-ssh-relay', 'apiFunctions': len(entries),
+               'primaryRegion': args.primary_region}
     destination.with_suffix('.manifest.json').write_text(json.dumps(summary, indent=2), encoding='utf-8')
     print(json.dumps({key: summary[key] for key in summary if key not in ['files', 'excluded']}))
 

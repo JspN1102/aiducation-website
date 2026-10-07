@@ -19,8 +19,8 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
 import {requestJSON, requestChat} from './network.mjs?v=20261007-school46';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
-import {schoolSession} from './bootstrap.mjs?v=20261007-school46';
-import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20260922-school22';
+import {schoolSession} from './bootstrap.mjs?v=20261008-school47';
+import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20261008-school47';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school22';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school41';
 import {getPoetSuggestions, matchPoetPreset} from './poet-presets.mjs?v=20261005-school40';
@@ -100,6 +100,9 @@ const publishedSpeech=new Map();
 const STATIC_AUDIO_RETRY_MS=60000;
 let ttsUnavailableUntil=0,ttsSuccessVersion=0;
 const requests=new Set();
+// Paid pronunciation scoring outlives navigation; only logout/session loss aborts it.
+// Each controller maps to an abort that first records it for research (logout).
+const scoringRequests=new Map();
 const recordings=createRecordingLibrary({enabled:school.enabled,actorId:school.user?.id,learningEpoch,fetch:schoolFetch,
   canUse:()=>!sessionLocked&&(!school.enabled||schoolState().user?.id===school.user.id),preparePayload:prepareAssessmentPayload,
   onEpochChanged:()=>reloadLearning(),onStorageError:()=>toast('錄音正在同步，請稍後再關閉本頁。'),
@@ -115,7 +118,7 @@ const sync=createSyncQueue({
   read:()=>{if(sessionLocked)return [];const list=readStorage(PENDING,[]);return Array.isArray(list)?list:[];},
   write:value=>{if(sessionLocked)return false;const stored=writeStorage(PENDING,value);renderRecordSyncStatus();return stored;},
   send:async item=>{
-    const response=await schoolFetch('/api/maanshan-save/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item),signal:AbortSignal.timeout(12000)});
+    const response=await schoolFetch('/api/maanshan-save/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item),signal:AbortSignal.timeout(30000)});
     if(response.status===409&&(await response.clone().json().catch(()=>null))?.code==='LEARNING_RESET')reloadLearning();
     return response;
   }
@@ -668,6 +671,9 @@ function stepRecordLine(step){
 }
 function recordControlsHTML(){
   const pending=pendingRecordings.get(`${poem.id}-${currentLine}`);
+  // A score already being paid for: no resend or re-record until it settles
+  // (the request is time-limited, then this line shows its result or retry).
+  if(pending?.scoring&&!recordBusy)return '<div class="record-recovery"><p class="record-status" id="record-status" role="status"><span class="spinner"></span> 正在等候評測，錄音已保留</p><button class="text-button" data-action="record-pending-play">'+icon('headphones')+'聽我的錄音</button></div>';
   if(pending&&!recordBusy){
     return '<div class="record-recovery"><p class="record-status" id="record-status" role="status">'+esc(pending.message||'錄音已保留，可以再送一次。')+'</p><div class="record-actions">'+(pending.canRetry?'<button class="button primary" data-action="record-send">'+icon('send')+'再送一次</button>':'')+'<button class="button" data-action="record-start">'+icon('mic')+'重新朗讀</button></div><button class="text-button" data-action="record-pending-play">'+icon('headphones')+'聽我的錄音</button></div>';
   }
@@ -711,15 +717,23 @@ function stopRecording(){if(recorder?.state==='recording'){recorder.stop();$('#r
 async function assessRecording(blob,p,index,version,generation,context,existing=null) {
   const isCurrent=()=>version===routeVersion&&generation===recordingVersion;
   const key=`${p.id}-${index}`,pending=existing||{blob,encoded:null,compact:undefined,recordingId:crypto.randomUUID(),recordedAt:Date.now(),canRetry:true,message:'錄音已保留，可以再送一次。',researchContext:recordResearch};
-  const controller=new AbortController();requests.add(controller);
+  // Leaving the page only stops UI updates; a returned score is kept while this
+  // recording is still the line's latest one and the session is unchanged.
+  const latest=()=>!sessionLocked&&pendingRecordings.get(key)===pending;
+  const controller=new AbortController();pending.scoring=true;let committed=false,abortRecorded=false;
+  const failed=code=>research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code,retryable:true}});
+  // Logout records the abort at once, so it is uploaded before the closing span.
+  scoringRequests.set(controller,()=>{if(!controller.signal.aborted){abortRecorded=true;failed('aborted');}controller.abort();});
   const closeContext=()=>{if(context?.state!=='closed')context?.close().catch(()=>{});if(recordContext===context)recordContext=null;context=null;};
+  // A resend has no recorder context; open one to convert (as the PCM fallback does).
+  const openContext=()=>{if(!context||context.state==='closed'){const Audio=window.AudioContext||window.webkitAudioContext;context=Audio?new Audio():null;}return context;};
   try {
     if(blob.size>=100)pendingRecordings.set(key,pending);
     // The recorder's own compact Opus/AAC bytes go first: several times smaller
     // on the slow inbound leg, decoded on the origin to the same 16 kHz PCM.
     // Only a definite refusal before scoring falls back to browser PCM, once.
     if(pending.compact===undefined&&!pending.encoded)pending.compact=await compactRecording(blob);
-    if(!pending.compact&&!pending.encoded)pending.encoded=await encodeRecording(blob,context);
+    if(!pending.compact&&!pending.encoded)pending.encoded=await encodeRecording(blob,openContext());
     if(!isCurrent())return;
     if(pending.encoded)closeContext();
     const payload=audio=>({...audio,poemId:p.id,refText:p.lines[index].simplified,...(collectResearch?{researchContext:pending.researchContext}: {})});
@@ -732,14 +746,13 @@ async function assessRecording(blob,p,index,version,generation,context,existing=
         if(error?.code!=='TRANSCODE')throw error;
         pending.compact=null;
         if(!isCurrent())return;
-        if(!context||context.state==='closed'){const Audio=window.AudioContext||window.webkitAudioContext;context=Audio?new Audio():null;}
-        pending.encoded=await encodeRecording(blob,context);closeContext();
+        pending.encoded=await encodeRecording(blob,openContext());closeContext();
         if(!isCurrent())return;
         raw=await submitAssessment(payload({audio:pending.encoded}),options);
       }
     }
     if(raw.researchRecorded===false)research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code:'storage_unavailable',retryable:true}});
-    if(!isCurrent())return;
+    if(!latest())return;
     const result=mapAssessment(raw,p.lines[index]);result.words=result.words.map(w=>({...w,lineIndex:index}));result.recordingId=pending.recordingId;const s=state(p);s.reading[index]=result;s.report='';s.updatedAt=Date.now();
     // Saving is independent of grading: return the score immediately, then
     // upload privately with a durable retry queue. No second SOE call is needed.
@@ -748,17 +761,29 @@ async function assessRecording(blob,p,index,version,generation,context,existing=
     if(raw.researchRecorded===false)research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code:'storage_unavailable',retryable:true}});
     pendingRecordings.delete(key);
     if(state(p).reading.every(Boolean))research.emit('activity_end',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.reading',result:{status:'completed',score:null,correct:null}});
-    recordStep='result';recordWordIndex=0;
+    committed=true;if(isCurrent()){recordStep='result';recordWordIndex=0;}
     queueReading(p,{lineIdx:index,lineScore:result.total_score});
   } catch(error) {
-    research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code:researchErrorCode(error),retryable:true}});
+    if(!abortRecorded)failed(researchErrorCode(error));
     pending.canRetry=Boolean(error.canRetry||pending.encoded||pending.compact);pending.message=recordingErrorMessage(error);
     if(isCurrent()){recordStep='read';if(!pendingRecordings.has(key))toast(pending.message);}
   }
-  finally {closeContext();requests.delete(controller);if(isCurrent()){cancelRecording();setRecordStep(recordStep);}}
+  finally {
+    closeContext();scoringRequests.delete(controller);pending.scoring=false;
+    if(isCurrent()){cancelRecording();setRecordStep(recordStep);}
+    // The pupil came back to this line (its reading or older result) or its
+    // report while it was scored. Audio playing on the report is not cut off.
+    else if(!sessionLocked&&!recordBusy&&poem===p){
+      if(view==='record'&&currentLine===index){
+        if(committed&&['read','result','words'].includes(recordStep)){recordWordIndex=0;setRecordStep('result',false);}
+        else if(!committed&&recordStep==='read'&&$('#record-controls')){$('#record-controls').innerHTML=recordControlsHTML();icons();}
+      }
+      else if(view==='report'&&committed&&!activeSpeechButton)renderReport();
+    }
+  }
 }
 function retryRecording(){
-  const pending=pendingRecordings.get(`${poem.id}-${currentLine}`);if(recordBusy||!pending?.canRetry)return;
+  const pending=pendingRecordings.get(`${poem.id}-${currentLine}`);if(recordBusy||!pending?.canRetry||pending.scoring)return;
   stopMedia();cancelRecording();recordBusy=true;recordStep='read';renderRecord();assessmentStatus('正在再送錄音');
   assessRecording(pending.blob,poem,currentLine,routeVersion,recordingVersion,null,pending);
 }
@@ -1248,7 +1273,7 @@ function reloadLearning(epoch){
   if(!school.enabled||sessionLocked)return;
   sessionLocked=true;routeVersion++;activityLoad++;reportGeneration++;
   recordings.stop();research.stop();answerOutbox.stop();
-  stopMedia();cancelRecording();requests.forEach(controller=>controller.abort());
+  stopMedia();cancelRecording();requests.forEach(controller=>controller.abort());scoringRequests.forEach((_,controller)=>controller.abort());
   poemSwipe?.destroy();sceneStage?.destroy();challenge?.destroy();lessonMap?.destroy();exploration?.destroy();shishi?.destroy();libraryShishi?.destroy();disposeAnimation?.();
   if(isTeacher&&epoch){saved={};writeStorage(STORE,{});writeStorage(PENDING,[]);writeStorage(LEARNING_EPOCH,epoch);}
   history.replaceState(null,'',location.pathname+location.search);location.reload();
@@ -1263,7 +1288,7 @@ $('#profile-open').addEventListener('click',openAccount);
 $('#account-logout').addEventListener('click',async event=>{
   const button=event.currentTarget;button.disabled=true;
   try{
-    stopMedia();cancelRecording();
+    stopMedia();cancelRecording();scoringRequests.forEach(abort=>abort());
     await Promise.race([Promise.allSettled([sync.flush(),recordings.flush(),research.finish(),answerOutbox.flush({force:true})]),new Promise(resolve=>setTimeout(resolve,3000))]);
     // After the session is revoked an upload can only fail with 401; anything
     // still queued waits on this device for the pupil's next login.
@@ -1294,7 +1319,7 @@ document.addEventListener('visibilitychange',()=>{if(sessionLocked)return;if(doc
 window.addEventListener('online',()=>{if(!sessionLocked)void recordings.hydrate({remote:Boolean(poem&&['record','report'].includes(view)),poemId:poem?.id});});
 onSchoolSessionInvalid(()=>recordings.stop());
 window.addEventListener('pagehide',()=>{if(sessionLocked)return;stopMedia();cancelRecording();persist();});
-onSchoolSessionInvalid(()=>{sessionLocked=true;routeVersion++;activityLoad++;reportGeneration++;stopMedia();cancelRecording();requests.forEach(controller=>controller.abort());libraryShishi?.destroy();libraryShishi=null;teacherReset?.destroy();teacherReset=null;challenge?.destroy();challenge=null;exploration?.destroy();exploration=null;disposeAnimation?.();disposeAnimation=null;research.stop();});
+onSchoolSessionInvalid(()=>{sessionLocked=true;routeVersion++;activityLoad++;reportGeneration++;stopMedia();cancelRecording();requests.forEach(controller=>controller.abort());scoringRequests.forEach((_,controller)=>controller.abort());libraryShishi?.destroy();libraryShishi=null;teacherReset?.destroy();teacherReset=null;challenge?.destroy();challenge=null;exploration?.destroy();exploration=null;disposeAnimation?.();disposeAnimation=null;research.stop();});
 async function init(){
   try{
     const [[data,pronunciation],preview]=await Promise.all([loadCurriculum(),school.enabled&&school.user?.previewPoems===true?loadPreviewCurriculum().catch(()=>null):null]);

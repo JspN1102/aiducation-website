@@ -26,8 +26,19 @@ const MAX_INPUT_BYTES = 1024 * 1024;
 const MAX_SECONDS = 32; // the browser rejects longer readings as well
 const MIN_PCM_BYTES = BYTES_PER_SECOND / 4;
 const MAX_PCM_BYTES = BYTES_PER_SECOND * MAX_SECONDS;
+// Three single-threaded ffmpeg runs share the 2 vCPU origin. A class of ~30
+// reading at once sends up to two compact uploads each (scoring, then the
+// stored copy); a refused scoring upload is re-sent as several-times-larger PCM,
+// so the queue holds a whole class burst. Each waiting job keeps at most ~2.4 MB
+// (<=1.4 MB base64 body + <=1 MB decoded): 48 is ~115 MB at worst, far inside
+// the service's 768 MB MemoryMax (a typical Opus line is ~0.1 MB).
 const MAX_CONCURRENT = 3;
-const MAX_WAITING = 12;
+const MAX_WAITING = 48;
+// A burst at 0.1-0.3 s a run waits a few seconds. A job still waiting after 10 s
+// (ffmpeg starved, up to 8 s a run) is refused as BUSY instead of decoding for a
+// request near its deadline: scoring and speech re-send PCM, which needs no
+// ffmpeg, and the stored copy is retried later.
+const MAX_QUEUE_WAIT_MS = 10000;
 
 class TranscodeError extends Error {
   constructor(code, message) { super(message || code); this.code = code; }
@@ -35,10 +46,19 @@ class TranscodeError extends Error {
 
 let running = 0;
 const waiting = [];
-async function gate(work) {
+async function gate(work, maxWaitMs) {
   if (running >= MAX_CONCURRENT) {
     if (waiting.length >= MAX_WAITING) throw new TranscodeError('BUSY', 'Too many recordings are being processed');
-    await new Promise(resolve => waiting.push(resolve));
+    await new Promise((resolve, reject) => {
+      const turn = () => { clearTimeout(timer); resolve(); };
+      const timer = setTimeout(() => {
+        const at = waiting.indexOf(turn);
+        if (at >= 0) waiting.splice(at, 1);
+        reject(new TranscodeError('BUSY', 'Waited too long for the decoder'));
+      }, maxWaitMs);
+      timer.unref?.();
+      waiting.push(turn);
+    });
   }
   running++;
   try { return await work(); }
@@ -92,7 +112,7 @@ function runFfmpeg(file, spec, {ffmpeg, timeoutMs, spawnImpl}) {
 
 // Returns the exact mono 16 kHz PCM16 WAV bytes (header + samples) or throws a
 // TranscodeError with a stable code. Nothing about the caller is logged.
-async function transcodeToWav(input, format, {ffmpeg = process.env.MAANSHAN_FFMPEG || 'ffmpeg', timeoutMs = 8000, tmpDir = os.tmpdir(), spawnImpl = spawn} = {}) {
+async function transcodeToWav(input, format, {ffmpeg = process.env.MAANSHAN_FFMPEG || 'ffmpeg', timeoutMs = 8000, queueWaitMs = MAX_QUEUE_WAIT_MS, tmpDir = os.tmpdir(), spawnImpl = spawn} = {}) {
   const spec = typeof format === 'string' ? FORMATS[format] : null;
   if (!spec) throw new TranscodeError('UNSUPPORTED_FORMAT');
   if (!Buffer.isBuffer(input) || !input.length || input.length > MAX_INPUT_BYTES || !looksLike(input, spec)) throw new TranscodeError('INVALID_INPUT');
@@ -109,11 +129,11 @@ async function transcodeToWav(input, format, {ffmpeg = process.env.MAANSHAN_FFMP
     if (pcm.length < MIN_PCM_BYTES) throw new TranscodeError('TOO_SHORT');
     if (pcm.length > MAX_PCM_BYTES) throw new TranscodeError('TOO_LONG');
     return wavFromPcm(pcm);
-  });
+  }, queueWaitMs);
 }
 
 // Transient conditions where the same upload may succeed shortly afterwards.
 const RETRYABLE = new Set(['FFMPEG_UNAVAILABLE', 'TIMEOUT', 'BUSY']);
 function isTransient(error) { return error instanceof TranscodeError && RETRYABLE.has(error.code); }
 
-module.exports = {FORMATS, MAX_INPUT_BYTES, MAX_SECONDS, TranscodeError, transcodeToWav, wavFromPcm, isTransient};
+module.exports = {FORMATS, MAX_INPUT_BYTES, MAX_SECONDS, MAX_CONCURRENT, MAX_WAITING, MAX_QUEUE_WAIT_MS, TranscodeError, transcodeToWav, wavFromPcm, isTransient};

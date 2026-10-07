@@ -81,7 +81,7 @@ export function createResearchTracker({actorId, csrfToken, learningEpoch, storag
         }
         if(!events.length){queue.hold(remaining[0].eventId,'event_too_large');remaining=remaining.slice(1);continue;}
         const ids=new Set(events.map(event=>event.eventId));
-        const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+        const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
         try{
           calls++;notify('syncing');
           const response=await fetchImpl('/api/research-events/',{method:'POST',credentials:'same-origin',keepalive,

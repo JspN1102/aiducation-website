@@ -44,9 +44,17 @@ for(const [name,source] of Object.entries(entries)){
 
     def test_function_limits_have_no_business_content_tracing(self):
         config=packager.functions_config()
-        self.assertEqual(len(config),1)
-        self.assertEqual(config['api/school-gateway.js'],{'maxDuration':60})
-        self.assertTrue(all(value=={'maxDuration':60} for value in config.values()), 'Every function must outlive the relay 55-second deadline.')
+        self.assertEqual(config,{'api/school-gateway.js':{'maxDuration':60,'regions':['hkg1']},'api/school-gateway-us.js':{'maxDuration':60,'regions':['iad1']}})
+        self.assertEqual(packager.functions_config('iad1')['api/school-gateway.js'],{'maxDuration':60,'regions':['iad1']})
+        for region in ['hkg1','iad1']:
+            self.assertTrue(all(value['maxDuration']==60 and set(value)=={'maxDuration','regions'} for value in packager.functions_config(region).values()), 'Every function must outlive the relay 55-second deadline.')
+        # The primary entry picks the Hong Kong-first gateway only in hkg1; the sibling always takes every route.
+        self.assertIn('.gatewayHongKong;',packager.gateway_entries('hkg1')['api/school-gateway.js'])
+        self.assertIn('.gatewayUs;',packager.gateway_entries('iad1')['api/school-gateway.js'])
+        for region in ['hkg1','iad1']:self.assertIn('.gatewayUs;',packager.gateway_entries(region)['api/school-gateway-us.js'])
+        for invalid in ['sfo1','',None]:
+            with self.assertRaises(ValueError):packager.functions_config(invalid)
+            with self.assertRaises(ValueError):packager.gateway_entries(invalid)
 
     def test_package_contains_only_relay_runtime_and_source_is_untouched(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -87,7 +95,7 @@ for(const [name,source] of Object.entries(entries)){
             with patch.object(packager,'ROOT',root),patch.object(packager.subprocess,'check_output',side_effect=git),patch.object(packager,'verify_local_assets'),patch.object(packager,'verify_audio_groups'),patch.object(packager,'build_media_config',return_value=media),patch.object(packager,'obsolete_audio_files',return_value=set()),patch.object(sys,'argv',arguments),contextlib.redirect_stdout(io.StringIO()):
                 packager.main()
             runtime=sorted(p.relative_to(destination).as_posix() for p in (destination/'api').rglob('*') if p.is_file())
-            self.assertEqual(runtime,sorted(['api/_lib/guangzhou-relay.cjs','api/_lib/response-encoding.cjs','api/school-gateway.js']))
+            self.assertEqual(runtime,sorted(['api/_lib/guangzhou-relay.cjs','api/_lib/response-encoding.cjs','api/school-gateway.js','api/school-gateway-us.js']))
             self.assertFalse((destination/'server').exists())
             for name,original in originals.items():self.assertEqual((root/name).read_bytes(),original)
             self.assertFalse((destination/'index.html').exists())
@@ -121,28 +129,48 @@ for(const [name,source] of Object.entries(entries)){
             self.assertIn({'source':'/api/school-auth/','destination':'/api/school-gateway/?__school_route=school-auth'},config['rewrites'])
             self.assertFalse((destination/'.env').exists())
             for name in packager.API_FILES:self.assertFalse((destination/'api'/name).exists())
-            self.assertIn('.gateway',(destination/'api/school-gateway.js').read_text())
+            self.assertIn('.gatewayHongKong;',(destination/'api/school-gateway.js').read_text())
+            self.assertIn('.gatewayUs;',(destination/'api/school-gateway-us.js').read_text())
+            self.assertEqual(config['regions'],['iad1'])
             manifest=json.loads(destination.with_suffix('.manifest.json').read_text())
             self.assertEqual(manifest['apiRuntime'],'guangzhou-ssh-relay')
-            self.assertEqual(manifest['apiFunctions'],1)
+            self.assertEqual(manifest['apiFunctions'],2)
+            self.assertEqual(manifest['primaryRegion'],'hkg1')
+            self.assertEqual(sorted(row['path'] for row in manifest['files'] if row['path'].startswith('api/')),runtime)
             self.assertEqual(manifest['dualRouteVideos'],1)
             self.assertEqual(manifest['dualRouteModels'],1)
             for row in manifest['files']:
                 data=(destination/row['path']).read_bytes()
                 self.assertEqual(row['bytes'],len(data))
                 self.assertEqual(row['sha256'],hashlib.sha256(data).hexdigest())
-            self.assertEqual(json.loads((destination/'vercel.json').read_text())['functions'],packager.functions_config())
-            # Load the actual isolated gateway: only ssh2 is substituted, while
+            self.assertEqual(json.loads((destination/'vercel.json').read_text())['functions'],packager.functions_config('hkg1'))
+            # Load the actual isolated gateways: only ssh2 is substituted, while
             # relative runtime imports must resolve from the packaged directory.
             script=r"""
 const assert=require('node:assert/strict'),Module=require('node:module'),path=require('node:path');
 const original=Module._load;
 Module._load=function(id,...args){if(id==='ssh2')return {Client:class{}};return original.call(this,id,...args);};
-assert.equal(typeof require(path.join(process.argv[1],'api/school-gateway.js')),'function');
+const relay=require(path.join(process.argv[1],'api/_lib/guangzhou-relay.cjs'));
+const primary=require(path.join(process.argv[1],'api/school-gateway.js')),sibling=require(path.join(process.argv[1],'api/school-gateway-us.js'));
+assert.equal(typeof primary,'function');assert.strictEqual(sibling,relay.gatewayUs);
+assert.strictEqual(primary,process.argv[2]==='hkg1'?relay.gatewayHongKong:relay.gatewayUs);
 const encoding=require(path.join(process.argv[1],'api/_lib/response-encoding.cjs'));
 assert.equal(encoding.acceptsGzip('gzip'),true);assert.equal(encoding.acceptsGzip('gzip;q=0, *;q=1'),false);
 """
-            subprocess.run(['node','-e',script,str(destination)],check=True,capture_output=True)
+            subprocess.run(['node','-e',script,str(destination),'hkg1'],check=True,capture_output=True)
+            # Rollback build: the primary gateway returns to iad1 with every route; nothing else changes.
+            rollback=base/'rollback'
+            with patch.object(packager,'ROOT',root),patch.object(packager.subprocess,'check_output',side_effect=git),patch.object(packager,'verify_local_assets'),patch.object(packager,'verify_audio_groups'),patch.object(packager,'build_media_config',return_value=media),patch.object(packager,'obsolete_audio_files',return_value=set()),patch.object(sys,'argv',arguments[:2]+[str(rollback)]+arguments[3:]+['--primary-region','iad1']),contextlib.redirect_stdout(io.StringIO()):
+                packager.main()
+            rolled=json.loads((rollback/'vercel.json').read_text())
+            self.assertEqual(rolled['functions'],packager.functions_config('iad1'))
+            self.assertEqual({key:value for key,value in rolled.items() if key!='functions'},{key:value for key,value in config.items() if key!='functions'})
+            self.assertEqual(json.loads(rollback.with_suffix('.manifest.json').read_text())['primaryRegion'],'iad1')
+            subprocess.run(['node','-e',script,str(rollback),'iad1'],check=True,capture_output=True)
+            # Only the two known regions are accepted.
+            with patch.object(sys,'argv',arguments[:2]+[str(base/'unknown-region')]+arguments[3:]+['--primary-region','sfo1']),contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit):packager.main()
+            self.assertFalse((base/'unknown-region').exists())
             # A helper present on disk but missing from reviewed/tracked inputs
             # must not silently produce a deployable but broken gateway.
             # An animation without a verified COS copy would leave pupils with a single route.

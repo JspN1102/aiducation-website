@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {EventEmitter}=require('node:events'),{PassThrough}=require('node:stream'),{execFileSync}=require('node:child_process');
-const {transcodeToWav,wavFromPcm,FORMATS,MAX_INPUT_BYTES,TranscodeError,isTransient}=require('../api/_lib/audio-transcode.cjs');
+const {transcodeToWav,wavFromPcm,FORMATS,MAX_INPUT_BYTES,MAX_CONCURRENT,MAX_WAITING,MAX_QUEUE_WAIT_MS,TranscodeError,isTransient}=require('../api/_lib/audio-transcode.cjs');
 const {validateWav}=require('../api/_lib/school-recordings.cjs');
 const WEBM=Buffer.concat([Buffer.from([0x1a,0x45,0xdf,0xa3]),Buffer.alloc(200,7)]);
 const MP4=Buffer.concat([Buffer.from([0,0,0,0x18]),Buffer.from('ftypisom'),Buffer.alloc(200,9)]);
@@ -55,10 +55,29 @@ test('decoder failures map to stable codes and only transient ones are retryable
  assert.equal(isTransient(new TranscodeError('DECODE_FAILED')),false);assert.equal(isTransient(new Error('TIMEOUT')),false);
 });
 test('concurrency is bounded and excess load is refused quickly instead of queueing forever',async()=>{
- const f=fakeSpawn({delayMs:40});
- const results=await Promise.allSettled(Array.from({length:20},()=>transcodeToWav(WEBM,'webm',{spawnImpl:f.spawn})));
+ const f=fakeSpawn({delayMs:20}),capacity=MAX_CONCURRENT+MAX_WAITING;
+ assert.equal(MAX_CONCURRENT,3);assert.equal(MAX_WAITING,48);
+ const results=await Promise.allSettled(Array.from({length:capacity+5},()=>transcodeToWav(WEBM,'webm',{spawnImpl:f.spawn})));
  const busy=results.filter(r=>r.status==='rejected'&&r.reason.code==='BUSY').length,ok=results.filter(r=>r.status==='fulfilled').length;
- assert.equal(ok,15);assert.equal(busy,5);assert.equal(f.calls.length,15);
+ assert.equal(ok,capacity);assert.equal(busy,5);assert.equal(f.calls.length,capacity);
+});
+test('a class of 30 reading at once is queued, not refused: each scoring upload is followed by its stored copy',async()=>{
+ const f=fakeSpawn({delayMs:10});
+ const pupil=async()=>{for(let n=0;n<2;n++)await transcodeToWav(WEBM,'webm',{spawnImpl:f.spawn});};
+ const results=await Promise.allSettled(Array.from({length:30},pupil));
+ assert.deepEqual(results.filter(r=>r.status==='rejected').map(r=>r.reason.code),[]);assert.equal(f.calls.length,60);
+});
+test('a job that waited too long is refused as BUSY without running ffmpeg, and gives its place back',async()=>{
+ assert.equal(MAX_QUEUE_WAIT_MS,10000);
+ const slow=fakeSpawn({delayMs:250}),stale=fakeSpawn(),fresh=fakeSpawn({delayMs:5});
+ const workers=Array.from({length:MAX_CONCURRENT},()=>transcodeToWav(WEBM,'webm',{spawnImpl:slow.spawn}));
+ const started=Date.now(),expired=await Promise.allSettled(Array.from({length:MAX_WAITING},()=>transcodeToWav(WEBM,'webm',{spawnImpl:stale.spawn,queueWaitMs:30})));
+ assert.deepEqual([...new Set(expired.map(r=>r.status==='rejected'&&isTransient(r.reason)&&r.reason.code))],['BUSY']);
+ assert.ok(Date.now()-started<200,'refused at the wait limit, not when a worker frees');assert.equal(stale.calls.length,0);
+ // The expired jobs left the queue: a full queue fits again behind the still-busy workers.
+ const later=await Promise.allSettled(Array.from({length:MAX_WAITING},()=>transcodeToWav(WEBM,'webm',{spawnImpl:fresh.spawn})));
+ assert.deepEqual(later.filter(r=>r.status==='rejected').map(r=>r.reason.code),[]);assert.equal(fresh.calls.length,MAX_WAITING);
+ assert.equal((await Promise.allSettled(workers)).filter(r=>r.status==='fulfilled').length,MAX_CONCURRENT);
 });
 test('wavFromPcm writes the exact header validateWav requires',()=>{
  const wav=wavFromPcm(Buffer.alloc(8000,5));assert.equal(validateWav(wav),250);assert.equal(wav.readUInt32LE(4),wav.length-8);assert.equal(wav.readUInt32LE(40),8000);

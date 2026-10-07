@@ -136,9 +136,12 @@ for item in data['manifest']:
 print('All release hashes verified.')
 """.replace('RELEASE',repr(release))
         print(command(client,'python3 -',verification),flush=True)
-        build='set -e\ncd '+shlex.quote(release)+'\nnpm ci --no-audit --no-fund\nnpm run build:server\n'
-        build+='nice -n 10 python3 deploy/performance-precompress.py --public-root public --write --summary\n'
-        build+='python3 deploy/performance-precompress.py --public-root public --verify --summary\n'
+        # The build shares the live 2-vCPU origin with pupils' requests: lowest CPU and lowest best-effort disk
+        # priority. Not the idle class: under steady database/journal writes it can starve past the 180 s read timeout.
+        low='nice -n 19 ionice -c2 -n7 '
+        build='set -e\ncd '+shlex.quote(release)+'\n'+low+'npm ci --no-audit --no-fund\n'+low+'npm run build:server\n'
+        build+=low+'python3 deploy/performance-precompress.py --public-root public --write --summary\n'
+        build+=low+'python3 deploy/performance-precompress.py --public-root public --verify --summary\n'
         print(command(client,build),flush=True)
         activate="""set -e
 exec 9>/srv/maanshan/.deploy.lock

@@ -51,6 +51,14 @@ test('account or CSRF failures stop uploads, preserving the original account que
   const {createResearchTracker}=await moduleReady;let calls=0;const f=fixture({fetchImpl:async()=>{calls++;return {ok:false,status:409,json:async()=>({code:'ACTOR_CHANGED'})};}});
   const tracker=createResearchTracker(f.options);await tracker.flush();await tracker.flush();assert.equal(calls,1);assert.equal(tracker.status().stopped,true);assert.equal(tracker.status().pending,1);assert(f.statuses.includes('session_changed'));
 });
+test('a slow upload is given 30 seconds through the relay before it is abandoned and kept',async t=>{
+  const {createResearchTracker}=await moduleReady;let signal;t.mock.timers.enable({apis:['setTimeout']});
+  const f=fixture({fetchImpl:(_url,options)=>{signal=options.signal;return new Promise((_resolve,reject)=>signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError'))));}});
+  const tracker=createResearchTracker(f.options),upload=tracker.flush();await new Promise(resolve=>setImmediate(resolve));
+  assert(signal);t.mock.timers.tick(29999);assert.equal(signal.aborted,false);
+  t.mock.timers.tick(1);assert.equal(signal.aborted,true);await upload;
+  assert.equal(tracker.status().pending,1);assert.equal(tracker.status().lastStatus,'sync_pending');
+});
 
 test('student learning generations retain old events and attach their own epoch to uploads',async()=>{
  const {createResearchTracker}=await moduleReady,f=fixture({fetchImpl:async()=>{throw Error('offline');}}),old=createResearchTracker(f.options),epoch='a'.repeat(32);old.emit('item_presented',{itemId:'old-period'});await old.flush();old.stop();

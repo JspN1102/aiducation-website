@@ -4,11 +4,13 @@ const assert = require('node:assert/strict');
 const http = require('node:http');
 const {gunzipSync}=require('node:zlib');
 const { test } = require('node:test');
-const { createApiServer } = require('./index.cjs');
+const { createApiServer, bodyBudget, routeDeadline } = require('./index.cjs');
+const fs = require('node:fs');
+const path = require('node:path');
 const routes = require('./routes.cjs');
 
 async function start(t, options) {
-  const server = createApiServer(options);
+  const server = createApiServer({ log() {}, ...options });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   t.after(() => new Promise(resolve => { server.close(resolve); server.closeAllConnections(); }));
   return `http://127.0.0.1:${server.address().port}`;
@@ -19,6 +21,9 @@ function fixtures(handler) {
 function post(base, path, body, headers = {}) {
   return fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body });
 }
+// Chunked upload written piece by piece, like a pupil's recording on the slow relay leg.
+function trickle(url,parts,gapMs,headers={}){return new Promise((resolve,reject)=>{let answered=false;const req=http.request(url,{method:'POST',agent:false,headers:{'Content-Type':'application/json','Transfer-Encoding':'chunked',...headers}},res=>{answered=true;const chunks=[];res.on('error',reject);res.on('data',chunk=>chunks.push(chunk));res.on('end',()=>resolve({status:res.statusCode,headers:res.headers,body:Buffer.concat(chunks).toString(),closed:new Promise(done=>req.socket.destroyed?done():req.socket.once('close',done))}));});req.on('error',error=>{if(!answered)reject(error);});let n=0;const next=()=>{if(answered)return;if(n<parts.length){req.write(parts[n++]);setTimeout(next,gapMs);}else req.end();};next();});}
+async function until(check){for(let n=0;n<200&&!check();n++)await new Promise(resolve=>setTimeout(resolve,5));}
 function raw(url,options={}){return new Promise((resolve,reject)=>{const req=http.request(url,options,res=>{const chunks=[];res.on('error',reject);res.on('data',chunk=>chunks.push(chunk));res.on('end',()=>resolve({status:res.statusCode,headers:res.headers,body:Buffer.concat(chunks)}));});req.on('error',reject);req.end();});}
 
 test('bundled real handlers preserve health, validation, methods and dynamic teaching import', async t => {
@@ -151,4 +156,101 @@ test('late large teacher JSON cannot overwrite a completed timeout or leave gzip
  let finish;const settled=new Promise(resolve=>finish=resolve);
  const base=await start(t,{requestTimeoutMs:15,handlers:fixtures((req,res)=>{setTimeout(()=>{try{res.setHeader('Content-Length',100000);res.json({large:'word '.repeat(20000)});finish();}catch(error){finish(error);}},45);})});
  const result=await raw(base+'/api/teacher-analytics',{headers:{'Accept-Encoding':'gzip'}});assert.equal(result.status,504);assert.equal(result.headers['content-encoding'],undefined);assert.deepEqual(JSON.parse(result.body),{error:'Request timed out'});assert.equal(await settled,undefined);
+});
+
+test('a slow upload gets its own body budget; the handler deadline starts only once the body has arrived',async t=>{
+ // 400 ms trickle against a 150 ms handler deadline: before, upload time counted and this was a 504.
+ const lines=[],base=await start(t,{requestTimeoutMs:150,bodyTimeoutMs:2000,log:line=>lines.push(JSON.parse(line)),handlers:fixtures((req,res)=>res.status(200).json({ok:true,size:req.body.audio.length}))});
+ const result=await trickle(base+'/api/school-recordings',['{"audio":"','a'.repeat(4000),'b'.repeat(4000),'c'.repeat(4000),'"}'],100);
+ assert.equal(result.status,200);assert.deepEqual(JSON.parse(result.body),{ok:true,size:12000});
+ await until(()=>lines.length);const [entry]=lines;
+ assert.equal(entry.route,'school-recordings');assert.equal(entry.status,200);assert.equal(entry.bodyBytes,12012);
+ assert.ok(entry.bodyMs>=300,String(entry.bodyMs));assert.ok(entry.handlerMs<150,String(entry.handlerMs));assert.ok(entry.totalMs>=entry.bodyMs);
+});
+
+test('a body slower than its budget gets a JSON 408, is no longer read and never reaches the handler or the 504',async t=>{
+ const lines=[],base=await start(t,{requestTimeoutMs:30,bodyTimeoutMs:120,log:line=>lines.push(JSON.parse(line)),handlers:fixtures(()=>assert.fail('An unfinished body reached the handler'))});
+ const result=await trickle(base+'/api/school-recordings',['{"audio":"aaaa','b'.repeat(10),'"}'],400);
+ assert.equal(result.status,408);assert.deepEqual(JSON.parse(result.body),{ok:false,code:'BODY_TIMEOUT'});
+ assert.equal(result.headers.connection,'close');assert.equal(result.headers['content-type'],'application/json; charset=utf-8');assert.equal(result.headers['cache-control'],'no-store');
+ await result.closed; // the server hung up instead of waiting for the rest
+ await new Promise(resolve=>setTimeout(resolve,80));
+ assert.equal((await fetch(base+'/api/health')).status,200);
+ await until(()=>lines.length>=2);
+ assert.deepEqual(lines[0],{event:'api',route:'school-recordings',method:'POST',status:408,bodyBytes:14,bodyMs:lines[0].bodyMs,handlerMs:null,totalMs:lines[0].totalMs});
+ assert.ok(lines[0].bodyMs>=110&&lines[0].bodyMs<400,String(lines[0].bodyMs));assert.equal(lines.length,2);
+});
+
+test('upload deadlines end before the browser and the relay give up; other routes keep their old deadline and body window',()=>{
+ // The browser's own waits, counted before the relay even reaches Guangzhou: leave each at least 5 s.
+ const source=file=>fs.readFileSync(path.join(__dirname,'..',file),'utf8'),number=(text,pattern)=>Number(pattern.exec(text)?.[1]);
+ const audio=source('maanshan/recording-audio.mjs'),relayMs=number(source('api/_lib/guangzhou-relay.cjs'),/[{,]timeoutMs=(\d+)/);
+ const browser={soe:number(audio,/timeout = (\d+)\} = \{\}, messages\)/),'speech-to-text':number(audio,/'\/api\/speech-to-text\/', payload, \{timeout:(\d+)/),
+  'school-recordings':number(source('maanshan/recording-library.mjs'),/controller\.abort\(\),(\d+)\)/)};
+ assert.deepEqual(browser,{soe:50000,'speech-to-text':40000,'school-recordings':50000});assert.equal(relayMs,55000);
+ for(const [name,wait] of Object.entries(browser)){
+  assert.ok(routeDeadline(name)<=wait-5000&&routeDeadline(name)<relayMs,name);
+  assert.ok(bodyBudget(name)>=30000&&routeDeadline(name)-bodyBudget(name)>=5000,name); // the handler always keeps 5 s
+ }
+ assert.deepEqual(Object.keys(browser).map(name=>[bodyBudget(name),routeDeadline(name)]),[[40000,45000],[30000,35000],[40000,45000]]);
+ for(const name of Object.keys(routes).filter(name=>!Object.hasOwn(browser,name))){
+  assert.equal(routeDeadline(name),routes[name].timeoutMs,name);assert.equal(bodyBudget(name),Math.min(30000,routes[name].timeoutMs),name);
+ }
+ const server=createApiServer({handlers:fixtures(()=>{}),log(){}});
+ assert.equal(server.requestTimeout,50000);assert.equal(server.headersTimeout,15000);assert.equal(server.keepAliveTimeout,95000);
+ assert.ok(server.requestTimeout>40000&&server.requestTimeout<55000); // the relay gives up at 55 s
+});
+
+test('a stalled body on any other route keeps the old 504, so a login keeps its typed password',async t=>{
+ const lines=[],base=await start(t,{bodyTimeoutMs:120,log:line=>lines.push(JSON.parse(line)),handlers:fixtures(()=>assert.fail('An unfinished body reached the handler'))});
+ const result=await trickle(base+'/api/school-auth',['{"action":"login"','}'],400);
+ assert.equal(result.status,504);assert.deepEqual(JSON.parse(result.body),{error:'Request timed out'});assert.equal(result.headers.connection,'close');
+ await result.closed;await until(()=>lines.length);
+ assert.equal(lines[0].route,'school-auth');assert.equal(lines[0].status,504);assert.equal(lines[0].handlerMs,null);assert.ok(lines[0].bodyMs>=110&&lines[0].bodyMs<400,String(lines[0].bodyMs));
+});
+
+test('the handler only gets what the route deadline leaves after a slow upload',async t=>{
+ // 300 ms upload, 450 ms deadline, 5 s handler deadline: the 504 comes at 450 ms, not 5.3 s.
+ const lines=[],base=await start(t,{requestTimeoutMs:5000,bodyTimeoutMs:2000,deadlineMs:450,log:line=>lines.push(JSON.parse(line)),handlers:fixtures(()=>{})});
+ const result=await trickle(base+'/api/soe',['{"audio":"','a'.repeat(100),'b'.repeat(100),'"}'],100);
+ assert.equal(result.status,504);assert.deepEqual(JSON.parse(result.body),{error:'Request timed out'});
+ await until(()=>lines.length);const [entry]=lines;
+ assert.ok(entry.bodyMs>=280,String(entry.bodyMs));assert.ok(entry.totalMs>=440&&entry.totalMs<1500,String(entry.totalMs));
+ assert.ok(entry.handlerMs<=entry.totalMs-entry.bodyMs+20,JSON.stringify(entry));
+});
+
+test('a slow handler after a complete upload still receives the existing 504',async t=>{
+ const lines=[],base=await start(t,{requestTimeoutMs:100,log:line=>lines.push(JSON.parse(line)),handlers:fixtures(()=>{})});
+ const response=await post(base,'/api/school-recordings',JSON.stringify({audio:'a'.repeat(1000)}));
+ assert.equal(response.status,504);assert.deepEqual(await response.json(),{error:'Request timed out'});assert.equal(response.headers.get('connection'),'close');
+ await until(()=>lines.length);assert.equal(lines.length,1);assert.equal(lines[0].status,504);assert.ok(lines[0].handlerMs>=90,String(lines[0].handlerMs));
+});
+
+test('the access log writes one PII-free line per API request',async t=>{
+ const lines=[],base=await start(t,{requestTimeoutMs:2000,log:line=>lines.push(line),handlers:fixtures((req,res)=>{if(req.query.hang)return;res.setHeader('Set-Cookie','session=PUPIL-SESSION');res.status(201).json({ok:true,login:req.body.login});})});
+ const secret={'Cookie':'maanshan_session=PUPIL-COOKIE','X-Forwarded-For':'203.0.113.9','X-Real-IP':'203.0.113.9'},login=JSON.stringify({login:'s1a01',password:'PUPIL-PASSWORD',actorId:'actor-123'});
+ assert.equal((await trickle(base+'/api/school-auth?login=s1a01&research=r-77',[login],0,{...secret,'X-School-Relay':'hk:3101'})).status,201);
+ assert.equal((await trickle(base+'/api/research-events/',['{"events":[]}'],0,{...secret,'X-School-Relay':'hop-gz:3100'})).status,201);
+ // Only the relay's own labels: anything else a direct client sends is dropped, including login-shaped tokens.
+ const forged=['hk','gz:2222','hk:3199','gz:3101','HK:3100','hop-hop-hk:3100','hk:3100,hk:3101','hk relay','s1a01','a'.repeat(25)];
+ for(const relay of forged)assert.equal((await raw(base+'/api/challenge-result',{headers:{'X-School-Relay':relay}})).status,201,relay);
+ assert.equal((await raw(base+'/api/health?login=s1a01')).status,200);
+ assert.equal((await raw(base+'/api/secretpupilname?login=s1a01')).status,404);
+ const aborted=new AbortController();setTimeout(()=>aborted.abort(),60);
+ await assert.rejects(fetch(base+'/api/tts?hang=1',{signal:aborted.signal}));
+ await until(()=>lines.length>=forged.length+5);await new Promise(resolve=>setTimeout(resolve,30));
+ assert.equal(lines.length,forged.length+5);
+ const text=lines.join('\n').toLowerCase();
+ for(const leak of ['127.0.0.1','203.0.113','pupil','s1a01','r-77','actor-123','login','password','cookie','session','secretpupilname','?'])assert.ok(!text.includes(leak),leak);
+ const entries=lines.map(line=>JSON.parse(line));
+ for(const entry of entries){
+  assert.deepEqual(Object.keys(entry).filter(key=>!['relay','closed'].includes(key)),['event','route','method','status','bodyBytes','bodyMs','handlerMs','totalMs']);
+  for(const key of ['bodyBytes','totalMs'])assert.ok(Number.isInteger(entry[key])&&entry[key]>=0,key);
+ }
+ assert.deepEqual(entries.map(entry=>[entry.event,entry.route,entry.method,entry.status,entry.relay]),[
+  ['api','school-auth','POST',201,'hk:3101'],['api','research-events','POST',201,'hop-gz:3100'],
+  ...forged.map(()=>['api','challenge-result','GET',201,undefined]),['api','health','GET',200,undefined],['api','unknown','GET',404,undefined],['api','tts','GET',499,undefined]]);
+ assert.equal(entries[0].bodyBytes,Buffer.byteLength(login));
+ assert.equal(entries.at(-1).closed,true);assert.equal(entries.filter(entry=>entry.closed).length,1);
+ assert.equal(entries.at(-3).bodyMs,null);assert.equal(entries.at(-3).handlerMs,null);
 });
