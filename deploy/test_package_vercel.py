@@ -123,9 +123,9 @@ for(const [name,source] of Object.entries(entries)){
             self.assertIn({'source':'/maanshan/', 'destination':'/school/', 'statusCode':307}, redirects)
             self.assertIn({'source':'/maanshan', 'destination':'/school/', 'statusCode':307}, redirects)
             self.assertIn({'source':'/maanshan/:path*', 'destination':'/school/:path*', 'statusCode':307}, redirects)
-            # The keep-warm check is a read-only account request routed to the one gateway function.
+            # The keep-warm check is a read-only account request to the gateway and to its iad1 sibling.
             config=json.loads((destination/'vercel.json').read_text())
-            self.assertEqual(config['crons'],[{'path':'/api/school-auth/','schedule':'* * * * *'}])
+            self.assertEqual(config['crons'],[{'path':'/api/school-auth/','schedule':'* * * * *'},{'path':'/api/school-gateway-us/?__school_route=school-auth','schedule':'* * * * *'}])
             self.assertIn({'source':'/api/school-auth/','destination':'/api/school-gateway/?__school_route=school-auth'},config['rewrites'])
             self.assertFalse((destination/'.env').exists())
             for name in packager.API_FILES:self.assertFalse((destination/'api'/name).exists())

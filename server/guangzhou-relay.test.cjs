@@ -680,6 +680,21 @@ test('Hong Kong off in hkg1 hops every request and iad1 goes direct; hop failure
  const slow=await pair({primaryEnv:{GUANGZHOU_RELAY_HONG_KONG:'off'},timeoutMs:150,sibling:()=>{}});
  try{const r=await slow.hkg1.call();assert.equal(r.status,504);assert.equal((await r.json()).code,'ORIGIN_TIMEOUT');}finally{await slow.close();}
 });
+test('the sibling keep-warm call goes straight to Guangzhou like a hop; the hkg1 one stays on Hong Kong',async()=>{
+ const cron={headers:{'x-vercel-cron-schedule':'* * * * *'}};
+ const sibling=await fixture((req,res)=>res.end('{"ok":true}'),{gateway:true,acceptHop:true,env:viaHongKong});
+ try{
+  const r=await sibling.call('/api/school-auth/',cron);
+  assert.equal(r.status,200);assert.equal(r.headers.get('x-relay-route'),'gz');
+  assert.deepEqual(sibling.clients.map(c=>c.config.host),['134.175.149.14']);
+ }finally{await sibling.close();}
+ const primary=await fixture((req,res)=>res.end('{"ok":true}'),{gateway:true,mode:'hk-primary',env:viaHongKong});
+ try{
+  const r=await primary.call('/api/school-auth/',cron);
+  assert.equal(r.status,200);assert.equal(r.headers.get('x-relay-route'),'hk');
+  assert.deepEqual(primary.clients.map(c=>c.config.host),[HONG_KONG.host]);
+ }finally{await primary.close();}
+});
 test('iad1 accepts only a fresh hop signed for the same route and method',async t=>{
  const warnings=[];t.mock.method(console,'warn',(...args)=>warnings.push(JSON.parse(args[0])));
  let clock=1_700_000_000_000;const seen=[];

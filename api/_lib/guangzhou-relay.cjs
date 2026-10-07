@@ -308,7 +308,10 @@ function createRelay({env=process.env,mode='full',clientFactory=()=>new Client()
   const idempotent=(req.method==='GET'||req.method==='HEAD'||BACKGROUND_ROUTES.has(name))&&arrived?.reason!=='retry';
   // Every hop goes direct: Hong Kong is 2 ms from hkg1 and 212 ms from here, so
   // whatever made hkg1 give up on it would only cost this request more time.
-  const avoidHongKong=!!arrived;
+  // The sibling's once-a-minute keep-warm call goes direct too, so the first hop
+  // after Hong Kong fails finds a warm instance and a live Guangzhou session.
+  const keepWarm=acceptHop&&!arrived&&req.method==='GET'&&req.headers?.['x-vercel-cron-schedule']!==undefined;
+  const avoidHongKong=!!arrived||keepWarm;
   // Vercel supplies this client address; never trust caller-provided X-Real-IP.
   // A verified hop carries the address the hkg1 function saw.
   const raw=String(req.headers?.['x-vercel-forwarded-for']||req.socket?.remoteAddress||'').split(',')[0].trim();

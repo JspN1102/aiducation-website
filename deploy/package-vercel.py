@@ -18,7 +18,7 @@ API_FILES = {'soe.js', 'tts.js', 'maanshan-chat.js', 'maanshan-report.js',
 RELAY_FILE = 'api/_lib/guangzhou-relay.cjs'
 RELAY_RUNTIME = {RELAY_FILE, 'api/_lib/response-encoding.cjs'}
 # One shared function serves the fourteen fixed school endpoints (its iad1
-# sibling only receives signed hops from it).
+# sibling only receives signed hops from it and a keep-warm call).
 # Guangzhou persists long report jobs and returns 202 for polling. Individual
 # relay requests still finish before Vercel's 60-second function deadline.
 FUNCTION_SECONDS = {name: 60 for name in API_FILES}
@@ -151,7 +151,10 @@ def main():
         # relay keeps an idle session for 240 s and an idle channel for 85 s, so a
         # read-only account check every minute (the Pro plan's finest schedule)
         # keeps both warm, with room for a late or skipped run. It reads no pupil data.
-        'crons': [{'path': '/api/school-auth/', 'schedule': '* * * * *'}],
+        # The iad1 sibling (and its direct Guangzhou session) is kept warm the
+        # same way, so the first hop after Hong Kong fails does not wait for either.
+        'crons': [{'path': '/api/school-auth/', 'schedule': '* * * * *'},
+                  {'path': '/api/school-gateway-us/?__school_route=school-auth', 'schedule': '* * * * *'}],
         'redirects': [{'source': '/', 'destination': '/school/', 'statusCode': 307},
                       {'source': '/maanshan', 'destination': '/school/', 'statusCode': 307},
                       {'source': '/maanshan/', 'destination': '/school/', 'statusCode': 307},
