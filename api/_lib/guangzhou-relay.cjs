@@ -79,6 +79,12 @@ class ChannelAgent extends http.Agent{
     // ssh2 channels lack Socket ref/unref and synchronous destroyed semantics.
     // A Duplex wrapper supplies reliable abort/close handling for the HTTP pool.
     const socket=Duplex.from({readable:stream,writable:stream});
+    // The wrapper would close only once the channel does, which takes the far
+    // side's CLOSE and a drained read side. Until then http.Agent still counts
+    // it, so sixteen discarded channels left the pool unable to open any more
+    // and every request waited out the relay deadline (10-08 04:00). Close at
+    // once, and let the channel drain so ssh2 can release it too.
+    socket._destroy=(error,callback)=>{stream.removeAllListeners('readable');stream.resume();stream.destroy();callback(error);};
     socket.ref=socket.unref=()=>socket;
     socket.on('error',()=>{});
     // Channels are half-open: when the far side ends (its tunnel went away)

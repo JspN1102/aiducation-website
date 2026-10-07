@@ -271,6 +271,38 @@ test('a pooled channel the far side ended (its tunnel went away) is dropped, not
  }
 });
 
+test('discarded channels leave the pool: twenty requests on channels never kept all go through', {timeout:15000},async()=>{
+ // Keep-Alive: timeout=5 is inside the deadline margin, so the pool discards each
+ // channel the moment its answer ends, with the channel's read side still open.
+ const origin=http.createServer((req,res)=>res.end('ok'));origin.keepAliveTimeout=5000;const originPort=await listen(origin);
+ const key=generateKeyPairSync('rsa',{modulusLength:2048}).privateKey.export({type:'pkcs1',format:'pem'});
+ const hash=createHash('sha256').update(sshUtils.parseKey(key).getPublicSSH()).digest('hex');
+ const connections=[],targets=[];let opened=0;
+ const ssh=new SSHServer({hostKeys:[key]},client=>{
+  connections.push(client);client.on('error',()=>{});
+  client.on('authentication',ctx=>ctx.accept()).on('ready',()=>client.on('tcpip',accept=>{
+   const channel=accept(),target=net.connect(originPort,'127.0.0.1');targets.push(target);opened++;
+   channel.on('error',()=>target.destroy());target.on('error',()=>channel.destroy());channel.on('close',()=>target.destroy());channel.pipe(target).pipe(channel);
+  }));
+ });
+ const sshPort=await listen(ssh);
+ class LocalClient extends SSHClient{connect(config){return super.connect({...config,host:'127.0.0.1',port:sshPort,privateKey:key});}}
+ const relay=createRelay({env:{...env,GUANGZHOU_RELAY_HOST_SHA256:hash},clientFactory:()=>new LocalClient(),timeoutMs:1500});
+ const front=http.createServer((req,res)=>relay.relay('school-auth',req,res)),port=await listen(front);
+ try{
+  for(let i=0;i<20;i++){
+   const response=await fetch('http://127.0.0.1:'+port+'/api/school-auth');
+   assert.equal(response.status,200,'request '+(i+1));assert.equal(await response.text(),'ok');
+   await new Promise(resolve=>setTimeout(resolve,20));
+  }
+  assert.equal(opened,20);assert.equal(connections.length,1,'one SSH session throughout');
+ }finally{
+  relay.close();for(const client of connections)client.end();for(const target of targets)target.destroy();
+  front.closeAllConnections();origin.closeAllConnections();
+  await Promise.all([front,origin,ssh].map(server=>new Promise(resolve=>server.close(resolve))));
+ }
+});
+
 test('a session that died while the instance was suspended is replaced before a POST is forwarded',async()=>{
  let calls=0,clock=1000;const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{now:()=>clock});
  try{
