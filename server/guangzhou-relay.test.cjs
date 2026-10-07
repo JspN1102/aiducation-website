@@ -16,21 +16,25 @@ async function fixture(fn,options={}){
  const originPort=await listen(origin),clients=[],requests=[],channels=[],logs=[];
  // A tunnel whose listener accepts the channel, then drops it unanswered.
  let deadHits=0;const deadSockets=new Set(),dead=net.createServer(socket=>{deadSockets.add(socket);socket.on('error',()=>{});socket.once('data',()=>{deadHits++;socket.destroy();});}),deadPort=await listen(dead);
+ // One that answers 100 Continue to the headers, then drops once the body came.
+ let lateHits=0;const late=net.createServer(socket=>{deadSockets.add(socket);socket.on('error',()=>{});let head='';const onData=chunk=>{head+=chunk;if(!head.includes('\r\n\r\n'))return;socket.off('data',onData);lateHits++;socket.write('HTTP/1.1 100 Continue\r\n\r\n');socket.once('data',()=>socket.destroy());};socket.on('data',onData);}),latePort=await listen(late);
+ // One whose far side is silently gone: it takes the bytes and never answers.
+ let silentHits=0;const silent=net.createServer(socket=>{deadSockets.add(socket);socket.on('error',()=>{});socket.once('data',()=>{silentHits++;});}),silentPort=await listen(silent);
  class SSH extends EventEmitter{
   constructor(){super();this.closed=false;this.once('close',()=>{this.closed=true;});}
   connect(config){this.config=config;if(options.onConnect){options.onConnect(this,clients);return this;}queueMicrotask(()=>{if(options.failFirstHandshake&&clients.length===1)return this.emit('error',new Error('synthetic transport timeout'));config.hostVerifier(options.hostHash||(config.host===HONG_KONG.host?HONG_KONG.hostHash:'a'.repeat(64)))?this.emit('ready'):this.emit('error',new Error('synthetic key mismatch'));});return this;}
   forwardOut(from,port,to,target,cb){
    requests.push({from,port,to,target});const action=options.onForward?.(target,this);
    if(action==='refuse'){queueMicrotask(()=>cb(Object.assign(new Error('(SSH) Channel open failure: Connection refused'),{reason:'CONNECT_FAILED'})));return;}
-   const socket=net.connect(action==='dead'?deadPort:originPort,'127.0.0.1');channels.push(socket);(this.chans||=[]).push(socket);socket.once('connect',()=>options.forwardDelayMs?setTimeout(()=>cb(null,socket),options.forwardDelayMs):cb(null,socket));socket.once('error',cb);}
+   const socket=net.connect({dead:deadPort,late:latePort,silent:silentPort}[action]||originPort,'127.0.0.1');channels.push(socket);(this.chans||=[]).push(socket);socket.once('connect',()=>options.forwardDelayMs?setTimeout(()=>cb(null,socket),options.forwardDelayMs):cb(null,socket));socket.once('error',cb);}
   end(){this.emit('close');}destroy(){if(options.onDestroy)return options.onDestroy(this);this.end();}
  }
- const relay=createRelay({env:options.env||env,clientFactory:()=>{const client=new SSH();clients.push(client);return client;},timeoutMs:options.timeoutMs||1500,log:line=>logs.push(line),...options.mode?{mode:options.mode}:{},...options.hopRequest?{hopRequest:options.hopRequest}:{},...options.now?{now:options.now}:{},...options.channelOpenTimeoutMs?{channelOpenTimeoutMs:options.channelOpenTimeoutMs}:{},...options.laneSessions?{laneSessions:options.laneSessions}:{},...options.maxActive?{maxActive:options.maxActive}:{}});
+ const relay=createRelay({env:options.env||env,clientFactory:()=>{const client=new SSH();clients.push(client);return client;},timeoutMs:options.timeoutMs||1500,log:line=>logs.push(line),...options.mode?{mode:options.mode}:{},...options.hopRequest?{hopRequest:options.hopRequest}:{},...options.now?{now:options.now}:{},...options.channelOpenTimeoutMs?{channelOpenTimeoutMs:options.channelOpenTimeoutMs}:{},...options.laneSessions?{laneSessions:options.laneSessions}:{},...options.maxActive?{maxActive:options.maxActive}:{},...options.continueTimeoutMs?{continueTimeoutMs:options.continueTimeoutMs}:{},...options.socketWaitMs?{socketWaitMs:options.socketWaitMs}:{}});
  // The gateway option stands in for a Vercel function entry (query parsed by the platform).
  const gateway=options.gateway&&createGateway((name,req,res)=>relay.relay(name,req,res,{acceptHop:!!options.acceptHop}));
  const frontend=http.createServer(async(req,res)=>{const chunks=[];for await(const chunk of req)chunks.push(chunk);if(chunks.length){try{req.body=JSON.parse(Buffer.concat(chunks));}catch{req.body=Buffer.concat(chunks);}}options.onRequest?.(req);if(gateway){req.query=Object.fromEntries(new URL(req.url,'http://test').searchParams);return gateway(req,res);}await relay.relay(req.headers['x-test-route']||options.name||'school-auth',req,res,{acceptHop:!!options.acceptHop});});
  const port=await listen(frontend);
- return {port,logs,get deadHits(){return deadHits;},clients,requests,channels,call:(url='/api/school-auth',init={})=>fetch('http://127.0.0.1:'+port+url,init),raw:(url,init)=>raw('http://127.0.0.1:'+port+url,init),close:async()=>{relay.close();frontend.closeAllConnections();origin.closeAllConnections();for(const socket of deadSockets)socket.destroy();await Promise.all([new Promise(r=>frontend.close(r)),new Promise(r=>origin.close(r)),new Promise(r=>dead.close(r))]);}};
+ return {port,logs,get deadHits(){return deadHits;},get lateHits(){return lateHits;},get silentHits(){return silentHits;},clients,requests,channels,call:(url='/api/school-auth',init={})=>fetch('http://127.0.0.1:'+port+url,init),raw:(url,init)=>raw('http://127.0.0.1:'+port+url,init),close:async()=>{relay.close();frontend.closeAllConnections();origin.closeAllConnections();for(const socket of deadSockets)socket.destroy();await Promise.all([new Promise(r=>frontend.close(r)),new Promise(r=>origin.close(r)),...[dead,late,silent].map(server=>new Promise(r=>server.close(r)))]);}};
 }
 function raw(url,options={}){return new Promise((resolve,reject)=>{const req=http.request(url,options,res=>{const chunks=[];res.on('error',reject);res.on('data',chunk=>chunks.push(chunk));res.on('end',()=>resolve({status:res.statusCode,headers:res.headers,body:Buffer.concat(chunks)}));});req.on('error',reject);req.end();});}
 test('fixed host and pinned key are mandatory; environment cannot create an arbitrary destination',()=>{
@@ -352,6 +356,17 @@ test('the once-a-minute keep-warm request keeps a channel open against the 95 se
  }finally{await f.close();}
 });
 
+test('hkg1 reuses a channel only within a burst: after a quiet spell a fresh channel checks the session',async()=>{
+ let clock=1000;const f=await fixture((req,res)=>res.end('ok'),{mode:'hk-primary',env:{...viaHongKong,VERCEL_URL:'school-abc.vercel.app'},now:()=>clock});
+ try{
+  await (await f.call()).text();clock+=21000;
+  await (await f.call()).text();assert.equal(f.requests.length,2,'after 20 quiet seconds a fresh channel is opened');
+  assert(f.channels[0].destroyed,'the quiet channel is closed');
+  for(let i=0;i<3;i++){clock+=5000;await (await f.call()).text();}
+  assert.equal(f.requests.length,4,'ports take turns, and within a burst the first port channel is reused');
+  assert.equal(f.clients.length,1);
+ }finally{await f.close();}
+});
 test('a warm HTTP request skips the measured channel-open delay',async()=>{
  const f=await fixture((req,res)=>res.end('ok'),{forwardDelayMs:120});
  try{
@@ -585,15 +600,15 @@ test('a GET and a background upload go once more, on another port, after a fresh
  }
  assert.deepEqual(warnings.map(x=>[x.event,x.port,x.reason]),[['school_relay_port',3100,'closed'],['school_relay_port',3100,'closed']]);
 });
-test('scoring, chat and speech POSTs are never sent again once a channel opened',async t=>{
+test('scoring, chat and speech POSTs are never sent again once their body left',async t=>{
  t.mock.method(console,'warn',()=>{});
- let calls=0;const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{env:viaHongKong,onForward:()=>'dead'});
+ let calls=0;const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{env:viaHongKong,onForward:()=>'late'});
  try{
   for(const route of ['soe','maanshan-chat','speech-to-text']){
    const r=await f.call('/api/'+route,{method:'POST',headers:{'x-test-route':route,'Content-Type':'application/json',accept:'text/event-stream'},body:'{}'});
    assert.equal(r.status,502);assert.equal((await r.json()).code,'ORIGIN_INTERRUPTED');
   }
-  assert.equal(f.deadHits,3);assert.equal(f.requests.length,3,'one channel per request, none replayed');assert.equal(calls,0);
+  assert.equal(f.lateHits,3);assert.equal(f.requests.length,3,'one channel per request, none replayed');assert.equal(calls,0);
   assert.deepEqual(f.logs.map(line=>JSON.parse(line).retried),[false,false,false]);
  }finally{await f.close();}
 });
@@ -601,6 +616,79 @@ test('a GET is not sent again once response headers arrived',async t=>{
  t.mock.method(console,'warn',()=>{});
  let calls=0;const f=await fixture((req,res)=>{calls++;res.writeHead(200,{'content-type':'application/json'});res.flushHeaders();setTimeout(()=>req.socket.destroy(),20);},{env:viaHongKong});
  try{const r=await f.call();assert.equal(r.status,502);assert.equal((await r.json()).code,'ORIGIN_INTERRUPTED');assert.equal(calls,1);assert.equal(f.requests.length,1);}finally{await f.close();}
+});
+test('through Hong Kong a POST body waits for 100 Continue; the direct route sends at once',async()=>{
+ const seen=[];const f=await fixture(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;seen.push([req.headers.expect||null,body]);res.end('{"ok":true}');},{env:viaHongKong});
+ try{
+  for(const init of [{},{method:'POST',headers:{'x-test-route':'soe','Content-Type':'application/json'},body:'{"a":1}'}]){const r=await f.call('/api/soe',{headers:{'x-test-route':'soe'},...init});assert.equal(r.status,200);await r.text();}
+  assert.deepEqual(seen,[['100-continue',''],['100-continue','{"a":1}']]);
+ }finally{await f.close();}
+ const direct=await fixture(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;seen.push([req.headers.expect||null,body]);res.end('{"ok":true}');});
+ try{const r=await direct.call('/api/soe',{method:'POST',headers:{'x-test-route':'soe','Content-Type':'application/json'},body:'{"b":2}'});assert.equal(r.status,200);await r.text();assert.deepEqual(seen.at(-1),[null,'{"b":2}']);}finally{await direct.close();}
+});
+test('a POST whose channel closed before 100 Continue goes once more on another port: its body never left',async t=>{
+ const warnings=[];t.mock.method(console,'warn',(...args)=>warnings.push(JSON.parse(args[0])));
+ const bodies=[];const f=await fixture(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;bodies.push(body);res.end('{"ok":true}');},{env:viaHongKong,onForward:target=>target===3100?'dead':undefined});
+ try{
+  const r=await f.call('/api/soe',{method:'POST',headers:{'x-test-route':'soe','Content-Type':'application/json'},body:'{"s":1}'});
+  assert.equal(r.status,200);assert.equal(r.headers.get('x-relay-port'),'3101');await r.text();
+  assert.deepEqual(bodies,['{"s":1}'],'Guangzhou scored it exactly once');assert.equal(f.deadHits,1);
+ }finally{await f.close();}
+ assert.deepEqual(warnings,[{event:'school_relay_port',port:3100,reason:'closed',pauseSeconds:10}]);
+});
+test('a channel that never answers 100 Continue is left after the deadline: the scoring POST goes on through another port, once',{timeout:5000},async t=>{
+ const warnings=[];t.mock.method(console,'warn',(...args)=>warnings.push(JSON.parse(args[0])));
+ const bodies=[];const f=await fixture(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;bodies.push(body);res.end('{"ok":true}');},{env:viaHongKong,continueTimeoutMs:100,timeoutMs:3000,onForward:target=>target===3100?'silent':undefined});
+ try{
+  const began=Date.now();
+  const r=await f.call('/api/soe',{method:'POST',headers:{'x-test-route':'soe','Content-Type':'application/json'},body:'{"s":2}'});
+  assert.equal(r.status,200);assert.equal(r.headers.get('x-relay-port'),'3101');await r.text();
+  assert(Date.now()-began<1000,'moved on at the 100 Continue deadline, not the relay deadline');
+  assert.deepEqual(bodies,['{"s":2}']);assert.equal(f.silentHits,1);assert.equal(f.clients.length,1,'the session stays');
+ }finally{await f.close();}
+ assert.deepEqual(warnings,[{event:'school_relay_port',port:3100,reason:'silent',pauseSeconds:10}]);
+});
+test('a pooled channel gone silent while the instance slept is dropped with the pool; the GET is answered on a fresh channel',{timeout:5000},async t=>{
+ t.mock.method(console,'warn',()=>{});
+ let calls=0;const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{env:viaHongKong,continueTimeoutMs:100,timeoutMs:3000});
+ try{
+  for(let i=0;i<3;i++)await (await f.call()).text();
+  assert.equal(f.channels.length,3);
+  // The pooled channels' far side is gone: whatever is written goes nowhere.
+  for(const socket of f.channels)socket.write=(data,encoding,callback)=>{(typeof encoding==='function'?encoding:callback)?.();return true;};
+  const began=Date.now(),r=await f.call();assert.equal(r.status,200);await r.text();
+  assert(Date.now()-began<1000);assert.equal(calls,4);
+  assert.equal(f.channels.length,4,'one fresh channel after the silent pooled one');assert(f.channels.slice(0,3).every(socket=>socket.destroyed),'the whole idle pool was closed');
+  assert.equal(JSON.parse(f.logs.at(-1)??'{}').silences,undefined,'a quick recovery logs nothing');
+ }finally{await f.close();}
+});
+test('two silent ports in hkg1 open the breaker and hop to iad1 with the held body',{timeout:5000},async t=>{
+ const warnings=[];t.mock.method(console,'warn',(...args)=>warnings.push(JSON.parse(args[0])));
+ const received=[];
+ const p=await pair({continueTimeoutMs:100,timeoutMs:3000,onForward:()=>'silent',sibling:async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;received.push(body);res.end('{"ok":true}');}});
+ try{
+  const r=await p.hkg1.call('/api/soe',{method:'POST',headers:{'x-test-route':'soe','Content-Type':'application/json'},body:'{"s":3}'});
+  assert.equal(r.status,200);assert.equal(r.headers.get('x-relay-hop'),'iad1');await r.text();
+  assert.deepEqual(received,['{"s":3}']);assert.equal(p.hkg1.silentHits,2);assert.equal(hopReason(p.hops[0]),'tunnel');
+  const next=await p.hkg1.call();assert.equal(next.headers.get('x-relay-hop'),'iad1');await next.text();assert.equal(hopReason(p.hops[1]),'breaker');
+  assert.equal(p.hkg1.silentHits,2,'Hong Kong rests while the breaker is open');
+ }finally{await p.close();}
+ assert.deepEqual(warnings.filter(w=>w.event!=='school_relay_port'),[{event:'school_relay_route',route:'iad1',reason:'HONG_KONG_SILENT',pauseSeconds:10}]);
+});
+test('a request that waits too long for any channel hops untouched, and the session gets a new pool',{timeout:5000},async t=>{
+ const warnings=[];t.mock.method(console,'warn',(...args)=>warnings.push(JSON.parse(args[0])));
+ const held=[];
+ const p=await pair({socketWaitMs:100,timeoutMs:3000,laneSessions:{interactive:1,background:1},origin:(req,res)=>{if(req.url.includes('hold'))held.push(res);else res.end('{"ok":true}');}});
+ try{
+  const pending=Array.from({length:16},()=>p.hkg1.call('/api/school-auth?hold=1'));
+  while(held.length<16)await new Promise(resolve=>setTimeout(resolve,10));
+  const r=await p.hkg1.call();assert.equal(r.status,200);assert.equal(r.headers.get('x-relay-hop'),'iad1');await r.text();assert.equal(hopReason(p.hops[0]),'connect');
+  const fresh=await p.hkg1.call();assert.equal(fresh.status,200);assert.equal(fresh.headers.get('x-relay-route'),'hk','a new pool on the same session');await fresh.text();
+  assert.equal(p.hkg1.clients.length,1);
+  for(const res of held)res.end('{"ok":true}');
+  for(const r of await Promise.all(pending)){assert.equal(r.status,200);await r.text();}
+ }finally{await p.close();}
+ assert.deepEqual(warnings.filter(w=>w.event==='school_relay_queue_stall').length,1);
 });
 // Computed here independently of the relay, so the signed format itself is pinned.
 const hopSign=(ts,reason,ip,name,method)=>{const key=createHash('sha256').update('maanshan-school-hop-v1\n'+env.GUANGZHOU_RELAY_PRIVATE_KEY).digest();return ['v1',ts,reason,Buffer.from(ip).toString('base64url'),createHmac('sha256',key).update(['v1',ts,reason,ip,name,method].join('|')).digest('base64url')].join('.');};
@@ -651,14 +739,15 @@ test('every Hong Kong port refusing in hkg1 hops; iad1 skips Hong Kong and recor
   assert.deepEqual(warnings.filter(x=>x.event==='school_relay_route'),[{event:'school_relay_route',route:'iad1',reason:'HONG_KONG_TUNNEL_DOWN',pauseSeconds:10}]);
  }finally{await p.close();}
 });
-test('hkg1 hops an idempotent request after its one retry closed unanswered, but never a scoring POST',async t=>{
+test('hkg1 hops an idempotent request after its one retry closed unanswered, but never a scoring POST whose body left',async t=>{
  t.mock.method(console,'warn',()=>{});
- const p=await pair({onForward:()=>'dead'});
+ let action='dead';const p=await pair({onForward:()=>action});
  try{
   const r=await p.hkg1.call('/api/school-auth');assert.equal(r.status,200);assert.equal(r.headers.get('x-relay-hop'),'iad1');await r.text();
   assert.deepEqual(p.hkg1.requests.map(x=>x.target),[3100,3101]);assert.equal(p.hkg1.deadHits,2);assert.equal(hopReason(p.hops[0]),'retry');
+  action='late';
   const scored=await p.hkg1.call('/api/soe',{method:'POST',headers:{'x-test-route':'soe','Content-Type':'application/json'},body:'{}'});
-  assert.equal(scored.status,502);await scored.text();assert.equal(p.hops.length,1,'a POST that may have arrived is never sent on');assert.equal(p.hkg1.deadHits,3);
+  assert.equal(scored.status,502);await scored.text();assert.equal(p.hops.length,1,'a POST that may have arrived is never sent on');assert.equal(p.hkg1.lateHits,1);
  }finally{await p.close();}
 });
 test('Hong Kong off in hkg1 hops every request and iad1 goes direct; hop failures are honest',async t=>{
@@ -733,7 +822,7 @@ test('slow or failed requests leave one line of fixed labels and timings, never 
   const r=await f.call('/api/school-auth?login='+secret,{method:'POST',headers:{'Content-Type':'application/json',cookie:'session='+secret,'X-Vercel-Forwarded-For':'192.0.2.77'},body:JSON.stringify({password:secret})});
   assert.equal(r.status,200);await r.text();
   assert.equal(f.logs.length,1);
-  assert.deepEqual(JSON.parse(f.logs[0]),{event:'school_relay_slow',route:'school-auth',via:'gz',port:3100,lane:'interactive',status:200,code:null,retried:false,hop:null,connectMs:0,channelMs:0,originMs:6000,totalMs:6000,bytes:11,region:process.env.VERCEL_REGION||null});
+  assert.deepEqual(JSON.parse(f.logs[0]),{event:'school_relay_slow',route:'school-auth',via:'gz',port:3100,lane:'interactive',status:200,code:null,retried:false,hop:null,connectMs:0,channelMs:0,originMs:6000,totalMs:6000,bytes:11,region:process.env.VERCEL_REGION||null,stage:'headers',reused:false,silences:0});
   for(const leak of [secret,'192.0.2.77','127.0.0.1','session'])assert(!f.logs[0].includes(leak),leak);
   slow=false;const quick=await f.call();await quick.text();assert.equal(f.logs.length,1,'a quick success is silent');
  }finally{await f.close();}
@@ -782,13 +871,13 @@ test('a session that dies with uploads in flight replays them on a new session; 
 test('ports other requests rested are still tried, earliest first, before Hong Kong is declared down',async t=>{
  const warnings=[];t.mock.method(console,'warn',(...args)=>warnings.push(JSON.parse(args[0])));
  let clock=1000,dead=true;
- const f=await fixture((req,res)=>res.end('{"ok":true}'),{env:viaHongKong,now:()=>clock,onForward:()=>dead?'dead':undefined});
+ const f=await fixture((req,res)=>res.end('{"ok":true}'),{env:viaHongKong,now:()=>clock,onForward:()=>dead?'late':undefined});
  const post=()=>f.call('/api/soe',{method:'POST',headers:{'x-test-route':'soe','Content-Type':'application/json'},body:'{}'});
  try{
   const ports=[];for(let i=0;i<4;i++){const r=await post();assert.equal(r.status,502);ports.push(JSON.parse(f.logs.at(-1)).port);await r.text();clock++;}
   assert.deepEqual(ports,[3100,3101,3102,3100],'with every port resting, the one whose rest ends first is probed');
   dead=false;const r=await post();assert.equal(r.status,200);assert.equal(r.headers.get('x-relay-route'),'hk');assert.equal(r.headers.get('x-relay-port'),'3101');await r.text();
-  assert.equal(f.clients.length,1);assert.equal(f.deadHits,4);
+  assert.equal(f.clients.length,1);assert.equal(f.lateHits,4);
   assert.deepEqual(warnings,[3100,3101,3102].map(port=>({event:'school_relay_port',port,reason:'closed',pauseSeconds:10})),'no tunnel-down pause');
  }finally{await f.close();}
 });

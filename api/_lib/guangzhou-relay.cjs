@@ -40,10 +40,22 @@ const CHANNEL_IDLE_MS=85000,CHANNEL_DEADLINE_MARGIN_MS=10000;
 // Opening a channel normally takes one round trip (well under two seconds even
 // when many open at once). Longer silence means the session is gone.
 const CHANNEL_OPEN_TIMEOUT_MS=5000;
+// A channel can open and still lead nowhere: a serverless instance resumes
+// holding a pooled channel (or a whole session) that Hong Kong dropped while it
+// was frozen, or a tunnel stalls. Requests through Hong Kong therefore ask for
+// 100 Continue, which Guangzhou sends the moment the headers arrive (tens of
+// milliseconds), and hold any body until it comes. Silence past this deadline
+// means the request never reached a handler, so it may go elsewhere whatever
+// its method: once more on a fresh channel through another port, then (hkg1)
+// to iad1. The pupil waits seconds instead of the 55 second relay deadline.
+const CONTINUE_TIMEOUT_MS=6000;
+// A request still waiting for any channel this long found the session's pool
+// stuck; nothing was sent, so hkg1 hops it and gives the session a new pool.
+const SOCKET_WAIT_MS=15000;
 class ChannelAgent extends http.Agent{
- constructor(client,now,openTimeoutMs=CHANNEL_OPEN_TIMEOUT_MS){
+ constructor(client,now,openTimeoutMs=CHANNEL_OPEN_TIMEOUT_MS,idleMs=CHANNEL_IDLE_MS){
   super({keepAlive:true,maxSockets:16,maxTotalSockets:16,maxFreeSockets:4,scheduling:'lifo'});
-  this.client=client;this.now=now;this.openTimeoutMs=openTimeoutMs;this.idle=new Map();this.closed=false;
+  this.client=client;this.now=now;this.openTimeoutMs=openTimeoutMs;this.idleMs=idleMs;this.idle=new Map();this.closed=false;
  }
  createConnection(options,callback){
   // A request still queued when its session was given up: no bytes left, so the
@@ -81,7 +93,7 @@ class ChannelAgent extends http.Agent{
  clearIdle(socket){const idle=this.idle.get(socket);if(idle){clearTimeout(idle.timer);this.idle.delete(socket);}}
  keepSocketAlive(socket){
   if(this.closed||socket.destroyed)return false;
-  let lifetime=CHANNEL_IDLE_MS;
+  let lifetime=this.idleMs;
   const hint=/(?:^|,)\s*timeout=(\d+)/i.exec(String(socket._httpMessage?.res?.headers['keep-alive']||''));
   if(hint)lifetime=Math.min(lifetime,Number(hint[1])*1000-CHANNEL_DEADLINE_MARGIN_MS);
   if(lifetime<=0)return false;
@@ -103,6 +115,8 @@ class ChannelAgent extends http.Agent{
   super.addRequest(req,options);
  }
  reuseSocket(socket,req){this.clearIdle(socket);super.reuseSocket(socket,req);}
+ // Close the pooled channels so the next request opens (and so checks) a fresh one.
+ dropIdle(){for(const sockets of Object.values(this.freeSockets))for(const socket of [...sockets]){this.clearIdle(socket);socket.destroy();}}
  destroy(){this.closed=true;for(const socket of this.idle.keys())this.clearIdle(socket);super.destroy();}
 }
 function configuration(env){
@@ -136,6 +150,12 @@ const HONG_KONG_RETRY_MS=30000,HONG_KONG_RETRY_MAX_MS=5*60000,HONG_KONG_TUNNEL_P
 // Inside Hong Kong a handshake takes tens of milliseconds, so the hkg1 function
 // gives up early and hops instead of spending the pupil's wait.
 const READY_TIMEOUT_MS=4500,PRIMARY_READY_TIMEOUT_MS=2500,PRIMARY_CHANNEL_OPEN_TIMEOUT_MS=2000;
+// A fresh channel costs hkg1 only milliseconds, and opening it proves the
+// session still lives (a dead one fails within the open deadline above). So
+// hkg1 reuses a channel only within a burst: after a quiet spell, when the
+// instance may have been frozen while Hong Kong dropped its session, the next
+// request checks the session instead of writing into a silent channel.
+const PRIMARY_CHANNEL_IDLE_MS=QUIET_MS;
 const MODES=new Set(['full','hk-primary']);
 // A whole class reading at once used to share one SSH session, which is one TCP
 // flow across the Pacific: every upload queued behind every other one and
@@ -180,7 +200,7 @@ const requestSibling=(url,options,callback)=>https.request(url,options,callback)
 // Fluid compute packs concurrent requests into one instance: two classes reading
 // at once must queue on the sessions, not be refused as busy.
 const MAX_ACTIVE=96;
-function createRelay({env=process.env,mode='full',clientFactory=()=>new Client(),request=http.request,hopRequest=requestSibling,now=Date.now,timeoutMs=55000,channelOpenTimeoutMs=mode==='hk-primary'?PRIMARY_CHANNEL_OPEN_TIMEOUT_MS:CHANNEL_OPEN_TIMEOUT_MS,hongKongReadyTimeoutMs=mode==='hk-primary'?PRIMARY_READY_TIMEOUT_MS:READY_TIMEOUT_MS,laneSessions=LANE_SESSIONS,maxActive=MAX_ACTIVE,log=line=>console.log(line)}={}){
+function createRelay({env=process.env,mode='full',clientFactory=()=>new Client(),request=http.request,hopRequest=requestSibling,now=Date.now,timeoutMs=55000,channelOpenTimeoutMs=mode==='hk-primary'?PRIMARY_CHANNEL_OPEN_TIMEOUT_MS:CHANNEL_OPEN_TIMEOUT_MS,hongKongReadyTimeoutMs=mode==='hk-primary'?PRIMARY_READY_TIMEOUT_MS:READY_TIMEOUT_MS,laneSessions=LANE_SESSIONS,maxActive=MAX_ACTIVE,continueTimeoutMs=CONTINUE_TIMEOUT_MS,socketWaitMs=SOCKET_WAIT_MS,log=line=>console.log(line)}={}){
  if(!MODES.has(mode))throw new Error('RELAY_MODE');
  const primary=mode==='hk-primary';
  let active=0,turn=0,hopSecret,hopPool;
@@ -229,7 +249,7 @@ function createRelay({env=process.env,mode='full',clientFactory=()=>new Client()
  const slots=[...lanes.interactive,...lanes.background];
  const agents=new Map();
  const disposeAgent=client=>{const agent=agents.get(client);if(agent){agents.delete(client);agent.destroy();}};
- const agentFor=client=>{if(!agents.has(client))agents.set(client,new ChannelAgent(client,now,channelOpenTimeoutMs));return agents.get(client);};
+ const agentFor=client=>{if(!agents.has(client))agents.set(client,new ChannelAgent(client,now,channelOpenTimeoutMs,primary?PRIMARY_CHANNEL_IDLE_MS:CHANNEL_IDLE_MS));return agents.get(client);};
  // Forget a session whose first round trip failed, so that no later request
  // (including a concurrent one that shares it) is offered the same dead client.
  const discard=client=>{gone.add(client);disposeAgent(client);for(const s of slots){if(s.connection===client)s.connection=null;if(s.pendingClient===client){s.pending=null;s.pendingClient=null;}}client.destroy();};
@@ -316,13 +336,13 @@ function createRelay({env=process.env,mode='full',clientFactory=()=>new Client()
   // A verified hop carries the address the hkg1 function saw.
   const raw=String(req.headers?.['x-vercel-forwarded-for']||req.socket?.remoteAddress||'').split(',')[0].trim();
   const clientIp=arrived?arrived.ip:net.isIP(raw)?raw:'';
-  let upstream,channel,timer,done=false,responseComplete=false,client,hongKong=false,port=null,via=null,code=null,hopped=null,reconnected=false,rerouted=false,replayed=false,bytes=0;
+  let upstream,channel,timer,done=false,responseComplete=false,client,hongKong=false,port=null,via=null,code=null,hopped=null,reconnected=false,rerouted=false,replayed=false,bytes=0,silences=0,stage='connect',reused=false;
   const tried=new Set(),startedAt=now();let connectedAt=startedAt,channelAt=startedAt,headersAt=0;
   // One line per slow or failed request: fixed labels, timings and sizes only.
   const report=()=>{
    const ended=now(),totalMs=ended-startedAt,status=res.headersSent?res.statusCode:0,span=(from,to)=>Math.max(0,to-from);
    if(totalMs<=SLOW_MS&&status<500)return;
-   log(JSON.stringify({event:'school_relay_slow',route:name,via,port,lane,status,code,retried:replayed,hop:hopped||arrived?.reason||null,connectMs:span(startedAt,connectedAt),channelMs:span(connectedAt,channelAt),originMs:span(channelAt,headersAt||ended),totalMs,bytes,region:env.VERCEL_REGION||process.env.VERCEL_REGION||null}));
+   log(JSON.stringify({event:'school_relay_slow',route:name,via,port,lane,status,code,retried:replayed,hop:hopped||arrived?.reason||null,connectMs:span(startedAt,connectedAt),channelMs:span(connectedAt,channelAt),originMs:span(channelAt,headersAt||ended),totalMs,bytes,region:env.VERCEL_REGION||process.env.VERCEL_REGION||null,stage,reused,silences}));
   };
   if(active>=maxActive){code='SERVICE_BUSY';fail(res,503,code);report();return;}
   const session=choose(lane,avoidHongKong);
@@ -349,7 +369,7 @@ function createRelay({env=process.env,mode='full',clientFactory=()=>new Client()
       console.warn(JSON.stringify({event:'school_relay_hop_failed',route:name,reason:rejected?'rejected':'platform',status:response.statusCode||0}));
       error(503,'ORIGIN_UNAVAILABLE');return;
      }
-     attempt.response=true;headersAt=now();
+     attempt.response=true;headersAt=now();stage='headers';
      const encoding=String(response.headers['content-encoding']||'identity').toLowerCase().trim();
      if(TEACHER_ROUTES.has(name)&&encoding!=='identity'&&(encoding!=='gzip'||!gzipAllowed)){response.destroy();error(502,'ORIGIN_ENCODING_UNSUPPORTED');return;}
      const streaming=name==='maanshan-chat'&&/^text\/event-stream(?:;|$)/i.test(String(response.headers['content-type']||''))&&String(req.headers?.accept||'').includes('text/event-stream');
@@ -395,17 +415,45 @@ function createRelay({env=process.env,mode='full',clientFactory=()=>new Client()
     };
     const send=next=>{
      if(done||res.destroyed){finish();return;}
-     const attempt={port:next,client,stale:false,socket:false,response:false};
-     port=next;via=hongKong?'hk':'gz';tried.add(via+':'+next);channel=undefined;
+     // Through Hong Kong the body waits for 100 Continue (see CONTINUE_TIMEOUT_MS).
+     const watch=hongKong;
+     const attempt={port:next,client,stale:false,socket:false,response:false,held:watch&&!!body};
+     port=next;via=hongKong?'hk':'gz';tried.add(via+':'+next);channel=undefined;stage='channel';
      if(hongKong)lastPort.set(client,{port:next,at:now()});
      const headers={host:'mandarin.aiducation.asia',...forwarded,'x-forwarded-proto':'https','x-school-relay':(arrived?'hop-':'')+via+':'+next};
      if(clientIp)headers['x-real-ip']=clientIp;
-     let sent;
-     try{sent=upstream=request({host:'127.0.0.1',port:next,method:req.method,path:'/api/'+name+url.search,headers,agent:agentFor(client)},response=>onResponse(response,attempt,false));}
+     if(watch)headers.expect='100-continue';
+     const agent=agentFor(client);
+     let sent,watchdog;
+     const settle=()=>{clearTimeout(watchdog);watchdog=undefined;};
+     try{sent=upstream=request({host:'127.0.0.1',port:next,method:req.method,path:'/api/'+name+url.search,headers,agent},response=>{settle();
+      // Guangzhou always sends 100 Continue first; an answer without it leaves the body unsent and the channel unusable.
+      if(attempt.held){attempt.held=false;response.once('end',()=>sent.destroy());}
+      onResponse(response,attempt,false);});}
      catch{error(503,'ORIGIN_UNAVAILABLE');return;}
-     sent.once('socket',socket=>{if(attempt.stale)return;attempt.socket=true;channel=socket;channelAt=now();if(done||res.destroyed){socket.destroy();finish();}});
-     sent.on('error',cause=>failed(cause,attempt,sent));
-     if(body)sent.write(body);sent.end();
+     // Nothing reached a handler yet, so the request moves on whatever its method.
+     const silent=()=>{
+      if(attempt.stale||done||attempt.response)return;
+      attempt.stale=true;sent.destroy();silences++;markDown(attempt.port,'silent');agent.dropIdle();
+      if(silences<2){advance('tunnel');return;}
+      if(hongKong)hongKongFailed('HONG_KONG_SILENT');
+      exhausted('tunnel');
+     };
+     if(watch&&primary){watchdog=setTimeout(()=>{
+      if(attempt.stale||done||attempt.socket)return;
+      attempt.stale=true;sent.destroy();
+      if(agents.get(attempt.client)===agent)agents.delete(attempt.client);
+      console.warn(JSON.stringify({event:'school_relay_queue_stall',port:attempt.port}));
+      hop('connect');
+     },socketWaitMs);watchdog.unref?.();}
+     sent.once('socket',socket=>{
+      if(attempt.stale)return;attempt.socket=true;channel=socket;channelAt=now();reused=!!sent.reusedSocket;stage='sent';
+      if(done||res.destroyed){socket.destroy();finish();return;}
+      if(watch){settle();watchdog=setTimeout(silent,continueTimeoutMs);watchdog.unref?.();}
+     });
+     sent.once('continue',()=>{settle();if(attempt.stale||done)return;stage='continued';if(!attempt.held)return;attempt.held=false;sent.end(body);});
+     sent.on('error',cause=>{settle();failed(cause,attempt,sent);});
+     if(!attempt.held){if(body)sent.write(body);sent.end();}
     };
     // Without a channel nothing was written to the origin: a session that died
     // while the instance was idle is replaced once, and a port Hong Kong refused
@@ -429,8 +477,10 @@ function createRelay({env=process.env,mode='full',clientFactory=()=>new Client()
      // A fresh channel closed unanswered: that tunnel's listener is gone, unless
      // the whole session went (ssh2 reports that before closing its channels).
      if(hongKong&&!sent.reusedSocket){const lost=attempt.client,lostPort=attempt.port;setImmediate(()=>{if(!gone.has(lost))markDown(lostPort,'closed');});}
-     if(idempotent&&!replayed){replayed=true;advance('retry');return;}
-     if(primary&&idempotent){hop('retry');return;}
+     // A body still held back never reached a handler, so any method may go on.
+     const safe=idempotent||attempt.held;
+     if(safe&&!replayed){replayed=true;advance('retry');return;}
+     if(primary&&safe){hop('retry');return;}
      error(502,'ORIGIN_INTERRUPTED');
     };
     const advance=kind=>{
@@ -464,7 +514,7 @@ function createRelay({env=process.env,mode='full',clientFactory=()=>new Client()
      try{signature=signHop(secret(),Math.floor(now()/1000),reason,clientIp,name,req.method);}
      catch{error(503,'ORIGIN_UNAVAILABLE');return;}
      const attempt={port:null,stale:false,socket:true,response:false};
-     hopped=reason;via='iad1';port=null;channel=undefined;channelAt=now();
+     hopped=reason;via='iad1';port=null;channel=undefined;channelAt=now();stage='hop';
      const query=new URLSearchParams([['__school_route',name],...[...url.searchParams].filter(([key])=>!RESERVED_QUERY.test(key))]);
      const headers={...forwarded,'x-school-hop':signature};if(target.bypass)headers['x-vercel-protection-bypass']=target.bypass;
      let sent;
