@@ -6,8 +6,9 @@ const {generateKeyPairSync,createHash}=require('node:crypto');
 const {Client:SSHClient,Server:SSHServer,utils:sshUtils}=require('ssh2');
 const {createApiServer}=require('./index.cjs');
 const routes=require('./routes.cjs');
-const {createRelay,configuration,createGateway}=require('../api/_lib/guangzhou-relay.cjs');
-const env={GUANGZHOU_RELAY_HOST:'134.175.149.14',GUANGZHOU_RELAY_USERNAME:'maanshan-relay',GUANGZHOU_RELAY_HOST_SHA256:'a'.repeat(64),GUANGZHOU_RELAY_PRIVATE_KEY:'-----BEGIN OPENSSH PRIVATE KEY-----\nSYNTHETIC-ONLY\n-----END OPENSSH PRIVATE KEY-----'};
+const {createRelay,configuration,createGateway,HONG_KONG}=require('../api/_lib/guangzhou-relay.cjs');
+const env={GUANGZHOU_RELAY_HOST:'134.175.149.14',GUANGZHOU_RELAY_USERNAME:'maanshan-relay',GUANGZHOU_RELAY_HOST_SHA256:'a'.repeat(64),GUANGZHOU_RELAY_PRIVATE_KEY:'-----BEGIN OPENSSH PRIVATE KEY-----\nSYNTHETIC-ONLY\n-----END OPENSSH PRIVATE KEY-----',GUANGZHOU_RELAY_HONG_KONG:'off'};
+const viaHongKong={...env,GUANGZHOU_RELAY_HONG_KONG:''};
 const listen=server=>new Promise(resolve=>server.listen(0,'127.0.0.1',()=>resolve(server.address().port)));
 async function fixture(fn,options={}){
  const origin=options.origin||http.createServer(fn);
@@ -15,11 +16,11 @@ async function fixture(fn,options={}){
  const originPort=await listen(origin),clients=[],requests=[],channels=[];
  class SSH extends EventEmitter{
   constructor(){super();this.closed=false;this.once('close',()=>{this.closed=true;});}
-  connect(config){this.config=config;if(options.onConnect){options.onConnect(this,clients);return this;}queueMicrotask(()=>{if(options.failFirstHandshake&&clients.length===1)return this.emit('error',new Error('synthetic transport timeout'));config.hostVerifier(options.hostHash||'a'.repeat(64))?this.emit('ready'):this.emit('error',new Error('synthetic key mismatch'));});return this;}
+  connect(config){this.config=config;if(options.onConnect){options.onConnect(this,clients);return this;}queueMicrotask(()=>{if(options.failFirstHandshake&&clients.length===1)return this.emit('error',new Error('synthetic transport timeout'));config.hostVerifier(options.hostHash||(config.host===HONG_KONG.host?HONG_KONG.hostHash:'a'.repeat(64)))?this.emit('ready'):this.emit('error',new Error('synthetic key mismatch'));});return this;}
   forwardOut(from,port,to,target,cb){requests.push({from,port,to,target});const socket=net.connect(originPort,'127.0.0.1');channels.push(socket);socket.once('connect',()=>options.forwardDelayMs?setTimeout(()=>cb(null,socket),options.forwardDelayMs):cb(null,socket));socket.once('error',cb);}
   end(){this.emit('close');}destroy(){if(options.onDestroy)return options.onDestroy(this);this.end();}
  }
- const relay=createRelay({env,clientFactory:()=>{const client=new SSH();clients.push(client);return client;},timeoutMs:options.timeoutMs||1500,...options.now?{now:options.now}:{},...options.channelOpenTimeoutMs?{channelOpenTimeoutMs:options.channelOpenTimeoutMs}:{},...options.laneSessions?{laneSessions:options.laneSessions}:{},...options.maxActive?{maxActive:options.maxActive}:{}});
+ const relay=createRelay({env:options.env||env,clientFactory:()=>{const client=new SSH();clients.push(client);return client;},timeoutMs:options.timeoutMs||1500,...options.now?{now:options.now}:{},...options.channelOpenTimeoutMs?{channelOpenTimeoutMs:options.channelOpenTimeoutMs}:{},...options.laneSessions?{laneSessions:options.laneSessions}:{},...options.maxActive?{maxActive:options.maxActive}:{}});
  const frontend=http.createServer(async(req,res)=>{const chunks=[];for await(const chunk of req)chunks.push(chunk);if(chunks.length){try{req.body=JSON.parse(Buffer.concat(chunks));}catch{req.body=Buffer.concat(chunks);}}options.onRequest?.(req);await relay.relay(req.headers['x-test-route']||options.name||'school-auth',req,res);});
  const port=await listen(frontend);
  return {clients,requests,channels,call:(url='/api/school-auth',init={})=>fetch('http://127.0.0.1:'+port+url,init),raw:(url,init)=>raw('http://127.0.0.1:'+port+url,init),close:async()=>{relay.close();frontend.closeAllConnections();origin.closeAllConnections();await Promise.all([new Promise(r=>frontend.close(r)),new Promise(r=>origin.close(r))]);}};
@@ -437,4 +438,59 @@ test('background uploads travel on their own session, never the one carrying sco
   assert.equal(f.clients.length,2,'one scoring session and one background session, each reused');
  }finally{await f.close();}
  assert(f.clients.every(client=>client.closed),'relay cleanup must close every SSH session');
+});
+
+test('requests take the Hong Kong relay first with its own pinned key; off keeps the direct route',async()=>{
+ const f=await fixture((req,res)=>res.end('{"ok":true}'),{env:viaHongKong});
+ try{
+  const r=await f.call('/api/school-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"action":"login"}'});
+  assert.equal(r.status,200);assert.equal(r.headers.get('x-relay-route'),'hk');
+  assert.deepEqual(f.clients.map(c=>[c.config.host,c.config.port,c.config.username]),[['43.161.201.12',2222,'maanshan-relay']]);
+  assert.equal(f.clients[0].config.hostVerifier(HONG_KONG.hostHash),true);assert.equal(f.clients[0].config.hostVerifier('a'.repeat(64)),false,'the Guangzhou key is not accepted for Hong Kong');
+  assert(f.requests.every(x=>x.to==='127.0.0.1'&&x.target===3100));
+ }finally{await f.close();}
+ const direct=await fixture((req,res)=>res.end('{"ok":true}'),{env:{...viaHongKong,GUANGZHOU_RELAY_HONG_KONG:'OFF'}});
+ try{const r=await direct.call();assert.equal(r.headers.get('x-relay-route'),'gz');assert.deepEqual(direct.clients.map(c=>c.config.host),['134.175.149.14']);}finally{await direct.close();}
+});
+test('a Hong Kong handshake failure sends the POST once on the direct route, then pauses Hong Kong and returns to it later',async t=>{
+ const logs=[];t.mock.method(console,'warn',(...args)=>logs.push(args));t.mock.method(console,'error',()=>{});
+ let calls=0,clock=1000,hongKongDown=true;
+ const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{env:viaHongKong,now:()=>clock,onConnect(client){queueMicrotask(()=>{if(client.config.host===HONG_KONG.host&&hongKongDown)client.emit('error',new Error('synthetic Hong Kong timeout'));else client.emit('ready');});}});
+ try{
+  const r=await f.call('/api/school-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"action":"login"}'});
+  assert.equal(r.status,200);assert.equal(r.headers.get('x-relay-route'),'gz');assert.equal(calls,1);assert.equal(f.requests.length,1);
+  assert.deepEqual(f.clients.map(c=>c.config.host),['43.161.201.12','134.175.149.14']);
+  assert.deepEqual(logs.map(x=>JSON.parse(x[0])),[{event:'school_relay_route',route:'guangzhou',reason:'HONG_KONG_CONNECT_FAILED',pauseSeconds:60}]);
+  // A request in another lane during the pause goes straight to the direct route.
+  await (await f.call('/api/school-recordings',{method:'POST',headers:{'x-test-route':'school-recordings','Content-Type':'application/json'},body:'{}'})).text();
+  assert.deepEqual(f.clients.map(c=>c.config.host),['43.161.201.12','134.175.149.14','134.175.149.14']);
+  // After the pause an idle direct session is replaced by Hong Kong.
+  hongKongDown=false;clock+=61000;
+  const back=await f.call();assert.equal(back.headers.get('x-relay-route'),'hk');await back.text();
+  assert.equal(f.clients[1].closed,true,'the idle direct session is closed once Hong Kong is back');
+  assert.equal(f.clients.at(-1).config.host,'43.161.201.12');
+ }finally{await f.close();}
+});
+test('repeated Hong Kong failures lengthen the pause up to fifteen minutes',async t=>{
+ const logs=[];t.mock.method(console,'warn',(...args)=>logs.push(JSON.parse(args[0])));t.mock.method(console,'error',()=>{});
+ let clock=1000;
+ const f=await fixture((req,res)=>res.end('ok'),{env:viaHongKong,now:()=>clock,laneSessions:{interactive:1,background:1},onConnect(client){queueMicrotask(()=>client.config.host===HONG_KONG.host?client.emit('error',new Error('synthetic')):client.emit('ready'));}});
+ try{
+  for(let i=0;i<6;i++){await (await f.call()).text();clock+=16*60000;}
+  assert.deepEqual(logs.map(x=>x.pauseSeconds),[60,120,240,480,900,900]);
+ }finally{await f.close();}
+});
+test('Hong Kong refusing the channel (tunnel down) reroutes the unsent POST to Guangzhou exactly once',async t=>{
+ t.mock.method(console,'warn',()=>{});
+ let calls=0;const refused=[];
+ const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{env:viaHongKong,onConnect(client){queueMicrotask(()=>{if(client.config.host===HONG_KONG.host)client.forwardOut=(from,port,to,target,cb)=>{refused.push(target);queueMicrotask(()=>cb(Object.assign(new Error('(SSH) Channel open failure: Connection refused'),{reason:'CONNECT_FAILED'})));};client.emit('ready');});}});
+ try{
+  const r=await f.call('/api/maanshan-save',{method:'POST',headers:{'x-test-route':'maanshan-save','Content-Type':'application/json'},body:'{"save":1}'});
+  assert.equal(r.status,200);assert.equal(r.headers.get('x-relay-route'),'gz');assert.equal(calls,1);assert.deepEqual(refused,[3100]);
+  assert.deepEqual(f.clients.map(c=>c.config.host),['43.161.201.12','134.175.149.14']);assert.equal(f.clients[0].closed,true);
+ }finally{await f.close();}
+});
+test('a channel lost after Hong Kong accepted it is never replayed',async()=>{
+ let calls=0;const f=await fixture((req,res)=>{calls++;req.socket.destroy();},{env:viaHongKong});
+ try{const r=await f.call('/api/soe',{method:'POST',headers:{'x-test-route':'soe','Content-Type':'application/json'},body:'{}'});assert.equal(r.status,502);assert.equal(calls,1);assert.equal(f.clients.length,1);}finally{await f.close();}
 });

@@ -102,6 +102,16 @@ function configuration(env){
  if(![22,2222].includes(port))throw new Error('RELAY_NOT_CONFIGURED');
  return {host,port,username,privateKey,hostHash};
 }
+// Guangzhou keeps a reverse SSH tunnel open to this Hong Kong relay (Hong Kong
+// cannot open connections into the mainland), so its loopback 3100 is the same
+// application. The Pacific leg then ends in Hong Kong at megabytes a second and
+// only a 9 ms hop crosses the border; the direct route carried 25-50 KB/s and
+// timed out scoring uploads. Same account and key, its own pinned host key.
+// Any failure before a request is sent falls back to the direct route, which
+// is retried on Hong Kong again after a growing pause (one minute up to 15).
+// GUANGZHOU_RELAY_HONG_KONG=off keeps every request on the direct route.
+const HONG_KONG=Object.freeze({host:'43.161.201.12',port:2222,hostHash:'c39e25fba8c733ecc6398a860909e152a147e871b7a756a9d333d460a69c2b03'});
+const HONG_KONG_RETRY_MS=60000,HONG_KONG_RETRY_MAX_MS=15*60000;
 // A whole class reading at once used to share one SSH session, which is one TCP
 // flow across the Pacific: every upload queued behind every other one and
 // scores timed out although Guangzhou answered within five seconds. Spread the
@@ -114,6 +124,16 @@ const LANE_SESSIONS=Object.freeze({interactive:3,background:2});
 const SESSION_SHARE_LIMIT=2;
 function createRelay({env=process.env,clientFactory=()=>new Client(),request=http.request,now=Date.now,timeoutMs=55000,channelOpenTimeoutMs=CHANNEL_OPEN_TIMEOUT_MS,laneSessions=LANE_SESSIONS,maxActive=48}={}){
  let active=0;
+ const hongKongEnabled=String(env.GUANGZHOU_RELAY_HONG_KONG||'').toLowerCase()!=='off';
+ let hongKongFailures=0,hongKongRetryAt=0;
+ const hongKongReady=()=>hongKongEnabled&&now()>=hongKongRetryAt;
+ // Only fixed labels reach the logs, once per pause.
+ const hongKongFailed=reason=>{
+  if(now()<hongKongRetryAt)return;
+  hongKongFailures++;hongKongRetryAt=now()+Math.min(HONG_KONG_RETRY_MAX_MS,HONG_KONG_RETRY_MS*2**(hongKongFailures-1));
+  console.warn(JSON.stringify({event:'school_relay_route',route:'guangzhou',reason,pauseSeconds:Math.round((hongKongRetryAt-now())/1000)}));
+ };
+ const routeOf=new WeakMap();
  const slot=()=>({pending:null,pendingClient:null,connection:null,lastUsed:0,active:0});
  const lanes={interactive:Array.from({length:Math.max(1,laneSessions.interactive|0)},slot),background:Array.from({length:Math.max(1,laneSessions.background|0)},slot)};
  const slots=[...lanes.interactive,...lanes.background];
@@ -130,32 +150,36 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
   if(live.length&&live[0].active<SESSION_SHARE_LIMIT)return live[0];
   return pool.find(s=>!s.connection&&!s.pending)||live[0];
  }
- async function tunnel(s,alternate=false){
+ async function tunnel(s,route='direct'){
   // A child can listen or write for several minutes between calls. Keep the
   // verified SSH session across those pauses (the relay sshd tolerates about
   // ten minutes of silence); transport errors/close still invalidate it
   // immediately, dead sessions are detected on use, and no forwarded POST is
   // ever replayed.
-  if(s.connection&&now()-s.lastUsed>240000&&s.active<=1){disposeAgent(s.connection);s.connection.end();s.connection=null;s.pending=null;s.pendingClient=null;}
+  // A session left on the direct route moves back to Hong Kong once it is idle
+  // and Hong Kong may be tried again.
+  const upgrade=route==='hongkong'&&s.connection&&routeOf.get(s.connection)!=='hongkong';
+  if(s.connection&&(now()-s.lastUsed>240000||upgrade)&&s.active<=1){disposeAgent(s.connection);s.connection.end();s.connection=null;s.pending=null;s.pendingClient=null;}
   s.lastUsed=now();
   if(s.pending)return s.pending;
   const config=configuration(env),client=clientFactory();
-  const port=alternate?(config.port===2222?22:2222):config.port;
+  const target=route==='hongkong'?HONG_KONG:{host:config.host,port:route==='alternate'?(config.port===2222?22:2222):config.port,hostHash:config.hostHash};
+  routeOf.set(client,route==='hongkong'?'hongkong':'guangzhou');
   s.pendingClient=client;
   s.pending=new Promise((resolve,reject)=>{
    let ready=false,tcpConnected=false,handshakeComplete=false;
    client.once('connect',()=>{tcpConnected=true;client.setNoDelay?.(true);});
    client.once('handshake',()=>{handshakeComplete=true;});
    const clear=()=>{disposeAgent(client);if(s.connection===client)s.connection=null;if(s.pendingClient===client){s.pending=null;s.pendingClient=null;}};
-   client.once('ready',()=>{ready=true;s.connection=client;resolve(client);});
+   client.once('ready',()=>{ready=true;if(route==='hongkong')hongKongFailures=0;s.connection=client;resolve(client);});
    // The peer closing its side ends the writable socket before 'close' fires;
    // forget the session at once so nothing tries to open a channel on it.
    client.once('end',()=>{clear();});
-   client.on('error',error=>{clear();if(!ready){const code=typeof error?.code==='string'&&/^[A-Z0-9_]+$/.test(error.code)?error.code:'SSH_CONNECT_ERROR';console.error('Guangzhou relay transport:',code,error?.level==='client-timeout'?'HANDSHAKE_TIMEOUT':'CONNECT_FAILED',JSON.stringify({tcpConnected,handshakeComplete}));reject(new Error('RELAY_CONNECT_FAILED'));}});
-   client.once('close',()=>{clear();if(!ready)reject(new Error('RELAY_CONNECT_FAILED'));});
+   client.on('error',error=>{clear();if(!ready){const code=typeof error?.code==='string'&&/^[A-Z0-9_]+$/.test(error.code)?error.code:'SSH_CONNECT_ERROR';console.error('Guangzhou relay transport:',code,error?.level==='client-timeout'?'HANDSHAKE_TIMEOUT':'CONNECT_FAILED',JSON.stringify({tcpConnected,handshakeComplete,route:routeOf.get(client)}));reject(Object.assign(new Error('RELAY_CONNECT_FAILED'),{route}));}});
+   client.once('close',()=>{clear();if(!ready)reject(Object.assign(new Error('RELAY_CONNECT_FAILED'),{route}));});
    // Offer the key straight away: the relay account accepts nothing else, and
    // the default 'none' probe costs a Pacific round trip on every new session.
-   client.connect({host:config.host,port,username:config.username,privateKey:config.privateKey,authHandler:['publickey'],hostHash:'sha256',hostVerifier:hash=>hash===config.hostHash,readyTimeout:4500,keepaliveInterval:15000,keepaliveCountMax:2,tryKeyboard:false});
+   client.connect({host:target.host,port:target.port,username:config.username,privateKey:config.privateKey,authHandler:['publickey'],hostHash:'sha256',hostVerifier:hash=>hash===target.hostHash,readyTimeout:4500,keepaliveInterval:15000,keepaliveCountMax:2,tryKeyboard:false});
   });
   try{return await s.pending;}catch(error){if(s.pendingClient===client){s.pending=null;s.pendingClient=null;}client.destroy();throw error;}
  }
@@ -186,9 +210,16 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
     timer=setTimeout(()=>error(504,'ORIGIN_TIMEOUT'),timeoutMs);timer.unref?.();
     res.once('close',finish);
     try{
-     // A second handshake is safe before any request reaches the origin.
+     // Another handshake is safe before any request reaches the origin.
      // Never retry once a channel/request has been opened.
-     const connect=async()=>{try{return await tunnel(session);}catch{if(done||res.destroyed)return null;return tunnel(session,true);}};
+     const connect=async()=>{
+      const routes=hongKongReady()?['hongkong','direct','alternate']:['direct','alternate'];
+      for(const route of routes.slice(0,-1)){
+       try{return await tunnel(session,route);}
+       catch(error){if(error?.route==='hongkong')hongKongFailed('HONG_KONG_CONNECT_FAILED');if(done||res.destroyed)return null;}
+      }
+      return tunnel(session,routes.at(-1));
+     };
      const client=await connect();
      if(client===null||done||res.destroyed){finish();return;}
      connectedAt=now();
@@ -199,7 +230,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
      const raw=String(req.headers?.['x-vercel-forwarded-for']||req.socket?.remoteAddress||'').split(',')[0].trim();
      if(net.isIP(raw))headers['x-real-ip']=raw;
      if(body)headers['content-length']=String(body.length);
-     let retried=false;
+     let retried=false,rerouted=false;
      const send=client=>{
       upstream=request({host:'127.0.0.1',port:3100,method:req.method,path:'/api/'+name+url.search,headers,agent:agentFor(client)},response=>{
        if(done){response.destroy();return;}
@@ -211,7 +242,7 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
         res.statusCode=response.statusCode||502;
         const hop=new Set([...HOP,...String(response.headers.connection||'').toLowerCase().split(',').map(x=>x.trim())]);
         for(const [key,value]of Object.entries(response.headers))if(value!==undefined&&!hop.has(key)&&key!=='content-length')res.setHeader(key,value);
-        res.setHeader('Cache-Control','private, no-store');res.setHeader('X-Content-Type-Options','nosniff');
+        res.setHeader('Cache-Control','private, no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Relay-Route',routeOf.get(client)==='hongkong'?'hk':'gz');
         const duration=(from,to)=>Math.max(0,to-from).toFixed(1);
         const originTiming=typeof response.headers['server-timing']==='string'?response.headers['server-timing']+', ':'';
         res.setHeader('Server-Timing',originTiming+'relay_connect;dur='+duration(startedAt,connectedAt)+', relay_channel;dur='+duration(connectedAt,channelAt)+', relay_origin;dur='+duration(channelAt,now()));
@@ -248,6 +279,9 @@ function createRelay({env=process.env,clientFactory=()=>new Client(),request=htt
        // session died while the instance was idle. Reconnect and send once more.
        // After a channel exists the request may have arrived, so never retry.
        if(!done&&channel===undefined&&!retried&&cause?.sessionDead===true){retried=true;discard(client);reconnect();return;}
+       // Hong Kong refusing the channel means Guangzhou's tunnel is down; the
+       // request never left Hong Kong, so send it once on the direct route.
+       if(!done&&channel===undefined&&!rerouted&&cause?.reason!==undefined&&routeOf.get(client)==='hongkong'){rerouted=true;hongKongFailed('HONG_KONG_TUNNEL_DOWN');discard(client);reconnect();return;}
        if(channel===undefined)error(503,'ORIGIN_UNAVAILABLE');else error(502,'ORIGIN_INTERRUPTED');
       });
       if(body)upstream.write(body);upstream.end();
@@ -280,4 +314,4 @@ function createGateway(forward=relay){return function gateway(req,res){
  req.url='/api/'+name+(search.size?'?'+search.toString():'');
  return forward(name,req,res);
 };}
-module.exports={LIMITS,BACKGROUND_ROUTES,configuration,createRelay,relay,createGateway,gateway:createGateway()};
+module.exports={LIMITS,BACKGROUND_ROUTES,HONG_KONG,configuration,createRelay,relay,createGateway,gateway:createGateway()};

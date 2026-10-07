@@ -64,6 +64,15 @@ vercel --prod --yes --scope jspn1102s-projects --local-config ./vercel.json
 不得把管理员部署私钥提供给 Vercel。供应商凭据及数据库配置保留在广州的私密环境文件中；
 旧 Vercel 供应商／Blob 环境变量不是新 relay 的业务存储配置，不应未经备份随意清理。
 
+2026-10-07 起 relay 优先经香港轻量服务器（`43.161.201.12:2222`，独立 sshd
+`maanshan-relay-2222.service`，同一账号与公钥，主机指纹写在代码里）。香港无法主动连大陆，
+所以由广州 `maanshan-hk-tunnel.service`（账号 `maanshan-hktunnel`，`ssh -N -R
+127.0.0.1:3100:127.0.0.1:3100`，5 秒×3 心跳）主动连香港 22 端口的受限账号
+`maanshan-tunnel`（只许监听 `127.0.0.1:3100`），香港本机 3100 即广州应用。
+香港握手失败或隧道断开（通道被拒）时，未发出的请求改走广州直连，香港暂停 1 分钟起、
+最长 15 分钟后再试；已发出的请求一律不重发。响应头 `X-Relay-Route` 为 `hk` 或 `gz`。
+设置 `GUANGZHOU_RELAY_HONG_KONG=off` 并重新部署即全部改回直连。
+
 服务器独立账号 `maanshan-relay` 仅能转发到 `127.0.0.1:3100`；
 无 shell、SFTP、PTY、远程转发、数据库端口或任意内网目标权限。
 relay 校验 SSH 主机密钥指纹，并转发 Cookie、Origin 和 CSRF 字段，
