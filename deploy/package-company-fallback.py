@@ -14,9 +14,9 @@ import subprocess
 import zipfile
 
 ROOT = Path(__file__).resolve().parent.parent
-BASE_COMMIT = 'ce24ed93b2b23c26364302176c1683ae432b69dd'
-BASE_ARCHIVE = Path('D:/maanshan-work/company-base/website-ce24ed9.zip')
-BASE_SHA256 = '01c999eaed1eaa6fedbf027f8f4ea2b5ac66155fc4cccd8c318bda87c5c59cb9'
+BASE_COMMIT = 'e1ad9b3abbaf48a49744aac44f9088f89d1ab534'
+BASE_ARCHIVE = Path('D:/maanshan-work/company-base/website-e1ad9b3.zip')
+BASE_SHA256 = '479e1989329e153b007441b5c305369de3a58af122be7c5ba1a7c69c44b53f73'
 COMPANY_PROJECT = 'prj_bqY58Gj2ysGIw7UaFgfU6AheN4Us'
 SCHOOL_PROJECT = 'prj_BXHyIePcHYn42fprA8v1zB2rvSF1'
 TEAM = 'team_6bMNzzu5QidBaJlDV3R4icEd'

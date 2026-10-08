@@ -13,7 +13,7 @@
 ## 不改 DNS 的学校备用入口
 
 `https://aiducation.asia/school/` 是同一广州数据库的学校备用入口；
-公司首页为 2026-10-08 起的水墨宫廷版（company-v3-ink 分支 ce24ed9，备份 `D:/maanshan-work/company-base/website-ce24ed9.zip`；上一版 2d1b8ff 见 `company-base/backup-live-20261008/`）；`/maanshan/` 旧演示及其他旧站保持原部署内容。
+公司首页为 2026-10-08 起的水墨宫廷版（company-v3-ink 分支 e1ad9b3，备份 `D:/maanshan-work/company-base/website-e1ad9b3.zip`；上一版 2d1b8ff 见 `company-base/backup-live-20261008/`）；`/maanshan/` 旧演示及其他旧站保持原部署内容。
 `deploy/package-company-fallback.py` 从已校验的公司生产源码备份添加学校包，
 校验所有原文件摘要，仅追加 `/school/`、13 个 `/school-api/` 固定转发及资源规则。
 先生成与当前提交一致的学校包，再生成隔离公司包并从该目录发布；不要从主源码目录直接发布公司站。
