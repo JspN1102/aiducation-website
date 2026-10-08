@@ -33,7 +33,7 @@
   requestAnimationFrame(function () { requestAnimationFrame(function () { hero.classList.add('is-in'); }); });
 
   /* ---------------- reveal (ink, seals, brush, leaves) ---------------- */
-  var revealEls = $$('[data-reveal], .juan-head, .leaf, .seal-ins, .brush');
+  var revealEls = $$('[data-reveal], .juan-head, .leaf, .brush');
   function markDone(leaf) {
     var m = $('.ink-mask', leaf);
     if (!m || m.classList.contains('done')) return;
@@ -75,35 +75,10 @@
   /* ---------------- scroll-linked bits ---------------- */
   var ticking = false;
 
-  /* village reel: pinned horizontal scroll on wide screens (html.reel-on), stacked panels otherwise */
-  var reel = $('#reel'), track = reel && $('.reel-track', reel), rbar = reel && $('.reel-bar span', reel), dist = 0;
-  function layoutReel() {
-    if (!reel) return;
-    var on = !reduce && win.innerWidth >= 900 && win.innerHeight >= 560;
-    root.classList.toggle('reel-on', on);
-    track.style.transform = '';
-    dist = 0;
-    if (on) {
-      var last = track.lastElementChild, pr = parseFloat(win.getComputedStyle(track).paddingRight) || 0;
-      dist = Math.max(0, Math.round(last.offsetLeft + last.offsetWidth + pr - track.clientWidth));
-      reel.style.height = (win.innerHeight + dist) + 'px';
-    } else {
-      reel.style.height = '';
-      if (rbar) rbar.style.transform = '';
-    }
-  }
-  function updateReel(vh) {
-    if (!dist) return;
-    var r = reel.getBoundingClientRect(), span = reel.offsetHeight - vh;
-    var p = span > 0 ? clamp(-r.top / span, 0, 1) : 0;
-    track.style.transform = 'translate3d(' + (-p * dist).toFixed(1) + 'px,0,0)';
-    if (rbar) rbar.style.transform = 'scaleX(' + p.toFixed(4) + ')';
-  }
   function onScroll() {
     var vh = win.innerHeight, y = win.pageYOffset, max = root.scrollHeight - vh;
     nav.classList.toggle('is-scrolled', y > 40);
     if (prog) prog.style.setProperty('--p', max > 0 ? clamp(y / max, 0, 1).toFixed(4) : '0');
-    updateReel(vh);
     var line = vh * 0.4, cur = null;
     navTargets.forEach(function (t) {
       if (!t.el) return;
@@ -114,18 +89,14 @@
     ticking = false;
   }
   win.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
-  var reelT = 0, reelW = win.innerWidth, reelH = win.innerHeight;
+  var resizeT = 0;
   win.addEventListener('resize', function () {
-    clearTimeout(reelT);
-    reelT = setTimeout(function () {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(function () {
       if (win.innerWidth > 900 && nav.classList.contains('is-open')) setMenu(false, false);
-      // ignore pure mobile URL-bar height jitter; recompute on real size changes
-      if (win.innerWidth === reelW && Math.abs(win.innerHeight - reelH) < 90 && !root.classList.contains('reel-on')) return;
-      reelW = win.innerWidth; reelH = win.innerHeight;
-      layoutReel(); onScroll();
+      onScroll();
     }, 120);
   });
-  layoutReel();
   onScroll();
 
   /* ---------------- stats count-up ---------------- */

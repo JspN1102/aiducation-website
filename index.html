@@ -20,7 +20,7 @@
 <link rel="preload" href="assets/fonts/song-900.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/song-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/home.css?v=ink1">
-<script>(function(d,w){d.classList.add('js');if(w.innerWidth>=900&&w.innerHeight>=560&&!(w.matchMedia&&w.matchMedia('(prefers-reduced-motion: reduce)').matches))d.classList.add('reel-on')})(document.documentElement,window)</script>
+<script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
 <a class="skip" href="#main">跳到主要內容</a>
@@ -291,47 +291,45 @@
   <div class="juan">
     <div class="juan-head" aria-hidden="true"><span class="juan-no">卷五</span><span class="v-title"><span class="ink-in">走進詩裡</span></span><span class="juan-en">Village</span></div>
     <div class="juan-body">
-      <div class="v-head">
-        <div data-reveal>
-          <p class="kicker"><b>02</b>產品 · Product</p>
-          <h2 class="h-xl brush" id="village-title">中華經典<br>文化村</h2>
-          <p class="h-en en" lang="en">Chinese Classics Culture Village</p>
-        </div>
-        <div data-reveal>
-          <p class="v-tag">不是把古詩放進遊戲，<br>而是讓孩子走進古詩裡，生活一次。</p>
-          <p class="d">一座可以步行探索的國風數碼村落。孩子從村口一路走到村尾，在沿途的人、景、器物與小任務中「先看見、再動手、再理解」。每一首經典都化成一個簡單、即時回饋的互動，最後收集印記，帶走屬於自己的成長卷。</p>
-          <p class="en v-en" lang="en">Step into the poem, not just read it. A walkable, hand-painted digital village where pupils learn the classics by exploring them.</p>
-          <p class="chips"><span>瀏覽器即開即玩</span><span>支援離線使用</span><span>觸控與鍵盤皆可</span><span>無分數・無倒數・無懲罰</span></p>
+      <div class="vil-intro">
+        <p class="kicker" data-reveal><b>02</b>產品 · Product</p>
+        <h2 class="h-xl brush" id="village-title" data-reveal>中華經典文化村</h2>
+        <p class="h-en en" lang="en" data-reveal>Chinese Classics Culture Village</p>
+        <p class="prod-tag" data-reveal>讓孩子走進古詩裡，生活一次。</p>
+        <p class="prod-lead" data-reveal>一座可以在瀏覽器裡漫步的國風數碼村落。孩子先看見、再動手、再理解：在村口賞春，在茶寮聽雨，在燈夜放燈，詩句就藏在日常的煙火之中。</p>
+      </div>
+
+      <div class="album">
+        <figure class="leaf leaf-a" data-reveal>
+          <div class="leaf-mount"><div class="leaf-img ink-mask"><img src="assets/img/village-spring-900.webp" srcset="assets/img/village-spring-900.webp 900w, assets/img/village-spring-1400.webp 1400w" sizes="(max-width: 900px) 92vw, 1040px" width="1400" height="933" loading="lazy" decoding="async" alt="概念圖：春日村口，石拱橋邊孩童放紙鳶，燕子掠過柳岸"></div></div>
+          <figcaption><span class="seal seal-sm" aria-hidden="true"><span>概念</span></span><b>春日出遊</b><span>村口春景 · 走進詩畫</span></figcaption>
+        </figure>
+        <figure class="leaf leaf-b" data-reveal>
+          <div class="leaf-mount"><div class="leaf-img ink-mask"><img src="assets/img/village-teahouse-900.webp" srcset="assets/img/village-teahouse-900.webp 900w, assets/img/village-teahouse-1400.webp 1400w" sizes="(max-width: 900px) 92vw, 420px" width="1400" height="933" loading="lazy" decoding="async" alt="概念圖：細雨中的水邊茶寮，村民圍坐品茶"></div></div>
+          <figcaption><span class="seal seal-sm" aria-hidden="true"><span>概念</span></span><b>雨中茶寮</b><span>煙火日常 · 泡茶聽雨</span></figcaption>
+        </figure>
+        <figure class="leaf leaf-c" data-reveal>
+          <div class="leaf-mount"><div class="leaf-img ink-mask"><img src="assets/img/village-lantern-900.webp" srcset="assets/img/village-lantern-900.webp 900w, assets/img/village-lantern-1400.webp 1400w" sizes="(max-width: 900px) 92vw, 420px" width="1400" height="933" loading="lazy" decoding="async" alt="概念圖：月夜水鄉，河面漂着點點蓮花燈"></div></div>
+          <figcaption><span class="seal seal-sm" aria-hidden="true"><span>概念</span></span><b>上元燈夜</b><span>製燈放燈 · 夜讀詩情</span></figcaption>
+        </figure>
+      </div>
+      <p class="note" data-reveal>圖為概念設計，非遊戲實機畫面。</p>
+
+      <ol class="ways">
+        <li data-reveal><span class="num" aria-hidden="true">壹</span><b>走進詩畫</b><span>詩句化作可以走進去的場景，孩子在畫中漫步。</span></li>
+        <li data-reveal><span class="num" aria-hidden="true">貳</span><b>煙火日常</b><span>泡茶、種菜、製燈，在動手中體會詩意。</span></li>
+        <li data-reveal><span class="num" aria-hidden="true">參</span><b>器物細看</b><span>3D 古器物可旋轉、可放大，看清每一處細節。</span></li>
+        <li data-reveal><span class="num" aria-hidden="true">肆</span><b>村中尋趣</b><span>跟着線索尋找詩句，親手拓印帶回家。</span></li>
+        <li data-reveal><span class="num" aria-hidden="true">伍</span><b>成長印記</b><span>收集印記與明信片：無分數、無倒數、無懲罰。</span></li>
+      </ol>
+
+      <div class="roadmap" data-reveal>
+        <span class="seal seal-road" aria-hidden="true"><span>規劃</span></span>
+        <div>
+          <p class="road-title">規劃中 · 第一期內容</p>
+          <p>12 首古詩 + 3 篇文言文，分布於五大場景：村口春景、田園人家、學堂驛舍、高樓夜路、村外關河。瀏覽器即開，學校電腦與平板皆可使用，並支援離線運行。</p>
         </div>
       </div>
-    </div>
-  </div>
-  <div class="reel" id="reel">
-    <div class="reel-pin">
-      <ol class="reel-track" aria-label="文化村概念圖">
-        <li class="panel panel--art"><figure><div class="leaf"><div class="leaf-img ink-mask"><img src="assets/img/village-spring-900.webp" srcset="assets/img/village-spring-900.webp 900w, assets/img/village-spring-1400.webp 1400w" sizes="(min-width:900px) 68vw, 92vw" width="1400" height="933" loading="lazy" decoding="async" alt="概念圖：春日村口，石拱橋邊孩童放紙鳶，燕子掠過柳岸"></div><span class="label">概念圖</span></div><figcaption><span class="panel__n">01 / 05</span><h3>漫步水鄉</h3><p>拱橋、垂柳、烏篷船——從村口出發，一路走進經典。</p></figcaption></figure></li>
-        <li class="panel panel--ins"><div class="ins"><div class="ins-text"><h3>走進詩畫</h3><p>白鵝、黃鸝、白鷺——詩句裡的風景，一幕幕來到眼前。</p></div><span class="panel__n">02 / 05</span><span class="seal seal-ins" aria-hidden="true"><span>題跋</span></span></div></li>
-        <li class="panel panel--art"><figure><div class="leaf"><div class="leaf-img ink-mask"><img src="assets/img/village-teahouse-900.webp" srcset="assets/img/village-teahouse-900.webp 900w, assets/img/village-teahouse-1400.webp 1400w" sizes="(min-width:900px) 68vw, 92vw" width="1400" height="933" loading="lazy" decoding="async" alt="概念圖：細雨中的水邊茶寮，村民圍坐品茶"></div><span class="label">概念圖</span></div><figcaption><span class="panel__n">03 / 05</span><h3>煙火日常</h3><p>泡茶、種菜、製燈，在手作裡認識生活。</p></figcaption></figure></li>
-        <li class="panel panel--ins"><div class="ins"><div class="ins-text"><h3>村中尋趣</h3><p>觀察地標、親手拓印，下載屬於自己的紀念小箋。</p></div><span class="panel__n">04 / 05</span><span class="seal seal-ins" aria-hidden="true"><span>題跋</span></span></div></li>
-        <li class="panel panel--art"><figure><div class="leaf"><div class="leaf-img ink-mask"><img src="assets/img/village-lantern-900.webp" srcset="assets/img/village-lantern-900.webp 900w, assets/img/village-lantern-1400.webp 1400w" sizes="(min-width:900px) 68vw, 92vw" width="1400" height="933" loading="lazy" decoding="async" alt="概念圖：月夜水鄉，河面漂着點點蓮花燈"></div><span class="label">概念圖</span></div><figcaption><span class="panel__n">05 / 05</span><h3>成長印記</h3><p>收集印記、完成送禮任務、自製明信片，帶走自己的成長卷。</p></figcaption></figure></li>
-      </ol>
-      <div class="reel-bar" aria-hidden="true"><span></span></div>
-    </div>
-  </div>
-  <div class="juan juan-tail">
-    <ul class="v-facts">
-      <li data-reveal><h3>3D 器物細看</h3><p>白鵝、小馬、茶壺、花燈、石獅、古井、烏篷船，都能拿在手上旋轉細看。</p></li>
-      <li data-reveal><h3>會說話的村莊</h3><p>村民用普通話和粵語開口說話，還會遇上說英語的旅人；詩句皆有配樂朗誦。</p></li>
-    </ul>
-    <div class="road" data-reveal>
-      <div class="road__head"><h3>發展藍圖<span class="en" lang="en"> · Roadmap</span></h3><p>15 篇經典古詩文，串成 5 段連續場景</p></div>
-      <ol>
-        <li><b>01</b><span>村口春景</span></li>
-        <li><b>02</b><span>田園人家</span></li>
-        <li><b>03</b><span>學堂驛舍</span></li>
-        <li><b>04</b><span>高樓夜路</span></li>
-        <li><b>05</b><span>村外關河</span></li>
-      </ol>
     </div>
   </div>
 </section>
