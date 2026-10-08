@@ -5,7 +5,9 @@ const measured=value=>typeof value==='number'&&Number.isFinite(value)&&value>=0&
 
 // Receives only quality-checked, selected server reading outcomes. Keep one
 // chosen recording per learner and poem line even across content versions;
-// never carry an older character score into a newer unmeasured recording.
+// first/latest never carry an older character score into a newer unmeasured
+// recording; best keeps the highest scored recording (later wins a tie).
+const lineScore=row=>measured(row.event.result?.score)?row.event.result.score:-1;
 function buildCharacterAnalysis(outcomes,filters={}){
   const catalog=poems.filter(poem=>(filters.grade===undefined||Number(filters.grade)===poem.grade)&&(filters.poemId===undefined||Number(filters.poemId)===poem.id));
   const selected=new Map();
@@ -14,7 +16,7 @@ function buildCharacterAnalysis(outcomes,filters={}){
     const match=/^p([1-6])\.l(\d+)$/.exec(event.itemId||'');
     if(!poem||row.grade!==poem.grade||!match||Number(match[1])!==poem.id||!poem.lines[Number(match[2])])continue;
     const key=JSON.stringify([row.researchId,event.poemId,Number(match[2])]),previous=selected.get(key);
-    if(!previous||(filters.attempt==='first'?row.serverReceivedAt<previous.serverReceivedAt:row.serverReceivedAt>previous.serverReceivedAt))selected.set(key,row);
+    if(!previous||(filters.attempt==='first'?row.serverReceivedAt<previous.serverReceivedAt:filters.attempt==='best'?lineScore(row)>lineScore(previous)||lineScore(row)===lineScore(previous)&&row.serverReceivedAt>previous.serverReceivedAt:row.serverReceivedAt>previous.serverReceivedAt))selected.set(key,row);
   }
   const groups=new Map();
   for(const row of selected.values()){

@@ -6,7 +6,7 @@ const DEMO=location.pathname.endsWith('/teacher-demo.html');
 const AUTH='/api/school-auth',ANALYTICS=DEMO?'/api/teacher-tools?tool=demo-data&kind=analytics':'/api/teacher-analytics';
 const analyticsQuery=params=>ANALYTICS+(DEMO?'&':'?')+params;
 const root=document.querySelector('#teacher-root'),dialog=document.querySelector('#student-dialog');
-const state={auth:null,legacy:false,legacyCode:'',roster:null,rosterError:false,data:null,poems:[],view:'overview',search:'',page:0,generation:0,request:null,detailRequest:null,detailStudent:null,filters:{grade:'',poemId:'',cls:'',from:dayOffset(-29),to:dayOffset(0),attempt:'latest',activity:''},scopeCache:new Map()};
+const state={auth:null,legacy:false,legacyCode:'',roster:null,rosterError:false,data:null,poems:[],view:'overview',search:'',page:0,generation:0,request:null,detailRequest:null,detailStudent:null,filters:{grade:'',poemId:'',cls:'',from:dayOffset(-29),to:dayOffset(0),attempt:'best',activity:''},scopeCache:new Map()};
 Object.assign(state,{studentFilter:'all',constructFilter:'',detailTab:'learning',detailData:null,exportJob:null});
 Object.assign(state,{assistantJob:null,assistantReport:null,documentJob:null,toolsPreparing:false,rosterGeneration:0});
 const ASSISTANT='/api/teacher-tools?tool='+(DEMO?'demo-analysis':'analysis'),DOCUMENTS='/api/teacher-tools?tool='+(DEMO?'demo-export':'export');
@@ -201,11 +201,11 @@ function classWordAnalysis(){
   const heading=`<span>${esc(poem.title)}</span><small>${poem.grade} 年級</small>`;
   return state.filters.grade?`<article class="poem-character-sheet" data-poem-id="${poem.id}"><h3 class="poem-character-title">${heading}</h3><div class="character-lines">${lines}</div></article>`:`<details class="poem-character-sheet" data-poem-id="${poem.id}"><summary class="poem-character-title">${heading}<span class="details-chevron" aria-hidden="true">⌄</span></summary><div class="character-lines">${lines}</div></details>`;
  }).join('');
- return `<section class="class-character-analysis" aria-labelledby="class-words-title"><div class="character-section-heading"><h2 id="class-words-title">逐字分析</h2><div class="character-legend"><span class="legend-low">低於 80 分</span><span class="legend-clear">80 分或以上</span></div></div>${content||empty('古詩內容暫未載入')}<p class="chart-note">每字平均分 · 每位學生取${state.filters.attempt==='first'?'首次':'最近'}一次朗讀 · 未測不計分</p></section>`;
+ return `<section class="class-character-analysis" aria-labelledby="class-words-title"><div class="character-section-heading"><h2 id="class-words-title">逐字分析</h2><div class="character-legend"><span class="legend-low">低於 80 分</span><span class="legend-clear">80 分或以上</span></div></div>${content||empty('古詩內容暫未載入')}<p class="chart-note">每字平均分 · 每位學生每句取${({first:'首次',latest:'最近',best:'最高分'})[state.filters.attempt]||'最近'}一次朗讀 · 未測不計分</p></section>`;
 }
 function studentWordBody(data,expanded=false){
  const words=wordIssues(data),visible=expanded?words:words.slice(0,6);
- if(!words.length)return empty(data?.readingCharacterAnalysis?.source==='server_verified'&&data.readingCharacterAnalysis.poems?.some(poem=>poem.lines.some(line=>line.words.some(word=>word.count>0)))?'最近的字音評測沒有低於 80 分的字':'尚未有逐字朗讀紀錄');
+ if(!words.length)return empty(data?.readingCharacterAnalysis?.source==='server_verified'&&data.readingCharacterAnalysis.poems?.some(poem=>poem.lines.some(line=>line.words.some(word=>word.count>0)))?(state.filters.attempt==='best'?'最佳一次的字音評測沒有低於 80 分的字':'最近的字音評測沒有低於 80 分的字'):'尚未有逐字朗讀紀錄');
  return `<div class="student-word-grid">${visible.map(word=>{const context=wordContext(word);return `<article class="student-word-card"><div class="student-word-top"><strong class="word-glyph">${esc(word.char)}</strong><span class="word-score" title="字音平均分">${characterScore(word.meanScore)}<small>分</small></span></div><p class="word-context-label">${esc(context.label)}</p>${context.text?`<p class="word-original-line">${context.text}</p>`:''}</article>`;}).join('')}</div><p class="chart-note">最近字音平均分 · 只列低於 80 分的字</p>${words.length>visible.length?'<button type="button" class="button" data-action="more-student-words">查看其餘字音</button>':''}`;
 }
 function studentPracticeBody(data){
@@ -261,7 +261,7 @@ async function changePassword(form){
  finally{form.reset();button.disabled=false;button.textContent='儲存新密碼';}
 }
 
-function filterKey(filters){return JSON.stringify(Object.fromEntries(['grade','poemId','cls','from','to','attempt','activity'].map(key=>[key,String(filters?.[key]??(key==='attempt'?'latest':''))])));}
+function filterKey(filters){return JSON.stringify(Object.fromEntries(['grade','poemId','cls','from','to','attempt','activity'].map(key=>[key,String(filters?.[key]??(key==='attempt'?'best':''))])));}
 function filterDescription(filters){return `${filters.grade} 年級 · ${selectedPoem(filters)?.title||'古詩'}${filters.cls?' · '+filters.cls+' 班':''} · ${filters.from} 至 ${filters.to}`;}
 function toolPayloadFilters(filters){return Object.fromEntries(Object.entries(filters).filter(([,value])=>value!==''&&value!==null&&value!==undefined));}
 function clearTeacherTools(){state.assistantJob?.controller.abort();state.documentJob?.controller.abort();state.assistantJob=null;state.assistantReport=null;state.documentJob=null;state.toolsPreparing=false;}
@@ -385,7 +385,7 @@ function click(event){const button=event.target.closest('button');if(!button||bu
  if(button.dataset.teacherTool){const tool=button.dataset.teacherTool;if(tool==='docx')void generateAnalysis();else if(tool==='cancel-analysis')cancelAnalysis();else if(tool==='cancel-document')cancelDocument();else void exportDocument(tool);return;}
  if(button.dataset.action==='refresh'||button.dataset.action==='retry-roster'){if(state.rosterError||!state.poems.length||button.dataset.action==='retry-roster')void enterDashboard();else void loadData({force:true});}
  if(button.dataset.action==='boot')void boot();if(button.dataset.action==='logout')void logout();
- if(button.dataset.action==='reset-filters')applyFilters({grade:'',poemId:'',cls:'',from:dayOffset(-29),to:dayOffset(0),attempt:'latest',activity:''});
+ if(button.dataset.action==='reset-filters')applyFilters({grade:'',poemId:'',cls:'',from:dayOffset(-29),to:dayOffset(0),attempt:'best',activity:''});
  if(button.dataset.dateOffset!==undefined){const form=document.querySelector('#teacher-filters');form.elements.from.value=dayOffset(Number(button.dataset.dateOffset));form.elements.to.value=dayOffset(0);markFilterDraft();}
  if(button.dataset.action==='close-dialog'){state.detailRequest?.abort();state.detailStudent=null;state.detailData=null;dialog.close();document.querySelector('#student-dialog-content').replaceChildren();}
  if(button.dataset.page!==undefined){state.page=Math.max(0,Number(button.dataset.page)||0);updateStudentList();document.querySelector('#student-list')?.scrollIntoView({block:'start',behavior:'instant'});}
