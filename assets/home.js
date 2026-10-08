@@ -73,7 +73,6 @@
   }
 
   /* ---------------- scroll-linked bits ---------------- */
-  var scrubSpans = $$('[data-scrub] span');
   var ticking = false;
 
   /* village reel: pinned horizontal scroll on wide screens (html.reel-on), stacked panels otherwise */
@@ -104,11 +103,6 @@
     var vh = win.innerHeight, y = win.pageYOffset, max = root.scrollHeight - vh;
     nav.classList.toggle('is-scrolled', y > 40);
     if (prog) prog.style.setProperty('--p', max > 0 ? clamp(y / max, 0, 1).toFixed(4) : '0');
-    if (!reduce) {
-      scrubSpans.forEach(function (s) {
-        s.classList.toggle('is-on', s.getBoundingClientRect().top < vh * 0.72);
-      });
-    }
     updateReel(vh);
     var line = vh * 0.4, cur = null;
     navTargets.forEach(function (t) {
@@ -131,7 +125,6 @@
       layoutReel(); onScroll();
     }, 120);
   });
-  if (reduce) scrubSpans.forEach(function (s) { s.classList.add('is-on'); });
   layoutReel();
   onScroll();
 
