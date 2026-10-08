@@ -56,7 +56,13 @@ class ChannelAgent extends http.Agent{
  constructor(client,now,openTimeoutMs=CHANNEL_OPEN_TIMEOUT_MS,idleMs=CHANNEL_IDLE_MS){
   super({keepAlive:true,maxSockets:16,maxTotalSockets:16,maxFreeSockets:4,scheduling:'lifo'});
   this.client=client;this.now=now;this.openTimeoutMs=openTimeoutMs;this.idleMs=idleMs;this.idle=new Map();this.closed=false;
+  // When the session last proved itself alive: a channel opened or carried data.
+  this.aliveAt=-Infinity;
  }
+ // A slow open on a session that answered within the open deadline is that one
+ // channel's problem (a busy tunnel, one lost packet): failing the whole session
+ // would also kill every request in flight on it.
+ alive(){return this.now()-this.aliveAt<=this.openTimeoutMs;}
  createConnection(options,callback){
   // A request still queued when its session was given up: no bytes left, so the
   // relay may reconnect once, exactly as for a dead session.
@@ -70,11 +76,15 @@ class ChannelAgent extends http.Agent{
   // session is alive but the origin refused; everything else marks it dead.
   let settled=false;
   const settle=(error,socket)=>{if(settled){socket?.destroy();return;}settled=true;clearTimeout(timer);if(error&&error.reason===undefined)error.sessionDead=true;callback(error,socket);};
-  const timer=setTimeout(()=>{settle(new Error('CHANNEL_OPEN_TIMEOUT'));this.client.destroy();},this.openTimeoutMs);timer.unref?.();
+  const timer=setTimeout(()=>{
+   if(this.alive()){settle(Object.assign(new Error('CHANNEL_OPEN_SLOW'),{slowOpen:true,reason:'SLOW_OPEN'}));return;}
+   settle(new Error('CHANNEL_OPEN_TIMEOUT'));this.client.destroy();
+  },this.openTimeoutMs);timer.unref?.();
   try{
    // The destination port is the request's own, so the pool keeps channels per port.
    this.client.forwardOut('127.0.0.1',0,'127.0.0.1',options.port,(error,stream)=>{
     if(error){settle(error);return;}
+    this.aliveAt=this.now();
     if(this.closed||settled){stream.destroy();settle(new Error('RELAY_CLOSED'));return;}
     // ssh2 channels lack Socket ref/unref and synchronous destroyed semantics.
     // A Duplex wrapper supplies reliable abort/close handling for the HTTP pool.
@@ -92,6 +102,9 @@ class ChannelAgent extends http.Agent{
     // Close it at once, as a TCP socket would, so the pool forgets it.
     socket.once('end',()=>socket.destroy());
     socket.once('close',()=>this.clearIdle(socket));
+    // Data read from any channel proves the session. The wrapper pulls the
+    // channel with read() on 'readable', so this listener only observes.
+    stream.on('data',()=>{this.aliveAt=this.now();});
     settle(null,socket);
    });
   }catch(error){settle(error);}
@@ -170,6 +183,13 @@ const MODES=new Set(['full','hk-primary']);
 // uploads (recordings, research events, saves) off the sessions that carry the
 // scoring, speech and chat requests a pupil is waiting for.
 const BACKGROUND_ROUTES=new Set(['school-recordings','research-events','maanshan-save']);
+// A pupil waits on these with the recording or drawing kept, and a transport
+// blip used to end in an error and a resend tap. Their body is buffered here, so
+// one interrupted copy is sent once more (another port, else the iad1 hop) while
+// nothing of the answer has reached the pupil. The origin answers a repeat that
+// carries the same requestId from the first copy (no second score or record);
+// an older client's repeat may be scored twice, which the owner accepts.
+const REPLAY_ROUTES=new Set(['soe','handwriting','speech-to-text']);
 const LANE_SESSIONS=Object.freeze({interactive:3,background:2});
 // A session carrying fewer requests than this is shared before another opens.
 const SESSION_SHARE_LIMIT=2;
@@ -271,8 +291,8 @@ function createRelay({env=process.env,mode='full',clientFactory=()=>new Client()
   // A child can listen or write for several minutes between calls. Keep the
   // verified SSH session across those pauses (the relay sshd tolerates about
   // ten minutes of silence); transport errors/close still invalidate it
-  // immediately, dead sessions are detected on use, and no forwarded POST is
-  // ever replayed.
+  // immediately, dead sessions are detected on use, and a forwarded POST is
+  // replayed only as BACKGROUND_ROUTES and REPLAY_ROUTES allow.
   // A session left on the direct route moves back to Hong Kong once it is idle
   // and Hong Kong may be tried again (and an idle Hong Kong one is replaced
   // for a hop).
@@ -332,6 +352,9 @@ function createRelay({env=process.env,mode='full',clientFactory=()=>new Client()
   // port, while no response has begun). Scoring, speech, chat, synthesis and
   // every other POST never are, nor a hop after hkg1 already sent it twice.
   const idempotent=(req.method==='GET'||req.method==='HEAD'||BACKGROUND_ROUTES.has(name))&&arrived?.reason!=='retry';
+  // Scoring, handwriting and speech go once more after their body left (see
+  // REPLAY_ROUTES), never after the pupil got any byte, nor after a retry hop.
+  const replayable=req.method==='POST'&&REPLAY_ROUTES.has(name)&&arrived?.reason!=='retry';
   // Every hop goes direct: Hong Kong is 2 ms from hkg1 and 212 ms from here, so
   // whatever made hkg1 give up on it would only cost this request more time.
   // The sibling's once-a-minute keep-warm call goes direct too, so the first hop
@@ -342,7 +365,7 @@ function createRelay({env=process.env,mode='full',clientFactory=()=>new Client()
   // A verified hop carries the address the hkg1 function saw.
   const raw=String(req.headers?.['x-vercel-forwarded-for']||req.socket?.remoteAddress||'').split(',')[0].trim();
   const clientIp=arrived?arrived.ip:net.isIP(raw)?raw:'';
-  let upstream,channel,timer,done=false,responseComplete=false,client,hongKong=false,port=null,via=null,code=null,hopped=null,reconnected=false,rerouted=false,replayed=false,bytes=0,silences=0,stage='connect',reused=false;
+  let upstream,channel,timer,done=false,responseComplete=false,client,hongKong=false,port=null,via=null,code=null,hopped=null,reconnected=false,rerouted=false,replayed=false,resent=false,bytes=0,silences=0,stage='connect',reused=false;
   const tried=new Set(),startedAt=now();let connectedAt=startedAt,channelAt=startedAt,headersAt=0;
   // One line per slow or failed request: fixed labels, timings and sizes only.
   const report=()=>{
@@ -393,16 +416,20 @@ function createRelay({env=process.env,mode='full',clientFactory=()=>new Client()
       res.setHeader('Server-Timing',originTiming+'relay_connect;dur='+duration(startedAt,connectedAt)+', relay_channel;dur='+duration(connectedAt,channelAt)+', relay_origin;dur='+duration(channelAt,now()));
      };
      if(streaming){copyHeaders();res.setHeader('X-Accel-Buffering','no');res.flushHeaders?.();}
-     response.on('error',()=>error(502,'ORIGIN_INTERRUPTED'));
-     response.on('aborted',()=>error(502,'ORIGIN_INTERRUPTED'));
+     // An answer cut off before any of it was relayed: a replayable POST goes once more.
+     attempt.streaming=streaming;
+     const broken=()=>{if(attempt.stale||done)return;attempt.stale=true;response.destroy();attempt.request?.destroy();interrupted(attempt,sibling);};
+     response.on('error',broken);
+     response.on('aborted',broken);
      response.on('data',chunk=>{
-      if(done)return;
+      if(done||attempt.stale)return;
       size+=chunk.length;bytes=size;
       if(size>RESPONSE_LIMIT){error(502,'ORIGIN_RESPONSE_TOO_LARGE');response.destroy();}
       else if(streaming){if(!res.write(chunk)){response.pause();res.once('drain',()=>{if(!done)response.resume();});}}
       else chunks.push(chunk);
      });
      response.on('end',()=>{
+      if(attempt.stale)return;
       if(done){finish();return;}
       responseComplete=true;
       done=true;
@@ -419,6 +446,12 @@ function createRelay({env=process.env,mode='full',clientFactory=()=>new Client()
       finish();
      });
     };
+    // The answer began but broke off. Nothing of it reached the pupil unless it
+    // streams, so a replayable POST may still go once more.
+    const interrupted=(attempt,sibling)=>{
+     if(replayable&&!resent&&!sibling&&!attempt.streaming&&!res.headersSent){resent=replayed=true;advance('retry');return;}
+     error(502,'ORIGIN_INTERRUPTED');
+    };
     const send=next=>{
      if(done||res.destroyed){finish();return;}
      // Through Hong Kong the body waits for 100 Continue (see CONTINUE_TIMEOUT_MS).
@@ -432,7 +465,7 @@ function createRelay({env=process.env,mode='full',clientFactory=()=>new Client()
      const agent=agentFor(client);
      let sent,watchdog;
      const settle=()=>{clearTimeout(watchdog);watchdog=undefined;};
-     try{sent=upstream=request({host:'127.0.0.1',port:next,method:req.method,path:'/api/'+name+url.search,headers,agent},response=>{settle();
+     try{sent=attempt.request=upstream=request({host:'127.0.0.1',port:next,method:req.method,path:'/api/'+name+url.search,headers,agent},response=>{settle();
       // Guangzhou always sends 100 Continue first; an answer without it leaves the body unsent and the channel unusable.
       if(attempt.held){attempt.held=false;response.once('end',()=>sent.destroy());}
       onResponse(response,attempt,false);});}
@@ -475,17 +508,20 @@ function createRelay({env=process.env,mode='full',clientFactory=()=>new Client()
        discard(attempt.client);
        if(!reconnected){reconnected=true;tried.delete(via+':'+attempt.port);proceed();return;}
       }
+      // A slow open on a live session costs only this request its port.
+      else if(cause?.slowOpen&&hongKong){markDown(attempt.port,'slow');advance('tunnel');return;}
       else if(cause?.reason!==undefined&&hongKong){markDown(attempt.port,'refused');advance('tunnel');return;}
       if(primary){hongKongFailed('HONG_KONG_CONNECT_FAILED');hop('connect');return;}
       error(503,'ORIGIN_UNAVAILABLE');return;
      }
-     if(attempt.response){error(502,'ORIGIN_INTERRUPTED');return;}
+     if(attempt.response){interrupted(attempt,false);return;}
      // A fresh channel closed unanswered: that tunnel's listener is gone, unless
      // the whole session went (ssh2 reports that before closing its channels).
      if(hongKong&&!sent.reusedSocket){const lost=attempt.client,lostPort=attempt.port;setImmediate(()=>{if(!gone.has(lost))markDown(lostPort,'closed');});}
      // A body still held back never reached a handler, so any method may go on.
      const safe=idempotent||attempt.held;
      if(safe&&!replayed){replayed=true;advance('retry');return;}
+     if(replayable&&!resent){resent=replayed=true;advance('retry');return;}
      if(primary&&safe){hop('retry');return;}
      error(502,'ORIGIN_INTERRUPTED');
     };

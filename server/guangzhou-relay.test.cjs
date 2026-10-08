@@ -303,6 +303,50 @@ test('discarded channels leave the pool: twenty requests on channels never kept 
  }
 });
 
+test('a slow channel open on a session still carrying answers costs only that request its port', {timeout:8000},async t=>{
+ const warnings=[];t.mock.method(console,'warn',(...args)=>warnings.push(JSON.parse(args[0])));
+ let streamed;const streaming=new Promise(resolve=>{streamed=resolve;});
+ const origin=http.createServer((req,res)=>{
+  if(req.url.includes('slow')){res.writeHead(200,{'content-type':'text/plain'});let n=0;streamed();const tick=setInterval(()=>{res.write('x');if(++n===14){clearInterval(tick);res.end('done');}},50);return;}
+  res.end('ok');
+ });origin.keepAliveTimeout=95000;const originPort=await listen(origin);
+ const key=generateKeyPairSync('rsa',{modulusLength:2048}).privateKey.export({type:'pkcs1',format:'pem'});
+ const connections=[],targets=[],opens=[];let held=0;
+ const ssh=new SSHServer({hostKeys:[key]},client=>{
+  connections.push(client);client.on('error',()=>{});
+  client.on('authentication',ctx=>ctx.accept()).on('ready',()=>client.on('tcpip',(accept,reject,info)=>{
+   opens.push(info.destPort);
+   if(info.destPort===3101){held++;return;} // this tunnel is busy: the open is never answered
+   const channel=accept(),target=net.connect(originPort,'127.0.0.1');targets.push(target);
+   target.on('error',()=>channel.destroy());channel.on('error',()=>target.destroy());channel.on('close',()=>target.destroy());channel.pipe(target).pipe(channel);
+  }));
+ });
+ const sshPort=await listen(ssh);
+ class LocalClient extends SSHClient{connect(config){return super.connect({...config,host:'127.0.0.1',port:sshPort,privateKey:key,hostVerifier:()=>true});}}
+ const relay=createRelay({env:viaHongKong,clientFactory:()=>new LocalClient(),timeoutMs:3000,channelOpenTimeoutMs:300,laneSessions:{interactive:1,background:1}});
+ const front=http.createServer((req,res)=>relay.relay('school-auth',req,res)),port=await listen(front);
+ try{
+  const long=fetch('http://127.0.0.1:'+port+'/api/school-auth?slow=1');
+  await streaming;
+  const quick=await fetch('http://127.0.0.1:'+port+'/api/school-auth');
+  assert.equal(quick.status,200);assert.equal(await quick.text(),'ok');assert.equal(quick.headers.get('x-relay-port'),'3102','the slow port is passed over for the next one');
+  const first=await long;assert.equal(first.status,200);assert.equal(await first.text(),'x'.repeat(14)+'done','the answer in flight was untouched');
+  assert.deepEqual(opens,[3100,3101,3102]);assert.equal(held,1);assert.equal(connections.length,1,'the live session is kept');
+  assert.deepEqual(warnings.filter(x=>x.event==='school_relay_port'),[{event:'school_relay_port',port:3101,reason:'slow',pauseSeconds:10}]);
+ }finally{
+  relay.close();for(const client of connections)client.end();for(const target of targets)target.destroy();
+  front.closeAllConnections();origin.closeAllConnections();
+  await Promise.all([front,origin,ssh].map(server=>new Promise(resolve=>server.close(resolve))));
+ }
+});
+test('a slow channel open on a quiet session still replaces the session (mock)',{timeout:5000},async()=>{
+ let calls=0,clock=1000;const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{env:viaHongKong,channelOpenTimeoutMs:150,now:()=>clock});
+ try{
+  await (await f.call()).text();clock+=1000; // the last answer is older than the open deadline
+  f.clients[0].forwardOut=()=>{};
+  const r=await f.call();assert.equal(r.status,200);await r.text();assert.equal(f.clients.length,2);assert.equal(f.clients[0].closed,true);assert.equal(calls,2);
+ }finally{await f.close();}
+});
 test('a session that died while the instance was suspended is replaced before a POST is forwarded',async()=>{
  let calls=0,clock=1000;const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{now:()=>clock});
  try{
@@ -587,8 +631,28 @@ test('Hong Kong refusing every port (tunnel down) reroutes the unsent POST to Gu
 test('a channel lost after Hong Kong accepted it is never replayed',async t=>{
  const warnings=[];t.mock.method(console,'warn',(...args)=>warnings.push(JSON.parse(args[0])));
  let calls=0;const f=await fixture((req,res)=>{calls++;req.socket.destroy();},{env:viaHongKong});
- try{const r=await f.call('/api/soe',{method:'POST',headers:{'x-test-route':'soe','Content-Type':'application/json'},body:'{}'});assert.equal(r.status,502);assert.equal(calls,1);assert.equal(f.clients.length,1);assert.equal(f.requests.length,1);}finally{await f.close();}
+ try{const r=await f.call('/api/maanshan-chat',{method:'POST',headers:{'x-test-route':'maanshan-chat','Content-Type':'application/json'},body:'{}'});assert.equal(r.status,502);assert.equal(calls,1);assert.equal(f.clients.length,1);assert.equal(f.requests.length,1);}finally{await f.close();}
  assert.deepEqual(warnings,[{event:'school_relay_port',port:3100,reason:'closed',pauseSeconds:10}],'a fresh channel dropped unanswered rests its port');
+});
+test('a recording or drawing POST lost before any answer goes once more on another port, never twice',async t=>{
+ t.mock.method(console,'warn',()=>{});
+ for(const route of ['soe','handwriting','speech-to-text']){
+  const bodies=[];const f=await fixture(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;bodies.push([req.headers['x-school-relay'],body]);res.end('{"ok":true}');},{env:viaHongKong,onForward:target=>target===3100?'late':undefined});
+  try{
+   const r=await f.call('/api/'+route,{method:'POST',headers:{'x-test-route':route,'Content-Type':'application/json'},body:'{"s":1}'});
+   assert.equal(r.status,200,route);assert.equal(r.headers.get('x-relay-port'),'3101');await r.text();
+   assert.equal(f.lateHits,1);assert.deepEqual(bodies,[['hk:3101','{"s":1}']]);assert.equal(f.clients.length,1);
+  }finally{await f.close();}
+  let calls=0;const g=await fixture((req,res)=>{calls++;req.socket.destroy();},{env:viaHongKong});
+  try{const r=await g.call('/api/'+route,{method:'POST',headers:{'x-test-route':route,'Content-Type':'application/json'},body:'{}'});assert.equal(r.status,502);assert.equal((await r.json()).code,'ORIGIN_INTERRUPTED');assert.equal(calls,2,route+' is sent at most twice');}finally{await g.close();}
+ }
+});
+test('a recording POST whose answer broke off before any byte was relayed goes once more; a relaying stream is never replayed',async t=>{
+ t.mock.method(console,'warn',()=>{});
+ let calls=0;const f=await fixture((req,res)=>{calls++;if(calls===1){res.writeHead(200,{'content-type':'application/json','content-length':'40'});res.write('{"score"');setTimeout(()=>req.socket.destroy(),20);return;}res.end('{"score":90}');},{env:viaHongKong});
+ try{const r=await f.call('/api/soe',{method:'POST',headers:{'x-test-route':'soe','Content-Type':'application/json'},body:'{}'});assert.equal(r.status,200);assert.deepEqual(await r.json(),{score:90});assert.equal(calls,2);}finally{await f.close();}
+ let chats=0;const g=await fixture((req,res)=>{chats++;res.writeHead(200,{'content-type':'text/event-stream'});res.write('data: 1\n\n');setTimeout(()=>req.socket.destroy(),20);},{env:viaHongKong});
+ try{const r=await g.call('/api/maanshan-chat',{method:'POST',headers:{'x-test-route':'maanshan-chat','Content-Type':'application/json',accept:'text/event-stream'},body:'{}'});await r.text().catch(()=>{});assert.equal(chats,1,'a stream already relaying is never replayed');}finally{await g.close();}
 });
 test('Hong Kong ports take turns per request; X-Relay-Port and x-school-relay name the port',async()=>{
  const seen=[];const f=await fixture((req,res)=>{seen.push(req.headers['x-school-relay']);res.end('ok');},{env:viaHongKong});
@@ -632,7 +696,7 @@ test('a GET and a background upload go once more, on another port, after a fresh
  }
  assert.deepEqual(warnings.map(x=>[x.event,x.port,x.reason]),[['school_relay_port',3100,'closed'],['school_relay_port',3100,'closed']]);
 });
-test('scoring, chat and speech POSTs are never sent again once their body left',async t=>{
+test('chat is never sent again once its body left; scoring and speech go at most once more',async t=>{
  t.mock.method(console,'warn',()=>{});
  let calls=0;const f=await fixture((req,res)=>{calls++;res.end('{"ok":true}');},{env:viaHongKong,onForward:()=>'late'});
  try{
@@ -640,8 +704,8 @@ test('scoring, chat and speech POSTs are never sent again once their body left',
    const r=await f.call('/api/'+route,{method:'POST',headers:{'x-test-route':route,'Content-Type':'application/json',accept:'text/event-stream'},body:'{}'});
    assert.equal(r.status,502);assert.equal((await r.json()).code,'ORIGIN_INTERRUPTED');
   }
-  assert.equal(f.lateHits,3);assert.equal(f.requests.length,3,'one channel per request, none replayed');assert.equal(calls,0);
-  assert.deepEqual(f.logs.map(line=>JSON.parse(line).retried),[false,false,false]);
+  assert.equal(f.lateHits,5);assert.equal(f.requests.length,5,'chat once, the others twice');assert.equal(calls,0);
+  assert.deepEqual(f.logs.map(line=>JSON.parse(line).retried),[true,false,true]);
  }finally{await f.close();}
 });
 test('a GET is not sent again once response headers arrived',async t=>{
@@ -779,7 +843,7 @@ test('hkg1 hops an idempotent request after its one retry closed unanswered, but
   assert.deepEqual(p.hkg1.requests.map(x=>x.target),[3100,3101]);assert.equal(p.hkg1.deadHits,2);assert.equal(hopReason(p.hops[0]),'retry');
   action='late';
   const scored=await p.hkg1.call('/api/soe',{method:'POST',headers:{'x-test-route':'soe','Content-Type':'application/json'},body:'{}'});
-  assert.equal(scored.status,502);await scored.text();assert.equal(p.hops.length,1,'a POST that may have arrived is never sent on');assert.equal(p.hkg1.lateHits,1);
+  assert.equal(scored.status,502);await scored.text();assert.equal(p.hops.length,1,'a POST that may have arrived is never sent on');assert.equal(p.hkg1.lateHits,2,'a recording goes once more on Hong Kong, never to iad1');
  }finally{await p.close();}
 });
 test('Hong Kong off in hkg1 hops every request and iad1 goes direct; hop failures are honest',async t=>{
@@ -904,7 +968,7 @@ test('ports other requests rested are still tried, earliest first, before Hong K
  const warnings=[];t.mock.method(console,'warn',(...args)=>warnings.push(JSON.parse(args[0])));
  let clock=1000,dead=true;
  const f=await fixture((req,res)=>res.end('{"ok":true}'),{env:viaHongKong,now:()=>clock,onForward:()=>dead?'late':undefined});
- const post=()=>f.call('/api/soe',{method:'POST',headers:{'x-test-route':'soe','Content-Type':'application/json'},body:'{}'});
+ const post=()=>f.call('/api/maanshan-chat',{method:'POST',headers:{'x-test-route':'maanshan-chat','Content-Type':'application/json'},body:'{}'});
  try{
   const ports=[];for(let i=0;i<4;i++){const r=await post();assert.equal(r.status,502);ports.push(JSON.parse(f.logs.at(-1)).port);await r.text();clock++;}
   assert.deepEqual(ports,[3100,3101,3102,3100],'with every port resting, the one whose rest ends first is probed');

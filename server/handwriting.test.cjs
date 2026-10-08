@@ -180,5 +180,50 @@ test('successive checks reuse a connection after writing time but each drawing i
   assert.equal(sockets.size, 2, 'a remotely closed idle socket is replaced');
   interruptResponse = true;
   assert.equal((await invoke({ink})).statusCode, 502);
-  assert.equal(drawings.length, 4, 'a posted drawing must not be automatically replayed after a broken response');
+  assert.equal(drawings.length, 5, 'a broken relay answer is asked once more, never twice');
+});
+
+test('one lost, refused or timed-out relay call is tried once more inside the budget; Google directly is not', async t => {
+  const previous = process.env.HANDWRITING_RELAY_URL;
+  t.after(() => previous === undefined ? delete process.env.HANDWRITING_RELAY_URL : process.env.HANDWRITING_RELAY_URL = previous);
+  process.env.HANDWRITING_RELAY_URL = relay;
+  const plan = [];let calls = 0;
+  t.mock.method(globalThis, 'fetch', async () => {
+    calls++;const step = plan.shift();
+    if (step === 'network') throw new TypeError('fetch failed');
+    if (step === 'timeout') throw new DOMException('deadline', 'TimeoutError');
+    if (typeof step === 'number') return new Response('', { status: step });
+    return Response.json({ candidates: ['雨'] });
+  });
+  for (const first of ['network', 'timeout', 502, 503, 504]) {
+    plan.push(first, 'ok');calls = 0;
+    const result = await invoke();
+    assert.equal(result.statusCode, 200, String(first));assert.deepEqual(result.value, { candidates: ['雨'] });assert.equal(calls, 2);
+  }
+  plan.push('network', 'network');calls = 0;
+  assert.equal((await invoke()).statusCode, 502);assert.equal(calls, 2, 'at most two relay calls');
+  for (const refused of [400, 429]) {plan.push(refused, 'ok');calls = 0;assert.equal((await invoke()).statusCode, 502);assert.equal(calls, 1);plan.length = 0;}
+  // Not enough time left for a useful second call.
+  const now = performance.now.bind(performance);let shift = 0;
+  t.mock.method(performance, 'now', () => now() + shift);
+  t.mock.method(globalThis, 'fetch', async () => {calls++;shift += 9500;throw new DOMException('deadline', 'TimeoutError');});
+  calls = 0;assert.equal((await invoke()).statusCode, 504);assert.equal(calls, 1);
+  delete process.env.HANDWRITING_RELAY_URL;shift = 0;
+  t.mock.method(globalThis, 'fetch', async () => {calls++;throw new TypeError('fetch failed');});
+  calls = 0;assert.equal((await invoke({ ink }, { 'x-maanshan-handwriting-relay': '1' })).statusCode, 502);assert.equal(calls, 1);
+});
+test('the browser resends a drawing once when its answer was lost, within the same overall wait',async()=>{
+ globalThis.location??=new URL('https://mandarin.aiducation.asia/school/');
+ const {requestJSON}=await import('../maanshan/network.mjs');
+ const body={ink:[[[1,2],[3,4],[0,9]]],poemId:1,requestId:'7d0c2f7e-1b1a-4c55-8f3e-2b9a0d6c1e55'};
+ const script=steps=>{const sent=[];return {sent,fetchImpl:async(url,options)=>{sent.push(options.body);const step=steps[sent.length-1];if(step instanceof Error)throw step;if(step==='hang')return new Promise((_,reject)=>options.signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError'))));if(step==='cut')return {ok:true,status:200,json:async()=>{throw new SyntaxError('Unexpected end');}};return {ok:step===200,status:step,json:async()=>step===200?{candidates:['鵝']}:{error:'x'}};}};};
+ for(const first of [new TypeError('Load failed'),502,503,504,'cut']){
+  const s=script([first,200]);assert.deepEqual(await requestJSON('/api/handwriting',body,{retry:'transport',fetchImpl:s.fetchImpl}),{candidates:['鵝']},String(first));
+  assert.equal(s.sent.length,2);assert.equal(s.sent[0],s.sent[1],'the same drawing and requestId');
+ }
+ for(const status of [400,413,422,429,500]){const s=script([status,200]);await assert.rejects(requestJSON('/api/handwriting',body,{retry:'transport',fetchImpl:s.fetchImpl}));assert.equal(s.sent.length,1,String(status));}
+ const twice=script([502,502,200]);await assert.rejects(requestJSON('/api/handwriting',body,{retry:'transport',fetchImpl:twice.fetchImpl}),/服務暫時未能完成/);assert.equal(twice.sent.length,2,'never a third time');
+ const started=Date.now(),slow=script(['hang','hang']);await assert.rejects(requestJSON('/api/handwriting',body,{retry:'transport',timeout:120,fetchImpl:slow.fetchImpl}),/等得有點久/);
+ assert.equal(slow.sent.length,1,'the overall wait is never extended');assert.ok(Date.now()-started<1000);
+ const legacy=script([502,200]);await assert.rejects(requestJSON('/api/handwriting',body,{retry:true,fetchImpl:legacy.fetchImpl}));assert.equal(legacy.sent.length,1,'retry:true keeps its old meaning');
 });

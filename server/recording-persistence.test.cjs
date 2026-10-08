@@ -60,6 +60,12 @@ test('late old uploads cannot replace a newer recording, and an ID cannot change
  assert.equal(late.body.saved,false);assert.equal(late.body.recording.recordingId,second.recordingId);assert.equal(f.rows.size,1);
  assert.equal((await f.call('POST',{...second,audio:first.audio})).statusCode,409);
 });
+test('a tablet clock running fast is stored as sent: its own recordings keep their order and a retry is the same row',async()=>{
+ const f=fixture(),ahead=NOW+20*60000,first=f.input({recordedAt:ahead}),second=f.input({recordedAt:ahead+1000,audio:wav(1,2).toString('base64')});
+ const saved=await f.call('POST',first);assert.equal(saved.statusCode,200);assert.equal(saved.body.recording.recordedAt,ahead);
+ assert.equal((await f.call('POST',first)).body.saved,true);assert.equal(f.rows.size,1);
+ await f.call('POST',second);const late=await f.call('POST',first);assert.equal(late.body.saved,false);assert.equal(late.body.recording.recordingId,second.recordingId);
+});
 test('teacher reset hides earlier generation and rejects queued old uploads or old audio URLs',async()=>{
  const f=fixture(),body=f.input({actorId:teacher.id,learningEpoch:'initial'});await f.call('POST',body,teacher);
  const reset=await f.learning.reset({actor:teacher,headers:{'x-csrf-token':'synthetic'},body:{action:'reset_my_progress',confirm:true,learningEpoch:'initial',requestId:crypto.randomUUID()}});
@@ -71,7 +77,7 @@ test('teacher reset hides earlier generation and rejects queued old uploads or o
 });
 test('strict audio bounds reject disguised files, oversized gzip and invalid timestamps',async()=>{
  const f=fixture();
- for(const patch of [{audio:Buffer.from('<html>bad</html>').toString('base64')},{audio:'!!!!'},{audioCompression:'brotli'},{lineIndex:4},{recordingId:'../path'},{recordedAt:NOW+300001},{audio:gzipSync(Buffer.alloc(MAX_WAV_BYTES+1)).toString('base64'),audioCompression:'gzip'}]){
+ for(const patch of [{audio:Buffer.from('<html>bad</html>').toString('base64')},{audio:'!!!!'},{audioCompression:'brotli'},{lineIndex:4},{recordingId:'../path'},{recordedAt:NOW+366*86400000+1},{audio:gzipSync(Buffer.alloc(MAX_WAV_BYTES+1)).toString('base64'),audioCompression:'gzip'}]){
   assert.equal((await f.call('POST',f.input(patch))).statusCode,400);
  }
  const corrupt=wav();corrupt.writeUInt32LE(44100,24);assert.throws(()=>validateWav(corrupt));

@@ -15,11 +15,11 @@ import {mountLessonMap} from './lesson-map.mjs?v=20261006-school43';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261006-school43';
 import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20261006-school43';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school22';
-import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20261008-school48';
+import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20261008-school49';
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
-import {requestJSON, requestChat} from './network.mjs?v=20261008-school48';
+import {requestJSON, requestChat} from './network.mjs?v=20261008-school49';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
-import {schoolSession} from './bootstrap.mjs?v=20261008-school48';
+import {schoolSession} from './bootstrap.mjs?v=20261008-school49';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261008-school48';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school22';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school41';
@@ -125,7 +125,7 @@ const speechCache=new Map(), speechPending=new Map(), speechFailureUntil=new Map
 // Signed speech URL -> the same phrase's public COS copy, when the origin reports one.
 const publishedSpeech=new Map();
 const STATIC_AUDIO_RETRY_MS=60000;
-let ttsUnavailableUntil=0,ttsSuccessVersion=0;
+let ttsUnavailableUntil=0,ttsSuccessVersion=0,ttsFailures=0;
 const requests=new Set();
 // Paid pronunciation scoring outlives navigation; only logout/session loss aborts it.
 // Each controller maps to an abort that first records it for research (logout).
@@ -275,7 +275,7 @@ async function speechSource(text,{markup=null,voice=TTS_VOICE,purpose}={}) {
       if(speechCache.size>=80)speechCache.delete(speechCache.keys().next().value);
       speechCache.set(key,source);
       speechFailureUntil.delete(key);
-      ttsUnavailableUntil=0;
+      ttsUnavailableUntil=0;ttsFailures=0;
       ttsSuccessVersion++;
       return source;
     }catch(error){
@@ -283,7 +283,8 @@ async function speechSource(text,{markup=null,voice=TTS_VOICE,purpose}={}) {
         if([400,413,422].includes(error.status)){
           if(speechFailureUntil.size>=80)speechFailureUntil.delete(speechFailureUntil.keys().next().value);
           speechFailureUntil.set(key,Date.now()+45000);
-        }else if(ttsSuccessVersion===successVersion)ttsUnavailableUntil=Date.now()+45000;
+        // One lost phrase is not an outage: speech pauses for 10 s only after two failures in a row.
+        }else if(ttsSuccessVersion===successVersion&&++ttsFailures>=2)ttsUnavailableUntil=Date.now()+10000;
       }
       throw error;
     }
@@ -772,7 +773,9 @@ async function assessRecording(blob,p,index,version,generation,context,existing=
     if(!pending.compact&&!pending.encoded)pending.encoded=await encodeRecording(blob,openContext());
     if(!isCurrent())return;
     if(pending.encoded)closeContext();
-    const payload=audio=>({...audio,poemId:p.id,refText:p.lines[index].simplified,...(collectResearch?{researchContext:pending.researchContext}: {})});
+    // One id per recording: an automatic or manual resend of the same audio gets the first score instead of a second one.
+    pending.requestId||=crypto.randomUUID();
+    const payload=audio=>({...audio,requestId:pending.requestId,poemId:p.id,refText:p.lines[index].simplified,...(collectResearch?{researchContext:pending.researchContext}: {})});
     const options={signal:controller.signal,onRetry:()=>{research.emit('retry',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,retryCount:1});if(isCurrent())assessmentStatus('正在重新連線，錄音已保留');},onWaiting:()=>{if(isCurrent())assessmentStatus('正在等候評測，錄音已保留');}};
     let raw;
     if(pending.encoded){uploadPath='pcm';raw=await submitAssessment(payload({audio:pending.encoded}),options);}
@@ -1009,7 +1012,7 @@ async function renderQuiz() {
     onResearch:(type,fields)=>research.emit(type,timedResearch(type,{...fields,poemId:p.id})),
     onAnswer:answer=>{if(!school.enabled)return;queueMicrotask(()=>queueReading(p));const audit={...research.context({...answer}),poemId:p.id};if(!answerOutbox.enqueue({poemId:p.id,itemId:answer.itemId,status:answer.status,response:answer.response||{},researchContext:audit}))research.emit('error',{poemId:p.id,activity:answer.activity,attemptId:answer.attemptId,itemId:answer.itemId,error:{code:'storage_unavailable',retryable:false}});},
     playAudio:playChallengeAudio,prefetchAudio:prefetchChallengeAudio,stopAudio:stopMedia,prewarm:prewarmAssessment,
-    recognize:(ink,context)=>api('/api/handwriting',{ink,poemId:p.id,...(collectResearch?{researchContext:research.context(context)}:{})},16000)});
+    recognize:(ink,context)=>api('/api/handwriting',{ink,poemId:p.id,requestId:crypto.randomUUID(),...(collectResearch?{researchContext:research.context(context)}:{})},16000,'transport')});
 }
 async function renderExploration(){
   preloadActivityModules('explore');
@@ -1156,11 +1159,11 @@ async function transcribeChatVoice(voice,blob){
     // Compact Opus/AAC first, decoded on the origin; plain PCM only if that is refused.
     const compact=await compactRecording(blob);let result;
     if(chatVoice!==voice)return;
-    try{result=await submitSpeech(compact?{audio:compact.audio,audioFormat:compact.audioFormat}:{audio:await encodeRecording(blob,voice.context)},{signal:controller.signal});}
+    try{result=await submitSpeech({...(compact?{audio:compact.audio,audioFormat:compact.audioFormat}:{audio:await encodeRecording(blob,voice.context)}),requestId:crypto.randomUUID()},{signal:controller.signal});}
     catch(error){
       if(error?.code!=='TRANSCODE'||!compact)throw error;
       if(chatVoice!==voice)return;
-      result=await submitSpeech({audio:await encodeRecording(blob,voice.context)},{signal:controller.signal});
+      result=await submitSpeech({audio:await encodeRecording(blob,voice.context),requestId:crypto.randomUUID()},{signal:controller.signal});
     }
     if(chatVoice!==voice)return;
     const text=typeof result?.text==='string'?result.text.trim():'',input=$('#chat-input');
@@ -1328,7 +1331,7 @@ $('#account-logout').addEventListener('click',async event=>{
   const button=event.currentTarget;button.disabled=true;
   try{
     stopMedia();cancelRecording();scoringRequests.forEach(abort=>abort());
-    await Promise.race([Promise.allSettled([sync.flush(),recordings.flush(),research.finish(),answerOutbox.flush({force:true})]),new Promise(resolve=>setTimeout(resolve,3000))]);
+    await Promise.race([Promise.allSettled([sync.flush(),recordings.flush(),research.finish(),answerOutbox.flush({force:true})]),new Promise(resolve=>setTimeout(resolve,10000))]);
     // After the session is revoked an upload can only fail with 401; anything
     // still queued waits on this device for the pupil's next login.
     research.pause();answerOutbox.pause();

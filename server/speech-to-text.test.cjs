@@ -22,8 +22,9 @@ function fixture({reply={Response:{Result:'骆宾王你几岁写的咏鹅？',Au
  }};
  const schoolAuth={enabled:()=>auth,async requireActor(req){if(req.headers?.cookie!=='session')throw Object.assign(new Error('auth'),{status:401});return {id:req.headers['x-actor']||'s1',role:req.headers['x-role']||'student'};},getStore(){if(!pool)throw new Error('Missing PostgreSQL');return {pool};},sendError(res,error){return res.status(error.status).json({error:'AUTH_REQUIRED'});}};
  const transcoder={FORMATS:{webm:{},mp4:{},ogg:{}},MAX_INPUT_BYTES:1024*1024,async transcodeToWav(input,format){transcodes.push(format);if(!transcode)throw Object.assign(new Error('bad'),{code:'DECODE_FAILED'});return transcode(input,format);}};
- const module={exports:{}},errors=[];
- vm.runInNewContext(fs.readFileSync(filename,'utf8'),{module,Buffer,setTimeout,clearTimeout,queueMicrotask,console:{error:(...args)=>errors.push(args.join(' '))},process:{env:{TENCENT_SECRET_ID:'synthetic-id',TENCENT_SECRET_KEY:'synthetic-key'}},require:name=>name==='https'?https:name==='./_lib/school-auth.cjs'?schoolAuth:name==='./_lib/audio-transcode.cjs'?transcoder:require(name)});
+ const module={exports:{}},errors=[],replayPath=require.resolve('../api/_lib/request-replay.cjs');
+ delete require.cache[replayPath];const replay=require(replayPath);
+ vm.runInNewContext(fs.readFileSync(filename,'utf8'),{module,Buffer,setTimeout,clearTimeout,queueMicrotask,console:{error:(...args)=>errors.push(args.join(' '))},process:{env:{TENCENT_SECRET_ID:'synthetic-id',TENCENT_SECRET_KEY:'synthetic-key'}},require:name=>name==='https'?https:name==='./_lib/school-auth.cjs'?schoolAuth:name==='./_lib/audio-transcode.cjs'?transcoder:name==='./_lib/request-replay.cjs'?replay:require(name)});
  const call=async(body,headers={cookie:'session'})=>{const res={statusCode:200,headers:{},setHeader(k,v){this.headers[k]=v;},status(v){this.statusCode=v;return this;},json(v){this.body=JSON.parse(JSON.stringify(v));return this;},end(){}};await module.exports({method:'POST',headers,body},res);return res;};
  return {call,calls,transcodes,errors,pool};
 }
@@ -89,6 +90,21 @@ test('speech input reports provider refusals without echoing them and keeps empt
  assert.deepEqual((await silent.call({audio:wav().toString('base64')})).body,{text:''});
 });
 
+test('a resent question with the same requestId gets the first answer and uses one recognition',async()=>{
+ const f=fixture({reply:()=>({Response:{Result:'李白',RequestId:'synthetic'}})}),audio=wav().toString('base64'),requestId='7c9e6679-7425-40de-944b-e07fc1f90ae7';
+ const first=f.call({audio,requestId}),second=f.call({audio,requestId});
+ const [a,b]=await Promise.all([first,second]);
+ assert.deepEqual([a.statusCode,b.statusCode],[200,200]);assert.deepEqual(a.body,b.body);assert.equal(b.headers['X-Request-Replayed'],'1');
+ assert.equal(f.calls.length,1);assert.equal(f.pool.used.get('s1|'+month()),1,'one of the ten monthly recognitions');
+ const later=await f.call({audio,requestId});assert.deepEqual(later.body,a.body);assert.equal(f.calls.length,1);
+ assert.equal((await f.call({audio,requestId},{cookie:'session','x-actor':'s2'})).statusCode,200);assert.equal(f.calls.length,2,'another pupil never shares an answer');
+ await f.call({audio});await f.call({audio});assert.equal(f.calls.length,4,'requests without an id run as before');
+});
+test('a failed first copy is not shared: the resend is recognised itself',async()=>{
+ let n=0;const f=fixture({reply:()=>n++===0?{Response:{Error:{Code:'FailedOperation.ServiceIsolate'}}}:{Response:{Result:'李白'}}}),audio=wav().toString('base64'),requestId='0b6e2d3c-1111-4222-8333-944455556666';
+ const a=await f.call({audio,requestId});assert.equal(a.statusCode,502);
+ const b=await f.call({audio,requestId});assert.equal(b.statusCode,200);assert.equal(b.body.text,'李白');assert.equal(f.calls.length,2);
+});
 test('the whole site stops below the provider free quota',async()=>{
  const f=fixture(),audio=wav().toString('base64');f.pool.used.set('*site|'+month(),4799);
  assert.equal((await f.call({audio})).statusCode,200);
