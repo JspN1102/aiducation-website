@@ -7,13 +7,14 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const repo=path.resolve(__dirname,'..'),origin='https://report-score-bands.invalid',actor='synthetic-score-bands';
-const poems=JSON.parse(fs.readFileSync(path.join(repo,'maanshan/poems.json'),'utf8')).poems;
+// Preview poems too: 鄭人買履 has the only six-column line (twelve characters) and the longest clauses.
+const poems=['poems.json','poems-preview.json'].flatMap(file=>JSON.parse(fs.readFileSync(path.join(repo,'maanshan',file),'utf8')).poems);
 const key='maanshan-learning-v2:'+actor,checks=[],errors=[];let browser;
 function check(label,value){assert(value,label);checks.push({label,passed:true});}
 const band=score=>score===null?'unknown':score<60?'error':score<80?'warn':'ok';
 // Band edges with unscored words between scored neighbours.
 const pattern=[59,60,79,80,100,null,0,100,null,85];
-const plans={'zeng-wang-lun':[84,59,70,100],'gui-yuan-tian-ju':[100,100,100,100]};
+const plans={'zeng-wang-lun':[84,59,70,100],'gui-yuan-tian-ju':[100,100,100,100],'zheng-ren-mai-lu':[90,70,55,85]};
 function seed(){return Object.fromEntries(poems.map(p=>[p.id,{reading:p.lines.map((line,i)=>{
  const total=plans[p.slug]?.[i];if(total===undefined)return null;
  return {total_score:total,grade:'繼續進步',dimensions:{phone_score:total,fluency_score:total,integrity_score:100},
@@ -26,7 +27,7 @@ async function setup(width,height){
  await context.route('**/*',async route=>{
   const url=new URL(route.request().url()),endpoint=url.pathname.replace(/\/$/,''),send=data=>route.fulfill({contentType:'application/json',body:JSON.stringify(data)});
   if(endpoint.startsWith('/api/')){
-   if(endpoint==='/api/school-auth')return send(url.searchParams.get('action')==='progress'?{enabled:true,userId:actor,poems:{}}:{enabled:true,authenticated:true,user:{id:actor,role:'student',displayName:'示範同學',grade:1,cls:'A',classNo:1,isTest:true,learningScope:'all-grades',researchEnabled:false},csrfToken:'synthetic-csrf'});
+   if(endpoint==='/api/school-auth')return send(url.searchParams.get('action')==='progress'?{enabled:true,userId:actor,poems:{}}:{enabled:true,authenticated:true,user:{id:actor,role:'student',displayName:'示範同學',grade:1,cls:'A',classNo:1,isTest:true,learningScope:'all-grades',researchEnabled:false,previewPoems:true},csrfToken:'synthetic-csrf'});
    if(endpoint==='/api/school-recordings')return send({ok:true,userId:actor,recordings:[]});
    return route.fulfill({status:500,body:'Unexpected API blocked'});
   }
@@ -69,6 +70,6 @@ async function reports(width,height){const {page,context}=await setup(width,heig
  }
 }finally{await context.close();}}
 (async()=>{browser=await chromium.launch({channel:'msedge',headless:true,args:['--no-proxy-server']});
- for(const size of [[320,740],[390,844],[768,1024],[820,1180],[1024,768],[1440,900]])await reports(...size);
+ for(const size of [[320,740],[360,780],[375,812],[390,844],[414,896],[744,1133],[768,1024],[820,1180],[1024,768],[1440,900]])await reports(...size);
  assert.deepEqual(errors,[]);
 })().catch(error=>{checks.push({label:'suite',passed:false,error:error.stack});process.exitCode=1;}).finally(async()=>{await browser?.close();const result={passed:checks.every(c=>c.passed),checks:checks.length,failed:checks.filter(c=>!c.passed),errors};console.log(JSON.stringify(result,null,1));});

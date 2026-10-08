@@ -703,7 +703,7 @@ function aggregateEvents(all,f,{generatedAt=new Date().toISOString(),source='pos
       const outcomes=selectedOutcomes(valid,f.attempt,'server_verified').filter(row=>constructFor(row)==='reading.pronunciation');
       studentDetails[researchId]={readingCharacterAnalysis:buildCharacterAnalysis(outcomes,{...f,student:researchId}),practiceSummary:buildPracticeSummary(valid)};
     }
-    return {researchId,grade:items.at(-1).grade,cls:items.at(-1).cls,...({first,latest,best})[f.attempt],first,latest,lastSeenAt:items.at(-1).serverReceivedAt};
+    return {researchId,grade:items.at(-1).grade,cls:items.at(-1).cls,...(({first,latest,best})[f.attempt]||latest),first,latest,lastSeenAt:items.at(-1).serverReceivedAt};
   });
   const summary=summarize(rows,f.attempt,true);
   return {schemaVersion:1,dictionaryVersion:'research-v1',generatedAt,source,filters:f,

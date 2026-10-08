@@ -150,6 +150,7 @@ test('best keeps the highest measured reading per line while latest and first st
   assert.equal(student.serverVerified.measuredN,2);assert.equal(student.serverVerified.unmeasuredN,1);
   assert.equal(student.latest.serverVerified.meanScore,60);assert.equal(student.first.serverVerified.meanScore,87.5);
   assert.equal(latest.students[0].serverVerified.meanScore,60);
+  const {attempt:_unset,...noAttempt}=f;assert.equal(s.aggregateEvents(rows,noAttempt).students[0].serverVerified.meanScore,60);
   assert.equal(best.summary.serverVerified.meanScore,87.5);
   assert.equal(best.readingWords.find(word=>word.itemId==='p2.l0').meanScore,95);
   assert.equal(latest.readingWords.find(word=>word.itemId==='p2.l0').meanScore,40);
