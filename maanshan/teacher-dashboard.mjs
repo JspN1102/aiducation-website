@@ -22,7 +22,7 @@ function esc(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;'
 function number(value){return typeof value==='number'&&Number.isFinite(value)?value:null;}
 function score(value){const n=number(value);return n!==null&&n>=0&&n<=100?n:null;}
 function shown(value,digits=0){return number(value)===null?'—':value.toLocaleString('zh-HK',{maximumFractionDigits:digits});}
-function characterScore(value){return value<80&&Math.round(value*10)/10>=80?shown(Math.floor(value*100)/100,2):shown(value,1);}
+function characterScore(value){return value<80&&Math.round(value*10)/10>=80?shown(Math.min(7999,Math.floor(value*100+1e-9))/100,2):shown(value,1);}
 // Score colours: 80–100 green, 60–79 yellow, below 60 red, decided from the number
 // exactly as the teacher sees it (79.96 shown as "80" is green). No score = neutral.
 const BAND_LEGEND=[['high','綠 80–100 分'],['mid','黃 60–79 分'],['low','紅 低於 60 分'],['none','未測']];
