@@ -49,7 +49,6 @@ p,li,figcaption{text-wrap:pretty}
 .js .ink-in{opacity:0;filter:blur(14px);transform:scale(1.03)}
 .is-in .ink-in{animation:ink 1.9s var(--ease) forwards}
 .is-in .ink-in.d2{animation-delay:.45s}
-.is-in .ink-in.d3{animation-delay:.9s}
 @keyframes ink{0%{opacity:0;filter:blur(16px);transform:scale(1.05)}35%{opacity:.75}100%{opacity:1;filter:blur(0);transform:none}}
 html.js [data-reveal]{opacity:0;transform:translateY(22px);transition:opacity 1.1s var(--ease),transform 1.1s var(--ease)}
 html.js [data-reveal].is-in{opacity:1;transform:none}
