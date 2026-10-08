@@ -46,7 +46,7 @@ async function requestJSON(url,{signal,headers={},timeoutMs=25000,...options}={}
   if(!data||typeof data!=='object')throw new Error('回應格式不完整');return data;
  }finally{pendingRequests.delete(controller);clearTimeout(timeout);signal?.removeEventListener('abort',abort);}
 }
-function clearPrivate(){state.scopeCache.clear();clearTeacherTools();state.exportJob?.controller.abort();state.exportJob=null;state.detailData=null;state.studentsOpen=false;state.studentFilter='all';state.constructFilter='';sessionEpoch++;for(const controller of pendingRequests)controller.abort();pendingRequests.clear();sessionCheck=null;state.request?.abort();state.detailRequest?.abort();state.generation++;state.data=null;state.roster=null;state.rosterError=false;state.auth=null;state.legacyCode='';state.search='';state.page=0;state.detailStudent=null;if(dialog.open)dialog.close();document.querySelector('#student-dialog-content').replaceChildren();const identity=document.querySelector('#teacher-identity');identity.textContent='';identity.hidden=true;document.querySelector('#teacher-logout').hidden=true;document.querySelector('#teacher-change-password')?.remove();}
+function clearPrivate(){state.scopeCache.clear();clearTeacherTools();state.exportJob?.controller.abort();state.exportJob=null;state.detailData=null;state.studentsOpen=false;state.studentFilter='all';state.constructFilter='';sessionEpoch++;for(const controller of pendingRequests)controller.abort();pendingRequests.clear();sessionCheck=null;state.request?.abort();state.detailRequest?.abort();state.generation++;state.data=null;state.roster=null;state.rosterError=false;state.auth=null;state.legacyCode='';state.search='';state.page=0;state.detailStudent=null;if(dialog.open)dialog.close();document.querySelector('#student-dialog-content').replaceChildren();const identity=document.querySelector('#teacher-identity');identity.textContent='';identity.hidden=true;document.querySelector('#teacher-logout').hidden=true;document.querySelector('#teacher-change-password')?.remove();resetMonitor();document.querySelector('#teacher-site-monitor')?.remove();}
 function lockSession(){clearPrivate();state.legacy=false;renderLogin('帳戶已登出或在另一個分頁切換，請重新登入。');}
 function validateAuth(auth){if(typeof auth.enabled!=='boolean'||requiresSchoolAuth&&!auth.enabled||auth.authenticated&&(!auth.user?.id||!['student','teacher'].includes(auth.user.role)||typeof auth.csrfToken!=='string'||!auth.csrfToken))throw new Error('帳戶服務回覆不完整');return auth;}
 async function checkSession(){
@@ -56,7 +56,7 @@ async function checkSession(){
  return sessionCheck;
 }
 sessionChannel?.addEventListener('message',event=>{if(!state.legacy&&['signed-in','signed-out','session-changing','password-changed'].includes(event.data?.kind))lockSession();});
-function updateIdentity(){const el=document.querySelector('#teacher-identity');el.textContent=state.legacy?'舊版班級紀錄':state.auth?.user?.displayName||'教師';el.hidden=false;document.querySelector('#teacher-logout').hidden=false;if(!state.legacy&&state.auth?.user?.role==='teacher'&&!document.querySelector('#teacher-change-password')){const button=document.createElement('button');button.id='teacher-change-password';button.type='button';button.className='button quiet';button.textContent='修改密碼';button.addEventListener('click',showPasswordChange);el.after(button);}}
+function updateIdentity(){const el=document.querySelector('#teacher-identity');el.textContent=state.legacy?'舊版班級紀錄':state.auth?.user?.displayName||'教師';el.hidden=false;document.querySelector('#teacher-logout').hidden=false;if(!state.legacy&&state.auth?.user?.role==='teacher'&&!document.querySelector('#teacher-change-password')){const button=document.createElement('button');button.id='teacher-change-password';button.type='button';button.className='button quiet';button.textContent='修改密碼';button.addEventListener('click',showPasswordChange);el.after(button);}if(siteAdmin()&&!document.querySelector('#teacher-site-monitor')){const button=document.createElement('button');button.id='teacher-site-monitor';button.type='button';button.className='button quiet';button.textContent='網站後台';button.setAttribute('aria-pressed','false');button.addEventListener('click',()=>{if(monitorOpen())closeMonitor();else openMonitor();});el.after(button);}}
 function renderLogin(message='',success=false){
  root.innerHTML=`<main id="teacher-main" class="login-layout"><section class="login-card" aria-labelledby="login-title"><h1 id="login-title">教師登入</h1><form id="teacher-login-form" class="login-form">${state.legacy?'':`<label class="field" for="teacher-login">登入名稱<input id="teacher-login" name="login" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="128" required></label>`}<label class="field" for="teacher-password">${state.legacy?'教師存取碼':'登入密碼'}<input id="teacher-password" name="password" type="password" autocomplete="${state.legacy?'off':'current-password'}" maxlength="512" required></label>${termsConfirmationMarkup('teacher-terms')}<p id="login-error" class="form-error" role="alert" ${message?'':'hidden'}>${esc(message)}</p><button class="button primary" type="submit">登入</button></form></section></main>`;
  bindTermsConfirmation(document.querySelector('#teacher-login-form'));
@@ -372,6 +372,82 @@ async function loadLegacy(signal){
  const students=(data.students||[]).map(s=>{const r=score(s.score),w=score(s.writeScore),summary={nEvents:1,nStudents:1,nAttempts:null,completedN:null,serverVerified:{meanScore:r,measuredN:r===null?0:1,unmeasuredN:r===null?1:0},clientReported:{meanScore:w,measuredN:w===null?0:1,unmeasuredN:w===null?1:0}};return{researchId:String(s.id),legacyName:String(s.name||'未命名學生'),grade,cls,...summary,first:{},latest:summary,lastSeenAt:s.lastUpdated};});
  return{schemaVersion:1,generatedAt:new Date().toISOString(),legacyPhonics:data.phonAvg,students,summary:{serverVerified:{meanScore:mean(students.map(s=>s.serverVerified.meanScore)),measuredN:students.filter(s=>s.serverVerified.meanScore!==null).length},clientReported:{meanScore:mean(students.map(s=>s.clientReported.meanScore)),measuredN:students.filter(s=>s.clientReported.meanScore!==null).length}},byGrade:[],byClass:[],trend:[],coverage:{nStudents:students.length,nEvents:null,nInvalidEvents:null}};
 }
+// 網站後台: the site administrator's live view of the servers, the relay and what
+// pupils met recently. It replaces the class view in place (the dashboard keeps its
+// state) and polls every 10 s while it is open and the tab is visible.
+const SITE_STATUS='/api/teacher-tools?tool=site-status',LEVELS={ok:'正常',warn:'需要留意',bad:'有問題',unknown:'未能判斷'};
+const STATUS_TEXT={500:'程式錯誤',502:'中轉失敗',503:'暫停服務',504:'超時',408:'上傳超時'};
+const monitor={timer:null,controller:null,generation:0,data:null,link:'',failed:'',failures:0};
+function siteAdmin(){return !DEMO&&!state.legacy&&state.auth?.user?.role==='teacher'&&state.auth.user.siteAdmin===true;}
+function monitorOpen(){return !!document.querySelector('#site-monitor');}
+function stopMonitor(){monitor.generation++;clearTimeout(monitor.timer);monitor.timer=null;monitor.controller?.abort();monitor.controller=null;}
+function resetMonitor(){stopMonitor();Object.assign(monitor,{data:null,link:'',failed:'',failures:0});}
+function scheduleMonitor(seconds){clearTimeout(monitor.timer);monitor.timer=null;if(monitorOpen()&&document.visibilityState==='visible')monitor.timer=setTimeout(()=>{monitor.timer=null;void pollMonitor();},Math.min(300,Math.max(10,Number(seconds)||10))*1000);}
+function markMonitorButton(open){document.querySelector('#teacher-site-monitor')?.setAttribute('aria-pressed',String(open));}
+function openMonitor(){
+ const main=document.querySelector('#teacher-main.workspace');if(!siteAdmin()||!main)return;
+ if(!monitorOpen()){main.classList.add('monitor-mode');main.insertAdjacentHTML('beforeend','<section id="site-monitor" class="site-monitor" aria-labelledby="site-monitor-title"><div class="monitor-top"><h1 id="site-monitor-title">網站後台</h1><button type="button" class="button small" data-action="close-monitor">返回教師後台</button></div><div id="site-monitor-body"></div></section>');}
+ markMonitorButton(true);renderMonitor();window.scrollTo(0,0);void pollMonitor();
+}
+function closeMonitor(){resetMonitor();document.querySelector('#site-monitor')?.remove();document.querySelector('#teacher-main')?.classList.remove('monitor-mode');markMonitorButton(false);}
+function connectionText(headers,rtt){
+ const route=headers.get('X-Relay-Route'),port=headers.get('X-Relay-Port')||'';
+ const via=headers.get('X-Relay-Hop')==='iad1'?'香港未能接通，經美國備用線路':route==='hk'&&/^310[0-2]$/.test(port)?'經香港 '+port:route==='gz'?'經美國節點':'直接連到廣州';
+ return `你這邊的連線：${via}，往返 ${Math.round(rtt)} ms`;
+}
+async function pollMonitor(){
+ if(!monitorOpen()){markMonitorButton(false);return;}
+ if(monitor.controller||!siteAdmin())return;
+ clearTimeout(monitor.timer);monitor.timer=null;
+ const controller=new AbortController(),generation=monitor.generation,epoch=sessionEpoch,started=performance.now(),timeout=setTimeout(()=>controller.abort(),15000);
+ const current=()=>epoch===sessionEpoch&&generation===monitor.generation&&monitorOpen();
+ monitor.controller=controller;pendingRequests.add(controller);let retry=10;
+ try{
+  const response=await fetch(SITE_STATUS,{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'},signal:controller.signal});
+  const rtt=performance.now()-started;let data=null;try{data=await response.json();}catch{}
+  if(!current())return;
+  retry=Number(data?.retryAfterSeconds)||Number(response.headers.get('Retry-After'))||10;
+  if(response.status===403&&data?.code==='SITE_ADMIN_ONLY'){closeMonitor();document.querySelector('#teacher-site-monitor')?.remove();toast('這個帳戶沒有網站後台權限。');return;}
+  if(response.status===401||response.status===403){clearPrivate();renderLogin('登入已失效，請重新登入。');return;}
+  if(!response.ok)throw Object.assign(new Error('Site status failed'),{status:response.status});
+  if(data?.ok!==true||data.schemaVersion!==1||!data.verdict?.sections)throw new Error('Site status incomplete');
+  Object.assign(monitor,{data,link:connectionText(response.headers,rtt),failed:'',failures:0});
+ }catch(error){if(!current())return;monitor.failures++;monitor.failed=error.status?'伺服器回覆 '+error.status:error.name==='AbortError'?'15 秒內沒有回應':error.name==='TypeError'?'網絡未能連線':'回覆內容不完整';}
+ finally{clearTimeout(timeout);pendingRequests.delete(controller);if(monitor.controller===controller)monitor.controller=null;}
+ if(!current())return;renderMonitor();scheduleMonitor(retry);
+}
+function clockTime(value){return new Intl.DateTimeFormat('zh-HK',{timeZone:'Asia/Hong_Kong',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(value));}
+function since(at,now){if(number(at)===null)return ['—'];const s=Math.max(0,Math.round((now-at)/1000));return s<90?[s,' 秒前']:s<5400?[Math.round(s/60),' 分鐘前']:[Math.round(s/3600),' 小時前'];}
+function lasted(seconds){return number(seconds)===null?['—']:seconds<3600?[Math.max(1,Math.round(seconds/60)),' 分鐘']:seconds<172800?[Math.round(seconds/3600),' 小時']:[Math.round(seconds/86400),' 天'];}
+function seconds(ms){return number(ms)===null?null:Math.round(ms/100)/10;}
+function levelOf(section){return Object.hasOwn(LEVELS,section?.level)?section.level:'unknown';}
+function monitorStats(rows){return `<dl class="monitor-stats">${rows.map(([label,value,unit=''])=>{const none=value===null||value===undefined||value==='—';return `<div><dt>${esc(label)}</dt><dd>${none?'—':typeof value==='number'?shown(value,1):esc(value)}${unit&&!none?`<small>${esc(unit)}</small>`:''}</dd></div>`;}).join('')}</dl>`;}
+function monitorNote(parts){const text=parts.filter(Boolean);return text.length?`<p class="monitor-note">${text.map(esc).join(' · ')}</p>`:'';}
+function monitorCard(title,section,body){const level=levelOf(section);return `<article class="monitor-card level-${level}"><h2><span class="monitor-dot" aria-hidden="true"></span>${esc(title)}<span class="sr-only">：${LEVELS[level]}</span></h2><p class="monitor-status">${esc(section?.text||'未能判斷')}</p>${body}</article>`;}
+function renderMonitor(){
+ const host=document.querySelector('#site-monitor-body');if(!host)return;const d=monitor.data;
+ if(!d){host.innerHTML=monitor.failed?`<p class="monitor-banner level-bad"><span class="monitor-dot" aria-hidden="true"></span><strong>未能取得網站狀態（${esc(monitor.failed)}），稍後自動重試。</strong></p>`:'<div class="data-loading" role="status"><span class="loader" aria-hidden="true"></span><p>正在讀取網站狀態</p></div>';return;}
+ const now=Date.parse(d.generatedAt)||Date.now(),s=d.verdict.sections,o=d.origin||{},hk=d.hk||{},db=d.db||{},st=d.students||{},t15=d.traffic?.[15]||{},totals=t15.totals||{};
+ const units=Array.isArray(o.units)?o.units:[],stopped=units.filter(u=>u.activeState!=='active');
+ const server=monitorCard('廣州伺服器',s.server,monitorStats([['已運行',...lasted(o.uptimeS)],['內存',o.rssMB,' / '+o.memoryLimitMB+' MB'],['剩餘空間',o.diskFreePct,'%'],['系統服務',o.unitsAvailable?units.length-stopped.length:'未能讀取',o.unitsAvailable?' / '+units.length+' 運行中':'']])
+  +monitorNote([o.unitsAvailable&&stopped.length?'未運行：'+stopped.map(u=>u.label).join('、'):'',o.release?.commit?'版本 '+o.release.commit+'（'+timestamp(o.release.builtAt)+'）':'']));
+ const tunnels=(Array.isArray(hk.tunnels)?hk.tunnels:[]).map(t=>{const level=t.state==='active'?'ok':t.state==='unknown'?'unknown':'bad';return `<li class="level-${level}"><span class="monitor-dot" aria-hidden="true"></span>${esc(t.port)}<span class="sr-only">：${level==='ok'?'正常':level==='bad'?'中斷':'未知'}</span></li>`;}).join('');
+ const relay=monitorCard('香港中轉',s.hk,`<ul class="monitor-tunnels" aria-label="香港通道">${tunnels}</ul>`+monitorStats([['最近經過',...since(hk.lastHeartbeatAt,now)],['繞道美國（15 分鐘）',number(hk.hop15?.ratio)===null?null:Math.round(hk.hop15.ratio*100),'%'],['伺服器到期',hk.renewal?.daysLeft,' 天後']]));
+ const via=Object.values(hk.mix15||{}).reduce((n,v)=>n+(number(v)||0),0);
+ const vercel=monitorCard('Vercel',s.vercel,monitorStats([['香港節點',...since(d.vercel?.hkg1?.lastAt,now)],['美國節點',...since(d.vercel?.iad1?.lastAt,now)],['近 15 分鐘請求',via,' 次']])+monitorNote(['兩個節點每分鐘自動檢查一次']));
+ const pool=db.pools?.auth;
+ const database=monitorCard('資料庫',s.db,monitorStats([['回應時間',db.ok?db.latencyMs:null,' ms'],['使用中連線',pool?pool.total-pool.idle:null,pool?' / '+pool.total:''],['學習紀錄查詢',st.available?'正常':st.reason==='timeout'?'超時':st.reason==='disabled'?'未啟用':'未能讀取']]));
+ const routes=(Array.isArray(t15.routes)?t15.routes:[]).filter(r=>r.count>0),soe=routes.find(r=>r.route==='soe');
+ const waited=(Array.isArray(st.latency)?st.latency:[]).filter(r=>r.count>0&&number(r.p50Ms)!==null).map(r=>r.label+' '+seconds(r.p50Ms)+' 秒');
+ const table=routes.length?`<div class="table-area"><table class="monitor-table"><caption>各功能回應（近 15 分鐘）</caption><thead><tr><th scope="col">功能</th><th scope="col">次數</th><th scope="col">中位</th><th scope="col">最慢一成</th></tr></thead><tbody>${routes.map(r=>`<tr><th scope="row">${esc(r.label)}</th><td>${shown(r.count)}</td><td>${number(r.p50Ms)===null?'—':seconds(r.p50Ms)+' 秒'}</td><td>${number(r.p95Ms)===null?'—':seconds(r.p95Ms)+' 秒'}</td></tr>`).join('')}</tbody></table></div>`:'';
+ const latency=monitorCard('學生使用（回應時間）',s.latency,monitorStats([['在線學生（5 分鐘）',st.available?st.active5:null,' 人'],['近一小時',st.available?st.active60:null,' 人'],['朗讀評分中位',seconds(soe?.p50Ms),' 秒'],['最慢一成',seconds(soe?.p95Ms),' 秒']])+table+monitorNote([waited.length?'學生畫面等候中位（30 分鐘）：'+waited.join('、'):'']));
+ const network=st.available?['network','timeout'].reduce((n,code)=>n+(number(st.clientErrors?.[code]?.n15)||0),0):null,provider=st.available?(st.providerErrors||[]).reduce((n,e)=>n+(number(e.n15)||0),0):null;
+ const recent=(Array.isArray(d.traffic?.recentErrors)?d.traffic.recentErrors:[]).slice(0,5);
+ const errors=monitorCard('近期報錯',s.errors,monitorStats([['伺服器錯誤',totals.s5xx,' 個'],['請求超時',number(totals.s504)===null?null:totals.s504+(totals.s408||0),' 個'],['學生網絡中斷',network,' 次'],['外部服務出錯',provider,' 次']])+monitorNote(['以上為近 15 分鐘'])
+  +(recent.length?`<ol class="monitor-errors" aria-label="最近的伺服器錯誤">${recent.map(e=>`<li><time>${clockTime(e.at)}</time><span>${esc(e.label)}</span><strong>${esc(STATUS_TEXT[e.status]||'錯誤 '+e.status)}</strong></li>`).join('')}</ol>`:'<p class="monitor-note">重啟以來沒有伺服器錯誤紀錄。</p>'));
+ const lost=monitor.failures>=3,level=lost?'bad':levelOf(d.verdict);
+ host.innerHTML=`<div class="monitor-banner level-${level}"><span class="monitor-dot" aria-hidden="true"></span><strong>${esc(lost?`連續 ${monitor.failures} 次未能取得網站狀態（${monitor.failed}），學生可能也連不上。`:d.verdict.text)}</strong></div><p class="monitor-meta"><span>更新於 ${clockTime(now)}</span>${monitor.link?`<span>${esc(monitor.link)}</span>`:''}${monitor.failed&&!lost?`<span class="monitor-stale">最近一次更新未完成（${esc(monitor.failed)}）</span>`:''}</p><div class="monitor-grid${lost?' stale':''}">${server}${relay}${vercel}${database}${latency}${errors}</div>`;
+}
 root.addEventListener('submit',event=>{
  if(event.target.id==='teacher-login-form'){event.preventDefault();void login(event.target);}
  if(event.target.id==='teacher-filters'){event.preventDefault();applyFilters(draftFilters());}
@@ -390,6 +466,7 @@ root.addEventListener('input',event=>{
 });
 root.addEventListener('compositionend',event=>{if(event.target.id==='student-search')event.target.dispatchEvent(new Event('input',{bubbles:true}));});
 function click(event){const button=event.target.closest('button');if(!button||button.disabled)return;
+ if(button.dataset.action==='close-monitor'){closeMonitor();document.querySelector('#teacher-site-monitor')?.focus();return;}
  if(button.dataset.studentWords){void openStudentWords(button.dataset.studentWords);return;}
  if(button.dataset.action==='retry-student-words'&&state.detailStudent){void openStudentWords(state.detailStudent.researchId);return;}
  if(button.dataset.action==='more-student-words'&&state.detailStudent&&state.detailData){document.querySelector('#student-dialog-content').innerHTML=studentWordDialog(state.detailStudent,studentLearningBody(state.detailData,true));return;}
@@ -408,6 +485,6 @@ dialog.addEventListener('close',()=>{if(dialog.open)return;state.detailRequest?.
 dialog.addEventListener('submit',event=>{if(event.target.id==='teacher-password-form'){event.preventDefault();void changePassword(event.target);}});document.querySelector('#teacher-logout').addEventListener('click',logout);
 // Remove the old teacher-token persistence once; school credentials are never stored in browser storage.
 try{sessionStorage.removeItem('maanshan-teacher-access');}catch{}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void checkSession();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){void checkSession();if(monitorOpen()&&!monitor.timer)void pollMonitor();}else{clearTimeout(monitor.timer);monitor.timer=null;}});
 window.addEventListener('pagehide',()=>{clearPrivate();root.replaceChildren();});window.addEventListener('pageshow',event=>{if(event.persisted)void boot();else void checkSession();});
 boot();

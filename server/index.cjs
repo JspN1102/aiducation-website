@@ -4,6 +4,7 @@ const http = require('node:http');
 const {gzipSync} = require('node:zlib');
 const routes = require('./routes.cjs');
 const {TEACHER_ROUTES,acceptsGzip,varyAcceptEncoding} = require('../api/_lib/response-encoding.cjs');
+const opsMetrics = require('../api/_lib/ops-metrics.cjs');
 
 class RequestError extends Error {
   constructor(status, message, body) { super(message); this.status = status; this.body = body; }
@@ -147,6 +148,10 @@ function createApiServer({ handlers, requestTimeoutMs, bodyTimeoutMs, deadlineMs
         if (typeof relay === 'string' && RELAY_LABEL.test(relay)) entry.relay = relay;
         if (!finished) entry.closed = true;
         try { log(JSON.stringify(entry)); } catch {}
+        // Site monitor aggregates (in memory only); the monitor's own polls are left out.
+        if (route !== 'health' && !(route === 'teacher-tools' && url.searchParams.get('tool') === 'site-status')) {
+          try { opsMetrics.record({ route, method: req.method, status: entry.status, totalMs: entry.totalMs, relay: entry.relay, userAgent: req.headers['user-agent'] }); } catch {}
+        }
       };
       res.once('finish', () => done(true));
       res.once('close', () => done(false));

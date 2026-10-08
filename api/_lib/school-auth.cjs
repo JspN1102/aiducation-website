@@ -71,7 +71,7 @@ function validateDirectory(data) {
 function publicActor(account) {
   return {...Object.fromEntries(['id', 'researchId', 'role', 'login', 'displayName', 'grade', 'cls', 'classNo'].map(key => [key, account[key]])),
     isTest: account.isTest === true, learningScope: allGrades(account) ? 'all-grades' : 'own-grade', researchEnabled: researchEligible(account),
-    previewPoems: previewPoems(account)};
+    previewPoems: previewPoems(account), siteAdmin: siteAdmin(account)};
 }
 function allGrades(actor) { return actor?.role === 'teacher' || actor?.role === 'student' && actor.isTest === true && actor.learningScope === 'all-grades'; }
 function researchEligible(actor) { return actor?.role === 'student' && actor.isTest !== true; }
@@ -79,6 +79,9 @@ function researchEligible(actor) { return actor?.role === 'student' && actor.isT
 // two teachers. Nobody else is offered them or may practise them.
 const PREVIEW_LOGINS = new Set(['jasper', 'molly']);
 function previewPoems(actor) { return actor?.role === 'teacher' && PREVIEW_LOGINS.has(actor.login); }
+// Only this teacher sees the site monitor (server, relay and error aggregates).
+const SITE_ADMIN_LOGINS = new Set(['jasper']);
+function siteAdmin(actor) { return actor?.role === 'teacher' && SITE_ADMIN_LOGINS.has(actor.login); }
 function poemVisible(actor, poem) { return (!poem.preview || previewPoems(actor)) && (allGrades(actor) || actor?.role === 'student' && poem.grade === actor.grade); }
 function allowedPoemIds(actor) { return require('./poems.js').catalog.filter(poem => poemVisible(actor, poem)).map(poem => poem.id); }
 function assertPoemAccess(actor, poemId) {
@@ -431,5 +434,5 @@ function sendError(res, error) {
 }
 const singleton = createAuth();
 module.exports = { NAMESPACE, COOKIE, SESSION_MS, TERMS_VERSION, FORMAT, SCHEMA, AuthError, Conflict, MAX_OBJECT,
-  hashPassword, verifyPassword, normalizeLogin, validateDirectory, directoryHash, validAccount, publicActor, allGrades, researchEligible, previewPoems, allowedPoemIds, assertPoemAccess,
+  hashPassword, verifyPassword, normalizeLogin, validateDirectory, directoryHash, validAccount, publicActor, allGrades, researchEligible, previewPoems, siteAdmin, allowedPoemIds, assertPoemAccess,
   createBlobStore, createPostgresStore, getStore, createAuth, sendError, ...singleton };
