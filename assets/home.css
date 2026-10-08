@@ -431,6 +431,8 @@ html.js [data-reveal].is-in{opacity:1;transform:none}
 .partners-tag{margin-top:18px;font-size:clamp(19px,1.7vw,24px);font-weight:600;line-height:1.6;letter-spacing:.26em;color:var(--ink-2)}
 .logos{grid-column:1;grid-row:2;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(4,104px) 176px;gap:12px;margin-top:clamp(40px,5vw,64px)}
 .logos li{grid-column:span 2;display:grid;place-items:center;min-width:0;padding:12px;background:#fbf7ee;border-radius:2px;box-shadow:inset 0 0 0 1px var(--gline);transition:background .35s,box-shadow .35s}
+/* 14 small logos in rows of 3/4/4/3: the centred rows of three line up with the two feature cells below */
+.logos li:nth-child(1),.logos li:nth-child(12){grid-column:2/span 2}
 .logos li:hover{background:#fffaf0;box-shadow:inset 0 0 0 1px var(--gold)}
 .logos img{max-width:62%;max-height:54px;width:auto;height:auto;object-fit:contain;mix-blend-mode:multiply}
 .logos li.feature{grid-column:2/span 3;background:linear-gradient(180deg,#fdf9f1,#f7efde);
