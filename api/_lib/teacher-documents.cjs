@@ -11,10 +11,11 @@ const number=value=>typeof value==='number'&&Number.isFinite(value)?value:null;
 const metric=(summary,construct,source)=>summary?.byConstruct?.[construct]?.[source]||{};
 const selected=(person,dataset)=>person.stats?.[dataset.filters.attempt]||person.stats;
 function assertDataset(dataset){if(dataset?.schemaVersion!==1||!/^[a-f0-9]{64}$/.test(dataset.snapshotId||'')||!Array.isArray(dataset.students)||dataset.students.length>10000||!dataset.analytics||!dataset.filters)throw new TeacherDataError('REPORT_SNAPSHOT_INVALID',409);}
-function rangeLabel(dataset){const f=dataset.filters,poem=poems.find(p=>p.id===Number(f.poemId));return `${f.grade?f.grade+' 年級':'全校'}${poem?' · '+poem.title:''}${f.cls?' · '+f.cls+' 班':''}${f.student?' · 個別學生':''} · ${f.from} 至 ${f.to} · ${f.activity?ACTIVITY[f.activity]||f.activity:'全部活動'} · ${f.attempt==='first'?'首次':'最近'}練習`;}
+const ATTEMPT_LABEL={first:'首次',latest:'最近',best:'最佳'};
+function rangeLabel(dataset){const f=dataset.filters,poem=poems.find(p=>p.id===Number(f.poemId));return `${f.grade?f.grade+' 年級':'全校'}${poem?' · '+poem.title:''}${f.cls?' · '+f.cls+' 班':''}${f.student?' · 個別學生':''} · ${f.from} 至 ${f.to} · ${f.activity?ACTIVITY[f.activity]||f.activity:'全部活動'} · ${ATTEMPT_LABEL[f.attempt]||'最近'}練習`;}
 function limitationLines(dataset){const a=dataset.analytics,s=dataset.rosterSummary;return [
   '朗讀、辨音與聽寫分開查看。0 分是已有評分；空白或「未測」表示尚無評分。',
-  '首次及最近分數取自相同題目和練習模式；錯題複習及自由練習另行記錄。',
+  '首次、最近及最佳分數取自相同題目和練習模式；最佳為同一題多次評分中的最高分。錯題複習及自由練習另行記錄。',
   '日期按平台收到紀錄的 UTC 日期整理，離線完成的練習會在連線後補上。',
   `更新狀態：${SYNC[a.sync?.status]||'待更新'}。`,
   ...(a.coverage?.nInvalidEvents?[`${a.coverage.nInvalidEvents} 筆紀錄待核對。`]:[]),
@@ -40,7 +41,7 @@ async function buildXlsx(dataset){
   students.pageSetup.printTitlesRow='1:1';students.pageSetup.printTitlesColumn='A:D';
   students.headerFooter={oddHeader:`&L${wb.title}&R${rangeLabel(dataset)}`,oddFooter:'&LAIDUCATION&R第 &P 頁 / 共 &N 頁'};
   students.getCell('A1').note=`${wb.title}\n${rangeLabel(dataset)}\n產生時間：${hongKongTime(dataset.generatedAt)}`;
-  for(let index=0;index<constructs.length;index++)students.getCell(1,index+5).note=`${dataset.filters.attempt==='first'?'首次':'最近'}紀錄的平均分（0–100）。0 分是已有評分；空白表示未測。`;
+  for(let index=0;index<constructs.length;index++)students.getCell(1,index+5).note=`${ATTEMPT_LABEL[dataset.filters.attempt]||'最近'}紀錄的平均分（0–100）。0 分是已有評分；空白表示未測。`;
   students.getCell('H1').note='最近一輪練一練的完成題數及答對題數。小遊戲完成計入完成題數，不計入答對題數。';
   if(hasGuided){students.getCell('G1').note='描紅與聽寫只記完成情況，不計對錯。舊版獨立聽寫分數保留為分數顯示。';students.getCell('H1').note='各題最近的完成情況；描紅與聽寫、小遊戲不計入答對題數。';}
   for(const person of dataset.students){

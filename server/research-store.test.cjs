@@ -140,6 +140,28 @@ test('first/latest distinct attempts and real zero differ from null; client neve
   assert.equal(result.summary.serverVerified.measuredN,0);
   assert.equal(result.summary.nAttempts,3);
 });
+test('best keeps the highest measured reading per line while latest and first stay unchanged',()=>{
+  const base={activity:'read',type:'provider_result',operation:'reading',context:{mode:'standard'}};
+  const reading=(itemId,score,at,wordScore)=>row({...base,itemId,attemptId:randomUUID(),result:{status:score===null?'unmeasured':'completed',score},wordScores:wordScore===undefined?[]:[{index:0,char:'李',score:wordScore}]},now+at,'server_verified');
+  const rows=[reading('p2.l0',95,0,95),reading('p2.l0',60,1000,40),reading('p2.l1',80,2000,80),reading('p2.l1',null,3000),reading('p2.l2',null,4000),reading('p2.l2',null,5000)];
+  const best=s.aggregateEvents(rows,{...f,attempt:'best'}),latest=s.aggregateEvents(rows,f),student=best.students[0];
+  assert.equal(best.filters.attempt,'best');
+  assert.equal(student.serverVerified.meanScore,87.5);assert.equal(student.best,undefined);
+  assert.equal(student.serverVerified.measuredN,2);assert.equal(student.serverVerified.unmeasuredN,1);
+  assert.equal(student.latest.serverVerified.meanScore,60);assert.equal(student.first.serverVerified.meanScore,87.5);
+  assert.equal(latest.students[0].serverVerified.meanScore,60);
+  assert.equal(best.summary.serverVerified.meanScore,87.5);
+  assert.equal(best.readingWords.find(word=>word.itemId==='p2.l0').meanScore,95);
+  assert.equal(latest.readingWords.find(word=>word.itemId==='p2.l0').meanScore,40);
+  const tie=[reading('p2.l0',70,0,10),reading('p2.l0',70,1000,90)];
+  assert.equal(s.aggregateEvents(tie,{...f,attempt:'best'}).readingWords[0].meanScore,90);
+  const challenge=[row({itemId:'p2-sound-1',attemptId:randomUUID(),result:{status:'correct',score:100,correct:true}},now),
+    row({itemId:'p2-sound-1',attemptId:randomUUID(),result:{status:'incorrect',score:0,correct:false}},now+1000)];
+  assert.equal(s.aggregateEvents(challenge,{...f,attempt:'best'}).students[0].clientReported.correctN,1);
+  assert.equal(s.aggregateEvents(challenge,f).students[0].clientReported.correctN,0);
+  assert.throws(()=>s.filtersFrom({attempt:'max'}),e=>e.code==='INVALID_ATTEMPT_FILTER');
+  assert.equal(s.filtersFrom({attempt:'best',from:'2026-09-01',to:'2026-09-20'}).attempt,'best');
+});
 test('monotonic duration rejects decreasing clocks, skips gaps and does not accumulate idle wall time',()=>{
   const sessionId=randomUUID();
   const rows=[row({sessionId,seq:0,activeMs:0}),row({sessionId,seq:1,activeMs:1000}),
