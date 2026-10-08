@@ -196,7 +196,6 @@ html.js [data-reveal].is-in{opacity:1;transform:none}
 .juan-head{grid-column:2;grid-row:1;align-self:start;position:sticky;top:100px;display:flex;flex-direction:column;align-items:center;gap:18px}
 .juan-no{writing-mode:vertical-rl;font-size:13px;font-weight:600;letter-spacing:.3em;color:var(--red);padding:9px 5px 6px;box-shadow:inset 0 0 0 1px var(--red);border-radius:2px}
 .v-title{writing-mode:vertical-rl;font-weight:900;font-size:clamp(44px,3.9vw,60px);line-height:1;letter-spacing:.14em;color:var(--ink)}
-.v-couplet{display:flex;flex-direction:column;gap:.3em;font-size:clamp(40px,3.4vw,52px)}
 .juan-en{writing-mode:vertical-rl;font-size:12px;letter-spacing:.42em;text-transform:uppercase;color:var(--grey);padding-top:58px;
   background:linear-gradient(var(--gold),var(--gold)) 50% 0/1px 42px no-repeat}
 .juan-body{grid-column:1;grid-row:1;min-width:0}
@@ -354,8 +353,7 @@ html.js [data-reveal].is-in{opacity:1;transform:none}
 .roll__row{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)}
 .roll__track{display:flex;width:max-content;animation:roll 70s linear infinite}
 .roll__row--rev .roll__track{animation-direction:reverse;animation-duration:84s}
-.roll:hover .roll__track{animation-play-state:paused}
-@keyframes roll{to{transform:translate3d(-50%,0,0)}}
+@keyframes roll{to{transform:translate3d(calc(-100% / 3),0,0)}}
 .roll__track span{position:relative;flex:none;writing-mode:vertical-rl;display:flex;align-items:center;gap:10px;height:196px;width:52px;margin-right:8px;padding:20px 0 16px;
   font-size:24px;font-weight:600;line-height:1;letter-spacing:.14em;color:var(--ink);white-space:nowrap;border-radius:3px;
   background:linear-gradient(rgba(110,78,30,.55),rgba(110,78,30,.55)) 0 14px/100% 2px no-repeat,linear-gradient(rgba(110,78,30,.55),rgba(110,78,30,.55)) 0 calc(100% - 12px)/100% 2px no-repeat,
@@ -429,9 +427,9 @@ html.js [data-reveal].is-in{opacity:1;transform:none}
 .moment figcaption b{display:block;font-size:15.5px;color:var(--ink);letter-spacing:.04em;margin-bottom:2px}
 
 /* 卷七 partners (A's grid numbers, gold lattice dress) */
-.juan-partners .juan-head{position:static;align-self:end}
-.juan-partners .juan-body{align-self:end}
-.logos{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(4,104px) 176px;gap:12px;margin-top:clamp(40px,5vw,64px)}
+.juan-partners .juan-head{grid-row:1/span 2}
+.partners-tag{margin-top:18px;font-size:clamp(19px,1.7vw,24px);font-weight:600;line-height:1.6;letter-spacing:.26em;color:var(--ink-2)}
+.logos{grid-column:1;grid-row:2;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(4,104px) 176px;gap:12px;margin-top:clamp(40px,5vw,64px)}
 .logos li{grid-column:span 2;display:grid;place-items:center;min-width:0;padding:12px;background:#fbf7ee;border-radius:2px;box-shadow:inset 0 0 0 1px var(--gline);transition:background .35s,box-shadow .35s}
 .logos li:hover{background:#fffaf0;box-shadow:inset 0 0 0 1px var(--gold)}
 .logos img{max-width:62%;max-height:54px;width:auto;height:auto;object-fit:contain;mix-blend-mode:multiply}
@@ -439,6 +437,7 @@ html.js [data-reveal].is-in{opacity:1;transform:none}
   box-shadow:inset 0 0 0 1px var(--gold),inset 0 0 0 6px #fcf7ec,inset 0 0 0 7px rgba(176,141,74,.5),0 22px 40px -30px rgba(60,40,10,.55)}
 .logos li.feature+li.feature{grid-column:5/span 3}
 .logos li.feature img{width:66%;max-width:none;max-height:none}
+.logos li.feature--educe img{width:87%}
 
 /* 卷八 contact + footer */
 .contact,.foot{position:relative;isolation:isolate;background:#17140f;color:#e9dcc3}
@@ -502,10 +501,9 @@ html.js [data-reveal].is-in{opacity:1;transform:none}
   .juan-head-gold::before{background:linear-gradient(90deg,transparent,rgba(226,194,122,.6))}
   .juan-en,.juan-head-gold .juan-en{padding-top:0;background:none}
   .v-title{font-size:42px}
-  .v-couplet{font-size:36px}
   .juan-body,.film-body,.contact-body{grid-column:1;grid-row:2}
   .juan-cont .juan-head{display:none}
-  .juan-partners .juan-head{align-self:start}
+  .juan-partners .juan-head{grid-row:1;align-self:start}
   .logos{grid-row:3}
   .pillars{grid-template-columns:minmax(0,1fr)}
   .p-head{grid-template-columns:minmax(0,1fr)}
@@ -532,7 +530,8 @@ html.js [data-reveal].is-in{opacity:1;transform:none}
   .logos img{max-height:40px;max-width:92%}
   .logos li.feature{grid-column:1/span 4}
   .logos li.feature+li.feature{grid-column:5/span 4}
-  .logos li.feature img{width:80%}
+  .logos li.feature img{width:72%}
+  .logos li.feature--educe img{width:90%}
   .film-body{margin:0 calc(-1 * var(--pad) + 8px)}
   .film__frame{padding:8px}
   .film__frame video,.film__poster{left:8px;top:8px;width:calc(100% - 16px);height:calc(100% - 16px)}
@@ -562,7 +561,6 @@ html.js [data-reveal].is-in{opacity:1;transform:none}
   .note{text-align:left}
   .juan-head{margin-bottom:32px}
   .v-title{font-size:36px}
-  .v-couplet{font-size:30px}
   .sec+.sec::before{width:72%}
 }
 @media (max-width:560px){
@@ -579,6 +577,10 @@ html.js [data-reveal].is-in{opacity:1;transform:none}
   .pillar{padding:36px 22px 26px}
   .roll__track span{height:170px;width:46px;font-size:21px}
   .roll__row--rev .roll__track span{height:146px;width:42px;font-size:18px}
+  .logos{grid-template-rows:repeat(4,72px) 100px 100px}
+  .logos li.feature,.logos li.feature+li.feature{grid-column:1/-1}
+  .logos li.feature img{width:52%;max-width:220px}
+  .logos li.feature--educe img{width:76%;max-width:320px}
   .contact .h-xl{font-size:34px}
   .mail{font-size:15.5px;padding:12px 18px}
   .foot-in{flex-direction:column;align-items:flex-start}
