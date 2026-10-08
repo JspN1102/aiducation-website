@@ -580,7 +580,7 @@ function filtersFrom(query={},now=Date.now()) {
   for(const date of [from,to])if(typeof date!=='string'||!/^\d{4}-\d\d-\d\d$/.test(date)||!Number.isFinite(Date.parse(date))||new Date(date).toISOString().slice(0,10)!==date)fail('INVALID_DATE');
   if(from>to || Date.parse(to)-Date.parse(from)>30*86400000)fail('DATE_RANGE_MAX_31_DAYS');
   const f={from,to,attempt:query.attempt||'latest'};
-  if(!['first','latest'].includes(f.attempt))fail('INVALID_ATTEMPT_FILTER');
+  if(!['first','latest','best'].includes(f.attempt))fail('INVALID_ATTEMPT_FILTER');
   if(query.grade!==undefined){if(typeof query.grade!=='string'||!/^[1-6]$/.test(query.grade))fail();f.grade=Number(query.grade);}
   if(query.poemId!==undefined){if(typeof query.poemId!=='string'||!/^\d{1,4}$/.test(query.poemId)||!poems.some(poem=>poem.id===Number(query.poemId)))fail('INVALID_POEM_FILTER');f.poemId=Number(query.poemId);}
   if(query.cls!==undefined){if(typeof query.cls!=='string'||!/^[A-Za-z]$/.test(query.cls))fail();f.cls=query.cls.toUpperCase();}
@@ -612,6 +612,9 @@ function constructFor(row){
   if(e.type==='answer_submitted'&&['challenge','writing'].includes(e.activity))return ITEM_CONSTRUCTS[e.context?.itemType]||null;
   return null;
 }
+// best: highest measured score per item; unmeasured attempts only count when
+// nothing was measured. Equal scores keep the later attempt.
+const outcomeRank=row=>typeof row.event.result.score==='number'?row.event.result.score:-1;
 function selectedOutcomes(rows,which,source){
   const attempts=new Map();
   for(const row of rows){const construct=constructFor(row);if(row.source!==source||!construct||['review','free'].includes(row.event.context?.mode))continue;
@@ -623,7 +626,7 @@ function selectedOutcomes(rows,which,source){
   }
   const items=new Map();
   for(const a of attempts.values()){const row=a.row,e=row.event,key=canonical([row.researchId,e.poemId,e.activity,e.itemId||'',e.contentVersion,e.context?.mode||'unspecified',constructFor(row),e.operation||'client']);const prior=items.get(key);
-    if(!prior||(which==='first'?a.first<prior.first:a.first>prior.first))items.set(key,a);}
+    if(!prior||(which==='first'?a.first<prior.first:which==='best'?outcomeRank(a.row)>outcomeRank(prior.row)||outcomeRank(a.row)===outcomeRank(prior.row)&&a.first>prior.first:a.first>prior.first))items.set(key,a);}
   return [...items.values()].map(a=>a.row);
 }
 function scoreSummary(selected,includeMixed=true){
@@ -693,13 +696,14 @@ function aggregateEvents(all,f,{generatedAt=new Date().toISOString(),source='pos
   const group=key=>{const buckets=new Map();for(const row of rows){const k=key(row);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(row);}return buckets;};
   const studentGroups=group(r=>r.researchId),studentDetails={};
   const students=[...studentGroups].map(([researchId,items])=>{
-    const first=summarize(items,'first'),latest=summarize(items,'latest');
+    // best is only sent as the row's own summary, keeping the overview size unchanged.
+    const first=summarize(items,'first'),latest=summarize(items,'latest'),best=f.attempt==='best'?summarize(items,'best'):null;
     if(includeStudentDetails){
       const quality=qualityAndDuration(items),valid=items.filter(row=>!quality.flags.has(row.researchId+'/'+row.source+'/'+row.event.eventId));
       const outcomes=selectedOutcomes(valid,f.attempt,'server_verified').filter(row=>constructFor(row)==='reading.pronunciation');
       studentDetails[researchId]={readingCharacterAnalysis:buildCharacterAnalysis(outcomes,{...f,student:researchId}),practiceSummary:buildPracticeSummary(valid)};
     }
-    return {researchId,grade:items.at(-1).grade,cls:items.at(-1).cls,...(f.attempt==='first'?first:latest),first,latest,lastSeenAt:items.at(-1).serverReceivedAt};
+    return {researchId,grade:items.at(-1).grade,cls:items.at(-1).cls,...(({first,latest,best})[f.attempt]||latest),first,latest,lastSeenAt:items.at(-1).serverReceivedAt};
   });
   const summary=summarize(rows,f.attempt,true);
   return {schemaVersion:1,dictionaryVersion:'research-v1',generatedAt,source,filters:f,

@@ -23,6 +23,13 @@ test('first/latest choose a recording per learner and line across versions; late
  assert.equal(analysis(rows,{grade:1}).poems[0].lines[0].words[0].meanScore,90);assert.equal(analysis(rows,{grade:1,attempt:'first'}).poems[0].lines[0].words[0].meanScore,20);
  rows.push(row({words:[],total:null,at:2000,version:'new'}));assert.equal(analysis(rows,{grade:1}).poems[0].lines[0].words[0].meanScore,null);
 });
+test('best chooses the highest scored recording per learner and line; unmeasured never replaces it',()=>{
+ const rows=[row({words:words(95),total:95,at:0,version:'old'}),row({words:words(40),total:60,at:1000,version:'new'}),row({words:[],total:null,at:2000,version:'new'})];
+ assert.equal(analysis(rows,{grade:1,attempt:'best'}).poems[0].lines[0].words[0].meanScore,95);
+ assert.equal(analysis(rows,{grade:1,attempt:'best'}).attempt,'best');
+ assert.equal(analysis(rows,{grade:1}).poems[0].lines[0].words[0].meanScore,null);
+ assert.equal(analysis([row({words:words(10),total:70,at:0}),row({words:words(90),total:70,at:1000})],{grade:1,attempt:'best'}).poems[0].lines[0].words[0].meanScore,90);
+});
 test('long poem excludes punctuation from SOE indices and retains punctuation in the reference',()=>{
  const data=analysis([row({grade:5,words:[{index:5,char:'草',score:78},{index:6,char:'盛',score:84},{index:7,char:'錯',score:99},{index:99,char:'豆',score:100}]})],{grade:5});
  const line=data.poems[0].lines[0];assert.equal(line.words.length,10);assert.equal(line.text,'種豆南山下，草盛豆苗稀');assert.equal(line.words[5].char,'草');assert.equal(line.words[5].meanScore,78);assert.equal(line.words[6].pinyin,'shèng');assert.equal(line.words[7].meanScore,null);
