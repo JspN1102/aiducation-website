@@ -6,7 +6,8 @@ const {gunzipSync} = require('node:zlib');
 // A pupil normally spends more than fetch's default five-second idle window
 // writing the next character. Keep only this provider's connections warm so
 // each check does not repeat the Guangzhou-to-relay TCP/TLS handshake.
-// No result cache or retry: every submitted drawing is recognised once.
+// No result cache: every submitted drawing is recognised afresh (a resent copy
+// with the same requestId shares the first answer, see request-replay.cjs).
 const recognitionAgent = new Agent({
   keepAliveTimeout: 55000,
   keepAliveMaxTimeout: 55000,
@@ -17,6 +18,10 @@ const MAX_BODY_BYTES = 512 * 1024;
 const MAX_RESPONSE_BYTES = 64 * 1024;
 const RELAY_HEADER = 'x-maanshan-handwriting-relay';
 const GOOGLE_URL = 'https://inputtools.google.com/request?itc=zh-hant-t-i0-handwrit&app=translate';
+// The relay leg crosses to Vercel and back; one lost connection, refused or
+// timed-out call is tried once more while an answer can still reach the pupil
+// inside the origin's 15 s for this route (auth and recording need the rest).
+const RELAY_BUDGET_MS = 12000, RELAY_ATTEMPT_MS = 9000, RELAY_RETRY_MIN_MS = 3000;
 
 function validInk(ink) {
   if (!Array.isArray(ink) || !ink.length || ink.length > 128) return false;
@@ -109,19 +114,32 @@ module.exports = withSchoolLearning('handwriting', async (req, res) => {
       }]
     };
     const started = performance.now();
-    const response = await fetch(relay || GOOGLE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(relay ? { [RELAY_HEADER]: '1' } : {}) },
-      body: JSON.stringify(payload),
-      dispatcher: recognitionAgent,
-      redirect: 'error',
-      signal: AbortSignal.timeout(relay ? 9000 : 8000)
-    });
-    if (!response.ok) {
-      await response.body?.cancel();
-      return res.status(response.status === 504 ? 504 : 502).json({ error: 'Recognition service unavailable' });
+    const again = attempt => relay && attempt === 0 && started + RELAY_BUDGET_MS - performance.now() >= RELAY_RETRY_MIN_MS;
+    let data;
+    for (let attempt = 0; ; attempt++) {
+      let response;
+      try {
+        response = await fetch(relay || GOOGLE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(relay ? { [RELAY_HEADER]: '1' } : {}) },
+          body: JSON.stringify(payload),
+          dispatcher: recognitionAgent,
+          redirect: 'error',
+          signal: AbortSignal.timeout(relay ? Math.min(RELAY_ATTEMPT_MS, Math.max(1, Math.round(started + RELAY_BUDGET_MS - performance.now()))) : 8000)
+        });
+      } catch (error) {
+        // A network failure (fetch's TypeError) or this attempt's deadline.
+        if ((error?.name === 'TypeError' || error?.name === 'TimeoutError') && again(attempt)) continue;
+        throw error;
+      }
+      if (!response.ok) {
+        await response.body?.cancel();
+        if (response.status >= 500 && again(attempt)) continue;
+        return res.status(response.status === 504 ? 504 : 502).json({ error: 'Recognition service unavailable' });
+      }
+      data = await responseJSON(response);
+      break;
     }
-    const data = await responseJSON(response);
     res.setHeader?.('Server-Timing', [res.getHeader?.('Server-Timing'), `handwriting_upstream;dur=${(performance.now() - started).toFixed(1)}`].filter(Boolean).join(', '));
     const candidates = relay ? data?.candidates : data?.[0] === 'SUCCESS' ? data?.[1]?.[0]?.[1] : null;
     if (!validCandidates(candidates)) return res.status(502).json({ error: 'Invalid recognition response' });

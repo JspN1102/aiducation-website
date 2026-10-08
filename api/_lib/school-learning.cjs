@@ -4,6 +4,7 @@ const research = require('./research-store.cjs');
 const {getPoem} = require('./poems.js');
 const challenges = require('./challenge-loader.cjs');
 const grade = require('./writing-grade.cjs');
+const replay = require('./request-replay.cjs');
 const score = value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100 ? value : null;
 
 async function referenceFor(req, operation) {
@@ -86,6 +87,11 @@ function withSchoolLearning(operation, handler) {
       if(operation==='report'&&req.body)req.body.studentGrade=poem.grade;
     } catch(error) { return auth.sendError(res,error); }
     if(operation==='handwriting')res.setHeader('Server-Timing',`handwriting_auth;dur=${(performance.now()-authStarted).toFixed(1)}`);
+    // A resent recording or drawing (same requestId) gets the first copy's answer.
+    if(operation==='reading'||operation==='handwriting')return replay.coalesce(operation,actor.id,req,res,()=>respond(req,res,actor,reference));
+    return respond(req,res,actor,reference);
+  };
+  async function respond(req,res,actor,reference){
     if (!reference || !auth.researchEligible(actor)) return handler(req,res);
     const originalJSON=res.json.bind(res), started=performance.now();
     let responseWork=null;
@@ -113,6 +119,6 @@ function withSchoolLearning(operation, handler) {
       throw error;
     }
     finally {res.json=originalJSON;}
-  };
+  }
 }
 module.exports={withSchoolLearning,outcomeFor,referenceFor};

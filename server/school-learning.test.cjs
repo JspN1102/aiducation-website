@@ -107,6 +107,22 @@ test('provider response awaits durable recording, enforces school grade and bind
  assert(recorded);assert.equal(res.body.researchRecorded,true);
  req.body.researchContext.actorId='someone-else';const denied=response();await handler(req,denied);assert.equal(denied.statusCode,409);
 });
+test('a resent recording with the same requestId is scored and recorded once; others run as before',async t=>{
+ t.mock.method(auth,'enabled',()=>true);t.mock.method(auth,'requireActor',async()=>actor);
+ const saved=[];t.mock.method(research,'recordVerifiedOutcome',async(req,outcome)=>{saved.push(outcome);await new Promise(resolve=>setTimeout(resolve,5));return {recorded:true};});
+ let scored=0,fail=false;
+ const handler=withSchoolLearning('reading',async(req,res)=>{scored++;await new Promise(resolve=>setTimeout(resolve,20));if(fail)return res.status(502).json({error:'Assessment service unavailable'});res.json({SuggestedScore:80+scored});});
+ const p=getPoem(2),body=id=>({poemId:2,refText:p.lines[0].simplified,...(id?{requestId:id}:{}),audio:'AAAA',researchContext:{actorId:actor.id,poemId:2,itemId:'p2.l0'}});
+ const requestId=require('node:crypto').randomUUID();
+ const [a,b]=[response(),response()];await Promise.all([handler({method:'POST',body:body(requestId)},a),handler({method:'POST',body:body(requestId)},b)]);
+ assert.equal(scored,1);assert.equal(saved.length,1,'one research outcome');assert.deepEqual(b.body,a.body);assert.equal(a.body.researchRecorded,true);assert.equal(a.body.SuggestedScore,81);
+ const later=response();await handler({method:'POST',body:body(requestId)},later);assert.deepEqual(later.body,a.body);assert.equal(scored,1);
+ const other=response();await handler({method:'POST',body:{...body(requestId),audio:'BBBB'}},other);assert.equal(scored,2,'the same id with another recording is its own request');
+ await handler({method:'POST',body:body()},response());await handler({method:'POST',body:body()},response());assert.equal(scored,4,'no requestId: unchanged behaviour');
+ fail=true;const failedId=require('node:crypto').randomUUID(),first=response();await handler({method:'POST',body:body(failedId)},first);assert.equal(first.statusCode,502);
+ fail=false;const again=response();await handler({method:'POST',body:body(failedId)},again);assert.equal(again.statusCode,200);assert.equal(scored,6,'a failure is never shared');
+ assert.equal(saved.length,6);
+});
 test('collection failure leaves a usable provider response with an explicit missing-record flag',async t=>{
  t.mock.method(auth,'enabled',()=>true);t.mock.method(auth,'requireActor',async()=>actor);
  t.mock.method(research,'recordVerifiedOutcome',async()=>{throw new Error('unavailable');});
@@ -141,7 +157,13 @@ test('same queued challenge answer has stable server event identity and persiste
  responseResult={recorded:false,reason:'INVALID_EVENT',invalidRequest:true};const invalid=response();await challenge(req,invalid);assert.equal(invalid.statusCode,400);assert.equal(invalid.body.retryable,false);
  responseResult={recorded:false,reason:'outcome_storage_unavailable',invalidRequest:true};const unknown=response();await challenge(req,unknown);assert.equal(unknown.statusCode,503);assert.equal(unknown.body.retryable,true);
  responseResult={recorded:false,reason:'EVENT_ID_CONFLICT'};const conflict=response();await challenge(req,conflict);assert.equal(conflict.statusCode,409);assert.equal(conflict.body.researchRecorded,false);assert.equal(conflict.body.retryable,false);
- req.body.researchContext.requestedAt=new Date(Date.now()+600000).toISOString();const future=response();await challenge(req,future);assert.equal(future.statusCode,400);
+ // A tablet clock ten minutes fast: accepted, and identical on every retry.
+ responseResult={recorded:true};const fast=new Date(Date.now()+600000).toISOString(),fastId=require('node:crypto').randomUUID();
+ req.body.researchContext.requestedAt=fast;req.body.researchContext.requestId=fastId;
+ const future=response();await challenge(req,future);assert.equal(future.statusCode,200);const again=response();await challenge(req,again);assert.equal(again.statusCode,200);
+ assert.deepEqual(saved.at(-1),saved.at(-2));assert.equal(saved.at(-1).clientAt,fast);assert.equal(saved.at(-1).eventId,research.stableOutcomeId(actor.id,fastId));
+ req.body.researchContext.requestedAt='2026-13-01T00:00:00.000Z';const malformed=response();await challenge(req,malformed);assert.equal(malformed.statusCode,400);
+ req.body.researchContext.requestId=requestId;
  req.body.researchContext.requestedAt=requestedAt;delete req.body.researchContext.requestId;const incomplete=response();await challenge(req,incomplete);assert.equal(incomplete.statusCode,400);
 });
 

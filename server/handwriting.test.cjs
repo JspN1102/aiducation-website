@@ -180,5 +180,35 @@ test('successive checks reuse a connection after writing time but each drawing i
   assert.equal(sockets.size, 2, 'a remotely closed idle socket is replaced');
   interruptResponse = true;
   assert.equal((await invoke({ink})).statusCode, 502);
-  assert.equal(drawings.length, 4, 'a posted drawing must not be automatically replayed after a broken response');
+  assert.equal(drawings.length, 5, 'a broken relay answer is asked once more, never twice');
+});
+
+test('one lost, refused or timed-out relay call is tried once more inside the budget; Google directly is not', async t => {
+  const previous = process.env.HANDWRITING_RELAY_URL;
+  t.after(() => previous === undefined ? delete process.env.HANDWRITING_RELAY_URL : process.env.HANDWRITING_RELAY_URL = previous);
+  process.env.HANDWRITING_RELAY_URL = relay;
+  const plan = [];let calls = 0;
+  t.mock.method(globalThis, 'fetch', async () => {
+    calls++;const step = plan.shift();
+    if (step === 'network') throw new TypeError('fetch failed');
+    if (step === 'timeout') throw new DOMException('deadline', 'TimeoutError');
+    if (typeof step === 'number') return new Response('', { status: step });
+    return Response.json({ candidates: ['雨'] });
+  });
+  for (const first of ['network', 'timeout', 502, 503, 504]) {
+    plan.push(first, 'ok');calls = 0;
+    const result = await invoke();
+    assert.equal(result.statusCode, 200, String(first));assert.deepEqual(result.value, { candidates: ['雨'] });assert.equal(calls, 2);
+  }
+  plan.push('network', 'network');calls = 0;
+  assert.equal((await invoke()).statusCode, 502);assert.equal(calls, 2, 'at most two relay calls');
+  for (const refused of [400, 429]) {plan.push(refused, 'ok');calls = 0;assert.equal((await invoke()).statusCode, 502);assert.equal(calls, 1);plan.length = 0;}
+  // Not enough time left for a useful second call.
+  const now = performance.now.bind(performance);let shift = 0;
+  t.mock.method(performance, 'now', () => now() + shift);
+  t.mock.method(globalThis, 'fetch', async () => {calls++;shift += 9500;throw new DOMException('deadline', 'TimeoutError');});
+  calls = 0;assert.equal((await invoke()).statusCode, 504);assert.equal(calls, 1);
+  delete process.env.HANDWRITING_RELAY_URL;shift = 0;
+  t.mock.method(globalThis, 'fetch', async () => {calls++;throw new TypeError('fetch failed');});
+  calls = 0;assert.equal((await invoke({ ink }, { 'x-maanshan-handwriting-relay': '1' })).statusCode, 502);assert.equal(calls, 1);
 });

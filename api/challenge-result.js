@@ -14,8 +14,10 @@ module.exports = async function handler(req,res){
     if(context?.actorId!==actor.id)return res.status(409).json({code:'ACTOR_CHANGED',error:'Account changed'});
     let stable={};
     if(context.requestId!==undefined||context.requestedAt!==undefined){
+      // A tablet clock running fast is accepted as sent: clientAt must stay the
+      // same on every retry, and the research store flags it as out of range.
       const at=context.requestedAt;
-      if(typeof at!=='string'||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(at)||!Number.isFinite(Date.parse(at))||new Date(at).toISOString()!==at||Date.parse(at)>Date.now()+300000)return res.status(400).json({code:'INVALID_REQUEST_IDENTITY',error:'Invalid request identity'});
+      if(typeof at!=='string'||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(at)||!Number.isFinite(Date.parse(at))||new Date(at).toISOString()!==at)return res.status(400).json({code:'INVALID_REQUEST_IDENTITY',error:'Invalid request identity'});
       try{stable={eventId:research.stableOutcomeId(actor.id,context.requestId),clientAt:at,stableBatch:true};}
       catch{return res.status(400).json({code:'INVALID_REQUEST_IDENTITY',error:'Invalid request identity'});}
     }

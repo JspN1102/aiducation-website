@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const https = require('https');
 const {gunzipSync} = require('node:zlib');
 const schoolAuth = require('./_lib/school-auth.cjs');
+const replay = require('./_lib/request-replay.cjs');
 const {FORMATS: AUDIO_FORMATS, MAX_INPUT_BYTES: MAX_COMPACT_BYTES, transcodeToWav} = require('./_lib/audio-transcode.cjs');
 
 // Speech input for the poet conversation: one short question is recognised by
@@ -153,6 +154,12 @@ module.exports = async function handler(req, res) {
     if (!audioBuf.length || audioBuf.length > 3 * 1024 * 1024) throw new Error('Invalid audio');
     if (audioFormat == null && (audioBuf.length < 44 || audioBuf.toString('ascii', 0, 4) !== 'RIFF' || audioBuf.toString('ascii', 8, 12) !== 'WAVE')) throw new Error('Invalid audio');
   } catch { return res.status(400).json({error: 'Invalid audio encoding'}); }
+  // A resent question (same requestId) gets the first copy's text and uses no
+  // second recognition from the pupil's month.
+  return actor ? replay.coalesce('speech', actor.id, req, res, () => recogniseRequest(req, res, actor, audioBuf, audioFormat)) : recogniseRequest(req, res, actor, audioBuf, audioFormat);
+};
+
+async function recogniseRequest(req, res, actor, audioBuf, audioFormat) {
   if (audioFormat != null) {
     // As with reading: the browser keeps the recording and re-sends plain PCM.
     try { audioBuf = await transcodeToWav(audioBuf, audioFormat); }
@@ -181,4 +188,4 @@ module.exports = async function handler(req, res) {
     if (error.upstreamCode) console.error('speech-to-text upstream', error.upstreamCode);
     return res.status(error.statusCode || 502).json({error: 'Speech recognition unavailable', code: 'SPEECH_UNAVAILABLE'});
   }
-};
+}

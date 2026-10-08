@@ -110,8 +110,11 @@ function createHandler({service=auth,learning=teacherLearning,store=runtimeStore
         res.setHeader('Content-Disposition','inline; filename="reading.wav"');
         return res.status(200).send(bytes);
       }
+      // recordedAt is the tablet's clock and is stored as sent: a clock running
+      // fast still orders that tablet's own recordings, and a retry stays the
+      // same row. Only a clock a year or more out is refused.
       if(Object.keys(input).some(key=>!['actorId','learningEpoch','poemId','lineIndex','recordingId','recordedAt','audio','audioCompression','audioFormat'].includes(key))||
-        !Number.isSafeInteger(input.recordedAt)||input.recordedAt<1577836800000||input.recordedAt>now()+300000||
+        !Number.isSafeInteger(input.recordedAt)||input.recordedAt<1577836800000||input.recordedAt>now()+366*86400000||
         typeof input.audio!=='string'||input.audio.length>Math.ceil(MAX_WAV_BYTES/3)*4||
         !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(input.audio)||
         ![undefined,'gzip'].includes(input.audioCompression)||
