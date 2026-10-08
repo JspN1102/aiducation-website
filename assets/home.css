@@ -213,10 +213,10 @@ html.js [data-reveal].is-in{opacity:1;transform:none}
 .brush.is-in::after,.is-in .brush::after,html:not(.js) .brush::after{clip-path:inset(0 0 0 0)}
 
 /* 卷一 about */
-.statement{margin-top:10px;max-width:24em;font-weight:600;font-size:clamp(25px,2.7vw,40px);line-height:1.6;letter-spacing:.06em}
-html.js .statement span{color:rgba(28,26,23,.24);transition:color .6s var(--ease)}
-html.js .statement span.is-on{color:var(--ink)}
-@media (min-width:901px){.statement span{display:block}}
+.quote{margin:10px 0 40px}
+.quote p{font-size:clamp(30px,3.2vw,46px);font-weight:600;line-height:1.35;letter-spacing:.14em}
+.quote cite{display:block;margin-top:12px;font-style:normal;font-size:14px;letter-spacing:.24em;color:var(--grey)}
+.manifesto{font-size:clamp(17px,1.35vw,19px);line-height:2.05;color:var(--ink-2);max-width:37em}
 .statement-en{margin-top:26px;max-width:46em;font-size:clamp(15px,1.15vw,17px);line-height:1.8}
 .pillars-lead{margin-top:clamp(56px,7vw,92px);max-width:24em;font-size:clamp(21px,2vw,28px);font-weight:600;line-height:1.6;letter-spacing:.05em}
 .pillars{margin-top:clamp(28px,3.4vw,44px);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(16px,2vw,28px)}
@@ -246,6 +246,8 @@ html.js .statement span.is-on{color:var(--ink)}
 .bio{font-size:14px;line-height:1.85;color:var(--ink-2);max-width:17em;margin:0 auto}
 .bio li{text-wrap:balance}
 .bio li+li{margin-top:5px}
+.team-tag{margin-top:34px;font-size:clamp(20px,1.8vw,26px);font-weight:600;line-height:1.65;letter-spacing:.12em}
+.team-lead{margin-top:10px;max-width:31em;color:var(--ink-2);letter-spacing:.04em;text-wrap:balance}
 
 /* 卷三 platform */
 .p-head{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:clamp(24px,4vw,60px);align-items:end}
@@ -288,6 +290,8 @@ html.js .statement span.is-on{color:var(--ink)}
 .juan-head-gold .v-title .ink-in{background:linear-gradient(180deg,#f8e7b6 0%,#d8ae58 45%,#f3d993 70%,#c2963f 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .juan-head-gold .juan-en{color:rgba(243,228,203,.72);background-image:linear-gradient(var(--gold-l),var(--gold-l))}
 .film-body{grid-column:1;grid-row:1;min-width:0}
+.kicker-gold{color:var(--gold-l)}
+.film-name{font-weight:900;font-size:clamp(28px,3vw,44px);line-height:1.35;letter-spacing:.06em;color:#fbefd9;margin-bottom:clamp(30px,4.5vh,48px)}
 .film__frame{position:relative;padding:12px;background:linear-gradient(135deg,#ecd28f 0%,#a98440 22%,#f4dea2 48%,#9c7838 74%,#e0c27c 100%);
   box-shadow:0 0 0 1px rgba(60,20,5,.5),0 46px 90px -34px rgba(25,3,0,.8)}
 .film__frame::before{content:"";display:block;aspect-ratio:16/9;background:#1d1b18;box-shadow:0 0 0 1px rgba(60,30,6,.7)}
@@ -586,6 +590,8 @@ html.js .statement span.is-on{color:var(--ink)}
   .play-seal::after{inset:-8px}
   .play-txt{font-size:13px;letter-spacing:.14em;padding:4px 12px 4px 14px}
   .film__cap{padding:0 calc(var(--pad) - 8px);font-size:13px}
+  .film-body>.kicker,.film-name{padding:0 calc(var(--pad) - 8px)}
+  .film-name{font-size:26px;word-break:keep-all;overflow-wrap:anywhere}
   .wall{padding-top:150px}
   .team{grid-template-columns:minmax(0,1fr);gap:0}
   .member{display:grid;grid-template-columns:96px minmax(0,1fr);column-gap:20px;align-items:start;text-align:left;padding:26px 0;border-top:1px solid var(--line)}
