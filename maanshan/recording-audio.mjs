@@ -5,7 +5,7 @@ function audioError(code, message, canRetry = false) {
 
 export function recordingErrorMessage(error, online = globalThis.navigator?.onLine !== false) {
   if (typeof error?.code === 'string') return error.message;
-  if (error?.name === 'NotAllowedError' || error?.name === 'SecurityError') return '請先允許使用麥克風，再試一次。';
+  if (error?.name === 'NotAllowedError' || error?.name === 'SecurityError') return '請先允許使用麥克風：看到提示時按「允許」；沒有提示的話，到 iPad「設定」›「Safari」›「麥克風」選「允許」，再重新整理頁面。';
   if (error?.name === 'NotFoundError') return '找不到麥克風，請檢查裝置。';
   if (error?.name === 'NotReadableError') return '麥克風正在被其他程式使用，請關閉後再試。';
   if (!online) return '網絡未連上，連線後可以再送一次。';
@@ -86,49 +86,77 @@ export async function prepareAssessmentPayload(payload, scope = globalThis) {
   } catch { return payload; }
 }
 
-// Only one quick transport failure is retried, with the same request context.
-// A slow request, HTTP error, or explicit cancellation always returns control to the learner.
+// A reading whose answer was lost on the way (the network dropped, the relay
+// answered 502/503/504, or the wait ran out) is sent once more by itself. Its
+// requestId lets the origin hand back the first copy's score instead of scoring
+// and recording it twice. When the tablet hid the page meanwhile (Safari
+// freezes requests in the background), it is sent again once the page is shown.
+// A refusal (4xx) is never resent; TRANSCODE is the caller's single PCM fallback.
 export function submitAssessment(payload, options = {}) {
-  return postRecording('/api/soe/', payload, options, {busy:'現在較多人使用，稍後可以再送一次。', service:'評測暫時未能完成，稍後可以再送一次。'});
+  return postRecording('/api/soe/', payload, {resend:true, ...options}, {busy:'現在較多人使用，稍後可以再送一次。', service:'評測暫時未能完成，稍後可以再送一次。'});
 }
 
 // Speech input for the poet conversation: the same upload, returned as text.
+// Only one quick network failure is retried; anything slower returns to the pupil.
 export function submitSpeech(payload, options = {}) {
   return postRecording('/api/speech-to-text/', payload, {timeout:40000, ...options}, {busy:'語音輸入現在繁忙，請稍後再試，或者先打字。', service:'暫時未能把聲音變成文字，請再說一次，或者先打字。'});
+}
+const aborted = () => new DOMException('Aborted', 'AbortError');
+function shown(page, signal) {
+  return new Promise((resolve, reject) => {
+    const done = () => {if (page.visibilityState !== 'hidden') {stop();resolve();}};
+    const cancel = () => {stop();reject(aborted());};
+    const stop = () => {page.removeEventListener('visibilitychange', done);signal?.removeEventListener('abort', cancel);};
+    if (signal?.aborted) return reject(aborted());
+    page.addEventListener('visibilitychange', done);signal?.addEventListener('abort', cancel, {once:true});
+  });
 }
 // When a whole class sends at once the US-to-Guangzhou relay can queue a reading
 // for a while even though Guangzhou scores it within seconds. Wait up to fifty
 // seconds (the relay itself gives up at fifty-five) before asking for a resend.
-async function postRecording(url, payload, {signal, onRetry, onWaiting, fetchImpl = schoolFetch, timeout = 50000} = {}, messages) {
+// A resend after a full wait has thirty seconds more at most.
+async function postRecording(url, payload, {signal, onRetry, onWaiting, fetchImpl = schoolFetch, page = globalThis.document, resend = false, timeout = 50000} = {}, messages) {
   if (globalThis.navigator?.onLine === false) throw audioError('OFFLINE', '網絡未連上，連線後可以再送一次。', true);
-  const body = JSON.stringify(await prepareAssessmentPayload(payload));
-  for (let attempt = 0; attempt < 2; attempt++) {
-    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-    const controller = new AbortController(), started = Date.now();let expired = false;
+  const body = JSON.stringify(await prepareAssessmentPayload(payload)), first = Date.now();
+  let quick = !resend, silent = resend, onShow = resend && !!page?.addEventListener, fresh = false, hidden = false;
+  for (let attempt = 0;; attempt++) {
+    if (signal?.aborted) throw aborted();
+    const limit = attempt === 0 || fresh ? timeout : Math.min(timeout, Math.max(15000, timeout + 30000 - (Date.now() - first)));
+    const controller = new AbortController(), started = Date.now();let expired = false, lost = false;hidden ||= page?.visibilityState === 'hidden';fresh = false;
     const cancel = () => controller.abort();signal?.addEventListener('abort', cancel, {once:true});
-    const timer = setTimeout(() => {expired = true;controller.abort();}, timeout);
+    const watch = () => {if (page.visibilityState === 'hidden') hidden = true;};if (onShow) page.addEventListener('visibilitychange', watch);
+    const timer = setTimeout(() => {expired = true;controller.abort();}, limit);
     const waiting = setTimeout(() => onWaiting?.(), 7000);
+    let failure;
     try {
       const response = await fetchImpl(url, {method:'POST', headers:{'Content-Type':'application/json'}, body, signal:controller.signal});
       const data = await response.json().catch(() => null);
-      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+      if (signal?.aborted) throw aborted();
       if (!response.ok || !data || data.error) {
         if (response.status === 429) throw audioError('BUSY', messages.busy, true);
         // Definite, pre-scoring refusal of the compact upload: the caller re-sends PCM once.
         if (response.status === 422 && data?.code === 'AUDIO_TRANSCODE_FAILED') throw audioError('TRANSCODE', '錄音處理未能完成，請再試一次。', true);
+        // The relay or gateway lost the answer, or it broke off: the reading may well have been scored.
+        lost = [502, 503, 504].includes(response.status) || (response.ok && !data);
         throw audioError('SERVICE', messages.service, true);
       }
       return data;
     } catch (error) {
-      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-      if (expired) throw audioError('TIMEOUT', '這次等得有點久，可以再送一次。', true);
-      if (typeof error?.code === 'string') throw error;
-      if (globalThis.navigator?.onLine === false) throw audioError('OFFLINE', '網絡未連上，連線後可以再送一次。', true);
-      if (error instanceof TypeError && attempt === 0 && Date.now() - started < 8000) {onRetry?.();continue;}
-      throw audioError('NETWORK', '網絡暫時未連上，可以再送一次。', true);
+      if (signal?.aborted) throw aborted();
+      if (expired) failure = audioError('TIMEOUT', '這次等得有點久，可以再送一次。', true);
+      else if (typeof error?.code === 'string') failure = error;
+      else if (globalThis.navigator?.onLine === false && page?.visibilityState !== 'hidden') throw audioError('OFFLINE', '網絡未連上，連線後可以再送一次。', true);
+      else failure = audioError('NETWORK', '網絡暫時未連上，可以再送一次。', true);
+      lost ||= expired || error instanceof TypeError;
+      if (quick && error instanceof TypeError && Date.now() - started < 8000) {quick = false;onRetry?.();continue;}
     } finally {
-      clearTimeout(timer);clearTimeout(waiting);signal?.removeEventListener('abort', cancel);
+      clearTimeout(timer);clearTimeout(waiting);signal?.removeEventListener('abort', cancel);if (onShow) page.removeEventListener('visibilitychange', watch);
     }
+    if (!lost || !resend) throw failure;
+    if (onShow && page.visibilityState === 'hidden') {onShow = false;await shown(page, signal);fresh = true;onRetry?.();continue;}
+    if (silent && globalThis.navigator?.onLine !== false) {silent = false;onRetry?.();continue;}
+    if (onShow && hidden) {onShow = false;fresh = true;onRetry?.();continue;}
+    throw failure;
   }
 }
 

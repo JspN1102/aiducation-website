@@ -36,7 +36,7 @@ async function setup(){
     return send({enabled:true,authenticated:true,user:{id:actor,role:'student',displayName:'示範同學',grade:1,cls:'A',classNo:1,isTest:true,learningScope:'all-grades',researchEnabled:true},csrfToken:'synthetic-csrf'});
    }
    if(endpoint==='/api/soe'){
-    const body=request.postDataJSON();state.soe.push({poemId:body.poemId,refText:body.refText,audioFormat:body.audioFormat??null});
+    const body=request.postDataJSON();state.soe.push({poemId:body.poemId,refText:body.refText,audioFormat:body.audioFormat??null,requestId:body.requestId});
     if(state.soeFail>0){state.soeFail--;return send({error:'busy'},503);}
     await new Promise(resolve=>state.held.push(resolve));
     // The origin's definite pre-scoring refusal of a compact upload it could not transcode.
@@ -107,7 +107,8 @@ async function hiddenPageKeepsScore(){
 }
 async function retryHiddenWhileScoring(){
  const env=await setup(),{page,state,go,record,reading,readingSaves,controls}=env;try{
-  state.soeFail=1;await go('#yong-e/record');await record();
+  // A 503 is resent once by itself; only a second one hands the recording back to the pupil.
+  state.soeFail=2;await go('#yong-e/record');await record();
   await page.locator('#record-controls [data-action=record-send]').waitFor();
   await page.locator('#record-controls [data-action=record-send]').click();await until(()=>state.held.length===1,'resend in flight');
   check('while a resend is scored on the line there is no resend button',(await controls()).send===0);
@@ -115,7 +116,8 @@ async function retryHiddenWhileScoring(){
   check('after leaving and returning during a resend there is still no resend button',waiting.send===0&&waiting.start===0&&waiting.text.includes('正在等候評測'));
   env.release();await page.locator('.record-result').waitFor({timeout:15000});
   await page.waitForTimeout(400);
-  check('the resent score appears on the line it belongs to and is saved once',(await reading())[0]?.total_score===93&&state.soe.length===2&&readingSaves().length===1&&state.uploads.length===1);
+  check('the resent score appears on the line it belongs to and is saved once',(await reading())[0]?.total_score===93&&state.soe.length===3&&readingSaves().length===1&&state.uploads.length===1);
+  check('every send of one recording carries the same requestId',/^[0-9a-f-]{36}$/.test(state.soe[0].requestId)&&state.soe.every(entry=>entry.requestId===state.soe[0].requestId));
  }finally{await env.close();}
 }
 async function refusedCompactResend(){

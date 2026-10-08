@@ -5,9 +5,10 @@ const {createHash}=require('node:crypto');
 // Both copies carry the browser's requestId: the second waits for the first
 // and receives the same answer, so the provider is asked (and billed) and the
 // research outcome is written only once. Requests without an id run as before.
-// The origin is a single process, so memory is enough; an entry outlives any
-// resend the browser makes for the same recording.
-const TTL_MS=120000,MAX_ENTRIES=300;
+// The origin is a single process, so memory is enough. An entry is kept ten
+// minutes, so a reading resent when a tablet shows the page again (or by the
+// pupil) still gets the first answer; answers are a few kilobytes each.
+const TTL_MS=600000,MAX_ENTRIES=1000;
 const ID=/^[A-Za-z0-9-]{8,64}$/;
 const entries=new Map();
 const digest=value=>createHash('sha256').update(value).digest('hex');

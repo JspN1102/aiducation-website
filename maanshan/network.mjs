@@ -52,8 +52,11 @@ export async function requestChat(body,{signal,onDelta,timeout=30000,fetchImpl=s
   }
 }
 // Bound the complete request (including the response body), and cancel it when
-// its screen is left. Retry only an early transport failure, never a slow job.
-export async function requestJSON(path, body, {timeout = 35000, signal, retry = false} = {}) {
+// its screen is left. retry:true resends only an early transport failure, never
+// a slow job. retry:'transport' (a drawing carrying a requestId, which the origin
+// answers once) also resends once when the answer was lost: the network dropped,
+// the relay answered 502/503/504 or the body broke off; still within `timeout`.
+export async function requestJSON(path, body, {timeout = 35000, signal, retry = false, fetchImpl = schoolFetch} = {}) {
   if (globalThis.navigator?.onLine === false) throw new Error('網絡已斷開，連線後可以再試一次。');
   const controller = new AbortController();
   let timedOut = false;
@@ -65,10 +68,11 @@ export async function requestJSON(path, body, {timeout = 35000, signal, retry = 
   const payload = JSON.stringify(/(?:^|\/)handwriting\/?$/.test(path) ? await prepareHandwritingPayload(body) : body);
   try {
     for (let attempt = 0; ; attempt++) {
-      const started = Date.now();
+      const started = Date.now();let lost = false;
       try {
-        const response = await schoolFetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: payload, signal: controller.signal});
+        const response = await fetchImpl(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: payload, signal: controller.signal});
         if (!response.ok) {
+          lost = [502, 503, 504].includes(response.status);
           throw new Error(response.status === 429 ? '現在較多人使用，稍後再試一次吧。'
             : response.status === 504 ? '這次等得有點久，可以再試一次。'
               : '服務暫時未能完成，可以再試一次。');
@@ -77,13 +81,14 @@ export async function requestJSON(path, body, {timeout = 35000, signal, retry = 
         try { data = await response.json(); }
         catch (error) {
           if (controller.signal.aborted || error instanceof TypeError) throw error;
+          lost = true;
           throw new Error('剛才的回覆未能完整收到，可以再試一次。');
         }
         if (!data || data.error) throw new Error('服務暫時未能完成，可以再試一次。');
         return data;
       } catch (error) {
         if (controller.signal.aborted) throw error;
-        if (retry && attempt === 0 && error instanceof TypeError && Date.now() - started < 4000 && globalThis.navigator?.onLine !== false) continue;
+        if (retry && attempt === 0 && globalThis.navigator?.onLine !== false && (retry === 'transport' ? lost || error instanceof TypeError : error instanceof TypeError && Date.now() - started < 4000)) continue;
         throw error;
       }
     }

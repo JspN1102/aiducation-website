@@ -192,3 +192,22 @@ test('thrown provider errors record a safe failure without changing response/err
  assert.doesNotMatch(JSON.stringify(stored),/private upstream/);assert.ok(stored.metrics.latencyMs>=0);
  assert.equal(outcomeFor('reading',null,200,{line:{text:'李',simplified:'李'}},NaN).result.status,'error');
 });
+test('a resent request shares only a successful first answer, for ten minutes',async()=>{
+ const replay=require('../api/_lib/request-replay.cjs');replay._entries.clear();
+ let clock=1000;const now=()=>clock;
+ const response=()=>{const res={statusCode:200,headers:{},setHeader(k,v){this.headers[k]=v;},status(v){this.statusCode=v;return this;},json(v){this.body=v;return this;}};return res;};
+ const req=body=>({body});let runs=0;
+ const ok=res=>()=>{runs++;return res.json({score:runs});},fail=res=>()=>{runs++;res.status(502);return res.json({error:'x'});};
+ const id='a1b2c3d4-0000-4000-8000-000000000001';
+ let a=response();await replay.coalesce('reading','s1',req({requestId:id,audio:'A'}),a,fail(a),{now});
+ let b=response();await replay.coalesce('reading','s1',req({requestId:id,audio:'A'}),b,ok(b),{now});
+ assert.equal(runs,2,'a failed first copy is not shared');assert.deepEqual(b.body,{score:2});
+ clock+=replay.TTL_MS-1;let c=response();await replay.coalesce('reading','s1',req({requestId:id,audio:'A'}),c,ok(c),{now});
+ assert.equal(runs,2);assert.deepEqual(c.body,{score:2});assert.equal(c.headers['X-Request-Replayed'],'1');
+ let d=response();await replay.coalesce('reading','s2',req({requestId:id,audio:'A'}),d,ok(d),{now});assert.equal(runs,3,'another pupil never shares it');
+ let e=response();await replay.coalesce('reading','s1',req({requestId:id,audio:'B'}),e,ok(e),{now});assert.equal(runs,4,'another body runs itself');
+ clock+=2;let f=response();await replay.coalesce('reading','s1',req({requestId:'other-id-1',audio:'A'}),f,ok(f),{now});
+ let g=response();await replay.coalesce('reading','s1',req({requestId:id,audio:'A'}),g,ok(g),{now});assert.equal(runs,6,'after ten minutes the copy runs again');
+ let h=response();await replay.coalesce('reading','s1',req({audio:'A'}),h,ok(h),{now});let i=response();await replay.coalesce('reading','s1',req({audio:'A'}),i,ok(i),{now});assert.equal(runs,8,'requests without an id run as before');
+ replay._entries.clear();
+});
