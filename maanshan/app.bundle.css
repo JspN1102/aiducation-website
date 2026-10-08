@@ -4172,12 +4172,13 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 .workspace.view-report .score-line-tabs button[aria-pressed=true]{background:#e7efdf;border-color:#789c75;color:#315d48;box-shadow:inset 0 -3px #6c956f}
 .workspace.view-report .report-line{display:flex;flex:1;flex-direction:column;min-height:0;gap:18px;padding:0;border:0}
 .workspace.view-report .report-sentence{display:flex;flex:1;align-items:stretch;position:relative;width:100%;min-height:190px;padding:clamp(14px,2vw,24px);border:1px solid #d5dfcb;border-radius:26px;background:linear-gradient(145deg,#fffef9,#f6f8ef);color:var(--ink);text-align:center;touch-action:manipulation;box-shadow:0 8px 24px #3a664608}
-.workspace.view-report .word-analysis .word-grid{display:grid;flex:1;grid-template-columns:repeat(var(--report-columns,5),minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:clamp(7px,1vw,14px);overflow:visible;padding:0;width:100%;min-width:0}
-.workspace.view-report .word-analysis .word-result{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;min-width:0;max-width:none;min-height:0;padding:20px 4px;border-radius:18px;border:1px solid var(--band-pale);border-bottom:3px solid var(--band-line);background:linear-gradient(180deg,var(--band-wash),var(--band-soft));box-shadow:inset 0 -2px 0 var(--band-line),0 4px 12px #2f4a3a0f;gap:10px}
-.workspace.view-report .word-analysis .word-result ruby{font-size:clamp(36px,4.7vw,64px);line-height:1.55}
-.workspace.view-report .word-analysis .word-result rt{font:400 clamp(17px,1.95vw,25px)/1.3 var(--sans);color:#526b59}
+/* Two tracks per word, so a shorter clause row sits centred under a longer one. */
+.workspace.view-report .word-analysis .word-grid{display:grid;flex:1;grid-template-columns:repeat(var(--report-tracks,10),minmax(0,1fr));grid-auto-rows:minmax(0,1fr);--word-gap:clamp(7px,1vw,14px);gap:var(--word-gap) 0;overflow:visible;padding:0;width:100%;min-width:0;--ruby-size:clamp(36px,4.7vw,64px);--rt-size:clamp(17px,1.95vw,25px);--chip-size:clamp(23px,2.5vw,32px)}
+.workspace.view-report .word-analysis .word-result{display:flex;flex-direction:column;align-items:center;justify-content:center;grid-column:span 2;width:auto;min-width:0;max-width:none;min-height:0;margin:0 calc(var(--word-gap) / 2);padding:20px 4px;border-radius:18px;border:1px solid var(--band-pale);border-bottom:3px solid var(--band-line);background:linear-gradient(180deg,var(--band-wash),var(--band-soft));box-shadow:inset 0 -2px 0 var(--band-line),0 4px 12px #2f4a3a0f;gap:10px}
+.workspace.view-report .word-analysis .word-result ruby{font-size:var(--ruby-size);line-height:1.55}
+.workspace.view-report .word-analysis .word-result rt{font:400 var(--rt-size)/1.3 var(--sans);color:#526b59}
 /* In a narrow card the chip's side padding gives way first, so a two-character 未測 stays inside. */
-.workspace.view-report .word-analysis .word-result strong{font:700 clamp(23px,2.5vw,32px)/1.4 var(--sans);text-align:center;margin:0;white-space:nowrap;min-width:2.3em;padding:0 clamp(0px,calc((100% - 2em) / 2),.42em);border-radius:999px;background:#fff;color:var(--band);box-shadow:inset 0 0 0 2px var(--band-line);font-variant-numeric:tabular-nums}
+.workspace.view-report .word-analysis .word-result strong{font:700 var(--chip-size)/1.4 var(--sans);text-align:center;margin:0;white-space:nowrap;min-width:2.3em;padding:0 clamp(0px,calc((100% - 2em) / 2),.42em);border-radius:999px;background:#fff;color:var(--band);box-shadow:inset 0 0 0 2px var(--band-line);font-variant-numeric:tabular-nums}
 .workspace.view-report .word-analysis .word-result:is(.warn,.fair) strong{background:var(--band-pale);color:var(--band-ink)}
 .workspace.view-report .word-analysis .word-result:is(.error,.poor) strong{background:var(--band);color:#fff;box-shadow:0 2px 6px #b91c1c3d}
 .workspace.view-report .word-analysis .word-result.unknown strong{background:var(--band-soft);color:var(--band);box-shadow:inset 0 0 0 2px var(--band-pale)}
@@ -4204,11 +4205,9 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace.view-report .score-line-tabs button{min-height:48px;padding:8px 4px;font-size:18px;border-radius:12px}
  .workspace.view-report .report-line{gap:12px;min-height:auto}
  .workspace.view-report .report-sentence{min-height:146px;padding:12px 8px;border-radius:20px}
- .workspace.view-report .word-analysis .word-grid{gap:6px}
+ .workspace.view-report .word-analysis .word-grid{--word-gap:6px;--ruby-size:34px;--rt-size:17px;--chip-size:22px}
  .workspace.view-report .word-analysis .word-result{min-height:118px;padding:12px 2px;border-radius:12px;gap:2px}
- .workspace.view-report .word-analysis .word-result ruby{font-size:34px;line-height:1.5}
- .workspace.view-report .word-analysis .word-result rt{font-size:17px}
- .workspace.view-report .word-analysis .word-result strong{font-size:22px}
+ .workspace.view-report .word-analysis .word-result ruby{line-height:1.5}
  .workspace.view-report .report-line-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
  .workspace.view-report .report-line-actions .button{min-height:50px;padding:9px 8px;font-size:18px;gap:7px;border-radius:13px}
  .workspace.view-report .report-line-actions .button svg{width:22px;height:22px}
@@ -4216,22 +4215,16 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace.view-report .report-next{flex:none;margin-top:auto;padding-top:2px}
  .workspace.view-report .report-animation-next{width:100%;min-height:58px;font-size:22px;padding:11px 20px;border-radius:15px}
 }
-/* Pinyin stays legible on a narrow phone; seven-character clauses wrap 4 + 3 and
-   six-column lines (eleven or twelve characters) four to a row, so every score chip fits its card. */
+/* A narrow phone gives the cards of a seven-character clause every spare pixel. */
 @media(max-width:520px){
- .workspace.view-report .word-analysis .word-grid[data-columns="6"]{grid-template-columns:repeat(4,minmax(0,1fr))}
- .workspace.view-report .word-analysis .word-grid[data-columns="7"]{grid-template-columns:repeat(8,minmax(0,1fr))}
- .workspace.view-report .word-analysis .word-grid[data-columns="7"] .word-result{grid-column:span 2}
- .workspace.view-report .word-analysis .word-grid[data-columns="7"] .word-result:nth-child(7n + 5){grid-column:2/span 2}
+ .workspace.view-report .report-sentence{padding:12px 4px}
+ .workspace.view-report .word-analysis .word-grid{--word-gap:4px}
 }
 @media(max-width:350px){
  .workspace.view-report .score-legend{display:none}
 }
 @media(max-width:360px){
  .workspace.view-report .score-line-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
- .workspace.view-report .word-analysis .word-grid[data-columns="5"]{grid-template-columns:repeat(6,minmax(0,1fr))}
- .workspace.view-report .word-analysis .word-grid[data-columns="5"] .word-result{grid-column:span 2}
- .workspace.view-report .word-analysis .word-grid[data-columns="5"] .word-result:nth-child(5n + 4){grid-column:2/span 2}
 }
 @media(min-width:701px) and (max-height:680px){
  .workspace.view-report #view{grid-template-columns:144px minmax(0,1fr);gap:12px 18px;padding-top:4px}
@@ -4242,10 +4235,9 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace.view-report .word-analysis,.workspace.view-report .report-line{gap:10px}
  .workspace.view-report .score-line-tabs button{min-height:46px;font-size:20px;padding:7px 10px}
  .workspace.view-report .report-sentence{min-height:0;padding:12px}
+ .workspace.view-report .word-analysis .word-grid{--ruby-size:36px;--rt-size:17px;--chip-size:22px}
  .workspace.view-report .word-analysis .word-result{padding:8px 2px;border-radius:12px;gap:0}
- .workspace.view-report .word-analysis .word-result ruby{font-size:36px;line-height:1.45}
- .workspace.view-report .word-analysis .word-result rt{font-size:17px}
- .workspace.view-report .word-analysis .word-result strong{font-size:22px}
+ .workspace.view-report .word-analysis .word-result ruby{line-height:1.45}
  .workspace.view-report .report-line-actions .button{min-height:48px;font-size:19px;padding:8px}
  .workspace.view-report .report-animation-next{min-height:52px;font-size:22px;padding:9px 20px}
 }
@@ -4255,9 +4247,16 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace.view-report .score-legend{display:none}
  .workspace.view-report .report-line-actions .button{min-height:44px;font-size:17px;padding:6px}
  .workspace.view-report .score-line-tabs button{min-height:44px;font-size:18px}
- .workspace.view-report .word-analysis .word-result ruby{font-size:30px}
- .workspace.view-report .word-analysis .word-result rt{font-size:16px}
- .workspace.view-report .word-analysis .word-result strong{font-size:18px}
+ .workspace.view-report .word-analysis .word-grid{--ruby-size:30px;--rt-size:16px;--chip-size:18px}
+}
+/* Each clause stays on one row: in a narrow card the character, pinyin and score
+   shrink with the card instead of wrapping onto a second row. */
+@supports (width:1cqi){
+ .workspace.view-report .word-analysis .word-grid{container-type:inline-size}
+ .workspace.view-report .word-analysis .word-result{--cell:calc(100cqi / var(--report-columns,5) - var(--word-gap) - 4px)}
+ .workspace.view-report .word-analysis .word-result ruby{font-size:min(var(--ruby-size),calc(var(--cell) * .74))}
+ .workspace.view-report .word-analysis .word-result rt{font-size:min(var(--rt-size),calc(var(--cell) / var(--pinyin-chars,5) / .56))}
+ .workspace.view-report .word-analysis .word-result strong{font-size:min(var(--chip-size),calc(var(--cell) / 2.4))}
 }
 
 /* Scores arrive with a short pop; still for pupils who reduce motion. */
@@ -5234,8 +5233,10 @@ html[data-showcase] .site-header{display:none}
 }
 /* Each part to practise, one per line under a word's score in the results.
    Always present, so the characters of one line stay level. */
-.workspace.view-report .word-analysis .word-result .word-part{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:1.35em;font:700 clamp(14px,1.45vw,17px)/1.35 var(--sans);color:var(--score-warn-ink);white-space:nowrap}
+.workspace.view-report .word-analysis .word-result .word-part{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:var(--parts-height,1.35em);font:700 clamp(14px,1.45vw,17px)/1.35 var(--sans);color:var(--score-warn-ink);white-space:nowrap}
 .workspace.view-report .word-analysis .word-result:is(.error,.poor) .word-part{color:var(--score-error)}
+/* A narrow card keeps at least two characters of a part to a line. */
+@supports (width:1cqi){.workspace.view-report .word-analysis .word-result .word-part{font-size:min(clamp(14px,1.45vw,17px),calc(var(--cell) / 2.2));white-space:normal}}
 
 /* chat-voice.css */
 /* Speech input in the poet conversation: a quiet microphone beside the send

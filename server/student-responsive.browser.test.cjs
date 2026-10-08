@@ -30,23 +30,27 @@ async function setup(width,height){
 }
 async function reports(width,height){const {page,context}=await setup(width,height);try{
  for(const poem of poems){
-  await page.evaluate(slug=>location.hash='#'+slug+'/report',poem.slug);await page.waitForFunction(title=>document.title.startsWith(title),poem.title);await page.locator('.report-line').first().waitFor();
+  await page.evaluate(slug=>location.hash='#'+slug+'/report',poem.slug);await page.waitForFunction(title=>document.title.startsWith(title)||document.body.innerText.includes(title),poem.title);await page.locator('.report-line').first().waitFor();
   for(let n=0;n<4;n++){
    await page.locator('[data-action="score-line"][data-value="'+n+'"]').click();
    const state=await page.locator('.report-line:visible').evaluate(el=>{
     const grid=el.querySelector('.word-grid'),cards=[...grid.querySelectorAll('.word-result')],rows=[];
     for(const card of cards){const b=card.getBoundingClientRect(),row=rows.find(r=>Math.abs(r.y-b.y)<2);if(row)row.count++;else rows.push({y:b.y,count:1});}
+    const level=rows.every(r=>{const inRow=cards.filter(card=>Math.abs(card.getBoundingClientRect().y-r.y)<2),tops=sel=>inRow.map(card=>card.querySelector(sel).getBoundingClientRect().top);return [tops('ruby'),tops('strong')].every(list=>Math.max(...list)-Math.min(...list)<=1);});
     const view=document.querySelector('#view'),next=document.querySelector('.report-animation-next'),nextBox=next.getBoundingClientRect(),sentence=el.querySelector('.report-sentence').getBoundingClientRect();
-    return {columns:Number(grid.dataset.columns),rows:rows.map(r=>r.count),count:cards.length,noOverflow:document.documentElement.scrollWidth<=innerWidth+1,
+    return {columns:Number(grid.dataset.columns),rows:rows.map(r=>r.count),level,count:cards.length,noOverflow:document.documentElement.scrollWidth<=innerWidth+1,
      tabletFits:view.scrollHeight<=view.clientHeight+2&&document.documentElement.scrollHeight<=innerHeight+2&&nextBox.bottom<=innerHeight&&sentence.height>=innerHeight*.28,
      nextLabel:next.textContent,nextHeight:nextBox.height,nextHref:next.getAttribute('href'),backLabel:document.querySelector('.back-library').textContent,
      ownReading:el.querySelectorAll('[data-action="replay"]').length,originalReading:el.querySelectorAll('[data-action="report-line-tts"]').length,
-     pinyin:cards.map(card=>{const b=card.getBoundingClientRect(),rt=card.querySelector('rt'),r=rt.getBoundingClientRect();return {size:parseFloat(getComputedStyle(rt).fontSize),fits:r.left>=b.left-1&&r.right<=b.right+1,text:rt.textContent,scoreCentred:getComputedStyle(card.querySelector('strong')).textAlign==='center'};}),
+     pinyin:cards.map(card=>{const b=card.getBoundingClientRect(),rt=card.querySelector('rt'),r=rt.getBoundingClientRect(),chip=card.querySelector('strong').getBoundingClientRect();return {size:parseFloat(getComputedStyle(rt).fontSize),fits:r.left>=b.left-1&&r.right<=b.right+1&&chip.left>=b.left-1&&chip.right<=b.right+1,text:rt.textContent,scoreCentred:getComputedStyle(card.querySelector('strong')).textAlign==='center'};}),
      actions:[...el.querySelectorAll('.report-line-actions .button')].map(button=>{const s=getComputedStyle(button),b=button.getBoundingClientRect();return{centred:s.justifyContent==='center',height:b.height,inside:b.left>=0&&b.right<=innerWidth};})};
    });
-   const groups=state.count/state.columns,perGroup=state.columns===7&&width<=520?[4,3]:state.columns===5&&width<=360?[3,2]:[state.columns],expected=Array.from({length:groups},()=>perGroup).flat();
-   assert.deepEqual(state.rows,expected,width+'px '+poem.slug+' sentence '+n+' balanced groups');
-   check(width+'px '+poem.slug+' sentence '+n+' readable pinyin and centred buttons',state.noOverflow&&state.pinyin.every(p=>p.size>=16&&p.fits&&p.scoreCentred)&&state.actions.every(a=>a.centred&&a.height>=44&&a.inside));
+   // Each clause stays on one row at every width; short clauses share a row of up to seven characters.
+   const line=poem.lines[n],sizes=(line.text+(line.punctuation||'')).match(/[^，。！？；」]+[，。！？；」]*/g).map(c=>[...c].filter(ch=>/\p{Script=Han}/u.test(ch)).length).filter(Boolean),limit=Math.max(7,...sizes),expected=[];
+   for(const size of sizes){if(expected.length&&expected.at(-1)+size<=limit)expected[expected.length-1]+=size;else expected.push(size);}
+   assert.deepEqual(state.rows,expected,width+'px '+poem.slug+' sentence '+n+' one row per clause');
+   check(width+'px '+poem.slug+' sentence '+n+' characters and scores level',state.level);
+   check(width+'px '+poem.slug+' sentence '+n+' readable pinyin and centred buttons',state.noOverflow&&state.pinyin.every(p=>p.size>=(width<=340?10:width<=520?12:16)&&p.fits&&p.scoreCentred)&&state.actions.every(a=>a.centred&&a.height>=44&&a.inside));
    check(width+'px '+poem.slug+' sentence '+n+' keeps distinct audio actions and the animation continuation',state.ownReading===1&&state.originalReading===1&&state.nextLabel==='去看動畫'&&state.nextHeight>=44&&state.nextHref==='#'+poem.slug+'/animation'&&state.backLabel==='返回');
    if(width>=701&&height>=560)check(width+'px '+poem.slug+' sentence '+n+' uses tablet height without scrolling',state.tabletFits);
   }

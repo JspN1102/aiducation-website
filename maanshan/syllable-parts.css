@@ -51,5 +51,7 @@
 }
 /* Each part to practise, one per line under a word's score in the results.
    Always present, so the characters of one line stay level. */
-.workspace.view-report .word-analysis .word-result .word-part{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:1.35em;font:700 clamp(14px,1.45vw,17px)/1.35 var(--sans);color:var(--score-warn-ink);white-space:nowrap}
+.workspace.view-report .word-analysis .word-result .word-part{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:var(--parts-height,1.35em);font:700 clamp(14px,1.45vw,17px)/1.35 var(--sans);color:var(--score-warn-ink);white-space:nowrap}
 .workspace.view-report .word-analysis .word-result:is(.error,.poor) .word-part{color:var(--score-error)}
+/* A narrow card keeps at least two characters of a part to a line. */
+@supports (width:1cqi){.workspace.view-report .word-analysis .word-result .word-part{font-size:min(clamp(14px,1.45vw,17px),calc(var(--cell) / 2.2));white-space:normal}}

@@ -64,7 +64,7 @@
 /* Score colour bands (teacher request 2026-10-08): 80–100 green, 60–79 yellow, below 60 red,
    from the number as displayed; a missing score stays neutral. Each band is a tinted chip with
    a coloured border and bold text, so it reads at a glance on an iPad and not by hue alone. */
-:root{--band-high:#15803d;--band-high-soft:#dcfce7;--band-high-line:#22c55e;--band-mid:#a16207;--band-mid-soft:#fef9c3;--band-mid-line:#eab308;--band-low:#b91c1c;--band-low-soft:#fee2e2;--band-low-line:#ef4444;--band-none:#5b675f;--band-none-soft:#f1f4f0;--band-none-line:#bcc6be}
+:root{--band-high:#166534;--band-high-soft:#c9f7d9;--band-high-line:#16a34a;--band-mid:#a16207;--band-mid-soft:#fef9c3;--band-mid-line:#eab308;--band-low:#991b1b;--band-low-soft:#fdd4d4;--band-low-line:#dc2626;--band-none:#5b675f;--band-none-soft:#f1f4f0;--band-none-line:#bcc6be}
 .band-high{--band:var(--band-high);--band-soft:var(--band-high-soft);--band-line:var(--band-high-line)}.band-mid{--band:var(--band-mid);--band-soft:var(--band-mid-soft);--band-line:var(--band-mid-line)}.band-low{--band:var(--band-low);--band-soft:var(--band-low-soft);--band-line:var(--band-low-line)}.band-none{--band:var(--band-none);--band-soft:var(--band-none-soft);--band-line:var(--band-none-line)}
 .band-chip,.band-pill{display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--band-line);border-radius:999px;background:var(--band-soft);color:var(--band);font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}.band-chip.band-none,.band-pill.band-none{border-style:dashed;font-weight:400}
 .band-legend{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0}.band-legend .band-chip{padding:2px 10px;font-size:15px;line-height:1.4}

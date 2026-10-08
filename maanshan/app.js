@@ -19,7 +19,7 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
 import {requestJSON, requestChat} from './network.mjs?v=20261008-school49';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
-import {schoolSession} from './bootstrap.mjs?v=20261008-school50';
+import {schoolSession} from './bootstrap.mjs?v=20261008-school51';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261008-school48';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school22';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school41';
@@ -900,10 +900,10 @@ function renderReport() {
     '<section id="panel-scores" class="word-analysis" aria-label="朗讀成果"><div class="score-line-tabs" aria-label="選擇詩句">'+s.reading.map((r,i)=>r?'<button type="button" class="button" data-action="score-line" data-value="'+i+'">'+lineLabel(i)+'</button>':'').join('')+'</div>'+
     s.reading.map((lineResult,i)=>{
       if(!lineResult)return '';
-      const columns=Math.min(7,lineResult.words.length>7?Math.ceil(lineResult.words.length/2):lineResult.words.length||1);
-      return '<div class="report-line" data-line="'+i+'"><div class="report-sentence" role="group" aria-label="'+esc(poem.lines[i].text)+'"><span class="word-grid" data-columns="'+columns+'" style="--report-columns:'+columns+'">'+lineResult.words.map(w=>{
+      const rows=reportRows(poem.lines[i],lineResult.words),columns=Math.max(1,...rows.map(row=>row.length)),pinyinChars=Math.max(3,...lineResult.words.map(w=>Array.from(String(w.p||'')).length));
+      return '<div class="report-line" data-line="'+i+'"><div class="report-sentence" role="group" aria-label="'+esc(poem.lines[i].text)+'"><span class="word-grid" data-columns="'+columns+'" style="--report-columns:'+columns+';--report-tracks:'+columns*2+';--pinyin-chars:'+pinyinChars+'">'+rows.flatMap(row=>row.map((w,j)=>[w,j?0:columns-row.length+1])).map(([w,start])=>{
         const parts=syllableParts(w,poem.lines[i]),status=w.status==='ok'&&parts?.tone.state==='miss'?'warn':w.status,issues=status==='ok'?[]:partIssues(parts);
-        return '<button type="button" class="word-result '+esc(status)+'" data-action="word-tts" data-value="'+esc(w.c)+'" data-pinyin="'+esc(w.p)+'" aria-label="聽'+esc(w.c)+'，'+esc(w.p)+'的讀音'+(issues.length?'，'+issues.join('、'):'')+'" aria-pressed="false"><ruby>'+esc(w.c)+'<rt>'+esc(w.p)+'</rt></ruby><strong>'+(w.score??'未測')+'</strong>'+'<small class="word-part">'+issues.map(issue=>'<span>'+issue+'</span>').join('')+'</small></button>';
+        return '<button type="button" class="word-result '+esc(status)+'"'+(start?' style="grid-column:'+start+'/span 2"':'')+' data-action="word-tts" data-value="'+esc(w.c)+'" data-pinyin="'+esc(w.p)+'" aria-label="聽'+esc(w.c)+'，'+esc(w.p)+'的讀音'+(issues.length?'，'+issues.join('、'):'')+'" aria-pressed="false"><ruby>'+esc(w.c)+'<rt>'+esc(w.p)+'</rt></ruby><strong>'+(w.score??'未測')+'</strong>'+'<small class="word-part">'+issues.map(issue=>'<span>'+issue+'</span>').join('')+'</small></button>';
       }).join('')+'</span></div><div class="report-line-actions"><button type="button" class="button" data-action="report-line-tts" data-value="'+i+'" aria-pressed="false">'+icon('volume-2')+'聽原句</button><button type="button" class="button" data-action="replay" data-value="'+i+'" '+(recordings.has(poem.id+'-'+i)?'':'disabled title="這次重新朗讀後，就可以回聽錄音。"')+'>'+icon('headphones')+'聽自己讀</button><a class="button report-reread" href="'+link('record')+'" data-action="record-target" data-value="'+i+'">'+icon('mic')+'再讀這一句</a></div></div>';
     }).join('')+'</section><div class="report-next"><a class="button primary report-animation-next" href="'+link('animation')+'">'+icon('clapperboard')+'<span>去看動畫</span>'+icon('arrow-right')+'</a></div>';
   if(!s.reading[reportLine])reportLine=s.reading.findIndex(Boolean);
@@ -916,7 +916,29 @@ function updateReportTab(){
 function updateScoreLine(){
   document.querySelectorAll('.report-line').forEach(line=>line.hidden=Number(line.dataset.line)!==reportLine);
   document.querySelectorAll('[data-action="score-line"]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.value)===reportLine)));
+  levelReportCards();
 }
+// A line's words in rows that never split a clause; short clauses share a row of
+// up to seven characters (or the longest clause), so each row reads as written.
+function reportRows(line,words){
+  const sizes=((line.text+(line.punctuation||'')).match(/[^，。！？；」]+[，。！？；」]*/g)||[]).map(clause=>Array.from(clause).filter(c=>/\p{Script=Han}/u.test(c)).length).filter(Boolean);
+  if(sizes.reduce((sum,size)=>sum+size,0)!==words.length)return [words];
+  const limit=Math.max(7,...sizes),rows=[];let at=0;
+  for(const size of sizes){const row=rows.at(-1);if(row&&row.length+size<=limit)row.push(...words.slice(at,at+size));else rows.push(words.slice(at,at+size));at+=size;}
+  return rows;
+}
+// Every card of the shown line reserves the tallest list of parts to practise,
+// so the characters and scores of one line stay level.
+function levelReportCards(){
+  for(const grid of document.querySelectorAll('.workspace.view-report .report-line:not([hidden]) .word-grid')){
+    grid.style.removeProperty('--parts-height');
+    const height=Math.max(0,...[...grid.querySelectorAll('.word-part')].map(part=>part.getBoundingClientRect().height));
+    if(height)grid.style.setProperty('--parts-height',Math.ceil(height)+'px');
+  }
+}
+let levelFrame=0;
+addEventListener('resize',()=>{cancelAnimationFrame(levelFrame);levelFrame=requestAnimationFrame(levelReportCards);});
+document.fonts?.ready.then(levelReportCards);
 async function generateReport() {
   const button=$('#report-button');if(!button||button.disabled)return;button.disabled=true;const version=routeVersion,p=poem,generation=++reportGeneration,grade=studentGrade(p);const result=poemAssessment(p);
   const audit=research.context({itemId:'p'+p.id+'.report',activity:'read'}),requestedAt=performance.now();
