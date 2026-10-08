@@ -5,12 +5,13 @@
 .workspace.view-record .syllable-part .part-sound{font:600 21px/1.3 var(--sans);color:var(--ink);white-space:nowrap}
 .workspace.view-record .syllable-part .part-state{display:inline-flex;align-items:center;justify-content:center;gap:2px;font-size:14px;font-weight:600;line-height:1.35;color:var(--muted);white-space:nowrap}
 .workspace.view-record .syllable-part .part-state svg{width:15px;height:15px;flex-shrink:0;stroke-width:3}
-.workspace.view-record .syllable-part.ok{border-bottom-color:#9cc9ad}
-.workspace.view-record .syllable-part.ok .part-state{color:var(--green)}
-.workspace.view-record .syllable-part.near{background:#fff8e7;border-color:#ecdcae;border-bottom-color:#d1b35f}
-.workspace.view-record .syllable-part.near .part-state{color:#855d0c}
-.workspace.view-record .syllable-part.miss{background:#fff1ec;border-color:#efcabd;border-bottom-color:#d58a74}
-.workspace.view-record .syllable-part.miss .part-state{color:var(--red)}
+/* Score colours from student-ui.css: green read right, yellow nearly, red to practise. */
+.workspace.view-record .syllable-part.ok{background:linear-gradient(180deg,var(--score-ok-wash),var(--score-ok-soft));border-color:var(--score-ok-pale);border-bottom-color:var(--score-ok-line);box-shadow:inset 0 -2px 0 var(--score-ok-line)}
+.workspace.view-record .syllable-part.ok .part-state{color:var(--score-ok)}
+.workspace.view-record .syllable-part.near{background:linear-gradient(180deg,var(--score-warn-wash),var(--score-warn-soft));border-color:var(--score-warn-pale);border-bottom-color:var(--score-warn-line);box-shadow:inset 0 -2px 0 var(--score-warn-line)}
+.workspace.view-record .syllable-part.near .part-state{color:var(--score-warn-ink)}
+.workspace.view-record .syllable-part.miss{background:linear-gradient(180deg,var(--score-error-wash),var(--score-error-soft));border-color:var(--score-error-pale);border-bottom-color:var(--score-error-line);box-shadow:inset 0 -2px 0 var(--score-error-line)}
+.workspace.view-record .syllable-part.miss .part-state{color:var(--score-error)}
 .workspace.view-record .syllable-part:is(.unknown,.none){background:#f7f7f3;border-color:#e4e4dc}
 /* Phones: the cards sit beside the character so the next button stays in view. */
 @media (max-width:700px) and (orientation:portrait){
@@ -49,5 +50,5 @@
 }
 /* Each part to practise, one per line under a word's score in the results.
    Always present, so the characters of one line stay level. */
-.workspace.view-report .word-analysis .word-result .word-part{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:1.35em;font:700 clamp(14px,1.45vw,17px)/1.35 var(--sans);color:#855d0c;white-space:nowrap}
-.workspace.view-report .word-analysis .word-result.error .word-part{color:var(--red)}
+.workspace.view-report .word-analysis .word-result .word-part{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:1.35em;font:700 clamp(14px,1.45vw,17px)/1.35 var(--sans);color:var(--score-warn-ink);white-space:nowrap}
+.workspace.view-report .word-analysis .word-result:is(.error,.poor) .word-part{color:var(--score-error)}

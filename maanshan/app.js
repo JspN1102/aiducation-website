@@ -649,10 +649,10 @@ function renderRecord() {
   }else if(recordStep==='extension'){
     content='<div class="record-extension"><div class="record-review"><button class="focus-word" data-action="word-tts" data-value="快" data-pinyin="kuài" aria-label="聽快，kuài 的讀音" aria-pressed="false"><ruby>快<rt>kuài</rt></ruby>'+icon('volume-2')+'</button></div><p class="extension-final">韻母 <strong>uai</strong></p><p class="record-word-hint">點字聽音，跟着讀一讀。</p><div class="record-actions"><button class="button primary" data-action="record-extension-back">'+icon('arrow-left')+'返回讀詩</button></div></div>';
   }else if(recordStep==='result'){
-    content='<div class="record-feedback"><img class="feedback-motif" src="'+poemMotif()+'" width="64" height="64" alt=""><div class="record-result" aria-label="這次朗讀'+result.total_score+'分">'+result.total_score+'<small>分</small></div><h2 tabindex="-1" class="record-feedback-title">'+esc(result.grade)+'</h2><div class="record-actions"><button class="button" data-action="record-retry">'+icon('rotate-ccw')+'再讀一次</button>'+next+'</div></div>';
+    content='<div class="record-feedback"><img class="feedback-motif" src="'+poemMotif()+'" width="64" height="64" alt=""><div class="record-result '+scoreBand(result.total_score)+'" aria-label="這次朗讀'+result.total_score+'分">'+result.total_score+'<small>分</small></div><h2 tabindex="-1" class="record-feedback-title">'+esc(result.grade)+'</h2><div class="record-actions"><button class="button" data-action="record-retry">'+icon('rotate-ccw')+'再讀一次</button>'+next+'</div></div>';
   }else{
     recordWordIndex=clamp(recordWordIndex,0,weak.length-1);const word=weak[recordWordIndex],parts=syllableParts(word,line);
-    content='<div class="record-word-heading"><span>這句 '+result.total_score+' 分</span><span>第 '+(recordWordIndex+1)+' / '+weak.length+' 個字</span></div><div class="record-review"><button class="focus-word" data-action="word-tts" data-value="'+esc(word.c)+'" data-pinyin="'+esc(word.p)+'" aria-label="聽'+esc(word.c)+'的讀音"><ruby>'+esc(word.c)+'<rt>'+esc(word.p)+'</rt></ruby>'+icon('volume-2')+'</button></div>'+syllablePartsHTML(parts,word.c)+'<p class="record-word-hint">'+syllableHint(parts)+'</p><div class="record-word-pager"><button class="icon-button" data-action="record-word-step" data-value="-1" aria-label="上一個字" '+(recordWordIndex===0?'disabled':'')+'>'+icon('chevron-left')+'</button><button class="icon-button" data-action="record-word-step" data-value="1" aria-label="下一個字" '+(recordWordIndex===weak.length-1?'disabled':'')+'>'+icon('chevron-right')+'</button></div><div class="record-actions">'+next+'</div>';
+    content='<div class="record-word-heading"><span>這句 <b class="score-chip '+scoreBand(result.total_score)+'">'+result.total_score+'</b> 分</span><span>第 '+(recordWordIndex+1)+' / '+weak.length+' 個字</span></div><div class="record-review"><button class="focus-word" data-action="word-tts" data-value="'+esc(word.c)+'" data-pinyin="'+esc(word.p)+'" aria-label="聽'+esc(word.c)+'的讀音"><ruby>'+esc(word.c)+'<rt>'+esc(word.p)+'</rt></ruby>'+icon('volume-2')+'</button></div>'+syllablePartsHTML(parts,word.c)+'<p class="record-word-hint">'+syllableHint(parts)+'</p><div class="record-word-pager"><button class="icon-button" data-action="record-word-step" data-value="-1" aria-label="上一個字" '+(recordWordIndex===0?'disabled':'')+'>'+icon('chevron-left')+'</button><button class="icon-button" data-action="record-word-step" data-value="1" aria-label="下一個字" '+(recordWordIndex===weak.length-1?'disabled':'')+'>'+icon('chevron-right')+'</button></div><div class="record-actions">'+next+'</div>';
   }
   $('#record-tool').dataset.step=recordStep;
   const extensionEntry=poem.id===2&&recordStep!=='extension'?'<button class="text-button extension-entry" data-action="record-extension" '+(recordBusy?'disabled':'')+'>拓展字：快</button>':'';
@@ -662,6 +662,9 @@ function renderRecord() {
   setRecordingBusy();
   icons();
 }
+// Colour band of a sentence or poem score: the same 80 / 60 cut-offs as each
+// word's status (core.mjs mapAssessment), so a score and its words agree.
+function scoreBand(score){return typeof score!=='number'||!Number.isFinite(score)?'unknown':score<60?'error':score<80?'warn':'ok';}
 // The word score ignores the tone, so a clearly wrong tone is practised too.
 function recordWeakWords(){const line=poem.lines[currentLine];return state(poem).reading[currentLine]?.words.filter(w=>Number.isFinite(w.score)&&(w.score<80||w.missing===true||syllableParts(w,line)?.tone.state==='miss'))||[];}
 const partStates={ok:['check','讀對了'],near:['','差一點'],miss:['x','要再練'],unknown:['','未能判斷'],none:['','沒有聲母']};
@@ -891,7 +894,9 @@ function renderReport() {
   const s=state(poem),result=poemAssessment();
   if(!result){$('#view').innerHTML='<div class="report-empty"><img class="empty-motif" src="'+poemMotif()+'" width="90" height="90" alt=""><h2>先讀一句，再看成果</h2><a class="button primary" href="'+link('record')+'">'+icon('mic')+'開始朗讀</a></div>';return;}
   const scoreLabel=value=>typeof value==='number'&&Number.isFinite(value)?String(Math.round(clamp(value,0,100)*10)/10):'—';
-  $('#view').innerHTML='<div class="report-summary"><div class="score-ring"><div><strong>'+scoreLabel(result.total_score)+'</strong><span>朗讀得分</span></div></div></div>'+
+  const shownScore=scoreLabel(result.total_score);
+  $('#view').innerHTML='<div class="report-summary"><div class="score-ring '+scoreBand(Number(shownScore))+'"><div><strong>'+shownScore+'</strong><span>朗讀得分</span></div></div>'+
+    '<ul class="score-legend" aria-hidden="true"><li class="ok"><i></i>讀對了</li><li class="warn"><i></i>差一點</li><li class="error"><i></i>要再練</li></ul></div>'+
     '<section id="panel-scores" class="word-analysis" aria-label="朗讀成果"><div class="score-line-tabs" aria-label="選擇詩句">'+s.reading.map((r,i)=>r?'<button type="button" class="button" data-action="score-line" data-value="'+i+'">'+lineLabel(i)+'</button>':'').join('')+'</div>'+
     s.reading.map((lineResult,i)=>{
       if(!lineResult)return '';
