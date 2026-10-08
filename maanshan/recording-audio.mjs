@@ -113,10 +113,10 @@ async function postRecording(url, payload, {signal, onRetry, onWaiting, fetchImp
       const data = await response.json().catch(() => null);
       if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
       if (!response.ok || !data || data.error) {
-        if (response.status === 429) throw audioError('BUSY', messages.busy, true);
+        if (response.status === 429) throw Object.assign(audioError('BUSY', messages.busy, true), {researchHttpStatus:response.status});
         // Definite, pre-scoring refusal of the compact upload: the caller re-sends PCM once.
-        if (response.status === 422 && data?.code === 'AUDIO_TRANSCODE_FAILED') throw audioError('TRANSCODE', '錄音處理未能完成，請再試一次。', true);
-        throw audioError('SERVICE', messages.service, true);
+        if (response.status === 422 && data?.code === 'AUDIO_TRANSCODE_FAILED') throw Object.assign(audioError('TRANSCODE', '錄音處理未能完成，請再試一次。', true), {researchHttpStatus:response.status});
+        throw Object.assign(audioError('SERVICE', messages.service, true), response.ok ? {} : {researchHttpStatus:response.status});
       }
       return data;
     } catch (error) {

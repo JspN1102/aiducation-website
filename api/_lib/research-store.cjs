@@ -131,7 +131,7 @@ const DATA_DICTIONARY = {
     {
       "name": "event.context",
       "type": "optional typed object",
-      "meaning": "mode standard/advanced/review/free; itemType sound/dictation/microgame/match/sequence/scene-builder; position 0..200; total 1..200; optionOrder up to 30 stable tokens; sourceAttemptId UUID. Dictation may additionally carry flow trace-dictation-v1 and booleans traceCompleted/dictationCompleted; the latter cannot be true before tracing is complete."
+      "meaning": "mode standard/advanced/review/free; itemType sound/dictation/microgame/match/sequence/scene-builder; position 0..200; total 1..200; optionOrder up to 30 stable tokens; sourceAttemptId UUID. Dictation may additionally carry flow trace-dictation-v1 and booleans traceCompleted/dictationCompleted; the latter cannot be true before tracing is complete. Optional process context: mediaRoute public/local; audioSource recitation (official recording)/static (pre-built audio file)/tts (speech service, fresh or cached in this page)/recording (pupil's own); audioTrigger the control that started audio (poem-heading-audio/line-tts/word-tts/sentence-tts/practice-word/practice-sequence/practice-compare/report-line-tts/record-pending-play/replay/replay-all/chat-speak/challenge/other); lineIndex 0..199; pinyinShown boolean; recorderFormat webm-opus/webm/mp4/ogg/default/other; stopReason manual/time-limit; uploadPath compact/pcm/pcm-fallback; resend boolean; errorDetail mic-denied/mic-missing/mic-busy/unsupported/too-short/too-long/offline/network/timeout/busy/service/transcode/decode/incomplete/aborted/other; httpStatus 400..599; inputMode typed/voice/suggestion; on session_start pointer coarse/fine/none, viewport small(<480)/medium(480-899)/large(>=900) shorter CSS side, pageLoad navigate/reload/back-forward/prerender/other, deviceAccounts 1..10 capped count of school accounts seen in this browser profile (no identifiers). Absent means not recorded."
     },
     {
       "name": "event.response",
@@ -151,7 +151,7 @@ const DATA_DICTIONARY = {
     {
       "name": "event.metrics",
       "type": "optional finite numeric object",
-      "meaning": "elapsedMs/playbackMs/watchedMs <=21600000; audioDurationMs/latencyMs <=600000; videoPositionMs <=3600000; playbackRate 0.25..4; strokeCount/eraseCount/hintCount <=10000; userCharacters/assistantCharacters <=20000; wordCount/correctCount/itemCount <=1000; lostEventCount <=1000000. Integers except playbackRate. Server-only accuracyScore/fluencyScore/completionScore/suggestedScore are finite provider score dimensions 0..100 and may be fractional; omit unavailable values. They are export provenance, not extra overall assessments."
+      "meaning": "elapsedMs/playbackMs/watchedMs <=21600000; audioDurationMs/latencyMs <=600000; videoPositionMs <=3600000; playbackRate 0.25..4; strokeCount/eraseCount/hintCount <=10000; userCharacters/assistantCharacters <=20000; wordCount/correctCount/itemCount <=1000; lostEventCount <=1000000. Integers except playbackRate. Server-only accuracyScore/fluencyScore/completionScore/suggestedScore are finite provider score dimensions 0..100 and may be fractional; omit unavailable values. They are export provenance, not extra overall assessments. fallbackCount <=10; mediaDurationMs/seekFromMs <=3600000; stallCount <=10000; selectionChanges <=1000; firstResponseMs/prepareMs <=600000; pendingCount/heldCount <=100000. latencyMs by event: playback_started (listen) from handing this clip to the audio player to its first playing event, including copy fallbacks but excluding TTS synthesis (prepareMs) and earlier clips of a recitation sequence; playback_started (animation) from the play request to playing; recording_started from the read attempt_started to the recorder starting, including any microphone permission prompt; read feedback_shown for a line (itemId p<poem>.l<line>, with result) from the start of assessment (or of a resend) to the score being ready, including on-device encoding and upload; session_start from page navigation start to research start, including time on the login screen in the same page load; provider_result server processing time; report and chat feedback_shown keep their existing request-to-answer meaning. fallbackCount on playback_started is how many alternative copies were tried before audio played; prepareMs is the wait for the TTS service (near 0 when cached); mediaDurationMs is the media element duration; stallCount counts animation buffering waits within a watching segment, excluding waits while seeking; seekFromMs is the animation position before a seek; selectionChanges counts option choices, placements and density changes before submitting a sound/match/sequence/scene-builder item; firstResponseMs on chat feedback_shown is request to first streamed text; pendingCount/heldCount on session_start are this account's unsent and held events already on the device. elapsedMs on microgame/explore answer_submitted is time since the latest item_presented of the same attempt and item. strokeCount on handwriting provider_result is strokes submitted."
     },
     {
       "name": "event.error",
@@ -167,6 +167,26 @@ const DATA_DICTIONARY = {
       "name": "event.wordScores",
       "type": "server-only array up to 200",
       "meaning": "Unique integer index, one character from the poem, score and optional pronunciationScore/toneScore 0..100, optional status; excludes transcript/audio."
+    },
+    {
+      "name": "event.providerWords",
+      "type": "server-only array up to 40, <=1500 bytes",
+      "meaning": "Reading only. Provider word list aligned to the reference: i provider position; m MatchTag 1 inserted/2 missing/3 misread/4 not in lexicon (absent=0 matched); r index into the line Han characters (same basis as wordScores.index; absent for inserted words); a accuracy 0..100 (rounded); f provider word fluency (native scale); b/e begin/end ms within the utterance; ph up to 4 phones {s phone, x reference phone if different, m phone MatchTag, a accuracy}. Phones dropped if over budget. Inserted words carry no text or phones. Not a transcript."
+    },
+    {
+      "name": "event.service",
+      "type": "server-only typed object",
+      "meaning": "relay hk/gz/hop-hk/hop-gz/none (school relay path, no ports); audioPath webm/ogg/mp4/m4a/aac/mp3/pcm/pcm-gzip; textMode 0 plain or 1 polyphonic word list; audioMs utterance length; prepareMs/connectMs/scoreMs server timings; providerCode numeric provider error code only (no message)."
+    },
+    {
+      "name": "event.recognition",
+      "type": "server-only typed object",
+      "meaning": "Handwriting only: candidateCount 0..20, targetRank 1-based rank of the first accepted form among the first 20 candidates (0 absent), topCandidate the single top-ranked Han character. No coordinates."
+    },
+    {
+      "name": "event.provenance",
+      "type": "server-only typed object",
+      "meaning": "serverVersion server build that computed the outcome; termsVersion platform terms version accepted at login for this session (e.g. 2026-09-30-v3), absent if not recorded. Not present on stable challenge receipts."
     }
   ],
   "missingness": {
@@ -217,7 +237,12 @@ const DATA_DICTIONARY = {
       "names",
       "school login",
       "IP address",
-      "device fingerprint"
+      "device fingerprint",
+      "provider error text",
+      "user agent",
+      "exact screen size",
+      "persistent device identifier",
+      "inserted speech content"
     ]
   }
 };
@@ -236,8 +261,20 @@ const STATUS = ['correct','incorrect','completed','skipped','cancelled','unmeasu
 const METRICS = { elapsedMs:21600000,playbackMs:21600000,audioDurationMs:600000,playbackRate:4,
   strokeCount:10000,eraseCount:10000,hintCount:10000,userCharacters:20000,assistantCharacters:20000,
   latencyMs:600000,wordCount:1000,correctCount:1000,itemCount:1000,watchedMs:21600000,videoPositionMs:3600000,lostEventCount:1000000,
-  accuracyScore:100,fluencyScore:100,completionScore:100,suggestedScore:100 };
+  accuracyScore:100,fluencyScore:100,completionScore:100,suggestedScore:100,
+  fallbackCount:10,mediaDurationMs:3600000,seekFromMs:3600000,stallCount:10000,selectionChanges:1000,firstResponseMs:600000,prepareMs:600000,pendingCount:100000,heldCount:100000 };
 const PROVIDER_SCORE_METRICS=['accuracyScore','fluencyScore','completionScore','suggestedScore'];
+// Optional process context (school48). Enums only; absent means not recorded.
+const CONTEXT_ENUMS={mediaRoute:['public','local'],audioSource:['recitation','static','tts','recording'],
+  audioTrigger:['poem-heading-audio','line-tts','word-tts','sentence-tts','practice-word','practice-sequence','practice-compare','report-line-tts','record-pending-play','replay','replay-all','chat-speak','challenge','other'],
+  recorderFormat:['webm-opus','webm','mp4','ogg','default','other'],stopReason:['manual','time-limit'],uploadPath:['compact','pcm','pcm-fallback'],
+  errorDetail:['mic-denied','mic-missing','mic-busy','unsupported','too-short','too-long','offline','network','timeout','busy','service','transcode','decode','incomplete','aborted','other'],
+  inputMode:['typed','voice','suggestion'],pointer:['coarse','fine','none'],viewport:['small','medium','large'],pageLoad:['navigate','reload','back-forward','prerender','other']};
+// Server-only outcome detail; recordVerifiedOutcome drops it rather than lose the core outcome.
+const RESEARCH_SERVER_VERSION='server-research-20261008-school48';
+const EXTENSIONS=['providerWords','service','recognition','provenance'];
+const PHONE=/^[a-z]{1,8}[1-5]?$/,TERMS=/^\d{4}-\d\d-\d\d-v\d{1,3}$/;
+const RELAYS=['hk','gz','hop-hk','hop-gz','none'],AUDIO_PATHS=['webm','ogg','mp4','m4a','aac','mp3','pcm','pcm-gzip'];
 const canonical = value => JSON.stringify(value && typeof value === 'object'
   ? Array.isArray(value) ? value.map(v => JSON.parse(canonical(v)))
     : Object.fromEntries(Object.keys(value).sort().map(k => [k, JSON.parse(canonical(value[k]))])) : value);
@@ -252,6 +289,7 @@ function object(value, allowed, required = []) {
       Object.keys(value).some(k => !allowed.includes(k)) || required.some(k => !Object.hasOwn(value,k))) fail();
 }
 function integer(value, min, max) { if (!Number.isSafeInteger(value) || value < min || value > max) fail(); }
+function finite(value, min, max) { if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max) fail(); }
 function token(value, max) { if (typeof value !== 'string' || value.length > max || !TOKEN.test(value)) fail(); }
 function uuid(value) { if (typeof value !== 'string' || !UUID.test(value)) fail(); }
 function iso(value) { return typeof value === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value; }
@@ -266,7 +304,7 @@ function resultValid(result) {
 function validateEvent(event, server = false) {
   object(event, ['eventId','sessionId','seq','clientAt','activeMs','poemId','activity','type',
     'appVersion','contentVersion','attemptId','itemId','attemptNo','hint','retryCount','result','error','metrics','context','response','interaction',
-    ...(server ? ['provider','model','operation','providerVersion','wordScores'] : [])],
+    ...(server ? ['provider','model','operation','providerVersion','wordScores','providerWords','service','recognition','provenance'] : [])],
   ['eventId','sessionId','seq','clientAt','activeMs','poemId','activity','type','appVersion','contentVersion']);
   uuid(event.eventId); uuid(event.sessionId); integer(event.seq,0,10000000); integer(event.activeMs,0,21600000);
   if (!iso(event.clientAt) || !ACTIVITIES.includes(event.activity) || !(server ? [...TYPES,'provider_result'] : TYPES).includes(event.type)) fail();
@@ -296,7 +334,8 @@ function validateEvent(event, server = false) {
     }
   }
   if(event.context!==undefined){
-    object(event.context,['mode','itemType','position','total','optionOrder','sourceAttemptId','flow','traceCompleted','dictationCompleted']);
+    object(event.context,['mode','itemType','position','total','optionOrder','sourceAttemptId','flow','traceCompleted','dictationCompleted',
+      'mediaRoute','audioSource','audioTrigger','lineIndex','pinyinShown','recorderFormat','stopReason','uploadPath','resend','errorDetail','httpStatus','inputMode','pointer','viewport','pageLoad','deviceAccounts']);
     if(event.context.mode!==undefined&&!['standard','advanced','review','free'].includes(event.context.mode))fail();
     if(event.context.itemType!==undefined&&!['sound','dictation','microgame','match','sequence','scene-builder'].includes(event.context.itemType))fail();
     if(event.context.position!==undefined)integer(event.context.position,0,200);
@@ -306,6 +345,11 @@ function validateEvent(event, server = false) {
     if(event.context.flow!==undefined&&(event.context.flow!=='trace-dictation-v1'||event.context.itemType!=='dictation'))fail();
     for(const key of ['traceCompleted','dictationCompleted'])if(event.context[key]!==undefined&&(event.context.flow!=='trace-dictation-v1'||typeof event.context[key]!=='boolean'))fail();
     if(event.context.dictationCompleted===true&&event.context.traceCompleted!==true)fail();
+    for(const [key,values] of Object.entries(CONTEXT_ENUMS))if(event.context[key]!==undefined&&!values.includes(event.context[key]))fail();
+    if(event.context.lineIndex!==undefined)integer(event.context.lineIndex,0,199);
+    if(event.context.httpStatus!==undefined)integer(event.context.httpStatus,400,599);
+    if(event.context.deviceAccounts!==undefined)integer(event.context.deviceAccounts,1,10);
+    for(const key of ['pinyinShown','resend'])if(event.context[key]!==undefined&&typeof event.context[key]!=='boolean')fail();
   }
   if(event.response!==undefined){
     object(event.response,['choiceId','placements']);
@@ -330,6 +374,36 @@ function validateEvent(event, server = false) {
         if (word.status !== undefined && !STATUS.includes(word.status)) fail();
       }
     }
+    // Provider word list aligned to the line: positions, tags, timings and phones; never text or audio.
+    if(event.providerWords!==undefined){
+      if(event.operation!=='reading'||!Array.isArray(event.providerWords)||event.providerWords.length<1||event.providerWords.length>40||Buffer.byteLength(canonical(event.providerWords))>1500)fail();
+      let lastI=-1,lastR=-1;
+      for(const word of event.providerWords){
+        object(word,['i','m','r','a','f','b','e','ph'],['i']);integer(word.i,0,39);if(word.i<=lastI)fail();lastI=word.i;
+        if(word.m!==undefined)integer(word.m,0,4);
+        if(word.r!==undefined){if(word.m===1)fail();integer(word.r,0,199);if(word.r<=lastR)fail();lastR=word.r;}
+        for(const key of ['a','f'])if(word[key]!==undefined)finite(word[key],0,100);
+        for(const key of ['b','e'])if(word[key]!==undefined)integer(word[key],0,600000);
+        if(word.b!==undefined&&word.e!==undefined&&word.e<word.b)fail();
+        if(word.ph!==undefined){if(word.m===1||!Array.isArray(word.ph)||word.ph.length<1||word.ph.length>4)fail();
+          for(const phone of word.ph){object(phone,['s','x','m','a'],['s']);
+            if(typeof phone.s!=='string'||!PHONE.test(phone.s)||phone.x!==undefined&&(typeof phone.x!=='string'||!PHONE.test(phone.x)))fail();
+            if(phone.m!==undefined)integer(phone.m,0,4);if(phone.a!==undefined)finite(phone.a,0,100);}}
+      }
+    }
+    if(event.service!==undefined){const service=event.service;
+      object(service,['relay','audioPath','textMode','audioMs','prepareMs','connectMs','scoreMs','providerCode']);if(!Object.values(service).some(value=>value!==undefined))fail();
+      if(service.relay!==undefined&&!RELAYS.includes(service.relay)||service.audioPath!==undefined&&!AUDIO_PATHS.includes(service.audioPath)||service.textMode!==undefined&&![0,1].includes(service.textMode))fail();
+      for(const key of ['audioMs','prepareMs','connectMs','scoreMs'])if(service[key]!==undefined)integer(service[key],0,600000);
+      if(service.providerCode!==undefined)integer(service.providerCode,-1,999999999);
+    }
+    if(event.recognition!==undefined){const recognition=event.recognition;if(event.operation!=='handwriting')fail();
+      object(recognition,['candidateCount','targetRank','topCandidate'],['candidateCount','targetRank']);
+      integer(recognition.candidateCount,0,20);integer(recognition.targetRank,0,20);if(recognition.targetRank>recognition.candidateCount)fail();
+      if(recognition.topCandidate!==undefined&&(typeof recognition.topCandidate!=='string'||!/^\p{Script=Han}$/u.test(recognition.topCandidate)||recognition.topCandidate.normalize('NFC')!==recognition.topCandidate))fail();
+    }
+    if(event.provenance!==undefined){object(event.provenance,['serverVersion','termsVersion'],['serverVersion']);token(event.provenance.serverVersion,64);
+      if(event.provenance.termsVersion!==undefined&&(typeof event.provenance.termsVersion!=='string'||!TERMS.test(event.provenance.termsVersion)))fail();}
   }
   return JSON.parse(canonical(event));
 }
@@ -476,10 +550,19 @@ async function recordVerifiedOutcome(req,input) {
       type:'provider_result',appVersion,contentVersion,provider,model,operation,providerVersion};
     for(const [key,value] of Object.entries({attemptId,itemId,result,error,metrics,wordScores,context:eventContext}))if(value!==undefined)event[key]=value;
     if(input.response!==undefined)event.response=input.response;
+    // Server-computed detail comes only from the outcome, never from researchContext.
+    // Stable challenge receipts keep their exact shape so retries hash identically.
+    if(input.stableBatch!==true){for(const k of ['providerWords','service','recognition'])if(input[k]!==undefined)event[k]=input[k];
+      let terms=null;try{terms=typeof auth.sessionTermsVersion==='function'?await auth.sessionTermsVersion(req):null;}catch{}
+      event.provenance={serverVersion:RESEARCH_SERVER_VERSION,...(typeof terms==='string'&&TERMS.test(terms)?{termsVersion:terms}:{})};}
     // Distinguish an invalid incoming event from invalid data read from storage.
     // Only the former is a permanent request rejection for the answer queue.
+    let invalid=null;
     try{validateEvent(event,true);}
-    catch(error){if(error instanceof ResearchError&&error.code==='INVALID_EVENT')return {recorded:false,reason:error.code,invalidRequest:true};throw error;}
+    catch(error){invalid=error;
+      // Optional detail never costs the core outcome: drop it and validate the core event once more.
+      if(EXTENSIONS.some(k=>event[k]!==undefined)){for(const k of EXTENSIONS)delete event[k];try{validateEvent(event,true);invalid=null;}catch(again){invalid=again;}}}
+    if(invalid){if(invalid instanceof ResearchError&&invalid.code==='INVALID_EVENT')return {recorded:false,reason:invalid.code,invalidRequest:true};throw invalid;}
     await ingest({schemaVersion:1,batchId:input.stableBatch===true?eventId:crypto.randomUUID(),actorId:actor.id,events:[event]},actor,{source:'server_verified',stableRequest:input.stableBatch===true,signal:AbortSignal.timeout(3000)});
     return {recorded:true,eventId};
   }catch(error){return {recorded:false,reason:error instanceof ResearchError?error.code:'outcome_storage_unavailable'};}
@@ -710,6 +793,6 @@ async function researchExport(f,options){
   return exportRows(rows,f,options);
 }
 function sendError(res,error){const safe=error instanceof ResearchError?error:new ResearchError('RESEARCH_STORAGE_UNAVAILABLE',503);return res.status(safe.status).json({error:safe.code,schemaVersion:1,...['POEM_GRADE_FORBIDDEN','RESEARCH_EXCLUDED'].includes(safe.code)?{code:safe.code,retryable:false}:{},...safe.code==='NARROW_DATE_OR_CLASS_FILTER'?{suggestion:'FILTER_BY_CLASS_OR_SHORTER_DATE_RANGE',maxEvents:MAX_READ_EVENTS,maxSelectedDays:31}:{}});}
-module.exports={NS,MAX_BATCH_BYTES,MAX_READ_EVENTS,ACTIVITIES,TYPES,ERRORS,STATUS,METRICS,DATA_DICTIONARY,ResearchError,canonical,hash,
+module.exports={NS,MAX_BATCH_BYTES,MAX_READ_EVENTS,ACTIVITIES,TYPES,ERRORS,STATUS,METRICS,DATA_DICTIONARY,RESEARCH_SERVER_VERSION,PHONE,RELAYS,AUDIO_PATHS,ResearchError,canonical,hash,
   validateEvent,validateBatch,verifyStoredBatch,pgConfig,getPool,mode,outboxPath,readPrivate,appendPostgres,appendBlob,
   ingest,recordVerifiedOutcome,stableOutcomeId,filtersFrom,matches,aggregateEvents,validatePublishedParts,readPostgres,readPublished,analytics,exportRows,researchExport,sendError};

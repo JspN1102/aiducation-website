@@ -122,7 +122,7 @@
     {
       "name": "event.context",
       "type": "optional typed object",
-      "meaning": "mode standard/advanced/review/free; itemType sound/dictation/microgame/match/sequence/scene-builder; position 0..200; total 1..200; optionOrder up to 30 stable tokens; sourceAttemptId UUID. Dictation may additionally carry flow trace-dictation-v1 and booleans traceCompleted/dictationCompleted; the latter cannot be true before tracing is complete."
+      "meaning": "mode standard/advanced/review/free; itemType sound/dictation/microgame/match/sequence/scene-builder; position 0..200; total 1..200; optionOrder up to 30 stable tokens; sourceAttemptId UUID. Dictation may additionally carry flow trace-dictation-v1 and booleans traceCompleted/dictationCompleted; the latter cannot be true before tracing is complete. Optional process context: mediaRoute public/local; audioSource recitation (official recording)/static (pre-built audio file)/tts (speech service, fresh or cached in this page)/recording (pupil's own); audioTrigger the control that started audio (poem-heading-audio/line-tts/word-tts/sentence-tts/practice-word/practice-sequence/practice-compare/report-line-tts/record-pending-play/replay/replay-all/chat-speak/challenge/other); lineIndex 0..199; pinyinShown boolean; recorderFormat webm-opus/webm/mp4/ogg/default/other; stopReason manual/time-limit; uploadPath compact/pcm/pcm-fallback; resend boolean; errorDetail mic-denied/mic-missing/mic-busy/unsupported/too-short/too-long/offline/network/timeout/busy/service/transcode/decode/incomplete/aborted/other; httpStatus 400..599; inputMode typed/voice/suggestion; on session_start pointer coarse/fine/none, viewport small(<480)/medium(480-899)/large(>=900) shorter CSS side, pageLoad navigate/reload/back-forward/prerender/other, deviceAccounts 1..10 capped count of school accounts seen in this browser profile (no identifiers). Absent means not recorded."
     },
     {
       "name": "event.response",
@@ -142,7 +142,7 @@
     {
       "name": "event.metrics",
       "type": "optional finite numeric object",
-      "meaning": "elapsedMs/playbackMs/watchedMs <=21600000; audioDurationMs/latencyMs <=600000; videoPositionMs <=3600000; playbackRate 0.25..4; strokeCount/eraseCount/hintCount <=10000; userCharacters/assistantCharacters <=20000; wordCount/correctCount/itemCount <=1000; lostEventCount <=1000000. Integers except playbackRate. Server-only accuracyScore/fluencyScore/completionScore/suggestedScore are finite provider score dimensions 0..100 and may be fractional; omit unavailable values. They are export provenance, not extra overall assessments."
+      "meaning": "elapsedMs/playbackMs/watchedMs <=21600000; audioDurationMs/latencyMs <=600000; videoPositionMs <=3600000; playbackRate 0.25..4; strokeCount/eraseCount/hintCount <=10000; userCharacters/assistantCharacters <=20000; wordCount/correctCount/itemCount <=1000; lostEventCount <=1000000. Integers except playbackRate. Server-only accuracyScore/fluencyScore/completionScore/suggestedScore are finite provider score dimensions 0..100 and may be fractional; omit unavailable values. They are export provenance, not extra overall assessments. fallbackCount <=10; mediaDurationMs/seekFromMs <=3600000; stallCount <=10000; selectionChanges <=1000; firstResponseMs/prepareMs <=600000; pendingCount/heldCount <=100000. latencyMs by event: playback_started (listen) from handing this clip to the audio player to its first playing event, including copy fallbacks but excluding TTS synthesis (prepareMs) and earlier clips of a recitation sequence; playback_started (animation) from the play request to playing; recording_started from the read attempt_started to the recorder starting, including any microphone permission prompt; read feedback_shown for a line (itemId p<poem>.l<line>, with result) from the start of assessment (or of a resend) to the score being ready, including on-device encoding and upload; session_start from page navigation start to research start, including time on the login screen in the same page load; provider_result server processing time; report and chat feedback_shown keep their existing request-to-answer meaning. fallbackCount on playback_started is how many alternative copies were tried before audio played; prepareMs is the wait for the TTS service (near 0 when cached); mediaDurationMs is the media element duration; stallCount counts animation buffering waits within a watching segment, excluding waits while seeking; seekFromMs is the animation position before a seek; selectionChanges counts option choices, placements and density changes before submitting a sound/match/sequence/scene-builder item; firstResponseMs on chat feedback_shown is request to first streamed text; pendingCount/heldCount on session_start are this account's unsent and held events already on the device. elapsedMs on microgame/explore answer_submitted is time since the latest item_presented of the same attempt and item. strokeCount on handwriting provider_result is strokes submitted."
     },
     {
       "name": "event.error",
@@ -158,6 +158,26 @@
       "name": "event.wordScores",
       "type": "server-only array up to 200",
       "meaning": "Unique integer index, one character from the poem, score and optional pronunciationScore/toneScore 0..100, optional status; excludes transcript/audio."
+    },
+    {
+      "name": "event.providerWords",
+      "type": "server-only array up to 40, <=1500 bytes",
+      "meaning": "Reading only. Provider word list aligned to the reference: i provider position; m MatchTag 1 inserted/2 missing/3 misread/4 not in lexicon (absent=0 matched); r index into the line Han characters (same basis as wordScores.index; absent for inserted words); a accuracy 0..100 (rounded); f provider word fluency (native scale); b/e begin/end ms within the utterance; ph up to 4 phones {s phone, x reference phone if different, m phone MatchTag, a accuracy}. Phones dropped if over budget. Inserted words carry no text or phones. Not a transcript."
+    },
+    {
+      "name": "event.service",
+      "type": "server-only typed object",
+      "meaning": "relay hk/gz/hop-hk/hop-gz/none (school relay path, no ports); audioPath webm/ogg/mp4/m4a/aac/mp3/pcm/pcm-gzip; textMode 0 plain or 1 polyphonic word list; audioMs utterance length; prepareMs/connectMs/scoreMs server timings; providerCode numeric provider error code only (no message)."
+    },
+    {
+      "name": "event.recognition",
+      "type": "server-only typed object",
+      "meaning": "Handwriting only: candidateCount 0..20, targetRank 1-based rank of the first accepted form among the first 20 candidates (0 absent), topCandidate the single top-ranked Han character. No coordinates."
+    },
+    {
+      "name": "event.provenance",
+      "type": "server-only typed object",
+      "meaning": "serverVersion server build that computed the outcome; termsVersion platform terms version accepted at login for this session (e.g. 2026-09-30-v3), absent if not recorded. Not present on stable challenge receipts."
     }
   ],
   "missingness": {
@@ -208,7 +228,12 @@
       "names",
       "school login",
       "IP address",
-      "device fingerprint"
+      "device fingerprint",
+      "provider error text",
+      "user agent",
+      "exact screen size",
+      "persistent device identifier",
+      "inserted speech content"
     ]
   }
 }

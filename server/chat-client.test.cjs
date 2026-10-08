@@ -34,3 +34,19 @@ test('chat cancellation stops a pending request and never retries automatically'
  const promise=requestChat({}, {signal:abort.signal,fetchImpl:async(_url,options)=>{calls++;return new Promise((_resolve,reject)=>options.signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError')),{once:true}));}});
  abort.abort();await assert.rejects(promise,e=>e.name==='AbortError');assert.equal(calls,1);
 });
+test('chat errors keep their messages and types and only gain a research reason (never a code)',async()=>{
+ const {requestChat}=await import('../maanshan/network.mjs');
+ const cases=[
+  [async()=>new Response('',{status:429}),'現在較多人使用，稍後再試一次吧。','busy',429],
+  [async()=>new Response('',{status:502}),'暫時未能回答，可以再送一次。','service',502],
+  [async()=>Response.json({error:'x'}),'剛才的回覆未能完整收到，可以再試一次。','incomplete'],
+  [async()=>new Response(frame({type:'delta',text:1}),{headers:{'Content-Type':'text/event-stream'}}),'回覆格式不完整。','incomplete'],
+  [async()=>{throw new TypeError('Failed to fetch');},'剛才未能完整連線，請再試一次。','network']];
+ for(const [fetchImpl,message,detail,status] of cases){
+  const error=await requestChat({}, {fetchImpl}).then(()=>null,e=>e);
+  assert.equal(Object.getPrototypeOf(error),Error.prototype);assert.equal(error.message,message);assert.equal(error.researchDetail,detail);
+  assert.equal('code' in error,false);assert.equal(error.researchHttpStatus,status);
+ }
+ const slow=await requestChat({}, {timeout:5,fetchImpl:async(_url,options)=>new Promise((_resolve,reject)=>options.signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError')),{once:true}))}).then(()=>null,e=>e);
+ assert.equal(slow.message,'這次等得有點久，可以再試一次。');assert.equal(slow.researchDetail,'timeout');assert.equal('code' in slow,false);
+});

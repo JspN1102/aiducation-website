@@ -170,3 +170,96 @@ test('thrown provider errors record a safe failure without changing response/err
  assert.doesNotMatch(JSON.stringify(stored),/private upstream/);assert.ok(stored.metrics.latencyMs>=0);
  assert.equal(outcomeFor('reading',null,200,{line:{text:'李',simplified:'李'}},NaN).result.status,'error');
 });
+// school48 server-only research detail (providerWords/service/recognition). None of it may change a verdict.
+const line2=()=>{const poem=getPoem(2);return {poem,line:poem.lines[0]};}; // 李白乘舟將欲行 / 李白乘舟将欲行
+test('server-only research detail never changes the verified score, word scores or metrics',()=>{
+ const reference=line2(),payload={SuggestedScore:71,PronAccuracy:70,PronFluency:0.9,PronCompletion:100,
+  Words:[{Word:'李',PronAccuracy:69,MatchTag:0,MemBeginTime:0,MemEndTime:300,PhoneInfos:[{Phone:'l',PronAccuracy:60}]},{Word:'白',PronAccuracy:88,MatchTag:0,MemBeginTime:300,MemEndTime:600,PhoneInfos:[]}]};
+ const plain=outcomeFor('reading',payload,200,reference,10);
+ const extended=outcomeFor('reading',payload,200,reference,10,undefined,{relay:'hop-hk',service:{audioPath:'webm',textMode:1,audioMs:2100,prepareMs:3,connectMs:40,scoreMs:900,message:'dropped'},rawWords:[{word:'李',pron_accuracy:69}]});
+ for(const key of ['operation','provider','model','providerVersion','result','metrics','wordScores'])assert.deepEqual(extended[key],plain[key],key);
+ assert.deepEqual(plain.metrics,{latencyMs:10,accuracyScore:70,fluencyScore:0.9,completionScore:100,suggestedScore:71,wordCount:2});
+ assert.deepEqual(plain.wordScores.map(w=>w.index),[0,1]);
+ assert.deepEqual(Object.keys(plain).sort(),['metrics','model','operation','provider','providerVersion','providerWords','result','wordScores']);
+ assert.deepEqual(plain.providerWords,[{i:0,r:0,a:69,b:0,e:300,ph:[{s:'l',a:60}]},{i:1,r:1,a:88,b:300,e:600}]);
+ assert.deepEqual(extended.service,{relay:'hop-hk',audioPath:'webm',textMode:1,audioMs:2100,prepareMs:3,connectMs:40,scoreMs:900});
+ assert.deepEqual(extended.providerWords,[{i:0,r:0,a:69}],'raw provider words are preferred to the mapped response');
+ const failed=outcomeFor('reading',{error:'x'},502,reference,10,undefined,{relay:'gz',service:{audioPath:'pcm',textMode:0,prepareMs:1,providerCode:4002}});
+ assert.deepEqual(failed.error,outcomeFor('reading',{error:'x'},502,reference,10).error);assert.deepEqual(failed.service,{relay:'gz',audioPath:'pcm',textMode:0,prepareMs:1,providerCode:4002});
+ assert.equal(failed.providerWords,undefined);
+ for(const extras of [undefined,null,{},{service:'x'},{service:{relay:'hk:8443',audioPath:'wav',textMode:2,audioMs:-1,prepareMs:1.5,providerCode:'4002'}},{rawWords:'x'},{rawWords:[null]}]){
+  const value=outcomeFor('reading',payload,200,reference,10,undefined,extras);
+  assert.deepEqual(value.result,plain.result);assert.deepEqual(value.wordScores,plain.wordScores);assert.equal(value.service,undefined);
+ }
+ assert.equal(outcomeFor('chat',{reply:'hi'},200,{poem:reference.poem},10,undefined,{relay:'none'}).service.relay,'none');
+});
+test('provider words align inserted, missing, traditional and punctuation entries to the line without text',()=>{
+ const raw=[
+  {word:'李',pron_accuracy:69.4,pron_fluency:0.934,match_tag:0,begin_time:0,end_time:300,phone_infos:[{phone:'l',pron_accuracy:60.2},{phone:'i3',reference_phone:'i3',pron_accuracy:80},{phone:'Ü3',reference_phone:'u3',match_tag:3},{phone:'n',pron_accuracy:1},{phone:'g',pron_accuracy:2}]},
+  {word:'啊',pron_accuracy:40,match_tag:1,begin_time:300,end_time:350,phone_infos:[{phone:'a1',pron_accuracy:40}]},
+  {word:'白',pron_accuracy:0,match_tag:2},
+  {word:'，',pron_accuracy:90},
+  {word:'乘',pron_accuracy:90,mem_begin_time:400,mem_end_time:700},
+  {word:'',match_tag:2},
+  {word:'將',pron_accuracy:77},{word:'欲',pron_accuracy:78},{word:'行',pron_accuracy:79},{word:'哦',match_tag:1},{word:'外'}];
+ const value=outcomeFor('reading',{SuggestedScore:50,Words:[]},200,line2(),10,undefined,{rawWords:raw});
+ assert.deepEqual(value.providerWords,[
+  {i:0,r:0,a:69,f:0.93,b:0,e:300,ph:[{s:'l',a:60},{s:'i3',a:80},{s:'v3',x:'u3',m:3},{s:'n',a:1}]},
+  {i:1,m:1,a:40,b:300,e:350},
+  {i:2,m:2,r:1,a:0},
+  {i:4,r:2,a:90,b:400,e:700},
+  {i:5,m:2,r:3},
+  {i:6,r:4,a:77},{i:7,r:5,a:78},{i:8,r:6,a:79},{i:9,m:1},{i:10}]);
+ assert.doesNotMatch(JSON.stringify(value.providerWords),/[\p{Script=Han}]/u,'no characters and no inserted speech content');
+ assert.equal(value.result.score,50);assert.deepEqual(value.wordScores,[]);
+ // Simplified forms align too; a different character anywhere voids the whole field.
+ assert.deepEqual(outcomeFor('reading',{SuggestedScore:50},200,line2(),10,undefined,{rawWords:[{word:'李'},{word:'白'},{word:'乘'},{word:'舟'},{word:'将'}]}).providerWords.map(w=>w.r),[0,1,2,3,4]);
+ for(const rawWords of [[{word:'李'},{word:'黑'}],[{word:'白'}],[{word:'李',match_tag:5}],[{word:'李',match_tag:-1}],[{word:'黑',match_tag:'1'}]])
+  assert.equal(outcomeFor('reading',{SuggestedScore:50},200,line2(),10,undefined,{rawWords}).providerWords,undefined,JSON.stringify(rawWords));
+ assert.equal(outcomeFor('reading',{SuggestedScore:50},200,line2(),10,undefined,{rawWords:[]}).providerWords,undefined);
+ assert.equal(outcomeFor('reading',{SuggestedScore:50},200,line2(),10,undefined,{rawWords:[{word:'，'}]}).providerWords,undefined);
+});
+test('negative or out-of-range provider values are omitted and the byte budget drops phones before the field',()=>{
+ const one=word=>outcomeFor('reading',{SuggestedScore:50},200,line2(),10,undefined,{rawWords:[word]}).providerWords;
+ assert.deepEqual(one({word:'李',pron_accuracy:-1,pron_fluency:-1,begin_time:-10,end_time:-5,phone_infos:[{phone:'l',pron_accuracy:-1},{phone:'',pron_accuracy:5},{phone:'x9y'},{phone:'li',reference_phone:'LI'}]}),[{i:0,r:0,ph:[{s:'l'},{s:'li'}]}]);
+ assert.deepEqual(one({word:'李',pron_accuracy:101,pron_fluency:Infinity,begin_time:500,end_time:400}),[{i:0,r:0,b:500}]);
+ assert.deepEqual(one({word:'李',begin_time:600001,end_time:12.6}),[{i:0,r:0,e:13}]);
+ assert.deepEqual(one({word:'李',pron_accuracy:NaN,phone_infos:'x'}),[{i:0,r:0}]);
+ const phones=Array.from({length:4},()=>({phone:'zh',reference_phone:'z',match_tag:3,pron_accuracy:50}));
+ const heavy=[...'李白乘舟將欲行'].map((word,i)=>({word,pron_accuracy:69,pron_fluency:0.93,begin_time:120000+i*1000,end_time:120500+i*1000,phone_infos:phones}));
+ const trimmed=outcomeFor('reading',{SuggestedScore:50},200,line2(),10,undefined,{rawWords:heavy}).providerWords;
+ assert.equal(trimmed.length,7);assert.equal(trimmed.some(w=>w.ph),false);assert.deepEqual(trimmed[6],{i:6,r:6,a:69,f:0.93,b:126000,e:126500});
+ const inserted=Array.from({length:45},(_,i)=>({word:'啊',match_tag:1,pron_accuracy:40.4,pron_fluency:12.345,begin_time:100000+i,end_time:200000+i}));
+ assert.equal(outcomeFor('reading',{SuggestedScore:50},200,line2(),10,undefined,{rawWords:inserted}).providerWords,undefined,'over budget even without phones');
+ assert.equal(outcomeFor('reading',{SuggestedScore:50},200,line2(),10,undefined,{rawWords:inserted.slice(0,10)}).providerWords.length,10);
+});
+test('handwriting records strokes and recognition rank without changing the verdict',()=>{
+ const whole={item:{target:{char:'霑',accept:['霑','沾']}},strokes:15};
+ const value=outcomeFor('handwriting',{candidates:['雨','霑','露']},200,whole,1,undefined,{relay:'hk'});
+ assert.equal(value.result.correct,outcomeFor('handwriting',{candidates:['雨','霑','露']},200,{...whole,strokes:15},1).result.correct);
+ assert.equal(value.result.correct,true);assert.equal(value.metrics.strokeCount,15);
+ assert.deepEqual(value.recognition,{candidateCount:3,targetRank:2,topCandidate:'雨'});assert.deepEqual(value.service,{relay:'hk'});
+ assert.equal(value.providerWords,undefined);
+ const multi=outcomeFor('handwriting',{candidates:['雨水','霑']},200,whole,1);
+ assert.deepEqual(multi.recognition,{candidateCount:2,targetRank:2});
+ assert.deepEqual(outcomeFor('handwriting',{candidates:[]},200,{item:whole.item,strokes:0},1).recognition,{candidateCount:0,targetRank:0});
+ const many=outcomeFor('handwriting',{candidates:[...Array.from({length:22},(_,i)=>String.fromCodePoint(0x4e00+i)),'霑']},200,whole,1);
+ assert.deepEqual(many.recognition,{candidateCount:20,targetRank:0,topCandidate:'一'});
+ assert.equal(outcomeFor('handwriting',{candidates:['雨']},200,{item:{target:{char:'雨',accept:[]}}},1).metrics.strokeCount,undefined,'unknown stroke count stays absent');
+ assert.equal(outcomeFor('handwriting',{candidates:['雨']},200,{item:{target:{char:'雨',accept:[]}},strokes:10001},1).metrics.strokeCount,undefined);
+ assert.equal(outcomeFor('handwriting',{},502,whole,1).recognition,undefined);
+});
+test('the learning wrapper hands the relay path and provider detail to the recorder but never to the learner',async t=>{
+ t.mock.method(auth,'enabled',()=>true);t.mock.method(auth,'requireActor',async()=>actor);
+ const stored=[];t.mock.method(research,'recordVerifiedOutcome',async(req,outcome)=>{stored.push(outcome);return {recorded:true};});
+ const line=getPoem(2).lines[0],payload={SuggestedScore:80,PronAccuracy:80,Words:[{Word:line.simplified[0],PronAccuracy:80,MatchTag:0,PhoneInfos:[]}]};
+ const handler=withSchoolLearning('reading',async(req,res)=>{res.researchExtras={service:{audioPath:'pcm-gzip',textMode:0,audioMs:1200,prepareMs:2,connectMs:30,scoreMs:400},rawWords:[{word:line.simplified[0],pron_accuracy:80.4,match_tag:0}]};return res.json(payload);});
+ for(const [header,relay] of [['hop-hk:8443','hop-hk'],['gz:9443','gz'],[undefined,'none'],['hk:443','none'],['hk:8443, gz:9443','none'],[['hk:8443'],'none']]){
+  const res=response(),req={method:'POST',headers:header===undefined?{}:{'x-school-relay':header},body:{poemId:2,refText:line.simplified,researchContext:{actorId:actor.id,poemId:2,itemId:'p2.l0'}}};
+  await handler(req,res);
+  assert.deepEqual(res.body,{...payload,researchRecorded:true},'learner response unchanged');
+  const outcome=stored.at(-1);assert.equal(outcome.service.relay,relay,String(header));
+  assert.deepEqual(outcome.service,{relay,audioPath:'pcm-gzip',textMode:0,audioMs:1200,prepareMs:2,connectMs:30,scoreMs:400});
+  assert.deepEqual(outcome.providerWords,[{i:0,r:0,a:80}]);assert.equal(outcome.result.score,80);
+ }
+});

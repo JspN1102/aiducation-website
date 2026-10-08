@@ -568,3 +568,32 @@ test('delayed older reset cannot overwrite a newer account revocation generation
   assert.equal(f.records.get('account/' + accounts[0].id).value.generation, 2);
   assert.equal((await login(f, { password: newer.initialPassword })).state.authenticated, true);
 });
+
+test('session terms version is internal research provenance only and leaves state, actor and login outputs unchanged', async () => {
+  const f = fixture(), originalGet = f.store.get; let reads = 0;
+  f.store.get = async key => { reads++; return originalGet(key); };
+  assert.equal(await f.service.sessionTermsVersion(request({ method: 'GET' })), null, 'no session');
+  const signedIn = await login(f);
+  assert.deepEqual(Object.keys(signedIn.state).sort(), ['authenticated', 'csrfToken', 'enabled', 'user']);
+  assert.equal(JSON.stringify(signedIn.state).includes(auth.TERMS_VERSION), false);
+  assert.equal(await f.service.sessionTermsVersion(request({ method: 'GET', cookie: signedIn.cookie })), '2026-09-30-v3');
+  const state = await f.service.state(request({ method: 'GET', cookie: signedIn.cookie }));
+  assert.deepEqual(Object.keys(state).sort(), ['authenticated', 'csrfToken', 'enabled', 'user']);
+  assert.equal('termsVersion' in state.user, false); assert.equal(JSON.stringify(state).includes(auth.TERMS_VERSION), false);
+  // One request: the provider wrapper, the outcome recorder and provenance share one storage verification.
+  const req = request({ cookie: signedIn.cookie, csrf: signedIn.state.csrfToken });
+  const actor = await f.service.requireActor(req); reads = 0;
+  assert.equal('termsVersion' in actor, false); assert.equal(Object.isFrozen(actor), true);
+  assert.equal(await f.service.sessionTermsVersion(req), auth.TERMS_VERSION); assert.equal(reads, 0, 'no extra storage reads');
+  const row = [...f.records].find(([key]) => key.startsWith('session/'))[1];
+  for (const [version, expected] of [['2026-09-21-v2', '2026-09-21-v2'], ['forged', null], [7, null], [undefined, null]]) {
+    if (version === undefined) delete row.value.termsAcceptance; else row.value.termsAcceptance = { ...row.value.termsAcceptance, version };
+    assert.equal(await f.service.sessionTermsVersion(request({ method: 'GET', cookie: signedIn.cookie })), expected, String(version));
+    assert.equal((await f.service.state(request({ method: 'GET', cookie: signedIn.cookie }))).authenticated, true);
+  }
+  f.store.get = async () => { throw new Error('synthetic storage outage'); };
+  assert.equal(await f.service.sessionTermsVersion(request({ method: 'GET', cookie: signedIn.cookie })), null, 'storage failure never throws');
+  const disabled = auth.createAuth({ env: { ...f.env, SCHOOL_AUTH_ENABLED: '0' }, store: f.store, now: () => NOW });
+  assert.equal(await disabled.sessionTermsVersion(request({ method: 'GET', cookie: signedIn.cookie })), null);
+  assert.equal(typeof auth.sessionTermsVersion, 'function');
+});

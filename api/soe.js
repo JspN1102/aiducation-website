@@ -62,6 +62,10 @@ module.exports = withSchoolLearning('reading', async function handler(req, res) 
     }
   }
   const prepared = performance.now();
+  // Server-only research detail for the learning wrapper (res.researchExtras is never serialised).
+  const audioPath = audioFormat != null ? audioFormat : audioCompression === 'gzip' ? 'pcm-gzip' : 'pcm';
+  let audioMs = null;
+  try { if (audioBuf.length > 44 && audioBuf.toString('ascii', 0, 4) === 'RIFF' && audioBuf.toString('ascii', 8, 12) === 'WAVE') { const channels = audioBuf.readUInt16LE(22), rate = audioBuf.readUInt32LE(24), bits = audioBuf.readUInt16LE(34); if (channels > 0 && rate > 0 && bits > 0) audioMs = Math.min(600000, Math.round((audioBuf.length - 44) / (rate * channels * bits / 8) * 1000)); } } catch (_) { audioMs = null; }
 
   const secretId = process.env.TENCENT_SECRET_ID;
   const secretKey = process.env.TENCENT_SECRET_KEY;
@@ -72,6 +76,8 @@ module.exports = withSchoolLearning('reading', async function handler(req, res) 
 
   const now = Math.floor(Date.now() / 1000);
   const voiceId = crypto.randomUUID();
+  const ref = assessmentReference(refText);
+  const setExtras = (service, rawWords) => { try { res.researchExtras = {service: {audioPath, textMode: ref.text_mode, ...(audioMs != null ? {audioMs} : {}), ...service}, ...(rawWords ? {rawWords} : {})}; } catch (_) {} };
 
   const params = {
     appid: appId,
@@ -79,7 +85,7 @@ module.exports = withSchoolLearning('reading', async function handler(req, res) 
     expired: now + 86400,
     nonce: String(now),
     rec_mode: 1,
-    ...assessmentReference(refText),
+    ...ref,
     score_coeff: 1.5,
     secretid: secretId,
     sentence_info_enabled: 0,
@@ -98,6 +104,7 @@ module.exports = withSchoolLearning('reading', async function handler(req, res) 
       if (!settled) {
         settled = true;
         try { ws.terminate(); } catch (_) {}
+        setExtras({prepareMs: Math.round(prepared - started)});
         res.status(504).json({ error: 'Evaluation timeout' });
         resolve();
       }
@@ -110,6 +117,7 @@ module.exports = withSchoolLearning('reading', async function handler(req, res) 
       settled = true;clearTimeout(timeout);
       const completed = performance.now();
       res.setHeader('Server-Timing', `audio_prepare;dur=${(prepared-started).toFixed(1)}, soe_connect;dur=${((connected||completed)-prepared).toFixed(1)}, soe_score;dur=${(completed-(connected||prepared)).toFixed(1)}, soe_total;dur=${(completed-started).toFixed(1)}`);
+      setExtras({prepareMs: Math.round(prepared - started), connectMs: Math.round((connected || completed) - prepared), scoreMs: Math.round(completed - (connected || prepared))}, result?.result ? (result.result.words || result.result.Words) : null);
       if (result?.result) res.status(200).json(mapResult(result.result));
       else res.status(502).json({error: 'No final result received'});
       // The final scores are already complete. A slow peer close must not keep
@@ -133,6 +141,7 @@ module.exports = withSchoolLearning('reading', async function handler(req, res) 
           if (!settled) {
             settled = true;
             clearTimeout(timeout);
+            setExtras({prepareMs: Math.round(prepared - started), ...(Number.isInteger(msg.code) ? {providerCode: msg.code} : {})});
             res.status(502).json({ error: msg.message, code: msg.code });
             ws.close();
             resolve();
@@ -152,6 +161,7 @@ module.exports = withSchoolLearning('reading', async function handler(req, res) 
       if (!settled) {
         settled = true;
         clearTimeout(timeout);
+        setExtras({prepareMs: Math.round(prepared - started)});
         res.status(502).json({ error: 'No final result received' });
         resolve();
       }
@@ -161,6 +171,7 @@ module.exports = withSchoolLearning('reading', async function handler(req, res) 
       if (!settled) {
         settled = true;
         clearTimeout(timeout);
+        setExtras({prepareMs: Math.round(prepared - started)});
         res.status(502).json({ error: err.message || 'WebSocket error' });
         resolve();
       }

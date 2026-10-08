@@ -1,14 +1,45 @@
 // Structured learning events, never raw speech, strokes, chat, IP or device IDs.
 // Durable browser queues are partitioned by authenticated school account.
 import {createPersistentQueue} from './persistent-queue.mjs?v=20260920b';
-export const RESEARCH_APP_VERSION = 'school-research-20260922-school22';
+export const RESEARCH_APP_VERSION = 'school-research-20261008-school48';
 export const RESEARCH_CONTENT_VERSION = 'edb-20260919b-challenge-20260919d';
 const MAX_QUEUE = 5000, BATCH_SIZE = 32, MAX_BODY_BYTES = 48000, MAX_BATCHES = 4;
 const OPTIONAL = ['attemptId','itemId','attemptNo','hint','retryCount','result','error','metrics','context','response','interaction'];
+// school48 optional process detail: enums and bounded integers only. Invalid
+// values are dropped one by one; an older server that rejects them gets the
+// same event again without them.
+const oneOf=values=>value=>values.includes(value),int=(min,max)=>value=>Number.isSafeInteger(value)&&value>=min&&value<=max,bool=value=>typeof value==='boolean';
+export const AUDIO_TRIGGERS=['poem-heading-audio','line-tts','word-tts','sentence-tts','practice-word','practice-sequence','practice-compare','report-line-tts','record-pending-play','replay','replay-all','chat-speak'];
+export const ERROR_DETAILS=['mic-denied','mic-missing','mic-busy','unsupported','too-short','too-long','offline','network','timeout','busy','service','transcode','decode','incomplete','aborted','other'];
+const EXT_CONTEXT={mediaRoute:oneOf(['public','local']),audioSource:oneOf(['recitation','static','tts','recording']),
+  audioTrigger:oneOf([...AUDIO_TRIGGERS,'challenge','other']),lineIndex:int(0,199),pinyinShown:bool,
+  recorderFormat:oneOf(['webm-opus','webm','mp4','ogg','default','other']),stopReason:oneOf(['manual','time-limit']),
+  uploadPath:oneOf(['compact','pcm','pcm-fallback']),resend:bool,errorDetail:oneOf(ERROR_DETAILS),httpStatus:int(400,599),
+  inputMode:oneOf(['typed','voice','suggestion']),pointer:oneOf(['coarse','fine','none']),viewport:oneOf(['small','medium','large']),
+  pageLoad:oneOf(['navigate','reload','back-forward','prerender','other']),deviceAccounts:int(1,10)};
+const EXT_METRICS={fallbackCount:10,mediaDurationMs:3600000,seekFromMs:3600000,stallCount:10000,selectionChanges:1000,
+  firstResponseMs:600000,prepareMs:600000,pendingCount:100000,heldCount:100000};
+const EXT={context:EXT_CONTEXT,metrics:EXT_METRICS},has=(table,key)=>Object.prototype.hasOwnProperty.call(table,key);
+// Rebuilds context/metrics as new objects (never the caller's) only when they carry extension keys.
+function prune(event,keep){
+  let found=false;
+  for(const field of ['context','metrics']){
+    const source=event[field],table=EXT[field];
+    if(!source||typeof source!=='object'||Array.isArray(source))continue;
+    const keys=Object.keys(source);if(!keys.some(key=>has(table,key)))continue;
+    found=true;const next={};
+    // An extension value that cannot even be read (hostile getter) is dropped like an invalid one.
+    for(const key of keys){if(!has(table,key)){next[key]=source[key];continue;}try{const value=source[key];if(keep(field,key,value))next[key]=value;}catch{}}
+    if(Object.keys(next).length)event[field]=next;else delete event[field];
+  }
+  return found;
+}
+function sanitize(event){prune(event,(field,key,value)=>field==='context'?EXT_CONTEXT[key](value)===true:int(0,EXT_METRICS[key])(value));}
+export function stripExtensions(event){try{const copy=JSON.parse(JSON.stringify(event));return prune(copy,()=>false)?copy:null;}catch{return null;}}
 export function createResearchTracker({actorId, csrfToken, learningEpoch, storage,
   fetchImpl = globalThis.fetch, now = Date.now, monotonic = () => performance.now(),
   uuid = () => crypto.randomUUID(), visible = () => document.visibilityState !== 'hidden',
-  onStatus = () => {}, enabled = true} = {}) {
+  onStatus = () => {}, enabled = true, startFields = null} = {}) {
   const epoch = /^[a-f0-9]{32}$/.test(learningEpoch || '') ? learningEpoch : null;
   const key = 'maanshan-research-v1:' + actorId + (epoch ? ':epoch:' + epoch : '');
   const eventPrefix = key + ':event:';
@@ -48,6 +79,7 @@ export function createResearchTracker({actorId, csrfToken, learningEpoch, storag
     for (const name of OPTIONAL) if (fields[name] !== undefined) event[name] = fields[name];
     if (fields.activity) event.activity = fields.activity;
     if (fields.poemId !== undefined) event.poemId = fields.poemId;
+    try{sanitize(event);}catch{try{prune(event,()=>false);}catch{}}
     if(!queue.add(event)){lost++;notify('queue_full');return null;}
     notify('queued');
     if (queue.status().pending >= BATCH_SIZE) void flush();
@@ -91,6 +123,7 @@ export function createResearchTracker({actorId, csrfToken, learningEpoch, storag
           if([401,403].includes(response.status)||(response.status===409&&!['EVENT_ID_CONFLICT','BATCH_ID_CONFLICT'].includes(code))){stopped=true;notify('session_changed');return;}
           if([400,413].includes(response.status)||(response.status===422&&['POEM_GRADE_FORBIDDEN','RESEARCH_EXCLUDED'].includes(code))||(response.status===409&&['EVENT_ID_CONFLICT','BATCH_ID_CONFLICT'].includes(code))){
             if(events.length>1){batchCeiling=ceiling=Math.max(1,Math.floor(events.length/2));continue;}
+            if(response.status===400){const stripped=stripExtensions(events[0]);if(stripped){queue.acknowledge([events[0].eventId]);queue.add(stripped);remaining=[stripped,...remaining.slice(1)];batchCeiling=ceiling=BATCH_SIZE;continue;}}
             if(response.status===422)queue.acknowledge([events[0].eventId]);
             else queue.hold(events[0].eventId,response.status===409?'record_conflict':'schema_rejected');
             remaining=remaining.slice(1);batchCeiling=ceiling=BATCH_SIZE;
@@ -119,7 +152,9 @@ export function createResearchTracker({actorId, csrfToken, learningEpoch, storag
   // on this device for the pupil's next login.
   function pause() { paused = true; }
   function resume() { paused = false; }
-  emit('session_start');
+  let start={};
+  try{const s=typeof startFields==='function'?startFields():startFields;const q=queue.status();start={...(s?.context?{context:{...s.context}}:{}),metrics:{...(s?.metrics||{}),pendingCount:Math.min(100000,q.pending),heldCount:Math.min(100000,q.held)}};}catch{start={};}
+  emit('session_start',start);
   return {emit, begin, touch, context, flush, leave, finish, stop, pause, resume, visibilityChanged, sessionId,
     status};
 }
@@ -144,4 +179,28 @@ export function researchErrorCode(error) {
   if (error?.code === 'AUDIO_UNSUPPORTED') return 'unsupported';
   if (error?.code === 'SERVICE' || error?.code === 'BUSY') return 'provider_unavailable';
   return 'unknown';
+}
+// Finer, enum-only reason for an error event's context; never throws.
+export function researchErrorContext(error) {
+  try {
+    const name=error?.name,code=error?.code;
+    const errorDetail=ERROR_DETAILS.includes(error?.researchDetail)?error.researchDetail
+      :['NotAllowedError','SecurityError'].includes(name)?'mic-denied'
+      :['NotFoundError','OverconstrainedError'].includes(name)?'mic-missing'
+      :name==='NotReadableError'?'mic-busy'
+      :name==='AbortError'?'aborted'
+      :name==='TimeoutError'||code==='TIMEOUT'?'timeout'
+      :code==='AUDIO_UNSUPPORTED'?'unsupported'
+      :code==='TOO_SHORT'?'too-short'
+      :code==='TOO_LONG'?'too-long'
+      :code==='OFFLINE'?'offline'
+      :code==='NETWORK'||error instanceof TypeError?'network'
+      :code==='BUSY'?'busy'
+      :code==='SERVICE'?'service'
+      :code==='TRANSCODE'?'transcode'
+      :['AUDIO_DECODE','AUDIO_RENDER'].includes(code)?'decode'
+      :'other';
+    const httpStatus=error?.researchHttpStatus;
+    return {errorDetail,...(Number.isInteger(httpStatus)&&httpStatus>=400&&httpStatus<=599?{httpStatus}:{})};
+  } catch { return {errorDetail:'other'}; }
 }

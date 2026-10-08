@@ -1,14 +1,17 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),{EventEmitter}=require('node:events'),{gzipSync}=require('node:zlib');
-function fixture({transcode}={}){
+// fixed: a frozen clock and voice ID so the signed provider URL can be compared byte for byte.
+const FIXED_AT=Date.parse('2026-10-08T00:00:00.000Z'),FIXED_VOICE='00000000-0000-4000-8000-000000000000';
+class FixedDate extends Date{constructor(...args){super(...(args.length?args:[FIXED_AT]));}static now(){return FIXED_AT;}}
+function fixture({transcode,fixed}={}){
  const clients=[],filename=path.resolve(__dirname,'../api/soe.js'),transcodes=[];
  const transcoder={FORMATS:{webm:{},mp4:{}},MAX_INPUT_BYTES:1024*1024,async transcodeToWav(input,format){transcodes.push({input,format});if(!transcode)throw new Error('unexpected transcode');return transcode(input,format);}};
  class WS extends EventEmitter{
-  constructor(url,options){super();this.sent=[];this.options=options;clients.push(this);queueMicrotask(()=>this.emit('open'));}
+  constructor(url,options){super();this.url=url;this.sent=[];this.options=options;clients.push(this);queueMicrotask(()=>this.emit('open'));}
   send(value){this.sent.push(value);}close(){this.closeRequested=true;}terminate(){this.terminated=true;this.emit('close');}
  }
  const module={exports:{}};
- vm.runInNewContext(fs.readFileSync(filename,'utf8'),{module,Buffer,performance,setTimeout,clearTimeout,process:{env:{TENCENT_SECRET_ID:'synthetic',TENCENT_SECRET_KEY:'synthetic',TENCENT_APP_ID:'123'}},require:name=>name==='ws'?WS:name==='./_lib/school-learning.cjs'?{withSchoolLearning:(_operation,handler)=>handler}:name==='./_lib/soe-reference'?require('../api/_lib/soe-reference'):name==='./_lib/audio-transcode.cjs'?transcoder:require(name)},{filename});
+ vm.runInNewContext(fs.readFileSync(filename,'utf8'),{module,Buffer,performance,setTimeout,clearTimeout,...fixed?{Date:FixedDate}:{},process:{env:{TENCENT_SECRET_ID:'synthetic',TENCENT_SECRET_KEY:'synthetic',TENCENT_APP_ID:'123'}},require:name=>fixed&&name==='crypto'?{...require('node:crypto'),randomUUID:()=>FIXED_VOICE}:name==='ws'?WS:name==='./_lib/school-learning.cjs'?{withSchoolLearning:(_operation,handler)=>handler}:name==='./_lib/soe-reference'?require('../api/_lib/soe-reference'):name==='./_lib/audio-transcode.cjs'?transcoder:require(name)},{filename});
  const call=body=>{const res={statusCode:200,headers:{},setHeader(k,v){this.headers[k]=v;},status(v){this.statusCode=v;return this;},json(v){this.body=v;return this;},end(raw){this.raw=raw;}};return {res,pending:module.exports({method:'POST',body},res)};};
  return {clients,call,transcodes};
 }
@@ -97,4 +100,64 @@ test('SOE passes each word match tag and its phone scores through to the browser
  const words=JSON.parse(JSON.stringify(res.body.Words));
  assert.deepEqual(words.map(w=>w.MatchTag),[0,1,2,0],'older results without a tag count as matched');
  assert.deepEqual(words[0].PhoneInfos,[{Phone:'q',PronAccuracy:50},{Phone:'v1',PronAccuracy:87}]);ws.emit('close');
+});
+// school48 research detail: signed provider URLs captured from the pre-change soe.js (synthetic credentials,
+// frozen clock and voice ID). The research detail must never alter the provider request or the learner's response.
+const CAPTURED_URLS={
+ '鹅鹅鹅':'wss://soe.cloud.tencent.com/soe/api/123?eval_mode=1&expired=1791504000&nonce=1791417600&rec_mode=1&ref_text=%E9%B9%85%E9%B9%85%E9%B9%85&score_coeff=1.5&secretid=synthetic&sentence_info_enabled=0&server_engine_type=16k_zh&text_mode=0&timestamp=1791417600&voice_format=1&voice_id=00000000-0000-4000-8000-000000000000&signature=TzH6CN0QC3rhG%2FgRQBJnb5z4ues%3D',
+ '曲项向天歌':'wss://soe.cloud.tencent.com/soe/api/123?eval_mode=1&expired=1791504000&nonce=1791417600&rec_mode=1&ref_text=%7B%22wordList%22%3A%5B%7B%22word%22%3A%22%E6%9B%B2%22%2C%22pron%22%3A%5B%5B%22qu1%22%5D%5D%7D%2C%7B%22word%22%3A%22%E9%A1%B9%22%7D%2C%7B%22word%22%3A%22%E5%90%91%22%7D%2C%7B%22word%22%3A%22%E5%A4%A9%22%7D%2C%7B%22word%22%3A%22%E6%AD%8C%22%7D%5D%7D&score_coeff=1.5&secretid=synthetic&sentence_info_enabled=0&server_engine_type=16k_zh&text_mode=1&timestamp=1791417600&voice_format=1&voice_id=00000000-0000-4000-8000-000000000000&signature=alSem%2BPP7%2FtJQVfOB781F2FZZ%2FY%3D'};
+function wav(ms,{rate=16000,channels=1,bits=16}={}){
+ const data=Buffer.alloc(Math.round(ms*rate*channels*bits/8/1000),3),h=Buffer.alloc(44);
+ h.write('RIFF',0,'ascii');h.writeUInt32LE(36+data.length,4);h.write('WAVE',8,'ascii');h.write('fmt ',12,'ascii');h.writeUInt32LE(16,16);h.writeUInt16LE(1,20);
+ h.writeUInt16LE(channels,22);h.writeUInt32LE(rate,24);h.writeUInt32LE(rate*channels*bits/8,28);h.writeUInt16LE(channels*bits/8,32);h.writeUInt16LE(bits,34);h.write('data',36,'ascii');h.writeUInt32LE(data.length,40);
+ return Buffer.concat([h,data]);
+}
+const settle=()=>new Promise(resolve=>setImmediate(resolve)),plain=value=>JSON.parse(JSON.stringify(value));
+test('SOE research detail leaves the signed provider request identical to the pre-change capture (text_mode 0 and 1)',async()=>{
+ for(const [refText,url] of Object.entries(CAPTURED_URLS))for(const body of [{audio:Buffer.alloc(1600,27).toString('base64')},{audio:gzipSync(wav(500)).toString('base64'),audioCompression:'gzip'}]){
+  const f=fixture({fixed:true}),{res,pending}=f.call({refText,...body});await settle();const ws=f.clients[0];
+  assert.equal(ws.url,url);assert.deepEqual(plain(ws.options),{handshakeTimeout:8000,perMessageDeflate:false});
+  ws.emit('message',Buffer.from(JSON.stringify({code:0,final:1,result:{pron_accuracy:80,words:[]}})));await pending;ws.emit('close');
+  assert.equal(res.statusCode,200);assert.equal(res.researchExtras.service.textMode,refText==='鹅鹅鹅'?0:1);
+ }
+});
+test('SOE response body and Server-Timing are unchanged while the wrapper receives raw words, path, length and timings',async()=>{
+ const words=[{word:'曲',pron_accuracy:69.4,pron_fluency:0.93,match_tag:0,begin_time:120,end_time:400,phone_infos:[{phone:'q',pron_accuracy:50},{phone:'v1',reference_phone:'u1',pron_accuracy:87}]},{word:'啊',pron_accuracy:40,match_tag:1},{word:'项',pron_accuracy:0,match_tag:2}];
+ const audio=wav(1000),f=fixture({fixed:true}),{res,pending}=f.call({refText:'曲项向天歌',audio:gzipSync(audio).toString('base64'),audioCompression:'gzip'});
+ await settle();const ws=f.clients[0];assert.deepEqual(ws.sent[0],audio);
+ ws.emit('message',Buffer.from(JSON.stringify({code:0,final:1,result:{pron_accuracy:70,pron_fluency:0.9,pron_completion:100,suggested_score:71,words}})));await pending;ws.emit('close');
+ assert.equal(res.statusCode,200);
+ assert.deepEqual(JSON.parse(JSON.stringify(res.body)),{PronAccuracy:70,PronFluency:0.9,PronCompletion:100,SuggestedScore:71,Words:[
+  {Word:'曲',PronAccuracy:69.4,PronFluency:0.93,MatchTag:0,MemBeginTime:120,MemEndTime:400,PhoneInfos:[{Phone:'q',PronAccuracy:50},{Phone:'v1',PronAccuracy:87}]},
+  {Word:'啊',PronAccuracy:40,PronFluency:null,MatchTag:1,MemBeginTime:0,MemEndTime:0,PhoneInfos:[]},
+  {Word:'项',PronAccuracy:0,PronFluency:null,MatchTag:2,MemBeginTime:0,MemEndTime:0,PhoneInfos:[]}]});
+ assert.deepEqual(Object.keys(res.headers),['Access-Control-Allow-Origin','Access-Control-Allow-Methods','Access-Control-Allow-Headers','Server-Timing']);
+ assert.match(res.headers['Server-Timing'],/^audio_prepare;dur=\d+\.\d, soe_connect;dur=\d+\.\d, soe_score;dur=\d+\.\d, soe_total;dur=\d+\.\d$/);
+ const {service,rawWords}=res.researchExtras;
+ assert.deepEqual(plain(rawWords),words);assert.equal(service.audioPath,'pcm-gzip');assert.equal(service.textMode,1);assert.equal(service.audioMs,1000);
+ for(const key of ['prepareMs','connectMs','scoreMs'])assert.ok(Number.isInteger(service[key])&&service[key]>=0,key);
+ assert.deepEqual(Object.keys(service).sort(),['audioMs','audioPath','connectMs','prepareMs','scoreMs','textMode']);
+});
+test('SOE compact path reports the decoded length; a provider error keeps only its numeric code',async()=>{
+ const decoded=wav(2000,{rate:48000,channels:2}),input=Buffer.concat([Buffer.from([0x1a,0x45,0xdf,0xa3]),Buffer.alloc(9000,5)]);
+ const f=fixture({transcode:async()=>decoded}),{res,pending}=f.call({refText:'鹅鹅鹅',audio:input.toString('base64'),audioFormat:'webm'});
+ await settle();await settle();const ws=f.clients[0];assert.deepEqual(ws.sent[0],decoded);
+ ws.emit('message',Buffer.from(JSON.stringify({code:4002,message:'synthetic provider message'})));await pending;
+ assert.equal(res.statusCode,502);assert.deepEqual(plain(res.body),{error:'synthetic provider message',code:4002});
+ assert.deepEqual(Object.keys(res.researchExtras),['service']);
+ const {service}=res.researchExtras;assert.equal(service.audioPath,'webm');assert.equal(service.textMode,0);assert.equal(service.audioMs,2000);assert.equal(service.providerCode,4002);
+ assert.ok(Number.isInteger(service.prepareMs));assert.equal('connectMs' in service,false);
+ assert.equal(JSON.stringify(res.researchExtras).includes('synthetic'),false,'no provider error text');
+ const other=fixture(),call=other.call({refText:'鹅鹅鹅',audio:Buffer.alloc(1600,27).toString('base64')});await settle();
+ other.clients[0].emit('message',Buffer.from(JSON.stringify({code:'E1',message:'x'})));await call.pending;
+ assert.equal(call.res.statusCode,502);assert.deepEqual(plain(call.res.body),{error:'x',code:'E1'});assert.equal('providerCode' in call.res.researchExtras.service,false);
+});
+test('SOE socket failures keep their responses and leave only the preparation time and path',async()=>{
+ for(const [fail,error] of [[ws=>ws.emit('error',new Error('synthetic socket failure')),'synthetic socket failure'],[ws=>ws.emit('close'),'No final result received']]){
+  const f=fixture(),{res,pending}=f.call({refText:'鹅鹅鹅',audio:Buffer.alloc(1600,27).toString('base64')});await settle();fail(f.clients[0]);await pending;
+  assert.equal(res.statusCode,502);assert.deepEqual(plain(res.body),{error});
+  assert.deepEqual(Object.keys(res.researchExtras.service).sort(),['audioPath','prepareMs','textMode']);assert.equal(res.researchExtras.service.audioPath,'pcm');
+  assert.equal(res.researchExtras.rawWords,undefined);
+ }
+ const invalid=fixture(),{res,pending}=invalid.call({refText:'鹅鹅鹅',audio:'bad?'});await pending;assert.equal(res.statusCode,400);assert.equal(res.researchExtras,undefined);
 });

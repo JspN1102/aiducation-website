@@ -254,7 +254,9 @@ function createAuth({ env = process.env, store: suppliedStore, now = Date.now, r
     const account = (await store().get('account/' + record.actorId))?.value;
     if (!account?.active || !same(account.authVersion, record.authVersion) || account.user?.id !== record.actorId ||
         !RESEARCH_ID.test(account.user?.researchId) || !['student', 'teacher'].includes(account.user?.role)) return null;
-    return { actor: Object.freeze(publicActor(account.user)), csrfToken: record.csrf };
+    // termsVersion is internal research provenance only; state() and requireActor() never expose it.
+    return { actor: Object.freeze(publicActor(account.user)), csrfToken: record.csrf,
+      ...(typeof record.termsAcceptance?.version === 'string' && /^\d{4}-\d\d-\d\d-v\d{1,3}$/.test(record.termsAcceptance.version) ? { termsVersion: record.termsAcceptance.version } : {}) };
   }
   function session(req) {
     // Reuse only within one incoming HTTP request. Provider wrappers and event
@@ -263,6 +265,8 @@ function createAuth({ env = process.env, store: suppliedStore, now = Date.now, r
     if (!requestSessions.has(req)) requestSessions.set(req, readSessionRecord(req));
     return requestSessions.get(req);
   }
+  // Platform terms version accepted at login for this session (research provenance only). Never throws.
+  async function sessionTermsVersion(req) { if (!enabled(env)) return null; try { const found = await session(req); return found?.termsVersion || null; } catch { return null; } }
   async function requireActor(req, { roles, csrf = !['GET', 'HEAD', 'OPTIONS'].includes(req.method) } = {}) {
     if (!enabled(env)) return null;
     try {
@@ -407,7 +411,7 @@ function createAuth({ env = process.env, store: suppliedStore, now = Date.now, r
     await updatePassword(account, password, actor, 'student_password_reset');
     return { enabled: true, reset: true, studentId: account.id, initialPassword: password };
   }
-  return { enabled: () => enabled(env), requireActor, state, login, logout, roster, listAccounts, directory, audit,
+  return { enabled: () => enabled(env), requireActor, sessionTermsVersion, state, login, logout, roster, listAccounts, directory, audit,
     changePassword, resetStudentPassword,
     clearCache: () => { directoryCache = undefined; } };
 }

@@ -15,12 +15,12 @@ import {mountLessonMap} from './lesson-map.mjs?v=20261006-school43';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261006-school43';
 import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20261006-school43';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school22';
-import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20261007-school46';
+import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20261008-school48';
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
-import {requestJSON, requestChat} from './network.mjs?v=20261007-school46';
+import {requestJSON, requestChat} from './network.mjs?v=20261008-school48';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
-import {schoolSession} from './bootstrap.mjs?v=20261008-school47';
-import {createResearchTracker, attachResearchLifecycle, researchErrorCode} from './research-client.mjs?v=20261008-school47';
+import {schoolSession} from './bootstrap.mjs?v=20261008-school48';
+import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261008-school48';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school22';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school41';
 import {getPoetSuggestions, matchPoetPreset} from './poet-presets.mjs?v=20261005-school40';
@@ -70,7 +70,34 @@ function recordSyncStatus(kind,status,state){
   if(status==='session_changed')invalidateSchoolSession();
   renderRecordSyncStatus();
 }
-const research=createResearchTracker({enabled:collectResearch,actorId:school.user?.id,csrfToken:school.csrfToken,learningEpoch,onStatus:(status,state)=>recordSyncStatus('events',status,state)});
+// Invisible research detail (school48): enums and bounded numbers only, never a visible or behavioural change.
+// Pending PI/ethics confirmation: how many school accounts have used this browser (1-10), for shared iPads.
+const SHARED_DEVICE_SIGNAL=true;
+function researchExtra(build){try{const value=build();return value&&typeof value==='object'?value:{};}catch{return {};}}
+function researchStartFields(){
+  try{
+    const media=query=>{try{return window.matchMedia?.(query)?.matches===true;}catch{return false;}};
+    const short=Math.min(window.innerWidth,window.innerHeight),type=performance.getEntriesByType?.('navigation')?.[0]?.type;
+    let accounts=0;
+    if(school.enabled&&SHARED_DEVICE_SIGNAL){try{for(let i=0;i<localStorage.length;i++)if(localStorage.key(i)?.startsWith('ms_learning_epoch:'))accounts++;}catch{accounts=0;}}
+    return {metrics:{latencyMs:Math.min(600000,Math.max(0,Math.round(performance.now())))},
+      context:{pointer:media('(pointer: coarse)')?'coarse':media('(pointer: fine)')?'fine':'none',
+        ...(Number.isFinite(short)?{viewport:short<480?'small':short<900?'medium':'large'}:{}),
+        ...(typeof type==='string'?{pageLoad:{navigate:'navigate',reload:'reload',back_forward:'back-forward',prerender:'prerender'}[type]||'other'}:{}),
+        ...(accounts>=1?{deviceAccounts:Math.min(10,accounts)}:{})}};
+  }catch{return {};}
+}
+// Time from an item being shown to its answer, for activities that do not measure it themselves.
+const presentedAt=new Map();
+function timedResearch(type,fields){
+  try{
+    const key=(fields?.attemptId||'')+'|'+fields?.itemId;
+    if(type==='item_presented'){presentedAt.delete(key);presentedAt.set(key,performance.now());if(presentedAt.size>200)presentedAt.delete(presentedAt.keys().next().value);}
+    else if(type==='answer_submitted'&&fields.metrics===undefined&&presentedAt.has(key))return {...fields,metrics:{elapsedMs:Math.min(21600000,Math.max(0,Math.round(performance.now()-presentedAt.get(key))))}};
+  }catch{}
+  return fields;
+}
+const research=createResearchTracker({enabled:collectResearch,actorId:school.user?.id,csrfToken:school.csrfToken,learningEpoch,onStatus:(status,state)=>recordSyncStatus('events',status,state),startFields:()=>{try{return researchStartFields();}catch{return {};}}});
 const answerOutbox=createAnswerOutbox({enabled:collectResearch,actorId:school.user?.id,csrfToken:school.csrfToken,learningEpoch,onStatus:(status,state)=>recordSyncStatus('answers',status,state)});
 if(collectResearch)attachResearchLifecycle(research);
 if(school.enabled){
@@ -85,7 +112,7 @@ let transientAudio=null, transientUrl=null, speechVersion=0, toastTimer=null;
 let currentLine=0, recorder=null, stream=null, recordContext=null, recordTimer=null, recordStarted=0, recordBusy=false, recordingVersion=0;
 let recordStep='read', recordWordIndex=0;
 let reportGeneration=0;
-let chatBusy=false,chatVoice=null;
+let chatBusy=false,chatVoice=null,chatVoiceInserted=false,recordStopReason='manual';
 let sceneStage=null, exploration=null, activeSpeechButton=null, finishTransient=null;
 let shishi=null,libraryShishi=null,teacherReset=null,challenge=null,lessonMap=null,poemSwipe=null;
 let animationPlayer=null,disposeAnimation=null;
@@ -263,11 +290,11 @@ async function speechSource(text,{markup=null,voice=TTS_VOICE,purpose}={}) {
   })().finally(()=>speechPending.delete(key));
   speechPending.set(key,pending);return pending;
 }
-function playBlob(blob) {
-  return playSource(URL.createObjectURL(blob),true,1);
+function playBlob(blob,meta={}) {
+  return playSource(URL.createObjectURL(blob),true,1,meta);
 }
-function playSpeech(source) {
-  return typeof source==='string'?playSource(source,false,1):playBlob(source);
+function playSpeech(source,meta={}) {
+  return typeof source==='string'?playSource(source,false,1,meta):playBlob(source,meta);
 }
 async function speakPoemHeading(kind,button) {
   if(recordBusy||!poem||!['title','author'].includes(kind))return;
@@ -277,7 +304,7 @@ async function speakPoemHeading(kind,button) {
   activeSpeechButton=button;speechResearchItem='p'+poem.id+'.'+kind;speechState(button,'loading');
   try{
     const url=getRecitationAudioURL(poem,kind);if(!url)throw new Error('Recording unavailable');
-    const playback=playSource(url);
+    const playback=playSource(url,false,1,{sourceKind:'recitation'});
     transientAudio?.addEventListener('playing',()=>{if(current())speechState(button,'playing');},{signal:events.signal});
     transientAudio?.addEventListener('waiting',()=>{if(current())speechState(button,'loading');},{signal:events.signal});
     const finished=await playback;
@@ -285,7 +312,7 @@ async function speakPoemHeading(kind,button) {
   }catch{if(current())toast('示範錄音暫時未能播放，請再點一次重試。');}
   finally{events.abort();if(current())stopTransient();}
 }
-function playSource(url,revoke=false,playbackRate=1) {
+function playSource(url,revoke=false,playbackRate=1,meta={}) {
   return new Promise(resolve=>{
     // A published recording has two copies (deployed and COS), as does speech the origin published (signed URL and COS);
     // a recording made on the spot has one.
@@ -295,12 +322,14 @@ function playSource(url,revoke=false,playbackRate=1) {
     let settled=false,watchdog,started=false;
     const audit=speechResearchContext||research.context({activity:'listen',itemId:speechResearchItem||(poem?'p'+poem.id+'.l'+currentLine:'demonstration')});
     let audibleAt=null,playedMs=0,playbackReported=false;
+    const t0=performance.now(),ext=researchExtra(()=>{const action=activeSpeechButton?.dataset?.action,trigger=AUDIO_TRIGGERS.includes(action)?action:speechResearchContext?'challenge':'other';
+      return {audioSource:meta?.sourceKind,audioTrigger:trigger,...(['line-tts','report-line-tts','replay','replay-all','record-pending-play'].includes(trigger)&&Number.isInteger(meta?.lineIndex)&&meta.lineIndex>=0&&meta.lineIndex<=199?{lineIndex:meta.lineIndex}:{})};});
     const countAudio=()=>{if(audibleAt!==null){playedMs+=performance.now()-audibleAt;audibleAt=null;}};
     transientUrl=revoke?url:null;transientAudio=player;
     const finish=(ok,reason='cancelled')=>{
       if(settled)return;settled=true;clearTimeout(watchdog);
       countAudio();
-      if(playbackReported||reason==='error')research.emit('playback_ended',{activity:audit.activity,poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,...(audit.context?{context:audit.context}:{}),result:{status:ok?'completed':reason,score:null,correct:null},metrics:{playbackMs:Math.min(21600000,Math.round(playedMs)),playbackRate},...(reason==='error'?{error:{code:'audio_unavailable',retryable:true}}:{})});
+      if(playbackReported||reason==='error')research.emit('playback_ended',{activity:audit.activity,poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,...(audit.context?{context:audit.context}:{}),result:{status:ok?'completed':reason,score:null,correct:null},metrics:{playbackMs:Math.min(21600000,Math.round(playedMs)),playbackRate,...researchExtra(()=>Number.isFinite(player.duration)&&player.duration>0?{mediaDurationMs:Math.min(3600000,Math.round(player.duration*1000))}:{})},...(reason==='error'?{error:{code:'audio_unavailable',retryable:true}}:{})});
       player.onended=null;player.onerror=null;player.onplaying=null;player.onwaiting=null;
       player.pause();if(!ok){player.removeAttribute('src');player.load();}if(revoke)URL.revokeObjectURL(url);
       if(transientAudio===player){transientAudio=null;transientUrl=null;finishTransient=null;}
@@ -315,7 +344,7 @@ function playSource(url,revoke=false,playbackRate=1) {
     // A copy's error may arrive after play() already rejected for it and the element moved on to the other
     // copy; load() cleared player.error then, so a stale event must not count against the new copy.
     player.onerror=()=>{if(player.error)fail();};
-    player.onplaying=()=>{clearTimeout(watchdog);if(attempt>0)rememberRoute(routes[attempt].route);audibleAt=performance.now();research.touch();if(!playbackReported){playbackReported=true;research.emit('playback_started',{activity:audit.activity,poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,...(audit.context?{context:audit.context}:{}),metrics:{playbackRate}});}};player.onwaiting=waitForAudio;waitForAudio();
+    player.onplaying=()=>{clearTimeout(watchdog);if(attempt>0)rememberRoute(routes[attempt].route);audibleAt=performance.now();research.touch();if(!playbackReported){playbackReported=true;research.emit('playback_started',{activity:audit.activity,poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,...(audit.context?{context:audit.context}:{}),...researchExtra(()=>({context:{...(audit.context||{}),...ext,...(['public','local'].includes(routes[attempt]?.route)?{mediaRoute:routes[attempt].route}:{})}})),metrics:{playbackRate,...researchExtra(()=>({latencyMs:Math.min(600000,Math.max(0,Math.round(performance.now()-t0))),fallbackCount:Math.min(10,attempt),...(Number.isInteger(meta?.prepareMs)?{prepareMs:Math.min(600000,Math.max(0,meta.prepareMs))}:{})}))}});}};player.onwaiting=waitForAudio;waitForAudio();
     // Safari rejects play() instead of firing error when a copy cannot be fetched; that too hands over to the other copy.
     const start=()=>{if(started||settled)return;started=true;const mine=attempt;player.playbackRate=playbackRate;player.play().catch(error=>{if(attempt!==mine||settled)return;if(error?.name!=='NotAllowedError'&&nextRoute())fail();else finish(false);});};
     // Queue playback during the original tap. Waiting for canplay before
@@ -333,28 +362,29 @@ function rememberStaticAudioFailure(url){
   if(staticAudioFailures.size>=80)staticAudioFailures.delete(staticAudioFailures.keys().next().value);
   staticAudioFailures.set(url,Date.now());
 }
-async function playDemonstration(url,text,markup,isCurrent,onPhase=()=>{}){
+async function playDemonstration(url,text,markup,isCurrent,onPhase=()=>{},meta={}){
   const requestText=markup||String(text),key=speechKey(requestText,markup);
   try{
     const official=getRecitationSequence(text);
     if(official){
       for(const source of official){
         if(!isCurrent())return false;
-        onPhase('playing');if(!await playSource(source))return false;
+        onPhase('playing');if(!await playSource(source,false,1,{...meta,sourceKind:'recitation'}))return false;
       }
       return true;
     }
     if(url&&shouldTryStaticAudio(url)){
       onPhase('playing');
-      const finished=await playSource(url);
+      const finished=await playSource(url,false,1,{...meta,sourceKind:'static'});
       if(finished||!isCurrent())return finished;
       rememberStaticAudioFailure(url);
     }
     onPhase('loading');
+    const prepareAt=performance.now();
     const source=await speechSource(text,{markup});
     if(!isCurrent())return false;
     onPhase('playing');
-    const finished=await playSpeech(source);
+    const finished=await playSpeech(source,{...meta,sourceKind:'tts',prepareMs:Math.round(performance.now()-prepareAt)});
     if(finished||!isCurrent())return finished;
     if(typeof source==='string')speechCache.delete(key);
   }catch{}
@@ -501,25 +531,29 @@ function renderAnimation() {
   let started=false,failed=false,dead=false;
   const animationPoemId=poem.id,animationItem='p'+poem.id+'.animation';
   let animationAudit=research.context({poemId:animationPoemId,activity:'animation',itemId:animationItem});
-  let watchingAt=null,watchedMs=0,segmentOpen=false,animationFinished=false;
+  let watchingAt=null,watchedMs=0,segmentOpen=false,animationFinished=false,playAt=null,lastPos=null,seekFrom=null,stalls=0;
   const videoFields=()=>({activity:'animation',poemId:animationPoemId,itemId:animationItem,attemptId:animationAudit.attemptId});
   const countWatching=()=>{if(watchingAt!==null){watchedMs+=Math.max(0,performance.now()-watchingAt);watchingAt=null;}};
   function closeWatching(status='cancelled'){
     countWatching();if(!segmentOpen)return;segmentOpen=false;
-    research.emit('playback_ended',{...videoFields(),result:{status,score:null,correct:null},metrics:{watchedMs:Math.min(21600000,Math.round(watchedMs)),videoPositionMs:Math.min(21600000,Math.max(0,Math.round(player.currentTime*1000)))}});
-    watchedMs=0;
+    research.emit('playback_ended',{...videoFields(),result:{status,score:null,correct:null},metrics:{watchedMs:Math.min(21600000,Math.round(watchedMs)),videoPositionMs:Math.min(21600000,Math.max(0,Math.round(player.currentTime*1000))),...researchExtra(()=>({...(Number.isFinite(player.duration)&&player.duration>0?{mediaDurationMs:Math.min(3600000,Math.round(player.duration*1000))}:{}),stallCount:Math.min(10000,stalls)}))}});
+    watchedMs=0;stalls=0;
   }
   research.emit('item_presented',videoFields());
   listen(player,'playing',()=>{
     if(animationFinished){animationAudit=research.context({poemId:animationPoemId,activity:'animation',itemId:animationItem});animationFinished=false;}
-    if(!segmentOpen){segmentOpen=true;research.emit('playback_started',{...videoFields(),metrics:{playbackRate:player.playbackRate}});}
+    if(!segmentOpen){segmentOpen=true;research.emit('playback_started',{...videoFields(),...researchExtra(()=>({context:{mediaRoute:route.route}})),metrics:{playbackRate:player.playbackRate,...researchExtra(()=>playAt!==null?{latencyMs:Math.min(600000,Math.max(0,Math.round(performance.now()-playAt)))}:{})}});playAt=null;}
     if(watchingAt===null)watchingAt=performance.now();
   });
   listen(player,'waiting',countWatching);
+  listen(player,'play',()=>{if(!segmentOpen)playAt=performance.now();});
+  listen(player,'waiting',()=>{if(segmentOpen&&!player.seeking)stalls++;});
+  listen(player,'timeupdate',()=>{if(!player.seeking)lastPos=player.currentTime;});
   listen(player,'pause',()=>{closeWatching(player.ended?'completed':'cancelled');});
   listen(player,'ended',()=>{closeWatching('completed');if(!animationFinished)research.emit('activity_end',{...videoFields(),result:{status:'completed',score:null,correct:null}});animationFinished=true;});
   listen(player,'seeking',countWatching);
-  listen(player,'seeked',()=>{research.emit('item_interacted',{...videoFields(),interaction:'video_seek',metrics:{videoPositionMs:Math.min(21600000,Math.max(0,Math.round(player.currentTime*1000)))}});if(!player.paused&&watchingAt===null)watchingAt=performance.now();});
+  listen(player,'seeking',()=>{seekFrom=lastPos;});
+  listen(player,'seeked',()=>{research.emit('item_interacted',{...videoFields(),interaction:'video_seek',metrics:{videoPositionMs:Math.min(21600000,Math.max(0,Math.round(player.currentTime*1000))),...researchExtra(()=>seekFrom!==null?{seekFromMs:Math.min(3600000,Math.max(0,Math.round(seekFrom*1000)))}:{})}});seekFrom=null;if(!player.paused&&watchingAt===null)watchingAt=performance.now();});
   listen(player,'error',()=>{closeWatching('error');research.emit('error',{...videoFields(),error:{code:'audio_unavailable',retryable:true}});});
   animationPlayer=player;
   function message(text=''){status.textContent=text;status.hidden=!text;}
@@ -565,7 +599,7 @@ async function speak(text,context='',button=null,lineIndex=currentLine) {
       speechState(button,'loading');
       const line=poem?.lines?.[lineIndex];
       const markup=line?.text?.includes(phrase)?lineMarkup(line,phrase):null;
-      const finished=await playDemonstration(url,phrase,markup,()=>version===speechVersion&&route===routeVersion,status=>speechState(button,status));
+      const finished=await playDemonstration(url,phrase,markup,()=>version===speechVersion&&route===routeVersion,status=>speechState(button,status),{lineIndex});
       if(version!==speechVersion||route!==routeVersion)return;
       if(!finished)throw new Error('playback');
     }
@@ -577,9 +611,10 @@ async function speakPoetReply(text,button){
   stopMedia();const version=speechVersion,route=routeVersion;
   activeSpeechButton=button;speechResearchItem='poet-reply';speechState(button,'loading');
   try{
+    const prepareAt=performance.now();
     const source=await speechSource(text,{voice:101021,purpose:'poet-chat'});
     if(version!==speechVersion||route!==routeVersion)return;
-    speechState(button,'playing');if(!await playSpeech(source))throw new Error('playback');
+    speechState(button,'playing');if(!await playSpeech(source,{sourceKind:'tts',prepareMs:Math.round(performance.now()-prepareAt)}))throw new Error('playback');
   }catch{if(version===speechVersion&&route===routeVersion)toast('語音暫時無法播放，請再按一次重試。');}
   finally{if(version===speechVersion&&route===routeVersion)stopTransient();}
 }
@@ -688,7 +723,8 @@ async function startRecording() {
   const version=routeVersion,generation=recordingVersion,p=poem,index=currentLine;
   recordResearch=research.context({activity:'read',itemId:'p'+p.id+'.l'+index});
   const audit=recordResearch;
-  research.emit('attempt_started',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId});
+  research.emit('attempt_started',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,context:{pinyinShown:showPinyin===true}});
+  const tOpen=performance.now();recordStopReason='manual';
   const isCurrent=()=>version===routeVersion&&generation===recordingVersion;
   const controls=$('#record-controls');controls.innerHTML='<p class="record-status"><span class="spinner"></span> 正在開啟麥克風</p>';
   try {
@@ -705,23 +741,23 @@ async function startRecording() {
     const mime=['audio/webm;codecs=opus','audio/mp4','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t));
     const localRecorder=new MediaRecorder(acquired,mime?{mimeType:mime}:{});recorder=localRecorder;const chunks=[];
     localRecorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
-    localRecorder.onerror=event=>{research.emit('error',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,error:{code:researchErrorCode(event.error),retryable:true}});if(!isCurrent())return;cancelRecording();renderRecord();toast(recordingErrorMessage(event.error));};
-    localRecorder.onstop=()=>{acquired.getTracks().forEach(t=>t.stop());if(isCurrent()){research.emit('recording_stopped',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,metrics:{audioDurationMs:Math.max(0,Math.min(600000,Date.now()-recordStarted))}});stream=null;clearInterval(recordTimer);assessRecording(new Blob(chunks,{type:localRecorder.mimeType}),p,index,version,generation,context);}};
+    localRecorder.onerror=event=>{research.emit('error',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,error:{code:researchErrorCode(event.error),retryable:true},context:researchErrorContext(event.error)});if(!isCurrent())return;cancelRecording();renderRecord();toast(recordingErrorMessage(event.error));};
+    localRecorder.onstop=()=>{acquired.getTracks().forEach(t=>t.stop());if(isCurrent()){research.emit('recording_stopped',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,metrics:{audioDurationMs:Math.max(0,Math.min(600000,Date.now()-recordStarted))},context:{stopReason:recordStopReason}});stream=null;clearInterval(recordTimer);assessRecording(new Blob(chunks,{type:localRecorder.mimeType}),p,index,version,generation,context);}};
     localRecorder.start();pendingRecordings.delete(`${p.id}-${index}`);recordStarted=Date.now();
-    research.emit('recording_started',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId});
+    research.emit('recording_started',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,...researchExtra(()=>{const type=String(localRecorder.mimeType||'').toLowerCase();return {metrics:{latencyMs:Math.min(600000,Math.max(0,Math.round(performance.now()-tOpen)))},context:{recorderFormat:type===''?'default':type.includes('webm')?(type.includes('opus')?'webm-opus':'webm'):type.includes('mp4')?'mp4':type.includes('ogg')?'ogg':'other'}};})});
     controls.innerHTML=`<div class="record-wave live">${'<span></span>'.repeat(19)}</div><div class="record-actions"><button class="mic-button recording" data-action="record-stop" aria-label="完成錄音" title="完成錄音">${icon('square')}<span>讀好了</span></button></div><p class="record-status" id="record-status">錄音中 · 0:00</p>`;icons();
-    recordTimer=setInterval(()=>{const seconds=Math.floor((Date.now()-recordStarted)/1000);const status=$('#record-status');if(status)status.textContent=`錄音中 · 0:${String(seconds).padStart(2,'0')}`;if(seconds>=30)stopRecording();},250);
-  } catch(error) {research.emit('error',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,error:{code:researchErrorCode(error),retryable:true}});if(!isCurrent())return;cancelRecording();renderRecord();toast(recordingErrorMessage(error));}
+    recordTimer=setInterval(()=>{const seconds=Math.floor((Date.now()-recordStarted)/1000);const status=$('#record-status');if(status)status.textContent=`錄音中 · 0:${String(seconds).padStart(2,'0')}`;if(seconds>=30){recordStopReason='time-limit';stopRecording();}},250);
+  } catch(error) {research.emit('error',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,error:{code:researchErrorCode(error),retryable:true},context:researchErrorContext(error)});if(!isCurrent())return;cancelRecording();renderRecord();toast(recordingErrorMessage(error));}
 }
 function stopRecording(){if(recorder?.state==='recording'){recorder.stop();$('#record-controls').innerHTML='<p class="record-status"><span class="spinner"></span> 正在聆聽你的朗讀</p>';}}
 async function assessRecording(blob,p,index,version,generation,context,existing=null) {
-  const isCurrent=()=>version===routeVersion&&generation===recordingVersion;
+  const isCurrent=()=>version===routeVersion&&generation===recordingVersion,tAssess=performance.now();let uploadPath=null;
   const key=`${p.id}-${index}`,pending=existing||{blob,encoded:null,compact:undefined,recordingId:crypto.randomUUID(),recordedAt:Date.now(),canRetry:true,message:'錄音已保留，可以再送一次。',researchContext:recordResearch};
   // Leaving the page only stops UI updates; a returned score is kept while this
   // recording is still the line's latest one and the session is unchanged.
   const latest=()=>!sessionLocked&&pendingRecordings.get(key)===pending;
   const controller=new AbortController();pending.scoring=true;let committed=false,abortRecorded=false;
-  const failed=code=>research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code,retryable:true}});
+  const failed=(code,ctx)=>research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code,retryable:true},...(ctx?{context:ctx}:{})});
   // Logout records the abort at once, so it is uploaded before the closing span.
   scoringRequests.set(controller,()=>{if(!controller.signal.aborted){abortRecorded=true;failed('aborted');}controller.abort();});
   const closeContext=()=>{if(context?.state!=='closed')context?.close().catch(()=>{});if(recordContext===context)recordContext=null;context=null;};
@@ -739,16 +775,16 @@ async function assessRecording(blob,p,index,version,generation,context,existing=
     const payload=audio=>({...audio,poemId:p.id,refText:p.lines[index].simplified,...(collectResearch?{researchContext:pending.researchContext}: {})});
     const options={signal:controller.signal,onRetry:()=>{research.emit('retry',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,retryCount:1});if(isCurrent())assessmentStatus('正在重新連線，錄音已保留');},onWaiting:()=>{if(isCurrent())assessmentStatus('正在等候評測，錄音已保留');}};
     let raw;
-    if(pending.encoded)raw=await submitAssessment(payload({audio:pending.encoded}),options);
+    if(pending.encoded){uploadPath='pcm';raw=await submitAssessment(payload({audio:pending.encoded}),options);}
     else {
-      try{raw=await submitAssessment(payload({audio:pending.compact.audio,audioFormat:pending.compact.audioFormat}),options);}
+      try{uploadPath='compact';raw=await submitAssessment(payload({audio:pending.compact.audio,audioFormat:pending.compact.audioFormat}),options);}
       catch(error){
         if(error?.code!=='TRANSCODE')throw error;
         pending.compact=null;
         if(!isCurrent())return;
         pending.encoded=await encodeRecording(blob,openContext());closeContext();
         if(!isCurrent())return;
-        raw=await submitAssessment(payload({audio:pending.encoded}),options);
+        uploadPath='pcm-fallback';raw=await submitAssessment(payload({audio:pending.encoded}),options);
       }
     }
     if(raw.researchRecorded===false)research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code:'storage_unavailable',retryable:true}});
@@ -757,14 +793,14 @@ async function assessRecording(blob,p,index,version,generation,context,existing=
     // Saving is independent of grading: return the score immediately, then
     // upload privately with a durable retry queue. No second SOE call is needed.
     void recordings.save({poemId:p.id,lineIndex:index,recordingId:pending.recordingId,recordedAt:pending.recordedAt,audio:pending.encoded||pending.compact.audio,...(pending.encoded?{}:{audioFormat:pending.compact.audioFormat}),blob});
-    research.emit('feedback_shown',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,result:{status:'completed',score:result.total_score,correct:null}});
+    research.emit('feedback_shown',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,result:{status:'completed',score:result.total_score,correct:null},...researchExtra(()=>({metrics:{latencyMs:Math.min(600000,Math.max(0,Math.round(performance.now()-tAssess)))},context:{...(uploadPath?{uploadPath}:{}),resend:existing!==null}}))});
     if(raw.researchRecorded===false)research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code:'storage_unavailable',retryable:true}});
     pendingRecordings.delete(key);
     if(state(p).reading.every(Boolean))research.emit('activity_end',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.reading',result:{status:'completed',score:null,correct:null}});
     committed=true;if(isCurrent()){recordStep='result';recordWordIndex=0;}
     queueReading(p,{lineIdx:index,lineScore:result.total_score});
   } catch(error) {
-    if(!abortRecorded)failed(researchErrorCode(error));
+    if(!abortRecorded)failed(researchErrorCode(error),researchErrorContext(error));
     pending.canRetry=Boolean(error.canRetry||pending.encoded||pending.compact);pending.message=recordingErrorMessage(error);
     if(isCurrent()){recordStep='read';if(!pendingRecordings.has(key))toast(pending.message);}
   }
@@ -791,16 +827,16 @@ async function replayPendingRecording(button){
   const pending=pendingRecordings.get(`${poem.id}-${currentLine}`);if(recordBusy||!pending)return;
   if(activeSpeechButton===button){stopMedia();return;}
   stopMedia();const version=speechVersion,route=routeVersion;activeSpeechButton=button;speechState(button,'playing');
-  const finished=await playBlob(pending.blob);
+  const finished=await playBlob(pending.blob,{sourceKind:'recording',lineIndex:currentLine});
   if(version!==speechVersion||route!==routeVersion)return;
   if(!finished)toast('錄音暫時無法播放，可以重新朗讀。');stopTransient();
 }
 async function replay(index,button=null) {
   if(button&&activeSpeechButton===button){stopMedia();return;}
-  const sources=(index===null?poem.lines.map((_,i)=>recordings.source(poem.id+'-'+i)):[recordings.source(poem.id+'-'+index)]).filter(Boolean);
+  const sources=(index===null?poem.lines.map((_,i)=>[i,recordings.source(poem.id+'-'+i)]):[[index,recordings.source(poem.id+'-'+index)]]).filter(([,source])=>source);
   if(!sources.length){toast('還沒有這一句的錄音，讀一次就能保存。');return;}
   stopMedia();const version=speechVersion,route=routeVersion;activeSpeechButton=button;speechState(button,'playing');
-  try{for(const source of sources){const finished=await(typeof source==='string'?playSource(source,false,1):playBlob(source));if(version!==speechVersion||route!==routeVersion)return;if(!finished)throw new Error('playback');}}
+  try{for(const [lineIndex,source] of sources){const meta={sourceKind:'recording',lineIndex};const finished=await(typeof source==='string'?playSource(source,false,1,meta):playBlob(source,meta));if(version!==speechVersion||route!==routeVersion)return;if(!finished)throw new Error('playback');}}
   catch{if(version===speechVersion&&route===routeVersion)toast('錄音暫時無法播放。');}
   finally{if(version===speechVersion&&route===routeVersion)stopTransient();}
 }
@@ -888,7 +924,7 @@ async function generateReport() {
     research.emit('feedback_shown',{poemId:p.id,activity:'read',attemptId:audit.attemptId,itemId:audit.itemId,metrics:{assistantCharacters:Math.min(20000,data.report.length),latencyMs:Math.min(600000,Math.round(performance.now()-requestedAt))}});
     queueSection('report',{content:data.report,totalScore:result.total_score,grade:result.grade,studentGrade:grade,reportVersion:REPORT_VERSION},p);$('#report-prose').textContent=data.report;
   }
-  catch(error){research.emit('error',{poemId:p.id,activity:'read',attemptId:audit.attemptId,itemId:audit.itemId,error:{code:researchErrorCode(error),retryable:true}});if(version===routeVersion&&generation===reportGeneration){$('#report-prose').textContent=quickAdvice(result);toast('先照這個方法練一練，稍後可以再試老師建議。');}}
+  catch(error){research.emit('error',{poemId:p.id,activity:'read',attemptId:audit.attemptId,itemId:audit.itemId,error:{code:researchErrorCode(error),retryable:true},context:researchErrorContext(error)});if(version===routeVersion&&generation===reportGeneration){$('#report-prose').textContent=quickAdvice(result);toast('先照這個方法練一練，稍後可以再試老師建議。');}}
   finally{if(version===routeVersion&&generation===reportGeneration){button.disabled=false;button.removeAttribute('aria-busy');button.innerHTML=icon('sparkles')+'更新建議';icons();}}
 }
 async function playChallengeAudio(target,auditFields={}) {
@@ -963,14 +999,14 @@ function preloadActivityModules(activity,slug) {
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
   preloadActivityModules('quiz',poem?.slug);
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20261007-school46'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20261008-school48'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
     onChange:attempt=>{state(p).challenge=attempt;state(p).updatedAt=Date.now();persist();},
     onCorrectionProgress:()=>queueReading(p),
     onComplete:summary=>{research.emit('activity_end',{poemId:p.id,activity:'challenge',attemptId:summary.attemptId,itemId:'p'+p.id+'.challenge',context:{mode:summary.mode||'standard'},result:{status:'completed',score:null,correct:null},metrics:{itemCount:summary.total}});if(!school.enabled)queueReading(p);},
-    onResearch:(type,fields)=>research.emit(type,{...fields,poemId:p.id}),
+    onResearch:(type,fields)=>research.emit(type,timedResearch(type,{...fields,poemId:p.id})),
     onAnswer:answer=>{if(!school.enabled)return;queueMicrotask(()=>queueReading(p));const audit={...research.context({...answer}),poemId:p.id};if(!answerOutbox.enqueue({poemId:p.id,itemId:answer.itemId,status:answer.status,response:answer.response||{},researchContext:audit}))research.emit('error',{poemId:p.id,activity:answer.activity,attemptId:answer.attemptId,itemId:answer.itemId,error:{code:'storage_unavailable',retryable:false}});},
     playAudio:playChallengeAudio,prefetchAudio:prefetchChallengeAudio,stopAudio:stopMedia,prewarm:prewarmAssessment,
     recognize:(ink,context)=>api('/api/handwriting',{ink,poemId:p.id,...(collectResearch?{researchContext:research.context(context)}:{})},16000)});
@@ -985,7 +1021,7 @@ async function renderExploration(){
   const p=poem;
   exploration=module.mountExploration(holder,{
     poem:p,
-    onResearch:(type,fields)=>research.emit(type,{...fields,poemId:p.id,activity:'explore'}),
+    onResearch:(type,fields)=>research.emit(type,timedResearch(type,{...fields,poemId:p.id,activity:'explore'})),
     speakWord:(char,pinyin,button)=>speakWord(char,pinyin,button),
     onComplete:result=>{
       const s=state(p);
@@ -1005,6 +1041,7 @@ function chatGreeting(p=poem){
   return `你好，我是${p.author}。想聊《${titleOf(p)}》、別的詩，還是今天的趣事？也可以一起寫一首新詩！`;
 }
 function renderChat() {
+  chatVoiceInserted=false;
   const messages=state(poem).chat;
   $('#view').innerHTML=`<div class="chat-layout"><aside class="poet-profile"><img src="${asset('avatar.webp')}" width="480" height="600" alt="${esc(poem.author)}"><h2>${esc(poem.author)}</h2><p>${esc(poem.authorBio)}</p></aside><div class="chat-tool"><div class="chat-messages" id="chat-messages" role="log" aria-live="polite"><div class="chat-message"><img src="${asset('avatar.webp')}" width="32" height="32" alt="${esc(poem.author)}"><div class="chat-bubble">${esc(chatGreeting())}</div></div>${messages.map((m,i)=>chatMessage(m,i)).join('')}</div><div class="chat-suggestions">${chatSuggestions().map((q,i)=>`<button data-action="chat-suggestion" data-value="${i}">${esc(q)}</button>`).join('')}</div><form class="chat-form" id="chat-form"><textarea id="chat-input" aria-label="想和詩人聊的話" placeholder="我想聊……" rows="2" maxlength="1000" required></textarea><button type="button" class="icon-button chat-voice" id="chat-voice" data-action="chat-voice" aria-label="用說話輸入" title="用說話輸入">${icon('mic')}</button><button type="submit" class="icon-button" id="chat-send" aria-label="傳送問題" title="傳送問題">${icon('send')}</button></form><p id="chat-voice-status" class="chat-voice-status" role="status" aria-live="polite"></p><div id="chat-error" class="chat-error" role="status"></div></div></div>`;
   $('#chat-form').addEventListener('submit',event=>{event.preventDefault();sendChat($('#chat-input').value.trim());});
@@ -1018,16 +1055,17 @@ function showChatRetry(message) {
   const holder=$('#chat-error');if(!holder)return;
   holder.innerHTML=`<span>${esc(message)}</span><button type="button" class="button chat-retry" data-action="chat-retry">再送一次</button>`;
 }
-async function sendChat(text,retry=false,presetId=null) {
+async function sendChat(text,retry=false,presetId=null,inputMode=null) {
   if(chatBusy)return;
   const p=poem,version=routeVersion,s=state(p);
+  let mode=null;
   if(retry){if(s.chat.at(-1)?.role!=='user')return;}
-  else {if(!text?.trim())return;const content=text.trim().slice(0,1000),preset=matchPoetPreset(p.id,content);s.chat.push({role:'user',content,...(presetId&&preset?.id===presetId?{presetId,presetVersion:preset.version}:{})});s.chat=s.chat.slice(-30);persist();}
+  else {if(!text?.trim())return;mode=inputMode==='suggestion'?'suggestion':chatVoiceInserted?'voice':'typed';chatVoiceInserted=false;const content=text.trim().slice(0,1000),preset=matchPoetPreset(p.id,content);s.chat.push({role:'user',content,...(presetId&&preset?.id===presetId?{presetId,presetVersion:preset.version}:{})});s.chat=s.chat.slice(-30);persist();}
   const audit=research.context({activity:'chat',itemId:'p'+p.id+'.chat'}),requestedAt=performance.now();
-  research.emit(retry?'retry':'attempt_started',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,metrics:{userCharacters:s.chat.at(-1)?.content?.length||0},...(retry?{retryCount:1}:{})});
+  research.emit(retry?'retry':'attempt_started',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,metrics:{userCharacters:s.chat.at(-1)?.content?.length||0},...(retry?{retryCount:1}:{}),...(mode?{context:{inputMode:mode}}:{})});
   stopMedia();cancelChatVoice();chatBusy=true;renderChat();$('#chat-send').disabled=true;
   $('#chat-error').innerHTML='<span class="spinner"></span><span>正在想一想…</span>';
-  const controller=new AbortController();requests.add(controller);let partial=null;
+  const controller=new AbortController();requests.add(controller);let partial=null,firstAt=null;
   const waiting=setTimeout(()=>{if(version===routeVersion&&chatBusy&&!partial)$('#chat-error').innerHTML='<span class="spinner"></span><span>還在等回覆，你的問題已保留。</span>';},8000);
   try {
     const last=s.chat.at(-1),selectedPreset=last?.presetId&&matchPoetPreset(p.id,last.content);
@@ -1035,6 +1073,7 @@ async function sendChat(text,retry=false,presetId=null) {
       if(version!==routeVersion||sessionLocked)return;
       const holder=$('#chat-messages'),atBottom=holder.scrollHeight-holder.scrollTop-holder.clientHeight<100;
       if(!partial){
+        firstAt=performance.now();
         $('#chat-error').textContent='';clearTimeout(waiting);
         const row=document.createElement('div');row.className='chat-message';row.dataset.streaming='true';
         const portrait=document.createElement('img');portrait.src=asset('avatar.webp');portrait.alt=p.author;portrait.width=portrait.height=32;
@@ -1047,11 +1086,11 @@ async function sendChat(text,retry=false,presetId=null) {
     if(typeof data.reply!=='string'||!data.reply.trim())throw new Error('暫時未能回答，可以再送一次。');
     if(collectResearch&&data.researchRecorded===false)research.emit('error',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,error:{code:'storage_unavailable',retryable:true}});
     s.chat.push({role:'assistant',content:data.reply});persist();renderChat();
-    research.emit('feedback_shown',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,metrics:{assistantCharacters:Math.min(20000,data.reply.length),latencyMs:Math.min(600000,Math.round(performance.now()-requestedAt))}});
+    research.emit('feedback_shown',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,metrics:{assistantCharacters:Math.min(20000,data.reply.length),latencyMs:Math.min(600000,Math.round(performance.now()-requestedAt)),...researchExtra(()=>firstAt!==null?{firstResponseMs:Math.min(600000,Math.max(0,Math.round(firstAt-requestedAt)))}:{})}});
   } catch(error) {
     partial?.closest('[data-streaming]')?.remove();
     if(version===routeVersion)showChatRetry(error.message);
-    research.emit('error',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,error:{code:researchErrorCode(error),retryable:true}});
+    research.emit('error',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,error:{code:researchErrorCode(error),retryable:true},context:researchErrorContext(error)});
   } finally {
     requests.delete(controller);
     clearTimeout(waiting);
@@ -1127,7 +1166,7 @@ async function transcribeChatVoice(voice,blob){
     const text=typeof result?.text==='string'?result.text.trim():'',input=$('#chat-input');
     chatVoice=null;if(voice.context?.state!=='closed')voice.context?.close().catch(()=>{});chatVoiceUI();
     if(!text){chatVoiceStatus('聽不清楚，請靠近一點，按一下麥克風再說一次。','error');return;}
-    if(input){input.value=(input.value.trim()+text).slice(0,1000);input.scrollTop=input.scrollHeight;}
+    if(input){input.value=(input.value.trim()+text).slice(0,1000);input.scrollTop=input.scrollHeight;chatVoiceInserted=true;}
     chatVoiceStatus('已變成文字。看看對不對，可以改一改，再按傳送。','done');
   } catch(error) {chatVoiceError(voice,error);}
   finally {requests.delete(controller);}
@@ -1198,7 +1237,7 @@ document.addEventListener('click',event=>{
   if(action==='replay')replay(Number(value),button);
   if(action==='replay-all')replay(null,button);
   if(action==='report-generate')generateReport();
-  if(action==='chat-suggestion'){const question=chatSuggestions()[Number(value)];sendChat(question,false,matchPoetPreset(poem.id,question)?.id);}
+  if(action==='chat-suggestion'){const question=chatSuggestions()[Number(value)];sendChat(question,false,matchPoetPreset(poem.id,question)?.id,'suggestion');}
   if(action==='chat-retry')sendChat('',true);
   if(action==='chat-voice')toggleChatVoice();
   if(action==='chat-speak'){const message=state(poem).chat[Number(value)];if(message?.role==='assistant')speakPoetReply(message.content,button);}

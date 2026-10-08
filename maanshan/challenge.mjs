@@ -101,7 +101,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
   const currentAnswer = () => attempt?.answers[screen];
   // The form follows the round's saved order; a 錯題重做 round keeps the form of the round it came from.
   const formOf = item => soundForm(poem, item, attempt.mode === 'review' ? attempt.sourceAttempt?.itemIds : attempt.itemIds);
-  let itemPresentedAt = performance.now();
+  let itemPresentedAt = performance.now(), selectionChanges = 0;
   function researchContext(){
     const item=items[screen];
     return {attemptId:attempt.attemptId,itemId:item?.id||'challenge-summary',activity:item?.type==='dictation'?'writing':'challenge',
@@ -243,7 +243,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     try {prefetchAudio([item.audio, items[screen + 1]?.audio].filter(Boolean));} catch {}
     writingTraced=currentAnswer()?.traceCompleted===true;
     itemPresentedAt=performance.now();audit('item_presented');
-    heard = false; selected = null; placements = {}; density = {};
+    heard = false; selected = null; placements = {}; density = {}; selectionChanges = 0;
     const answer = currentAnswer();
     if (answer?.response && item.type === 'sound') selected = answer.response;
     else if (answer?.response && item.type === 'scene-builder') density = {...answer.response};
@@ -320,6 +320,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
   }
   function chooseSound(id) {
     if (!heard || currentAnswer()||!items[screen].options.some(option=>option.id===id)) return;
+    if(id!==selected)selectionChanges++;
     selected=id;updateSound();
     const option=items[screen].options.find(value=>value.id===id),status=q('.challenge-audio-status');
     if(status)status.textContent=`已選「${option.label}」，點「${formOf(items[screen]).submit}」。`;
@@ -337,6 +338,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
   }
   function place(slot) {
     if (!selected || currentAnswer()) return;
+    selectionChanges++;
     for (const key of Object.keys(placements)) if (placements[key]===selected) delete placements[key];
     placements[slot]=selected;selected=null;updatePlacements();
   }
@@ -367,7 +369,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     if(!recordAnswer(attempt,set,screen,result))return;
     const response=typeof result.response==='string'?{choiceId:result.response}:result.response&&['match','sequence','scene-builder'].includes(items[screen].type)?{placements:Object.entries(result.response).filter(([,value])=>typeof value==='string').map(([slotId,choiceId])=>({slotId,choiceId}))}:undefined;
     const measured=['correct','incorrect'].includes(result.status)&&items[screen].type!=='microgame';
-    audit('answer_submitted',{result:{status:items[screen].type==='microgame'&&result.status==='correct'?'completed':result.status,score:measured?(result.status==='correct'?100:0):null,correct:measured?result.status==='correct':null},metrics:{elapsedMs:Math.min(21600000,Math.round(performance.now()-itemPresentedAt))},...(response?{response}:{})});
+    audit('answer_submitted',{result:{status:items[screen].type==='microgame'&&result.status==='correct'?'completed':result.status,score:measured?(result.status==='correct'?100:0):null,correct:measured?result.status==='correct':null},metrics:{elapsedMs:Math.min(21600000,Math.round(performance.now()-itemPresentedAt)),...(['sound','match','sequence','scene-builder'].includes(items[screen].type)?{selectionChanges:Math.min(1000,selectionChanges)}:{})},...(response?{response}:{})});
     onAnswer({...researchContext(),status:result.status,...(response?{response}:{})});
     save();if(attempt.answers.length===items.length)onComplete?.(challengeSummary(attempt,set));
     audioGeneration++;stopAudio?.();playing=false;
@@ -422,7 +424,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     if(action==='choose')chooseSound(button.dataset.option);
     if(action==='card'&&!currentAnswer()){selected=button.dataset.card;updatePlacements();}
     if(action==='slot')place(button.dataset.slot);
-    if(action==='density'&&!currentAnswer()){density[button.dataset.layer]=button.dataset.density;updateField();}
+    if(action==='density'&&!currentAnswer()){if(density[button.dataset.layer]!==button.dataset.density)selectionChanges++;density[button.dataset.layer]=button.dataset.density;updateField();}
     if(action==='field-3d'){
       const generation=renderGeneration;livingField?.destroy();q('.living-field-canvas').hidden=false;q('.living-field-picture').hidden=false;
       button.hidden=true;q('[data-ch="field-picture"]').hidden=false;
