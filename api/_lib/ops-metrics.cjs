@@ -104,12 +104,24 @@ function windowSummary(s,now,minutes){
   return {minutes,totals,routes,relay,beats,hk,hop,direct,hopRatio:hk+hop?hop/(hk+hop):null};
 }
 
+// One entry per minute for the last hour, oldest first: every counted request
+// (heartbeats excluded) and the failures among them (5xx and upload timeouts).
+function series(s,now){
+  const last=Math.floor(now/MINUTE),out=[];
+  for(let minute=last-BUCKETS+1;minute<=last;minute++){
+    let count=0,failed=0;
+    for(const stats of Object.values(s.buckets.get(minute)?.routes||{})){count+=stats.count;failed+=stats.s5xx+stats.s408;}
+    out.push({at:minute*MINUTE,count,failed});
+  }
+  return out;
+}
+
 function snapshot(now=Date.now()){
   const s=state();rotateLoop(s,now);
   const h=s.loop?.histogram,current=h&&h.count>0?{p50Ms:h.percentile(50)/1e6,p99Ms:h.percentile(99)/1e6,maxMs:h.max/1e6,at:now}:null;
   return {startedAt:s.startedAt,now,heartbeat:{...s.heartbeat},ports:{...s.ports},lastHop:s.lastHop,lastDirect:s.lastDirect,
     windows:{5:windowSummary(s,now,5),15:windowSummary(s,now,15),60:windowSummary(s,now,60)},
-    errors:s.errors.slice(-RECENT_ERRORS).reverse(),eventLoop:s.loop?.last||current};
+    series:series(s,now),errors:s.errors.slice(-RECENT_ERRORS).reverse(),eventLoop:s.loop?.last||current};
 }
 function reset(){const s=globalThis[KEY];s?.loop?.histogram.disable();delete globalThis[KEY];}
 

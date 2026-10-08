@@ -375,7 +375,7 @@ async function loadLegacy(signal){
 // 網站後台: the site administrator's live view of the servers, the relay and what
 // pupils met recently. It replaces the class view in place (the dashboard keeps its
 // state) and polls every 10 s while it is open and the tab is visible.
-const SITE_STATUS='/api/teacher-tools?tool=site-status',LEVELS={ok:'正常',warn:'需要留意',bad:'有問題',unknown:'未能判斷'};
+const SITE_STATUS='/api/teacher-tools?tool=site-status',LEVELS={ok:'正常',warn:'需要留意',bad:'有問題',unknown:'未能判斷',info:'資料'};
 const STATUS_TEXT={500:'程式錯誤',502:'中轉失敗',503:'暫停服務',504:'超時',408:'上傳超時'};
 const monitor={timer:null,controller:null,generation:0,data:null,link:'',failed:'',failures:0};
 function siteAdmin(){return !DEMO&&!state.legacy&&state.auth?.user?.role==='teacher'&&state.auth.user.siteAdmin===true;}
@@ -423,30 +423,82 @@ function seconds(ms){return number(ms)===null?null:Math.round(ms/100)/10;}
 function levelOf(section){return Object.hasOwn(LEVELS,section?.level)?section.level:'unknown';}
 function monitorStats(rows){return `<dl class="monitor-stats">${rows.map(([label,value,unit=''])=>{const none=value===null||value===undefined||value==='—';return `<div><dt>${esc(label)}</dt><dd>${none?'—':typeof value==='number'?shown(value,1):esc(value)}${unit&&!none?`<small>${esc(unit)}</small>`:''}</dd></div>`;}).join('')}</dl>`;}
 function monitorNote(parts){const text=parts.filter(Boolean);return text.length?`<p class="monitor-note">${text.map(esc).join(' · ')}</p>`:'';}
-function monitorCard(title,section,body){const level=levelOf(section);return `<article class="monitor-card level-${level}"><h2><span class="monitor-dot" aria-hidden="true"></span>${esc(title)}<span class="sr-only">：${LEVELS[level]}</span></h2><p class="monitor-status">${esc(section?.text||'未能判斷')}</p>${body}</article>`;}
+function monitorCard(title,section,body){const level=levelOf(section);return `<article class="monitor-card level-${level}"><h2><span class="monitor-dot" aria-hidden="true"></span>${esc(title)}${level==='info'?'':`<span class="sr-only">：${LEVELS[level]}</span>`}</h2><p class="monitor-status">${esc(section?.text||'未能判斷')}</p>${body}</article>`;}
+const GRADES=['一','二','三','四','五','六'];
+function hourMinute(value){return new Intl.DateTimeFormat('zh-HK',{timeZone:'Asia/Hong_Kong',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(value));}
+function hkDay(value){return new Date(value+8*3600000).toISOString().slice(0,10);}
+function dayLabel(date){const [,m,d]=String(date).split('-');return Number(m)+'/'+Number(d);}
+// A time of day, with the date when it is not today in Hong Kong.
+function when(at,now){return number(at)===null?'—':(hkDay(at)===hkDay(now)?'':dayLabel(hkDay(at))+' ')+hourMinute(at);}
+function rows(list){return Array.isArray(list)?list:[];}
+// One bar per minute; failures sit at the foot of each bar in red.
+function minuteBars(series,label){const max=Math.max(1,...series.map(m=>number(m.count)||0));
+ return `<div class="monitor-bars" role="img" aria-label="${esc(label)}">${series.map(m=>{const n=number(m.count)||0,bad=Math.min(n,number(m.failed)||0);return `<span style="height:${n?Math.max(4,Math.round(n/max*100)):0}%">${bad?`<i style="height:${Math.max(12,Math.round(bad/n*100))}%"></i>`:''}</span>`;}).join('')}</div><p class="monitor-axis" aria-hidden="true"><span>60 分鐘前</span><span>現在</span></p>`;}
+function dayBars(days){const max=Math.max(1,...days.map(d=>number(d.pupils)||0));
+ return `<ol class="monitor-days">${days.map((d,i)=>{const n=number(d.pupils)||0;return `<li><strong>${shown(n)}</strong><span class="bar"><span style="height:${n?Math.max(6,Math.round(n/max*100)):0}%"></span></span><small>${i===days.length-1?'今天':esc(dayLabel(d.date))}</small><span class="sr-only"> ${shown(n)} 人</span></li>`;}).join('')}</ol>`;}
+function monitorList(items){return items.length?`<ul class="monitor-list">${items.map(([level,label,value,detail])=>`<li class="level-${level}"><span class="monitor-dot" aria-hidden="true"></span><span>${esc(label)}${detail?`<small>${esc(detail)}</small>`:''}</span><strong>${esc(value)}</strong></li>`).join('')}</ul>`:'';}
+function jobState(job,now){
+ if(job.loadState!=='loaded')return ['unknown','未安裝'];
+ if(job.running)return ['ok','運行中'];
+ if(job.result!=='success'&&job.result!=='unknown')return [job.unit==='maanshan-backup'?'bad':'warn','失敗'];
+ if(number(job.lastAt)===null||now-job.lastAt>job.maxGapS*1000)return ['warn','太久沒有運行'];
+ return ['ok','成功'];
+}
 function renderMonitor(){
  const host=document.querySelector('#site-monitor-body');if(!host)return;const d=monitor.data;
  if(!d){host.innerHTML=monitor.failed?`<p class="monitor-banner level-bad"><span class="monitor-dot" aria-hidden="true"></span><strong>未能取得網站狀態（${esc(monitor.failed)}），稍後自動重試。</strong></p>`:'<div class="data-loading" role="status"><span class="loader" aria-hidden="true"></span><p>正在讀取網站狀態</p></div>';return;}
  const now=Date.parse(d.generatedAt)||Date.now(),s=d.verdict.sections,o=d.origin||{},hk=d.hk||{},db=d.db||{},st=d.students||{},t15=d.traffic?.[15]||{},totals=t15.totals||{};
  const units=Array.isArray(o.units)?o.units:[],stopped=units.filter(u=>u.activeState!=='active');
- const server=monitorCard('廣州伺服器',s.server,monitorStats([['已運行',...lasted(o.uptimeS)],['內存',o.rssMB,' / '+o.memoryLimitMB+' MB'],['剩餘空間',o.diskFreePct,'%'],['系統服務',o.unitsAvailable?units.length-stopped.length:'未能讀取',o.unitsAvailable?' / '+units.length+' 運行中':'']])
-  +monitorNote([o.unitsAvailable&&stopped.length?'未運行：'+stopped.map(u=>u.label).join('、'):'',o.release?.commit?'版本 '+o.release.commit+'（'+timestamp(o.release.builtAt)+'）':'']));
+ const server=monitorCard('廣州伺服器',s.server,monitorStats([['已運行',...lasted(o.uptimeS)],['內存',o.rssMB,' / '+o.memoryLimitMB+' MB'],['剩餘空間',o.diskFreePct,'%'],['系統服務',o.unitsAvailable?units.length-stopped.length:'未能讀取',o.unitsAvailable?' / '+units.length+' 運行中':''],
+  ...(Array.isArray(o.loadavg)?[['CPU 負載',number(o.loadavg[0]),o.cpus?' / '+o.cpus+' 核':''],['系統可用內存',number(o.memory?.availableMB)===null?null:Math.round(o.memory.availableMB/102.4)/10,number(o.memory?.totalMB)===null?' GB':' / '+Math.round(o.memory.totalMB/102.4)/10+' GB']]:[])])
+  +monitorNote([o.unitsAvailable&&stopped.length?'未運行：'+stopped.map(u=>u.label).join('、'):'',number(o.eventLoopP99Ms)===null?'':'程式最慢反應 '+o.eventLoopP99Ms+' ms',o.release?.commit?'版本 '+o.release.commit+'（'+timestamp(o.release.builtAt)+'）':'']));
  const tunnels=(Array.isArray(hk.tunnels)?hk.tunnels:[]).map(t=>{const level=t.state==='active'?'ok':t.state==='unknown'?'unknown':'bad';return `<li class="level-${level}"><span class="monitor-dot" aria-hidden="true"></span>${esc(t.port)}<span class="sr-only">：${level==='ok'?'正常':level==='bad'?'中斷':'未知'}</span></li>`;}).join('');
- const relay=monitorCard('香港中轉',s.hk,`<ul class="monitor-tunnels" aria-label="香港通道">${tunnels}</ul>`+monitorStats([['最近經過',...since(hk.lastHeartbeatAt,now)],['繞道美國（15 分鐘）',number(hk.hop15?.ratio)===null?null:Math.round(hk.hop15.ratio*100),'%'],['伺服器到期',hk.renewal?.daysLeft,' 天後']]));
+ const relay=monitorCard('香港中轉',s.hk,`<ul class="monitor-tunnels" aria-label="香港通道">${tunnels}</ul>`+monitorStats([['最近經過',...since(hk.lastHeartbeatAt,now)],['繞道美國（15 分鐘）',number(hk.hop15?.ratio)===null?null:Math.round(hk.hop15.ratio*100),'%'],['伺服器到期',hk.renewal?.daysLeft,' 天後']])
+  +monitorNote([(()=>{const n=rows(hk.tunnels).reduce((n,t)=>n+(number(t.restarts)||0),0);return n?'通道曾自動重連 '+n+' 次':'';})()]));
  const via=Object.values(hk.mix15||{}).reduce((n,v)=>n+(number(v)||0),0);
  const vercel=monitorCard('Vercel',s.vercel,monitorStats([['香港節點',...since(d.vercel?.hkg1?.lastAt,now)],['美國節點',...since(d.vercel?.iad1?.lastAt,now)],['近 15 分鐘請求',via,' 次']])+monitorNote(['兩個節點每分鐘自動檢查一次']));
- const pool=db.pools?.auth;
- const database=monitorCard('資料庫',s.db,monitorStats([['回應時間',db.ok?db.latencyMs:null,' ms'],['使用中連線',pool?pool.total-pool.idle:null,pool?' / '+pool.total:''],['學習紀錄查詢',st.available?'正常':st.reason==='timeout'?'超時':st.reason==='disabled'?'未啟用':'未能讀取']]));
+ const pool=db.pools?.auth,today=d.today;
+ const database=monitorCard('資料庫',s.db,monitorStats([['回應時間',db.ok?db.latencyMs:null,' ms'],['使用中連線',pool?pool.total-pool.idle:null,pool?' / '+pool.total:''],['學習紀錄查詢',st.available?'正常':st.reason==='timeout'?'超時':st.reason==='disabled'?'未啟用':'未能讀取'],
+  ...(d.usage||d.today?[['資料庫大小',d.usage?.available?d.usage.dbMB:null,' MB'],['最新學習紀錄',...(today?.available?since(today.lastRecordAt,now):['—'])],['今日學習紀錄',today?.available?today.events:null,' 條']]:[])]));
  const routes=(Array.isArray(t15.routes)?t15.routes:[]).filter(r=>r.count>0),soe=routes.find(r=>r.route==='soe');
  const waited=(Array.isArray(st.latency)?st.latency:[]).filter(r=>r.count>0&&number(r.p50Ms)!==null).map(r=>r.label+' '+seconds(r.p50Ms)+' 秒');
- const table=routes.length?`<div class="table-area"><table class="monitor-table"><caption>各功能回應（近 15 分鐘）</caption><thead><tr><th scope="col">功能</th><th scope="col">次數</th><th scope="col">中位</th><th scope="col">最慢一成</th></tr></thead><tbody>${routes.map(r=>`<tr><th scope="row">${esc(r.label)}</th><td>${shown(r.count)}</td><td>${number(r.p50Ms)===null?'—':seconds(r.p50Ms)+' 秒'}</td><td>${number(r.p95Ms)===null?'—':seconds(r.p95Ms)+' 秒'}</td></tr>`).join('')}</tbody></table></div>`:'';
+ const table=routes.length?`<div class="table-area"><table class="monitor-table"><caption>各功能回應（近 15 分鐘）</caption><thead><tr><th scope="col">功能</th><th scope="col">次數</th><th scope="col">出錯</th><th scope="col">中位</th><th scope="col">最慢一成</th></tr></thead><tbody>${routes.map(r=>`<tr><th scope="row">${esc(r.label)}</th><td>${shown(r.count)}</td><td${(r.s5xx||0)+(r.s408||0)?' class="bad"':''}>${shown((number(r.s5xx)||0)+(number(r.s408)||0))}</td><td>${number(r.p50Ms)===null?'—':seconds(r.p50Ms)+' 秒'}</td><td>${number(r.p95Ms)===null?'—':seconds(r.p95Ms)+' 秒'}</td></tr>`).join('')}</tbody></table></div>`:'';
  const latency=monitorCard('學生使用（回應時間）',s.latency,monitorStats([['在線學生（5 分鐘）',st.available?st.active5:null,' 人'],['近一小時',st.available?st.active60:null,' 人'],['朗讀評分中位',seconds(soe?.p50Ms),' 秒'],['最慢一成',seconds(soe?.p95Ms),' 秒']])+table+monitorNote([waited.length?'學生畫面等候中位（30 分鐘）：'+waited.join('、'):'']));
  const network=st.available?['network','timeout'].reduce((n,code)=>n+(number(st.clientErrors?.[code]?.n15)||0),0):null,provider=st.available?(st.providerErrors||[]).reduce((n,e)=>n+(number(e.n15)||0),0):null;
  const recent=(Array.isArray(d.traffic?.recentErrors)?d.traffic.recentErrors:[]).slice(0,5);
  const errors=monitorCard('近期報錯',s.errors,monitorStats([['伺服器錯誤',totals.s5xx,' 個'],['請求超時',number(totals.s504)===null?null:totals.s504+(totals.s408||0),' 個'],['學生網絡中斷',network,' 次'],['外部服務出錯',provider,' 次']])+monitorNote(['以上為近 15 分鐘'])
   +(recent.length?`<ol class="monitor-errors" aria-label="最近的伺服器錯誤">${recent.map(e=>`<li><time>${clockTime(e.at)}</time><span>${esc(e.label)}</span><strong>${esc(STATUS_TEXT[e.status]||'錯誤 '+e.status)}</strong></li>`).join('')}</ol>`:'<p class="monitor-note">重啟以來沒有伺服器錯誤紀錄。</p>'));
+ let summary='',week='',trend='',services='',upkeep='',clients='';
+ if(today?.available){
+  const peak=today.peak?[today.peak.pupils,' 人（'+hourMinute(today.peak.at)+'）']:[0,' 人'];
+  summary=monitorCard('今日概況',s.today,monitorStats([['今日學生',today.pupils,' 人'],['朗讀',today.readings,' 句'],['對話',today.chats,' 次'],['最多同時在線',...peak]])
+   +(rows(today.byGrade).length?`<ul class="monitor-chips" aria-label="各年級今日學生">${rows(today.byGrade).map(g=>`<li>${esc((GRADES[g.grade-1]||g.grade)+'年級')}<strong>${shown(g.pupils)}</strong>人</li>`).join('')}</ul>`:'')
+   +monitorNote(['同時在線按每 5 分鐘計']));
+  const days=rows(today.week?.days),busiest=days.reduce((a,b)=>(number(b.pupils)||0)>(number(a?.pupils)||0)?b:a,null);
+  week=monitorCard('近 7 日',s.week,monitorStats([['7 日內學生',today.week?.pupils,' 人'],['最多一天',busiest?busiest.pupils:null,busiest?' 人（'+dayLabel(busiest.date)+'）':'']])+(days.length?dayBars(days):''));
+  const list=rows(today.clientErrors);
+  clients=monitorCard('學生端問題（今日）',s.clients,monitorList(list.map(e=>['info',e.label||'其他',shown(e.count)+' 次']))+monitorNote(['學生裝置自動回報，不含學生自己取消的操作']));
+ }else if(today)summary=monitorCard('今日概況',s.today,'');
+ const series=rows(d.traffic?.series);
+ if(series.length){
+  const count=series.reduce((n,m)=>n+(number(m.count)||0),0),failed=series.reduce((n,m)=>n+(number(m.failed)||0),0);
+  trend=monitorCard('近 60 分鐘',s.trend,monitorStats([['請求',count,' 個'],['出錯',failed,' 個']])+minuteBars(series,'近 60 分鐘每分鐘請求 '+count+' 個，出錯 '+failed+' 個')
+   +monitorNote([number(o.uptimeS)!==null&&o.uptimeS<3600?'伺服器 '+lasted(o.uptimeS).join('')+'前重啟，之前的數據已清空':'不含定時檢查']));
+ }
+ const t60=d.traffic?.[60],usage=d.usage;
+ if(t60||usage){
+  const used=rows(t60?.routes).filter(r=>r.count>0),table60=used.length?`<div class="table-area"><table class="monitor-table"><caption>各服務（近 1 小時，所有帳戶）</caption><thead><tr><th scope="col">服務</th><th scope="col">次數</th><th scope="col">失敗</th><th scope="col">成功率</th></tr></thead><tbody>${used.map(r=>{const bad=(number(r.s5xx)||0)+(number(r.s408)||0);return `<tr><th scope="row">${esc(r.label)}</th><td>${shown(r.count)}</td><td${bad?' class="bad"':''}>${shown(bad)}</td><td>${shown(Math.floor((r.count-bad)/r.count*1000)/10,1)}%</td></tr>`;}).join('')}</tbody></table></div>`:'';
+  const speech=usage?.available?usage.speech:null,providers=today?.available?rows(today.providers):[];
+  services=monitorCard('外部服務',s.services,monitorStats([['本月語音輸入',speech?speech.used:null,speech?' / '+speech.limit+' 次':''],['本月學生朗讀評分',today?.available?today.monthReadings:null,' 次']])+table60
+   +monitorNote([providers.length?'今日學生：'+providers.map(p=>p.label+' '+p.count+' 次'+(p.failed?'（失敗 '+p.failed+'）':'')).join('、'):'']));
+ }
+ if(d.upkeep){
+  const items=rows(d.upkeep.jobs).map(job=>{const [level,text]=jobState(job,now);return [level,job.label,text,'上次 '+when(job.lastAt,now)+(number(job.nextAt)!==null?' · 下次 '+when(job.nextAt,now):'')];})
+   .concat(rows(d.upkeep.certs).map(c=>[number(c.daysLeft)===null?'unknown':!c.matches||c.daysLeft<7?'bad':c.daysLeft<20?'warn':'ok',c.label,number(c.daysLeft)===null?'未能讀取':c.matches?c.daysLeft+' 天後到期':'與網址不符',c.host]));
+  upkeep=monitorCard('維護與備份',s.upkeep,d.upkeep.available||rows(d.upkeep.certs).length?monitorList(items):'');
+ }
  const lost=monitor.failures>=3,level=lost?'bad':levelOf(d.verdict);
- host.innerHTML=`<div class="monitor-banner level-${level}"><span class="monitor-dot" aria-hidden="true"></span><strong>${esc(lost?`連續 ${monitor.failures} 次未能取得網站狀態（${monitor.failed}），學生可能也連不上。`:d.verdict.text)}</strong></div><p class="monitor-meta"><span>更新於 ${clockTime(now)}</span>${monitor.link?`<span>${esc(monitor.link)}</span>`:''}${monitor.failed&&!lost?`<span class="monitor-stale">最近一次更新未完成（${esc(monitor.failed)}）</span>`:''}</p><div class="monitor-grid${lost?' stale':''}">${server}${relay}${vercel}${database}${latency}${errors}</div>`;
+ host.innerHTML=`<div class="monitor-banner level-${level}"><span class="monitor-dot" aria-hidden="true"></span><strong>${esc(lost?`連續 ${monitor.failures} 次未能取得網站狀態（${monitor.failed}），學生可能也連不上。`:d.verdict.text)}</strong></div><p class="monitor-meta"><span>更新於 ${clockTime(now)}</span>${monitor.link?`<span>${esc(monitor.link)}</span>`:''}${monitor.failed&&!lost?`<span class="monitor-stale">最近一次更新未完成（${esc(monitor.failed)}）</span>`:''}</p><div class="monitor-grid${lost?' stale':''}">${summary}${week}${trend}${server}${relay}${vercel}${database}${latency}${errors}${services}${upkeep}${clients}</div>`;
 }
 root.addEventListener('submit',event=>{
  if(event.target.id==='teacher-login-form'){event.preventDefault();void login(event.target);}

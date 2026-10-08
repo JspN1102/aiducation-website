@@ -3,13 +3,22 @@
 // origin, the Hong Kong tunnels, the Vercel crons, the database and what pupils
 // experienced recently. Aggregates only: no addresses, environment values,
 // accounts, names, research IDs or upstream message text ever leave here.
-const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),tls=require('node:tls');
 const {execFile}=require('node:child_process');
 const auth=require('./school-auth.cjs');
 const ops=require('./ops-metrics.cjs');
 
-const MINUTE=60000,CACHE_MS=10000,STALE_MS=60000,HEARTBEAT_STALE_MS=3*MINUTE,STARTUP_GRACE_S=150;
+const MINUTE=60000,HOUR=60*MINUTE,CACHE_MS=10000,STALE_MS=60000,HEARTBEAT_STALE_MS=3*MINUTE,STARTUP_GRACE_S=150;
+const DAILY_MS=MINUTE,UPKEEP_MS=5*MINUTE,CERT_MS=10*MINUTE;
 const MEMORY_LIMIT_MB=768,HK_RENEWAL='2026-11-07';
+const SPEECH_LIMIT=4800; // MONTHLY_SITE_LIMIT in api/speech-to-text.js
+// Scheduled upkeep on the origin: unit, label, and the longest normal gap
+// between two runs (daily timers carry a random delay of up to 15 minutes).
+const JOBS=[['maanshan-backup','每日備份',30*HOUR],['maanshan-health-check','健康檢查',45*MINUTE],['maanshan-health-restore','恢復演練',50*HOUR],['certbot','證書續期',36*HOUR]];
+const CERTS=[['mandarin.aiducation.asia','學生平台證書'],['aiducation.hk.cn','展示版證書']];
+const CLIENT_ERROR_LABELS={network:'網絡中斷',timeout:'等候超時',permission_denied:'未允許錄音',audio_unavailable:'無法播放或錄音',provider_unavailable:'評分服務不可用',
+  invalid_response:'回覆不完整',storage_unavailable:'本機儲存不可用',unsupported:'裝置不支援',unknown:'其他'};
+const OPERATION_LABELS={reading:'朗讀評分',handwriting:'手寫',chat:'對話',report:'報告',challenge:'挑戰'};
 const UNITS=[['maanshan','網站程式'],['nginx','網頁伺服器'],['postgresql@14-main','資料庫'],['maanshan-hk-tunnel','香港通道 3100'],
   ['maanshan-hk-tunnel@3101','香港通道 3101'],['maanshan-hk-tunnel@3102','香港通道 3102'],['maanshan-relay-2222','直連中轉 2222'],['maanshan-egress-shape','出口限速']];
 const TUNNELS=[['maanshan-hk-tunnel',3100],['maanshan-hk-tunnel@3101',3101],['maanshan-hk-tunnel@3102',3102]];
@@ -31,25 +40,58 @@ function withTimeout(promise,ms,onLate){
 
 // One systemctl call, read over D-Bus without privileges; TZ=UTC so the
 // timestamps parse exactly. Unknown units come back as LoadState=not-found.
-function systemctlShow(units){
-  return new Promise((resolve,reject)=>execFile('systemctl',['show',...units.map(u=>u+'.service'),'--no-pager','--property=Id,LoadState,ActiveState,SubState,NRestarts,ActiveEnterTimestamp'],
+function systemctl(units,properties){
+  return new Promise((resolve,reject)=>execFile('systemctl',['show',...units,'--no-pager','--property='+properties],
     {timeout:2000,maxBuffer:64*1024,env:{PATH:'/usr/bin:/bin',TZ:'UTC',LANG:'C',SYSTEMD_COLORS:'0'},windowsHide:true},
     (error,stdout)=>error?reject(error):resolve(String(stdout))));
 }
-function parseUnits(text){
-  const found={};
-  for(const block of String(text).split(/\r?\n\s*\r?\n/)){
+const systemctlShow=units=>systemctl(units.map(u=>u+'.service'),'Id,LoadState,ActiveState,SubState,NRestarts,ActiveEnterTimestamp');
+// Each job's service (last result, when it finished) and its timer (last and next run).
+const systemctlJobs=units=>systemctl(units.flatMap(u=>[u+'.service',u+'.timer']),'Id,LoadState,ActiveState,Result,ExecMainExitTimestamp,LastTriggerUSec,NextElapseUSecRealtime');
+function blocks(text){
+  return String(text).split(/\r?\n\s*\r?\n/).map(block=>{
     const fields={};
     for(const line of block.split(/\r?\n/)){const at=line.indexOf('=');if(at>0)fields[line.slice(0,at)]=line.slice(at+1).trim();}
+    return fields;
+  });
+}
+function stampOf(value){const m=/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d) UTC/.exec(value||'');return m?Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6]):null;}
+const word=value=>STATE.test(value||'')?value:'unknown';
+function parseUnits(text){
+  const found={};
+  for(const fields of blocks(text)){
     const id=/^(.+)\.service$/.exec(fields.Id||'')?.[1];
     if(!id)continue;
-    const since=/(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d) UTC/.exec(fields.ActiveEnterTimestamp||'');
     const restarts=fields.NRestarts?Number(fields.NRestarts):NaN;
-    found[id]={loadState:STATE.test(fields.LoadState||'')?fields.LoadState:'unknown',activeState:STATE.test(fields.ActiveState||'')?fields.ActiveState:'unknown',
-      subState:STATE.test(fields.SubState||'')?fields.SubState:'unknown',restarts:Number.isInteger(restarts)&&restarts>=0?restarts:null,
-      activeSince:since?Date.UTC(+since[1],+since[2]-1,+since[3],+since[4],+since[5],+since[6]):null};
+    found[id]={loadState:word(fields.LoadState),activeState:word(fields.ActiveState),subState:word(fields.SubState),
+      restarts:Number.isInteger(restarts)&&restarts>=0?restarts:null,activeSince:stampOf(fields.ActiveEnterTimestamp)};
   }
   return found;
+}
+function parseJobs(text){
+  const found={};
+  for(const fields of blocks(text)){
+    const m=/^(.+)\.(service|timer)$/.exec(fields.Id||'');
+    if(!m)continue;
+    const job=found[m[1]]||(found[m[1]]={loadState:'unknown',state:'unknown',result:'unknown',finishedAt:null,timer:'unknown',lastAt:null,nextAt:null});
+    if(m[2]==='service')Object.assign(job,{loadState:word(fields.LoadState),state:word(fields.ActiveState),result:word(fields.Result),finishedAt:stampOf(fields.ExecMainExitTimestamp)});
+    else Object.assign(job,{timer:fields.LoadState==='loaded'?word(fields.ActiveState):'missing',lastAt:stampOf(fields.LastTriggerUSec),nextAt:stampOf(fields.NextElapseUSecRealtime)});
+  }
+  return found;
+}
+
+// The certificate nginx serves for a host name on this machine: when it
+// expires and whether it covers the name. Never leaves the loopback.
+function certificateOf(host){
+  return new Promise(resolve=>{
+    let done=false;
+    const finish=value=>{if(done)return;done=true;socket.destroy();resolve(value);};
+    const socket=tls.connect({host:'127.0.0.1',port:443,servername:host,rejectUnauthorized:false,timeout:3000},()=>{
+      const cert=socket.getPeerCertificate(),until=Date.parse(cert?.valid_to||'');
+      finish(Number.isFinite(until)?{validTo:until,matches:!tls.checkServerIdentity(host,cert)}:null);
+    });
+    socket.on('error',()=>finish(null));socket.on('timeout',()=>finish(null));
+  });
 }
 
 function releaseOf(dir){
@@ -115,6 +157,73 @@ async function dbProbe(pool,researchPool,clock){
   catch(error){return {ok:false,reason:error?.code==='PROBE_TIMEOUT'?'timeout':'unavailable',pools:{auth:poolCounts(pool),research:poolCounts(researchPool)}};}
 }
 
+// Hong Kong calendar day and month for "today" and "this month".
+function hkCalendar(t){
+  const d=new Date(t+8*HOUR),dayStart=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())-8*HOUR;
+  return {date:d.toISOString().slice(0,10),month:d.toISOString().slice(0,7),dayStart,monthStart:Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),1)-8*HOUR};
+}
+// $1 is the start of the Hong Kong day (of the month in `month`). Counts only.
+const READ_LINE=`source='client' AND activity='read' AND record->'event'->>'type'='feedback_shown' AND record->'event'->>'itemId' ~ '^p[0-9]+[.]l[0-9]+$'`;
+const DAILY_SQL={
+  today:`SELECT GROUPING(grade)=1 AS total,grade,count(DISTINCT research_id)::int AS pupils,count(*) FILTER (WHERE ${READ_LINE})::int AS readings,
+    count(*) FILTER (WHERE source='client' AND activity='chat' AND record->'event'->>'type'='feedback_shown')::int AS chats,count(*)::int AS events
+    FROM research_events WHERE received_at >= $1 GROUP BY ROLLUP(grade)`,
+  peak:`SELECT floor(extract(epoch FROM received_at)/300)::bigint*300 AS slot,count(DISTINCT research_id)::int AS pupils
+    FROM research_events WHERE received_at >= $1 GROUP BY 1 ORDER BY pupils DESC,slot DESC LIMIT 1`,
+  week:`SELECT day,count(DISTINCT research_id)::int AS pupils FROM (SELECT floor(extract(epoch FROM received_at-$1::timestamptz)/86400)::int AS day,research_id
+    FROM research_events WHERE received_at >= $1::timestamptz-interval '6 days') x GROUP BY ROLLUP(day)`,
+  providers:`SELECT record->'event'->>'operation' AS operation,count(*)::int AS n,
+    count(*) FILTER (WHERE coalesce(record->'event'->'error'->>'code','aborted')<>'aborted')::int AS failed
+    FROM research_events WHERE received_at >= $1 AND source='server_verified' AND record->'event'->>'type'='provider_result' GROUP BY 1`,
+  clients:`SELECT record->'event'->'error'->>'code' AS code,count(*)::int AS n FROM research_events
+    WHERE received_at >= $1 AND source='client' AND record->'event'->>'type'='error' AND coalesce(record->'event'->'error'->>'code','')<>'aborted' GROUP BY 1`,
+  month:`SELECT count(*)::int AS readings FROM research_events WHERE received_at >= $1 AND source='server_verified' AND record->'event'->>'type'='provider_result'
+    AND record->'event'->>'operation'='reading' AND record->'event'->'error' IS NULL`,
+  last:`SELECT (extract(epoch FROM max(received_at))*1000)::float8 AS at FROM research_events`
+};
+const USAGE_SQL={size:`SELECT (pg_database_size(current_database())/1048576)::int AS mb`,speech:`SELECT used FROM speech_input_usage WHERE actor_id='*site' AND month=$1`};
+
+async function dailyProbe(pool,t){
+  if(!pool)return {available:false,reason:'disabled'};
+  const cal=hkCalendar(t),params=[new Date(cal.dayStart).toISOString(),new Date(cal.monthStart).toISOString()];
+  let client;
+  try{
+    client=await withTimeout(pool.connect(),2000,late=>late.release());
+    await client.query('BEGIN READ ONLY');
+    await client.query("SET LOCAL statement_timeout = '4s'");
+    const rows={};
+    for(const [key,sql] of Object.entries(DAILY_SQL))rows[key]=(await client.query(sql,key==='month'?[params[1]]:sql.includes('$1')?[params[0]]:[])).rows;
+    await client.query('COMMIT');
+    const total=rows.today.find(r=>r.total)||{},peak=rows.peak[0],weekTotal=rows.week.find(r=>r.day===null);
+    const days=Array.from({length:7},(_,i)=>{const day=i-6,row=rows.week.find(r=>r.day===day);return {date:hkCalendar(cal.dayStart+day*24*HOUR).date,pupils:Number(row?.pupils)||0};});
+    const providers={},clients={};
+    for(const row of rows.providers){const operation=OPERATION_LABELS[row.operation]?row.operation:'other',into=providers[operation]||(providers[operation]={operation,label:OPERATION_LABELS[operation]||'其他',count:0,failed:0});
+      into.count+=Number(row.n)||0;into.failed+=Number(row.failed)||0;}
+    for(const row of rows.clients){const code=ERROR_CODES.includes(row.code)?row.code:'unknown',into=clients[code]||(clients[code]={code,label:CLIENT_ERROR_LABELS[code],count:0});into.count+=Number(row.n)||0;}
+    const last=Number(rows.last[0]?.at);
+    return {available:true,date:cal.date,pupils:Number(total.pupils)||0,readings:Number(total.readings)||0,chats:Number(total.chats)||0,events:Number(total.events)||0,
+      byGrade:rows.today.filter(r=>!r.total&&Number.isInteger(r.grade)&&r.grade>=1&&r.grade<=6).sort((a,b)=>a.grade-b.grade).map(r=>({grade:r.grade,pupils:Number(r.pupils)||0,readings:Number(r.readings)||0,chats:Number(r.chats)||0})),
+      peak:peak&&Number(peak.pupils)>0?{pupils:Number(peak.pupils),at:Number(peak.slot)*1000}:null,
+      week:{days,pupils:Number(weekTotal?.pupils)||0},
+      providers:Object.values(providers).sort((a,b)=>b.count-a.count),clientErrors:Object.values(clients).sort((a,b)=>b.count-a.count),
+      monthReadings:Number(rows.month[0]?.readings)||0,lastRecordAt:Number.isFinite(last)&&last>0?Math.round(last):null};
+  }catch(error){
+    if(client)await client.query('ROLLBACK').catch(()=>{});
+    return {available:false,reason:error?.code==='42P01'?'missing':error?.code==='PROBE_TIMEOUT'||error?.code==='57014'?'timeout':'unavailable'};
+  }finally{client?.release();}
+}
+async function usageProbe(pool,t){
+  if(!pool)return {available:false,reason:'unconfigured'};
+  const {month}=hkCalendar(t);
+  try{
+    const size=await withTimeout(pool.query(USAGE_SQL.size),2000);
+    // No table yet means nothing has been used.
+    const speech=await withTimeout(pool.query(USAGE_SQL.speech,[month]),2000).catch(error=>{if(error?.code==='42P01')return {rows:[]};throw error;});
+    return {available:true,dbMB:Number(size.rows[0]?.mb)||0,speech:{month,used:Number(speech.rows[0]?.used)||0,limit:SPEECH_LIMIT}};
+  }catch(error){return {available:false,reason:error?.code==='PROBE_TIMEOUT'?'timeout':'unavailable'};}
+}
+
+function rate(ok,total){const r=ok/total*100;return r===100?100:Math.floor(r*10)/10;}
 function level(...levels){return levels.includes('bad')?'bad':levels.includes('warn')?'warn':'ok';}
 function ago(ms){const s=Math.max(0,Math.round(ms/1000));return s<90?s+' 秒':s<5400?Math.round(s/60)+' 分鐘':Math.round(s/3600)+' 小時';}
 function upFor(seconds){return seconds<3600?Math.max(1,Math.round(seconds/60))+' 分鐘':seconds<172800?Math.round(seconds/3600)+' 小時':Math.round(seconds/86400)+' 天';}
@@ -173,28 +282,73 @@ function judge(p,now){
     else if(t15.s504+t15.s408>=5)sections.errors={level:'warn',text:'近 15 分鐘有 '+(t15.s504+t15.s408)+' 個請求超時。'};
     else sections.errors={level:'ok',text:t15.s5xx?'近 15 分鐘有零星錯誤（'+t15.s5xx+' 個），不影響使用。':'近 15 分鐘沒有伺服器錯誤。'};
   }
+  { // 外部服務（近 1 小時，所有帳戶）及本月額度
+    const routes=(p.traffic[60]?.routes||[]).map(r=>({...r,failed:r.s5xx+r.s408})),speech=p.usage?.available?p.usage.speech:null;
+    const worst=routes.filter(r=>r.failed>=5&&r.failed/r.count>0.1).sort((a,b)=>b.failed/b.count-a.failed/a.count)[0];
+    const total=routes.reduce((n,r)=>n+r.count,0),failed=routes.reduce((n,r)=>n+r.failed,0);
+    if(worst)sections.services={level:'warn',text:'近 1 小時'+worst.label+'失敗 '+worst.failed+' 次（'+Math.round(worst.failed/worst.count*100)+'%）。'};
+    else if(speech&&speech.used>=speech.limit)sections.services={level:'warn',text:'本月語音輸入額度已用完，學生暫時不能用語音輸入。'};
+    else if(speech&&speech.used>=speech.limit*0.9)sections.services={level:'warn',text:'本月語音輸入已用 '+speech.used+' / '+speech.limit+' 次，快用完了。'};
+    else sections.services={level:'ok',text:total?'近 1 小時成功率 '+rate(total-failed,total)+'%。':'近 1 小時沒有人使用外部服務。'};
+  }
+  { // 維護與備份
+    const u=p.upkeep,bad=[],warn=[];
+    if(u?.available){
+      for(const job of u.jobs){
+        if(job.loadState!=='loaded')continue;
+        const into=job.unit==='maanshan-backup'?bad:warn;
+        if(job.result!=='success'&&job.result!=='unknown')into.push(job.label+'上次失敗');
+        else if(!job.lastAt||now-job.lastAt>job.maxGapS*1000)into.push(job.label+(job.lastAt?'已 '+ago(now-job.lastAt)+'沒有運行':'從未運行'));
+        else if(job.timer!=='active')warn.push(job.label+'的排程已停止');
+      }
+    }
+    for(const cert of u?.certs||[]){
+      if(cert.daysLeft===null)continue;
+      if(!cert.matches||cert.daysLeft<7)bad.push(cert.label+(cert.matches?' '+cert.daysLeft+' 天後到期':'與網址不符'));
+      else if(cert.daysLeft<20)warn.push(cert.label+' '+cert.daysLeft+' 天後到期，自動續期可能失敗');
+    }
+    const days=(u?.certs||[]).map(c=>c.daysLeft).filter(d=>d!==null);
+    if(bad.length)sections.upkeep={level:'bad',text:bad.concat(warn).join('，')+'。'};
+    else if(warn.length)sections.upkeep={level:'warn',text:warn.join('，')+'。'};
+    else if(!u?.available)sections.upkeep={level:'unknown',text:'未能讀取排程狀態。'};
+    else sections.upkeep={level:'ok',text:'備份、健康檢查、恢復演練都正常'+(days.length?'，證書還有 '+Math.min(...days)+' 天':'')+'。'};
+  }
+  { // 資料（不影響整體判斷）：今日、近 7 日、近 60 分鐘、學生端問題
+    const d=p.today,unread={level:'unknown',text:'未能讀取學習紀錄。'};
+    sections.today=!d?.available?unread:{level:'info',text:d.pupils?'今天有 '+d.pupils+' 位學生用過，朗讀 '+d.readings+' 句。':'今天還沒有學生使用。'};
+    sections.week=!d?.available?unread:{level:'info',text:'7 日內共 '+d.week.pupils+' 位學生用過。'};
+    const series=p.traffic.series||[],count=series.reduce((n,m)=>n+m.count,0),failed=series.reduce((n,m)=>n+m.failed,0),busiest=Math.max(0,...series.map(m=>m.count));
+    sections.trend={level:'info',text:count?'共 '+count+' 個請求'+(failed?'，'+failed+' 個出錯':'')+'，最忙一分鐘 '+busiest+' 個。':fresh?'伺服器剛重啟，正在重新統計。':'近 60 分鐘沒有請求。'};
+    const total=d?.available?d.clientErrors.reduce((n,e)=>n+e.count,0):0;
+    sections.clients=!d?.available?unread:{level:'info',text:total?'今天共 '+total+' 次，最多是「'+d.clientErrors[0].label+'」。':'今天學生裝置沒有回報問題。'};
+  }
   const overall=level(...Object.values(sections).map(s=>s.level));
-  const NAMES={server:'廣州伺服器',hk:'香港中轉',vercel:'Vercel',db:'資料庫',latency:'學生使用',errors:'近期報錯'};
+  const NAMES={server:'廣州伺服器',hk:'香港中轉',vercel:'Vercel',db:'資料庫',latency:'學生使用',errors:'近期報錯',services:'外部服務',upkeep:'維護與備份'};
   const flagged=Object.entries(sections).filter(([,s])=>s.level===overall).map(([k])=>NAMES[k]);
   return {level:overall,text:overall==='ok'?'全部正常。':(overall==='bad'?'有問題：':'需要留意：')+flagged.join('、')+'。',sections};
 }
 
 function createSiteMonitor({now=Date.now,clock=()=>performance.now(),uptime=()=>process.uptime(),memory=()=>process.memoryUsage(),
   loadavg=()=>os.loadavg(),system=()=>({cpus:os.cpus().length,totalMB:Math.round(os.totalmem()/1048576),availableMB:Math.round(os.freemem()/1048576)}),
-  release=defaultRelease,disk=defaultDisk,systemctl=systemctlShow,authPool=defaultAuthPool,researchPool=defaultResearch,metrics=ops}={}){
+  release=defaultRelease,disk=defaultDisk,systemctl=systemctlShow,jobs=systemctlJobs,certificate=certificateOf,authPool=defaultAuthPool,researchPool=defaultResearch,metrics=ops}={}){
   const cache=new Map();
-  // Slow probes are shared for 10 s; an older answer (under a minute) is
-  // returned at once while a single refresh runs in the background.
-  function cached(key,load){
+  // Slow probes are shared for 10 s (daily figures for a minute, schedules and
+  // certificates for longer); an older answer is returned at once while a
+  // single refresh runs in the background.
+  function cached(key,load,ttl=CACHE_MS){
     const entry=cache.get(key),t=now();
-    if(entry?.value&&t-entry.at<CACHE_MS)return entry.value;
+    if(entry?.value&&t-entry.at<ttl)return entry.value;
     if(!entry?.pending){
       const pending=Promise.resolve().then(load).then(value=>{cache.set(key,{value,at:now()});return value;},error=>{cache.set(key,{...cache.get(key),pending:null});throw error;});
       cache.set(key,{...entry,pending});pending.catch(()=>{});
     }
     const current=cache.get(key);
-    return current.value&&t-current.at<STALE_MS?current.value:current.pending;
+    return current.value&&t-current.at<ttl+STALE_MS-CACHE_MS?current.value:current.pending;
   }
+  // The research pool also takes pupils' uploads: the monitor holds at most
+  // one of its connections at a time.
+  let queue=Promise.resolve();
+  function serial(task){const run=queue.then(task,task);queue=run.catch(()=>{});return run;}
   async function host(){
     const [units,diskFreePct]=await Promise.all([systemctl(UNITS.map(u=>u[0])).then(text=>{const units=parseUnits(text);return Object.keys(units).length?units:null;}).catch(()=>null),Promise.resolve().then(disk).catch(()=>null)]);
     return {units,diskFreePct:Number.isFinite(diskFreePct)?diskFreePct:null,checkedAt:now()};
@@ -203,11 +357,32 @@ function createSiteMonitor({now=Date.now,clock=()=>performance.now(),uptime=()=>
     let pool=null,rPool=null;
     try{pool=authPool();}catch{}
     try{rPool=researchPool();}catch{}
-    const [db,students]=await Promise.all([dbProbe(pool,rPool,clock),withTimeout(studentProbe(rPool),4000).catch(()=>({available:false,reason:'timeout'}))]);
+    const [db,students]=await Promise.all([dbProbe(pool,rPool,clock),withTimeout(serial(()=>studentProbe(rPool)),4000).catch(()=>({available:false,reason:'timeout'}))]);
     return {db:{...db,checkedAt:now()},students:{...students,checkedAt:now()}};
   }
+  async function daily(){
+    let pool=null,rPool=null;
+    try{pool=authPool();}catch{}
+    try{rPool=researchPool();}catch{}
+    const t=now(),[today,usage]=await Promise.all([withTimeout(serial(()=>dailyProbe(rPool,t)),8000).catch(()=>({available:false,reason:'timeout'})),
+      withTimeout(usageProbe(pool,t),5000).catch(()=>({available:false,reason:'timeout'}))]);
+    return {today:{...today,checkedAt:now()},usage:{...usage,checkedAt:now()}};
+  }
+  async function upkeep(){
+    const found=await withTimeout(Promise.resolve().then(()=>jobs(JOBS.map(j=>j[0]))),4000).then(parseJobs).catch(()=>null);
+    const available=!!found&&Object.keys(found).length>0;
+    return {available,jobs:JOBS.map(([unit,label,gap])=>{const j=available?found[unit]:null;
+      return {unit,label,loadState:j?.loadState||'unknown',running:j?.state==='activating',result:j?.result||'unknown',lastAt:j?.lastAt??j?.finishedAt??null,
+        finishedAt:j?.finishedAt??null,nextAt:j?.nextAt??null,timer:j?.timer||'unknown',maxGapS:gap/1000};}),checkedAt:now()};
+  }
+  async function certificates(){
+    const t=now();
+    return Promise.all(CERTS.map(async([host,label])=>{const cert=await withTimeout(Promise.resolve().then(()=>certificate(host)),5000).catch(()=>null);
+      return {host,label,daysLeft:cert?Math.floor((cert.validTo-t)/86400000):null,matches:cert?cert.matches===true:null,validTo:cert?new Date(cert.validTo).toISOString():null};}));
+  }
   async function collect(){
-    const t=now(),[hostInfo,data]=await Promise.all([cached('host',host),cached('db',database)]),snap=metrics.snapshot(t),mem=memory();
+    const t=now(),[hostInfo,data,day,jobInfo,certs]=await Promise.all([cached('host',host),cached('db',database),cached('daily',daily,DAILY_MS),cached('upkeep',upkeep,UPKEEP_MS),cached('certs',certificates,CERT_MS)]);
+    const snap=metrics.snapshot(t),mem=memory();
     const uptimeS=Math.round(uptime()),sys=system();
     const units=hostInfo.units?UNITS.map(([unit,label])=>({unit,label,...(hostInfo.units[unit]||{loadState:'not-found',activeState:'unknown',subState:'unknown',restarts:null,activeSince:null})})):[];
     const origin={uptimeS,release:release(),rssMB:Math.round(mem.rss/1048576),heapMB:Math.round(mem.heapUsed/1048576),memoryLimitMB:MEMORY_LIMIT_MB,
@@ -223,11 +398,13 @@ function createSiteMonitor({now=Date.now,clock=()=>performance.now(),uptime=()=>
     const vercel={hkg1:{lastAt:snap.heartbeat.hkg1,ageS:snap.heartbeat.hkg1?Math.round((t-snap.heartbeat.hkg1)/1000):null},
       iad1:{lastAt:snap.heartbeat.iad1,ageS:snap.heartbeat.iad1?Math.round((t-snap.heartbeat.iad1)/1000):null}};
     const traffic={};
-    for(const minutes of [5,15]){const w=snap.windows[minutes];
+    for(const minutes of [5,15,60]){const w=snap.windows[minutes];
       traffic[minutes]={totals:w.totals,routes:ops.STUDENT_ROUTES.map(route=>{const r=w.routes[route]||{};
         return {route,label:ROUTE_LABELS[route],count:r.count||0,p50Ms:r.p50Ms??null,p95Ms:r.p95Ms??null,s5xx:r.s5xx||0,s504:r.s504||0,s408:r.s408||0};})};}
     traffic.recentErrors=snap.errors.map(e=>({at:e.at,route:e.route,label:ROUTE_LABELS[e.route]||'其他',status:e.status}));
-    const payload={ok:true,schemaVersion:1,generatedAt:new Date(t).toISOString(),origin,db:data.db,hk,vercel,traffic,students:data.students};
+    traffic.series=(snap.series||[]).map(m=>({at:m.at,count:m.count,failed:m.failed}));
+    const payload={ok:true,schemaVersion:1,generatedAt:new Date(t).toISOString(),origin,db:data.db,hk,vercel,traffic,students:data.students,
+      today:day.today,usage:day.usage,upkeep:{...jobInfo,certs}};
     payload.verdict=judge(payload,t);
     return payload;
   }
@@ -246,4 +423,4 @@ function createSiteMonitor({now=Date.now,clock=()=>performance.now(),uptime=()=>
 }
 
 module.exports=createSiteMonitor();
-Object.assign(module.exports,{createSiteMonitor,parseUnits,releaseOf,judge,UNITS,STUDENT_SQL});
+Object.assign(module.exports,{createSiteMonitor,parseUnits,parseJobs,releaseOf,judge,hkCalendar,UNITS,JOBS,STUDENT_SQL,DAILY_SQL,USAGE_SQL,SPEECH_LIMIT});

@@ -141,19 +141,47 @@ function unitText(units,override={}){
   return units.map(unit=>{const u={LoadState:'loaded',ActiveState:'active',SubState:'running',NRestarts:'0',ActiveEnterTimestamp:'Thu 2026-10-09 01:00:00 UTC',...override[unit]};
     return ['Id='+unit+'.service',...Object.entries(u).map(([k,v])=>k+'='+v)].join('\n');}).join('\n\n')+'\n';
 }
-function fakes({units={},systemctl,authPool,researchPool,rows={},uptimeS=5*3600,rssMB=200}={}){
-  const log={systemctl:0,sql:[],released:0};
-  const client={async query(sql){log.sql.push(sql);
+// systemctl show for every job's service and timer; health checks run on a
+// monotonic timer, so they never report a wall-clock next run.
+function jobText(override={}){
+  return monitor.JOBS.flatMap(([unit])=>{const o=override[unit]||{};
+    return [['Id='+unit+'.service','LoadState='+(o.load||'loaded'),'ActiveState='+(o.state||'inactive'),'Result='+(o.result||'success'),'ExecMainExitTimestamp='+(o.finished??'Fri 2026-10-09 02:46:00 UTC')].join('\n'),
+      ['Id='+unit+'.timer','LoadState='+(o.timerLoad||'loaded'),'ActiveState='+(o.timer||'active'),'Result=success','LastTriggerUSec='+(o.last??'Fri 2026-10-09 02:45:00 UTC'),
+        'NextElapseUSecRealtime='+(o.next??(unit==='maanshan-health-check'?'':'Sat 2026-10-10 02:15:00 UTC'))].join('\n')];}).join('\n\n')+'\n';
+}
+const DAY=86400000;
+const DAILY_ROWS={
+  today:[{total:false,grade:1,pupils:12,readings:100,chats:20,events:300},{total:false,grade:2,pupils:8,readings:50,chats:5,events:150},
+    {total:false,grade:null,pupils:1,readings:0,chats:0,events:3},{total:true,grade:null,pupils:21,readings:150,chats:25,events:453}],
+  peak:[{slot:String((T-3600000)/1000),pupils:6}],
+  week:[{day:-6,pupils:3},{day:0,pupils:21},{day:null,pupils:30}],
+  providers:[{operation:'reading',n:150,failed:2},{operation:'chat',n:25,failed:0},{operation:'r_secret',n:1,failed:1}],
+  clients:[{code:'network',n:4},{code:'<script>',n:1}],
+  month:[{readings:1300}],
+  last:[{at:T-42000}]
+};
+const dailyKey=sql=>Object.entries(monitor.DAILY_SQL).find(([,v])=>v===sql)?.[0];
+// Postgres refuses a statement whose parameters do not match its placeholders.
+const placeholders=(sql,params=[])=>assert.equal(params.length,Math.max(0,...[...sql.matchAll(/\$(\d+)/g)].map(m=>Number(m[1]))),'parameters for '+sql.slice(0,40));
+function fakes({units={},systemctl,jobs,certificate,authPool,researchPool,rows={},usage={},uptimeS=5*3600,rssMB=200,now=()=>T}={}){
+  const log={systemctl:0,jobs:0,certs:0,sql:[],params:{},released:0};
+  const client={async query(sql,params){log.sql.push(sql);placeholders(sql,params);const key=dailyKey(sql);if(key)log.params[key]=params;
       if(rows.fail&&sql===rows.fail.sql)throw Object.assign(new Error('x'),{code:rows.fail.code});
       if(sql===monitor.STUDENT_SQL.active)return {rows:[rows.active||{active5:3,active60:41}]};
       if(sql===monitor.STUDENT_SQL.errors)return {rows:rows.errors||[]};
       if(sql===monitor.STUDENT_SQL.latency)return {rows:rows.latency||[]};
+      if(key)return {rows:(rows.daily||DAILY_ROWS)[key]};
       return {rows:[]};},release(){log.released++;}};
   let tick=0;
-  const options={now:()=>T,clock:()=>(tick+=7),uptime:()=>uptimeS,memory:()=>({rss:rssMB*MB,heapUsed:80*MB}),loadavg:()=>[0.123,0.2,0.3],
+  const options={now,clock:()=>(tick+=7),uptime:()=>uptimeS,memory:()=>({rss:rssMB*MB,heapUsed:80*MB}),loadavg:()=>[0.123,0.2,0.3],
     system:()=>({cpus:2,totalMB:3900,availableMB:2100}),release:()=>({commit:'abc1234',builtAt:'2026-10-09T01:00:00.000Z'}),disk:()=>42.5,
     systemctl:systemctl||(async list=>{log.systemctl++;return unitText(list,units);}),
-    authPool:authPool===undefined?()=>({totalCount:3,idleCount:2,waitingCount:0,query:async()=>({rows:[{'?column?':1}]})}):authPool,
+    jobs:jobs||(async list=>{log.jobs++;assert.deepEqual(list,monitor.JOBS.map(j=>j[0]));return jobText();}),
+    certificate:certificate||(async host=>{log.certs++;return {validTo:T+70*DAY+3600000,matches:true};}),
+    authPool:authPool===undefined?()=>({totalCount:3,idleCount:2,waitingCount:0,query:async(sql,params)=>{placeholders(sql,params);
+      if(sql===monitor.USAGE_SQL.size)return {rows:[{mb:usage.mb??145}]};
+      if(sql===monitor.USAGE_SQL.speech){if(usage.speechError)throw Object.assign(new Error('x'),{code:usage.speechError});log.params.speech=params;return {rows:usage.used===undefined?[{used:19}]:usage.used===null?[]:[{used:usage.used}]};}
+      return {rows:[{'?column?':1}]};}}):authPool,
     researchPool:researchPool===undefined?()=>({totalCount:2,idleCount:2,waitingCount:0,connect:async()=>client}):researchPool,metrics:ops};
   return {monitor:monitor.createSiteMonitor(options),log};
 }
@@ -169,7 +197,7 @@ test('payload shape: aggregates from injected systemd, database and traffic fake
       {server:true,code:'timeout',operation:'reading',n15:1,n60:3},{server:true,code:'provider_unavailable',operation:'r_secret',n15:0,n60:1}],
     latency:[{kind:'reading',n:12,p50:2310.4,p95:6100.6}]}});
   const p=await m.collect();
-  assert.deepEqual(Object.keys(p),['ok','schemaVersion','generatedAt','origin','db','hk','vercel','traffic','students','verdict']);
+  assert.deepEqual(Object.keys(p),['ok','schemaVersion','generatedAt','origin','db','hk','vercel','traffic','students','today','usage','upkeep','verdict']);
   assert.equal(p.generatedAt,'2026-10-09T03:00:00.000Z');
   assert.equal(p.origin.unitsAvailable,true);assert.equal(p.origin.units.length,8);
   assert(p.origin.units.every(u=>u.activeState==='active'&&u.label&&Number.isFinite(u.activeSince)));
@@ -187,14 +215,114 @@ test('payload shape: aggregates from injected systemd, database and traffic fake
   assert.deepEqual(p.students.clientErrors,{network:{n15:2,n60:6},unknown:{n15:1,n60:1}});
   assert.deepEqual(p.students.providerErrors,[{operation:'reading',code:'timeout',n15:1,n60:3},{operation:'other',code:'provider_unavailable',n15:0,n60:1}]);
   assert.deepEqual(p.students.latency,[{kind:'reading',label:'朗讀評分',count:12,p50Ms:2310,p95Ms:6101},{kind:'report',label:'朗讀報告',count:0,p50Ms:null,p95Ms:null},{kind:'chat',label:'對話',count:0,p50Ms:null,p95Ms:null}]);
-  assert.deepEqual(log.sql,['BEGIN READ ONLY',"SET LOCAL statement_timeout = '3s'",monitor.STUDENT_SQL.active,monitor.STUDENT_SQL.errors,monitor.STUDENT_SQL.latency,'COMMIT']);
-  assert.equal(log.released,1);
+  assert.deepEqual(log.sql,['BEGIN READ ONLY',"SET LOCAL statement_timeout = '3s'",monitor.STUDENT_SQL.active,monitor.STUDENT_SQL.errors,monitor.STUDENT_SQL.latency,'COMMIT',
+    'BEGIN READ ONLY',"SET LOCAL statement_timeout = '4s'",...Object.values(monitor.DAILY_SQL),'COMMIT']);
+  assert.equal(log.released,2);
+  assert.deepEqual(log.params,{today:['2026-10-08T16:00:00.000Z'],peak:['2026-10-08T16:00:00.000Z'],week:['2026-10-08T16:00:00.000Z'],providers:['2026-10-08T16:00:00.000Z'],
+    clients:['2026-10-08T16:00:00.000Z'],month:['2026-09-30T16:00:00.000Z'],last:[],speech:['2026-10']},'Hong Kong day and month');
+  assert.deepEqual(p.today,{available:true,date:'2026-10-09',pupils:21,readings:150,chats:25,events:453,
+    byGrade:[{grade:1,pupils:12,readings:100,chats:20},{grade:2,pupils:8,readings:50,chats:5}],peak:{pupils:6,at:T-3600000},
+    week:{days:['2026-10-03','2026-10-04','2026-10-05','2026-10-06','2026-10-07','2026-10-08','2026-10-09'].map((date,i)=>({date,pupils:i===0?3:i===6?21:0})),pupils:30},
+    providers:[{operation:'reading',label:'朗讀評分',count:150,failed:2},{operation:'chat',label:'對話',count:25,failed:0},{operation:'other',label:'其他',count:1,failed:1}],
+    clientErrors:[{code:'network',label:'網絡中斷',count:4},{code:'unknown',label:'其他',count:1}],monthReadings:1300,lastRecordAt:T-42000,checkedAt:T});
+  assert.deepEqual(p.usage,{available:true,dbMB:145,speech:{month:'2026-10',used:19,limit:4800},checkedAt:T});
+  assert.equal(p.upkeep.available,true);assert.equal(p.upkeep.checkedAt,T);
+  assert.deepEqual(p.upkeep.jobs[0],{unit:'maanshan-backup',label:'每日備份',loadState:'loaded',running:false,result:'success',lastAt:Date.UTC(2026,9,9,2,45),
+    finishedAt:Date.UTC(2026,9,9,2,46),nextAt:Date.UTC(2026,9,10,2,15),timer:'active',maxGapS:30*3600});
+  assert.equal(p.upkeep.jobs[1].nextAt,null,'monotonic timer');
+  assert.deepEqual(p.upkeep.certs,[{host:'mandarin.aiducation.asia',label:'學生平台證書',daysLeft:70,matches:true,validTo:new Date(T+70*DAY+3600000).toISOString()},
+    {host:'aiducation.hk.cn',label:'展示版證書',daysLeft:70,matches:true,validTo:new Date(T+70*DAY+3600000).toISOString()}]);
+  assert.equal(p.traffic.series.length,60);assert.deepEqual(p.traffic.series.at(-2),{at:Math.floor(T/60000)*60000-60000,count:4,failed:0});
+  assert.deepEqual(p.traffic[60].routes[0],{route:'soe',label:'朗讀評分',count:4,p50Ms:2750,p95Ms:3425,s5xx:0,s504:0,s408:0});
   assert.equal(p.verdict.level,'ok');assert.equal(p.verdict.text,'全部正常。');
-  assert.deepEqual(Object.keys(p.verdict.sections),['server','hk','vercel','db','latency','errors']);
+  assert.deepEqual(Object.keys(p.verdict.sections),['server','hk','vercel','db','latency','errors','services','upkeep','today','week','trend','clients']);
+  assert.deepEqual(p.verdict.sections.services,{level:'ok',text:'近 1 小時成功率 100%。'});
+  assert.deepEqual(p.verdict.sections.upkeep,{level:'ok',text:'備份、健康檢查、恢復演練都正常，證書還有 70 天。'});
+  assert.deepEqual(p.verdict.sections.today,{level:'info',text:'今天有 21 位學生用過，朗讀 150 句。'});
+  assert.deepEqual(p.verdict.sections.trend,{level:'info',text:'共 4 個請求，最忙一分鐘 4 個。'});
+  assert.deepEqual(p.verdict.sections.clients,{level:'info',text:'今天共 5 次，最多是「網絡中斷」。'});
   const text=JSON.stringify(p);
   for(const leak of ['<script>','r_secret','vercel-cron','research_id','jasper'])assert(!text.includes(leak),leak);
   assert(!/\b\d{1,3}(\.\d{1,3}){3}\b/.test(text),'no addresses');
   await m.collect();assert.equal(log.systemctl,1,'host probe is shared for 10 seconds');
+  assert.deepEqual([log.jobs,log.certs],[1,2]);
+});
+
+test('daily figures are kept for a minute, schedules for five; an older answer is served while one refresh runs',async()=>{
+  let t=T;const {monitor:m,log}=fakes({now:()=>t}),today=()=>log.sql.filter(sql=>sql===monitor.DAILY_SQL.today).length;
+  await m.collect();t=T+30000;await m.collect();
+  assert.deepEqual([today(),log.jobs,log.systemctl],[1,1,2]);
+  t=T+61000;const p=await m.collect();assert.equal(p.today.checkedAt,T,'stale answer at once');
+  for(let i=0;i<5;i++)await new Promise(r=>setImmediate(r));
+  assert.equal(today(),2);assert.equal(log.jobs,1);
+  t=T+5*60000+1000;await m.collect();for(let i=0;i<5;i++)await new Promise(r=>setImmediate(r));
+  assert.equal(log.jobs,2);assert.equal(log.certs,2,'certificates every ten minutes');
+});
+
+test('the monitor never holds two research connections at once',async()=>{
+  let open=0,most=0,connects=0;
+  const client={async query(sql){await new Promise(r=>setTimeout(r,2));
+      if(sql===monitor.STUDENT_SQL.active)return {rows:[{active5:0,active60:0}]};
+      const key=dailyKey(sql);return {rows:key?DAILY_ROWS[key]:[]};},release(){open--;}};
+  const {monitor:m}=fakes({researchPool:()=>({totalCount:1,idleCount:1,waitingCount:0,connect:async()=>{connects++;open++;most=Math.max(most,open);return client;}})});
+  const p=await m.collect();
+  assert.equal(connects,2);assert.equal(most,1);assert.equal(open,0);
+  assert.equal(p.students.available,true);assert.equal(p.today.available,true);
+});
+
+test('daily, usage, schedule and certificate probes degrade without failing the request',async()=>{
+  healthyTraffic();
+  let f=fakes({rows:{fail:{sql:monitor.DAILY_SQL.peak,code:'57014'}}}),p=await f.monitor.collect();
+  assert.deepEqual({available:p.today.available,reason:p.today.reason},{available:false,reason:'timeout'});
+  assert.equal(f.log.sql.at(-1),'ROLLBACK');assert.equal(f.log.released,2);
+  assert.equal(p.verdict.sections.today.level,'unknown');assert.equal(p.verdict.sections.clients.level,'unknown');assert.equal(p.verdict.level,'ok');
+  p=await fakes({researchPool:null}).monitor.collect();assert.deepEqual({available:p.today.available,reason:p.today.reason},{available:false,reason:'disabled'});
+  p=await fakes({usage:{speechError:'42P01'}}).monitor.collect();assert.deepEqual(p.usage.speech,{month:'2026-10',used:0,limit:4800},'no table yet');
+  p=await fakes({usage:{used:null}}).monitor.collect();assert.equal(p.usage.speech.used,0,'no row this month');
+  p=await fakes({usage:{speechError:'ECONNRESET'}}).monitor.collect();assert.deepEqual({available:p.usage.available,reason:p.usage.reason},{available:false,reason:'unavailable'});
+  p=await fakes({authPool:null}).monitor.collect();assert.equal(p.usage.reason,'unconfigured');
+  for(const jobs of [async()=>{throw new Error('ENOENT');},async()=>''])
+  {
+    p=await fakes({jobs,certificate:async()=>null}).monitor.collect();
+    assert.equal(p.upkeep.available,false);assert(p.upkeep.jobs.every(j=>j.loadState==='unknown'&&j.lastAt===null));
+    assert(p.upkeep.certs.every(c=>c.daysLeft===null&&c.matches===null&&c.validTo===null));
+    assert.deepEqual(p.verdict.sections.upkeep,{level:'unknown',text:'未能讀取排程狀態。'});assert.equal(p.verdict.level,'ok');
+  }
+  p=await fakes({certificate:async()=>{throw new Error('ECONNREFUSED 10.0.0.1');}}).monitor.collect();
+  assert(p.upkeep.certs.every(c=>c.daysLeft===null));assert.equal(p.verdict.sections.upkeep.level,'ok');assert(!JSON.stringify(p).includes('10.0.0.1'));
+});
+
+test('ops metrics: one entry per minute for the last hour, failures counted, heartbeats left out',()=>{
+  const N=T+30000;
+  ops.record({route:'soe',method:'POST',status:200,totalMs:900,now:N-1000});
+  ops.record({route:'soe',method:'POST',status:502,totalMs:900,now:N-1500});
+  ops.record({route:'school-recordings',method:'POST',status:408,totalMs:900,now:N-5*60000});
+  ops.record({route:'school-auth',method:'POST',status:401,now:N-5*60000});
+  ops.record({route:'school-auth',method:'GET',status:200,relay:'gz:3100',userAgent:CRON,now:N-2000});
+  ops.record({route:'soe',method:'POST',status:200,totalMs:900,now:N-60*60000});
+  const series=ops.snapshot(N).series,minute=Math.floor(N/60000)*60000;
+  assert.equal(series.length,60);assert.equal(series[0].at,minute-59*60000);assert.equal(series.at(-1).at,minute);
+  assert.deepEqual(series.at(-1),{at:minute,count:2,failed:1});
+  assert.deepEqual(series.at(-6),{at:minute-5*60000,count:2,failed:1});
+  assert.equal(series.reduce((n,m)=>n+m.count,0),4,'an hour ago and the heartbeat are not counted');
+});
+
+test('systemctl show output for jobs and the Hong Kong calendar are parsed strictly',()=>{
+  const jobs=monitor.parseJobs(jobText({'maanshan-backup':{state:'activating',result:'exit-code'},'maanshan-health-restore':{timerLoad:'not-found',last:'n/a'},
+    certbot:{result:'<b>',finished:'n/a',timer:'inactive; rm'}}).replace(/\n/g,'\r\n'));
+  assert.deepEqual(jobs['maanshan-backup'],{loadState:'loaded',state:'activating',result:'exit-code',finishedAt:Date.UTC(2026,9,9,2,46),timer:'active',lastAt:Date.UTC(2026,9,9,2,45),nextAt:Date.UTC(2026,9,10,2,15)});
+  assert.equal(jobs['maanshan-health-check'].nextAt,null);
+  assert.deepEqual([jobs['maanshan-health-restore'].timer,jobs['maanshan-health-restore'].lastAt],['missing',null]);
+  assert.deepEqual([jobs.certbot.result,jobs.certbot.finishedAt,jobs.certbot.timer],['unknown',null,'unknown']);
+  assert.deepEqual(monitor.parseJobs('Id=x.socket\nLoadState=loaded\n'),{});assert.deepEqual(monitor.parseJobs(''),{});
+  assert.deepEqual(monitor.hkCalendar(T),{date:'2026-10-09',month:'2026-10',dayStart:Date.parse('2026-10-08T16:00:00Z'),monthStart:Date.parse('2026-09-30T16:00:00Z')});
+  assert.deepEqual(monitor.hkCalendar(Date.parse('2026-10-31T16:00:00Z')),{date:'2026-11-01',month:'2026-11',dayStart:Date.parse('2026-10-31T16:00:00Z'),monthStart:Date.parse('2026-10-31T16:00:00Z')});
+  assert.equal(monitor.hkCalendar(Date.parse('2026-10-31T15:59:59Z')).month,'2026-10');
+});
+
+test('the speech input limit shown matches the one the route enforces',()=>{
+  const source=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','api','speech-to-text.js'),'utf8');
+  assert.equal(Number(/MONTHLY_SITE_LIMIT\s*=\s*(\d+)/.exec(source)?.[1]),monitor.SPEECH_LIMIT);
 });
 
 test('missing probes degrade to unknown or unavailable instead of failing the request',async()=>{
@@ -209,7 +337,8 @@ test('missing probes degrade to unknown or unavailable instead of failing the re
   assert.deepEqual({available:p.students.available,reason:p.students.reason},{available:false,reason:'disabled'});
   const f=fakes({rows:{fail:{sql:monitor.STUDENT_SQL.errors,code:'42P01'}}});
   p=await f.monitor.collect();
-  assert.equal(p.students.reason,'missing');assert.equal(f.log.sql.at(-1),'ROLLBACK');assert.equal(f.log.released,1);
+  assert.equal(p.students.reason,'missing');assert.equal(f.log.released,2);
+  assert.deepEqual(f.log.sql.slice(0,5),['BEGIN READ ONLY',"SET LOCAL statement_timeout = '3s'",monitor.STUDENT_SQL.active,monitor.STUDENT_SQL.errors,'ROLLBACK']);
   p=await fakes({authPool:()=>({totalCount:1,idleCount:0,waitingCount:0,query:async()=>{throw new Error('ECONNREFUSED 10.0.0.1');}})}).monitor.collect();
   assert.deepEqual({ok:p.db.ok,reason:p.db.reason},{ok:false,reason:'unavailable'});assert(!JSON.stringify(p).includes('10.0.0.1'));
   p=await fakes({units:{'maanshan-hk-tunnel@3101':{ActiveState:'failed',SubState:'failed',NRestarts:'12'}}}).monitor.collect();
@@ -242,4 +371,33 @@ test('verdict rules: each section raises only what needs attention',async()=>{
   p=clone();p.students.clientErrors={network:{n15:3,n60:3},timeout:{n15:2,n60:2}};assert.equal(judge(p).sections.errors.level,'warn');
   p=clone();p.students.providerErrors=[{operation:'reading',code:'provider_unavailable',n15:6,n60:6}];assert.match(judge(p).sections.errors.text,/朗讀評分服務失敗 6 次/);
   p=clone();Object.assign(p.traffic[15].totals,{s504:3,s408:2});assert.equal(judge(p).sections.errors.level,'warn');
+});
+
+test('verdict rules for services and upkeep; the figures sections never change the overall level',async()=>{
+  healthyTraffic();
+  const base=await fakes().monitor.collect(),clone=()=>structuredClone(base),judge=p=>monitor.judge(p,T);
+  let p=clone();Object.assign(p.traffic[60].routes[0],{count:20,s5xx:5,s408:1});let v=judge(p);
+  assert.deepEqual(v.sections.services,{level:'warn',text:'近 1 小時朗讀評分失敗 6 次（30%）。'});assert.match(v.text,/^需要留意：外部服務/);
+  p=clone();Object.assign(p.traffic[60].routes[0],{count:200,s5xx:5});assert.deepEqual(judge(p).sections.services,{level:'ok',text:'近 1 小時成功率 97.5%。'},'5 of 200 is not worth a warning');
+  p=clone();Object.assign(p.traffic[60].routes[0],{count:2000,s5xx:1});assert.match(judge(p).sections.services.text,/成功率 99\.9%/,'never rounded up to 100');
+  p=clone();p.traffic[60].routes.forEach(r=>{r.count=0;});assert.equal(judge(p).sections.services.text,'近 1 小時沒有人使用外部服務。');
+  p=clone();p.usage.speech.used=4800;assert.match(judge(p).sections.services.text,/額度已用完/);
+  p=clone();p.usage.speech.used=4400;assert.deepEqual(judge(p).sections.services,{level:'warn',text:'本月語音輸入已用 4400 / 4800 次，快用完了。'});
+  p=clone();p.upkeep.jobs[0].result='exit-code';v=judge(p);assert.deepEqual(v.sections.upkeep,{level:'bad',text:'每日備份上次失敗。'});assert.match(v.text,/^有問題：維護與備份/);
+  p=clone();p.upkeep.jobs[0].lastAt=T-31*3600000;assert.deepEqual(judge(p).sections.upkeep,{level:'bad',text:'每日備份已 31 小時沒有運行。'});
+  p=clone();p.upkeep.jobs[1].result='exit-code';assert.deepEqual(judge(p).sections.upkeep,{level:'warn',text:'健康檢查上次失敗。'});
+  p=clone();p.upkeep.jobs[2].lastAt=null;assert.deepEqual(judge(p).sections.upkeep,{level:'warn',text:'恢復演練從未運行。'});
+  p=clone();p.upkeep.jobs[3].timer='inactive';assert.deepEqual(judge(p).sections.upkeep,{level:'warn',text:'證書續期的排程已停止。'});
+  p=clone();p.upkeep.jobs[3].loadState='not-found';p.upkeep.jobs[3].lastAt=null;assert.equal(judge(p).sections.upkeep.level,'ok','a job that is not installed is skipped');
+  p=clone();p.upkeep.certs[1].daysLeft=15;assert.deepEqual(judge(p).sections.upkeep,{level:'warn',text:'展示版證書 15 天後到期，自動續期可能失敗。'});
+  p=clone();p.upkeep.certs[0].daysLeft=5;assert.deepEqual(judge(p).sections.upkeep,{level:'bad',text:'學生平台證書 5 天後到期。'});
+  p=clone();p.upkeep.certs[0].matches=false;p.upkeep.certs[1].daysLeft=15;
+  assert.deepEqual(judge(p).sections.upkeep,{level:'bad',text:'學生平台證書與網址不符，展示版證書 15 天後到期，自動續期可能失敗。'});
+  p=clone();p.today={available:false,reason:'timeout'};p.traffic.series=[];v=judge(p);
+  assert.deepEqual([v.sections.today.level,v.sections.week.level,v.sections.clients.level,v.sections.trend.text],['unknown','unknown','unknown','近 60 分鐘沒有請求。']);
+  assert.equal(v.level,'ok');assert.equal(v.text,'全部正常。');
+  p=clone();p.origin.uptimeS=30;p.traffic.series=[];assert.equal(judge(p).sections.trend.text,'伺服器剛重啟，正在重新統計。');
+  p=clone();p.today.pupils=0;p.today.clientErrors=[];v=judge(p);assert.equal(v.sections.today.text,'今天還沒有學生使用。');assert.equal(v.sections.clients.text,'今天學生裝置沒有回報問題。');
+  p=clone();delete p.today;delete p.usage;delete p.upkeep;delete p.traffic[60];delete p.traffic.series;v=judge(p);
+  assert.equal(v.level,'ok','an older payload without the new fields still judges');
 });
