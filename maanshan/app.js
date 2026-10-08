@@ -19,14 +19,14 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
 import {requestJSON, requestChat} from './network.mjs?v=20261008-school49';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
-import {schoolSession} from './bootstrap.mjs?v=20261008-school51';
+import {schoolSession} from './bootstrap.mjs?v=20261009-school52';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261008-school48';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school22';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school41';
 import {getPoetSuggestions, matchPoetPreset} from './poet-presets.mjs?v=20261005-school40';
 import {audioCandidates} from './audio-source.mjs?v=20261005-school40';
 import {rememberRoute,orderRoutes} from './media-route.mjs?v=20260923-school23';
-import {packState, onPackChange, resumeResourcePack, requestResourcePack, cancelResourcePack} from './resource-pack.mjs?v=20261007-school46';
+import {packView, onPackChange, resumeResourcePack, togglePack} from './resource-pack.mjs?v=20261009-school52';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -41,8 +41,6 @@ const accountSuffix = school.enabled ? ':' + school.user.id : '';
 const isTeacher = school.enabled && school.user?.role === 'teacher';
 const allGrades = school.enabled && (isTeacher || school.user?.learningScope === 'all-grades');
 const collectResearch = school.enabled && !isTeacher && school.user?.researchEnabled !== false;
-// The resource pack follows the library: an own-grade pupil downloads that grade's poem and the shared files only.
-resumeResourcePack({scope: school.enabled && !allGrades ? {grades: [Number(school.user?.grade)]} : null});
 const learningEpoch = isTeacher ? (school.learningEpoch || 'initial') : school.enabled && /^[a-f0-9]{32}$/.test(school.learningEpoch || '') ? school.learningEpoch : null;
 // Student resets select a fresh namespace. Keep all old progress and unsent
 // queues on the device, rather than erasing or replaying them into this batch.
@@ -440,46 +438,76 @@ function verseHTML(line,extra='') {
   const contents=clauses.map(clause=>Array.from(clause).map(c=>/\p{Script=Han}/u.test(c)?`<ruby>${esc(c)}<rt>${esc(line.pinyin[index++])}</rt></ruby>`:`<span class="punct">${esc(c)}</span>`).join(''));
   return `<div class="verse ${extra}${contents.length>1?' verse-compound':''}" aria-label="${esc(line.text+(line.punctuation||''))}">${contents.length>1?contents.map(part=>'<span class="verse-clause">'+part+'</span>').join(''):contents.join('')}</div>`;
 }
+const GRADE_NAMES=['','一','二','三','四','五','六'];
+// Teachers can narrow the library to one grade (0: every grade); the order stays the catalogue's.
+let gradeFilter=0;
+const libraryPoems=()=>gradeFilter?poems.filter(p=>p.grade===gradeFilter):poems;
+function gradeFilterHTML(){
+  const grades=[...new Set(poems.map(p=>p.grade))].sort((a,b)=>a-b);
+  if(!isTeacher||grades.length<2)return '';
+  return '<select class="pack-filter" aria-label="按年級篩選古詩"><option value="0">全部年級</option>'+grades.map(g=>'<option value="'+g+'"'+(g===gradeFilter?' selected':'')+'>'+GRADE_NAMES[g]+'年級</option>').join('')+'</select>';
+}
 function renderLibrary() {
   poem=null;document.title='AI普通話學習平台';
+  if(!poems.some(p=>p.grade===gradeFilter))gradeFilter=0;
   app.innerHTML='<main class="library" id="main">'+
-    '<div class="library-heading library-with-shishi"><div><h1><span class="library-title-start">AI普通話</span><span class="library-title-end">學習平台</span></h1><button type="button" class="pack-button" data-action="pack" hidden></button></div></div>'+
+    '<div class="library-heading library-with-shishi"><div><h1><span class="library-title-start">AI普通話</span><span class="library-title-end">學習平台</span></h1><div class="pack-row">'+gradeFilterHTML()+'<button type="button" class="pack-button" data-action="pack" hidden></button></div></div></div>'+
     '<div class="poem-grid library-books" id="poem-grid" aria-label="選擇古詩"></div></main>';
-  renderCards();icons();renderPackButton();
+  renderCards();icons();
   libraryShishi?.destroy();
   libraryShishi=mountLibraryShishi($('.library-heading'),{canPlay:()=>!sessionLocked&&!poem});
 }
-// The one-tap resource pack: its button sits under the library title (the
-// header's left corner holds the school badge) and follows the download state
-// (resource-pack.mjs). Nothing else waits on it.
+// The one-tap resource pack (resource-pack.mjs): the big button under the
+// library title (the header's left corner holds the school badge) downloads
+// every poem shown, each card's round button its own poem; both follow the
+// download state and size of their poems. Nothing else waits on them.
 function packMB(bytes){return Math.max(1,Math.round(bytes/1048576));}
+const packPct=s=>s.totalBytes?Math.min(99,Math.floor(s.bytesDone/s.totalBytes*100)):0;
 function packButtonView(s){
   const size=s.totalBytes?'（約 '+packMB(s.totalBytes)+' MB）':'';
+  const what=!isTeacher&&school.enabled&&!allGrades?'本年級資源包':gradeFilter?GRADE_NAMES[gradeFilter]+'年級資源包':'資源包';
   switch(s.status){
     case 'unsupported':return null;
     case 'checking':return {text:'正在準備資源包…',label:'正在準備資源包',busy:true,disabled:true};
-    case 'downloading':{const pct=s.totalBytes?Math.min(99,Math.floor(s.bytesDone/s.totalBytes*100)):0;return {text:'下載中 '+pct+'%　點擊暫停',label:'資源包下載中，已完成 '+pct+'%，點擊暫停',busy:true};}
-    case 'paused':return {text:'已暫停　點擊繼續下載',label:'資源包下載已暫停，點擊繼續下載'};
-    case 'error':return {text:'下載失敗　點擊重試',label:'資源包下載失敗，點擊重試'};
-    case 'complete':return {text:'資源包已下載',label:'資源包已下載到本機，圖片、錄音、動畫和模型不用再等候',disabled:true};
-    default:{const what=s.scope==='all'?'資源包':'本年級資源包';return {text:'一鍵下載'+what+size,label:'一鍵下載'+what+'的圖片、錄音、動畫和模型到本機'+size+'，下載期間可照常使用'};}
+    case 'downloading':{const pct=packPct(s);return {text:'下載中 '+pct+'%　點擊暫停',label:what+'下載中，已完成 '+pct+'%，點擊暫停',busy:true};}
+    case 'paused':return {text:'已暫停　點擊繼續下載',label:what+'下載已暫停，點擊繼續下載'};
+    case 'error':return {text:'下載失敗　點擊重試',label:what+'下載失敗，點擊重試'};
+    case 'complete':return {text:what+'已下載',label:what+'已下載到本機，圖片、錄音、動畫和模型不用再等候',disabled:true};
+    default:return {text:'一鍵下載'+what+size,label:'一鍵下載'+what+'的圖片、錄音、動畫和模型到本機'+size+'，下載期間可照常使用'};
   }
 }
-function renderPackButton(s=packState()){
+const PACK_GLYPHS={idle:'<path d="M12 4.5v10.5M7.5 10.5 12 15l4.5-4.5M6 19h12"/>',downloading:'<path d="M9.5 8v8M14.5 8v8"/>',complete:'<path d="m6 12.5 4 4 8-8.5"/>',error:'<path d="M12 7v6M12 16.5v.5"/>'};
+function poemPackView(p,s){
+  const title='《'+titleOf(p)+'》',size=s.totalBytes?'（約 '+packMB(s.totalBytes)+' MB）':'';
+  switch(s.status){
+    case 'unsupported':return null;
+    case 'checking':return {glyph:'idle',label:title+'資源準備中',disabled:true};
+    case 'downloading':{const pct=packPct(s);return {glyph:'downloading',label:title+'資源下載中，已完成 '+pct+'%，點擊暫停',pct};}
+    case 'paused':return {glyph:'idle',label:title+'資源下載已暫停，點擊繼續下載'+size,pct:packPct(s)};
+    case 'error':return {glyph:'error',label:title+'資源下載失敗，點擊重試'};
+    case 'complete':return {glyph:'complete',label:title+'資源已下載到本機',disabled:true};
+    default:return {glyph:'idle',label:'下載'+title+'的圖片、錄音、動畫和模型'+size};
+  }
+}
+function renderPackButtons(){
   const button=$('.pack-button');if(!button)return;
-  const view=packButtonView(s);
-  if(!view){button.hidden=true;return;}
-  button.hidden=false;button.textContent=view.text;button.setAttribute('aria-label',view.label);button.disabled=!!view.disabled;button.dataset.state=s.status;
-  if(view.busy)button.setAttribute('aria-busy','true');else button.removeAttribute('aria-busy');
+  const s=packView(libraryPoems().map(p=>p.id)),view=packButtonView(s);
+  if(!view)button.hidden=true;
+  else{
+    button.hidden=false;button.textContent=view.text;button.setAttribute('aria-label',view.label);button.disabled=!!view.disabled;button.dataset.state=s.status;
+    if(view.busy)button.setAttribute('aria-busy','true');else button.removeAttribute('aria-busy');
+  }
+  for(const round of document.querySelectorAll('.poem-download')){
+    const p=poems.find(item=>item.id===Number(round.dataset.value)),ps=p&&packView([p.id]),pv=p&&poemPackView(p,ps);
+    if(!pv){round.hidden=true;continue;}
+    round.hidden=false;round.disabled=!!pv.disabled;round.setAttribute('aria-label',pv.label);round.title=pv.label;
+    if(round.dataset.state!==ps.status){round.dataset.state=ps.status;round.firstElementChild.innerHTML=PACK_GLYPHS[pv.glyph];}
+    if(pv.pct!==undefined)round.style.setProperty('--pack-pct',pv.pct+'%');else round.style.removeProperty('--pack-pct');
+  }
 }
-onPackChange(renderPackButton);
-function togglePack(){
-  const s=packState();
-  if(s.status==='downloading')cancelResourcePack();
-  else if(s.status!=='complete'&&s.status!=='unsupported'&&s.status!=='checking')void requestResourcePack();
-}
+onPackChange(renderPackButtons);
 function renderCards() {
-  $('#poem-grid').innerHTML=poems.map(p=>'<article class="poem-card poem-color-'+p.id+'"><a class="poem-entry" href="'+link('lesson',p)+'" aria-label="學習'+esc(titleOf(p))+'"><div class="poem-art" style="background-image:url('+getScenePreview(p.slug,p.lines.at(-1).scene)+')"><img src="'+asset('cover-final.webp',p)+'" width="800" height="450" alt="'+esc(p.lines.at(-1).text)+'" '+(p.id>3?'loading="lazy"':'fetchpriority="high"')+'><span class="poem-grade">'+['','一','二','三','四','五','六'][p.grade]+'年級</span></div><div class="poem-card-body"><img class="poem-emblem" src="'+poemMotif(p)+'" width="56" height="56" alt="" aria-hidden="true"><div class="poem-card-title"><h2>'+esc(p.title)+(p.id===5?'<small>其三</small>':'')+'</h2></div><p class="poem-author">'+esc(p.dynasty)+' · '+esc(p.author)+'</p><span class="poem-open">'+icon('book-open')+'<span>一起讀</span>'+icon('arrow-right')+'</span></div></a></article>').join('');icons();
+  $('#poem-grid').innerHTML=libraryPoems().map(p=>'<article class="poem-card poem-color-'+p.id+'"><a class="poem-entry" href="'+link('lesson',p)+'" aria-label="學習'+esc(titleOf(p))+'"><div class="poem-art" style="background-image:url('+getScenePreview(p.slug,p.lines.at(-1).scene)+')"><img src="'+asset('cover-final.webp',p)+'" width="800" height="450" alt="'+esc(p.lines.at(-1).text)+'" '+(p.id>3?'loading="lazy"':'fetchpriority="high"')+'></div><div class="poem-card-body"><img class="poem-emblem" src="'+poemMotif(p)+'" width="56" height="56" alt="" aria-hidden="true"><div class="poem-card-title"><h2>'+esc(p.title)+(p.id===5?'<small>其三</small>':'')+'</h2></div><p class="poem-author">'+esc(p.dynasty)+' · '+esc(p.author)+'</p><span class="poem-open">'+icon('book-open')+'<span>一起讀</span>'+icon('arrow-right')+'</span></div></a><button type="button" class="poem-download" data-action="poem-pack" data-value="'+p.id+'" hidden><svg viewBox="0 0 24 24" aria-hidden="true"></svg></button></article>').join('');icons();renderPackButtons();
 }
 const NAV=[['lesson','map','學習路線','路線'],['record','mic','AI讀古詩','AI讀古詩'],['animation','clapperboard','動畫看古詩','動畫看古詩'],['quiz','flag','練習小遊戲','練習小遊戲'],['explore','sparkles','AR體驗','AR體驗'],['chat','messages-square','與詩人對話','詩人'],['report','award','朗讀成果','成果']];
 function headingAudioHTML(kind,text){return '<button type="button" class="poem-heading-audio" data-action="poem-heading-audio" data-value="'+kind+'" aria-label="聽'+(kind==='title'?'詩名':'詩人姓名')+'：'+esc(text)+'" aria-pressed="false"><span>'+esc(text)+'</span><span class="heading-audio-symbol">'+icon('volume-2')+'</span></button>';}
@@ -1236,7 +1264,8 @@ document.addEventListener('click',event=>{
   const button=event.target.closest('[data-action]');if(!button||button.disabled)return;const action=button.dataset.action,value=button.dataset.value;
   if(button.closest('.menu-panel')&&menu)menu.open=false;
   if(action==='profile'){if(menu)menu.open=false;openProfile();return;}
-  if(action==='pack'){togglePack();return;}
+  if(action==='pack'){togglePack(libraryPoems().map(p=>p.id));return;}
+  if(action==='poem-pack'){togglePack([Number(value)]);return;}
   if(!poem)return;
   if(action==='poem-heading-audio')void speakPoemHeading(value,button);
   if(action==='activity-retry')location.reload();
@@ -1374,6 +1403,7 @@ $('#profile-results').addEventListener('click',event=>{
 });
 $('#profile-form').addEventListener('submit',event=>{event.preventDefault();if(school.enabled)return;const form=event.currentTarget;const name=form.elements.name.value.trim();if(!name)return;profile={id:profile?.id||`S${crypto.randomUUID().replaceAll('-','').slice(0,30)}`,name,grade:Number(form.elements.grade.value),cls:form.elements.cls.value};writeStorage(PROFILE,profile);writeStorage(STUDENT_GRADE,profile.grade);reportGeneration++;$('#profile-name').textContent=profile.name;$('#profile-dialog').close();if(poem&&view==='report')renderReport();toast('學習檔案已儲存。');});
 document.addEventListener('change',event=>{if(event.target.id==='report-grade')changeStudentGrade(Number(event.target.value));});
+document.addEventListener('change',event=>{if(!event.target.matches('.pack-filter'))return;gradeFilter=Number(event.target.value)||0;renderCards();});
 if(profile?.name)$('#profile-name').textContent=profile.name;
 $('.skip-link').addEventListener('click',event=>{event.preventDefault();const main=$('#main');if(main){main.tabIndex=-1;main.focus();}});
 window.addEventListener('hashchange',route);window.addEventListener('online',()=>sync.flush());
@@ -1399,6 +1429,9 @@ async function init(){
     if(Array.isArray(preview?.poems))addScenePreviews(preview.scenePreviews);
     poems=school.enabled&&!allGrades ? catalog.filter(p=>p.grade===Number(school.user.grade)) : catalog;
     if(!poems.length)throw new Error('catalog-grade');
+    // The resource pack follows the library: an own-grade pupil downloads that grade's poem and the shared files only.
+    const previewIds=new Set((preview?.poems||[]).map(p=>p.id));
+    void resumeResourcePack({poems:poems.map(p=>({id:p.id,grade:p.grade,preview:previewIds.has(p.id)}))});
     configurePronunciation(pronunciation);route();sync.flush();answerOutbox.flush();icons();
     void recordings.hydrate({remote:false});
     if(school.enabled)void(async()=>{

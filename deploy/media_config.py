@@ -31,9 +31,10 @@ PACK_SCOPE = 'deploy/pack-scope.json'
 # speech-audio.mjs read its index after their own). Until the folder is published as
 # a COS group it ships on the deployment route only, like any unpublished file.
 ROUND2_TTS = 'round2-tts-20261006'
-# Poems 7-12 are shown to two preview teacher accounts only, so pupils' packs
-# and the session's route probe leave their media out. Only poems 10-12
-# (grades 4-6) have AR folders; grades 1-3 have no AR.
+# Poems 7-12 are shown to two preview teacher accounts only, so the session's
+# route probe leaves their media out, and in the resource pack each of their
+# files must name the poems it serves (``poems``), so that pupils' packs never
+# take it. Only poems 10-12 (grades 4-6) have AR folders; grades 1-3 have no AR.
 PREVIEW_MEDIA = tuple('/maanshan/media/' + folder + '/' for folder in (
     'yong-xue', 'hua-ji', 'qi-bu-shi', 'jue-ju', 'zheng-ren-mai-lu', 'ke-zhi', 'recitations/round2-20261005',
     'exploration/jue-ju', 'exploration/zheng-ren-mai-lu', 'exploration/ke-zhi', ROUND2_TTS))
@@ -213,8 +214,6 @@ def pack_entries(manifest):
         # The login page's parents' guide is streamed on demand, not packed for pupils.
         if asset['source'].startswith('/maanshan/media/guide/'):
             continue
-        if asset['source'].startswith(PREVIEW_MEDIA):
-            continue
         if EXTENSION_FONT.match(asset['source']):
             continue
         entries.append({'path': asset['source'][len('/maanshan/'):], 'remote': asset['destination'],
@@ -228,20 +227,26 @@ def pack_version(entries):
 
 
 def load_pack_scope(repo):
-    """Which grades each packed file serves, as ``scripts/build-pack-scope.cjs``
-    derived it from the poems, challenges and recording indexes. Files absent
-    from the scope reach every pack."""
+    """Which poems (by id) and which published poems' grades each packed file
+    serves, as ``scripts/build-pack-scope.cjs`` derived them from the poems,
+    challenges and recording indexes: ``{'grades': {path: [...]}, 'poems':
+    {path: [...]}}``. Files absent from both reach every pack."""
     root = Path(repo).resolve(strict=True)
     data = json.loads((root / PACK_SCOPE).read_text(encoding='utf-8'))
-    if not isinstance(data, dict) or data.get('schemaVersion') != 1 or not isinstance(data.get('grades'), dict):
+    if (not isinstance(data, dict) or data.get('schemaVersion') != 1 or not isinstance(data.get('grades'), dict)
+            or not isinstance(data.get('poems'), dict)):
         raise ValueError('Unsupported pack scope schema')
     scope = {}
-    for path, grades in data['grades'].items():
-        if (not isinstance(path, str) or not isinstance(grades, list) or not grades or len(grades) > 12
-                or any(type(grade) is not int or grade < 1 or grade > 12 for grade in grades)
-                or grades != sorted(set(grades))):
-            raise ValueError('Invalid pack scope entry: ' + str(path))
-        scope[path] = list(grades)
+    for field, limit in (('grades', 12), ('poems', 999)):
+        scope[field] = {}
+        for path, values in data[field].items():
+            if (not isinstance(path, str) or not isinstance(values, list) or not values or len(values) > limit
+                    or any(type(value) is not int or value < 1 or value > limit for value in values)
+                    or values != sorted(set(values))):
+                raise ValueError('Invalid pack scope entry: ' + str(path))
+            scope[field][path] = list(values)
+    if set(scope['grades']) - set(scope['poems']):
+        raise ValueError('Invalid pack scope entry: ' + sorted(set(scope['grades']) - set(scope['poems']))[0])
     return scope
 
 
@@ -253,17 +258,23 @@ def build_pack_manifest(manifest, scope=None):
     older deployment is recognised as outdated instead of served stale. Paths
     are relative to the page, so the same file works under ``/school/`` and
     ``/maanshan/``. With a ``scope`` (``load_pack_scope``) an entry carries the
-    ``grades`` whose pupils need it; entries without ``grades`` reach every
-    pack. The scope changes neither the version nor the byte total.
+    ``poems`` (ids) that need it, and the ``grades`` of the published ones for
+    pages deployed before poem ids; entries without ``poems`` reach every
+    pack. The scope changes neither the version nor the byte total. Every
+    preview poem's file must name its poems, or pupils' packs would take it.
     """
     entries = pack_entries(manifest)
-    if scope:
-        stale = sorted(set(scope) - {entry['path'] for entry in entries})
-        if stale:
-            raise ValueError('Pack scope lists a file the media manifest does not publish: ' + stale[0])
-        for entry in entries:
-            if entry['path'] in scope:
-                entry['grades'] = list(scope[entry['path']])
+    scope = scope or {'grades': {}, 'poems': {}}
+    stale = sorted((set(scope['grades']) | set(scope['poems'])) - {entry['path'] for entry in entries})
+    if stale:
+        raise ValueError('Pack scope lists a file the media manifest does not publish: ' + stale[0])
+    for entry in entries:
+        if entry['path'] in scope['grades']:
+            entry['grades'] = list(scope['grades'][entry['path']])
+        if entry['path'] in scope['poems']:
+            entry['poems'] = list(scope['poems'][entry['path']])
+        elif ('/maanshan/' + entry['path']).startswith(PREVIEW_MEDIA):
+            raise ValueError('Preview poem media must name its poems: ' + entry['path'])
     return json.dumps({'schemaVersion': 1, 'version': pack_version(entries), 'cache': PACK_CACHE,
                        'totalBytes': sum(entry['bytes'] for entry in entries), 'assets': entries},
                       indent=1, ensure_ascii=True) + '\n'

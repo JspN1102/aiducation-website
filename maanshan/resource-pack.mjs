@@ -4,14 +4,15 @@
 // there by recovery-sw.js from then on. The platform stays fully usable while
 // the pack downloads: a few small files and one big file are in flight, each
 // requested at low priority from whichever host the session knows to be
-// faster, the other host taking over when one fails. The count on the button
-// follows the bytes as they arrive, not only whole files. The pack
-// resumes automatically on later visits until it is complete, and refreshes
-// itself when a deployment changes a file. The pack follows the pupil's
-// learning scope: an own-grade account downloads the shared files and its
-// own poem's material only; teachers and all-grade accounts download
-// everything. Nothing about the pupil is sent or stored; the cache holds
-// public teaching material only, and files of several grades can share it.
+// faster, the other host taking over when one fails. The counts on the
+// buttons follow the bytes as they arrive, not only whole files. The pack is
+// chosen by poem among the poems the library shows: a pupil's own poem, or
+// for a teacher any one poem (its round button) or every poem shown (the
+// big button). Each poem's part is the shared files plus that poem's own
+// material. A wished poem resumes automatically on later visits until it is
+// complete, and refreshes itself when a deployment changes a file. Nothing
+// about the pupil is sent or stored; the cache holds public teaching material
+// only, and files of several poems can share it.
 import {orderRoutes, rememberRoute, rememberedRoute} from './media-route.mjs?v=20260923-school23';
 import {publicImagesReady} from './media-images.mjs?v=20261007-school46';
 
@@ -27,64 +28,11 @@ const LARGE_BYTES = 4 * 1024 * 1024;
 const MAX_ASSET_BYTES = 64 * 1024 * 1024;
 const MAX_ASSETS = 5000;
 
-let manifestPromise = null, run = null;
-const state = {status: 'idle', done: 0, total: 0, bytesDone: 0, totalBytes: 0, version: null, error: null, scope: 'all'};
-const listeners = new Set();
-// null downloads everything; {grades: [n]} keeps the pack to those grades' poems plus shared files.
-let scope = null;
-
 export function packSupported(view = globalThis) {
   try {
     return typeof view.caches?.open === 'function' && typeof view.crypto?.subtle?.digest === 'function' &&
       typeof view.fetch === 'function' && typeof view.Response === 'function' && !!view.isSecureContext;
   } catch { return false; }
-}
-
-export function packState() { return {...state}; }
-
-export function onPackChange(listener) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
-
-function update(patch) {
-  Object.assign(state, patch);
-  for (const listener of [...listeners]) { try { listener(packState()); } catch { /* listener error */ } }
-}
-
-export function scopeKey(value = scope) {
-  return value?.grades?.length ? 'g' + value.grades.join('-') : 'all';
-}
-
-function normalizeScope(value) {
-  const grades = Array.isArray(value?.grades) ? [...new Set(value.grades.filter(grade => Number.isInteger(grade) && grade >= 1 && grade <= 12))].sort((a, b) => a - b) : [];
-  return grades.length ? {grades} : null;
-}
-
-export function configureResourcePack(options = {}) {
-  scope = normalizeScope(options.scope);
-  update({scope: scopeKey()});
-}
-
-// The files one scope downloads: shared files and those marked for one of its grades.
-export function selectAssets(manifest, value = scope) {
-  if (!value) return manifest.assets;
-  return manifest.assets.filter(asset => !asset.grades || asset.grades.some(grade => value.grades.includes(grade)));
-}
-
-// The wish is kept per scope, so pupils of different grades sharing a device each keep their own.
-function wantedScopes() {
-  try { return new Set((localStorage.getItem(WANTED_KEY) || '').split(',').filter(Boolean)); } catch { return new Set(); }
-}
-
-export function packWanted(key = scopeKey()) {
-  return wantedScopes().has(key);
-}
-
-function setWanted(value, key = scopeKey()) {
-  const wanted = wantedScopes();
-  if (value) wanted.add(key); else wanted.delete(key);
-  try { if (wanted.size) localStorage.setItem(WANTED_KEY, [...wanted].sort().join(',')); else localStorage.removeItem(WANTED_KEY); } catch { /* storage unavailable */ }
 }
 
 // The page's pack version, from the meta tag the deployment renders.
@@ -93,25 +41,35 @@ export function pageVersion(doc = globalThis.document) {
   return /^[a-f0-9]{20}$/.test(content) ? content : null;
 }
 
+const ids = (value, limit) => value !== undefined && (!Array.isArray(value) || !value.length || value.length > limit ||
+  new Set(value).size !== value.length || value.some(item => !Number.isInteger(item) || item < 1 || item > limit));
+
+// `poems` names the poems (by id) a file serves; a file without it belongs to
+// every pack. `grades` is kept for pages deployed before poem ids.
 export function validateManifest(data) {
   if (!data || data.schemaVersion !== 1 || !/^[a-f0-9]{20}$/.test(data.version) || typeof data.cache !== 'string' ||
       !/^[a-z0-9-]{1,40}$/.test(data.cache) || !Array.isArray(data.assets) || data.assets.length > MAX_ASSETS) throw new Error('pack-manifest-invalid');
   const seen = new Set();
   let totalBytes = 0;
   const assets = data.assets.map(asset => {
-    const {path, remote, bytes, sha256, type, grades} = asset || {};
+    const {path, remote, bytes, sha256, type, grades, poems} = asset || {};
     if (typeof path !== 'string' || !PACKED.test(path) || seen.has(path)) throw new Error('pack-manifest-invalid');
     if (!Number.isInteger(bytes) || bytes <= 0 || bytes > MAX_ASSET_BYTES || !/^[a-f0-9]{64}$/.test(sha256)) throw new Error('pack-manifest-invalid');
     if (typeof remote !== 'string' || !remote.startsWith(COS_ORIGIN + '/') || /[?#]/.test(remote)) throw new Error('pack-manifest-invalid');
     if (type !== TYPES[path.slice(path.lastIndexOf('.') + 1)]) throw new Error('pack-manifest-invalid');
-    if (grades !== undefined && (!Array.isArray(grades) || !grades.length || grades.length > 12 || new Set(grades).size !== grades.length ||
-        grades.some(grade => !Number.isInteger(grade) || grade < 1 || grade > 12))) throw new Error('pack-manifest-invalid');
+    if (ids(grades, 12) || ids(poems, 999)) throw new Error('pack-manifest-invalid');
     seen.add(path);
     totalBytes += bytes;
-    return {path, remote, bytes, sha256, type, local: new URL(path, APP_ROOT).href, ...(grades ? {grades: [...grades]} : {})};
+    return {path, remote, bytes, sha256, type, local: new URL(path, APP_ROOT).href, ...(poems ? {poems: [...poems]} : {})};
   });
   if (totalBytes !== data.totalBytes) throw new Error('pack-manifest-invalid');
   return {version: data.version, cache: data.cache, totalBytes, assets};
+}
+
+// The files a set of poems downloads: the shared files and those of the poems.
+export function selectAssets(manifest, poemIds) {
+  const wanted = new Set(poemIds);
+  return manifest.assets.filter(asset => !asset.poems || asset.poems.some(id => wanted.has(id)));
 }
 
 export async function loadManifest({fetchImpl = (url, init) => fetch(url, init)} = {}) {
@@ -207,92 +165,219 @@ function schedule(assets) {
   return [...assets].sort((a, b) => a.bytes - b.bytes);
 }
 
-async function work(controller, {fetchImpl, view}) {
-  const signal = controller.signal;
-  update({status: 'checking', error: null});
-  const manifest = await (manifestPromise ||= loadManifest({fetchImpl}).catch(error => { manifestPromise = null; throw error; }));
-  if (signal.aborted) return;
-  const cache = await view.caches.open(manifest.cache);
-  const wanted = selectAssets(manifest);
-  update({version: manifest.version, total: wanted.length, totalBytes: wanted.reduce((sum, asset) => sum + asset.bytes, 0), done: 0, bytesDone: 0});
-  // The stored manifest tells the worker which bytes are current; it goes in
-  // first so files already held with the right digest are served at once.
-  await cache.put(MANIFEST_URL.href, new view.Response(JSON.stringify({schemaVersion: 1, version: manifest.version, cache: manifest.cache, totalBytes: manifest.totalBytes,
-    assets: manifest.assets.map(({path, remote, bytes, sha256, type}) => ({path, remote, bytes, sha256, type}))}),
-    {status: 200, headers: {'Content-Type': 'application/json', 'X-Pack-Version': manifest.version, 'Cache-Control': 'no-store'}}));
-  await cache.put(VERSION_URL.href, new view.Response(manifest.version, {status: 200, headers: {'Content-Type': 'text/plain', 'Cache-Control': 'no-store'}}));
-  try { view.navigator?.serviceWorker?.controller?.postMessage({type: 'pack-manifest'}); } catch { /* no worker */ }
-  await prune(cache, manifest);
-  if (!rememberedRoute()) await publicImagesReady.catch(() => false);
-  update({status: 'downloading'});
-  const queue = schedule(wanted);
-  let done = 0, bytesDone = 0, failed = 0, active = 0, largeActive = 0, firstError = null, timer = null;
-  // Bytes still arriving count toward the figure, a few times a second at most.
-  const inFlight = new Map();
-  const arrived = () => bytesDone + [...inFlight.values()].reduce((sum, bytes) => sum + bytes, 0);
-  const report = () => { timer = null; update({bytesDone: arrived()}); };
-  const progress = (asset, received) => { inFlight.set(asset, received); timer ??= setTimeout(report, 250); };
-  await new Promise(resolve => {
-    const next = () => {
-      if (signal.aborted) { if (!active) resolve(); return; }
-      while (active < CONCURRENCY && queue.length) {
-        let index = largeActive ? -1 : queue.findIndex(asset => asset.bytes >= LARGE_BYTES);
-        if (index < 0) index = queue.findIndex(asset => asset.bytes < LARGE_BYTES);
-        if (index < 0) break;
-        const [asset] = queue.splice(index, 1);
-        const large = asset.bytes >= LARGE_BYTES;
-        active++;
-        if (large) largeActive++;
-        syncAsset(cache, asset, manifest.version, {signal, fetchImpl, view, onProgress: received => progress(asset, received)}).then(() => {
-          done++;bytesDone += asset.bytes;inFlight.delete(asset);
-          update({done, bytesDone: arrived()});
-        }, error => {
-          inFlight.delete(asset);
-          if (error?.name !== 'AbortError') { failed++; firstError ??= error; }
-        }).finally(() => {
-          active--;
-          if (large) largeActive--;
-          if (!active && (!queue.length || signal.aborted)) resolve();
-          else next();
-        });
-      }
-      if (!active && !queue.length) resolve();
-    };
-    next();
-  });
+// --- what the page shows, wants and holds ---------------------------------
+
+let manifestPromise = null, manifest = null, manifestFailed = false, lookup = null;
+let options = {fetchImpl: (url, init) => fetch(url, init), view: globalThis}, supported = null;
+// The poems the library shows ({id, grade, preview}) and the wished ones of
+// this device ('p<id>'), so that pupils sharing a device each keep their own.
+let shown = [], wanted = new Set();
+// Paths whose current bytes the cache holds (null until looked up), bytes of
+// files still arriving, files that failed and poems paused on this page.
+let held = null;
+const arriving = new Map(), failed = new Set(), paused = new Set();
+// The cache once its stored manifest is current, and the files in flight.
+let cache = null, preparing = null, prepareFailed = false, largeActive = 0;
+const active = new Map();
+const listeners = new Set();
+let timer = null;
+
+export function onPackChange(listener) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function notify() {
   clearTimeout(timer);
-  if (signal.aborted) return;
-  if (failed) { update({status: 'error', error: firstError?.message || 'pack-incomplete'}); return; }
-  update({status: 'complete', done, bytesDone});
+  timer = null;
+  for (const listener of [...listeners]) { try { listener(); } catch { /* listener error */ } }
 }
 
-// Start or resume the pack download. Returns once the run has ended, but
-// callers normally just watch onPackChange.
-export function startResourcePack({fetchImpl = (url, init) => fetch(url, init), view = globalThis} = {}) {
-  if (!packSupported(view)) { update({status: 'unsupported'}); return Promise.resolve(); }
-  if (run) return run.promise;
-  const controller = new AbortController();
-  run = {controller, promise: null};
-  run.promise = work(controller, {fetchImpl, view}).catch(error => {
-    if (error?.name !== 'AbortError') update({status: 'error', error: error?.message || 'pack-failed'});
-  }).finally(() => { if (run?.controller === controller) run = null; if (controller.signal.aborted && state.status !== 'complete') update({status: 'paused'}); });
-  return run.promise;
+// Bytes still arriving move the counts a few times a second at most.
+function notifySoon() { timer ??= setTimeout(notify, 250); }
+
+function wishes() {
+  try { return new Set((localStorage.getItem(WANTED_KEY) || '').split(',').filter(Boolean)); } catch { return new Set(); }
 }
 
-export function pauseResourcePack() {
-  run?.controller.abort();
+function saveWishes() {
+  try { if (wanted.size) localStorage.setItem(WANTED_KEY, [...wanted].sort().join(',')); else localStorage.removeItem(WANTED_KEY); } catch { /* storage unavailable */ }
 }
 
-// The pupil's tap: remember the wish, ask for durable storage, and start.
-export async function requestResourcePack(options = {}) {
-  setWanted(true);
+// Pages before poem ids kept one wish per grade ('g<n>', a pupil) or one for
+// everything ('all', a teacher or all-grade account); each becomes the
+// published poems it meant among those shown here, and is otherwise kept for
+// the other accounts of the device.
+function migrateWishes() {
+  const published = shown.filter(poem => !poem.preview);
+  let changed = false;
+  for (const key of [...wanted]) {
+    const match = /^(?:all|g(\d+))$/.exec(key);
+    const poems = !match ? [] : match[1] ? published.filter(poem => poem.grade === Number(match[1])) : published.length > 1 ? published : [];
+    if (!poems.length) continue;
+    for (const poem of poems) wanted.add('p' + poem.id);
+    wanted.delete(key);
+    changed = true;
+  }
+  if (changed) saveWishes();
+}
+
+export function packWanted(id) { return wanted.has('p' + id); }
+
+const shownIds = () => shown.map(poem => poem.id);
+const known = poemIds => [...new Set(poemIds)].filter(id => shown.some(poem => poem.id === id));
+const wishedShown = () => shownIds().filter(packWanted);
+const sum = assets => assets.reduce((total, asset) => total + asset.bytes, 0);
+
+// Files the wished poems shown here still need.
+function needed() {
+  const ids = wishedShown();
+  return manifest && held && ids.length ? selectAssets(manifest, ids).filter(asset => !held.has(asset.path)) : [];
+}
+
+// One button's state for a set of poems: unsupported, idle, checking,
+// downloading, paused, error or complete, with its bytes in all and held.
+export function packView(poemIds = shownIds()) {
+  if (supported === false) return {status: 'unsupported', totalBytes: 0, bytesDone: 0};
+  const ids = known(poemIds), wishedAll = ids.length > 0 && ids.every(packWanted);
+  if (!manifest) return {status: wishedAll ? manifestFailed ? 'error' : 'checking' : 'idle', totalBytes: 0, bytesDone: 0};
+  const assets = selectAssets(manifest, ids), totalBytes = sum(assets);
+  if (!held) return {status: wishedAll ? 'checking' : 'idle', totalBytes, bytesDone: 0};
+  const missing = assets.filter(asset => !held.has(asset.path));
+  const bytesDone = totalBytes - sum(missing) + missing.reduce((total, asset) => total + (arriving.get(asset.path) || 0), 0);
+  if (!missing.length) return {status: 'complete', totalBytes, bytesDone};
+  const need = new Set(needed().map(asset => asset.path));
+  let status;
+  if (missing.every(asset => need.has(asset.path))) {
+    status = prepareFailed || missing.every(asset => failed.has(asset.path)) ? 'error' : cache ? 'downloading' : 'checking';
+  } else status = missing.some(asset => failed.has(asset.path)) ? 'error' : ids.some(id => paused.has(id)) ? 'paused' : 'idle';
+  return {status, totalBytes, bytesDone};
+}
+
+export function packState() {
+  return {...packView(), version: manifest?.version || null};
+}
+
+// Which current files the cache already holds, without creating it.
+async function lookUp() {
+  const {view} = options, found = new Set();
+  try {
+    if (await view.caches.has(manifest.cache)) {
+      const opened = await view.caches.open(manifest.cache), assets = selectAssets(manifest, shownIds());
+      for (let index = 0; index < assets.length; index += 24) await Promise.all(assets.slice(index, index + 24).map(async asset => {
+        const existing = await opened.match(asset.local);
+        if (existing?.headers.get('X-Pack-Sha256') === asset.sha256) found.add(asset.path);
+      }));
+    }
+  } catch { /* cache unavailable: nothing is held */ }
+  return found;
+}
+
+// The manifest once per page, the cache look-up once per set of poems shown.
+function ensure() {
+  if (supported === false || !shown.length) return Promise.resolve();
+  const current = lookup ||= (async () => {
+    manifest ||= await (manifestPromise ||= loadManifest({fetchImpl: options.fetchImpl}).catch(error => { manifestPromise = null; throw error; }));
+    const found = await lookUp();
+    if (lookup === current) held = found;
+  })().catch(() => { manifestFailed = true; if (lookup === current) lookup = null; });
+  return current.then(() => { notify(); drive(); });
+}
+
+// Before the page's first download: store the manifest so the worker knows
+// which bytes are current, drop entries no current file uses, and let the
+// session's route probe settle.
+function prepare() {
+  const {view} = options;
+  preparing ||= (async () => {
+    const opened = await view.caches.open(manifest.cache);
+    await opened.put(MANIFEST_URL.href, new view.Response(JSON.stringify({schemaVersion: 1, version: manifest.version, cache: manifest.cache, totalBytes: manifest.totalBytes,
+      assets: manifest.assets.map(({path, remote, bytes, sha256, type}) => ({path, remote, bytes, sha256, type}))}),
+      {status: 200, headers: {'Content-Type': 'application/json', 'X-Pack-Version': manifest.version, 'Cache-Control': 'no-store'}}));
+    await opened.put(VERSION_URL.href, new view.Response(manifest.version, {status: 200, headers: {'Content-Type': 'text/plain', 'Cache-Control': 'no-store'}}));
+    try { view.navigator?.serviceWorker?.controller?.postMessage({type: 'pack-manifest'}); } catch { /* no worker */ }
+    await prune(opened, manifest);
+    if (!rememberedRoute()) await publicImagesReady.catch(() => false);
+    cache = opened;
+  })().catch(() => { prepareFailed = true; preparing = null; }).finally(() => { notify(); drive(); });
+}
+
+// Keep the download in step with the wishes: stop files no wished poem needs
+// and keep a few small files and one big one in flight, smallest first.
+function drive() {
+  if (!manifest || !held) return;
+  const need = needed(), paths = new Set(need.map(asset => asset.path));
+  for (const [path, controller] of active) if (!paths.has(path)) controller.abort();
+  if (!wishedShown().length) return;
+  if (!cache) { if (!preparing && !prepareFailed) prepare(); return; }
+  const queue = schedule(need.filter(asset => !active.has(asset.path) && !failed.has(asset.path)));
+  while (active.size < CONCURRENCY && queue.length) {
+    let index = largeActive ? -1 : queue.findIndex(asset => asset.bytes >= LARGE_BYTES);
+    if (index < 0) index = queue.findIndex(asset => asset.bytes < LARGE_BYTES);
+    if (index < 0) break;
+    download(queue.splice(index, 1)[0]);
+  }
+}
+
+function download(asset) {
+  const controller = new AbortController(), large = asset.bytes >= LARGE_BYTES, {fetchImpl, view} = options;
+  active.set(asset.path, controller);
+  if (large) largeActive++;
+  syncAsset(cache, asset, manifest.version, {signal: controller.signal, fetchImpl, view, onProgress: received => { arriving.set(asset.path, received); notifySoon(); }})
+    .then(() => { held.add(asset.path); }, error => { if (error?.name !== 'AbortError') failed.add(asset.path); })
+    .finally(() => {
+      arriving.delete(asset.path);
+      active.delete(asset.path);
+      if (large) largeActive--;
+      drive();
+      if (active.size) notifySoon(); else notify();
+    });
+}
+
+// Called once the library knows its poems ({id, grade, preview}): announce
+// the version, then look up what the cache holds and resume wished poems.
+export function resumeResourcePack({poems = [], fetchImpl, view} = {}) {
+  if (fetchImpl) options.fetchImpl = fetchImpl;
+  if (view) options.view = view;
+  announcePackVersion(options.view);
+  supported = packSupported(options.view);
+  shown = poems.filter(poem => Number.isInteger(poem?.id) && poem.id > 0).map(poem => ({id: poem.id, grade: Number(poem.grade), preview: poem.preview === true}));
+  wanted = wishes();
+  migrateWishes();
+  held = null;
+  lookup = null;
+  notify();
+  return ensure();
+}
+
+// A tap on the button of these poems: remember the wish, ask for durable
+// storage, and download (again, after a failure or a pause).
+export function requestResourcePack(poemIds = shownIds()) {
+  const ids = known(poemIds);
+  for (const id of ids) { wanted.add('p' + id); paused.delete(id); }
+  saveWishes();
+  if (manifest) for (const asset of selectAssets(manifest, ids)) failed.delete(asset.path);
+  manifestFailed = false;
+  prepareFailed = false;
   void persist(options.view);
-  return startResourcePack(options);
+  notify();
+  return ensure();
 }
 
-export function cancelResourcePack() {
-  setWanted(false);
-  pauseResourcePack();
+// A tap while they download: forget the wish of those still incomplete and
+// stop their files; complete poems stay wished and keep refreshing.
+export function pauseResourcePack(poemIds = shownIds()) {
+  const ids = known(poemIds).filter(id => !manifest || !held || selectAssets(manifest, [id]).some(asset => !held.has(asset.path)));
+  for (const id of ids) { wanted.delete('p' + id); paused.add(id); }
+  saveWishes();
+  drive();
+  notify();
+}
+
+export function togglePack(poemIds) {
+  const {status} = packView(poemIds);
+  if (status === 'downloading' || status === 'checking') pauseResourcePack(poemIds);
+  else if (status !== 'complete' && status !== 'unsupported') void requestResourcePack(poemIds);
 }
 
 // Tell the recovery worker which pack version this page expects, so that it
@@ -304,32 +389,4 @@ export function announcePackVersion(view = globalThis) {
   const post = () => { try { worker.controller?.postMessage({type: 'pack-version', version}); } catch { /* no controller */ } };
   post();
   try { worker.addEventListener('controllerchange', post); } catch { /* unsupported */ }
-}
-
-// Called once per page with the pupil's scope: announce the version, then
-// resume a pack this scope asked for.
-export function resumeResourcePack(options = {}) {
-  if ('scope' in options) configureResourcePack(options);
-  announcePackVersion(options.view);
-  if (!packSupported(options.view || globalThis)) { update({status: 'unsupported'}); return; }
-  if (packWanted()) void startResourcePack(options);
-  else void checkResourcePack(options);
-}
-
-// Without downloading anything, report whether the cache already holds this
-// scope's whole current pack (a pupil who downloaded it on an earlier visit).
-export async function checkResourcePack({fetchImpl = (url, init) => fetch(url, init), view = globalThis} = {}) {
-  try {
-    const manifest = await (manifestPromise ||= loadManifest({fetchImpl}).catch(error => { manifestPromise = null; throw error; }));
-    // Only look inside a cache that a download created; never create one here.
-    const cache = (await view.caches.has(manifest.cache)) ? await view.caches.open(manifest.cache) : null;
-    const wanted = selectAssets(manifest);
-    let done = 0, bytesDone = 0;
-    if (cache) for (const asset of wanted) {
-      const existing = await cache.match(asset.local);
-      if (existing?.headers.get('X-Pack-Sha256') === asset.sha256) { done++; bytesDone += asset.bytes; }
-    }
-    update({version: manifest.version, total: wanted.length, totalBytes: wanted.reduce((sum, asset) => sum + asset.bytes, 0), done, bytesDone,
-      status: done === wanted.length ? 'complete' : state.status === 'complete' ? 'idle' : state.status});
-  } catch { /* manifest unavailable: the button offers the download anyway */ }
 }

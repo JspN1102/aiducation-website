@@ -1,8 +1,8 @@
 {
  "schemaVersion": 1,
- "version": "cdec657face7e7bf3bc6",
+ "version": "b0a968410bc18e60f9e6",
  "cache": "maanshan-pack-v1",
- "totalBytes": 219712293,
+ "totalBytes": 353515274,
  "assets": [
   {
    "path": "media/bo-chuan-gua-zhou/animation-20260917.mp4",
@@ -11,6 +11,9 @@
    "sha256": "4d0e645da50946ef5a0658bb6643139a0665a40e0ad5f9029a5da56d442caab1",
    "type": "video/mp4",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -22,6 +25,9 @@
    "type": "image/webp",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -31,6 +37,9 @@
    "sha256": "e74f4396536177ebb9ba32eeaf0a147c0497e54099733366050288d9b2c6e4db",
    "type": "image/webp",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -42,6 +51,9 @@
    "type": "image/webp",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -51,6 +63,9 @@
    "sha256": "2783623cd5dca1471387d682e318117fc1d1dd31ab651d02b604d835b78c9713",
    "type": "image/webp",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -62,6 +77,9 @@
    "type": "image/webp",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -71,6 +89,9 @@
    "sha256": "366ba8fcbffe4d89d61dbb5ec9e10134251142e5e62971cedbe9f75fdef126da",
    "type": "image/webp",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -82,6 +103,9 @@
    "type": "image/webp",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -91,6 +115,9 @@
    "sha256": "cf4d76e49695e7377b16013124bd3c2e5caba2e79ce9bf78ab72f79494b7c471",
    "type": "image/webp",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -102,6 +129,9 @@
    "type": "image/webp",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -111,6 +141,9 @@
    "sha256": "c0b9a7e15e1694aef9f7efc9c61f0c8264392f721972551161ba7c6548bd85ad",
    "type": "image/webp",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -122,6 +155,9 @@
    "type": "image/webp",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -132,6 +168,9 @@
    "type": "image/webp",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -141,6 +180,9 @@
    "sha256": "23ccaa831725ab6b4fa619c2e5b0fa92a498d55d113135b61d03be9f42d0ccec",
    "type": "image/webp",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -207,6 +249,9 @@
    "sha256": "6e1b347c402b19dcad15c2c052ae5c3b36e39aa1d4411c0a6ac3b78d143fda2f",
    "type": "image/webp",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -288,6 +333,9 @@
    "type": "image/webp",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -297,6 +345,9 @@
    "sha256": "3571ae508cc8dc301b6fc6931ed2b664670c4b4dd4151f081c5ba38cbe7fb9ce",
    "type": "image/webp",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -308,6 +359,9 @@
    "type": "image/webp",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -317,6 +371,9 @@
    "sha256": "0fc8105f30d3c089b4c844546345a2a9e093db505e59df4c334708e89517a5b0",
    "type": "image/webp",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -328,6 +385,9 @@
    "type": "model/gltf-binary",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -337,6 +397,9 @@
    "sha256": "9440463a264bed81217c5edf6e1242c30a1822df691e0b5a51639b967c42a7b3",
    "type": "model/gltf-binary",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -348,6 +411,9 @@
    "type": "image/webp",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -357,6 +423,9 @@
    "sha256": "8314aa1050f4598129603acfab6cdc0c19917df2f8afe0ec4b28907979efb358",
    "type": "model/gltf-binary",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -368,6 +437,9 @@
    "type": "model/gltf-binary",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -378,6 +450,69 @@
    "type": "image/webp",
    "grades": [
     5
+   ],
+   "poems": [
+    5
+   ]
+  },
+  {
+   "path": "media/exploration/jue-ju/model-20261005.glb",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/8cbd250cedaee29ece33/maanshan/media/exploration/jue-ju/model-20261005.glb",
+   "bytes": 2583860,
+   "sha256": "8cbd250cedaee29ece3385d3092695c660a9c2db6b17b91788a6c832d4ebfab7",
+   "type": "model/gltf-binary",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/exploration/jue-ju/model-20261006.glb",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/5b238377c2defb0d90e0/maanshan/media/exploration/jue-ju/model-20261006.glb",
+   "bytes": 3993048,
+   "sha256": "5b238377c2defb0d90e05867ce07bcbc4f74c153d28a07ab113192dc12723ad8",
+   "type": "model/gltf-binary",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/exploration/jue-ju/scene.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/3eac8c506e05880376bf/maanshan/media/exploration/jue-ju/scene.webp",
+   "bytes": 295680,
+   "sha256": "3eac8c506e05880376bf82ace96de0a8dca447c4534a8538d65f52afce21996b",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/exploration/ke-zhi/model-20261005.glb",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/61c12af1504d6da6619d/maanshan/media/exploration/ke-zhi/model-20261005.glb",
+   "bytes": 2600400,
+   "sha256": "61c12af1504d6da6619df0820eba72f63629becf52a072796ffc4d62ce4c0fc7",
+   "type": "model/gltf-binary",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/exploration/ke-zhi/model-20261006.glb",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2006a8f9f2435b468809/maanshan/media/exploration/ke-zhi/model-20261006.glb",
+   "bytes": 4116416,
+   "sha256": "2006a8f9f2435b468809e9c0581cbe4a19c02f8c2d6874a9ef1dfccdcccb36c4",
+   "type": "model/gltf-binary",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/exploration/ke-zhi/scene.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/364a966f1a380dbe01dc/maanshan/media/exploration/ke-zhi/scene.webp",
+   "bytes": 418978,
+   "sha256": "364a966f1a380dbe01dc7b28098da7af6a3a95a8d967823b8be3ed465ca5a0a8",
+   "type": "image/webp",
+   "poems": [
+    12
    ]
   },
   {
@@ -387,6 +522,9 @@
    "sha256": "fa9753ea598a3522da9b941bfeb11162e5418afd75a39856a77f1c09237b49e6",
    "type": "model/gltf-binary",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -398,6 +536,9 @@
    "type": "model/gltf-binary",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -407,6 +548,9 @@
    "sha256": "cd6ff9a12978705b44b3e51aa0bafea41fa9efee31f2209243354bfcd90959df",
    "type": "model/gltf-binary",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -418,6 +562,29 @@
    "type": "image/webp",
    "grades": [
     6
+   ],
+   "poems": [
+    6
+   ]
+  },
+  {
+   "path": "media/exploration/zheng-ren-mai-lu/model-20261005.glb",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/adcaaf9a72b6c3693f7a/maanshan/media/exploration/zheng-ren-mai-lu/model-20261005.glb",
+   "bytes": 2158588,
+   "sha256": "adcaaf9a72b6c3693f7af77df0f1750795195cdedc31b9d2cf5a2100c7d72158",
+   "type": "model/gltf-binary",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/exploration/zheng-ren-mai-lu/scene.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4b4ee7787100a2ef118d/maanshan/media/exploration/zheng-ren-mai-lu/scene.webp",
+   "bytes": 298352,
+   "sha256": "4b4ee7787100a2ef118dc8a7ff5a317f09ffe5269de6567d0099d49b0646446b",
+   "type": "image/webp",
+   "poems": [
+    11
    ]
   },
   {
@@ -427,6 +594,9 @@
    "sha256": "496f113640019b4f75a09648b9457c315dba9d72b4c1d864c3935d60fa68f890",
    "type": "video/mp4",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -438,6 +608,9 @@
    "type": "image/webp",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -447,6 +620,9 @@
    "sha256": "2b6cec2caebefc50900a04a4c4e5ec0b3e2f0ffe5959e5033d1ededa4834cfa4",
    "type": "image/webp",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -458,6 +634,9 @@
    "type": "image/webp",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -467,6 +646,9 @@
    "sha256": "b541b2c1b57723183c2167034031bc22bb44080faf87f1879c8a64b93bda8c9f",
    "type": "image/webp",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -478,6 +660,9 @@
    "type": "image/webp",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -487,6 +672,9 @@
    "sha256": "3c933258c96bf7967017acb972fb6c215a67f4677328a3dcb59a983aed33ec4e",
    "type": "image/webp",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -498,6 +686,9 @@
    "type": "image/webp",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -507,6 +698,9 @@
    "sha256": "e1c6f87c69534067f99c050b82c8e6789414de813397be2a6f7c7ea76ff3fdfc",
    "type": "image/webp",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -518,6 +712,9 @@
    "type": "image/webp",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -527,6 +724,9 @@
    "sha256": "1c8deb7b9982fd24874f950890e4069c3041d198bd62a47d5c54b56e71d1d1c3",
    "type": "image/webp",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -538,6 +738,9 @@
    "type": "image/webp",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -547,6 +750,9 @@
    "sha256": "0ebf7837a646e2302794e8368598097f8edac5d0910da8f285a6b42cb83ac562",
    "type": "image/webp",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -558,6 +764,779 @@
    "type": "image/webp",
    "grades": [
     5
+   ],
+   "poems": [
+    5
+   ]
+  },
+  {
+   "path": "media/hua-ji/animation-20261005.mp4",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/hua-ji/animation-20261005.mp4",
+   "bytes": 15268374,
+   "sha256": "6186b934f894f8e48078e4bf9c43494d0daea58be4fa04bb5dd586e006754584",
+   "type": "video/mp4",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/animation-poster-20261005.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/a196caf4b62202e26a46/maanshan/media/hua-ji/animation-poster-20261005.webp",
+   "bytes": 24474,
+   "sha256": "a196caf4b62202e26a467fb715609055a743533ae9001789cd5259813c8f6c34",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/avatar.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/3a4bb6accbd4b4041786/maanshan/media/hua-ji/avatar.webp",
+   "bytes": 71382,
+   "sha256": "3a4bb6accbd4b40417868c79c1ffb7f42b879e8ed080b8f2cc937f3c95fb1dcb",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/cover-final.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/adf8f393f08999d302f1/maanshan/media/hua-ji/cover-final.webp",
+   "bytes": 105628,
+   "sha256": "adf8f393f08999d302f1fcda1debd5219f6f3f22386900d7e38e924ea00ecdaa",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/cover.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/414105e2543b92650f89/maanshan/media/hua-ji/cover.webp",
+   "bytes": 54394,
+   "sha256": "414105e2543b92650f8976201edfa4e08d27b77998bde4f6b0e9394ea98429fe",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/game/door.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/0a8378f0c17497dffc06/maanshan/media/hua-ji/game/door.webp",
+   "bytes": 67480,
+   "sha256": "0a8378f0c17497dffc06d9febca13636fb089f975e3d03df66a69baecd7cbc51",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/game/lane.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/58e3a0f3a012a3d980db/maanshan/media/hua-ji/game/lane.webp",
+   "bytes": 92838,
+   "sha256": "58e3a0f3a012a3d980db53b3ec7eb388d0321b68cf5475b2d7c333aa0b22102e",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/game/night-head.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/41122811217ccd7780eb/maanshan/media/hua-ji/game/night-head.webp",
+   "bytes": 10880,
+   "sha256": "41122811217ccd7780eb045a9aaac91541feec1f6ca9cd3460b89ebca38eeae1",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/game/rooster-plate.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2d27f1988d76e17350cd/maanshan/media/hua-ji/game/rooster-plate.webp",
+   "bytes": 39202,
+   "sha256": "2d27f1988d76e17350cd1afce820caa11fa50afaab65ce1be919f65ebbd0ade4",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/game/rooster-walk.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/919a06892c29b0646a37/maanshan/media/hua-ji/game/rooster-walk.webp",
+   "bytes": 46270,
+   "sha256": "919a06892c29b0646a37eaa05c054f796aabd3db5d344b14457d591cca419281",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/game/roosters.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/f8ad0233113d436a8e5b/maanshan/media/hua-ji/game/roosters.webp",
+   "bytes": 36396,
+   "sha256": "f8ad0233113d436a8e5b0ff2cf13e84d78ebb4181ef7de40a3d7601b0fbd851e",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/game/villagers.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/fbf7fced2685b6337198/maanshan/media/hua-ji/game/villagers.webp",
+   "bytes": 35516,
+   "sha256": "fbf7fced2685b6337198b7a544d9be0824bf3a51f27016df6878fdb0ab1d4d9a",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/poster.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/5502509317690368b7cd/maanshan/media/hua-ji/poster.webp",
+   "bytes": 65750,
+   "sha256": "5502509317690368b7cdb8b61243f3b37bdfffd8f21ad9b0140e82219887faa9",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/preview-1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ecd5807e6b6b31861674/maanshan/media/hua-ji/preview-1.webp",
+   "bytes": 2476,
+   "sha256": "ecd5807e6b6b31861674e81766bd94baee5a8762a3ffb87fbb492ff83a031990",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/preview-2.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4149d618c6994bda3275/maanshan/media/hua-ji/preview-2.webp",
+   "bytes": 2520,
+   "sha256": "4149d618c6994bda32754a58020dd73870e8ce253330f3940457f94e999cda32",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/preview-3.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/341780499cd957b69c12/maanshan/media/hua-ji/preview-3.webp",
+   "bytes": 3740,
+   "sha256": "341780499cd957b69c12ff9fec38de8693d190502e8a8effdd21b15dc38b20ac",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/preview-4.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/be53899f57bd58c02cef/maanshan/media/hua-ji/preview-4.webp",
+   "bytes": 5338,
+   "sha256": "be53899f57bd58c02cef4f91c32f190d2cd8a970e614f224172348920a245639",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/scene-1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/a7f7a4c8dd3056926108/maanshan/media/hua-ji/scene-1.webp",
+   "bytes": 163908,
+   "sha256": "a7f7a4c8dd3056926108547f81b0b31c4ca52e5898951f475bc49be8eaae61cb",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/scene-2.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/04e4bb9a671aa01b1eb0/maanshan/media/hua-ji/scene-2.webp",
+   "bytes": 146564,
+   "sha256": "04e4bb9a671aa01b1eb0bb988a33b2dbef5545a25ce02cc24a034b5549e4b884",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/scene-3.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/5de9374e897066c9a13d/maanshan/media/hua-ji/scene-3.webp",
+   "bytes": 228352,
+   "sha256": "5de9374e897066c9a13debf3ad5c1c4202818111659b52922374af531492fc72",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/hua-ji/scene-4.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/bafc823899fe4d78fef3/maanshan/media/hua-ji/scene-4.webp",
+   "bytes": 308708,
+   "sha256": "bafc823899fe4d78fef3838f5451253c1a57f26e7f182938384a644836c86e64",
+   "type": "image/webp",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/jue-ju/animation-20261005.mp4",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/jue-ju/animation-20261005.mp4",
+   "bytes": 16225295,
+   "sha256": "fb2cfdd17ef1c4c3258a0d0929cccebc6bc341fa33f5c6f8107b241ce112be2d",
+   "type": "video/mp4",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/animation-poster-20261005.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/c38dd8d986920631a5e9/maanshan/media/jue-ju/animation-poster-20261005.webp",
+   "bytes": 40876,
+   "sha256": "c38dd8d986920631a5e98669b832a9c0ad773d46e7a445a457dc595635c966e3",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/avatar.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/abd7e14c9b54c860a8be/maanshan/media/jue-ju/avatar.webp",
+   "bytes": 75524,
+   "sha256": "abd7e14c9b54c860a8bea5aef4a75d0cc3006da041745045c7929bf2d7ca640a",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/cover-final.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/d2d1238f2529e07fd5ae/maanshan/media/jue-ju/cover-final.webp",
+   "bytes": 103420,
+   "sha256": "d2d1238f2529e07fd5ae8d65ba28a830a2cfbaf8b2fb59131aaaee23b4f5d29b",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/cover.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/6d0df4446859206d8679/maanshan/media/jue-ju/cover.webp",
+   "bytes": 91560,
+   "sha256": "6d0df4446859206d8679a099b6c70622946d8c48ade73f44a5cbc01d6c569180",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/boat.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4f2b41a5dc71da548a6b/maanshan/media/jue-ju/game/boat.webp",
+   "bytes": 44420,
+   "sha256": "4f2b41a5dc71da548a6bb508688642b0bcb266334a4c7eb5dc3b7541ef5cede3",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/brush.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/8499d689312f203aba83/maanshan/media/jue-ju/game/brush.webp",
+   "bytes": 5098,
+   "sha256": "8499d689312f203aba836820ae095f574b426a40c7040b6e8a5c50e978a2f959",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/egret-0.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/f03fdae50b1b0b767d43/maanshan/media/jue-ju/game/egret-0.webp",
+   "bytes": 11996,
+   "sha256": "f03fdae50b1b0b767d43d4ff7ca34a5a387f1aa5d4f9dfd028bb68bae5cb7c18",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/egret-1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2587aa70fd30a17ca5bf/maanshan/media/jue-ju/game/egret-1.webp",
+   "bytes": 11852,
+   "sha256": "2587aa70fd30a17ca5bfc401ac27459c903d532c541c990827525aa1daa0b05b",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/egret-2.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/30f74385544019e8759f/maanshan/media/jue-ju/game/egret-2.webp",
+   "bytes": 15398,
+   "sha256": "30f74385544019e8759f75152de2c08231aa6d26fb2a0d66b61895684a11b763",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/egret-3.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4b1213fd73bc79725d87/maanshan/media/jue-ju/game/egret-3.webp",
+   "bytes": 6086,
+   "sha256": "4b1213fd73bc79725d87efe8b2b3ebca745e7569093e55aef5c4565fa7923f46",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/egret-fly-0.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2c6eead83ed47b136398/maanshan/media/jue-ju/game/egret-fly-0.webp",
+   "bytes": 4000,
+   "sha256": "2c6eead83ed47b136398c2ebc9a78d8492c3978e6f0ecb991d7e7fd86a9f3140",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/egret-fly-1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/04762e3f862af7b04324/maanshan/media/jue-ju/game/egret-fly-1.webp",
+   "bytes": 2790,
+   "sha256": "04762e3f862af7b04324349341bed10e8d818163089b622ca41656dfae75521f",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/egret-fly-2.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/d09529ef9ce421503d0a/maanshan/media/jue-ju/game/egret-fly-2.webp",
+   "bytes": 2266,
+   "sha256": "d09529ef9ce421503d0ab19454dd83c60f107b98e4d581a6df817a8566643bd0",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/egret-fly-3.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/838c191be1516a2f0b66/maanshan/media/jue-ju/game/egret-fly-3.webp",
+   "bytes": 658,
+   "sha256": "838c191be1516a2f0b66e7ffa4e51de53f12d5bfe28027be9b1a80611483b648",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/oriole-a.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/f6b3ae684a4149b589f9/maanshan/media/jue-ju/game/oriole-a.webp",
+   "bytes": 5358,
+   "sha256": "f6b3ae684a4149b589f96766a4036bbfd84e21a28449bbb01f98fb00255720b0",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/oriole-b.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/b9b90b7668a1147c5461/maanshan/media/jue-ju/game/oriole-b.webp",
+   "bytes": 5530,
+   "sha256": "b9b90b7668a1147c5461cea562364fa0fd36a7979ac4817ab24faae855215e9d",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/oriole-fly-a.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/268fb0c22ff67a5017ba/maanshan/media/jue-ju/game/oriole-fly-a.webp",
+   "bytes": 13238,
+   "sha256": "268fb0c22ff67a5017ba535acf19d1d697cf603a537bd8fec67c2e8a3eb3d6ae",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/oriole-fly-b.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/c1615f62173f08cecae9/maanshan/media/jue-ju/game/oriole-fly-b.webp",
+   "bytes": 15920,
+   "sha256": "c1615f62173f08cecae9362c90b47dcbd68d9d00ebd7dc8330e5bdb8de566c64",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/oriole-gap.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/1387f9f9b941c46dfcf5/maanshan/media/jue-ju/game/oriole-gap.webp",
+   "bytes": 14120,
+   "sha256": "1387f9f9b941c46dfcf592e909cbf3835fb2896a25d3bba58ed2c73923004a80",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/pale-rest.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/3c48af39788e9732ae3e/maanshan/media/jue-ju/game/pale-rest.webp",
+   "bytes": 117918,
+   "sha256": "3c48af39788e9732ae3e3a0d8067ba99d1765658977fefcbafffdfd96f3354b6",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/pale-willow.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/3d3b6010cbd570b4b666/maanshan/media/jue-ju/game/pale-willow.webp",
+   "bytes": 90828,
+   "sha256": "3d3b6010cbd570b4b666bf6d56c1134f16085045fdf660a5a8df4326c2333f5e",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/post.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/1c8530e3979af75ec15c/maanshan/media/jue-ju/game/post.webp",
+   "bytes": 8726,
+   "sha256": "1c8530e3979af75ec15c37680f4f238aa53973b8f85e6d0a19e097d09b6742ea",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/shutter-l.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4139aed5f09650841cd0/maanshan/media/jue-ju/game/shutter-l.webp",
+   "bytes": 20356,
+   "sha256": "4139aed5f09650841cd00a7cd5f54b235a417f60497a11736d9a273ae4adefe4",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/shutter-r.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/900ce9bb3b9669114649/maanshan/media/jue-ju/game/shutter-r.webp",
+   "bytes": 20042,
+   "sha256": "900ce9bb3b9669114649eadcbb4f5d42cfc7eea9f72d84d659a28435401bfcd1",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/game/window-frame.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/a853f8ab21fad807ee3a/maanshan/media/jue-ju/game/window-frame.webp",
+   "bytes": 34394,
+   "sha256": "a853f8ab21fad807ee3a150b1e9369df214beed184a42d6fd959cf6b47344162",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/poster.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/142d7d1100d8f6ba151d/maanshan/media/jue-ju/poster.webp",
+   "bytes": 69880,
+   "sha256": "142d7d1100d8f6ba151de21fc28279e654690f158ffaeb3abc2706cd5fcf8777",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/preview-1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/d1b27dce4c90c926fc84/maanshan/media/jue-ju/preview-1.webp",
+   "bytes": 3682,
+   "sha256": "d1b27dce4c90c926fc84cde9e10c9be3f4919a5d997758cbc442efa255a0b117",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/preview-2.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/c0d483f8ca9cd88a6045/maanshan/media/jue-ju/preview-2.webp",
+   "bytes": 4012,
+   "sha256": "c0d483f8ca9cd88a60457794ceb8393491f6d890501db3251b92e5ed95722158",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/preview-3.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ee7ee9132aeb947bc168/maanshan/media/jue-ju/preview-3.webp",
+   "bytes": 4612,
+   "sha256": "ee7ee9132aeb947bc168254f23e70b2430d33f35fe42f7a701375b05dc7bfbf3",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/preview-4.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/15a0d1f481e7e6ace25c/maanshan/media/jue-ju/preview-4.webp",
+   "bytes": 4974,
+   "sha256": "15a0d1f481e7e6ace25c93da416b72e0ba31750889d1155499d94568d1b9d45c",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/scene-1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/6fbeea7af487f2dec1bb/maanshan/media/jue-ju/scene-1.webp",
+   "bytes": 282688,
+   "sha256": "6fbeea7af487f2dec1bba7429ffa4083536b6c743796772fa7c15266a15c45f0",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/scene-2.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4623d83ca211c8664034/maanshan/media/jue-ju/scene-2.webp",
+   "bytes": 224872,
+   "sha256": "4623d83ca211c8664034ae7121d8cc930f2ea7b0aba27bc67d08791c26d399d7",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/scene-3.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/1b46aa4079819500422c/maanshan/media/jue-ju/scene-3.webp",
+   "bytes": 236172,
+   "sha256": "1b46aa4079819500422cd2903570d86e6e320a0e78e4bcc688547e650de768b8",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/jue-ju/scene-4.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/636093dc0ec934142320/maanshan/media/jue-ju/scene-4.webp",
+   "bytes": 269494,
+   "sha256": "636093dc0ec93414232065b53b5e028145e08dcd1467465af42115ed877ae257",
+   "type": "image/webp",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/ke-zhi/animation-20261005.mp4",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/ke-zhi/animation-20261005.mp4",
+   "bytes": 20561172,
+   "sha256": "36fad20ddda6670f420b4a53b54c550ed90e6b9fe79244fdeb2fbce1f3e3ef95",
+   "type": "video/mp4",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/animation-poster-20261005.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/bc0a6f03d822eee32119/maanshan/media/ke-zhi/animation-poster-20261005.webp",
+   "bytes": 33912,
+   "sha256": "bc0a6f03d822eee32119aec2315e5f429e95dbb13e317545a39a62350232fd0f",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/avatar.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/277f403e15480e4c91fe/maanshan/media/ke-zhi/avatar.webp",
+   "bytes": 86220,
+   "sha256": "277f403e15480e4c91fe67e55530d848e3ba0bdcf7dbd6981a9da1abe22b1567",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/cover-final.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/d8102171fdff88e365e9/maanshan/media/ke-zhi/cover-final.webp",
+   "bytes": 152058,
+   "sha256": "d8102171fdff88e365e9380b8986d8bd7092c5c60e9748b2819affa6c0e10274",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/cover.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/41d99fb31ce986f1c356/maanshan/media/ke-zhi/cover.webp",
+   "bytes": 135026,
+   "sha256": "41d99fb31ce986f1c356f3f61cfcd92769ee8992aa2777771d8e117ce1ebe348",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/game/broom-gap.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/3ced333ae0eccca92b46/maanshan/media/ke-zhi/game/broom-gap.webp",
+   "bytes": 16842,
+   "sha256": "3ced333ae0eccca92b46d9c3b6a5ba2e8eda233ac88c34eeb402feef7b06bfda",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/game/broom.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/c3df136dd8363df90eee/maanshan/media/ke-zhi/game/broom.webp",
+   "bytes": 32936,
+   "sha256": "c3df136dd8363df90eee751f5b663b11723980a198c95697ffbf011f137f78cf",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/game/dish-feast.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/0cd014b399792a74f7a4/maanshan/media/ke-zhi/game/dish-feast.webp",
+   "bytes": 103836,
+   "sha256": "0cd014b399792a74f7a43d5b62eb8cae6dbb16f02d22efa1915ef9f4820d673d",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/game/dish-home.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/1ae73c0ced91d883d9a1/maanshan/media/ke-zhi/game/dish-home.webp",
+   "bytes": 57544,
+   "sha256": "1ae73c0ced91d883d9a15824f96146e29a37cb4febe9b589cefa46a34b0d7e90",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/game/door.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2986ad61b30dca16e235/maanshan/media/ke-zhi/game/door.webp",
+   "bytes": 103722,
+   "sha256": "2986ad61b30dca16e2354a8f39e40a3ffd6313985a947e63989dd16ab457f60c",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/game/wine-new.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/955656cd64dc75535809/maanshan/media/ke-zhi/game/wine-new.webp",
+   "bytes": 51640,
+   "sha256": "955656cd64dc75535809e3ca9b25ecc0efb014656534ca6827bea63d8b2b03ff",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/game/wine-old.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/321d37103a60313b0561/maanshan/media/ke-zhi/game/wine-old.webp",
+   "bytes": 58898,
+   "sha256": "321d37103a60313b056112abe823dc0e2a8063481ad2330d59bdfe3fc72562c6",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/poster.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ac14f0f51d0c00682c3e/maanshan/media/ke-zhi/poster.webp",
+   "bytes": 79698,
+   "sha256": "ac14f0f51d0c00682c3e0c2a4b90c4fc6a6f16a804b4ca29f06ffad40138d6c8",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/preview-1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/e41d05827bf0734063bf/maanshan/media/ke-zhi/preview-1.webp",
+   "bytes": 5498,
+   "sha256": "e41d05827bf0734063bf3aa6f49c9cca10d6747edeae02e0b18f915dc4f5b009",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/preview-2.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/5f4312c0406c6187cb9c/maanshan/media/ke-zhi/preview-2.webp",
+   "bytes": 6678,
+   "sha256": "5f4312c0406c6187cb9c5ba50baf10e8c4ec9650bc8ba043c08778a7f5065c25",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/preview-3.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ae84b437a7da07884d37/maanshan/media/ke-zhi/preview-3.webp",
+   "bytes": 6536,
+   "sha256": "ae84b437a7da07884d373b8f63f8437801c84117912af9c0389af230e492e300",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/preview-4.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/11c46d0f600efdefae77/maanshan/media/ke-zhi/preview-4.webp",
+   "bytes": 6786,
+   "sha256": "11c46d0f600efdefae770fe7724bd12671ca02cbfddb0a6163bc7a032ad1db88",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/scene-1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4584e62303f168f03cec/maanshan/media/ke-zhi/scene-1.webp",
+   "bytes": 438780,
+   "sha256": "4584e62303f168f03cec5f66f17485b7b03aac9dca8925c1b2498731b745a5f2",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/scene-2.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/b7998dfe41fec1395d24/maanshan/media/ke-zhi/scene-2.webp",
+   "bytes": 506900,
+   "sha256": "b7998dfe41fec1395d24ed01031ba2271702f29009ed67eb404a99632a8fe447",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/scene-3.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/b6560d074a02dbb6f256/maanshan/media/ke-zhi/scene-3.webp",
+   "bytes": 440338,
+   "sha256": "b6560d074a02dbb6f256b6af647faef57a4ef58a28fa4bc349846d42919f7574",
+   "type": "image/webp",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/ke-zhi/scene-4.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/b6032672dbd705ef9078/maanshan/media/ke-zhi/scene-4.webp",
+   "bytes": 437292,
+   "sha256": "b6032672dbd705ef9078be7e9fcad649b7c81de2ffe5235314e98fabea3ab075",
+   "type": "image/webp",
+   "poems": [
+    12
    ]
   },
   {
@@ -567,6 +1546,9 @@
    "sha256": "4e819ae9a9782074c7abb3d9998f8fbd9412877e02b8dc08c2a052e6e1aadadd",
    "type": "model/gltf-binary",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -578,6 +1560,9 @@
    "type": "image/webp",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -588,6 +1573,9 @@
    "type": "model/gltf-binary",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -597,6 +1585,9 @@
    "sha256": "b29cf5681d39ae1ceaea71c3f45a1b965759778cba6af3c348386f77a3d4f289",
    "type": "image/webp",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -629,6 +1620,9 @@
    "type": "image/webp",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -638,6 +1632,9 @@
    "sha256": "c959fd98be1882491cc8603e7b1382eb35ea446202965e0e3537a46aeebabb97",
    "type": "image/webp",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -649,6 +1646,9 @@
    "type": "image/webp",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -658,6 +1658,9 @@
    "sha256": "c26bb430039d3b8d073bf01e032316a5bd3ab680ea0073453347395c5d4ad0df",
    "type": "image/webp",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -669,6 +1672,9 @@
    "type": "image/webp",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -678,6 +1684,9 @@
    "sha256": "6a4bb8d41de210e96b50295e5053e23124414961d7499fe6ec5a578c1dea7413",
    "type": "image/webp",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -689,6 +1698,9 @@
    "type": "image/webp",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -698,6 +1710,9 @@
    "sha256": "8798628b65c6d06f5c343314f80c19f2614912688dd38d6bac7b1a977d3473a0",
    "type": "image/webp",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -709,6 +1724,9 @@
    "type": "image/webp",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -718,6 +1736,9 @@
    "sha256": "0fa13e02778c963f428719fcc5c54255f00df33ed35649f4f76878bf16d50a96",
    "type": "image/webp",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -729,6 +1750,9 @@
    "type": "image/webp",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -738,6 +1762,9 @@
    "sha256": "301eb0e53e077151c6f8d8663da1f36f13f27fd0c052c9ca0b3d1a555c31da8a",
    "type": "image/webp",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -749,6 +1776,9 @@
    "type": "image/webp",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -758,6 +1788,9 @@
    "sha256": "b9d2ceda7bb68346d9692c2b91ab5d0c35eb80570c1ca5299c7b04671062f284",
    "type": "image/webp",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -769,6 +1802,9 @@
    "type": "image/webp",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -778,6 +1814,9 @@
    "sha256": "afe35795b99d31078c8cd2b6440be245bedd2d83d7d331ab7cfb853854ace430",
    "type": "image/webp",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -789,6 +1828,9 @@
    "type": "image/webp",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -799,6 +1841,199 @@
    "type": "image/webp",
    "grades": [
     1
+   ],
+   "poems": [
+    1
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/animation-20261005.mp4",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/qi-bu-shi/animation-20261005.mp4",
+   "bytes": 21576970,
+   "sha256": "240da7c471ef6c7f1465426f3823a880a41c729ef5fc5c905eeb6a75f6c9541d",
+   "type": "video/mp4",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/animation-poster-20261005.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/b29a3c7fa410403850a5/maanshan/media/qi-bu-shi/animation-poster-20261005.webp",
+   "bytes": 39218,
+   "sha256": "b29a3c7fa410403850a51b1fa89d537eabda07643c0c1b2ac44e5b16f28f8079",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/avatar.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/741c4c4f8a6263e55a4f/maanshan/media/qi-bu-shi/avatar.webp",
+   "bytes": 55210,
+   "sha256": "741c4c4f8a6263e55a4f9b0a230d4bd8e320eff136e556bb0d424e85ec5f022a",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/cover-final.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/121e79f9726691a56e9a/maanshan/media/qi-bu-shi/cover-final.webp",
+   "bytes": 96962,
+   "sha256": "121e79f9726691a56e9a1b0ffc9893262f64b0e81bdbea4493d434e279a151fc",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/cover.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/b6b5dac3085ee9e40871/maanshan/media/qi-bu-shi/cover.webp",
+   "bytes": 87690,
+   "sha256": "b6b5dac3085ee9e408714d76d8e2b34815357136ba7550357aa5b9fd2d7738fd",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/game/basin-empty.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/24dd049a36b2974b7ffd/maanshan/media/qi-bu-shi/game/basin-empty.webp",
+   "bytes": 17644,
+   "sha256": "24dd049a36b2974b7ffdaf64f80dc78354d852858fab1dad7261c2528d4e8614",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/game/bean-basket.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4f7d293febbfa9265b9c/maanshan/media/qi-bu-shi/game/bean-basket.webp",
+   "bytes": 47298,
+   "sha256": "4f7d293febbfa9265b9c1b69dff265d6c136f3aa707bff751445f42adffb4c3b",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/game/bean-stalks.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/d2af0b598208124dc7d6/maanshan/media/qi-bu-shi/game/bean-stalks.webp",
+   "bytes": 59666,
+   "sha256": "d2af0b598208124dc7d6dc6d82930c6ca304e210aca1e1a0d4e570c1189663db",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/game/firewood.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/60a3e4194b3aaba9bb27/maanshan/media/qi-bu-shi/game/firewood.webp",
+   "bytes": 50788,
+   "sha256": "60a3e4194b3aaba9bb27b2af6f6b661653af2611d3777470a53314d1a046718c",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/game/gourd-ladle.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/564e804a5d560d830432/maanshan/media/qi-bu-shi/game/gourd-ladle.webp",
+   "bytes": 25824,
+   "sha256": "564e804a5d560d830432c5a84666468723df81f64752e16acf1d9e0109cb38b0",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/game/pot-water.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4dfcad0ccd4a3d0f2811/maanshan/media/qi-bu-shi/game/pot-water.webp",
+   "bytes": 12238,
+   "sha256": "4dfcad0ccd4a3d0f28114a386656e2df45d8430f6b5b17d5c3b0d8d776252b49",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/game/strainer-empty.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/c095d15079949380bccf/maanshan/media/qi-bu-shi/game/strainer-empty.webp",
+   "bytes": 20808,
+   "sha256": "c095d15079949380bccfd5d6b2067716c055a49642725d55c380407ecddb8cb0",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/poster.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/87102e06623ccbe62ef5/maanshan/media/qi-bu-shi/poster.webp",
+   "bytes": 50998,
+   "sha256": "87102e06623ccbe62ef526276ec500ccb0bc0bc2da259857af1b8fcd3830e094",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/preview-1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ffacd3b66a59659aed2f/maanshan/media/qi-bu-shi/preview-1.webp",
+   "bytes": 3758,
+   "sha256": "ffacd3b66a59659aed2f4fc8d92a206b773930476d51bb7eef1a9b2d43121af8",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/preview-2.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ef3a425adb7d6589c3d5/maanshan/media/qi-bu-shi/preview-2.webp",
+   "bytes": 4070,
+   "sha256": "ef3a425adb7d6589c3d51259396420a25e485b424bdbc4131d57342a984c8824",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/preview-3.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2af45cd9b28969541888/maanshan/media/qi-bu-shi/preview-3.webp",
+   "bytes": 4820,
+   "sha256": "2af45cd9b28969541888f81eb2deefcee063fe85490184802fc439d475ec8f13",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/scene-1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/1d2dc08267c3a4f30008/maanshan/media/qi-bu-shi/scene-1.webp",
+   "bytes": 280240,
+   "sha256": "1d2dc08267c3a4f3000832e03f7eddac5527f4e2a7d7f3187efff319eedfc1b9",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/scene-2.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/60be6893d6f1d89fda3f/maanshan/media/qi-bu-shi/scene-2.webp",
+   "bytes": 258680,
+   "sha256": "60be6893d6f1d89fda3fd5430470941bf5b2bdd0a7967249692072b1a420d029",
+   "type": "image/webp",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/qi-bu-shi/scene-3.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/17322176fd2d54ff52b0/maanshan/media/qi-bu-shi/scene-3.webp",
+   "bytes": 271488,
+   "sha256": "17322176fd2d54ff52b07f03b00ab94837579ad9ec2d9696a1ff7d175639a8e6",
+   "type": "image/webp",
+   "poems": [
+    9
    ]
   },
   {
@@ -808,6 +2043,9 @@
    "sha256": "17ee215143ed1e208585b689056fa7b10476fc17ba5d1a440c65452985c9926f",
    "type": "audio/mpeg",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -819,6 +2057,9 @@
    "type": "audio/mpeg",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -828,6 +2069,9 @@
    "sha256": "39b1cba118c3322462ad8dc743e0bd4151d0c9b1754a0e555644de2c28bcee1d",
    "type": "audio/mpeg",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -839,6 +2083,9 @@
    "type": "audio/mpeg",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -848,6 +2095,9 @@
    "sha256": "9a39d433afd1a6111500f33fbee4aa276b5fb66be24ed4770e3797cc5c902dfd",
    "type": "audio/mpeg",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -859,6 +2109,9 @@
    "type": "audio/mpeg",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -868,6 +2121,9 @@
    "sha256": "396c1558570da32ccfc2b404d8120ac5897c2ca9bdd4b1512046ebea2ca40d47",
    "type": "audio/mpeg",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -879,6 +2135,9 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -888,6 +2147,9 @@
    "sha256": "bf925678bb03f5a0fa0f7cc6ec842a54df624ac6097b70c5a7c064f56eadb66c",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -899,6 +2161,9 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -908,6 +2173,9 @@
    "sha256": "bf1cc9b2288120e2758bf2b12c919f570fdc317a5680e54b048b4bbaed39c9d9",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -919,6 +2187,9 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -928,6 +2199,9 @@
    "sha256": "6c94c8e7f30ec7aeef2026cd2641239a64041aee82d0fb1da6e6ada3f555e32d",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -939,6 +2213,9 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -948,6 +2225,9 @@
    "sha256": "f6479562b6bd82bd9479734b390054de5deb821a6e350478f024ecbfa84d3aba",
    "type": "audio/mpeg",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -959,6 +2239,9 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -968,6 +2251,9 @@
    "sha256": "47d74a2c9af6f987e89be1bc83d20bf32fff01809ca91a2991a7fd60be91287c",
    "type": "audio/mpeg",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -979,6 +2265,9 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -988,6 +2277,9 @@
    "sha256": "05c4b8b3f11cc81ad1324132cbef6687b971d93c17be82378cc45afa97a9cca1",
    "type": "audio/mpeg",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -999,6 +2291,9 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -1008,6 +2303,9 @@
    "sha256": "7cb60861e3df437a425148f32180ecb519cc3f9ba47e20500d9532de39834e47",
    "type": "audio/mpeg",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -1019,6 +2317,9 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -1028,6 +2329,9 @@
    "sha256": "52db47a4f8106b3c5716568cac0ba96a7d19f65e382ff3822c049f5b74456252",
    "type": "audio/mpeg",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -1039,6 +2343,9 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -1048,6 +2355,9 @@
    "sha256": "9c6dfad5d36949e49bd28211b5528a116581a8dc7e2bb437148703a6c9c93b39",
    "type": "audio/mpeg",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -1059,6 +2369,9 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -1068,6 +2381,9 @@
    "sha256": "7008b8c62dd7846918b63a7193adf65cbf99908b2fea1c87706e41675fb1fd81",
    "type": "audio/mpeg",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -1079,6 +2395,9 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -1088,6 +2407,9 @@
    "sha256": "df6fe591c629edc930d45c4bbd6585e186bff9b0bbe41a6071052ed38a4b5653",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -1099,6 +2421,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -1108,6 +2433,9 @@
    "sha256": "29ff176fec534f3a4573693fd041a275d11afb8ca649116cd2d0d865d6af3cd8",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -1119,6 +2447,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -1128,6 +2459,9 @@
    "sha256": "7a831f201c252c968e00771856152ad63db7aa90f16a281bac4971aa302e875c",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -1139,6 +2473,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -1148,6 +2485,9 @@
    "sha256": "2ad61068030b0a30a596ff4a681dd51c2483eeee1236982ddcbb28cf527caae1",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -1159,6 +2499,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -1168,6 +2511,9 @@
    "sha256": "a07b4544dcae25cbbbc6b5fcd0959e5f51ebe2ae78551465246ac0efa4c40a59",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -1179,6 +2525,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -1188,6 +2537,9 @@
    "sha256": "b48d4ede2ffd7fb40a30c171853006f6fe89a1a1f02b4ca637c69ecf459d4cd5",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -1199,6 +2551,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -1208,6 +2563,9 @@
    "sha256": "c0b90cce041274417fc0ea3f82049c7ada197e1f6360a4d546ee66f71ba751e7",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -1219,6 +2577,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -1228,6 +2589,9 @@
    "sha256": "dd3c6da984a837d20396b769c5f5baf7be77c29beeae8662594ba7347fc8c3f7",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -1239,6 +2603,9 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -1248,6 +2615,9 @@
    "sha256": "d71a1791f3f37a81e46ff8024839a610a8aa38a843c7a8d6c3cf1d0ae87fa612",
    "type": "audio/mpeg",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -1259,6 +2629,9 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -1268,6 +2641,9 @@
    "sha256": "00f684f6db57207b6548a46c0b05f46272dd7d86065c2d51ba50924ab7e90755",
    "type": "audio/mpeg",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -1279,6 +2655,9 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -1288,6 +2667,9 @@
    "sha256": "ee697bb3b0c1916b8289cd9ede9719374c6534d5e7f2c17a5d4b5756fea892ec",
    "type": "audio/mpeg",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -1299,6 +2681,559 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p10-author.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p10-author.mp3",
+   "bytes": 23555,
+   "sha256": "f8091176f16d4f969e5bfa5e6bc0dcf959da4368814db34445eff32167cc5ec2",
+   "type": "audio/mpeg",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p10-line1.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p10-line1.mp3",
+   "bytes": 61171,
+   "sha256": "ee58a19b249f3eab20fc969fcce67dbcfc3c445406c6ec12d288858d5bd19b88",
+   "type": "audio/mpeg",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p10-line2.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p10-line2.mp3",
+   "bytes": 61171,
+   "sha256": "c99c914a6ee3bcd6f2c4ad66e6fde54a76ee214cd488851761f171aef3cfb696",
+   "type": "audio/mpeg",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p10-line3.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p10-line3.mp3",
+   "bytes": 62738,
+   "sha256": "4be5b949cc4ce7fa36b87462f74c7b9654403a1e76f5a78d983653b0c6768c7c",
+   "type": "audio/mpeg",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p10-line4.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p10-line4.mp3",
+   "bytes": 70053,
+   "sha256": "a1a54e288828ac06f17890b119d61d9260a56627ab5bafb8e9b446cf50c20a5e",
+   "type": "audio/mpeg",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p10-poem.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p10-poem.mp3",
+   "bytes": 295228,
+   "sha256": "ef639f4819beb0e3e8a3f0d1d5403d01f80b0f3570fb1e0d9c84f0a959a52250",
+   "type": "audio/mpeg",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p10-title.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p10-title.mp3",
+   "bytes": 20943,
+   "sha256": "efc30d390be52f86aeec33f3fe0487c40a3d24735e6e14dce2c59e778b76a70b",
+   "type": "audio/mpeg",
+   "poems": [
+    10
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p11-author.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p11-author.mp3",
+   "bytes": 47065,
+   "sha256": "b43276fb1e61043dc72f374b5b81e41e10a8e72ac71b6725a1c8fdcbc6681e25",
+   "type": "audio/mpeg",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p11-line1.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p11-line1.mp3",
+   "bytes": 142673,
+   "sha256": "4957af603ec61bdca312e8b6bf15754c083971b5d9eae7e34e489b9d86ee990a",
+   "type": "audio/mpeg",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p11-line2.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p11-line2.mp3",
+   "bytes": 177155,
+   "sha256": "483257574a5102c33d86f885b1855ab2ebec4ea8df8ba314e6650d0a730bef4f",
+   "type": "audio/mpeg",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p11-line3.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p11-line3.mp3",
+   "bytes": 154167,
+   "sha256": "56293384374270fe9ae1055b7db37d78652f23938e365db31e387ae41c506e96",
+   "type": "audio/mpeg",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p11-line4.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p11-line4.mp3",
+   "bytes": 203277,
+   "sha256": "f1ef5821238196afbd3ea8c6edef9a10742c050ab96fccb96b45417e48a19f35",
+   "type": "audio/mpeg",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p11-poem.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p11-poem.mp3",
+   "bytes": 737743,
+   "sha256": "cb1b9840451fd48505a9543c9471e3deb91418305588495cd6dc0aabc400e92b",
+   "type": "audio/mpeg",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p11-title.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p11-title.mp3",
+   "bytes": 50200,
+   "sha256": "25785ca1c1660f1a1aeb43560f8c4d16bea5e5db97e64a79a9bd90f35bfd6464",
+   "type": "audio/mpeg",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p12-author.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-author.mp3",
+   "bytes": 21465,
+   "sha256": "dfdc2763887fb3c39aedd695601ce20c7954bd8f69c7c50ebc932051dd15e3c8",
+   "type": "audio/mpeg",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p12-line1.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-line1.mp3",
+   "bytes": 131179,
+   "sha256": "7151c114e52bc00544a0e0e486506e6f2c4bf2bb10658cfe7ed76af1ec2d6de7",
+   "type": "audio/mpeg",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p12-line2.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-line2.mp3",
+   "bytes": 129089,
+   "sha256": "fce9cb0c201e52309cbb57a17cc4be53c2666d2e7237d57689b4061abfc42db8",
+   "type": "audio/mpeg",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p12-line3.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-line3.mp3",
+   "bytes": 129089,
+   "sha256": "051813468d16a085880ab2c33aeec016483fe6aefa840a3ee4cadea473eb69eb",
+   "type": "audio/mpeg",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p12-line4.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-line4.mp3",
+   "bytes": 137971,
+   "sha256": "e09010660c9b11e98bb9401afc8efbaf908113e8d120e2ae2e0c5331f8cd4bff",
+   "type": "audio/mpeg",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p12-poem.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-poem.mp3",
+   "bytes": 612877,
+   "sha256": "9f1498d672bc82224a0c7114da822cd45f2ef3f2d22ff38e7e9be16a3557ad14",
+   "type": "audio/mpeg",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p12-title.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-title.mp3",
+   "bytes": 20943,
+   "sha256": "5ac950e6c76791dc001c41c6404aeff6c0b052b6cdfac2a042ced1423fe61698",
+   "type": "audio/mpeg",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p12-verse1.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-verse1.mp3",
+   "bytes": 62738,
+   "sha256": "95cc8ca99c997d7c4a5212cb233a1f570a8eabe5fc55ea79e491d2852855204a",
+   "type": "audio/mpeg",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p12-verse2.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-verse2.mp3",
+   "bytes": 56992,
+   "sha256": "8bd637876e92c84cdcea4d6e1016253b7865e44f017869d5c85a3ee0955b227f",
+   "type": "audio/mpeg",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p12-verse3.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-verse3.mp3",
+   "bytes": 58036,
+   "sha256": "66b71fd04c2ae438a1a02068f13e58def5e8af907d7d9e26375b761fd6ca35ab",
+   "type": "audio/mpeg",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p12-verse4.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-verse4.mp3",
+   "bytes": 61171,
+   "sha256": "b0038075ed15dd5c051be93e8b0816f418ee879beefbda89866c2c59dd1c131c",
+   "type": "audio/mpeg",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p12-verse5.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-verse5.mp3",
+   "bytes": 57514,
+   "sha256": "44706b761bdd1dd4d5edadc3bffc4038c7dcc8f0c14e79861c577fc15ff5e4fc",
+   "type": "audio/mpeg",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p12-verse6.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-verse6.mp3",
+   "bytes": 62216,
+   "sha256": "2549ccf1bdd6b2ee8b1fbb899f684aa2fbb3a497b3819438d77a9305e1531d4e",
+   "type": "audio/mpeg",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p12-verse7.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-verse7.mp3",
+   "bytes": 61694,
+   "sha256": "924b031ca270328347e8616f1a7ba9f2ceca7c79cca288466024881da32901bc",
+   "type": "audio/mpeg",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p12-verse8.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p12-verse8.mp3",
+   "bytes": 65351,
+   "sha256": "9173b82361a3b5f1b42eaf4fef03520786c55d730ffef31d2d765f4c590d0011",
+   "type": "audio/mpeg",
+   "poems": [
+    12
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p7-author.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p7-author.mp3",
+   "bytes": 21987,
+   "sha256": "c5a6e5aee1775d457bab7372343020bd9568f1a8f30ccc77f972af41463f1026",
+   "type": "audio/mpeg",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p7-line1.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p7-line1.mp3",
+   "bytes": 84159,
+   "sha256": "189e0bb12414319bd1f5db35e7738e15473916c16a1c9b0b8f917d8214fb3940",
+   "type": "audio/mpeg",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p7-line2.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p7-line2.mp3",
+   "bytes": 78934,
+   "sha256": "36285b421c675d49a512c7add8218c6a0649156e4959b73d1ac89187f050d9ac",
+   "type": "audio/mpeg",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p7-line3.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p7-line3.mp3",
+   "bytes": 84681,
+   "sha256": "bb24a0cb6ea8d09c37d310257590b1c4c4f1f2142dd023aa647305b015217794",
+   "type": "audio/mpeg",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p7-line4.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p7-line4.mp3",
+   "bytes": 86771,
+   "sha256": "b5dd9755ee50d3666b81cd3aa7b0adea78b4530ec17ebd9054b76cc40f3a2e64",
+   "type": "audio/mpeg",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p7-poem.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p7-poem.mp3",
+   "bytes": 408600,
+   "sha256": "cd3ea0c7ee4bf9a60c468394bebb6e45dd35d7e3e68e251291ea9ce3b659cd53",
+   "type": "audio/mpeg",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p7-title.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p7-title.mp3",
+   "bytes": 24600,
+   "sha256": "1367d383f917021420ae104440179cbe2683d981faff7274a7c833b21fd4afc6",
+   "type": "audio/mpeg",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p8-author.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p8-author.mp3",
+   "bytes": 22510,
+   "sha256": "7372024f6a2234e1052daa2f761304db60e02dce5ce817f1c241225dc08ac2f2",
+   "type": "audio/mpeg",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p8-line1.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p8-line1.mp3",
+   "bytes": 62738,
+   "sha256": "3268833b377356b4ad710e1ad6a13c01e214cf348eb94c30e2892dceaca7bce2",
+   "type": "audio/mpeg",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p8-line2.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p8-line2.mp3",
+   "bytes": 61171,
+   "sha256": "566752c336d36aecb5b03ff581590c7e5f3f177a828d4f94f3b39572f42d48a6",
+   "type": "audio/mpeg",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p8-line3.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p8-line3.mp3",
+   "bytes": 58036,
+   "sha256": "c581c1fe0c9bbdaa77f8905f1fc08f1767d64c08e15783f3a8b2c6532617fdd7",
+   "type": "audio/mpeg",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p8-line4.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p8-line4.mp3",
+   "bytes": 72143,
+   "sha256": "632007faa28052d41b2e8c40bb51bc42b6ce527e5db8342f368437bf6bd08579",
+   "type": "audio/mpeg",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p8-poem.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p8-poem.mp3",
+   "bytes": 307767,
+   "sha256": "b6fec7273921533b5b77351d8da1f0f8d33bcb0b2c70dded312a6fd0649312f3",
+   "type": "audio/mpeg",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p8-title.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p8-title.mp3",
+   "bytes": 20943,
+   "sha256": "82fe1ff27f86855ea6bd6948e37acf49960597fe917b9bad9b027002bcd4775d",
+   "type": "audio/mpeg",
+   "poems": [
+    8
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p9-author.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-author.mp3",
+   "bytes": 21987,
+   "sha256": "79a517e9a72c042bd9c3e4635222b5bdc9e1352c9b6904926911b6fdc1e57ada",
+   "type": "audio/mpeg",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p9-line1.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-line1.mp3",
+   "bytes": 108192,
+   "sha256": "02bfc9b068336c3fd1dd128930d77c2d1384148c38ca6f63ef8f215caae391c6",
+   "type": "audio/mpeg",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p9-line2.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-line2.mp3",
+   "bytes": 107147,
+   "sha256": "10ed64d1c7217faa30be231793360923becae9c09e3cdced091939e9abf9fe80",
+   "type": "audio/mpeg",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p9-line3.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-line3.mp3",
+   "bytes": 113416,
+   "sha256": "fde8a64485b8f3c43487f5acb39b5ccf42727fc4322bcbaea9210f1f71601e03",
+   "type": "audio/mpeg",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p9-poem.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-poem.mp3",
+   "bytes": 368894,
+   "sha256": "62782ce913004fa708bc40773f8e4e02f53579618d01f74bf7ed6c5122871ec3",
+   "type": "audio/mpeg",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p9-title.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-title.mp3",
+   "bytes": 26689,
+   "sha256": "dea00340ed804c7d31e2eb87cba89c9c714a511b00ca9c84462fdc0c5c093dd3",
+   "type": "audio/mpeg",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p9-verse1.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-verse1.mp3",
+   "bytes": 44453,
+   "sha256": "5793089a699da82b111b67181f920dcd6befd7a38b13219ebd67b1974278c657",
+   "type": "audio/mpeg",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p9-verse2.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-verse2.mp3",
+   "bytes": 44975,
+   "sha256": "02c57516d0245f24feb2acf10ffc1e5298ff02f1de9f35aa79a9bd7fae176dba",
+   "type": "audio/mpeg",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p9-verse3.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-verse3.mp3",
+   "bytes": 46543,
+   "sha256": "3ba398adee286a5a64ac11ebb32a434d23fc2a93200c71e01f28aff9062b56ab",
+   "type": "audio/mpeg",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p9-verse4.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-verse4.mp3",
+   "bytes": 47587,
+   "sha256": "d5846783dd6603cb0b5e79ba4769a804c77e39641d9fcf53cd761a3edba5fb3d",
+   "type": "audio/mpeg",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p9-verse5.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-verse5.mp3",
+   "bytes": 46543,
+   "sha256": "32ff849ddaecb38b0cc272271172a84d9796ea373095305c9f78b8ac07cafef3",
+   "type": "audio/mpeg",
+   "poems": [
+    9
+   ]
+  },
+  {
+   "path": "media/recitations/round2-20261005/p9-verse6.mp3",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-1dac2fccfd303178eb13/maanshan/media/recitations/round2-20261005/p9-verse6.mp3",
+   "bytes": 60649,
+   "sha256": "9e4965968987ce112a8c26dea2cc34a50ced0999b45626f819429d972d43bf7a",
+   "type": "audio/mpeg",
+   "poems": [
+    9
    ]
   },
   {
@@ -1379,6 +3314,10 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4,
+    10
    ]
   },
   {
@@ -1389,6 +3328,9 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -1398,6 +3340,9 @@
    "sha256": "3a656ea2dbab49aa9d3fccbfecfb2fd3c6b7741a4907b78bdfc5791dead4b14e",
    "type": "audio/mpeg",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -1430,6 +3375,9 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -1439,6 +3387,9 @@
    "sha256": "55995708799eabb873ca1b2259688eb05f758530dbbfb9c275bfd5d900c1cc4c",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -1485,6 +3436,9 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -1494,6 +3448,9 @@
    "sha256": "337d85f3d12dbd0e6950cde1e5c9a2c519a953bc8c4ad0e0664d75dd36df0036",
    "type": "audio/mpeg",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -1561,6 +3518,9 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -1570,6 +3530,9 @@
    "sha256": "268ae1f26ddfa0b3455681fbeb20b0353277886857767a4605e292890e4fcd5a",
    "type": "audio/mpeg",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -1602,6 +3565,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -1611,6 +3577,9 @@
    "sha256": "543f1d862214f04cf29a9f4e1bf34eee385a02130e9b054dbd2beaf52c93e3a6",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -1622,6 +3591,9 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -1631,6 +3603,9 @@
    "sha256": "48a4e85a0fc8e46a2f7dffc0dd52d02e55f4694fe7ef6af44cc75e478db195c8",
    "type": "audio/mpeg",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -1642,6 +3617,9 @@
    "type": "audio/mpeg",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -1651,6 +3629,9 @@
    "sha256": "92bd16f03cb835c0d36204a70d0f6761a56318d38e44c961abb7292f8016afce",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -1676,6 +3657,9 @@
    "type": "audio/mpeg",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -1685,6 +3669,9 @@
    "sha256": "c26db3f90674627ae8e2ffaa23dd1a24a6cd11e8575b1aa55fe2c0eb9a2b2c48",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -1696,6 +3683,9 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -1705,6 +3695,9 @@
    "sha256": "1008bff576438e4df106df03185af0d8cfe2d75e5efef68d79b692b710496e3e",
    "type": "audio/mpeg",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -1751,6 +3744,9 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -1777,6 +3773,13 @@
     1,
     3,
     4
+   ],
+   "poems": [
+    1,
+    3,
+    4,
+    9,
+    10
    ]
   },
   {
@@ -1787,6 +3790,9 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -1796,6 +3802,9 @@
    "sha256": "9b4a08fcb1ebca8dfb435e761ebeb0e705cb4182d4f4cc0f12023a78add8acc1",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -1821,6 +3830,9 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -1845,6 +3857,9 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -1854,6 +3869,9 @@
    "sha256": "dfdae4ee0ce3ab1893084bbbbdce92963cf3fa1a343e3ba75929c628d1f355b1",
    "type": "audio/mpeg",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -1886,6 +3904,9 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -1895,6 +3916,9 @@
    "sha256": "cf66df93c2dbbb5f155a6578bd8e457a8fe44d5e9779d271b3fc72a0efdee509",
    "type": "audio/mpeg",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -1928,6 +3952,11 @@
    "grades": [
     1,
     6
+   ],
+   "poems": [
+    1,
+    6,
+    7
    ]
   },
   {
@@ -1945,6 +3974,9 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -1954,6 +3986,9 @@
    "sha256": "fb41f1c18341ed8105d1e4fc2ae9104c9fb22551e9a855177d94188336a01220",
    "type": "audio/mpeg",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -1979,6 +4014,9 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -2003,6 +4041,9 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -2013,6 +4054,9 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -2022,6 +4066,9 @@
    "sha256": "78cf302238aec2d32bcc5fc2fd02d23534b7ecb6d47931b5e69688c9e7f846e1",
    "type": "audio/mpeg",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -2039,6 +4086,9 @@
    "sha256": "9192e78e0938d15984832086152148e8ed85acb13cda3585f6833d58f55a3a22",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -2063,6 +4113,9 @@
    "sha256": "3fc82ca0288af6c7b40d76123d13fe5b082336c776b8c2e1859722057860b464",
    "type": "audio/mpeg",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -2095,6 +4148,9 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -2105,6 +4161,9 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -2114,6 +4173,9 @@
    "sha256": "df2354a18c6d1e2387ec3353981eef918fd1880f1912008f8331c5036ce9ed87",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -2137,6 +4199,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -2146,6 +4222,9 @@
    "sha256": "7d48b80d2b82ecb89e462e6815e487fc2aa1e5fe443ba8472e57e13a638486da",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -2178,6 +4257,9 @@
    "type": "audio/mpeg",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -2187,6 +4269,9 @@
    "sha256": "0fb856174a4c4b079f655d8593b47d5dd51e7484ec97ec64f81ae5d90635569b",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -2219,6 +4304,9 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -2236,6 +4324,9 @@
    "type": "audio/mpeg",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -2245,6 +4336,9 @@
    "sha256": "384f7166264be3a018352ef36b167a8e50c574399fa3ca049b79039e13b8bb01",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -2256,6 +4350,10 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6,
+    10
    ]
   },
   {
@@ -2266,6 +4364,9 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -2275,6 +4376,9 @@
    "sha256": "1e540b5a26ea4ed60fb81ca124e3921fdc7eff1e5b9449d19c128c48f0deeb6d",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -2293,6 +4397,9 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -2302,6 +4409,9 @@
    "sha256": "8ed6edf65be78d43009bebac480af383f5b2f411146598c686e95c15e6db2e73",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -2362,6 +4472,9 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -2379,6 +4492,9 @@
    "type": "audio/mpeg",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -2388,6 +4504,9 @@
    "sha256": "08eda6b63dba1cb7e42c88e3022114cd98e57c11bb2dce35b98f94a0376f4d4c",
    "type": "audio/mpeg",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -2412,6 +4531,9 @@
    "sha256": "ddefb66fd53a631ab5aeccd75b452a179bf731dd4e1f3763af02548c6a4cd381",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -2472,6 +4594,9 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -2481,6 +4606,9 @@
    "sha256": "36ae02d3ada261f5870fada92fe08b4e7820961a7f58906cf18526d72aee5db2",
    "type": "audio/mpeg",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -2513,6 +4641,9 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -2522,6 +4653,9 @@
    "sha256": "07fc0d16dcff2658d6d3bb53f151e472c3100337fa527f99fa808eceb2f2344b",
    "type": "audio/mpeg",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -2539,6 +4673,9 @@
    "sha256": "665577ce1e5183841b9d162a4f52f3032a7471b7dbe9e9eeec4f784703efe604",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -2564,6 +4701,9 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -2573,6 +4713,9 @@
    "sha256": "c2b81c10a948f7e71f6d11e3810be2f0c32cd94afd6dc7780480f1fcb8065199",
    "type": "audio/mpeg",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -2591,6 +4734,9 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -2601,6 +4747,9 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -2610,6 +4759,9 @@
    "sha256": "134f16ff9938d7eb1da1f8ea7470cb3b468c3a98bacf0e4d2ae7f6ee5ab3d33c",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -2649,6 +4801,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -2665,6 +4820,9 @@
    "sha256": "e5fe59ca34ad2ffd33458985b52f217d2c76654c242d5a8e7aa9644474252c30",
    "type": "audio/mpeg",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -2683,6 +4841,9 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -2692,6 +4853,9 @@
    "sha256": "cb02beae4c45efaafb56eae6a72d4186f1c7a0d47fb7e8cf90163dcd0e360206",
    "type": "audio/mpeg",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -2710,6 +4874,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -2727,6 +4894,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -2737,6 +4907,9 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -2746,6 +4919,9 @@
    "sha256": "40cc9e5c55b399d00126a298f381c6f04ae122abde03d1dc82877ce1b3a74558",
    "type": "audio/mpeg",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -2771,6 +4947,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -2787,6 +4966,10 @@
    "sha256": "d2376e50208bc26a1ceb4eb22f8665d81c73ae9217ffc0354aac8cba988ff76d",
    "type": "audio/mpeg",
    "grades": [
+    1,
+    4
+   ],
+   "poems": [
     1,
     4
    ]
@@ -2820,6 +5003,9 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -2829,6 +5015,9 @@
    "sha256": "59172670d094f9171b0649be506060cd6ea5939a730853cc30d4976506dd745e",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -2840,6 +5029,9 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -2849,6 +5041,9 @@
    "sha256": "1cae49515032b5764661af89d23f7b05dccdfaeff53f4860a4a5feb469c69b07",
    "type": "audio/mpeg",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -2874,6 +5069,9 @@
    "type": "audio/mpeg",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -2883,6 +5081,9 @@
    "sha256": "3bb8383e16921c421d98b5f10a3d11252931e5939766ffbc61a19b13ddf20b61",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -2894,6 +5095,9 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -2903,6 +5107,9 @@
    "sha256": "5337c1122f7c28087dc09906c685ddb5c538b081036ee5f6ff89e6136671adf2",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -2935,6 +5142,9 @@
    "type": "audio/mpeg",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -2944,6 +5154,9 @@
    "sha256": "b7f32a38d92f426415a099e6f0ec44146f7d005b02d5aac88a9fa79b932c3996",
    "type": "audio/mpeg",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -2968,6 +5181,9 @@
    "sha256": "176da032c73feba8cb44ede820ade45b3c7948c2f12d2df8de55ad665b820594",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -3000,6 +5216,9 @@
    "type": "audio/mpeg",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -3016,6 +5235,9 @@
    "sha256": "d6f887d8df937ff104e7aac4b69645a7a18d12a1c4f5f2f9dde953d5564a49b6",
    "type": "audio/mpeg",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -3034,6 +5256,9 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -3043,6 +5268,9 @@
    "sha256": "c13e94919162a9636ae63d556abea10acd9d754d44e55a6c490fade8fc8bc522",
    "type": "audio/mpeg",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -3061,6 +5289,9 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -3071,6 +5302,9 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -3080,6 +5314,9 @@
    "sha256": "9a3b57e00f8b2a4ac5d4f899a56542898ff17aa0f1d00e711c548d0d724cbac2",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -3126,6 +5363,9 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -3135,6 +5375,9 @@
    "sha256": "d125501be0e4b01e27fb867dcab55804f21d9ea90d73903f7b05add8d21167a4",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -3160,6 +5403,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -3169,6 +5415,9 @@
    "sha256": "d75b489cb4cc4ea3ee223559a40b9c2b0373a1d196b848c53e04a95d4889d766",
    "type": "audio/mpeg",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -3193,6 +5442,9 @@
    "sha256": "d2f9c4b979b224dd9bc789153d00a02018af092ef5cfff25c8d62068349eb06d",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -3225,6 +5477,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -3241,6 +5496,9 @@
    "sha256": "f262cb52f7dd5414c8c7a9306c1fb92a1e16b21d38836b038867cd708a826559",
    "type": "audio/mpeg",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -3266,6 +5524,9 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -3275,6 +5536,9 @@
    "sha256": "8ff7d363a51eb1c5f4e0ea8fe1e9302f70d7b42bf2f0dd6d2e512f8dacacc254",
    "type": "audio/mpeg",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -3300,6 +5564,9 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -3309,6 +5576,9 @@
    "sha256": "8a4e4eaecaa0f38cd288eebe5f0c1f04563eea6b659a0dcd2343feb5c32a5f3b",
    "type": "video/mp4",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -3320,6 +5590,9 @@
    "type": "image/webp",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -3329,6 +5602,9 @@
    "sha256": "c1035b2e050ea1d34bc8401e82489a93e73ea777daae75c7878edb291e7ff843",
    "type": "image/webp",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -3340,6 +5616,9 @@
    "type": "image/webp",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -3349,6 +5628,9 @@
    "sha256": "97d84f40b9a2fbb4f2ee2960679bbd501a5d1925bff7e5a93ea02a1115780682",
    "type": "image/webp",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -3360,6 +5642,9 @@
    "type": "image/webp",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -3369,6 +5654,9 @@
    "sha256": "200aa1cb3a4c1386ffeeb64003c8b18c12fc6affc72d8bcd57c5fd0617a54c4f",
    "type": "image/webp",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -3380,6 +5668,9 @@
    "type": "image/webp",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -3389,6 +5680,9 @@
    "sha256": "971451f60fdb82274b4ccc3d2e29d54d1b74d1cce0e99d86697ce7f8a2ba6890",
    "type": "image/webp",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -3400,6 +5694,9 @@
    "type": "image/webp",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -3409,6 +5706,9 @@
    "sha256": "7a217c1c7e0e621eebe473c0a5098342648490c24b21341aeabcb72cda6dbf41",
    "type": "image/webp",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -3420,6 +5720,9 @@
    "type": "image/webp",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -3430,6 +5733,9 @@
    "type": "image/webp",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -3439,6 +5745,9 @@
    "sha256": "27c48033abe0947af3ec3784053552e4bb99561b1a280eda5b5b89f78469769e",
    "type": "image/webp",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -3452,6 +5761,11 @@
     2,
     4,
     6
+   ],
+   "poems": [
+    2,
+    4,
+    6
    ]
   },
   {
@@ -3461,6 +5775,9 @@
    "sha256": "cb7ff195effdb7d97f3ff1f844e6261f127d474e2a9279bc2a393eb2c8c8f3fd",
    "type": "audio/mpeg",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -3473,6 +5790,11 @@
    "grades": [
     1,
     3
+   ],
+   "poems": [
+    1,
+    3,
+    7
    ]
   },
   {
@@ -3485,6 +5807,14 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    4,
+    5,
+    6,
+    7,
+    11,
+    12
    ]
   },
   {
@@ -3495,6 +5825,10 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2,
+    11
    ]
   },
   {
@@ -3505,6 +5839,10 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3,
+    12
    ]
   },
   {
@@ -3516,6 +5854,12 @@
    "grades": [
     2,
     6
+   ],
+   "poems": [
+    2,
+    6,
+    10,
+    12
    ]
   },
   {
@@ -3528,6 +5872,17 @@
     3,
     5,
     6
+   ],
+   "poems": [
+    3,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -3538,6 +5893,11 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6,
+    7,
+    9
    ]
   },
   {
@@ -3553,6 +5913,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -3564,6 +5938,12 @@
    "grades": [
     2,
     6
+   ],
+   "poems": [
+    2,
+    6,
+    10,
+    12
    ]
   },
   {
@@ -3574,6 +5954,10 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3,
+    10
    ]
   },
   {
@@ -3584,6 +5968,11 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6,
+    9,
+    10
    ]
   },
   {
@@ -3595,6 +5984,11 @@
    "grades": [
     3,
     4
+   ],
+   "poems": [
+    3,
+    4,
+    12
    ]
   },
   {
@@ -3619,6 +6013,10 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2,
+    8
    ]
   },
   {
@@ -3633,6 +6031,19 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -3644,6 +6055,11 @@
    "grades": [
     3,
     5
+   ],
+   "poems": [
+    3,
+    5,
+    11
    ]
   },
   {
@@ -3659,6 +6075,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -3681,6 +6111,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -3695,6 +6139,19 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -3704,6 +6161,9 @@
    "sha256": "38d1c2f779754f71a28f1766152d14b5be17de7a958be5b88a2417a001dde0c1",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -3716,6 +6176,11 @@
    "grades": [
     2,
     4
+   ],
+   "poems": [
+    2,
+    4,
+    10
    ]
   },
   {
@@ -3726,6 +6191,12 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4,
+    8,
+    10,
+    11
    ]
   },
   {
@@ -3743,6 +6214,9 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -3758,6 +6232,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -3770,6 +6258,12 @@
     3,
     4,
     5
+   ],
+   "poems": [
+    3,
+    4,
+    5,
+    11
    ]
   },
   {
@@ -3787,6 +6281,11 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5,
+    9,
+    11
    ]
   },
   {
@@ -3799,6 +6298,12 @@
     3,
     5,
     6
+   ],
+   "poems": [
+    3,
+    5,
+    6,
+    11
    ]
   },
   {
@@ -3808,6 +6313,9 @@
    "sha256": "afc59b3a5d558ea2d01f8979551e58008b41e2e546bc69f34ebaaf2599dc8caf",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -3819,6 +6327,10 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4,
+    7
    ]
   },
   {
@@ -3832,6 +6344,13 @@
     3,
     4,
     5
+   ],
+   "poems": [
+    2,
+    3,
+    4,
+    5,
+    11
    ]
   },
   {
@@ -3844,6 +6363,12 @@
     2,
     4,
     5
+   ],
+   "poems": [
+    2,
+    4,
+    5,
+    11
    ]
   },
   {
@@ -3854,6 +6379,11 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3,
+    8,
+    11
    ]
   },
   {
@@ -3863,6 +6393,9 @@
    "sha256": "7ed617a8e989784cc67d95358d3a0db686e39dba458d3a82c05d6cba68ded415",
    "type": "audio/mpeg",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -3881,6 +6414,10 @@
    "type": "audio/mpeg",
    "grades": [
     1
+   ],
+   "poems": [
+    1,
+    8
    ]
   },
   {
@@ -3891,6 +6428,10 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4,
+    7
    ]
   },
   {
@@ -3901,6 +6442,9 @@
    "type": "audio/mpeg",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -3910,6 +6454,10 @@
    "sha256": "5c5251c87e01cf5684691dd793820c4ef9b5cc121e2c35fd19d65ed41ec0ac4a",
    "type": "audio/mpeg",
    "grades": [
+    2,
+    6
+   ],
+   "poems": [
     2,
     6
    ]
@@ -3923,6 +6471,14 @@
    "grades": [
     3,
     5
+   ],
+   "poems": [
+    3,
+    5,
+    7,
+    8,
+    9,
+    10
    ]
   },
   {
@@ -3935,6 +6491,14 @@
     1,
     4,
     6
+   ],
+   "poems": [
+    1,
+    4,
+    6,
+    7,
+    8,
+    10
    ]
   },
   {
@@ -3945,6 +6509,11 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5,
+    10,
+    12
    ]
   },
   {
@@ -3954,6 +6523,9 @@
    "sha256": "f60b626d76e0e6af93ad6096f5d9dffc1210bb8992d35f743a253f4c002ff244",
    "type": "audio/mpeg",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -3965,6 +6537,10 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3,
+    10
    ]
   },
   {
@@ -3974,6 +6550,9 @@
    "sha256": "47dc9cbd8e56da892d752c1af58ed085c961316a5eed572f79d931f3f9e2853a",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -3985,6 +6564,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -3994,6 +6576,9 @@
    "sha256": "230163f5c987fe4b112705b3083320b8dada674e8bfc44f13348f2c23a7575e8",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -4006,6 +6591,13 @@
    "grades": [
     1,
     4
+   ],
+   "poems": [
+    1,
+    4,
+    7,
+    8,
+    10
    ]
   },
   {
@@ -4016,6 +6608,10 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6,
+    10
    ]
   },
   {
@@ -4026,6 +6622,11 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6,
+    7,
+    8
    ]
   },
   {
@@ -4041,6 +6642,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -4053,6 +6668,14 @@
     1,
     2,
     5
+   ],
+   "poems": [
+    1,
+    2,
+    5,
+    7,
+    8,
+    10
    ]
   },
   {
@@ -4065,6 +6688,16 @@
     2,
     4,
     6
+   ],
+   "poems": [
+    2,
+    4,
+    6,
+    7,
+    8,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -4080,6 +6713,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -4091,6 +6738,13 @@
    "grades": [
     1,
     3
+   ],
+   "poems": [
+    1,
+    3,
+    7,
+    9,
+    10
    ]
   },
   {
@@ -4100,6 +6754,9 @@
    "sha256": "6cd7da73bc2e454b96e1639ee10d48c766ccd36522003165924f322634fcdb75",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -4111,6 +6768,9 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -4120,6 +6780,9 @@
    "sha256": "7000c2b264ef473851bb45c143560b9ac7bcf80c43aeaf39c240fe05add635dd",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -4133,6 +6796,13 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    4,
+    5,
+    6,
+    10,
+    12
    ]
   },
   {
@@ -4148,6 +6818,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -4158,6 +6842,11 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5,
+    10,
+    12
    ]
   },
   {
@@ -4175,6 +6864,9 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -4186,6 +6878,11 @@
    "grades": [
     3,
     6
+   ],
+   "poems": [
+    3,
+    6,
+    10
    ]
   },
   {
@@ -4195,6 +6892,9 @@
    "sha256": "742aaeefadfe6054e1d67d1c2ddbadf4144272d1acf85d72a355c55eeae8029a",
    "type": "audio/mpeg",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -4208,6 +6908,11 @@
     1,
     2,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    6
    ]
   },
   {
@@ -4218,6 +6923,10 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4,
+    12
    ]
   },
   {
@@ -4230,6 +6939,13 @@
     1,
     4,
     6
+   ],
+   "poems": [
+    1,
+    4,
+    6,
+    9,
+    10
    ]
   },
   {
@@ -4240,6 +6956,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -4249,6 +6968,9 @@
    "sha256": "fb6b3a7582bc7cac6e7de29198a759950ad532ae0556a3ee511f5a7761ffda4d",
    "type": "audio/mpeg",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -4269,6 +6991,14 @@
     1,
     4,
     6
+   ],
+   "poems": [
+    1,
+    4,
+    6,
+    7,
+    10,
+    12
    ]
   },
   {
@@ -4282,6 +7012,14 @@
     3,
     4,
     5
+   ],
+   "poems": [
+    2,
+    3,
+    4,
+    5,
+    8,
+    10
    ]
   },
   {
@@ -4291,6 +7029,9 @@
    "sha256": "9c29d6ed8c2491ccd5a2c76e2a5b8102d3f917cb07de6ae43c00a6d463e16edb",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -4303,6 +7044,11 @@
    "grades": [
     4,
     5
+   ],
+   "poems": [
+    4,
+    5,
+    7
    ]
   },
   {
@@ -4312,6 +7058,9 @@
    "sha256": "b7a9c2a992a947d0adbc50af0f650687cafd28d447e438a1aa26aeac020f8aac",
    "type": "audio/mpeg",
    "grades": [
+    3
+   ],
+   "poems": [
     3
    ]
   },
@@ -4323,6 +7072,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -4332,6 +7084,9 @@
    "sha256": "1be17a4e74b73851ee9e49c281231b23191bdc21709f1ca3c4d21a7f07105a0e",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -4347,6 +7102,16 @@
     3,
     4,
     5
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    7,
+    9,
+    11
    ]
   },
   {
@@ -4361,6 +7126,19 @@
     3,
     4,
     5
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -4371,6 +7149,12 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6,
+    7,
+    11,
+    12
    ]
   },
   {
@@ -4381,6 +7165,10 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2,
+    8
    ]
   },
   {
@@ -4390,6 +7178,9 @@
    "sha256": "be781350dc08d74cffa22e191c205da40375550c4a27eb492e1890845563e01a",
    "type": "audio/mpeg",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -4406,6 +7197,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -4416,6 +7221,10 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5,
+    12
    ]
   },
   {
@@ -4434,6 +7243,12 @@
    "grades": [
     4,
     6
+   ],
+   "poems": [
+    4,
+    6,
+    10,
+    12
    ]
   },
   {
@@ -4445,6 +7260,12 @@
    "grades": [
     1,
     6
+   ],
+   "poems": [
+    1,
+    6,
+    7,
+    9
    ]
   },
   {
@@ -4460,6 +7281,19 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
    ]
   },
   {
@@ -4471,6 +7305,11 @@
    "grades": [
     3,
     4
+   ],
+   "poems": [
+    3,
+    4,
+    9
    ]
   },
   {
@@ -4488,6 +7327,9 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3
    ]
   },
   {
@@ -4503,6 +7345,19 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
    ]
   },
   {
@@ -4513,6 +7368,10 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5,
+    8
    ]
   },
   {
@@ -4522,6 +7381,9 @@
    "sha256": "abeb98c6e1bd119b5479ef9bb1ed27af0ee9cf34d6ed5817747e264a243af37f",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -4534,6 +7396,11 @@
    "grades": [
     4,
     5
+   ],
+   "poems": [
+    4,
+    5,
+    11
    ]
   },
   {
@@ -4545,6 +7412,12 @@
    "grades": [
     3,
     6
+   ],
+   "poems": [
+    3,
+    6,
+    7,
+    8
    ]
   },
   {
@@ -4556,6 +7429,11 @@
    "grades": [
     2,
     4
+   ],
+   "poems": [
+    2,
+    4,
+    9
    ]
   },
   {
@@ -4565,6 +7443,9 @@
    "sha256": "6e44babfcc45ae1e928c25f233224917930b315a6d051a78dc1edfdfa9c8e983",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -4576,6 +7457,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -4586,6 +7470,10 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4,
+    11
    ]
   },
   {
@@ -4595,6 +7483,10 @@
    "sha256": "c1cbdbc7af7e5a52d1df747eebd851199c98ae8f8966be74b424caa7f7d76c83",
    "type": "audio/mpeg",
    "grades": [
+    2,
+    4
+   ],
+   "poems": [
     2,
     4
    ]
@@ -4607,6 +7499,9 @@
    "type": "audio/mpeg",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -4616,6 +7511,9 @@
    "sha256": "c76bfa875b0d2a62e5457043305f50c3aad211ecf6d155d74e72135e266dde03",
    "type": "audio/mpeg",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -4627,6 +7525,12 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2,
+    7,
+    8,
+    10
    ]
   },
   {
@@ -4642,6 +7546,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -4651,6 +7569,9 @@
    "sha256": "b964ff3df675ad5c4fcf3a0f68503722347ba64aa2f3a23954ad723b3a946950",
    "type": "audio/mpeg",
    "grades": [
+    4
+   ],
+   "poems": [
     4
    ]
   },
@@ -4663,6 +7584,14 @@
    "grades": [
     2,
     5
+   ],
+   "poems": [
+    2,
+    5,
+    7,
+    8,
+    10,
+    12
    ]
   },
   {
@@ -4674,6 +7603,11 @@
    "grades": [
     2,
     5
+   ],
+   "poems": [
+    2,
+    5,
+    11
    ]
   },
   {
@@ -4683,6 +7617,10 @@
    "sha256": "b01df519df9212bf480df69f7289063cc3516663e5af9bfb27032b2c8553d985",
    "type": "audio/mpeg",
    "grades": [
+    4,
+    5
+   ],
+   "poems": [
     4,
     5
    ]
@@ -4696,6 +7634,11 @@
    "grades": [
     4,
     5
+   ],
+   "poems": [
+    4,
+    5,
+    12
    ]
   },
   {
@@ -4711,6 +7654,19 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -4722,6 +7678,11 @@
    "grades": [
     5,
     6
+   ],
+   "poems": [
+    5,
+    6,
+    8
    ]
   },
   {
@@ -4733,6 +7694,11 @@
    "grades": [
     5,
     6
+   ],
+   "poems": [
+    5,
+    6,
+    10
    ]
   },
   {
@@ -4747,6 +7713,18 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -4769,6 +7747,18 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -4780,6 +7770,12 @@
    "grades": [
     3,
     4
+   ],
+   "poems": [
+    3,
+    4,
+    9,
+    11
    ]
   },
   {
@@ -4791,6 +7787,12 @@
    "grades": [
     1,
     3
+   ],
+   "poems": [
+    1,
+    3,
+    7,
+    10
    ]
   },
   {
@@ -4800,6 +7802,10 @@
    "sha256": "b18416b60055723b88691e138c7b8d9959d1c6f0c85754c13652e50072d223fa",
    "type": "audio/mpeg",
    "grades": [
+    4,
+    5
+   ],
+   "poems": [
     4,
     5
    ]
@@ -4812,6 +7818,9 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5
    ]
   },
   {
@@ -4823,6 +7832,10 @@
    "grades": [
     5,
     6
+   ],
+   "poems": [
+    5,
+    6
    ]
   },
   {
@@ -4832,6 +7845,9 @@
    "sha256": "f3c3c6c2299e828ea87857c2ecac1f8c86c3086d12dc788b39f79549418a9f1c",
    "type": "audio/mpeg",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -4847,6 +7863,18 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -4856,6 +7884,9 @@
    "sha256": "a3811cac5e0fa9f06f200fa5279338fa7b66cecc6a9ef7aabf273c999087963a",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -4868,6 +7899,12 @@
    "grades": [
     3,
     6
+   ],
+   "poems": [
+    3,
+    6,
+    10,
+    12
    ]
   },
   {
@@ -4878,6 +7915,10 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3,
+    7
    ]
   },
   {
@@ -4893,6 +7934,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -4907,6 +7962,17 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    11,
+    12
    ]
   },
   {
@@ -4921,6 +7987,19 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -4932,6 +8011,11 @@
    "grades": [
     1,
     5
+   ],
+   "poems": [
+    1,
+    5,
+    10
    ]
   },
   {
@@ -4949,6 +8033,9 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4
    ]
   },
   {
@@ -4959,6 +8046,9 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -4968,6 +8058,9 @@
    "sha256": "b795b0a442915ba3a01030803c887c4d026d9fbc88daa06927150bbc43f8328c",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -4998,6 +8091,16 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    9
    ]
   },
   {
@@ -5009,6 +8112,11 @@
    "grades": [
     3,
     6
+   ],
+   "poems": [
+    3,
+    6,
+    12
    ]
   },
   {
@@ -5018,6 +8126,10 @@
    "sha256": "779c46a8fe0b24bc0651ce43ec067a70ccb70093542e15b3f926ba848d33ee70",
    "type": "audio/mpeg",
    "grades": [
+    4,
+    5
+   ],
+   "poems": [
     4,
     5
    ]
@@ -5033,6 +8145,15 @@
     3,
     4,
     6
+   ],
+   "poems": [
+    1,
+    3,
+    4,
+    6,
+    9,
+    10,
+    12
    ]
   },
   {
@@ -5044,6 +8165,10 @@
    "grades": [
     5,
     6
+   ],
+   "poems": [
+    5,
+    6
    ]
   },
   {
@@ -5053,6 +8178,9 @@
    "sha256": "926626013296f7db2dc14e2726d80c9137a5fc3306548a7591e51e8e0cc60bc4",
    "type": "audio/mpeg",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -5073,6 +8201,17 @@
     1,
     2,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -5084,6 +8223,10 @@
    "grades": [
     3,
     5
+   ],
+   "poems": [
+    3,
+    5
    ]
   },
   {
@@ -5093,6 +8236,9 @@
    "sha256": "618a2dbb8fd720279a1d396639289ec20300de2f25e661ad3029c65bbdd25298",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -5113,6 +8259,12 @@
     1,
     4,
     5
+   ],
+   "poems": [
+    1,
+    4,
+    5,
+    10
    ]
   },
   {
@@ -5123,6 +8275,10 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4,
+    11
    ]
   },
   {
@@ -5134,6 +8290,13 @@
    "grades": [
     5,
     6
+   ],
+   "poems": [
+    5,
+    6,
+    7,
+    8,
+    10
    ]
   },
   {
@@ -5149,6 +8312,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -5158,6 +8335,9 @@
    "sha256": "acf29e232ffbe710272838ac79940c0007beb3229331f0b034dbb0b65d94c591",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -5174,6 +8354,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -5185,6 +8379,16 @@
    "grades": [
     2,
     6
+   ],
+   "poems": [
+    2,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -5203,6 +8407,11 @@
    "grades": [
     3,
     4
+   ],
+   "poems": [
+    3,
+    4,
+    12
    ]
   },
   {
@@ -5212,6 +8421,9 @@
    "sha256": "8cfbf77e5c7cbbb2d814e0780821e55c3dc05332656961a5bc51bf7a89fe93be",
    "type": "audio/mpeg",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -5230,6 +8442,10 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4,
+    10
    ]
   },
   {
@@ -5245,6 +8461,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -5257,6 +8487,13 @@
     2,
     3,
     4
+   ],
+   "poems": [
+    2,
+    3,
+    4,
+    9,
+    12
    ]
   },
   {
@@ -5266,6 +8503,9 @@
    "sha256": "27608aec250c51fffe853a50f41833907d99cd1c608f5ec66ca0082c6b157420",
    "type": "audio/mpeg",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -5282,6 +8522,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -5293,6 +8547,12 @@
    "grades": [
     1,
     6
+   ],
+   "poems": [
+    1,
+    6,
+    7,
+    9
    ]
   },
   {
@@ -5304,6 +8564,11 @@
    "grades": [
     2,
     5
+   ],
+   "poems": [
+    2,
+    5,
+    11
    ]
   },
   {
@@ -5313,6 +8578,9 @@
    "sha256": "a2c5303f4f6b5ab64eabb2fbea3d217e5e2da13a9f5183f260a38bd6bc77b214",
    "type": "audio/mpeg",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -5324,6 +8592,10 @@
    "type": "audio/mpeg",
    "grades": [
     1
+   ],
+   "poems": [
+    1,
+    8
    ]
   },
   {
@@ -5338,6 +8610,17 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    12
    ]
   },
   {
@@ -5348,6 +8631,9 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -5357,6 +8643,9 @@
    "sha256": "f0c735756fb6dd8eeedb3f09094d2e141ea3f86bf30b3cfd927fbd018e3c4bf8",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -5369,6 +8658,12 @@
    "grades": [
     2,
     3
+   ],
+   "poems": [
+    2,
+    3,
+    7,
+    12
    ]
   },
   {
@@ -5380,6 +8675,11 @@
    "grades": [
     3,
     4
+   ],
+   "poems": [
+    3,
+    4,
+    9
    ]
   },
   {
@@ -5391,6 +8691,16 @@
    "grades": [
     2,
     6
+   ],
+   "poems": [
+    2,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -5401,6 +8711,10 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2,
+    10
    ]
   },
   {
@@ -5411,6 +8725,10 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5,
+    10
    ]
   },
   {
@@ -5420,6 +8738,9 @@
    "sha256": "6c7e8cf1d1612a1fe2161a52ec26d55ae52a20585a05b06066c68b5fd754c776",
    "type": "audio/mpeg",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -5431,6 +8752,10 @@
    "type": "audio/mpeg",
    "grades": [
     5
+   ],
+   "poems": [
+    5,
+    9
    ]
   },
   {
@@ -5440,6 +8765,9 @@
    "sha256": "f74c8406bf8cfb375511806f649198ed5354ad62300495df84fb3ece3b581c6e",
    "type": "audio/mpeg",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -5456,6 +8784,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -5465,6 +8807,10 @@
    "sha256": "5adb2606c3ac4a0d15a61fc30c703414e025b186afa8e5f2ce7b70fb30cbeb39",
    "type": "audio/mpeg",
    "grades": [
+    4,
+    6
+   ],
+   "poems": [
     4,
     6
    ]
@@ -5485,6 +8831,10 @@
    "grades": [
     4,
     6
+   ],
+   "poems": [
+    4,
+    6
    ]
   },
   {
@@ -5495,6 +8845,10 @@
    "type": "audio/mpeg",
    "grades": [
     4
+   ],
+   "poems": [
+    4,
+    12
    ]
   },
   {
@@ -5504,6 +8858,9 @@
    "sha256": "e0df8659254e6704a9ca952894d54d20344b80545a84c57437e0a7eb8c68b709",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -5516,6 +8873,11 @@
    "grades": [
     1,
     3
+   ],
+   "poems": [
+    1,
+    3,
+    7
    ]
   },
   {
@@ -5525,6 +8887,9 @@
    "sha256": "6757a4e65c566ee55d871a7e22d588be825bc229663ced69f498c88f3fd834ff",
    "type": "audio/mpeg",
    "grades": [
+    5
+   ],
+   "poems": [
     5
    ]
   },
@@ -5544,6 +8909,10 @@
    "grades": [
     2,
     4
+   ],
+   "poems": [
+    2,
+    4
    ]
   },
   {
@@ -5554,6 +8923,10 @@
    "type": "audio/mpeg",
    "grades": [
     2
+   ],
+   "poems": [
+    2,
+    9
    ]
   },
   {
@@ -5566,6 +8939,16 @@
     2,
     4,
     6
+   ],
+   "poems": [
+    2,
+    4,
+    6,
+    7,
+    8,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -5575,6 +8958,10 @@
    "sha256": "0056c58efe8d3a89e6a958b39345613b7ab6baeda85b1bfa9b0ec518fb461490",
    "type": "audio/mpeg",
    "grades": [
+    4,
+    5
+   ],
+   "poems": [
     4,
     5
    ]
@@ -5587,6 +8974,10 @@
    "type": "audio/mpeg",
    "grades": [
     3
+   ],
+   "poems": [
+    3,
+    9
    ]
   },
   {
@@ -5600,6 +8991,15 @@
     3,
     4,
     5
+   ],
+   "poems": [
+    1,
+    3,
+    4,
+    5,
+    7,
+    9,
+    10
    ]
   },
   {
@@ -5611,6 +9011,14 @@
    "grades": [
     3,
     5
+   ],
+   "poems": [
+    3,
+    5,
+    7,
+    8,
+    9,
+    10
    ]
   },
   {
@@ -5626,6 +9034,20 @@
     4,
     5,
     6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -5636,6 +9058,10 @@
    "type": "audio/mpeg",
    "grades": [
     6
+   ],
+   "poems": [
+    6,
+    8
    ]
   },
   {
@@ -5645,6 +9071,9 @@
    "sha256": "03060538e03b49e0b85192398c22a4de832b12ad0dc21025b23230d533eac204",
    "type": "video/mp4",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -5656,6 +9085,9 @@
    "type": "image/webp",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -5665,6 +9097,9 @@
    "sha256": "ce09a212b4fa06963123df9984db11deed5f1e85ba77174926b4043bfcf5264a",
    "type": "image/webp",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -5676,6 +9111,9 @@
    "type": "image/webp",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -5685,6 +9123,9 @@
    "sha256": "f735d3de4c783f52dea3a18098a5bd8118f9e1e127589da2db64fc9b7d6be8e4",
    "type": "image/webp",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -5696,6 +9137,9 @@
    "type": "image/webp",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -5705,6 +9149,9 @@
    "sha256": "2454e08eca99cfb187eaa429bdbe742bdfd49efd23282ee641e577abd3de7d3f",
    "type": "image/webp",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -5716,6 +9163,9 @@
    "type": "image/webp",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -5725,6 +9175,9 @@
    "sha256": "712fffa5c0bf66bade65ea47efe247de8adc0445427a97bb960a35d9f38a0370",
    "type": "image/webp",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -5736,6 +9189,9 @@
    "type": "image/webp",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -5745,6 +9201,9 @@
    "sha256": "cc21a130408c84190fed3b8ea843fb5819e7f9532eef9a7fba730ea5eabd5624",
    "type": "image/webp",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -5756,6 +9215,9 @@
    "type": "image/webp",
    "grades": [
     1
+   ],
+   "poems": [
+    1
    ]
   },
   {
@@ -5765,6 +9227,9 @@
    "sha256": "a8d6e7d40b8bfb0b24d8e0591407c3444240b7c3c161c8a9274aab6ff247ccd1",
    "type": "image/webp",
    "grades": [
+    1
+   ],
+   "poems": [
     1
    ]
   },
@@ -5776,6 +9241,149 @@
    "type": "image/webp",
    "grades": [
     1
+   ],
+   "poems": [
+    1
+   ]
+  },
+  {
+   "path": "media/yong-xue/animation-20261005.mp4",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/yong-xue/animation-20261005.mp4",
+   "bytes": 6614648,
+   "sha256": "ac46f9aaf4bad0a7474fb886be23de5b8ea365137549287654f30d0618ccf520",
+   "type": "video/mp4",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/yong-xue/animation-poster-20261005.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/d2520e61790b6a83dee9/maanshan/media/yong-xue/animation-poster-20261005.webp",
+   "bytes": 25222,
+   "sha256": "d2520e61790b6a83dee95d8b30785c7e277584862ba70f30b1d56deed21e0ffd",
+   "type": "image/webp",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/yong-xue/avatar.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/97b969aac1d273fb2066/maanshan/media/yong-xue/avatar.webp",
+   "bytes": 69522,
+   "sha256": "97b969aac1d273fb2066bbba5a5912c0d2c240b24dd9d94403662fff0818f29a",
+   "type": "image/webp",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/yong-xue/cover-final.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/66ebdbb417226fa79486/maanshan/media/yong-xue/cover-final.webp",
+   "bytes": 97140,
+   "sha256": "66ebdbb417226fa79486245401cc6affe736755f53ea0622c49600f826df09b6",
+   "type": "image/webp",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/yong-xue/cover.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/6a65a373401b46cf25b8/maanshan/media/yong-xue/cover.webp",
+   "bytes": 24726,
+   "sha256": "6a65a373401b46cf25b8405e6553f74c939603a0a93a2d02233effbdec64246b",
+   "type": "image/webp",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/yong-xue/poster.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/fdd040fb870f2da44760/maanshan/media/yong-xue/poster.webp",
+   "bytes": 62992,
+   "sha256": "fdd040fb870f2da44760d515ebf917c45515eecdae855e4496d4371bbe9a6077",
+   "type": "image/webp",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/yong-xue/preview-1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/aa21ecef2ef1ca0dd48a/maanshan/media/yong-xue/preview-1.webp",
+   "bytes": 1370,
+   "sha256": "aa21ecef2ef1ca0dd48a27397414d67208c894d332320a342a9386e40c0d655c",
+   "type": "image/webp",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/yong-xue/preview-2.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/33e6fd86c0984d96036f/maanshan/media/yong-xue/preview-2.webp",
+   "bytes": 2092,
+   "sha256": "33e6fd86c0984d96036f012dece936dad31ba6bb720f389e4637a52d51bb2437",
+   "type": "image/webp",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/yong-xue/preview-3.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/6e24aca0d645768979c2/maanshan/media/yong-xue/preview-3.webp",
+   "bytes": 1958,
+   "sha256": "6e24aca0d645768979c256f85adf768b464c2b628e482d191235bdb921d2e82e",
+   "type": "image/webp",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/yong-xue/preview-4.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/a789b64b3998d623fcb0/maanshan/media/yong-xue/preview-4.webp",
+   "bytes": 4496,
+   "sha256": "a789b64b3998d623fcb06a8c4ccc85ab5cdfbbd1733037a1e76030d97ddfec0d",
+   "type": "image/webp",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/yong-xue/scene-1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/716ca448b977b59e5e68/maanshan/media/yong-xue/scene-1.webp",
+   "bytes": 83040,
+   "sha256": "716ca448b977b59e5e687b0c6cb1c495011a4ab2aa0d5b61945f37c5d5486570",
+   "type": "image/webp",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/yong-xue/scene-2.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/1c9cc4b28dbbf1d3a56b/maanshan/media/yong-xue/scene-2.webp",
+   "bytes": 140474,
+   "sha256": "1c9cc4b28dbbf1d3a56b8097fb0b3de39393a95908c05121ff1d19c4d0ea265a",
+   "type": "image/webp",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/yong-xue/scene-3.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/5c3bbfe6f5c73cc818aa/maanshan/media/yong-xue/scene-3.webp",
+   "bytes": 179878,
+   "sha256": "5c3bbfe6f5c73cc818aa2e2896118d319c94ab123e81f733cb45a7310e260695",
+   "type": "image/webp",
+   "poems": [
+    7
+   ]
+  },
+  {
+   "path": "media/yong-xue/scene-4.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/f7694e9f63f3deb10060/maanshan/media/yong-xue/scene-4.webp",
+   "bytes": 286846,
+   "sha256": "f7694e9f63f3deb100607f3a4894a6f919949402d68c90ad473d5bc9b2250855",
+   "type": "image/webp",
+   "poems": [
+    7
    ]
   },
   {
@@ -5785,6 +9393,9 @@
    "sha256": "48ca3b79e6207225710ade627f8537c40edd5cd7ad1b3f16ee433e1838d7d4d7",
    "type": "video/mp4",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -5796,6 +9407,9 @@
    "type": "image/webp",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -5805,6 +9419,9 @@
    "sha256": "29a2e0c29cdca53a5c50434ecd304bffa2fcf6968cc9552a312ec82d386606dd",
    "type": "image/webp",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -5816,6 +9433,9 @@
    "type": "image/webp",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -5825,6 +9445,9 @@
    "sha256": "e6ba5e3bfdd753b832d073d1129080d86877f456128ce5be4be4094a8e7500d3",
    "type": "image/webp",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -5836,6 +9459,9 @@
    "type": "image/webp",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -5845,6 +9471,9 @@
    "sha256": "4352a5eae224233966d4519aa3a3a9edf85c293924aa69312c6253fa54c8611d",
    "type": "image/webp",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -5856,6 +9485,9 @@
    "type": "image/webp",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -5865,6 +9497,9 @@
    "sha256": "ceec2b15c7dcda6008515480ca16fb069dcbe7404c0986117e0f69d7c69f54e4",
    "type": "image/webp",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -5876,6 +9511,9 @@
    "type": "image/webp",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -5885,6 +9523,9 @@
    "sha256": "d4ebe1431f4466cf16a2c2be274c12393904bf882a98013b77c96cef268da02d",
    "type": "image/webp",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -5896,6 +9537,9 @@
    "type": "image/webp",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -5905,6 +9549,9 @@
    "sha256": "f08ec2a59f05d25ef50562fca300ba4edfcb8bb2dacd11d9701d77fcc701308a",
    "type": "image/webp",
    "grades": [
+    6
+   ],
+   "poems": [
     6
    ]
   },
@@ -5916,6 +9563,9 @@
    "type": "image/webp",
    "grades": [
     6
+   ],
+   "poems": [
+    6
    ]
   },
   {
@@ -5925,6 +9575,9 @@
    "sha256": "9638ad61285dba5b1c462bbfe383adb13e4f970e0b9a14b2cffd316539b95a64",
    "type": "video/mp4",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -5936,6 +9589,9 @@
    "type": "image/webp",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -5945,6 +9601,9 @@
    "sha256": "35f3d1142aa4cdebf83c8c741c68243cc5ef7421fb5de4885616e3626bcc2eeb",
    "type": "image/webp",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -5956,6 +9615,9 @@
    "type": "image/webp",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -5965,6 +9627,9 @@
    "sha256": "b4fbf4fdb7df31819da422f7eeec383f6be9838e7a50f53411b3ec4b65a8c6d0",
    "type": "image/webp",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -5976,6 +9641,9 @@
    "type": "image/webp",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -5985,6 +9653,9 @@
    "sha256": "832c65829e37ed672333dd47d27e3d8e2f38b0734e1cf22e2d909322a8bff60f",
    "type": "image/webp",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -5996,6 +9667,9 @@
    "type": "image/webp",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -6005,6 +9679,9 @@
    "sha256": "fd7cd4f03840b8819d8674dd8a720084d50b236a40822322860c316cc0d77d20",
    "type": "image/webp",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -6016,6 +9693,9 @@
    "type": "image/webp",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -6025,6 +9705,9 @@
    "sha256": "6dc465456ea4620b5610797c9d22d9a69ee82f836735a607d110ceea147e9578",
    "type": "image/webp",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -6036,6 +9719,9 @@
    "type": "image/webp",
    "grades": [
     2
+   ],
+   "poems": [
+    2
    ]
   },
   {
@@ -6045,6 +9731,9 @@
    "sha256": "7dd1e0b139fb00afe8efe03cb8aeef97fb8e5643294b6d1e16c5c9cd90e8d934",
    "type": "image/webp",
    "grades": [
+    2
+   ],
+   "poems": [
     2
    ]
   },
@@ -6056,6 +9745,199 @@
    "type": "image/webp",
    "grades": [
     2
+   ],
+   "poems": [
+    2
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/animation-20261005.mp4",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/maanshan/media/zheng-ren-mai-lu/animation-20261005.mp4",
+   "bytes": 20431719,
+   "sha256": "7bcc109f2a2b37dd18ea11ff5fc96e8c76fc3167862bb98064186386be059fe3",
+   "type": "video/mp4",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/animation-poster-20261005.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/7a3b3f0808758d97b32e/maanshan/media/zheng-ren-mai-lu/animation-poster-20261005.webp",
+   "bytes": 30700,
+   "sha256": "7a3b3f0808758d97b32ef7e47c14a41f8d9b510dfbdfb3a4f1eaa658e2c4b4ae",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/avatar.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/06012cd295c0a99c4182/maanshan/media/zheng-ren-mai-lu/avatar.webp",
+   "bytes": 71800,
+   "sha256": "06012cd295c0a99c4182ec863932a2ff0123c234bfa9c24a520743e48bc58e45",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/cover-final.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/00058212428bc21ff95d/maanshan/media/zheng-ren-mai-lu/cover-final.webp",
+   "bytes": 119308,
+   "sha256": "00058212428bc21ff95da755fd21528d0a49fd0eb316c1aabab0235a523077ae",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/cover.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/7795decdf58e5e2c54c8/maanshan/media/zheng-ren-mai-lu/cover.webp",
+   "bytes": 91162,
+   "sha256": "7795decdf58e5e2c54c8d6aa56ff85bcf6d9349b57ca5594b0a9577b3209c7d6",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/game/bu-lu-front.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/27603259c31d3baf6b3c/maanshan/media/zheng-ren-mai-lu/game/bu-lu-front.webp",
+   "bytes": 92370,
+   "sha256": "27603259c31d3baf6b3c6817844a012dbc6eedf9cd2be5f85e23e8a5a93a1f20",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/game/bu-lu.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/37a064d7adf93bfa7fe6/maanshan/media/zheng-ren-mai-lu/game/bu-lu.webp",
+   "bytes": 103190,
+   "sha256": "37a064d7adf93bfa7fe68ce7bfdb27f5a5eb9e2c7c8eaad6429ff84ab59f35e0",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/game/foot.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/2ddc3cdce92651d11bf7/maanshan/media/zheng-ren-mai-lu/game/foot.webp",
+   "bytes": 81552,
+   "sha256": "2ddc3cdce92651d11bf7cc21add1cf3d82c76abe483c12b8ffb05ab885409558",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/game/mat-patch.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/c8ed39684a687b1a518c/maanshan/media/zheng-ren-mai-lu/game/mat-patch.webp",
+   "bytes": 6620,
+   "sha256": "c8ed39684a687b1a518cfd43621bc2f266cf974dbff2c43c7ca3518844918829",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/game/ruler.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/f5f92b7bf56b7a0ae7c0/maanshan/media/zheng-ren-mai-lu/game/ruler.webp",
+   "bytes": 12534,
+   "sha256": "f5f92b7bf56b7a0ae7c020ca017ee84e7f0a2b195791c6bc5c877e035be7859a",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/poster.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/4821b7949bb66a812b7b/maanshan/media/zheng-ren-mai-lu/poster.webp",
+   "bytes": 66748,
+   "sha256": "4821b7949bb66a812b7b7f6b94eda52414d364d3e02a0b5e22d7009b37eb1d3b",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/preview-1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/606256c0bb43e8b771c1/maanshan/media/zheng-ren-mai-lu/preview-1.webp",
+   "bytes": 4150,
+   "sha256": "606256c0bb43e8b771c133b9b8c0871cc13e340fcef5c092b1a7a73fad3c133f",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/preview-2.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/56f597709e3b46a1ded7/maanshan/media/zheng-ren-mai-lu/preview-2.webp",
+   "bytes": 5700,
+   "sha256": "56f597709e3b46a1ded7e894e7489009a78d389185be2b7c25e1ef66bd9e6961",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/preview-3.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/c3076a153485adc7f6dd/maanshan/media/zheng-ren-mai-lu/preview-3.webp",
+   "bytes": 5220,
+   "sha256": "c3076a153485adc7f6dd59b0303fac4a346ff2f0463609819209a1903c8b9100",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/preview-4.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/5ffb32ec89b6138dee19/maanshan/media/zheng-ren-mai-lu/preview-4.webp",
+   "bytes": 5422,
+   "sha256": "5ffb32ec89b6138dee19a767d8b69df84a8b1b6de826f3645e4eb6ce48d7ffdc",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/scene-1.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/3806ffe735840749662e/maanshan/media/zheng-ren-mai-lu/scene-1.webp",
+   "bytes": 273450,
+   "sha256": "3806ffe735840749662e3f022f6e8e7e1d62e4f41311a985510c622f8a4681c7",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/scene-2.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/cc8e4a3676f1e2da5aa2/maanshan/media/zheng-ren-mai-lu/scene-2.webp",
+   "bytes": 297524,
+   "sha256": "cc8e4a3676f1e2da5aa2175175f94a667c18eefdbe30046d4e1847dfb55d0997",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/scene-3.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ea09e117545fec74be0f/maanshan/media/zheng-ren-mai-lu/scene-3.webp",
+   "bytes": 350702,
+   "sha256": "ea09e117545fec74be0fcccf44e4014579b39cd159eda95130dcba1d9fa6a4e3",
+   "type": "image/webp",
+   "poems": [
+    11
+   ]
+  },
+  {
+   "path": "media/zheng-ren-mai-lu/scene-4.webp",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ce2f2db8ce8ad0594672/maanshan/media/zheng-ren-mai-lu/scene-4.webp",
+   "bytes": 330878,
+   "sha256": "ce2f2db8ce8ad059467272fbd7791e2640c67daa73ec2ab1c7984c3327b119e6",
+   "type": "image/webp",
+   "poems": [
+    11
    ]
   },
   {

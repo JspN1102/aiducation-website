@@ -322,28 +322,37 @@ class MediaConfigTests(unittest.TestCase):
         changed['assets'][1]['destination'] = changed['assets'][0]['destination'].replace('clip-1', 'clip-2')
         self.assertNotEqual(json.loads(media_config.build_pack_manifest(changed))['version'], pack['version'])
 
-    def test_pack_manifest_marks_grade_specific_files(self):
+    def test_pack_manifest_marks_poem_and_grade_specific_files(self):
         manifest, _ = audio_fixture()
         manifest['assets'] += [fixture(font=True)[0]['assets'][0]]
         plain = json.loads(media_config.build_pack_manifest(manifest))
         paths = [asset['path'] for asset in plain['assets']]
-        pack = json.loads(media_config.build_pack_manifest(manifest, {paths[0]: [1], paths[1]: [2, 5]}))
+        scope = {'grades': {paths[0]: [1], paths[1]: [2, 5]}, 'poems': {paths[0]: [1], paths[1]: [2, 5, 9], paths[2]: [8]}}
+        pack = json.loads(media_config.build_pack_manifest(manifest, scope))
         self.assertEqual([asset.get('grades') for asset in pack['assets']], [[1], [2, 5]] + [None] * (len(paths) - 2))
+        self.assertEqual([asset.get('poems') for asset in pack['assets']], [[1], [2, 5, 9], [8]] + [None] * (len(paths) - 3))
         self.assertEqual(pack['version'], plain['version'])
         self.assertEqual(pack['totalBytes'], plain['totalBytes'])
-        self.assertEqual(json.loads(media_config.build_pack_manifest(manifest, {})), plain)
-        with self.assertRaisesRegex(ValueError, 'does not publish: media/gone.webp'):
-            media_config.build_pack_manifest(manifest, {'media/gone.webp': [1]})
+        self.assertEqual(json.loads(media_config.build_pack_manifest(manifest, {'grades': {}, 'poems': {}})), plain)
+        for stale in ({'grades': {}, 'poems': {'media/gone.webp': [1]}}, {'grades': {'media/gone.webp': [1]}, 'poems': {}}):
+            with self.assertRaisesRegex(ValueError, 'does not publish: media/gone.webp'):
+                media_config.build_pack_manifest(manifest, stale)
 
-    def test_preview_poem_media_stays_out_of_packs_and_the_probe(self):
+    def test_preview_poem_media_reaches_only_its_poems_packs_and_never_the_probe(self):
         manifest, _ = fixture(image=True)
         data = b'preview poem picture, smaller'
         manifest['assets'] += [entry('/maanshan/media/yong-xue/preview-1.webp', data),
                                entry('/maanshan/media/exploration/jue-ju/scene.webp', data + b' scene'),
                                entry('/maanshan/media/recitations/round2-20261005/p7-line1.mp3', data,
                                      group='recitations/round2-20261005')]
-        pack = json.loads(media_config.build_pack_manifest(manifest))
-        self.assertEqual([asset['path'] for asset in pack['assets']], ['media/test/scene-1.webp'])
+        preview = ['media/yong-xue/preview-1.webp', 'media/exploration/jue-ju/scene.webp', 'media/recitations/round2-20261005/p7-line1.mp3']
+        # Unscoped, a preview poem's file would reach pupils' packs: refused.
+        with self.assertRaisesRegex(ValueError, 'Preview poem media must name its poems: media/exploration/jue-ju/scene.webp'):
+            media_config.build_pack_manifest(manifest)
+        pack = json.loads(media_config.build_pack_manifest(manifest, {'grades': {}, 'poems': dict(zip(preview, ([7], [10], [7])))}))
+        self.assertEqual({asset['path']: asset.get('poems') for asset in pack['assets']},
+                         {'media/test/scene-1.webp': None, preview[0]: [7], preview[1]: [10], preview[2]: [7]})
+        self.assertTrue(all('grades' not in asset for asset in pack['assets']))
         self.assertEqual(media_config.probe_image(manifest), manifest['assets'][0]['destination'])
         # Still published on both routes for the preview accounts.
         config = media_config.build_media_config(manifest)
@@ -367,15 +376,27 @@ class MediaConfigTests(unittest.TestCase):
             root = Path(tmp)
             (root / 'deploy').mkdir()
             target = root / media_config.PACK_SCOPE
+            def write(grades, poems):
+                target.write_text(json.dumps({'schemaVersion': 1, 'grades': grades, 'poems': poems}), encoding='utf-8')
             for bad in ([2, 1], [], [0], [1, 1], ['1'], [13], 1):
-                target.write_text(json.dumps({'schemaVersion': 1, 'grades': {'media/a.webp': bad}}), encoding='utf-8')
+                write({'media/a.webp': bad}, {'media/a.webp': [1]})
                 with self.assertRaisesRegex(ValueError, 'Invalid pack scope entry: media/a.webp'):
                     media_config.load_pack_scope(root)
-            target.write_text(json.dumps({'schemaVersion': 2, 'grades': {}}), encoding='utf-8')
-            with self.assertRaisesRegex(ValueError, 'Unsupported pack scope schema'):
+            for bad in ([2, 1], [], [0], [1, 1], ['1'], [1000], 1):
+                write({}, {'media/a.webp': bad})
+                with self.assertRaisesRegex(ValueError, 'Invalid pack scope entry: media/a.webp'):
+                    media_config.load_pack_scope(root)
+            # A grade-scoped file must also name its poems.
+            write({'media/a.webp': [1]}, {})
+            with self.assertRaisesRegex(ValueError, 'Invalid pack scope entry: media/a.webp'):
                 media_config.load_pack_scope(root)
-            target.write_text(json.dumps({'schemaVersion': 1, 'grades': {'media/a.webp': [1, 3], 'media/b.mp3': [6]}}), encoding='utf-8')
-            self.assertEqual(media_config.load_pack_scope(root), {'media/a.webp': [1, 3], 'media/b.mp3': [6]})
+            for unsupported in ({'schemaVersion': 2, 'grades': {}, 'poems': {}}, {'schemaVersion': 1, 'grades': {}}):
+                target.write_text(json.dumps(unsupported), encoding='utf-8')
+                with self.assertRaisesRegex(ValueError, 'Unsupported pack scope schema'):
+                    media_config.load_pack_scope(root)
+            write({'media/a.webp': [1, 3], 'media/b.mp3': [6]}, {'media/a.webp': [1, 3], 'media/b.mp3': [6, 12], 'media/c.mp4': [8]})
+            self.assertEqual(media_config.load_pack_scope(root), {'grades': {'media/a.webp': [1, 3], 'media/b.mp3': [6]},
+                                                                  'poems': {'media/a.webp': [1, 3], 'media/b.mp3': [6, 12], 'media/c.mp4': [8]}})
 
     def test_index_meta_tags_follow_the_manifest(self):
         manifest, _ = fixture(image=True)

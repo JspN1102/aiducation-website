@@ -1,5 +1,5 @@
 'use strict';
-// The per-grade resource pack scope against the real catalogue, challenge data
+// The per-poem resource pack scope against the real catalogues, challenge data
 // and recording indexes. No network, no account data.
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -41,7 +41,7 @@ test('each kind of file goes to the grade that uses it', async () => {
   assert.deepEqual(classify('media/yong-e/cover.webp'), [grade('yong-e')]);
   assert.deepEqual(classify('media/gui-yuan-tian-ju/animation-20260919b.mp4'), [grade('gui-yuan-tian-ju')]);
   assert.deepEqual(classify('media/exploration/gui-yuan-tian-ju/model.glb'), [grade('gui-yuan-tian-ju')]);
-  // Preview poems 7-12 are not in the catalogue; their media never enters a pack.
+  // Preview poems 7-12 are not in the published catalogue, so pupils' packs never take their media.
   assert.equal(classify('media/exploration/jue-ju/model-20261005.glb'), null);
   assert.deepEqual(classify('media/recitations/edb-20260921/grade3-poem.mp3'), [3]);
   assert.equal(classify('media/recitations/edb-20260921/grade9-poem.mp3'), null);
@@ -88,11 +88,34 @@ test('grade 1-3 packs carry no AR picture, and their quiz never asks for one', a
   }
 });
 
-test('the stored scope file is current', async () => {
+test('by poem id, preview poems take their own media and published poems keep theirs', async () => {
+  const catalogue = await scope.loadCatalogue({preview: true});
+  const classify = scope.classifier(catalogue, await scope.loadIndexes(), poem => poem.id);
+  const id = slug => catalogue.find(poem => poem.slug === slug).id;
+  assert.equal(catalogue.length, 12);
+  assert.equal(catalogue.filter(poem => poem.preview).length, 6);
+  assert.deepEqual(classify('media/yong-e/cover.webp'), [id('yong-e')]);
+  assert.deepEqual(classify('media/exploration/jue-ju/model-20261005.glb'), [id('jue-ju')]);
+  assert.deepEqual(classify('media/recitations/edb-20260921/grade3-poem.mp3'), [catalogue.find(poem => !poem.preview && poem.grade === 3).id]);
+  assert.equal(classify('vendor/fonts/noto-sans-hk-variants.woff2'), null);
+});
+
+test('the stored scope file is current, and pupils keep the files they had', async () => {
   const {text} = await scope.build();
   assert.equal(fs.readFileSync(path.join(root, 'deploy/pack-scope.json'), 'utf8'), text);
   const stored = JSON.parse(text);
   assert.equal(stored.schemaVersion, 1);
   const files = new Set(packed());
-  for (const file of Object.keys(stored.grades)) assert.ok(files.has(file), file);
+  for (const file of [...Object.keys(stored.grades), ...Object.keys(stored.poems)]) assert.ok(files.has(file), file);
+  const published = await scope.loadCatalogue();
+  const gradePoem = new Map(published.map(poem => [poem.grade, poem.id]));
+  // A grade-scoped file serves that grade's published poem (and possibly preview poems too).
+  for (const [file, grades] of Object.entries(stored.grades)) {
+    for (const grade of grades) assert.ok(stored.poems[file].includes(gradePoem.get(grade)), file);
+  }
+  // Files only preview poems use never reach a published poem's pack.
+  const publishedIds = new Set(published.map(poem => poem.id));
+  for (const [file, ids] of Object.entries(stored.poems)) {
+    if (!stored.grades[file]) assert.ok(ids.every(poemId => !publishedIds.has(poemId)), file);
+  }
 });

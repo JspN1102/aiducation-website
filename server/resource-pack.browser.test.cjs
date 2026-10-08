@@ -1,7 +1,9 @@
 // The one-tap resource pack end to end on a real local HTTP server: download
 // into Cache Storage, byte verification, the recovery worker serving cached
 // files for both hosts (same-origin and content-addressed COS), Range replies,
-// version gating across a deployment, and font route fallback. The COS host is
+// version gating across a deployment, packs chosen by poem (a pupil's own poem,
+// a teacher's one poem or every poem shown), pausing, the move from the old
+// per-grade wishes, and font route fallback. The COS host is
 // pinned to 127.0.0.1 so nothing leaves the machine; no account data is used.
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),crypto=require('node:crypto'),assert=require('node:assert/strict');
@@ -12,11 +14,15 @@ const registration=index.match(/<script id="school-navigation-recovery">([\s\S]*
 const worker=fs.readFileSync(path.join(repo,'maanshan/recovery-sw.js'),'utf8');
 const host='mandarin.aiducation.asia',cosHost='aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com',cos='https://'+cosHost;
 const mime={'.mjs':'text/javascript','.js':'text/javascript','.json':'application/json','.css':'text/css','.woff2':'font/woff2','.webp':'image/webp','.mp3':'audio/mpeg'};
+// [path, type, group, poems, grades]: poem 4 is grade four's published poem,
+// poem 9 a preview poem; files without poems are shared.
 const packed=[
   ['media/words/8c46-dou4-f101001-20260918a.mp3','audio/mpeg','g-9181908b9a88540cf3bd'],
-  ['media/bo-chuan-gua-zhou/preview-1.webp','image/webp',null,[4]],
-  ['vendor/fonts/noto-sans-hk-variants.woff2','font/woff2',null]
+  ['media/bo-chuan-gua-zhou/preview-1.webp','image/webp',null,[4],[4]],
+  ['vendor/fonts/noto-sans-hk-variants.woff2','font/woff2',null],
+  ['media/yong-xue/avatar.webp','image/webp',null,[9]]
 ];
+const TEACHER=[{id:1,grade:1},{id:4,grade:4},{id:9,grade:3,preview:true}];
 const overrides=new Map();
 // Files listed here are sent in pieces with pauses, like a big file on a slow line.
 const slow=new Map();
@@ -25,8 +31,8 @@ const records=[];
 const sha=buffer=>crypto.createHash('sha256').update(buffer).digest('hex');
 function bytesOf(file){return overrides.get(file)||fs.readFileSync(path.join(repo,'maanshan',file));}
 function manifest(){
-  const assets=packed.map(([file,type,group,grades])=>{const data=bytesOf(file),digest=sha(data);
-    return {path:file,remote:cos+'/published/'+(group||digest.slice(0,20))+'/maanshan/'+file,bytes:data.length,sha256:digest,type,...(grades?{grades}:{})};});
+  const assets=packed.map(([file,type,group,poems,grades])=>{const data=bytesOf(file),digest=sha(data);
+    return {path:file,remote:cos+'/published/'+(group||digest.slice(0,20))+'/maanshan/'+file,bytes:data.length,sha256:digest,type,...(poems?{poems}:{}),...(grades?{grades}:{})};});
   return {schemaVersion:1,version,cache:'maanshan-pack-v1',totalBytes:assets.reduce((sum,asset)=>sum+asset.bytes,0),assets};
 }
 function fixture(){
@@ -48,7 +54,7 @@ const server=http.createServer((req,res)=>{
       const pace=slow.get(relative);
       if(!pace){res.end(data);return;}
       let offset=0;const size=Math.ceil(data.length/pace.pieces);
-      const piece=()=>{res.write(data.subarray(offset,offset+size));offset+=size;if(offset<data.length)setTimeout(piece,pace.delay);else res.end();};
+      const piece=()=>{if(res.destroyed)return;res.write(data.subarray(offset,offset+size));offset+=size;if(offset<data.length)setTimeout(piece,pace.delay);else res.end();};
       piece();return;
     }
   }
@@ -74,26 +80,30 @@ const probe=(page,url,init)=>page.evaluate(async([url,init])=>{
     page.on('pageerror',error=>errors.push(error.message));
     const ready=async()=>{await page.waitForFunction(()=>Boolean(navigator.serviceWorker.controller&&window.pack));};
     await page.goto(origin+'/school/');await ready();
-    const [mp3,webp,font]=manifest().assets;
+    const [mp3,webp,font,avatar]=manifest().assets;
+    const view=(target,ids)=>target.evaluate(ids=>window.pack.packView(ids||undefined),ids||null);
+    const settle=(target,ids,status)=>target.waitForFunction(([ids,status])=>window.pack.packView(ids||undefined).status===status,[ids||null,status],{timeout:30000});
+    const keyCount=target=>target.evaluate(async()=>(await (await caches.open('maanshan-pack-v1')).keys()).length);
 
-    // Nothing is cached until the pupil asks; ordinary fetches reach the server.
-    await page.evaluate(()=>window.pack.resumeResourcePack());
-    await page.waitForFunction(()=>window.pack.packState().total===3);
-    let state=await page.evaluate(()=>window.pack.packState());
-    check('idle pack knows its size without downloading',state.status==='idle'&&state.done===0&&state.totalBytes===manifest().totalBytes);
+    // A teacher shows three poems. Nothing is cached until the tap; ordinary fetches reach the server.
+    await page.evaluate(poems=>window.pack.resumeResourcePack({poems}),TEACHER);
+    await page.waitForFunction(total=>window.pack.packView().totalBytes===total,manifest().totalBytes);
+    let state=await view(page);
+    check('idle pack knows its size without downloading',state.status==='idle'&&state.bytesDone===0);
     let mark=records.length;
     let reply=await probe(page,'/school/'+webp.path);
     check('uncached file comes from the network',reply.hit===null&&reply.bytes===webp.bytes&&since(mark).some(row=>row.path==='/school/'+webp.path));
     check('no pack cache before the tap',(await page.evaluate(()=>caches.keys())).length===0);
+    check('one poem counts the shared files and its own',(await view(page,[4])).totalBytes===mp3.bytes+font.bytes+webp.bytes&&(await view(page,[9])).totalBytes===mp3.bytes+font.bytes+avatar.bytes);
 
-    // One tap: everything downloads and verifies in the background.
-    await page.evaluate(()=>window.pack.requestResourcePack());
-    await page.waitForFunction(()=>window.pack.packState().status==='complete',null,{timeout:30000});
+    // One tap on the big button: every poem shown downloads and verifies in the background.
+    await page.evaluate(()=>window.pack.togglePack([1,4,9]));
+    await settle(page,null,'complete');
     state=await page.evaluate(()=>window.pack.packState());
-    check('pack completes with every byte accounted for',state.done===3&&state.bytesDone===state.totalBytes&&state.version===version);
-    check('the wish persists for later visits',await page.evaluate(()=>localStorage.getItem('maanshan:pack'))==='all');
+    check('pack completes with every byte accounted for',state.bytesDone===state.totalBytes&&state.totalBytes===manifest().totalBytes&&state.version===version);
+    check('the wish of each poem persists for later visits',await page.evaluate(()=>localStorage.getItem('maanshan:pack'))==='p1,p4,p9');
     const keys=await page.evaluate(async()=>(await (await caches.open('maanshan-pack-v1')).keys()).map(r=>new URL(r.url).pathname).sort());
-    assert.deepEqual(keys,['/school/__pack-version','/school/media/bo-chuan-gua-zhou/preview-1.webp','/school/media/words/8c46-dou4-f101001-20260918a.mp3','/school/pack-manifest.json','/school/vendor/fonts/noto-sans-hk-variants.woff2']);
+    assert.deepEqual(keys,['/school/__pack-version','/school/media/bo-chuan-gua-zhou/preview-1.webp','/school/media/words/8c46-dou4-f101001-20260918a.mp3','/school/media/yong-xue/avatar.webp','/school/pack-manifest.json','/school/vendor/fonts/noto-sans-hk-variants.woff2']);
     results.push('cache holds exactly the packed files, the manifest and the version note');
     const stored=await page.evaluate(async path=>{const r=await (await caches.open('maanshan-pack-v1')).match(path);return {sha:r.headers.get('X-Pack-Sha256'),type:r.headers.get('Content-Type'),bytes:(await r.arrayBuffer()).byteLength};},'/school/'+mp3.path);
     check('stored entry carries the verified digest',stored.sha===mp3.sha256&&stored.type==='audio/mpeg'&&stored.bytes===mp3.bytes);
@@ -129,8 +139,8 @@ const probe=(page,url,init)=>page.evaluate(async([url,init])=>{
     check('stale manifest: same-origin copy goes to the network',reply.hit===null&&reply.bytes===webp.bytes);
     reply=await probe(page,webp.remote);
     check('stale manifest: exact-digest COS copy still served',reply.hit==='hit');
-    await page.evaluate(()=>window.pack.resumeResourcePack());
-    await page.waitForFunction(()=>window.pack.packState().status==='complete',null,{timeout:30000});
+    await page.evaluate(poems=>window.pack.resumeResourcePack({poems}),TEACHER);
+    await settle(page,null,'complete');
     mark=records.length;
     reply=await probe(page,'/school/'+webp.path);
     check('after the new manifest unchanged files serve from the pack',reply.hit==='hit'&&!since(mark).some(row=>row.path==='/school/'+webp.path));
@@ -141,49 +151,60 @@ const probe=(page,url,init)=>page.evaluate(async([url,init])=>{
     overrides.set(mp3.path,Buffer.concat([bytesOf(mp3.path),Buffer.from([0])]));version='c'.repeat(20);slow.set(mp3.path,{pieces:6,delay:120});
     const changed=manifest().assets[0];
     await page.reload();await ready();
-    await page.evaluate(()=>{window.progress=[];window.pack.onPackChange(s=>window.progress.push({status:s.status,done:s.done,bytesDone:s.bytesDone}));window.pack.resumeResourcePack();});
-    await page.waitForFunction(()=>window.pack.packState().status==='complete',null,{timeout:30000});
+    await page.evaluate(poems=>{window.progress=[];window.pack.onPackChange(()=>{const s=window.pack.packView();window.progress.push({status:s.status,bytesDone:s.bytesDone});});window.pack.resumeResourcePack({poems});},TEACHER);
+    await settle(page,null,'complete');
     slow.delete(mp3.path);
-    const progress=await page.evaluate(()=>window.progress),wholeFiles=new Set([0,webp.bytes,font.bytes,changed.bytes,webp.bytes+font.bytes,webp.bytes+changed.bytes,font.bytes+changed.bytes,webp.bytes+font.bytes+changed.bytes]);
+    const others=[webp.bytes,font.bytes,avatar.bytes,changed.bytes],wholeFiles=new Set();
+    for(let set=0;set<16;set++)wholeFiles.add(others.reduce((sum,bytes,i)=>set&1<<i?sum+bytes:sum,0));
+    const progress=await page.evaluate(()=>window.progress);
     check('the count moves while a file is still arriving',progress.some(s=>s.status==='downloading'&&!wholeFiles.has(s.bytesDone)));
     check('the count never runs backwards',progress.every((s,i)=>i===0||s.bytesDone>=progress[i-1].bytesDone));
-    check('the count ends on the whole pack',progress.at(-1).status==='complete'&&progress.at(-1).bytesDone===webp.bytes+font.bytes+changed.bytes);
+    check('the count ends on the whole pack',progress.at(-1).status==='complete'&&progress.at(-1).bytesDone===webp.bytes+font.bytes+avatar.bytes+changed.bytes);
     reply=await probe(page,'/school/'+mp3.path);
     check('changed recording re-downloaded and served',reply.hit==='hit'&&reply.bytes===changed.bytes);
     reply=await probe(page,mp3.remote);
     check('group-addressed COS recording follows the manifest',reply.hit==='hit'&&reply.bytes===changed.bytes);
     check('old digest of a changed file is no longer served',(await probe(page,cos+'/published/'+mp3.sha256.slice(0,20)+'/maanshan/'+mp3.path)).hit!=='hit');
-    check('old entries pruned',(await page.evaluate(async()=>(await (await caches.open('maanshan-pack-v1')).keys()).length))===5);
-    await page.evaluate(()=>window.pack.cancelResourcePack());
-    check('cancelling forgets the wish',await page.evaluate(()=>localStorage.getItem('maanshan:pack'))===null);
+    check('old entries pruned',(await keyCount(page))===6);
 
-    // A grade-one pupil on a fresh device: the pack holds the shared files only;
-    // the grade-four picture is neither counted nor downloaded.
+    // A grade-one pupil on a fresh device whose old page wished 'g1': the wish
+    // becomes that grade's poem and resumes; the pack holds the shared files only.
     const scoped=await browser.newContext(),pupil=await scoped.newPage();
     pupil.on('pageerror',error=>errors.push(error.message));
     await pupil.goto(origin+'/school/');await pupil.waitForFunction(()=>Boolean(navigator.serviceWorker.controller&&window.pack));
-    await pupil.evaluate(()=>window.pack.resumeResourcePack({scope:{grades:[1]}}));
-    await pupil.waitForFunction(()=>window.pack.packState().total===2);
-    state=await pupil.evaluate(()=>window.pack.packState());
-    check('own-grade scope counts the shared files only',state.status==='idle'&&state.scope==='g1'&&state.totalBytes===changed.bytes+font.bytes);
     mark=records.length;
-    await pupil.evaluate(()=>window.pack.requestResourcePack());
-    await pupil.waitForFunction(()=>window.pack.packState().status==='complete',null,{timeout:30000});
-    state=await pupil.evaluate(()=>window.pack.packState());
-    check('own-grade pack completes without the other grade\'s file',state.done===2&&!since(mark).some(row=>row.path==='/school/'+webp.path));
-    check('the wish is kept per scope',await pupil.evaluate(()=>localStorage.getItem('maanshan:pack'))==='g1');
+    await pupil.evaluate(()=>{localStorage.setItem('maanshan:pack','g1,g4');return window.pack.resumeResourcePack({poems:[{id:1,grade:1}]});});
+    await settle(pupil,null,'complete');
+    state=await view(pupil);
+    check('own poem pack counts the shared files only',state.totalBytes===changed.bytes+font.bytes&&state.bytesDone===state.totalBytes);
+    check('the old grade wish resumes as the own poem',!since(mark).some(row=>row.path==='/school/'+webp.path||row.path==='/school/'+avatar.path));
+    check('the other grade\'s old wish is kept for its pupil',await pupil.evaluate(()=>localStorage.getItem('maanshan:pack'))==='g4,p1');
     reply=await probe(pupil,'/school/'+webp.path);
-    check('the other grade\'s file still comes from the network',reply.hit===null&&reply.bytes===webp.bytes);
+    check('another poem\'s file still comes from the network',reply.hit===null&&reply.bytes===webp.bytes);
     reply=await probe(pupil,font.remote);
-    check('shared file served from the own-grade pack',reply.hit==='hit'&&reply.bytes===font.bytes);
-    // A grade-four pupil on the same device adds that grade's file; nothing already held is removed.
-    await pupil.evaluate(()=>window.pack.resumeResourcePack({scope:{grades:[4]}}));
-    await pupil.waitForFunction(()=>window.pack.packState().total===3&&window.pack.packState().status==='idle');
-    await pupil.evaluate(()=>window.pack.requestResourcePack());
-    await pupil.waitForFunction(()=>window.pack.packState().status==='complete',null,{timeout:30000});
-    check('the second grade downloads only its own file',since(mark).filter(row=>row.path==='/school/'+webp.path).length===2&&since(mark).filter(row=>row.path==='/school/'+font.path).length===1);
-    check('wishes of both grades are kept',await pupil.evaluate(()=>localStorage.getItem('maanshan:pack'))==='g1,g4');
-    check('files of both grades stay in the cache',(await pupil.evaluate(async()=>(await (await caches.open('maanshan-pack-v1')).keys()).length))===5);
+    check('shared file served from the own poem pack',reply.hit==='hit'&&reply.bytes===font.bytes);
+
+    // A teacher on the same device: each poem's round button follows that poem only.
+    mark=records.length;
+    await pupil.evaluate(poems=>window.pack.resumeResourcePack({poems}),TEACHER);
+    await settle(pupil,[1],'complete');
+    check('the grade-four wish becomes poem 4 and resumes',await pupil.evaluate(()=>localStorage.getItem('maanshan:pack'))==='p1,p4');
+    await settle(pupil,[4],'complete');
+    check('a poem not yet wished stays idle, and so does the big button',(await view(pupil,[9])).status==='idle'&&(await view(pupil)).status==='idle');
+    slow.set(avatar.path,{pieces:40,delay:150});
+    await pupil.evaluate(()=>window.pack.togglePack([9]));
+    await settle(pupil,[9],'downloading');
+    check('the big button follows the one poem downloading',(await view(pupil)).status==='downloading');
+    await pupil.evaluate(()=>window.pack.togglePack([9]));
+    await settle(pupil,[9],'paused');
+    check('pausing forgets only that poem\'s wish',await pupil.evaluate(()=>localStorage.getItem('maanshan:pack'))==='p1,p4');
+    check('the other poems stay complete while one is paused',(await view(pupil,[1])).status==='complete'&&(await view(pupil,[4])).status==='complete');
+    slow.delete(avatar.path);
+    await pupil.evaluate(()=>window.pack.togglePack([9]));
+    await settle(pupil,[9],'complete');
+    check('a paused poem resumes and completes',(await view(pupil)).status==='complete'&&await pupil.evaluate(()=>localStorage.getItem('maanshan:pack'))==='p1,p4,p9');
+    check('each file was downloaded once per poem pack',since(mark).filter(row=>row.path==='/school/'+webp.path).length===1&&!since(mark).some(row=>row.path==='/school/'+font.path));
+    check('files of every poem stay in the cache',(await keyCount(pupil))===6);
     await scoped.close();
 
     // Fonts: the failing host is skipped and the working route remembered.
