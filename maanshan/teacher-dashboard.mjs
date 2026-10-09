@@ -437,6 +437,8 @@ function minuteBars(series,label){const max=Math.max(1,...series.map(m=>number(m
 function dayBars(days){const max=Math.max(1,...days.map(d=>number(d.pupils)||0));
  return `<ol class="monitor-days">${days.map((d,i)=>{const n=number(d.pupils)||0;return `<li><strong>${shown(n)}</strong><span class="bar"><span style="height:${n?Math.max(6,Math.round(n/max*100)):0}%"></span></span><small>${i===days.length-1?'今天':esc(dayLabel(d.date))}</small><span class="sr-only"> ${shown(n)} 人</span></li>`;}).join('')}</ol>`;}
 function monitorList(items){return items.length?`<ul class="monitor-list">${items.map(([level,label,value,detail])=>`<li class="level-${level}"><span class="monitor-dot" aria-hidden="true"></span><span>${esc(label)}${detail?`<small>${esc(detail)}</small>`:''}</span><strong>${esc(value)}</strong></li>`).join('')}</ul>`:'';}
+// 學生端問題: times and pupils per kind; an older server sends no pupil figures.
+function clientErrorItems(list){return list.map(e=>['info',e.label||'其他',shown(e.count)+' 次'+(number(e.pupils)===null?'':'（'+shown(e.pupils)+' 位學生）'),number(e.topPupil)===null?'':'其中 1 位學生就有 '+shown(e.topPupil)+' 次']);}
 function jobState(job,now){
  if(job.loadState!=='loaded')return ['unknown','未安裝'];
  if(job.running)return ['ok','運行中'];
@@ -477,7 +479,7 @@ function renderMonitor(){
   const days=rows(today.week?.days),busiest=days.reduce((a,b)=>(number(b.pupils)||0)>(number(a?.pupils)||0)?b:a,null);
   week=monitorCard('近 7 日',s.week,monitorStats([['7 日內學生',today.week?.pupils,' 人'],['最多一天',busiest?busiest.pupils:null,busiest?' 人（'+dayLabel(busiest.date)+'）':'']])+(days.length?dayBars(days):''));
   const list=rows(today.clientErrors);
-  clients=monitorCard('學生端問題（今日）',s.clients,monitorList(list.map(e=>['info',e.label||'其他',shown(e.count)+' 次']))+monitorNote(['學生裝置自動回報，不含學生自己取消的操作']));
+  clients=monitorCard('學生端問題（今日）',s.clients,monitorList(clientErrorItems(list))+monitorNote(['學生裝置自動回報，不含學生自己取消的操作']));
  }else if(today)summary=monitorCard('今日概況',s.today,'');
  const series=rows(d.traffic?.series);
  if(series.length){

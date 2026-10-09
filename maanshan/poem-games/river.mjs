@@ -185,6 +185,8 @@ export function mountRiver(holder, {
     slots[targetSlot] = piece;
     selected = null;
     completed = isSolved(slots);
+    // Finishing ends the round and its sound; a reading still pending must not cover 「拼好了！」.
+    if (completed) quietVoice();
     render();
     onState?.(snapshot());
 
@@ -263,20 +265,29 @@ export function mountRiver(holder, {
     speaking = true;
     updateAudioState();
     tell('慢慢聽一遍，拼圖時也可以再聽。');
-    let ok = false;
+    let ok = false, timer;
     try {
       ok = await Promise.race([
         Promise.resolve(playAudio?.(speech)),
-        new Promise(resolve => { voiceTimer = view.setTimeout(() => resolve(false), 45000); })
+        new Promise(resolve => { timer = voiceTimer = view.setTimeout(() => resolve(false), 45000); })
       ]);
     } catch {} finally {
-      view.clearTimeout(voiceTimer);
-      voiceTimer = null;
+      // A stale reading clears only its own timer, never the one of a newer tap.
+      view.clearTimeout(timer);
+      if (voiceTimer === timer) voiceTimer = null;
     }
     if (dead || generation !== voiceGeneration) return;
     speaking = false;
     updateAudioState();
+    // null: cut off by another sound, a pause or the page hiding. undefined: no player at all, so nothing was heard either.
     if (ok === false || ok === undefined) {research.error('audio','audio_unavailable');tell('聲音暫時未能播放，拼圖仍然可以繼續。');}
+  }
+
+  function quietVoice() {
+    voiceGeneration++;
+    view.clearTimeout(voiceTimer);
+    voiceTimer = null;
+    speaking = false;
   }
 
   async function load() {
@@ -352,10 +363,7 @@ export function mountRiver(holder, {
       if (dead || solution) return;
       research.hint('game','reveal');
       clearDrag();
-      voiceGeneration++;
-      view.clearTimeout(voiceTimer);
-      voiceTimer = null;
-      speaking = false;
+      quietVoice();
       solution = true;
       selected = null;
       slots = [...PIECES];

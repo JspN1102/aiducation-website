@@ -180,12 +180,13 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const locked = !!answer;
     const active = () => !dead && epoch === gameEpoch && generation === renderGeneration;
     try {
-      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20261007-school46');
+      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20261009-school54');
       if (!active()) return;
       let completionReceived = false;
       const mounted = mountPoemGame(holder, {slug: poem.slug, initialState: state, readOnly: locked,
         onResearch:(type,fields)=>{if(active())audit(type,fields);},
-        playAudio: async audio => active() ? await playAudio?.(audio,researchContext()) : false,
+        // null: interrupted, or the game is gone; a game reports only a real failure (false).
+        playAudio: async audio => {if (!active()) return null;const ok = await playAudio?.(audio,researchContext());return active() ? ok : null;},
         onState: value => {
           if (!active() || locked || completionReceived || currentAnswer()) return;
           const draft = safeGameState(value);
@@ -303,13 +304,17 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     if (playing || dead) return;
     const item = items[screen], generation = renderGeneration, playback = ++audioGeneration;
     playing = true;
-    const status = q('.challenge-audio-status'), button = q('[data-ch="listen"]');
+    const status = q('.challenge-audio-status'), button = q('[data-ch="listen"]'), before = status?.textContent;
     if (status) status.textContent = '聽一聽…';
     button?.classList.add('is-playing');button?.setAttribute('aria-busy','true');
-    let success = false;
-    try {success = await playAudio(item.audio,researchContext()) === true;} catch {}
+    let result = false;
+    try {result = await playAudio(item.audio,researchContext());} catch {}
     if (dead || generation !== renderGeneration || playback !== audioGeneration) return;
     playing = false;button?.classList.remove('is-playing');button?.removeAttribute('aria-busy');
+    // Interrupted (paused, page hidden): nothing failed, so the prompt goes back to what it said before the tap,
+    // unless a choice made during the replay has already rewritten it.
+    if (result === null) {if (status?.textContent === '聽一聽…') status.textContent = before;return;}
+    const success = result === true;
     if (success) heard = true;
     if (status) status.textContent = success ? item.type==='sound'?formOf(item).ready:'聽到了，可以寫字，也可以再聽一次。' : item.type==='dictation'?'聲音暫時未能播放，可以先寫字，稍後再聽。':heard?'這次未播完，可以再聽一次，或照剛才的聲音選答案。':formOf(item).retry;
     if(success&&item.type==='sound'){

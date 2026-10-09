@@ -3,9 +3,35 @@ function audioError(code, message, canRetry = false) {
   return Object.assign(new Error(message), {code, canRetry});
 }
 
-export function recordingErrorMessage(error, online = globalThis.navigator?.onLine !== false) {
+// Where this browser allows a refused microphone, as one step a child can follow.
+// device: {userAgent, maxTouchPoints} (navigator); iPadOS Safari reports a Mac
+// user agent with touch points. In-app browsers cannot be allowed at all.
+// keep: a recording still waits to be sent, so no reload (it would be lost).
+const IN_APP = /FBAN|FBAV|FB_IAB|Instagram|Line\/|MicroMessenger|WhatsApp|KAKAOTALK|Snapchat|Twitter|TikTok|musical_ly|BytedanceWebview|GSA\/|; wv\)/;
+export function micDeniedHelp(device, {keep = false} = {}) {
+  const ua = String(device?.userAgent || ''), touch = Number(device?.maxTouchPoints) > 1, then = keep ? '。' : '，再按「重新載入」。';
+  if (IN_APP.test(ua)) return '請改用 ' + (/Android/i.test(ua) ? 'Chrome' : 'Safari') + ' 打開這個網頁。';
+  if (/iPhone|iPad|iPod/.test(ua) || (touch && /Macintosh/.test(ua))) {
+    const app = /CriOS\//.test(ua) ? 'Chrome' : /EdgiOS\//.test(ua) ? 'Edge' : /FxiOS\//.test(ua) ? 'Firefox' : '';
+    // iOS 18 moved app settings under 設定 ›「App」. iPadOS desktop mode hides the OS version; Safari's Version/ follows it.
+    const ios = Number((/ OS (\d+)_/.exec(ua) || /Version\/(\d+)/.exec(ua) || [])[1]) || 0, apps = ios >= 18 ? '「App」›' : '';
+    return app ? '到「設定」›' + apps + '「' + app + '」› 打開「麥克風」' + then : '到「設定」›' + apps + '「Safari」›「麥克風」選「允許」' + then;
+  }
+  if (/Chrome\/|Chromium\/|Edg\//.test(ua)) return '按網址列左邊的圖示 ›「麥克風」選「允許」' + then;
+  if (/Macintosh/.test(ua) && /Safari\//.test(ua)) return 'Safari 選單 ›「此網站的設定」›「麥克風」選「允許」' + then;
+  return '請在瀏覽器設定中允許本網站使用麥克風' + then;
+}
+
+// WebKit (every iOS browser, Mac Safari) keeps refusing on this page until it is reloaded.
+export function micNeedsReload(device) {
+  const ua = String(device?.userAgent || '');
+  return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && (Number(device?.maxTouchPoints) > 1 || (/Safari\//.test(ua) && !/Chrome\/|Chromium\/|Edg\/|Firefox\//.test(ua))));
+}
+
+// device (optional, see micDeniedHelp) names this browser's step for a refused microphone.
+export function recordingErrorMessage(error, online = globalThis.navigator?.onLine !== false, device) {
   if (typeof error?.code === 'string') return error.message;
-  if (error?.name === 'NotAllowedError' || error?.name === 'SecurityError') return '請先允許使用麥克風：看到提示時按「允許」；沒有提示的話，到 iPad「設定」›「Safari」›「麥克風」選「允許」，再重新整理頁面。';
+  if (error?.name === 'NotAllowedError' || error?.name === 'SecurityError') return device ? '請先允許使用麥克風：' + micDeniedHelp(device) : '請先允許使用麥克風：看到提示時按「允許」；沒有提示的話，到 iPad「設定」›「Safari」›「麥克風」選「允許」，再重新整理頁面。';
   if (error?.name === 'NotFoundError') return '找不到麥克風，請檢查裝置。';
   if (error?.name === 'NotReadableError') return '麥克風正在被其他程式使用，請關閉後再試。';
   if (!online) return '網絡未連上，連線後可以再送一次。';

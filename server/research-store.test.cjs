@@ -419,9 +419,10 @@ test('the dictionary documents the school48 fields as optional and keeps exclusi
   const field=name=>d.fields.find(item=>item.name===name);
   for(const name of ['event.providerWords','event.service','event.recognition','event.provenance']){assert.ok(field(name),name);assert.match(field(name).type,/^server-only /,name);}
   assert.equal(new Set(d.fields.map(item=>item.name)).size,d.fields.length);
-  for(const key of ['mediaRoute','audioSource','audioTrigger','lineIndex','pinyinShown','recorderFormat','stopReason','uploadPath','resend','errorDetail','httpStatus','inputMode','pointer','viewport','pageLoad','deviceAccounts'])
+  for(const key of ['mediaRoute','audioSource','audioTrigger','lineIndex','pinyinShown','recorderFormat','stopReason','uploadPath','resend','errorDetail','httpStatus','inputMode','pointer','viewport','pageLoad','deviceAccounts','errorSource','errorKind',
+    'own-module','own-page','extension','other-origin','reference','not-allowed','muted','resize-loop'])
     assert.ok(field('event.context').meaning.includes(key),key);
   for(const key of ['fallbackCount','mediaDurationMs','seekFromMs','stallCount','selectionChanges','firstResponseMs','prepareMs','pendingCount','heldCount'])assert.ok(field('event.metrics').meaning.includes(key),key);
-  for(const item of ['provider error text','user agent','exact screen size','persistent device identifier','inserted speech content','IP address','device fingerprint'])assert.ok(d.export.excluded.includes(item),item);
+  for(const item of ['browser error message, script URL or stack trace','provider error text','user agent','exact screen size','persistent device identifier','inserted speech content','IP address','device fingerprint'])assert.ok(d.export.excluded.includes(item),item);
   assert.doesNotMatch(JSON.stringify(d),/self[- ]?assess/i);
 });

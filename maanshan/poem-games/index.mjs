@@ -6,15 +6,15 @@ const loaders={
  'yong-e':()=>import('./goose.mjs?v=20261007-school46').then(m=>m.mountGoose),
  'zeng-wang-lun':()=>import('./zeng.mjs?v=20261007-school46').then(m=>m.mountFarewell),
  'ti-xi-lin-bi':()=>import('./views.mjs?v=20261006-school43').then(m=>m.mountMountain),
- 'bo-chuan-gua-zhou':()=>import('./river.mjs?v=20261007-school46').then(m=>m.mountRiver),
- 'gui-yuan-tian-ju':()=>import('./garden.mjs?v=20261007-school46').then(m=>m.mountGarden),
+ 'bo-chuan-gua-zhou':()=>import('./river.mjs?v=20261009-school54').then(m=>m.mountRiver),
+ 'gui-yuan-tian-ju':()=>import('./garden.mjs?v=20261009-school54').then(m=>m.mountGarden),
  'zao-chun':()=>import('./rain.mjs?v=20261007-school46').then(m=>m.mountRain),
- 'yong-xue':()=>import('./snow-count.mjs?v=20261007-school46').then(m=>m.mountSnowCount),
- 'hua-ji':()=>import('./rooster.mjs?v=20261007-school46').then(m=>m.mountRooster),
+ 'yong-xue':()=>import('./snow-count.mjs?v=20261009-school54').then(m=>m.mountSnowCount),
+ 'hua-ji':()=>import('./rooster.mjs?v=20261009-school54').then(m=>m.mountRooster),
  'qi-bu-shi':()=>import('./seven-steps.mjs?v=20261007-school46').then(m=>m.mountSevenSteps),
- 'jue-ju':()=>import('./couplet.mjs?v=20261007-school46').then(m=>m.mountCouplet),
+ 'jue-ju':()=>import('./couplet.mjs?v=20261009-school54').then(m=>m.mountCouplet),
  'zheng-ren-mai-lu':()=>import('./shoe-market.mjs?v=20261007-school46').then(m=>m.mountShoeMarket),
- 'ke-zhi':()=>import('./guest.mjs?v=20261007-school46').then(m=>m.mountGuest)
+ 'ke-zhi':()=>import('./guest.mjs?v=20261009-school54').then(m=>m.mountGuest)
 };
 export function mountPoemGame(holder,{slug,...options}={}){
  if(!loaders[slug])throw new TypeError('Unknown poem game');

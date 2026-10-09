@@ -23,7 +23,7 @@ export function mountGarden(holder, {initialState, readOnly=false, playAudio, on
   const doc=holder.ownerDocument,view=doc.defaultView,abort=new view.AbortController();
   const loadImages=createGameImageLoader({signal:abort.signal});
   const removed=new Set(Array.isArray(initialState?.removed)?initialState.removed.filter(id=>weedIds.includes(id)):[]);
-  let dead=false,ready=false,done=removed.size===weedIds.length,reported=done,drag=null,dragFrame=0,loadId=0,suppressClickUntil=0;
+  let dead=false,ready=false,done=removed.size===weedIds.length,reported=done,drag=null,dragFrame=0,loadId=0,suppressClickUntil=0,audioTap=0;
   const research=createProcessResearch(onResearch,{prefix:'game.garden',alive:()=>!dead});
   const timers=new Set(),root=doc.createElement('section');root.className='poem-garden';root.setAttribute('aria-label','豆苗小幫手');
   root.innerHTML=`<div class="gr-instruction"><p>拔掉細長野草，留下寬葉豆苗。</p><span class="gr-count" aria-live="off"></span></div>
@@ -118,6 +118,13 @@ export function mountGarden(holder, {initialState, readOnly=false, playAudio, on
       if(!readOnly&&!done)plants.forEach((p,position)=>{if(!removed.has(p.id))research.present(p.id,{position,total:plants.length});});
     }catch{unavailable();}
   }
+  // Each tap starts the line again. Only the latest tap reports, and only a real failure (false or an error);
+  // null means the line was cut off (another tap, the round ending, the page hiding), which is no fault.
+  function listen(){
+    research.hint('game','audio');const tap=++audioTap;
+    const failed=()=>{if(dead||tap!==audioTap)return;research.error('audio','audio_unavailable');tell('聲音暫時未能播放，稍後再試。');};
+    Promise.resolve().then(()=>playAudio?.({text:done?'帶月荷鋤歸':'草盛豆苗稀'})).then(ok=>{if(ok===false)failed();},failed);
+  }
   root.addEventListener('pointerdown',down,{signal:abort.signal});
   root.addEventListener('pointermove',move,{signal:abort.signal,passive:false});
   root.addEventListener('pointerup',release,{signal:abort.signal});
@@ -129,10 +136,7 @@ export function mountGarden(holder, {initialState, readOnly=false, playAudio, on
   root.addEventListener('click',event=>{
     const plant=event.target.closest?.('[data-plant]');if(plant&&(event.detail===0||Date.now()>suppressClickUntil))pull(plant.dataset.plant);
     if(event.target.closest?.('[data-garden-retry]'))void load();
-    if(event.target.closest?.('[data-garden-audio]')){
-      research.hint('game','audio');
-      Promise.resolve().then(()=>playAudio?.({text:done?'帶月荷鋤歸':'草盛豆苗稀'})).then(ok=>{if(ok===false)research.error('audio','audio_unavailable');}).catch(()=>{research.error('audio','audio_unavailable');if(!dead)tell('聲音暫時未能播放，稍後再試。');});
-    }
+    if(event.target.closest?.('[data-garden-audio]'))listen();
   },{signal:abort.signal});
   tell(done?facts:'先看看葉子：豆苗寬，野草細長。');render();void load();
   return {

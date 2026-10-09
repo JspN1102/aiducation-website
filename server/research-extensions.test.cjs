@@ -23,7 +23,8 @@ const ENUMS={mediaRoute:['public','local'],audioSource:['recitation','static','t
  audioTrigger:['poem-heading-audio','line-tts','word-tts','sentence-tts','practice-word','practice-sequence','practice-compare','report-line-tts','record-pending-play','replay','replay-all','chat-speak','challenge','other'],
  recorderFormat:['webm-opus','webm','mp4','ogg','default','other'],stopReason:['manual','time-limit'],uploadPath:['compact','pcm','pcm-fallback'],
  errorDetail:['mic-denied','mic-missing','mic-busy','unsupported','too-short','too-long','offline','network','timeout','busy','service','transcode','decode','incomplete','aborted','other'],
- inputMode:['typed','voice','suggestion'],pointer:['coarse','fine','none'],viewport:['small','medium','large'],pageLoad:['navigate','reload','back-forward','prerender','other']};
+ inputMode:['typed','voice','suggestion'],pointer:['coarse','fine','none'],viewport:['small','medium','large'],pageLoad:['navigate','reload','back-forward','prerender','other'],
+ errorSource:['own-module','own-page','extension','other-origin','none'],errorKind:['type','reference','range','syntax','security','abort','not-allowed','network','muted','resize-loop','other']};
 const NEW_METRICS={fallbackCount:10,mediaDurationMs:3600000,seekFromMs:3600000,stallCount:10000,selectionChanges:1000,firstResponseMs:600000,prepareMs:600000,pendingCount:100000,heldCount:100000};
 const OLD_METRICS={elapsedMs:21600000,playbackMs:21600000,audioDurationMs:600000,playbackRate:4,strokeCount:10000,eraseCount:10000,hintCount:10000,userCharacters:20000,assistantCharacters:20000,
  latencyMs:600000,wordCount:1000,correctCount:1000,itemCount:1000,watchedMs:21600000,videoPositionMs:3600000,lostEventCount:1000000,accuracyScore:100,fluencyScore:100,completionScore:100,suggestedScore:100};
@@ -244,7 +245,8 @@ function cohort(extended){
   ['server_verified',server(10,{activity:'writing',attemptId:A2,itemId:'p2.d1',provider:'google-input-tools',model:'zh-hant-t-i0-handwrit',operation:'handwriting',providerVersion:'upstream-unversioned',
    context:{mode:'standard',itemType:'dictation',position:1,total:2},result:{status:'correct',score:100,correct:true},metrics:{latencyMs:20}}),{metrics:{strokeCount:15},recognition:RECOGNITION,service:{relay:'hk'},provenance:PROVENANCE}],
   ['client',base(11,{seq:7,activeMs:8000,activity:'chat',type:'error',error:{code:'provider_unavailable',retryable:true}}),{context:{inputMode:'voice',errorDetail:'service',httpStatus:503}}],
-  ['client',base(12,{seq:8,activeMs:9000,activity:'chat',type:'activity_end',result:{status:'completed'}}),{metrics:{firstResponseMs:1500}}]];
+  ['client',base(12,{seq:8,activeMs:9000,activity:'chat',type:'activity_end',result:{status:'completed'}}),{metrics:{firstResponseMs:1500}}],
+  ['client',base(13,{seq:9,activeMs:9500,activity:'chat',type:'error',itemId:'client.runtime',error:{code:'unknown',retryable:false}}),{context:{errorSource:'extension',errorKind:'type'}}]];
  return items.map(([source,event,extra],index)=>{
   const value=extended?{...event,...extra,...(extra.context?{context:{...event.context,...extra.context}}:{}),...(extra.metrics?{metrics:{...event.metrics,...extra.metrics}}:{})}:event;
   return s.validateBatch({schemaVersion:1,batchId:id(200+index),actorId:actor.id,events:[value]},actor,now,source).events[0];
@@ -261,8 +263,8 @@ test('teacher summaries, practice summaries and the CSV export are identical wit
  const csv=s.exportRows(plain,f,{format:'csv'}),wide=s.exportRows(extended,f,{format:'csv'});
  assert.equal(wide.content,csv.content);assert.deepEqual(wide.manifest.columns,csv.manifest.columns);
  // The research JSONL is where the new fields live; content hashes change with the content, as for any new row.
- const jsonl=s.exportRows(extended,f).content;for(const key of ['providerWords','recognition','provenance','service','deviceAccounts','pendingCount'])assert.ok(jsonl.includes(`"${key}"`),key);
- assert.doesNotMatch(s.exportRows(plain,f).content,/providerWords|deviceAccounts/);
+ const jsonl=s.exportRows(extended,f).content;for(const key of ['providerWords','recognition','provenance','service','deviceAccounts','pendingCount','errorSource','errorKind'])assert.ok(jsonl.includes(`"${key}"`),key);
+ assert.doesNotMatch(s.exportRows(plain,f).content,/providerWords|deviceAccounts|errorSource/);
  assert.notEqual(extended[5].eventChecksum,plain[5].eventChecksum);assert.equal(extended[7].eventChecksum,plain[7].eventChecksum,'stable receipts are untouched');
 });
 test('stored batches with the new fields verify, and tampering or smuggled detail is detected',()=>{
@@ -280,4 +282,26 @@ test('stored batches with the new fields verify, and tampering or smuggled detai
   events=>{events[4].event.providerWords=[{i:0}];},events=>{events[0].event.context.deviceAccounts=11;},events=>{events[1].event.metrics.stallCount=10001;},
   events=>{events[5].event.providerWords[0].text='李';}])
   assert.throws(()=>s.verifyStoredBatch(reseal(mutate)),error=>error.code==='INVALID_EVENT');
+});
+
+// (j) Uncaught page errors (client.runtime/client.unhandled): enum origin and class only; pages from before them stay valid.
+test('page-error context: the new server stores it, rejects anything outside the enums, and still takes the old payload',()=>{
+ const runtime=(changes={})=>client({activity:'navigation',poemId:null,type:'error',itemId:'client.runtime',error:{code:'unknown',retryable:false},...changes});
+ const batch=event=>s.validateBatch({schemaVersion:1,batchId:randomUUID(),actorId:actor.id,events:[event]},actor,now,'client');
+ const legacy=runtime(),legacyRow=batch(legacy).events[0];
+ assert.equal(legacyRow.event.context,undefined);assert.equal(legacyRow.event.itemId,'client.runtime');
+ assert.deepEqual(batch(runtime({itemId:'client.unhandled',error:{code:'network',retryable:false}})).events[0].event.error,{code:'network',retryable:false});
+ for(const errorSource of ENUMS.errorSource)for(const errorKind of ENUMS.errorKind)
+  assert.deepEqual(batch(runtime({context:{errorSource,errorKind}})).events[0].event.context,{errorKind,errorSource});
+ // Never a URL, scheme, message, stack or error name in place of the enum, and no free-text companions.
+ for(const errorSource of ['https://mandarin.aiducation.asia/school/app.js','chrome-extension://abc/x.js','chrome-extension','webkit-masked-url://hidden/','same-origin','own','page','None'])
+  rejects(runtime({context:{errorSource,errorKind:'type'}}),false);
+ for(const errorKind of ['TypeError','typeerror','Script error.','ResizeObserver loop limit exceeded','NotAllowedError','not_allowed','resize','unknown','timeout'])
+  rejects(runtime({context:{errorSource:'none',errorKind}}),false);
+ for(const key of ['errorMessage','message','stack','filename','lineno','colno','errorName','scriptUrl'])rejects(runtime({context:{errorSource:'none',errorKind:'other',[key]:'x'}}),false);
+ assert.throws(()=>batch(runtime({context:{errorSource:'own-module',errorKind:'TypeError'}})),error=>error.code==='INVALID_EVENT');
+ // An older stored row without the keys and a new one with them both verify.
+ const rows=[legacyRow,batch(runtime({context:{errorSource:'own-page',errorKind:'resize-loop'}})).events[0]];
+ for(const row of rows){const stored={schemaVersion:1,batchId:randomUUID(),serverReceivedAt:row.serverReceivedAt,events:[row]};stored.checksum=s.hash(s.canonical(stored));
+  assert.deepEqual(s.verifyStoredBatch(JSON.parse(s.canonical(stored))),JSON.parse(s.canonical(stored)));}
 });

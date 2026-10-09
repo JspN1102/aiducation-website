@@ -15,12 +15,12 @@ import {mountLessonMap} from './lesson-map.mjs?v=20261006-school43';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261006-school43';
 import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20261006-school43';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school22';
-import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, prewarmAssessment} from './recording-audio.mjs?v=20261008-school49';
+import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, micDeniedHelp, micNeedsReload, prewarmAssessment} from './recording-audio.mjs?v=20261009-school54';
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
 import {requestJSON, requestChat} from './network.mjs?v=20261008-school49';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
-import {schoolSession} from './bootstrap.mjs?v=20261009-school52';
-import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261008-school48';
+import {schoolSession} from './bootstrap.mjs?v=20261009-school54';
+import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261009-school54';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school22';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school41';
 import {getPoetSuggestions, matchPoetPreset} from './poet-presets.mjs?v=20261005-school40';
@@ -107,7 +107,7 @@ if(school.enabled){
 }
 let poems=[], poem=null, view='record', routeVersion=0, showPinyin=true, sessionLocked=false;
 let transientAudio=null, transientUrl=null, speechVersion=0, toastTimer=null;
-let currentLine=0, recorder=null, stream=null, recordContext=null, recordTimer=null, recordStarted=0, recordBusy=false, recordingVersion=0;
+let currentLine=0, recorder=null, stream=null, recordContext=null, recordTimer=null, recordStarted=0, recordBusy=false, recordingVersion=0, micDenied='';
 let recordStep='read', recordWordIndex=0;
 let reportGeneration=0;
 let chatBusy=false,chatVoice=null,chatVoiceInserted=false,recordStopReason='manual';
@@ -738,17 +738,21 @@ function stepRecordLine(step){
 }
 function recordControlsHTML(){
   const pending=pendingRecordings.get(`${poem.id}-${currentLine}`);
+  // A refused microphone keeps this browser's one step on screen until a retry, another line or page.
+  if(micDenied!==routeVersion+':'+poem.id+'-'+currentLine)micDenied='';
   // A score already being paid for: no resend or re-record until it settles
   // (the request is time-limited, then this line shows its result or retry).
   if(pending?.scoring&&!recordBusy)return '<div class="record-recovery"><p class="record-status" id="record-status" role="status"><span class="spinner"></span> 正在等候評測，錄音已保留</p><button class="text-button" data-action="record-pending-play">'+icon('headphones')+'聽我的錄音</button></div>';
   if(pending&&!recordBusy){
     return '<div class="record-recovery"><p class="record-status" id="record-status" role="status">'+esc(pending.message||'錄音已保留，可以再送一次。')+'</p><div class="record-actions">'+(pending.canRetry?'<button class="button primary" data-action="record-send">'+icon('send')+'再送一次</button>':'')+'<button class="button" data-action="record-start">'+icon('mic')+'重新朗讀</button></div><button class="text-button" data-action="record-pending-play">'+icon('headphones')+'聽我的錄音</button></div>';
   }
+  // Where the browser keeps refusing until the page is reloaded, 重新載入 is the main button.
+  if(micDenied&&!recordBusy){const reload=micNeedsReload(navigator),retry='<button class="button'+(reload?'':' primary')+'" data-action="record-start">'+icon('mic')+'再試一次</button>',again='<button class="button'+(reload?' primary':'')+'" data-action="record-reload">'+icon('refresh-cw')+'重新載入</button>';return '<div class="record-recovery record-mic-denied"><p class="record-mic-title">麥克風未開啟</p><p class="record-status" id="record-status" role="status">'+esc(micDeniedHelp(navigator))+'</p><div class="record-actions">'+(reload?again+retry:retry+again)+'</div></div>';}
   return '<div class="record-actions"><button class="mic-button" data-action="record-start" aria-label="開始朗讀">'+icon('mic')+'<span>開始朗讀</span></button></div><p class="record-status" id="record-status" role="status"></p>';
 }
 function assessmentStatus(message){const controls=$('#record-controls');if(controls)controls.innerHTML='<p class="record-status" role="status"><span class="spinner"></span> '+esc(message)+'</p>';}
 async function startRecording() {
-  if(recordBusy)return;stopMedia();cancelRecording();recordBusy=true;
+  if(recordBusy)return;stopMedia();cancelRecording();recordBusy=true;micDenied='';
   // Warm the relay now so a cold connection is not paid for when the score is awaited.
   prewarmAssessment();
   recordStep='read';renderRecord();
@@ -758,7 +762,7 @@ async function startRecording() {
   research.emit('attempt_started',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,context:{pinyinShown:showPinyin===true}});
   const tOpen=performance.now();recordStopReason='manual';
   const isCurrent=()=>version===routeVersion&&generation===recordingVersion;
-  const controls=$('#record-controls');controls.innerHTML='<p class="record-status"><span class="spinner"></span> 正在開啟麥克風</p>';
+  const controls=$('#record-controls');controls.innerHTML='<p class="record-status"><span class="spinner"></span> 正在開啟麥克風…看到提示請按「允許」</p>';
   try {
     if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder)throw Object.assign(new Error('此瀏覽器未能使用錄音，請使用新版 Safari、Chrome 或 Edge。'),{code:'AUDIO_UNSUPPORTED'});
     const Audio=window.AudioContext||window.webkitAudioContext;
@@ -779,7 +783,15 @@ async function startRecording() {
     research.emit('recording_started',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,...researchExtra(()=>{const type=String(localRecorder.mimeType||'').toLowerCase();return {metrics:{latencyMs:Math.min(600000,Math.max(0,Math.round(performance.now()-tOpen)))},context:{recorderFormat:type===''?'default':type.includes('webm')?(type.includes('opus')?'webm-opus':'webm'):type.includes('mp4')?'mp4':type.includes('ogg')?'ogg':'other'}};})});
     controls.innerHTML=`<div class="record-wave live">${'<span></span>'.repeat(19)}</div><div class="record-actions"><button class="mic-button recording" data-action="record-stop" aria-label="完成錄音" title="完成錄音">${icon('square')}<span>讀好了</span></button></div><p class="record-status" id="record-status">錄音中 · 0:00</p>`;icons();
     recordTimer=setInterval(()=>{const seconds=Math.floor((Date.now()-recordStarted)/1000);const status=$('#record-status');if(status)status.textContent=`錄音中 · 0:${String(seconds).padStart(2,'0')}`;if(seconds>=30){recordStopReason='time-limit';stopRecording();}},250);
-  } catch(error) {research.emit('error',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,error:{code:researchErrorCode(error),retryable:true},context:researchErrorContext(error)});if(!isCurrent())return;cancelRecording();renderRecord();toast(recordingErrorMessage(error));}
+  } catch(error) {
+    // How long a refusal took tells a declined prompt (seconds) from a browser that refused without asking.
+    const denied=['NotAllowedError','SecurityError'].includes(error?.name);
+    research.emit('error',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,error:{code:researchErrorCode(error),retryable:true},context:researchErrorContext(error),...researchExtra(()=>denied?{metrics:{latencyMs:Math.min(600000,Math.max(0,Math.round(performance.now()-tOpen)))}}:{})});
+    if(!isCurrent())return;cancelRecording();
+    // A refused microphone shows steps that stay (not a passing toast); a kept recording keeps its resend instead.
+    if(denied&&!pendingRecordings.has(`${p.id}-${index}`)){micDenied=version+':'+p.id+'-'+index;renderRecord();}
+    else{renderRecord();toast(denied?'請先允許使用麥克風：'+micDeniedHelp(navigator,{keep:true}):recordingErrorMessage(error));}
+  }
 }
 function stopRecording(){if(recorder?.state==='recording'){recorder.stop();$('#record-controls').innerHTML='<p class="record-status"><span class="spinner"></span> 正在聆聽你的朗讀</p>';}}
 async function assessRecording(blob,p,index,version,generation,context,existing=null) {
@@ -993,7 +1005,8 @@ async function playChallengeAudio(target,auditFields={}) {
   const markup=challengeMarkup(target);
   const url=target.text?getSpeechAudioURL(text):getWordAudioURL(target.char,target.pinyin);
   let played=false;try{played=await playDemonstration(url,text,markup,()=>version===speechVersion&&route===routeVersion);}catch{}
-  if(version!==speechVersion||route!==routeVersion)return false;
+  // true: played; false: no copy could play; null: interrupted (a newer tap, stopMedia, the page hiding or a route change).
+  if(version!==speechVersion||route!==routeVersion)return null;
   stopTransient();return played;
 }
 // A sound or dictation question fetches its recording while the pupil reads the prompt (and the next
@@ -1057,7 +1070,7 @@ function preloadActivityModules(activity,slug) {
 async function renderQuiz() {
   challenge?.destroy();challenge=null;stopMedia();
   preloadActivityModules('quiz',poem?.slug);
-  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20261008-school48'));
+  const module=await loadActivity('小挑戰',()=>import('./challenge.mjs?v=20261009-school54'));
   if(!module)return;
   const p=poem;
   challenge=module.mountChallenge($('#view'),{poem:p,saved:state(p).challenge,
@@ -1284,6 +1297,7 @@ document.addEventListener('click',event=>{
   if(action==='record-target'&&Number.isInteger(Number(value))){currentLine=Number(value);recordStep='read';location.hash=link('record');}
   if(action==='record-step')stepRecordLine(Number(value));
   if(action==='record-start')startRecording();
+  if(action==='record-reload')location.reload();
   if(action==='record-send')retryRecording();
   if(action==='record-pending-play')replayPendingRecording(button);
   if(action==='record-stop')stopRecording();

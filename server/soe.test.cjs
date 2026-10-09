@@ -206,7 +206,57 @@ test('speech input keeps its single quick retry and returns slower failures to t
 });
 test('a refused microphone tells the pupil where to allow it',async()=>{
  globalThis.location??=new URL('https://mandarin.aiducation.asia/school/');
- const {recordingErrorMessage}=await import('../maanshan/recording-audio.mjs');
+ const {recordingErrorMessage,micDeniedHelp,micNeedsReload}=await import('../maanshan/recording-audio.mjs');
+ // Without device details (chat voice input) the iPad Safari wording stays.
  for(const name of ['NotAllowedError','SecurityError']){const text=recordingErrorMessage(new DOMException('denied',name));assert.match(text,/允許使用麥克風/);assert.match(text,/「設定」›「Safari」›「麥克風」/);assert.ok(text.length<=70,text);}
  assert.equal(recordingErrorMessage(new DOMException('x','NotFoundError')),'找不到麥克風，請檢查裝置。');
+ // One step for the browser in hand. iPadOS Safari reports a Mac user agent and is told apart by touch points.
+ const safari='到「設定」›「Safari」›「麥克風」選「允許」，再按「重新載入」。',address='按網址列左邊的圖示 ›「麥克風」選「允許」，再按「重新載入」。',general='請在瀏覽器設定中允許本網站使用麥克風，再按「重新載入」。';
+ const mac='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15';
+ const iphone=(app,os='17_6')=>'Mozilla/5.0 (iPhone; CPU iPhone OS '+os+' like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) '+app+' Mobile/15E148 Safari/604.1';
+ // iOS 18 moved app settings under 「App」; iOS 26 Safari still says OS 18_6.
+ const apps=text=>text.replace('「設定」›','「設定」›「App」›');
+ const windows=tail=>'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'+tail;
+ const android='Mozilla/5.0 (Linux; Android 14; SM-X200) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36';
+ const cases=[
+  ['iPadOS Safari (desktop user agent)',{userAgent:mac,maxTouchPoints:5},safari],
+  ['iPhone Safari',{userAgent:iphone('Version/17.6'),maxTouchPoints:5},safari],
+  ['older iPad Safari',{userAgent:'Mozilla/5.0 (iPad; CPU OS 12_5_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.2 Mobile/15E148 Safari/604.1',maxTouchPoints:5},safari],
+  ['iOS Chrome',{userAgent:iphone('CriOS/129.0.6668.69'),maxTouchPoints:5},'到「設定」›「Chrome」› 打開「麥克風」，再按「重新載入」。'],
+  ['iOS Edge',{userAgent:iphone('EdgiOS/129.0.2792.84 Version/17.0'),maxTouchPoints:5},'到「設定」›「Edge」› 打開「麥克風」，再按「重新載入」。'],
+  ['iOS Firefox',{userAgent:iphone('FxiOS/131.0'),maxTouchPoints:5},'到「設定」›「Firefox」› 打開「麥克風」，再按「重新載入」。'],
+  ['iPadOS 18 Safari (desktop user agent)',{userAgent:mac.replace('17.6','18.0'),maxTouchPoints:5},apps(safari)],
+  ['iPadOS 26 Safari (desktop user agent)',{userAgent:mac.replace('17.6','26.0'),maxTouchPoints:5},apps(safari)],
+  ['iPhone iOS 18 Safari',{userAgent:iphone('Version/18.0','18_0'),maxTouchPoints:5},apps(safari)],
+  ['iPhone iOS 26 Safari',{userAgent:iphone('Version/26.0','18_6'),maxTouchPoints:5},apps(safari)],
+  ['iPad iOS 18 Safari',{userAgent:'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',maxTouchPoints:5},apps(safari)],
+  ['iOS 18 Chrome',{userAgent:iphone('CriOS/129.0.6668.69','18_0'),maxTouchPoints:5},'到「設定」›「App」›「Chrome」› 打開「麥克風」，再按「重新載入」。'],
+  ['iOS 18 Firefox',{userAgent:iphone('FxiOS/131.0','18_0'),maxTouchPoints:5},'到「設定」›「App」›「Firefox」› 打開「麥克風」，再按「重新載入」。'],
+  ['Facebook in-app on iPad',{userAgent:iphone('[FBAN/FBIOS;FBAV/480.0.0.38.107;FBBV/1]'),maxTouchPoints:5},'請改用 Safari 打開這個網頁。'],
+  ['Instagram in-app',{userAgent:iphone('Instagram 350.0.0.0.98'),maxTouchPoints:5},'請改用 Safari 打開這個網頁。'],
+  ['LINE in-app',{userAgent:iphone('Line/14.16.0'),maxTouchPoints:5},'請改用 Safari 打開這個網頁。'],
+  ['WeChat in-app',{userAgent:iphone('MicroMessenger/8.0.50(0x1800322f) NetType/WIFI Language/zh_HK'),maxTouchPoints:5},'請改用 Safari 打開這個網頁。'],
+  ['Android WhatsApp web view',{userAgent:android.replace('SM-X200)','SM-X200; wv)')+' WhatsApp/2.24',maxTouchPoints:5},'請改用 Chrome 打開這個網頁。'],
+  ['Windows Chrome',{userAgent:windows(''),maxTouchPoints:0},address],
+  ['Windows Edge with a touch screen',{userAgent:windows(' Edg/129.0.2792.79'),maxTouchPoints:10},address],
+  ['Mac Chrome',{userAgent:mac.replace('Version/17.6 ','Chrome/129.0.0.0 '),maxTouchPoints:0},address],
+  ['Android Chrome',{userAgent:android,maxTouchPoints:5},address],
+  ['Mac Safari',{userAgent:mac,maxTouchPoints:0},'Safari 選單 ›「此網站的設定」›「麥克風」選「允許」，再按「重新載入」。'],
+  ['Windows Firefox',{userAgent:'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0',maxTouchPoints:0},general],
+  ['no details',{},general],
+ ];
+ for(const [label,device,expected] of cases){
+  assert.equal(micDeniedHelp(device),expected,label);assert.ok(expected.length<=45,label);
+  for(const name of ['NotAllowedError','SecurityError'])assert.equal(recordingErrorMessage(new DOMException('denied',name),true,device),'請先允許使用麥克風：'+expected,label);
+  assert.ok(recordingErrorMessage(new DOMException('denied','NotAllowedError'),true,device).length<=70,label);
+  assert.equal(recordingErrorMessage(new DOMException('x','NotFoundError'),true,device),'找不到麥克風，請檢查裝置。',label);
+ }
+ assert.equal(micDeniedHelp(null),general);assert.equal(micDeniedHelp(),general);
+ // A kept recording would be lost on reload, so its step stops at 允許.
+ assert.equal(micDeniedHelp({userAgent:windows(''),maxTouchPoints:0},{keep:true}),'按網址列左邊的圖示 ›「麥克風」選「允許」。');
+ assert.equal(micDeniedHelp({userAgent:mac,maxTouchPoints:5},{keep:true}),'到「設定」›「Safari」›「麥克風」選「允許」。');
+ assert.equal(micDeniedHelp({userAgent:iphone('Instagram 350.0.0.0.98'),maxTouchPoints:5},{keep:true}),'請改用 Safari 打開這個網頁。');
+ // WebKit keeps refusing until a reload; other browsers ask again.
+ for(const [label,device] of [['iPadOS Safari',{userAgent:mac,maxTouchPoints:5}],['Mac Safari',{userAgent:mac,maxTouchPoints:0}],['iPhone Safari',{userAgent:iphone('Version/17.6'),maxTouchPoints:5}],['iOS Chrome',{userAgent:iphone('CriOS/129.0.6668.69'),maxTouchPoints:5}]])assert.equal(micNeedsReload(device),true,label);
+ for(const [label,device] of [['Mac Chrome',{userAgent:mac.replace('Version/17.6 ','Chrome/129.0.0.0 '),maxTouchPoints:0}],['Windows Edge',{userAgent:windows(' Edg/129.0.2792.79'),maxTouchPoints:10}],['Android Chrome',{userAgent:android,maxTouchPoints:5}],['Mac Firefox',{userAgent:'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:131.0) Gecko/20100101 Firefox/131.0',maxTouchPoints:0}],['no details',{}]])assert.equal(micNeedsReload(device),false,label);
 });

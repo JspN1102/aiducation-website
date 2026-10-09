@@ -156,7 +156,9 @@ const DAILY_ROWS={
   peak:[{slot:String((T-3600000)/1000),pupils:6}],
   week:[{day:-6,pupils:3},{day:0,pupils:21},{day:null,pupils:30}],
   providers:[{operation:'reading',n:150,failed:2},{operation:'chat',n:25,failed:0},{operation:'r_secret',n:1,failed:1}],
-  clients:[{code:'network',n:4},{code:'<script>',n:1}],
+  // Per kind: events, pupils and the most from one pupil; the total row counts each pupil once.
+  clients:[{total:false,code:'permission_denied',n:30,pupils:3,top:24},{total:false,code:'network',n:12,pupils:4,top:5},{total:false,code:'script',n:10,pupils:3,top:5},
+    {total:false,code:'unsupported',n:7,pupils:1,top:7},{total:false,code:'<script>',n:1,pupils:1,top:1},{total:true,code:null,n:60,pupils:9,top:24}],
   month:[{readings:1300}],
   last:[{at:T-42000}]
 };
@@ -224,7 +226,9 @@ test('payload shape: aggregates from injected systemd, database and traffic fake
     byGrade:[{grade:1,pupils:12,readings:100,chats:20},{grade:2,pupils:8,readings:50,chats:5}],peak:{pupils:6,at:T-3600000},
     week:{days:['2026-10-03','2026-10-04','2026-10-05','2026-10-06','2026-10-07','2026-10-08','2026-10-09'].map((date,i)=>({date,pupils:i===0?3:i===6?21:0})),pupils:30},
     providers:[{operation:'reading',label:'朗讀評分',count:150,failed:2},{operation:'chat',label:'對話',count:25,failed:0},{operation:'other',label:'其他',count:1,failed:1}],
-    clientErrors:[{code:'network',label:'網絡中斷',count:4},{code:'unknown',label:'其他',count:1}],monthReadings:1300,lastRecordAt:T-42000,checkedAt:T});
+    clientErrors:[{code:'network',label:'網絡中斷',count:12,pupils:4,topPupil:null},{code:'permission_denied',label:'未允許錄音',count:30,pupils:3,topPupil:24},
+      {code:'script',label:'頁面程式錯誤',count:10,pupils:3,topPupil:5},{code:'unsupported',label:'裝置不支援',count:7,pupils:1,topPupil:null},{code:'unknown',label:'其他',count:1,pupils:1,topPupil:null}],
+    clientErrorPupils:9,monthReadings:1300,lastRecordAt:T-42000,checkedAt:T});
   assert.deepEqual(p.usage,{available:true,dbMB:145,speech:{month:'2026-10',used:19,limit:4800},checkedAt:T});
   assert.equal(p.upkeep.available,true);assert.equal(p.upkeep.checkedAt,T);
   assert.deepEqual(p.upkeep.jobs[0],{unit:'maanshan-backup',label:'每日備份',loadState:'loaded',running:false,result:'success',lastAt:Date.UTC(2026,9,9,2,45),
@@ -240,12 +244,41 @@ test('payload shape: aggregates from injected systemd, database and traffic fake
   assert.deepEqual(p.verdict.sections.upkeep,{level:'ok',text:'備份、健康檢查、恢復演練都正常，證書還有 70 天。'});
   assert.deepEqual(p.verdict.sections.today,{level:'info',text:'今天有 21 位學生用過，朗讀 150 句。'});
   assert.deepEqual(p.verdict.sections.trend,{level:'info',text:'共 4 個請求，最忙一分鐘 4 個。'});
-  assert.deepEqual(p.verdict.sections.clients,{level:'info',text:'今天共 5 次，最多是「網絡中斷」。'});
+  assert.deepEqual(p.verdict.sections.clients,{level:'info',text:'今天有 9 位學生遇到問題，共 60 次，最多學生遇到「網絡中斷」。'});
   const text=JSON.stringify(p);
   for(const leak of ['<script>','r_secret','vercel-cron','research_id','jasper'])assert(!text.includes(leak),leak);
   assert(!/\b\d{1,3}(\.\d{1,3}){3}\b/.test(text),'no addresses');
   await m.collect();assert.equal(log.systemctl,1,'host probe is shared for 10 seconds');
   assert.deepEqual([log.jobs,log.certs],[1,2]);
+});
+
+test('pupil-side problems: page-script errors apart, pupils per kind and per day, one pupil tapping again and again',async()=>{
+  const sql=monitor.DAILY_SQL.clients;
+  assert.match(sql,/^SELECT GROUPING\(code\)=1 AS total,/);assert.match(sql,/WHEN record->'event'->>'itemId' LIKE 'client\.%' THEN 'script'/);
+  assert.match(sql,/WHERE received_at >= \$1 AND source='client'/,'today first, read-only aggregates');assert.match(sql,/GROUP BY ROLLUP\(code\)$/);
+  assert(sql.includes("IN ('network','timeout','permission_denied','audio_unavailable','provider_unavailable','invalid_response','storage_unavailable','unsupported','unknown')"));
+  // A code outside the list (the query already folds them) is merged into 其他.
+  const daily={...DAILY_ROWS,clients:[{total:false,code:'permission_denied',n:5,pupils:2,top:4},{total:false,code:'unknown',n:8,pupils:2,top:6},{total:false,code:'mystery',n:2,pupils:1,top:2},
+    {total:true,code:null,n:15,pupils:3,top:6}]};
+  let p=await fakes({rows:{daily}}).monitor.collect();
+  assert.deepEqual(p.today.clientErrors,[{code:'unknown',label:'其他',count:10,pupils:3,topPupil:6},{code:'permission_denied',label:'未允許錄音',count:5,pupils:2,topPupil:null}]);
+  assert.equal(p.today.clientErrorPupils,3);assert.equal(p.verdict.sections.clients.text,'今天有 3 位學生遇到問題，共 15 次，最多學生遇到「其他」。');
+  // No problems today: Postgres still returns the empty total row.
+  p=await fakes({rows:{daily:{...DAILY_ROWS,clients:[{total:true,code:null,n:null,pupils:0,top:null}]}}}).monitor.collect();
+  assert.deepEqual([p.today.clientErrors,p.today.clientErrorPupils,p.verdict.sections.clients.text],[[],0,'今天學生裝置沒有回報問題。']);
+});
+
+test('網站後台 page: times and pupils per kind, the one-pupil note, and an older server without pupil figures',()=>{
+  const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+  const source=fs.readFileSync(path.join(__dirname,'../maanshan/teacher-dashboard.mjs'),'utf8');
+  const pick=name=>new RegExp('^function '+name+'\\(.*$','m').exec(source)[0];
+  const ui=vm.runInNewContext(['esc','number','shown','monitorList','clientErrorItems'].map(pick).join('\n')+'\n({monitorList,clientErrorItems})');
+  const plain=value=>JSON.parse(JSON.stringify(value));
+  assert.deepEqual(plain(ui.clientErrorItems([{code:'permission_denied',label:'未允許錄音',count:37,pupils:11,topPupil:24},{code:'script',label:'頁面程式錯誤',count:3,pupils:2,topPupil:null}])),
+    [['info','未允許錄音','37 次（11 位學生）','其中 1 位學生就有 24 次'],['info','頁面程式錯誤','3 次（2 位學生）','']]);
+  assert.deepEqual(plain(ui.clientErrorItems([{code:'network',label:'網絡中斷',count:4},{code:'unknown',count:1}])),[['info','網絡中斷','4 次',''],['info','其他','1 次','']],'older server');
+  const html=ui.monitorList(ui.clientErrorItems([{label:'未允許錄音',count:37,pupils:11,topPupil:24},{label:'<b>',count:1,pupils:1,topPupil:null}]));
+  assert.equal((html.match(/<small>/g)||[]).length,1);assert.match(html,/<small>其中 1 位學生就有 24 次<\/small>/);assert(html.includes('&lt;b&gt;'));
 });
 
 test('daily figures are kept for a minute, schedules for five; an older answer is served while one refresh runs',async()=>{
@@ -398,6 +431,8 @@ test('verdict rules for services and upkeep; the figures sections never change t
   assert.equal(v.level,'ok');assert.equal(v.text,'全部正常。');
   p=clone();p.origin.uptimeS=30;p.traffic.series=[];assert.equal(judge(p).sections.trend.text,'伺服器剛重啟，正在重新統計。');
   p=clone();p.today.pupils=0;p.today.clientErrors=[];v=judge(p);assert.equal(v.sections.today.text,'今天還沒有學生使用。');assert.equal(v.sections.clients.text,'今天學生裝置沒有回報問題。');
+  p=clone();delete p.today.clientErrorPupils;p.today.clientErrors=[{code:'network',label:'網絡中斷',count:4},{code:'unknown',label:'其他',count:1}];
+  assert.deepEqual(judge(p).sections.clients,{level:'info',text:'今天共 5 次，最多是「網絡中斷」。'},'figures from an older server');
   p=clone();delete p.today;delete p.usage;delete p.upkeep;delete p.traffic[60];delete p.traffic.series;v=judge(p);
   assert.equal(v.level,'ok','an older payload without the new fields still judges');
 });

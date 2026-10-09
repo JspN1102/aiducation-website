@@ -127,7 +127,8 @@ export function mountGuest(holder,{initialState,readOnly=false,playAudio,onState
   const token=++speakGen;speaking=true;render();let ok=false,timer;
   try{ok=await Promise.race([Promise.resolve(playAudio?.({text})),new Promise(resolve=>{timer=later(()=>resolve(false),15000);})]);}catch{ok=false;}
   view.clearTimeout(timer);timers.delete(timer);if(dead||token!==speakGen)return;speaking=false;
-  if(ok===false){research.error('audio','audio_unavailable');if(!auto)tell('朗讀暫時未能播放，可以先看詩句，稍後再試。');}
+  // null: cut off (paused, page hidden); no fault, and a queued line does not start after it.
+  if(ok===null)queued=null;else if(ok===false){research.error('audio','audio_unavailable');if(!auto)tell('朗讀暫時未能播放，可以先看詩句，稍後再試。');}
   render();if(queued){const next=queued;queued=null;void speak(next,true);}
  }
  function won(text,clip){render();save();progress();tell(text);chime();void speak(clip,true);}

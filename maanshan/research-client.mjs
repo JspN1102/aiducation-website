@@ -1,7 +1,7 @@
 // Structured learning events, never raw speech, strokes, chat, IP or device IDs.
 // Durable browser queues are partitioned by authenticated school account.
 import {createPersistentQueue} from './persistent-queue.mjs?v=20260920b';
-export const RESEARCH_APP_VERSION = 'school-research-20261008-school48';
+export const RESEARCH_APP_VERSION = 'school-research-20261009-school54';
 export const RESEARCH_CONTENT_VERSION = 'edb-20260919b-challenge-20260919d';
 const MAX_QUEUE = 5000, BATCH_SIZE = 32, MAX_BODY_BYTES = 48000, MAX_BATCHES = 4;
 const OPTIONAL = ['attemptId','itemId','attemptNo','hint','retryCount','result','error','metrics','context','response','interaction'];
@@ -11,12 +11,16 @@ const OPTIONAL = ['attemptId','itemId','attemptNo','hint','retryCount','result',
 const oneOf=values=>value=>values.includes(value),int=(min,max)=>value=>Number.isSafeInteger(value)&&value>=min&&value<=max,bool=value=>typeof value==='boolean';
 export const AUDIO_TRIGGERS=['poem-heading-audio','line-tts','word-tts','sentence-tts','practice-word','practice-sequence','practice-compare','report-line-tts','record-pending-play','replay','replay-all','chat-speak'];
 export const ERROR_DETAILS=['mic-denied','mic-missing','mic-busy','unsupported','too-short','too-long','offline','network','timeout','busy','service','transcode','decode','incomplete','aborted','other'];
+// Page errors (client.runtime/client.unhandled): where the failing script came from and its error class, never the message, URL or stack.
+export const ERROR_SOURCES=['own-module','own-page','extension','other-origin','none'];
+export const ERROR_KINDS=['type','reference','range','syntax','security','abort','not-allowed','network','muted','resize-loop','other'];
 const EXT_CONTEXT={mediaRoute:oneOf(['public','local']),audioSource:oneOf(['recitation','static','tts','recording']),
   audioTrigger:oneOf([...AUDIO_TRIGGERS,'challenge','other']),lineIndex:int(0,199),pinyinShown:bool,
   recorderFormat:oneOf(['webm-opus','webm','mp4','ogg','default','other']),stopReason:oneOf(['manual','time-limit']),
   uploadPath:oneOf(['compact','pcm','pcm-fallback']),resend:bool,errorDetail:oneOf(ERROR_DETAILS),httpStatus:int(400,599),
   inputMode:oneOf(['typed','voice','suggestion']),pointer:oneOf(['coarse','fine','none']),viewport:oneOf(['small','medium','large']),
-  pageLoad:oneOf(['navigate','reload','back-forward','prerender','other']),deviceAccounts:int(1,10)};
+  pageLoad:oneOf(['navigate','reload','back-forward','prerender','other']),deviceAccounts:int(1,10),
+  errorSource:oneOf(ERROR_SOURCES),errorKind:oneOf(ERROR_KINDS)};
 const EXT_METRICS={fallbackCount:10,mediaDurationMs:3600000,seekFromMs:3600000,stallCount:10000,selectionChanges:1000,
   firstResponseMs:600000,prepareMs:600000,pendingCount:100000,heldCount:100000};
 const EXT={context:EXT_CONTEXT,metrics:EXT_METRICS},has=(table,key)=>Object.prototype.hasOwnProperty.call(table,key);
@@ -165,11 +169,46 @@ export function attachResearchLifecycle(tracker, scope = globalThis) {
   scope.document.addEventListener('visibilitychange', () => tracker.visibilityChanged(scope.document.visibilityState === 'hidden'), options);
   scope.addEventListener('online', () => void tracker.flush(), options);
   scope.addEventListener('pagehide', () => void tracker.leave(), options);
-  let errorBudget=8;
-  scope.addEventListener('unhandledrejection',event=>{if(errorBudget-->0)tracker.emit('error',{itemId:'client.unhandled',error:{code:researchErrorCode(event.reason),retryable:false}});},options);
-  scope.addEventListener('error',()=>{if(errorBudget-->0)tracker.emit('error',{itemId:'client.runtime',error:{code:'unknown',retryable:false}});},options);
+  // ResizeObserver loop notices are harmless and can repeat every frame: one per page, outside the budget for real errors.
+  let errorBudget=8,resizeBudget=1;
+  const report=(itemId,code,context)=>{if(context.errorKind==='resize-loop'?resizeBudget-->0:errorBudget-->0)tracker.emit('error',{itemId,error:{code,retryable:false},context});};
+  scope.addEventListener('unhandledrejection',event=>report('client.unhandled',researchErrorCode(event.reason),pageErrorContext({error:event.reason})),options);
+  scope.addEventListener('error',event=>report('client.runtime','unknown',pageErrorContext(event)),options);
   const timer = setInterval(() => void tracker.flush(), 15000);
   return () => { clearInterval(timer); controller.abort(); tracker.stop(); };
+}
+const EXTENSION_URL=/^(?:chrome-extension|safari-extension|safari-web-extension|moz-extension|webkit-masked-url):/i;
+const ERROR_NAMES={TypeError:'type',ReferenceError:'reference',RangeError:'range',SyntaxError:'syntax',SecurityError:'security',
+  AbortError:'abort',NotAllowedError:'not-allowed',NetworkError:'network'};
+const FETCH_FAILED=/^(?:Failed to fetch|Load failed|NetworkError when attempting to fetch resource\.?|Network request failed|The network connection was lost\.?)$/;
+let APP_BASE;try{APP_BASE=new URL('./',import.meta.url).href;}catch{}
+// Enum-only origin and class of a window error event or a rejection reason; never throws.
+// A rejection has no filename: only WebKit's sourceURL / Firefox's fileName on the reason, never its stack.
+export function pageErrorContext(event,page=globalThis.location?.href,base=APP_BASE){
+  let errorSource='none',errorKind='other';
+  try{
+    const error=event?.error;let file=typeof event?.filename==='string'?event.filename:'';
+    if(!file&&error&&typeof error==='object'){const own=error.sourceURL??error.fileName;if(typeof own==='string')file=own;}
+    if(file){
+      if(EXTENSION_URL.test(file))errorSource='extension';
+      else{errorSource='other-origin';
+        const url=new URL(file),home=base?new URL(base):null;
+        if(home&&url.origin===home.origin&&url.pathname.startsWith(home.pathname)&&/\.m?js$/.test(url.pathname))errorSource='own-module';
+        else if(url.origin===new URL(page).origin)errorSource='own-page';}
+    }
+  }catch{}
+  try{
+    const error=event?.error,text=typeof event?.message==='string'?event.message:'';
+    if(text.startsWith('ResizeObserver loop'))errorKind='resize-loop';
+    else if(/^Script error\.?$/.test(text)&&error==null)errorKind='muted';
+    else{
+      // Without an error object (older engines) the class is read off the message; the message itself is never kept.
+      const name=typeof error?.name==='string'?error.name:error==null?/^(?:Uncaught )?([A-Za-z]*Error)\b/.exec(text)?.[1]:undefined;
+      errorKind=has(ERROR_NAMES,name)?ERROR_NAMES[name]:'other';
+      if(errorKind==='type'&&FETCH_FAILED.test(error?.message))errorKind='network';
+    }
+  }catch{}
+  return {errorSource,errorKind};
 }
 export function researchErrorCode(error) {
   if (['NotAllowedError','SecurityError'].includes(error?.name)) return 'permission_denied';

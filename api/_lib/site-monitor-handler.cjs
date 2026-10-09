@@ -17,7 +17,7 @@ const SPEECH_LIMIT=4800; // MONTHLY_SITE_LIMIT in api/speech-to-text.js
 const JOBS=[['maanshan-backup','每日備份',30*HOUR],['maanshan-health-check','健康檢查',45*MINUTE],['maanshan-health-restore','恢復演練',50*HOUR],['certbot','證書續期',36*HOUR]];
 const CERTS=[['mandarin.aiducation.asia','學生平台證書'],['aiducation.hk.cn','展示版證書']];
 const CLIENT_ERROR_LABELS={network:'網絡中斷',timeout:'等候超時',permission_denied:'未允許錄音',audio_unavailable:'無法播放或錄音',provider_unavailable:'評分服務不可用',
-  invalid_response:'回覆不完整',storage_unavailable:'本機儲存不可用',unsupported:'裝置不支援',unknown:'其他'};
+  invalid_response:'回覆不完整',storage_unavailable:'本機儲存不可用',unsupported:'裝置不支援',unknown:'其他',script:'頁面程式錯誤'};
 const OPERATION_LABELS={reading:'朗讀評分',handwriting:'手寫',chat:'對話',report:'報告',challenge:'挑戰'};
 const UNITS=[['maanshan','網站程式'],['nginx','網頁伺服器'],['postgresql@14-main','資料庫'],['maanshan-hk-tunnel','香港通道 3100'],
   ['maanshan-hk-tunnel@3101','香港通道 3101'],['maanshan-hk-tunnel@3102','香港通道 3102'],['maanshan-relay-2222','直連中轉 2222'],['maanshan-egress-shape','出口限速']];
@@ -175,8 +175,12 @@ const DAILY_SQL={
   providers:`SELECT record->'event'->>'operation' AS operation,count(*)::int AS n,
     count(*) FILTER (WHERE coalesce(record->'event'->'error'->>'code','aborted')<>'aborted')::int AS failed
     FROM research_events WHERE received_at >= $1 AND source='server_verified' AND record->'event'->>'type'='provider_result' GROUP BY 1`,
-  clients:`SELECT record->'event'->'error'->>'code' AS code,count(*)::int AS n FROM research_events
-    WHERE received_at >= $1 AND source='client' AND record->'event'->>'type'='error' AND coalesce(record->'event'->'error'->>'code','')<>'aborted' GROUP BY 1`,
+  // Per label (page-script errors, itemId client.*, apart): events, pupils and the most from one pupil; the total row counts pupils once.
+  clients:`SELECT GROUPING(code)=1 AS total,code,sum(n)::int AS n,count(DISTINCT research_id)::int AS pupils,max(n)::int AS top
+    FROM (SELECT CASE WHEN record->'event'->>'itemId' LIKE 'client.%' THEN 'script' WHEN record->'event'->'error'->>'code' IN (${ERROR_CODES.map(c=>`'${c}'`).join(',')})
+        THEN record->'event'->'error'->>'code' ELSE 'unknown' END AS code,research_id,count(*)::int AS n FROM research_events
+      WHERE received_at >= $1 AND source='client' AND record->'event'->>'type'='error' AND coalesce(record->'event'->'error'->>'code','')<>'aborted' GROUP BY 1,2) x
+    GROUP BY ROLLUP(code)`,
   month:`SELECT count(*)::int AS readings FROM research_events WHERE received_at >= $1 AND source='server_verified' AND record->'event'->>'type'='provider_result'
     AND record->'event'->>'operation'='reading' AND record->'event'->'error' IS NULL`,
   last:`SELECT (extract(epoch FROM max(received_at))*1000)::float8 AS at FROM research_events`
@@ -199,13 +203,16 @@ async function dailyProbe(pool,t){
     const providers={},clients={};
     for(const row of rows.providers){const operation=OPERATION_LABELS[row.operation]?row.operation:'other',into=providers[operation]||(providers[operation]={operation,label:OPERATION_LABELS[operation]||'其他',count:0,failed:0});
       into.count+=Number(row.n)||0;into.failed+=Number(row.failed)||0;}
-    for(const row of rows.clients){const code=ERROR_CODES.includes(row.code)?row.code:'unknown',into=clients[code]||(clients[code]={code,label:CLIENT_ERROR_LABELS[code],count:0});into.count+=Number(row.n)||0;}
+    for(const row of rows.clients.filter(r=>!r.total)){const code=Object.hasOwn(CLIENT_ERROR_LABELS,row.code)?row.code:'unknown',into=clients[code]||(clients[code]={code,label:CLIENT_ERROR_LABELS[code],count:0,pupils:0,top:0});
+      into.count+=Number(row.n)||0;into.pupils+=Number(row.pupils)||0;into.top=Math.max(into.top,Number(row.top)||0);}
+    // topPupil: one pupil's events when they are half or more of the label's (and 5 or more); a count only.
+    const clientErrors=Object.values(clients).map(({top,...e})=>({...e,topPupil:top>=5&&top*2>=e.count&&e.pupils>1?top:null})).sort((a,b)=>b.pupils-a.pupils||b.count-a.count);
     const last=Number(rows.last[0]?.at);
     return {available:true,date:cal.date,pupils:Number(total.pupils)||0,readings:Number(total.readings)||0,chats:Number(total.chats)||0,events:Number(total.events)||0,
       byGrade:rows.today.filter(r=>!r.total&&Number.isInteger(r.grade)&&r.grade>=1&&r.grade<=6).sort((a,b)=>a.grade-b.grade).map(r=>({grade:r.grade,pupils:Number(r.pupils)||0,readings:Number(r.readings)||0,chats:Number(r.chats)||0})),
       peak:peak&&Number(peak.pupils)>0?{pupils:Number(peak.pupils),at:Number(peak.slot)*1000}:null,
       week:{days,pupils:Number(weekTotal?.pupils)||0},
-      providers:Object.values(providers).sort((a,b)=>b.count-a.count),clientErrors:Object.values(clients).sort((a,b)=>b.count-a.count),
+      providers:Object.values(providers).sort((a,b)=>b.count-a.count),clientErrors,clientErrorPupils:Number(rows.clients.find(r=>r.total)?.pupils)||0,
       monthReadings:Number(rows.month[0]?.readings)||0,lastRecordAt:Number.isFinite(last)&&last>0?Math.round(last):null};
   }catch(error){
     if(client)await client.query('ROLLBACK').catch(()=>{});
@@ -319,8 +326,8 @@ function judge(p,now){
     sections.week=!d?.available?unread:{level:'info',text:'7 日內共 '+d.week.pupils+' 位學生用過。'};
     const series=p.traffic.series||[],count=series.reduce((n,m)=>n+m.count,0),failed=series.reduce((n,m)=>n+m.failed,0),busiest=Math.max(0,...series.map(m=>m.count));
     sections.trend={level:'info',text:count?'共 '+count+' 個請求'+(failed?'，'+failed+' 個出錯':'')+'，最忙一分鐘 '+busiest+' 個。':fresh?'伺服器剛重啟，正在重新統計。':'近 60 分鐘沒有請求。'};
-    const total=d?.available?d.clientErrors.reduce((n,e)=>n+e.count,0):0;
-    sections.clients=!d?.available?unread:{level:'info',text:total?'今天共 '+total+' 次，最多是「'+d.clientErrors[0].label+'」。':'今天學生裝置沒有回報問題。'};
+    const total=d?.available?d.clientErrors.reduce((n,e)=>n+e.count,0):0,who=d?.clientErrorPupils;
+    sections.clients=!d?.available?unread:{level:'info',text:total?(who>0?'今天有 '+who+' 位學生遇到問題，共 '+total+' 次，最多學生遇到「':'今天共 '+total+' 次，最多是「')+d.clientErrors[0].label+'」。':'今天學生裝置沒有回報問題。'};
   }
   const overall=level(...Object.values(sections).map(s=>s.level));
   const NAMES={server:'廣州伺服器',hk:'香港中轉',vercel:'Vercel',db:'資料庫',latency:'學生使用',errors:'近期報錯',services:'外部服務',upkeep:'維護與備份'};

@@ -139,7 +139,8 @@ export function mountSnowCount(holder,{initialState,readOnly=false,playAudio,onS
   function say(li){if(readOnly||dead||typeof playAudio!=='function'||spoken.has(li))return;spoken.add(li);queue.push(li);void pump();}
   async function pump(){
     if(speaking||dead||!queue.length)return;const li=queue.shift(),gen=audioGen;speaking=true;render();
-    const ok=await speak(lines[li]);if(dead||gen!==audioGen)return;speaking=false;if(ok!==true)research.error(audioStep(),'audio_unavailable');render();void pump();
+    // null: cut off (the page hid, the round paused); the lines still waiting are dropped rather than started in the background.
+    const ok=await speak(lines[li]);if(dead||gen!==audioGen)return;speaking=false;if(ok===null)queue.length=0;else if(ok!==true)research.error(audioStep(),'audio_unavailable');render();void pump();
   }
   // On the poem board the button reads the whole poem, lighting each line as it is heard.
   async function listen(){
@@ -147,7 +148,7 @@ export function mountSnowCount(holder,{initialState,readOnly=false,playAudio,onS
     let ok=false;
     for(const li of whole?[0,1,2,3]:[lineNo()]){reading=whole?li:-1;render();ok=await speak(lines[li]);if(dead||gen!==audioGen)return;if(ok!==true)break;}
     reading=-1;speaking=false;render();
-    if(ok!==true){research.error(step,'audio_unavailable');tell('聲音暫時未能播放，可以看着詩句讀一讀。');}
+    if(ok===null)queue.length=0;else if(ok!==true){research.error(step,'audio_unavailable');tell('聲音暫時未能播放，可以看着詩句讀一讀。');}
     void pump();
   }
 

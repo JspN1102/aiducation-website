@@ -123,7 +123,8 @@ export function mountRooster(holder,{initialState,readOnly=false,playAudio,onSta
   const crowSound=()=>tone([[520,690,0,.16,.08,'sawtooth',1300],[610,760,.19,.14,.08,'sawtooth',1300],[680,820,.36,.14,.08,'sawtooth',1300],[800,560,.55,.7,.09,'sawtooth',1300]]);
   const PITCH=[1,1.12,.94,1.22],chickSound=(k,at=0)=>tone([[760*k,980*k,at,.11,.05,'sawtooth',2000],[900*k,700*k,at+.14,.36,.05,'sawtooth',2000]]);
   const hushSound=()=>tone([[392,370,0,.16,.07,'triangle'],[330,300,.2,.24,.06,'triangle']]);
-  function say(text,asked){Promise.resolve().then(()=>playAudio?.({text})).then(ok=>{if(ok===false)research.error('audio','audio_unavailable');}).catch(()=>{research.error('audio','audio_unavailable');if(!dead&&asked)tell('聲音暫時未能播放，稍後再試。');});}
+  // false or an error is a real failure; null means the line was cut off (another line, a pause, the page hiding).
+  function say(text,asked){const failed=()=>{research.error('audio','audio_unavailable');if(!dead&&asked)tell('聲音暫時未能播放，稍後再試。');};Promise.resolve().then(()=>playAudio?.({text})).then(ok=>{if(ok===false)failed();},failed);}
   const sayOnce=i=>{if(played.has(i)||full())return;played.add(i);say(LINES[i]);};
   const currentLine=()=>({look:found.has('comb')?1:0,dawn:2,open:3})[phase()];
   const progress=()=>full()?4:found.size+(dawn>=BRIGHT||crowed?1:0)+(crowed&&doors.size===4?1:0);

@@ -187,7 +187,7 @@ test('(d) researchErrorContext maps errors to enum detail, and researchErrorCode
 
 const sampleSupport=()=>{try{validateBatch({schemaVersion:1,batchId:'00000000-0000-4000-8000-00000000ffff',actorId:actor.id,events:[{eventId:'00000000-0000-4000-8000-00000000fffe',sessionId:'00000000-0000-4000-8000-00000000fffd',seq:0,clientAt:new Date(Date.UTC(2026,9,8)).toISOString(),activeMs:0,poemId:null,activity:'navigation',type:'session_start',appVersion:'test',contentVersion:'test',context:{pointer:'coarse'},metrics:{pendingCount:0}}]},actor,Date.UTC(2026,9,8));return true;}catch{return false;}};
 test('(f) every extension the app emits passes the server validator',{skip:sampleSupport()?false:'server validator lacks school48 extensions'},async()=>{
-  const {createResearchTracker,researchErrorContext,AUDIO_TRIGGERS,ERROR_DETAILS}=await moduleReady;const batches=[];
+  const {createResearchTracker,researchErrorContext,pageErrorContext,AUDIO_TRIGGERS,ERROR_DETAILS,ERROR_SOURCES,ERROR_KINDS}=await moduleReady;const batches=[];
   const f=fixture({fetchImpl:async(_url,options)=>{const body=JSON.parse(options.body);batches.push(validateBatch(body,actor,Date.UTC(2026,9,8)));return accept(body);}});
   const tracker=createResearchTracker({...f.options,startFields:()=>({context:{pointer:'coarse',viewport:'medium',pageLoad:'back-forward',deviceAccounts:10},metrics:{latencyMs:640}})});
   const emitted=[],emit=(type,fields)=>emitted.push(tracker.emit(type,{poemId:5,attemptId:f.options.uuid(),...fields}));
@@ -204,6 +204,8 @@ test('(f) every extension the app emits passes the server validator',{skip:sampl
   emit('feedback_shown',{activity:'read',itemId:'p5.l0',result:{status:'completed',score:88,correct:null},metrics:{latencyMs:2100},context:{resend:true}});
   for(const detail of ERROR_DETAILS)emit('error',{activity:'read',itemId:'p5.l0',error:{code:'unknown',retryable:true},context:researchErrorContext(Object.assign(new Error('x'),{researchDetail:detail,researchHttpStatus:detail==='busy'?429:503}))});
   emit('error',{activity:'chat',itemId:'p5.chat',error:{code:'permission_denied',retryable:true},context:researchErrorContext(Object.assign(new Error('x'),{name:'NotAllowedError'}))});
+  for(const [index,errorKind] of ERROR_KINDS.entries())emit('error',{itemId:index%2?'client.unhandled':'client.runtime',error:{code:'unknown',retryable:false},context:{errorSource:ERROR_SOURCES[index%ERROR_SOURCES.length],errorKind}});
+  emit('error',{itemId:'client.runtime',error:{code:'unknown',retryable:false},context:pageErrorContext({message:'Uncaught TypeError: x',filename:'https://mandarin.aiducation.asia/school/app.js',error:new TypeError('x')},'https://mandarin.aiducation.asia/school/','https://mandarin.aiducation.asia/school/')});
   emit('answer_submitted',{activity:'challenge',itemId:'g5-s1',attemptNo:1,context:{mode:'standard',itemType:'sound',position:1,total:5,optionOrder:['one','two']},response:{choiceId:'two'},result:{status:'correct',score:100,correct:true},metrics:{elapsedMs:5000,selectionChanges:3}});
   emit('answer_submitted',{activity:'challenge',itemId:'g5-m1',attemptNo:1,context:{mode:'standard',itemType:'match',position:2,total:5},response:{placements:[{slotId:'a',choiceId:'b'}]},result:{status:'incorrect',score:0,correct:false},metrics:{elapsedMs:5000,selectionChanges:1000}});
   for(const inputMode of ['typed','voice','suggestion'])emit('attempt_started',{activity:'chat',itemId:'p5.chat',metrics:{userCharacters:8},context:{inputMode}});
@@ -222,4 +224,121 @@ test('(f) every extension the app emits passes the server validator',{skip:sampl
   // Consent v3: only enum tokens and bounded integers, never identifiers or device strings.
   const text=JSON.stringify(accepted);
   for(const banned of ['userAgent','Mozilla','innerWidth','screen','deviceId','ip'])assert.equal(text.includes('"'+banned),false,banned);
+});
+
+// (g) Page errors carry where the script came from and its error class as enums; nothing else about the error leaves the device.
+const PAGE='https://mandarin.aiducation.asia/school/?from=login',BASE='https://mandarin.aiducation.asia/school/';
+test('(g) pageErrorContext classifies the script origin and error class, never the message, URL or stack',async()=>{
+  const {pageErrorContext,ERROR_SOURCES,ERROR_KINDS}=await moduleReady;
+  const named=(name,message='x')=>Object.assign(new Error(message),{name});
+  const sources=[
+    ['https://mandarin.aiducation.asia/school/app.js?v=20261009-school53','own-module'],['https://mandarin.aiducation.asia/school/poem-games/rain.mjs?v=1','own-module'],
+    ['https://mandarin.aiducation.asia/school/vendor/poetry-three.mjs#x','own-module'],
+    ['https://mandarin.aiducation.asia/school/','own-page'],['https://mandarin.aiducation.asia/school/index.html','own-page'],['https://mandarin.aiducation.asia/school/?from=login','own-page'],
+    ['https://mandarin.aiducation.asia/schoolx/app.js','own-page'],['https://mandarin.aiducation.asia/mandarin-assessment/app.js','own-page'],
+    ['chrome-extension://abcdefghijklmnopabcdefghijklmnop/content.js','extension'],['safari-extension://com.example.ext-0000/abc/inject.js','extension'],
+    ['safari-web-extension://00000000-0000-4000-8000-000000000000/content.js','extension'],['moz-extension://00000000-0000-4000-8000-000000000000/inject.js','extension'],
+    ['webkit-masked-url://hidden/','extension'],['Chrome-Extension://abc/x.js','extension'],
+    ['https://cdn.example.com/school/app.js','other-origin'],['http://mandarin.aiducation.asia/school/app.js','other-origin'],['https://aiducation.asia/school/app.js','other-origin'],
+    ['https://mandarin.aiducation.asia:8443/school/app.js','other-origin'],['undefined','other-origin'],['about:blank','other-origin'],
+    ['','none'],[undefined,'none'],[null,'none'],[42,'none']];
+  for(const [filename,source] of sources)
+    assert.deepEqual(pageErrorContext({filename,message:'Uncaught TypeError: x',error:new TypeError('x')},PAGE,BASE),{errorSource:source,errorKind:'type'},String(filename));
+  // The staging entrance classifies its own scripts the same way.
+  assert.equal(pageErrorContext({filename:'https://aiducation.asia/school/app.js'},'https://aiducation.asia/school/','https://aiducation.asia/school/').errorSource,'own-module');
+  // A rejection has no filename: WebKit's sourceURL or Firefox's fileName on the reason is used when present, never the stack.
+  assert.deepEqual(pageErrorContext({error:Object.assign(new TypeError('x'),{sourceURL:'https://mandarin.aiducation.asia/school/challenge.mjs?v=1'})},PAGE,BASE),{errorSource:'own-module',errorKind:'type'});
+  assert.deepEqual(pageErrorContext({error:Object.assign(new Error('x'),{fileName:'moz-extension://abc/inject.js'})},PAGE,BASE),{errorSource:'extension',errorKind:'other'});
+  assert.deepEqual(pageErrorContext({error:Object.assign(new TypeError('x'),{stack:'TypeError: x\n    at https://mandarin.aiducation.asia/school/app.js:1:2'})},PAGE,BASE),{errorSource:'none',errorKind:'type'});
+  assert.equal(pageErrorContext({filename:'chrome-extension://abc/x.js',error:Object.assign(new Error('x'),{sourceURL:BASE+'app.js'})},PAGE,BASE).errorSource,'extension','the event filename wins');
+  const kinds=[
+    [new TypeError('x'),'type'],[new ReferenceError('x'),'reference'],[new RangeError('x'),'range'],[new SyntaxError('x'),'syntax'],
+    [new DOMException('x','SecurityError'),'security'],[new DOMException('x','AbortError'),'abort'],[new DOMException('x','NotAllowedError'),'not-allowed'],
+    [new DOMException('x','NetworkError'),'network'],[named('NotAllowedError'),'not-allowed'],
+    [new TypeError('Failed to fetch'),'network'],[new TypeError('Load failed'),'network'],[new TypeError('NetworkError when attempting to fetch resource.'),'network'],
+    [new TypeError('Failed to fetch dynamically imported module: https://mandarin.aiducation.asia/school/x.mjs'),'type'],
+    [new Error('Failed to fetch'),'other'],[new DOMException('x','NotSupportedError'),'other'],[new DOMException('x','QuotaExceededError'),'other'],[new Error('x'),'other'],
+    [named('constructor'),'other'],[named('toString'),'other'],[{name:'TypeError'},'type'],
+    ['TypeError: string reason','other'],[42,'other'],[{},'other'],[[],'other'],[Symbol('s'),'other'],[undefined,'other'],[null,'other']];
+  for(const [error,kind] of kinds)
+    assert.deepEqual(pageErrorContext({error},PAGE,BASE),{errorSource:'none',errorKind:kind},String(error?.name||typeof error));
+  // Window error events: browser notices are told apart by their fixed message; with no error object the class comes off the message.
+  const events=[
+    [{message:'Script error.',filename:'',lineno:0,colno:0,error:null},{errorSource:'none',errorKind:'muted'}],
+    [{message:'Script error',filename:''},{errorSource:'none',errorKind:'muted'}],
+    [{message:'Script error.',filename:'https://cdn.example.com/lib.js',error:null},{errorSource:'other-origin',errorKind:'muted'}],
+    [{message:'ResizeObserver loop completed with undelivered notifications.',filename:'',error:null},{errorSource:'none',errorKind:'resize-loop'}],
+    [{message:'ResizeObserver loop limit exceeded',error:undefined},{errorSource:'none',errorKind:'resize-loop'}],
+    [{message:'TypeError: undefined is not an object',filename:BASE+'app.js',error:null},{errorSource:'own-module',errorKind:'type'}],
+    [{message:'Uncaught ReferenceError: foo is not defined',filename:PAGE},{errorSource:'own-page',errorKind:'reference'}],
+    [{message:'Uncaught SyntaxError: Unexpected token',filename:BASE+'app.js',error:new SyntaxError('Unexpected token')},{errorSource:'own-module',errorKind:'syntax'}],
+    [{message:'Uncaught boom',filename:BASE+'app.js',error:'boom'},{errorSource:'own-module',errorKind:'other'}],
+    [{message:'Error: Script error.',error:new Error('Script error.')},{errorSource:'none',errorKind:'other'}],
+    [{message:42,filename:{},error:{}},{errorSource:'none',errorKind:'other'}]];
+  for(const [event,expected] of events)assert.deepEqual(pageErrorContext(event,PAGE,BASE),expected,String(event.message));
+  // Never throws, and never returns anything but the two enum keys.
+  const hostile=new Proxy({},{get(){throw Error('boom');}});
+  const getters=Object.defineProperties({},{filename:{get(){throw Error('boom');}},message:{value:'x'},error:{get(){throw Error('boom');}}});
+  for(const value of [hostile,getters,{error:hostile},{error:new Proxy(new TypeError('x'),{get(){throw Error('boom');}})},null,undefined,'x',42])
+    assert.deepEqual(pageErrorContext(value,PAGE,BASE),{errorSource:'none',errorKind:'other'},typeof value);
+  assert.deepEqual(pageErrorContext({filename:BASE+'app.js',error:new TypeError('x')},undefined,null),{errorSource:'other-origin',errorKind:'type'},'without a page or app URL nothing is claimed as ours');
+  const secret='https://mandarin.aiducation.asia/school/?token=abc 學生姓名';
+  const context=pageErrorContext({filename:secret,message:'Uncaught TypeError: '+secret,error:Object.assign(new TypeError(secret),{stack:secret})},PAGE,BASE);
+  assert.deepEqual(Object.keys(context).sort(),['errorKind','errorSource']);assert.doesNotMatch(JSON.stringify(context),/token|學生|https/);
+  for(const [,source] of sources)assert(ERROR_SOURCES.includes(source));for(const [,kind] of kinds)assert(ERROR_KINDS.includes(kind));
+});
+
+function lifecycleScope(){
+  const listeners={};const add=(type,fn)=>{(listeners[type]||=[]).push(fn);};
+  return {scope:{addEventListener:add,document:{visibilityState:'visible',addEventListener:()=>{}}},fire:(type,event)=>listeners[type].forEach(fn=>fn(event))};
+}
+test('(h) uncaught errors and rejections are recorded with enum context; ResizeObserver notices once per page outside the budget',async()=>{
+  const {createResearchTracker,attachResearchLifecycle}=await moduleReady;const f=fixture({fetchImpl:async()=>{throw new TypeError('offline');}});
+  const tracker=createResearchTracker(f.options),{scope,fire}=lifecycleScope(),detach=attachResearchLifecycle(tracker,scope);
+  try{
+    for(let i=0;i<5;i++)fire('error',{message:'ResizeObserver loop completed with undelivered notifications.',filename:'',error:null});
+    fire('error',{message:'Uncaught TypeError: x',filename:'chrome-extension://abc/content.js',error:new TypeError('x')});
+    fire('error',{message:'Script error.',filename:'',error:null});
+    fire('unhandledrejection',{reason:new TypeError('Load failed')});
+    fire('unhandledrejection',{reason:new DOMException('play() failed','NotAllowedError')});
+    fire('unhandledrejection',{reason:'plain string'});
+    fire('unhandledrejection',{reason:undefined});
+    for(let i=0;i<10;i++)fire('error',{message:'Uncaught RangeError: x',filename:'',error:new RangeError('x')});
+    for(let i=0;i<3;i++)fire('error',{message:'ResizeObserver loop limit exceeded',error:null});
+    const errors=stored(f).filter(e=>e.type==='error').sort((a,b)=>a.seq-b.seq);
+    assert.deepEqual(errors.map(e=>[e.itemId,e.error.code,e.error.retryable,e.context.errorSource,e.context.errorKind]),[
+      ['client.runtime','unknown',false,'none','resize-loop'],
+      ['client.runtime','unknown',false,'extension','type'],
+      ['client.runtime','unknown',false,'none','muted'],
+      ['client.unhandled','network',false,'none','network'],
+      ['client.unhandled','permission_denied',false,'none','not-allowed'],
+      ['client.unhandled','unknown',false,'none','other'],
+      ['client.unhandled','unknown',false,'none','other'],
+      ['client.runtime','unknown',false,'none','range'],['client.runtime','unknown',false,'none','range']]);
+    for(const event of errors){assert.deepEqual(Object.keys(event.context).sort(),['errorKind','errorSource']);assert.doesNotMatch(JSON.stringify(event),/chrome-extension|Load failed|play\(\)|plain string/);}
+  }finally{detach();}
+});
+
+test('(i) a server without the page-error keys gets the error event stripped and resent; other detail is untouched',async()=>{
+  const {createResearchTracker,attachResearchLifecycle}=await moduleReady;const accepted=[];let rejected=0;
+  // The live school48-school53 server: knows the school48 extensions, not errorSource/errorKind.
+  const knowsPageErrors=event=>!['errorSource','errorKind'].some(key=>Object.hasOwn(event.context||{},key));
+  const f=fixture({fetchImpl:async(_url,options)=>{const body=JSON.parse(options.body);
+    if(!body.events.every(knowsPageErrors)){rejected++;return {ok:false,status:400,json:async()=>({error:'INVALID_EVENT'})};}
+    validateBatch(body,actor);accepted.push(...body.events);return accept(body);}});
+  const tracker=createResearchTracker(f.options),{scope,fire}=lifecycleScope(),detach=attachResearchLifecycle(tracker,scope);
+  try{
+    const listen=tracker.emit('playback_started',{activity:'listen',poemId:5,itemId:'p5.l0',context:{mediaRoute:'public',audioSource:'tts'},metrics:{latencyMs:90}});
+    fire('error',{message:'Uncaught TypeError: x',filename:'webkit-masked-url://hidden/',error:new TypeError('x')});
+    fire('unhandledrejection',{reason:new DOMException('x','AbortError')});
+    const [runtime,unhandled]=stored(f).filter(e=>e.type==='error').sort((a,b)=>a.seq-b.seq);
+    assert.deepEqual(runtime.context,{errorSource:'extension',errorKind:'type'});assert.deepEqual(unhandled.context,{errorSource:'none',errorKind:'abort'});
+    for(let i=0;i<10&&tracker.status().pending;i++)await tracker.flush({force:true});
+    assert(rejected>0);assert.equal(tracker.status().pending,0);assert.equal(tracker.status().held,0);assert.equal(tracker.status().lastStatus,'synced');
+    const byId=new Map(accepted.map(e=>[e.eventId,e]));assert.equal(byId.size,4,'session_start, listen and both errors each arrive once');
+    assert.equal(JSON.stringify(byId.get(runtime.eventId)),JSON.stringify({...runtime,context:undefined}));
+    assert.equal(JSON.stringify(byId.get(unhandled.eventId)),JSON.stringify({...unhandled,context:undefined}));
+    assert.deepEqual(byId.get(unhandled.eventId).error,{code:'aborted',retryable:false});
+    assert.equal(JSON.stringify(byId.get(listen.eventId)),JSON.stringify(listen),'school48 detail on other events is kept');
+  }finally{detach();}
 });

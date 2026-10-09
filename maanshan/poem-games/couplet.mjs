@@ -254,9 +254,10 @@ export function mountCouplet(holder,{initialState,readOnly=false,playAudio,onSta
   const token=++speakGen;speaking=true;render();let ok=false,timer;
   try{ok=await Promise.race([Promise.resolve(playAudio?.({text})),new Promise(resolve=>{timer=later(()=>resolve(false),15000);})]);}catch{ok=false;}
   clearLater(timer);if(dead||token!==speakGen)return false;speaking=false;
-  if(ok===false){research.error('audio','audio_unavailable');if(!auto)tell('朗讀暫時未能播放，可以先看詩句，稍後再試。');}
+  // null: cut off (paused, page hidden); no fault, and nothing queued starts after it, nor the rest of 聽全詩.
+  if(ok===null)queued=null;else if(ok===false){research.error('audio','audio_unavailable');if(!auto)tell('朗讀暫時未能播放，可以先看詩句，稍後再試。');}
   render();if(queued){const next=queued;queued=null;void speak(next,true);}
-  return ok!==false;
+  return ok!==false&&ok!==null;
  }
  async function readAll(){const g=++readGen;for(let k=0;k<LINES.length;k++){if(dead||g!==readGen)return;reading=k;render();if(!await speak(LINES[k])||g!==readGen)break;}if(!dead&&g===readGen){reading=-1;render();}}
  function won(text,clip){hideHand();help=0;render();save();progress();tell(text);chime();void speak(clip,true);arm();}
