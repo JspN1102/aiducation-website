@@ -288,6 +288,7 @@ async function synthesize({text, voice, speed, allowSSML}) {
           const response = JSON.parse(Buffer.concat(chunks).toString('utf8')).Response;
           if (!response?.Audio) {
             const upstream = response?.Error || {};
+            if (upstream.Code === 'UnsupportedOperation.TextTooLong') return finish(Object.assign(new Error('Text too long'), {statusCode: 413, upstreamCode: upstream.Code, upstreamMessage: upstream.Message}));
             return finish(Object.assign(new Error('TTS temporarily unavailable'), {statusCode: 502, upstreamCode: upstream.Code, upstreamMessage: upstream.Message}));
           }
           const audio = Buffer.from(response.Audio, 'base64');

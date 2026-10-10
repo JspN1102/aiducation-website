@@ -376,7 +376,7 @@ async function loadLegacy(signal){
 // pupils met recently. It replaces the class view in place (the dashboard keeps its
 // state) and polls every 10 s while it is open and the tab is visible.
 const SITE_STATUS='/api/teacher-tools?tool=site-status',LEVELS={ok:'正常',warn:'需要留意',bad:'有問題',unknown:'未能判斷',info:'資料'};
-const STATUS_TEXT={500:'程式錯誤',502:'中轉失敗',503:'暫停服務',504:'超時',408:'上傳超時'};
+const STATUS_TEXT={413:'文字太長',500:'程式錯誤',502:'中轉失敗',503:'暫停服務',504:'超時',408:'上傳超時'};
 const monitor={timer:null,controller:null,generation:0,data:null,link:'',failed:'',failures:0};
 function siteAdmin(){return !DEMO&&!state.legacy&&state.auth?.user?.role==='teacher'&&state.auth.user.siteAdmin===true;}
 function monitorOpen(){return !!document.querySelector('#site-monitor');}

@@ -260,3 +260,13 @@ test('a refused microphone tells the pupil where to allow it',async()=>{
  for(const [label,device] of [['iPadOS Safari',{userAgent:mac,maxTouchPoints:5}],['Mac Safari',{userAgent:mac,maxTouchPoints:0}],['iPhone Safari',{userAgent:iphone('Version/17.6'),maxTouchPoints:5}],['iOS Chrome',{userAgent:iphone('CriOS/129.0.6668.69'),maxTouchPoints:5}]])assert.equal(micNeedsReload(device),true,label);
  for(const [label,device] of [['Mac Chrome',{userAgent:mac.replace('Version/17.6 ','Chrome/129.0.0.0 '),maxTouchPoints:0}],['Windows Edge',{userAgent:windows(' Edg/129.0.2792.79'),maxTouchPoints:10}],['Android Chrome',{userAgent:android,maxTouchPoints:5}],['Mac Firefox',{userAgent:'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:131.0) Gecko/20100101 Firefox/131.0',maxTouchPoints:0}],['no details',{}]])assert.equal(micNeedsReload(device),false,label);
 });
+
+test('long poet replies are read in parts Tencent accepts, in order, without losing text',async()=>{
+ const {speechChunks}=await import('../maanshan/speech-audio.mjs');
+ assert.deepEqual(speechChunks('  春眠不覺曉。 '),['春眠不覺曉。']);assert.deepEqual(speechChunks(''),[]);
+ const sentence='床前明月光，疑是地上霜，舉頭望明月，低頭思故鄉。',long=Array(12).fill(sentence).join('')+'「好詩！」'+'啊'.repeat(300);
+ const parts=speechChunks(long),size=part=>Array.from(part).length;
+ assert(parts.length>3);assert(parts.every(part=>size(part)>0&&size(part)<=120));
+ assert.equal(parts.join(''),long);
+ assert(parts.slice(0,2).every(part=>/[。，]$/.test(part)));
+});

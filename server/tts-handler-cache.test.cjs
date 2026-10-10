@@ -96,3 +96,8 @@ test('an unreachable or private COS bucket leaves relay delivery unchanged',asyn
   assert.equal(result.cos.putCount,cos==='private'?1:0,cos);
  }
 });
+
+test('text Tencent refuses as too long answers 413, not a relay failure',async t=>{
+ const processRequest=await fixture(t),result=await processRequest({textTooLong:true,batches:[[body]]});
+ assert.equal(result.results[0].status,413);
+});

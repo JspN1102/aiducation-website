@@ -22,6 +22,7 @@ https.request=(_request,callback)=>{
     setTimeout(()=>{
       const response=new EventEmitter();callback(response);
       // Distinct waveform bytes prove different voices cannot share a file.
+      if(options.textTooLong){response.emit('data',Buffer.from(JSON.stringify({Response:{Error:{Code:'UnsupportedOperation.TextTooLong',Message:'Text too long'}}})));response.emit('end');return;}
       response.emit('data',Buffer.from(JSON.stringify({Response:{Audio:Buffer.alloc(options.pcmBytes||3200,parsed.VoiceType===101021?2:1).toString('base64')}})));
       response.emit('end');
     },20);

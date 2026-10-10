@@ -4,7 +4,7 @@ import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadin
 import {mountStage, getScenePreview, preloadScene, addScenePreviews} from './scene-stage.mjs?v=20261007-school46';
 import {configurePronunciation, getPronunciationPractice, syllableParts, toneName} from './pronunciation.mjs?v=20260929-parts1';
 import {getWordAudioURL} from './word-audio.mjs?v=20261007-school46';
-import {getSpeechAudioURL} from './speech-audio.mjs?v=20261007-school46';
+import {getSpeechAudioURL, speechChunks} from './speech-audio.mjs?v=20261010-school55';
 import {getRecitationAudioURL,getRecitationSequence} from './recitation-audio.mjs?v=20261005-school40';
 import {schoolTtsURL,schoolTtsRemote} from './school-audio-url.mjs?v=20260930-school29';
 import {mountShishi} from './shishi.mjs?v=20261007-school46';
@@ -19,7 +19,7 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
 import {requestJSON, requestChat} from './network.mjs?v=20261008-school49';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
-import {schoolSession} from './bootstrap.mjs?v=20261009-school54';
+import {schoolSession} from './bootstrap.mjs?v=20261010-school55';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261009-school54';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20260922-school22';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school41';
@@ -640,10 +640,18 @@ async function speakPoetReply(text,button){
   stopMedia();const version=speechVersion,route=routeVersion;
   activeSpeechButton=button;speechResearchItem='poet-reply';speechState(button,'loading');
   try{
-    const prepareAt=performance.now();
-    const source=await speechSource(text,{voice:101021,purpose:'poet-chat'});
-    if(version!==speechVersion||route!==routeVersion)return;
-    speechState(button,'playing');if(!await playSpeech(source,{sourceKind:'tts',prepareMs:Math.round(performance.now()-prepareAt)}))throw new Error('playback');
+    // A long reply plays in parts (speechChunks); the next part loads while one plays.
+    const parts=speechChunks(text),load=part=>speechSource(part,{voice:101021,purpose:'poet-chat'});
+    if(!parts.length)throw new Error('empty');
+    let prepareAt=performance.now(),next=load(parts[0]);
+    for(let index=0;index<parts.length;index++){
+      const source=await next;
+      if(version!==speechVersion||route!==routeVersion)return;
+      next=index+1<parts.length?load(parts[index+1]):null;next?.catch(()=>{});
+      speechState(button,'playing');if(!await playSpeech(source,{sourceKind:'tts',prepareMs:Math.round(performance.now()-prepareAt)}))throw new Error('playback');
+      if(version!==speechVersion||route!==routeVersion)return;
+      speechResearchItem='poet-reply';prepareAt=performance.now();
+    }
   }catch{if(version===speechVersion&&route===routeVersion)toast('語音暫時無法播放，請再按一次重試。');}
   finally{if(version===speechVersion&&route===routeVersion)stopTransient();}
 }

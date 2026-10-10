@@ -64,7 +64,7 @@ function record({route,method,status,totalMs,relay,userAgent,now=Date.now()}={})
   }
   const beat=heartbeatOf({route,method,userAgent,relay});
   if(beat){bucket.beats++;if(status<500)s.heartbeat[beat]=now;}
-  if(status>=500||status===408){s.errors.push({at:now,route,status});if(s.errors.length>RECENT_ERRORS)s.errors.splice(0,s.errors.length-RECENT_ERRORS);}
+  if(status>=500||status===408||(status===413&&route==='tts')){s.errors.push({at:now,route,status});if(s.errors.length>RECENT_ERRORS)s.errors.splice(0,s.errors.length-RECENT_ERRORS);}
   if(beat&&status<500)return;
   const stats=routeStats(bucket,route);stats.count++;
   if(status>=500)stats.s5xx++;
