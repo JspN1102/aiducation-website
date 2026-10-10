@@ -114,6 +114,7 @@
 .usage-students td,.usage-students th{vertical-align:top}.usage-students td:nth-child(7){min-width:120px;font-size:14px}.usage-name{padding:0;border:0;background:none;font:inherit;font-weight:700;color:#365a7d;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.usage-who{color:var(--muted);font-size:15px}
 .usage-reply{margin:2px 0 0;padding:8px 12px;background:#f7f4ec;border-left:3px solid #c9b78a;border-radius:6px;font-size:15px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;color:#3f4b44}.usage-convo li.failed .usage-question{color:#991b1b}
 @media (max-width:560px){.usage-search{grid-column:auto}}
+.usage-lines caption{text-align:left;font-weight:600;color:var(--ink);padding:6px 0}.usage-lines th[scope=row]{font-weight:400;font-size:16px}.usage-lines td:first-child{white-space:nowrap;color:var(--muted)}.usage-lines{margin-bottom:8px}.usage-lines th,.usage-lines td{text-align:left}
 #teacher-site-monitor[aria-pressed=true]{text-decoration:underline;text-underline-offset:6px}
 @media(max-width:1050px){.monitor-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:800px){.monitor-top h1{font-size:25px}.monitor-card{padding:18px}.monitor-banner{font-size:19px;padding:15px 18px}}

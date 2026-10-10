@@ -7,7 +7,7 @@ const s=require('../api/_lib/research-store.cjs');
 const {outcomeFor}=require('../api/_lib/school-learning.cjs');
 const {getPoem}=require('../api/_lib/poems.js');
 const {createActivity}=require('../api/_lib/teacher-activity.cjs');
-const {chatLog,conversation,filtersFrom,where,createActivityLog}=require('../api/_lib/activity-log-handler.cjs');
+const {chatLog,conversation,readings,filtersFrom,where,createActivityLog}=require('../api/_lib/activity-log-handler.cjs');
 
 const event=(changes={})=>({eventId:'11111111-1111-4111-8111-111111111111',sessionId:'22222222-2222-4222-8222-222222222222',seq:0,
  clientAt:'2026-10-10T00:00:00.000Z',activeMs:0,poemId:6,activity:'chat',type:'provider_result',appVersion:'test',contentVersion:'test',
@@ -79,6 +79,8 @@ function chatPool(seen=[]){
  const client={async query(sql,params){if(/^(BEGIN|SET|COMMIT|ROLLBACK)/.test(sql))return {rows:[]};seen.push({sql,params});
    if(sql.includes('AS questions'))return {rows:[{questions:3,pupils:2,suggested:1,typed:1,voice:1}]};
    if(sql.includes('GROUP BY 1,2'))return {rows:[{poem:6,question:'第一問',suggested:false,n:2,pupils:2}]};
+   if(sql.includes('GROUP BY research_id,poem_id'))return {rows:[{research_id:B,grade:2,cls:'A',poem:2,line:0,n:4,failed:0,last:5},{research_id:B,grade:2,cls:'A',poem:2,line:1,n:5,failed:1,last:6},
+     {research_id:A,grade:3,cls:'B',poem:4,line:3,n:2,failed:0,last:4},{research_id:A,grade:3,cls:'B',poem:99,line:0,n:7,failed:0,last:4}]};
    if(sql.includes('GROUP BY research_id'))return {rows:[{research_id:B,grade:2,cls:'A',n:2,failed:0,first:1,last:3,poems:[6,99]},{research_id:A,grade:3,cls:'B',n:1,failed:1,first:2,last:2,poems:[4]}]};
    if(sql.includes('DISTINCT grade,cls'))return {rows:[{grade:2,cls:'A'},{grade:3,cls:'B'},{grade:9,cls:'Z'}]};
    if(sql.includes('ASC'))return {rows:RECENT.filter(r=>!params.includes(B)||r.research_id===B).slice().reverse()};
@@ -110,6 +112,15 @@ test('the chat log names each pupil from the account directory, lists pupils and
  assert.equal(c.student.name,'測試甲');assert.deepEqual(c.conversation.map(r=>r.question),['第一問','第三問']);
 });
 
+test('line readings count each scored line per pupil and poem, and the text search does not narrow them',async()=>{
+ const seen=[],r=await readings(chatPool(seen),filtersFrom({grade:'2',q:'雨'},NOW),MAP);
+ assert.equal(r.available,true);assert.equal(r.readings,11);
+ const b=r.students.find(x=>x.student===B);assert.equal(b.name,'測試甲');assert.equal(b.total,9);assert.equal(b.failed,1);assert.equal(b.lastAt,6);
+ assert.deepEqual(b.poems.map(p=>[p.title,p.total,p.lines.map(l=>[l.line,l.text,l.count,l.failed])]),[[getPoem(2).title,9,[[1,getPoem(2).lines[0].text,4,0],[2,getPoem(2).lines[1].text,5,1]]]]);
+ assert.deepEqual(r.students.find(x=>x.student===A).poems.map(p=>p.id),[4]);
+ const q=seen[0];assert.match(q.sql,/operation'='reading'/);assert.doesNotMatch(q.sql,/ILIKE/);assert.deepEqual(q.params.slice(2),[2]);
+});
+
 test('only the site administrator gets the log, the conversation or the Excel file',async()=>{
  const auth=require('../api/_lib/school-auth.cjs'),saved={requireActor:auth.requireActor,siteAdmin:auth.siteAdmin};
  let who={role:'teacher',login:'chan'};auth.requireActor=async()=>who;auth.siteAdmin=a=>a.login==='jasper';
@@ -122,11 +133,13 @@ test('only the site administrator gets the log, the conversation or the Excel fi
   r=await call({grade:'9'});assert.equal(r.statusCode,400);
   r=await call({view:'student'});assert.equal(r.statusCode,400);
   r=await call({});assert.equal(r.statusCode,200);assert.equal(r.body.schemaVersion,2);assert.equal(r.body.chats.recent[0].name,'測試甲');assert.equal(r.body.teachers.available,true);
-  r=await call({view:'student',student:B});assert.equal(r.statusCode,200);assert.equal(r.body.conversation.length,2);
+  assert.equal(r.body.readings.students.length,2);
+  r=await call({view:'student',student:B});assert.equal(r.statusCode,200);assert.equal(r.body.conversation.length,2);assert.equal(r.body.readingsAvailable,true);assert(r.body.readings.total>0);
   r=await call({view:'xlsx'});assert.equal(r.statusCode,200);assert.match(r.headers['content-type'],/spreadsheetml/);
   const ExcelJS=require('exceljs'),wb=new ExcelJS.Workbook();await wb.xlsx.load(r.body);
   const ws=wb.getWorksheet('對話紀錄');assert.equal(ws.rowCount,4);assert.equal(ws.getRow(2).getCell(5).value,'測試甲');assert.equal(ws.getRow(2).getCell(10).value,'第一問');
   assert.equal(wb.getWorksheet('學生統計').rowCount,3);
+  const lines=wb.getWorksheet('朗讀測評次數');assert.equal(lines.rowCount,4);assert.equal(lines.getRow(2).getCell(4).value,'測試甲');assert.equal(lines.getRow(2).getCell(9).value,4);
  }finally{Object.assign(auth,saved);}
 });
 

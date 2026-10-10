@@ -9,9 +9,13 @@ const {catalog}=require('./poems.js');
 const DAY=86400000,RECENT_LIMIT=300,STUDENT_LIMIT=1000,CONVERSATION_LIMIT=3000,EXPORT_LIMIT=50000,MAX_DAYS=400;
 const RESEARCH_ID=/^r_[a-f0-9]{24}$/,DATE=/^\d{4}-\d{2}-\d{2}$/;
 const CHAT=`source='server_verified' AND activity='chat' AND record->'event'->>'type'='provider_result' AND record->'event' ? 'chat'`;
+// One server-scored line reading (朗讀測評), itemId p<poem>.l<line>.
+const READ=`source='server_verified' AND activity='read' AND record->'event'->>'type'='provider_result' AND record->'event'->>'operation'='reading' AND record->'event'->>'itemId' ~ '^p[0-9]+[.]l[0-9]+$'`;
+const READ_LIMIT=20000;
 const MODES={typed:'自己打字',voice:'語音輸入',suggestion:'建議問題'};
 
 const title=id=>catalog.find(poem=>poem.id===Number(id))?.title||null;
+const lineText=(id,line)=>catalog.find(poem=>poem.id===Number(id))?.lines?.[line]?.text||null;
 const text=(value,max)=>typeof value==='string'?value.slice(0,max):null;
 const hkStart=t=>{const d=new Date(t+8*3600000);return Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())-8*3600000;};
 const dateStart=date=>Date.parse(date+'T00:00:00+08:00');
@@ -38,14 +42,14 @@ function filtersFrom(query,t){
   if(search!==undefined){const s=search.normalize('NFC').trim();if(s.length>50)return {error:'INVALID_FILTER'};if(s)f.q=s;}
   return f;
 }
-function where(f){
-  const params=[f.from,f.to],clauses=['received_at >= $1','received_at < $2',CHAT];
+function where(f,kind=CHAT){
+  const params=[f.from,f.to],clauses=['received_at >= $1','received_at < $2',kind];
   const add=(sql,value)=>{params.push(value);clauses.push(sql.replace('?','$'+params.length));};
   if(f.grade)add('grade = ?',f.grade);
   if(f.cls)add('cls = ?',f.cls);
   if(f.poem)add('poem_id = ?',f.poem);
   if(f.student)add('research_id = ?',f.student);
-  if(f.q){params.push('%'+f.q.replace(/[\\%_]/g,c=>'\\'+c)+'%');const n='$'+params.length;
+  if(f.q&&kind===CHAT){params.push('%'+f.q.replace(/[\\%_]/g,c=>'\\'+c)+'%');const n='$'+params.length;
     clauses.push(`(record->'event'->'chat'->>'question' ILIKE ${n} OR record->'event'->'chat'->>'reply' ILIKE ${n})`);}
   return {sql:clauses.join(' AND '),params};
 }
@@ -68,6 +72,11 @@ const CHAT_SQL={
   recent:w=>`SELECT ${ROW} FROM research_events WHERE ${w} ORDER BY received_at DESC LIMIT ${RECENT_LIMIT}`,
   conversation:w=>`SELECT ${ROW} FROM research_events WHERE ${w} ORDER BY received_at ASC LIMIT ${CONVERSATION_LIMIT}`,
   all:w=>`SELECT ${ROW} FROM research_events WHERE ${w} ORDER BY received_at ASC LIMIT ${EXPORT_LIMIT}`,
+  readings:w=>`SELECT research_id,max(grade) AS grade,max(cls) AS cls,poem_id AS poem,
+      substring(record->'event'->>'itemId' from '[.]l([0-9]+)$')::int AS line,count(*)::int AS n,
+      count(*) FILTER (WHERE record->'event'->'result'->>'status'='error')::int AS failed,
+      (extract(epoch FROM max(received_at))*1000)::float8 AS last
+    FROM research_events WHERE ${w} GROUP BY research_id,poem_id,5 ORDER BY research_id,poem_id,5 LIMIT ${READ_LIMIT}`,
   classes:()=>`SELECT DISTINCT grade,cls FROM research_events WHERE received_at >= '2026-10-10T00:00:00+08:00' AND ${CHAT} AND grade IS NOT NULL AND cls IS NOT NULL ORDER BY 1,2 LIMIT 200`
 };
 
@@ -117,9 +126,26 @@ function conversation(pool,f,map=new Map()){
     return {student:identity(map,f.student,list[0]),conversation:list,limit:CONVERSATION_LIMIT};});
 }
 
+// Line readings per pupil → per poem → per line (each count is one scored reading).
+function readings(pool,f,map=new Map()){
+  const {sql,params}=where(f,READ);
+  return readOnly(pool,async q=>{
+    const rows=await q(CHAT_SQL.readings(sql),params),by=new Map();
+    for(const r of rows){const poem=Number(r.poem),line=Number(r.line);if(!title(poem)||!Number.isInteger(line))continue;
+      const s=by.get(r.research_id)||{...identity(map,r.research_id,r),total:0,failed:0,lastAt:0,poems:new Map()};
+      const p=s.poems.get(poem)||{id:poem,title:title(poem),total:0,failed:0,lastAt:0,lines:[]};
+      const n=Number(r.n)||0,failed=Number(r.failed)||0,last=Math.round(Number(r.last))||0;
+      p.lines.push({line:line+1,text:lineText(poem,line),count:n,failed,lastAt:last});p.total+=n;p.failed+=failed;p.lastAt=Math.max(p.lastAt,last);
+      s.total+=n;s.failed+=failed;s.lastAt=Math.max(s.lastAt,last);s.poems.set(poem,p);by.set(r.research_id,s);}
+    const students=[...by.values()].map(s=>({...s,poems:[...s.poems.values()].sort((a,b)=>a.id-b.id).map(p=>({...p,lines:p.lines.sort((a,b)=>a.line-b.line)}))}))
+      .sort((a,b)=>(a.grade||9)-(b.grade||9)||String(a.cls||'').localeCompare(String(b.cls||''))||(a.classNo||99)-(b.classNo||99)||b.total-a.total);
+    return {students,readings:students.reduce((n,s)=>n+s.total,0),truncated:rows.length>=READ_LIMIT};
+  });
+}
+
 const range=f=>f.fromDate||f.toDate?(f.fromDate||'')+' 至 '+(f.toDate||'今日'):f.days===1?'今日':'近 '+f.days+' 日';
 const hkTime=at=>new Date(at+8*3600000).toISOString().replace('T',' ').slice(0,19);
-async function workbook(list,f){
+async function workbook(list,f,reads=[]){
   const ExcelJS=require('exceljs');
   const wb=new ExcelJS.Workbook();wb.creator='AIDUCATION';wb.created=new Date();wb.title='學生與詩人對話紀錄';wb.subject=range(f);
   const sheet=(name,columns)=>{const ws=wb.addWorksheet(name,{views:[{state:'frozen',ySplit:1}]});
@@ -132,8 +158,12 @@ async function workbook(list,f){
   const students=sheet('學生統計',[['年級',7],['班別',7],['座號',7],['姓名',14],['登入名稱',16],['提問次數',10],['沒有回答',10],['第一次',20],['最後一次',20],['聊過的古詩',30]]);
   for(const s of [...by.values()].sort((a,b)=>(a.grade||9)-(b.grade||9)||String(a.cls).localeCompare(String(b.cls))||(a.classNo||99)-(b.classNo||99)))
     students.addRow([s.grade,s.cls,s.classNo,s.name||'（已沒有帳戶）',s.login,s.count,s.failed,hkTime(s.firstAt),hkTime(s.lastAt),[...s.poems].filter(Boolean).join('、')]);
+  const lines=sheet('朗讀測評次數',[['年級',7],['班別',7],['座號',7],['姓名',14],['登入名稱',16],['古詩',12],['第幾句',8],['句子',30],['測評次數',10],['沒有結果',10],['最後一次',20]]);
+  for(const s of reads)for(const p of s.poems)for(const l of p.lines)
+    lines.addRow([s.grade,s.cls,s.classNo,s.name||'（已沒有帳戶）',s.login,p.title,l.line,l.text,l.count,l.failed,hkTime(l.lastAt)]);
+  lines.autoFilter={from:'A1',to:'K1'};
   const about=wb.addWorksheet('說明');about.columns=[{width:16},{width:80}];
-  for(const row of [['範圍',range(f)],['匯出時間',hkTime(Date.now())],['條數',list.length+(list.length>=EXPORT_LIMIT?'（已達上限，請縮小範圍）':'')],['說明','只有網站管理員可匯出。2026-10-10 school55 上線後才開始記錄對話原文。']])about.addRow(row);
+  for(const row of [['範圍',range(f)],['匯出時間',hkTime(Date.now())],['條數',list.length+(list.length>=EXPORT_LIMIT?'（已達上限，請縮小範圍）':'')],['說明','只有網站管理員可匯出。2026-10-10 school55 上線後才開始記錄對話原文。「朗讀測評次數」是每位學生每句送去評分的次數（搜尋文字不適用於這一頁）。']])about.addRow(row);
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
 
@@ -154,21 +184,22 @@ function createActivityLog({researchPool=defaultResearch,activity=()=>require('.
     const map=await people(directory),pool=researchPool();
     const filters={days:f.days,fromDate:f.fromDate,toDate:f.toDate,grade:f.grade||null,cls:f.cls||null,poem:f.poem||null,q:f.q||null,student:f.student||null};
     const base={ok:true,schemaVersion:2,generatedAt:new Date(t).toISOString(),days:f.days,from:f.from,to:f.to,filters};
-    if(view==='student')return res.status(200).json({...base,...await conversation(pool,f,map)});
+    if(view==='student'){const [chat,read]=await Promise.all([conversation(pool,f,map),readings(pool,f,map)]);
+      return res.status(200).json({...base,...chat,readings:read.available?read.students[0]||null:null,readingsAvailable:read.available});}
     if(view==='xlsx'){
       const {sql,params}=where(f);
-      const result=await readOnly(pool,async q=>({list:(await q(CHAT_SQL.all(sql),params)).map(r=>chatRow(r,map))}));
-      if(!result.available)return res.status(503).json({ok:false,code:'CHAT_LOG_UNAVAILABLE',error:'未能讀取聊天紀錄，請稍後再試。'});
-      const bytes=await workbook(result.list,f),name='學生與詩人對話紀錄_'+hkTime(t).slice(0,10)+'.xlsx';
+      const [result,read]=await Promise.all([readOnly(pool,async q=>({list:(await q(CHAT_SQL.all(sql),params)).map(r=>chatRow(r,map))})),readings(pool,f,map)]);
+      if(!result.available||!read.available)return res.status(503).json({ok:false,code:'CHAT_LOG_UNAVAILABLE',error:'未能讀取聊天紀錄，請稍後再試。'});
+      const bytes=await workbook(result.list,f,read.students),name='學生與詩人對話紀錄_'+hkTime(t).slice(0,10)+'.xlsx';
       res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition',`attachment; filename="chat-log.xlsx"; filename*=UTF-8''${encodeURIComponent(name)}`);
       return res.status(200).send(bytes);
     }
-    const [chats,teachers]=await Promise.all([chatLog(pool,f,map),activity().summary(Math.min(f.days,MAX_DAYS))]);
-    return res.status(200).json({...base,chats,teachers});
+    const [chats,reads,teachers]=await Promise.all([chatLog(pool,f,map),readings(pool,f,map),activity().summary(Math.min(f.days,MAX_DAYS))]);
+    return res.status(200).json({...base,chats,readings:reads,teachers});
   };
 }
 function defaultResearch(){const research=require('./research-store.cjs');return research.mode()==='postgres'?research.getPool():null;}
 
 module.exports=createActivityLog();
-Object.assign(module.exports,{createActivityLog,chatLog,conversation,filtersFrom,where,workbook,CHAT_SQL,MODES});
+Object.assign(module.exports,{createActivityLog,chatLog,conversation,readings,filtersFrom,where,workbook,CHAT_SQL,MODES});
