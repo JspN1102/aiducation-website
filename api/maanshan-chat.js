@@ -38,6 +38,11 @@ module.exports = withSchoolLearning('chat', async function handler(req, res) {
   if(messages.at(-1).role!=='user')return res.status(400).json({error:'Expected a user question'});
 
   const preset=await presetCache.matchRequest(body,poem,grade);
+  // Kept with the research outcome (school-learning.cjs): the question, how it was entered, the suggestion tapped.
+  const asked=messages.at(-1).content.trim().normalize('NFC').slice(0,1000);
+  if(asked)res.researchExtras={...(res.researchExtras&&typeof res.researchExtras==='object'?res.researchExtras:{}),chat:{question:asked,
+    ...(['typed','voice','suggestion'].includes(body.inputMode)?{inputMode:body.inputMode}:{}),
+    ...(typeof body.presetId==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/.test(body.presetId)?{presetId:body.presetId}:{})}};
   const prepared=preset?await presetCache.lookup(body,poem,grade):null;
   res.setHeader('X-Poet-Cache',prepared?'HIT':preset?'MISS':'BYPASS');
   if(prepared){

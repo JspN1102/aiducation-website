@@ -184,6 +184,11 @@ const DATA_DICTIONARY = {
       "meaning": "Handwriting only: candidateCount 0..20, targetRank 1-based rank of the first accepted form among the first 20 candidates (0 absent), topCandidate the single top-ranked Han character. No coordinates."
     },
     {
+      "name": "event.chat",
+      "type": "server-only typed object",
+      "meaning": "Chat only (since 2026-10-10): question the pupil sent (<=1000 chars), reply the poet gave (<=4000 chars, absent on failure), inputMode typed/voice/suggestion, presetId of the suggested question tapped. Pupils were told not to type private details."
+    },
+    {
       "name": "event.provenance",
       "type": "server-only typed object",
       "meaning": "serverVersion server build that computed the outcome; termsVersion platform terms version accepted at login for this session (e.g. 2026-09-30-v3), absent if not recorded. Not present on stable challenge receipts."
@@ -233,7 +238,6 @@ const DATA_DICTIONARY = {
     "excluded": [
       "raw recordings",
       "handwriting coordinates",
-      "chat text",
       "names",
       "school login",
       "IP address",
@@ -273,8 +277,8 @@ const CONTEXT_ENUMS={mediaRoute:['public','local'],audioSource:['recitation','st
   inputMode:['typed','voice','suggestion'],pointer:['coarse','fine','none'],viewport:['small','medium','large'],pageLoad:['navigate','reload','back-forward','prerender','other'],
   errorSource:['own-module','own-page','extension','other-origin','none'],errorKind:['type','reference','range','syntax','security','abort','not-allowed','network','muted','resize-loop','other']};
 // Server-only outcome detail; recordVerifiedOutcome drops it rather than lose the core outcome.
-const RESEARCH_SERVER_VERSION='server-research-20261008-school48';
-const EXTENSIONS=['providerWords','service','recognition','provenance'];
+const RESEARCH_SERVER_VERSION='server-research-20261010-school55';
+const EXTENSIONS=['providerWords','service','recognition','provenance','chat'];
 const PHONE=/^[a-z]{1,8}[1-5]?$/,TERMS=/^\d{4}-\d\d-\d\d-v\d{1,3}$/;
 const RELAYS=['hk','gz','hop-hk','hop-gz','none'],AUDIO_PATHS=['webm','ogg','mp4','m4a','aac','mp3','pcm','pcm-gzip'];
 const canonical = value => JSON.stringify(value && typeof value === 'object'
@@ -306,7 +310,7 @@ function resultValid(result) {
 function validateEvent(event, server = false) {
   object(event, ['eventId','sessionId','seq','clientAt','activeMs','poemId','activity','type',
     'appVersion','contentVersion','attemptId','itemId','attemptNo','hint','retryCount','result','error','metrics','context','response','interaction',
-    ...(server ? ['provider','model','operation','providerVersion','wordScores','providerWords','service','recognition','provenance'] : [])],
+    ...(server ? ['provider','model','operation','providerVersion','wordScores','providerWords','service','recognition','provenance','chat'] : [])],
   ['eventId','sessionId','seq','clientAt','activeMs','poemId','activity','type','appVersion','contentVersion']);
   uuid(event.eventId); uuid(event.sessionId); integer(event.seq,0,10000000); integer(event.activeMs,0,21600000);
   if (!iso(event.clientAt) || !ACTIVITIES.includes(event.activity) || !(server ? [...TYPES,'provider_result'] : TYPES).includes(event.type)) fail();
@@ -404,6 +408,11 @@ function validateEvent(event, server = false) {
       integer(recognition.candidateCount,0,20);integer(recognition.targetRank,0,20);if(recognition.targetRank>recognition.candidateCount)fail();
       if(recognition.topCandidate!==undefined&&(typeof recognition.topCandidate!=='string'||!/^\p{Script=Han}$/u.test(recognition.topCandidate)||recognition.topCandidate.normalize('NFC')!==recognition.topCandidate))fail();
     }
+    if(event.chat!==undefined){const chat=event.chat;if(event.operation!=='chat')fail();
+      object(chat,['question','reply','inputMode','presetId'],['question']);
+      for(const [key,max] of [['question',1000],['reply',4000]])if(chat[key]!==undefined&&(typeof chat[key]!=='string'||!chat[key].trim()||chat[key].length>max))fail();
+      if(chat.inputMode!==undefined&&!CONTEXT_ENUMS.inputMode.includes(chat.inputMode))fail();
+      if(chat.presetId!==undefined&&(typeof chat.presetId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/.test(chat.presetId)))fail();}
     if(event.provenance!==undefined){object(event.provenance,['serverVersion','termsVersion'],['serverVersion']);token(event.provenance.serverVersion,64);
       if(event.provenance.termsVersion!==undefined&&(typeof event.provenance.termsVersion!=='string'||!TERMS.test(event.provenance.termsVersion)))fail();}
   }
@@ -554,7 +563,7 @@ async function recordVerifiedOutcome(req,input) {
     if(input.response!==undefined)event.response=input.response;
     // Server-computed detail comes only from the outcome, never from researchContext.
     // Stable challenge receipts keep their exact shape so retries hash identically.
-    if(input.stableBatch!==true){for(const k of ['providerWords','service','recognition'])if(input[k]!==undefined)event[k]=input[k];
+    if(input.stableBatch!==true){for(const k of ['providerWords','service','recognition','chat'])if(input[k]!==undefined)event[k]=input[k];
       let terms=null;try{terms=typeof auth.sessionTermsVersion==='function'?await auth.sessionTermsVersion(req):null;}catch{}
       event.provenance={serverVersion:RESEARCH_SERVER_VERSION,...(typeof terms==='string'&&TERMS.test(terms)?{termsVersion:terms}:{})};}
     // Distinguish an invalid incoming event from invalid data read from storage.
@@ -721,7 +730,7 @@ function aggregateEvents(all,f,{generatedAt=new Date().toISOString(),source='pos
     missingness:{scoreNullMeans:'not_measured',zeroScoreIsMeasured:true,clientScoresAreVerified:false,reviewAndFreeExcludedFromAssessment:true,
       sourceClock:'server_received_at',duration:'monotonic session activeMs deltas in selected events; lower bound if gaps or filter boundaries',
       roster:'Only students with events; merge authenticated school roster for not-started students',
-      omitted:{rawAudio:true,handwritingCoordinates:true,chatText:true,names:true,ipOrFingerprint:true}}};
+      omitted:{rawAudio:true,handwritingCoordinates:true,names:true,ipOrFingerprint:true}}};
 }
 async function readPostgres(f,db=getPool()){
   const values=[f.from,f.to],where=["received_at >= ($1::date::timestamp AT TIME ZONE 'UTC')","received_at < (($2::date + 1)::timestamp AT TIME ZONE 'UTC')"];

@@ -10,9 +10,9 @@ function createHandler({requireTeacher=req=>auth.requireActor(req,{roles:['teach
   return async function teacherExport(req,res){
     res.setHeader('Cache-Control','private, no-store');res.setHeader('Vary','Cookie');res.setHeader('X-Content-Type-Options','nosniff');
     if(req.method!=='POST')return res.status(405).json({ok:false,code:'POST_ONLY',error:'請使用匯出按鈕。'});
-    let timer,work;
+    let timer,work,actor;
     try{
-      const actor=await requireTeacher(req);if(!actor||actor.role!=='teacher')throw new auth.AuthError(403,'ROLE_FORBIDDEN');
+      actor=await requireTeacher(req);if(!actor||actor.role!=='teacher')throw new auth.AuthError(403,'ROLE_FORBIDDEN');
       const body=req.body;
       if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(key=>!['action','filters','reportId'].includes(key))||!['xlsx','docx'].includes(body.action)||body.action==='docx'&&!body.reportId||body.reportId!==undefined&&!/^ta_[a-f0-9]{64}$/.test(body.reportId)||body.reportId&&body.filters)throw new data.TeacherDataError('INVALID_EXPORT_REQUEST',400);
       if(active>=maxConcurrent)throw new data.TeacherDataError('EXPORT_BUSY',429);
@@ -31,6 +31,7 @@ function createHandler({requireTeacher=req=>auth.requireActor(req,{roles:['teach
       const poem=poems.find(item=>item.id===Number(f.poemId));
       const filename=`${result.dataset.demo?'模擬_':''}${body.action==='docx'?'普通話教研報告':'學生數據表格'}_${scope}_${poem.title}_${date}.${body.action}`;
       res.setHeader('Content-Type',MIME[body.action]);res.setHeader('Content-Disposition',`attachment; filename="mandarin-learning-${date}.${body.action}"; filename*=UTF-8''${encodeURIComponent(filename)}`);res.setHeader('Content-Length',String(result.bytes.length));res.setHeader('X-Data-Snapshot',result.dataset.snapshotId);
+      if(!result.dataset.demo)void require('./teacher-activity.cjs').record(actor,body.action);
       return res.status(200).send(Buffer.from(result.bytes));
     }catch(error){
       if(error instanceof auth.AuthError)return auth.sendError(res,error);

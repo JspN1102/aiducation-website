@@ -386,10 +386,10 @@ function scheduleMonitor(seconds){clearTimeout(monitor.timer);monitor.timer=null
 function markMonitorButton(open){document.querySelector('#teacher-site-monitor')?.setAttribute('aria-pressed',String(open));}
 function openMonitor(){
  const main=document.querySelector('#teacher-main.workspace');if(!siteAdmin()||!main)return;
- if(!monitorOpen()){main.classList.add('monitor-mode');main.insertAdjacentHTML('beforeend','<section id="site-monitor" class="site-monitor" aria-labelledby="site-monitor-title"><div class="monitor-top"><h1 id="site-monitor-title">網站後台</h1><button type="button" class="button small" data-action="close-monitor">返回教師後台</button></div><div id="site-monitor-body"></div></section>');}
+ if(!monitorOpen()){main.classList.add('monitor-mode');main.insertAdjacentHTML('beforeend','<section id="site-monitor" class="site-monitor" aria-labelledby="site-monitor-title"><div class="monitor-top"><h1 id="site-monitor-title">網站後台</h1><button type="button" class="button small" data-action="close-monitor">返回教師後台</button></div><div id="site-monitor-body"></div>'+usageLogShell()+'</section>');}
  markMonitorButton(true);renderMonitor();window.scrollTo(0,0);void pollMonitor();
 }
-function closeMonitor(){resetMonitor();document.querySelector('#site-monitor')?.remove();document.querySelector('#teacher-main')?.classList.remove('monitor-mode');markMonitorButton(false);}
+function closeMonitor(){usageLog.generation++;usageLog.controller?.abort();usageLog.controller=null;resetMonitor();document.querySelector('#site-monitor')?.remove();document.querySelector('#teacher-main')?.classList.remove('monitor-mode');markMonitorButton(false);}
 function connectionText(headers,rtt){
  const route=headers.get('X-Relay-Route'),port=headers.get('X-Relay-Port')||'';
  const via=headers.get('X-Relay-Hop')==='iad1'?'香港未能接通，經美國備用線路':route==='hk'&&/^310[0-2]$/.test(port)?'經香港 '+port:route==='gz'?'經美國節點':'直接連到廣州';
@@ -445,6 +445,40 @@ function jobState(job,now){
  if(job.result!=='success'&&job.result!=='unknown')return [job.unit==='maanshan-backup'?'bad':'warn','失敗'];
  if(number(job.lastAt)===null||now-job.lastAt>job.maxGapS*1000)return ['warn','太久沒有運行'];
  return ['ok','成功'];
+}
+// 使用紀錄: pupils' questions to the poets and each teacher's dashboard use, loaded on request.
+const ACTIVITY_LOG='/api/teacher-tools?tool=activity-log',usageLog={generation:0,controller:null,days:7};
+const INPUT_MODES={typed:'自己打字',voice:'語音輸入',suggestion:'建議問題'};
+const TEACHER_COUNTS=[['login','登入'],['open','打開後台'],['view','查看數據'],['analysis','AI 分析'],['xlsx','Excel'],['docx','Word'],['research_export','研究匯出']];
+function usageLogShell(){return `<section class="usage-log" aria-labelledby="usage-log-title"><div class="monitor-top"><h2 id="usage-log-title">使用紀錄</h2><div class="usage-days" role="group" aria-label="時間範圍">${[[1,'今日'],[7,'近 7 日'],[30,'近 30 日']].map(([d,label])=>`<button type="button" class="button small quiet" data-usage-days="${d}">${label}</button>`).join('')}</div></div><div id="usage-log-body"><p class="monitor-note">學生和詩人聊了甚麼、每位老師用了多少次後台。按上面的按鈕查看。</p></div></section>`;}
+async function loadUsageLog(days){
+ if(!siteAdmin())return;const host=document.querySelector('#usage-log-body');if(!host)return;
+ usageLog.controller?.abort();const controller=new AbortController(),generation=++usageLog.generation,epoch=sessionEpoch,timeout=setTimeout(()=>controller.abort(),20000);
+ usageLog.controller=controller;usageLog.days=days;pendingRequests.add(controller);
+ document.querySelectorAll('[data-usage-days]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.usageDays)===days)));
+ host.innerHTML='<div class="data-loading" role="status"><span class="loader" aria-hidden="true"></span><p>正在讀取使用紀錄</p></div>';
+ const current=()=>epoch===sessionEpoch&&generation===usageLog.generation&&document.querySelector('#usage-log-body')===host;
+ try{
+  const response=await fetch(ACTIVITY_LOG+'&days='+days,{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'},signal:controller.signal});
+  let data=null;try{data=await response.json();}catch{}
+  if(!current())return;
+  if(response.status===401){clearPrivate();renderLogin('登入已失效，請重新登入。');return;}
+  if(!response.ok||data?.ok!==true)throw Object.assign(new Error('Usage log failed'),{status:response.status});
+  host.innerHTML=usageLogBody(data);
+ }catch(error){if(!current())return;host.innerHTML=`<p class="monitor-banner level-bad"><span class="monitor-dot" aria-hidden="true"></span><strong>未能取得使用紀錄（${esc(error.status?'伺服器回覆 '+error.status:error.name==='AbortError'?'20 秒內沒有回應':'網絡未能連線')}），請再按一次。</strong></p>`;}
+ finally{clearTimeout(timeout);pendingRequests.delete(controller);if(usageLog.controller===controller)usageLog.controller=null;}
+}
+function pupilLabel(c){return (c.grade?(GRADES[c.grade-1]||c.grade)+'年級':'')+(c.cls?c.cls+'班':'')+' 學生 '+c.pupil;}
+function usageLogBody(d){
+ const now=Date.parse(d.generatedAt)||Date.now(),range=d.days===1?'今日':'近 '+d.days+' 日',t=d.teachers||{},c=d.chats||{};
+ const teacherRows=rows(t.teachers);
+ const teachers=`<article class="monitor-card level-info"><h2><span class="monitor-dot" aria-hidden="true"></span>教師使用（${esc(range)}）</h2>`+(!t.available?'<p class="monitor-status">未能讀取教師使用紀錄。</p>':teacherRows.length?`<div class="table-area"><table class="monitor-table usage-teachers"><caption>每位老師的次數（「打開後台」按每次隔 30 分鐘以上計）</caption><thead><tr><th scope="col">老師</th>${TEACHER_COUNTS.map(([,label])=>`<th scope="col">${esc(label)}</th>`).join('')}<th scope="col">最近使用</th></tr></thead><tbody>${teacherRows.map(r=>`<tr><th scope="row">${esc(r.name||r.login)}<small>${esc(r.login)}</small></th>${TEACHER_COUNTS.map(([key])=>`<td>${shown(number(r.counts?.[key])||0)}</td>`).join('')}<td>${esc(when(r.lastAt,now))}</td></tr>`).join('')}</tbody></table></div>`:'<p class="monitor-status">這段時間沒有老師使用後台。</p>')+monitorNote(['從 2026-10-10 開始記錄'])+'</article>';
+ if(!c.available)return teachers+'<article class="monitor-card level-info"><h2><span class="monitor-dot" aria-hidden="true"></span>學生聊天</h2><p class="monitor-status">未能讀取聊天紀錄。</p></article>';
+ const top=rows(c.top),recent=rows(c.recent);
+ const stats=monitorStats([['提問',c.questions,' 次'],['學生',c.pupils,' 人'],['點建議問題',c.suggested,' 次'],['自己打字',c.typed,' 次'],['語音輸入',c.voice,' 次']]);
+ const topList=top.length?`<ol class="usage-top" aria-label="最多學生問的問題">${top.map(q=>`<li><span><small>《${esc(q.poemTitle||'')}》${q.suggested?' · 建議問題':''}</small>${esc(q.question)}</span><strong>${shown(q.pupils)} 人<small>${shown(q.count)} 次</small></strong></li>`).join('')}</ol>`:'';
+ const recentList=recent.length?`<ol class="usage-chats" aria-label="最近的提問">${recent.map(q=>`<li${q.failed?' class="failed"':''}><p class="usage-chat-meta"><time>${esc(when(q.at,now))}</time><span>${esc(pupilLabel(q))}</span><span>《${esc(q.poemTitle||'')}》</span>${q.inputMode?`<span class="usage-mode">${esc(INPUT_MODES[q.inputMode])}</span>`:''}${q.failed?'<span class="usage-mode bad">沒有回答</span>':''}</p><p class="usage-question">${esc(q.question)}</p>${q.reply?`<details><summary>詩人的回答</summary><p>${esc(q.reply)}</p></details>`:''}</li>`).join('')}</ol>`:'<p class="monitor-status">這段時間還沒有聊天紀錄（從 2026-10-10 school55 上線後開始記錄）。</p>';
+ return teachers+`<article class="monitor-card level-info usage-chat-card"><h2><span class="monitor-dot" aria-hidden="true"></span>學生聊天（${esc(range)}）</h2>${stats}${top.length?'<h3>最多學生問的問題</h3>'+topList:''}<h3>最近的提問${recent.length>=number(c.limit)?'（最新 '+shown(c.limit)+' 條）':''}</h3>${recentList}${monitorNote(['同一學生在這一頁用同一編號，不顯示姓名'])}</article>`;
 }
 function renderMonitor(){
  const host=document.querySelector('#site-monitor-body');if(!host)return;const d=monitor.data;
@@ -521,6 +555,7 @@ root.addEventListener('input',event=>{
 root.addEventListener('compositionend',event=>{if(event.target.id==='student-search')event.target.dispatchEvent(new Event('input',{bubbles:true}));});
 function click(event){const button=event.target.closest('button');if(!button||button.disabled)return;
  if(button.dataset.action==='close-monitor'){closeMonitor();document.querySelector('#teacher-site-monitor')?.focus();return;}
+ if(button.dataset.usageDays){void loadUsageLog(Number(button.dataset.usageDays));return;}
  if(button.dataset.studentWords){void openStudentWords(button.dataset.studentWords);return;}
  if(button.dataset.action==='retry-student-words'&&state.detailStudent){void openStudentWords(state.detailStudent.researchId);return;}
  if(button.dataset.action==='more-student-words'&&state.detailStudent&&state.detailData){document.querySelector('#student-dialog-content').innerHTML=studentWordDialog(state.detailStudent,studentLearningBody(state.detailData,true));return;}

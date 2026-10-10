@@ -175,6 +175,11 @@
       "meaning": "Handwriting only: candidateCount 0..20, targetRank 1-based rank of the first accepted form among the first 20 candidates (0 absent), topCandidate the single top-ranked Han character. No coordinates."
     },
     {
+      "name": "event.chat",
+      "type": "server-only typed object",
+      "meaning": "Chat only (since 2026-10-10): question the pupil sent (<=1000 chars), reply the poet gave (<=4000 chars, absent on failure), inputMode typed/voice/suggestion, presetId of the suggested question tapped. Pupils were told not to type private details."
+    },
+    {
       "name": "event.provenance",
       "type": "server-only typed object",
       "meaning": "serverVersion server build that computed the outcome; termsVersion platform terms version accepted at login for this session (e.g. 2026-09-30-v3), absent if not recorded. Not present on stable challenge receipts."
@@ -224,7 +229,6 @@
     "excluded": [
       "raw recordings",
       "handwriting coordinates",
-      "chat text",
       "names",
       "school login",
       "IP address",

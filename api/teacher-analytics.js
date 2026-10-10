@@ -1,6 +1,7 @@
 import research from './_lib/research-store.cjs';
 import auth from './_lib/school-auth.cjs';
 import data from './_lib/teacher-data.cjs';
+import teacherActivity from './_lib/teacher-activity.cjs';
 
 export default async function handler(req,res){
   res.setHeader('Cache-Control','private, no-store');
@@ -13,8 +14,12 @@ export default async function handler(req,res){
     if(format&&format!=='json'){
       if(!['csv','jsonl'].includes(format))throw new research.ResearchError('INVALID_EXPORT_FORMAT');
       for(const key of ['cursor','limit'])if(req.query[key]!==undefined&&(typeof req.query[key]!=='string'||!/^\d{1,6}$/.test(req.query[key])))throw new research.ResearchError('INVALID_EXPORT_PAGE');
-      return res.status(200).json({schemaVersion:1,...await research.researchExport(filters,{format,cursor:Number(req.query.cursor||0),limit:Number(req.query.limit||5000),snapshot:req.query.snapshot})});
+      const page=await research.researchExport(filters,{format,cursor:Number(req.query.cursor||0),limit:Number(req.query.limit||5000),snapshot:req.query.snapshot});
+      if(!Number(req.query.cursor||0))void teacherActivity.record(actor,'research_export');
+      return res.status(200).json({schemaVersion:1,...page});
     }
-    return res.status(200).json(await research.analytics(filters,{includeStudentDetails:true}));
+    const result=await research.analytics(filters,{includeStudentDetails:true});
+    void teacherActivity.record(actor,'view');
+    return res.status(200).json(result);
   }catch(error){if(error instanceof auth.AuthError)return auth.sendError(res,error);return research.sendError(res,error);}
 }

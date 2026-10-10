@@ -99,6 +99,9 @@ function outcomeFor(operation, payload, status, reference, elapsedMs, providerMe
   if(['chat','report'].includes(operation)&&providerMetadata){
     for(const key of ['provider','model','providerVersion'])if(typeof providerMetadata[key]==='string'&&/^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,79}$/.test(providerMetadata[key]))value[key]=providerMetadata[key];
   }
+  // Chat: the pupil's question and the poet's answer (research consent covers chat text since school55).
+  try{const chat=extras?.chat;if(operation==='chat'&&chat&&typeof chat.question==='string'&&chat.question){value.chat={...chat};
+    if(!error&&typeof payload?.reply==='string'&&payload.reply.trim())value.chat.reply=payload.reply.trim().normalize('NFC').slice(0,4000);}}catch{}
   try{const service=cleanService({...(extras?.service||{}),...(extras?.relay?{relay:extras.relay}:{})});if(service)value.service=service;}catch{}
   if (error) { value.error={code:status===504?'timeout':status===429||status>=500?'provider_unavailable':'invalid_response',retryable:status>=500||status===429}; return value; }
   if (operation === 'reading') {

@@ -1148,7 +1148,7 @@ async function sendChat(text,retry=false,presetId=null,inputMode=null) {
   const waiting=setTimeout(()=>{if(version===routeVersion&&chatBusy&&!partial)$('#chat-error').innerHTML='<span class="spinner"></span><span>還在等回覆，你的問題已保留。</span>';},8000);
   try {
     const last=s.chat.at(-1),selectedPreset=last?.presetId&&matchPoetPreset(p.id,last.content);
-    const data=await requestChat({poemId:p.id,grade:Math.min(studentGrade(p),p.grade),messages:s.chat.slice(-10).map(({role,content})=>({role,content})),...(selectedPreset&&selectedPreset.id===last.presetId&&selectedPreset.version===last.presetVersion?{presetId:last.presetId,presetVersion:last.presetVersion}:{}),...(collectResearch?{researchContext:audit}:{})},{signal:controller.signal,onDelta:(_delta,text)=>{
+    const data=await requestChat({poemId:p.id,grade:Math.min(studentGrade(p),p.grade),messages:s.chat.slice(-10).map(({role,content})=>({role,content})),...(mode?{inputMode:mode}:{}),...(selectedPreset&&selectedPreset.id===last.presetId&&selectedPreset.version===last.presetVersion?{presetId:last.presetId,presetVersion:last.presetVersion}:{}),...(collectResearch?{researchContext:audit}:{})},{signal:controller.signal,onDelta:(_delta,text)=>{
       if(version!==routeVersion||sessionLocked)return;
       const holder=$('#chat-messages'),atBottom=holder.scrollHeight-holder.scrollTop-holder.clientHeight<100;
       if(!partial){

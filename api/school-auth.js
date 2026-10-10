@@ -1,5 +1,6 @@
 import auth from './_lib/school-auth.cjs';
 import teacherLearning from './_lib/teacher-learning-reset.cjs';
+import teacherActivity from './_lib/teacher-activity.cjs';
 import studentStore from './_lib/student-store.js';
 import practiceProgress from './_lib/practice-progress.cjs';
 import { get as getBlob } from '@vercel/blob';
@@ -60,7 +61,11 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
     if (!auth.enabled()) throw new auth.AuthError(403, 'AUTH_DISABLED');
     if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) throw new auth.AuthError(400, 'INVALID_REQUEST');
-    if (req.body.action === 'login') return res.status(200).json(await teacherLearning.withState(await auth.login(req, res)));
+    if (req.body.action === 'login') {
+      const state = await auth.login(req, res);
+      if (state?.user?.role === 'teacher') void teacherActivity.record(state.user, 'login');
+      return res.status(200).json(await teacherLearning.withState(state));
+    }
     if (req.body.action === 'logout') return res.status(200).json(await auth.logout(req, res));
     if (req.body.action === 'change_password') return res.status(200).json(await auth.changePassword(req, res));
     if (req.body.action === 'reset_student_password') return res.status(200).json(await auth.resetStudentPassword(req));

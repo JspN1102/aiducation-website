@@ -21,6 +21,7 @@ function createHandler({authModule=auth,analysisModule=analysis}={}){return asyn
     if(Object.keys(body).some(key=>key!=='filters')||!body.filters||typeof body.filters!=='object'||Array.isArray(body.filters))throw new analysis.AnalysisError('INVALID_REPORT_REQUEST',400,false);
     if(Object.keys(body.filters).some(key=>!['grade','poemId','cls','from','to','activity','attempt'].includes(key)))throw new analysis.AnalysisError('INVALID_REPORT_FILTERS',400,false);
     result=await analysisModule.generate(req,requireTeacherScope(normalizeFilters(body.filters)),actor,{signal:controller.signal,background:true});
+    void require('./teacher-activity.cjs').record(actor,'analysis');
    }
   }
   if(result.status==='generating'){res.setHeader('Retry-After',String(result.retryAfterSeconds));return res.status(202).json(result);}
