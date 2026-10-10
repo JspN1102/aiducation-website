@@ -46,7 +46,7 @@ async function requestJSON(url,{signal,headers={},timeoutMs=25000,...options}={}
   if(!data||typeof data!=='object')throw new Error('回應格式不完整');return data;
  }finally{pendingRequests.delete(controller);clearTimeout(timeout);signal?.removeEventListener('abort',abort);}
 }
-function clearPrivate(){state.scopeCache.clear();clearTeacherTools();state.exportJob?.controller.abort();state.exportJob=null;state.detailData=null;state.studentsOpen=false;state.studentFilter='all';state.constructFilter='';sessionEpoch++;for(const controller of pendingRequests)controller.abort();pendingRequests.clear();sessionCheck=null;state.request?.abort();state.detailRequest?.abort();state.generation++;state.data=null;state.roster=null;state.rosterError=false;state.auth=null;state.legacyCode='';state.search='';state.page=0;state.detailStudent=null;if(dialog.open)dialog.close();document.querySelector('#student-dialog-content').replaceChildren();const identity=document.querySelector('#teacher-identity');identity.textContent='';identity.hidden=true;document.querySelector('#teacher-logout').hidden=true;document.querySelector('#teacher-change-password')?.remove();resetMonitor();document.querySelector('#teacher-site-monitor')?.remove();}
+function clearPrivate(){state.scopeCache.clear();usageLog.data=null;usageLog.student=null;clearTeacherTools();state.exportJob?.controller.abort();state.exportJob=null;state.detailData=null;state.studentsOpen=false;state.studentFilter='all';state.constructFilter='';sessionEpoch++;for(const controller of pendingRequests)controller.abort();pendingRequests.clear();sessionCheck=null;state.request?.abort();state.detailRequest?.abort();state.generation++;state.data=null;state.roster=null;state.rosterError=false;state.auth=null;state.legacyCode='';state.search='';state.page=0;state.detailStudent=null;if(dialog.open)dialog.close();document.querySelector('#student-dialog-content').replaceChildren();const identity=document.querySelector('#teacher-identity');identity.textContent='';identity.hidden=true;document.querySelector('#teacher-logout').hidden=true;document.querySelector('#teacher-change-password')?.remove();resetMonitor();document.querySelector('#teacher-site-monitor')?.remove();}
 function lockSession(){clearPrivate();state.legacy=false;renderLogin('帳戶已登出或在另一個分頁切換，請重新登入。');}
 function validateAuth(auth){if(typeof auth.enabled!=='boolean'||requiresSchoolAuth&&!auth.enabled||auth.authenticated&&(!auth.user?.id||!['student','teacher'].includes(auth.user.role)||typeof auth.csrfToken!=='string'||!auth.csrfToken))throw new Error('帳戶服務回覆不完整');return auth;}
 async function checkSession(){
@@ -389,7 +389,7 @@ function openMonitor(){
  if(!monitorOpen()){main.classList.add('monitor-mode');main.insertAdjacentHTML('beforeend','<section id="site-monitor" class="site-monitor" aria-labelledby="site-monitor-title"><div class="monitor-top"><h1 id="site-monitor-title">網站後台</h1><button type="button" class="button small" data-action="close-monitor">返回教師後台</button></div><div id="site-monitor-body"></div>'+usageLogShell()+'</section>');}
  markMonitorButton(true);renderMonitor();window.scrollTo(0,0);void pollMonitor();
 }
-function closeMonitor(){usageLog.generation++;usageLog.controller?.abort();usageLog.controller=null;resetMonitor();document.querySelector('#site-monitor')?.remove();document.querySelector('#teacher-main')?.classList.remove('monitor-mode');markMonitorButton(false);}
+function closeMonitor(){usageLog.generation++;usageLog.data=null;usageLog.student=null;usageLog.controller?.abort();usageLog.controller=null;resetMonitor();document.querySelector('#site-monitor')?.remove();document.querySelector('#teacher-main')?.classList.remove('monitor-mode');markMonitorButton(false);}
 function connectionText(headers,rtt){
  const route=headers.get('X-Relay-Route'),port=headers.get('X-Relay-Port')||'';
  const via=headers.get('X-Relay-Hop')==='iad1'?'香港未能接通，經美國備用線路':route==='hk'&&/^310[0-2]$/.test(port)?'經香港 '+port:route==='gz'?'經美國節點':'直接連到廣州';
@@ -446,39 +446,101 @@ function jobState(job,now){
  if(number(job.lastAt)===null||now-job.lastAt>job.maxGapS*1000)return ['warn','太久沒有運行'];
  return ['ok','成功'];
 }
-// 使用紀錄: pupils' questions to the poets and each teacher's dashboard use, loaded on request.
-const ACTIVITY_LOG='/api/teacher-tools?tool=activity-log',usageLog={generation:0,controller:null,days:7};
+// 使用紀錄 (site administrator only): each pupil's questions to the poets, by name, and each teacher's dashboard use. Loaded on request.
+const ACTIVITY_LOG='/api/teacher-tools?tool=activity-log',usageLog={generation:0,controller:null,days:7,data:null,student:null};
 const INPUT_MODES={typed:'自己打字',voice:'語音輸入',suggestion:'建議問題'};
 const TEACHER_COUNTS=[['login','登入'],['open','打開後台'],['view','查看數據'],['analysis','AI 分析'],['xlsx','Excel'],['docx','Word'],['research_export','研究匯出']];
-function usageLogShell(){return `<section class="usage-log" aria-labelledby="usage-log-title"><div class="monitor-top"><h2 id="usage-log-title">使用紀錄</h2><div class="usage-days" role="group" aria-label="時間範圍">${[[1,'今日'],[7,'近 7 日'],[30,'近 30 日']].map(([d,label])=>`<button type="button" class="button small quiet" data-usage-days="${d}">${label}</button>`).join('')}</div></div><div id="usage-log-body"><p class="monitor-note">學生和詩人聊了甚麼、每位老師用了多少次後台。按上面的按鈕查看。</p></div></section>`;}
-async function loadUsageLog(days){
- if(!siteAdmin())return;const host=document.querySelector('#usage-log-body');if(!host)return;
- usageLog.controller?.abort();const controller=new AbortController(),generation=++usageLog.generation,epoch=sessionEpoch,timeout=setTimeout(()=>controller.abort(),20000);
- usageLog.controller=controller;usageLog.days=days;pendingRequests.add(controller);
- document.querySelectorAll('[data-usage-days]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.usageDays)===days)));
- host.innerHTML='<div class="data-loading" role="status"><span class="loader" aria-hidden="true"></span><p>正在讀取使用紀錄</p></div>';
- const current=()=>epoch===sessionEpoch&&generation===usageLog.generation&&document.querySelector('#usage-log-body')===host;
- try{
-  const response=await fetch(ACTIVITY_LOG+'&days='+days,{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'},signal:controller.signal});
-  let data=null;try{data=await response.json();}catch{}
-  if(!current())return;
-  if(response.status===401){clearPrivate();renderLogin('登入已失效，請重新登入。');return;}
-  if(!response.ok||data?.ok!==true)throw Object.assign(new Error('Usage log failed'),{status:response.status});
-  host.innerHTML=usageLogBody(data);
- }catch(error){if(!current())return;host.innerHTML=`<p class="monitor-banner level-bad"><span class="monitor-dot" aria-hidden="true"></span><strong>未能取得使用紀錄（${esc(error.status?'伺服器回覆 '+error.status:error.name==='AbortError'?'20 秒內沒有回應':'網絡未能連線')}），請再按一次。</strong></p>`;}
- finally{clearTimeout(timeout);pendingRequests.delete(controller);if(usageLog.controller===controller)usageLog.controller=null;}
+const USAGE_RANGES=[[1,'今日'],[7,'近 7 日'],[30,'近 30 日'],[400,'全部']];
+const USAGE_POEMS=['詠鵝','贈汪倫','題西林壁','泊船瓜洲','歸園田居','初春小雨','詠雪','畫雞','七步詩','絕句','鄭人買履','客至'];
+function usageLogShell(){
+ const options=(list,label)=>`<option value="">${label}</option>`+list.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join('');
+ return `<section class="usage-log" aria-labelledby="usage-log-title"><div class="monitor-top"><h2 id="usage-log-title">使用紀錄</h2><div class="usage-days" role="group" aria-label="時間範圍">${USAGE_RANGES.map(([d,label])=>`<button type="button" class="button small quiet" data-usage-days="${d}">${label}</button>`).join('')}</div></div>
+<form id="usage-filters" class="usage-filters" aria-label="篩選聊天紀錄"><label class="field">年級<select name="grade">${options([1,2,3,4,5,6].map(g=>[g,g+' 年級']),'全部')}</select></label><label class="field">班別<select name="cls">${options('ABCDEFGH'.split('').map(c=>[c,c+' 班']),'全部')}</select></label><label class="field">古詩<select name="poem">${options(USAGE_POEMS.map((t,i)=>[i+1,t]),'全部')}</select></label><label class="field">由<input type="date" name="fromDate" min="2026-10-10"></label><label class="field">至<input type="date" name="toDate" min="2026-10-10"></label><label class="field usage-search">搜尋問題或回答<input type="search" name="q" maxlength="50" autocomplete="off"></label><div class="usage-actions"><button type="submit" class="button small">查詢</button><button type="button" class="button small quiet" data-action="usage-export">匯出 Excel</button></div></form>
+<div id="usage-log-body"><p class="monitor-note">每位學生和詩人聊了甚麼（姓名、班別、時間、問題和回答），以及每位老師用了多少次後台。只有網站管理員看得到。按上面的時間或「查詢」查看。</p></div></section>`;}
+function usageFilters(){
+ const form=document.querySelector('#usage-filters'),out={};if(!form)return out;
+ for(const [key,value] of new FormData(form)){const v=String(value).trim();if(v)out[key]=v;}
+ return out;
 }
-function pupilLabel(c){return (c.grade?(GRADES[c.grade-1]||c.grade)+'年級':'')+(c.cls?c.cls+'班':'')+' 學生 '+c.pupil;}
+function usageQuery(extra={}){
+ const p=new URLSearchParams({days:String(usageLog.days),...usageFilters(),...extra});
+ return ACTIVITY_LOG+'&'+p.toString();
+}
+// One request at a time; a newer one (or closing 網站後台) cancels the older.
+async function usageRequest(url,{blob=false,loading='正在讀取使用紀錄'}={}){
+ const host=document.querySelector('#usage-log-body');if(!siteAdmin()||!host)return null;
+ usageLog.controller?.abort();const controller=new AbortController(),generation=++usageLog.generation,epoch=sessionEpoch,timeout=setTimeout(()=>controller.abort(),blob?60000:20000);
+ usageLog.controller=controller;pendingRequests.add(controller);
+ const current=()=>epoch===sessionEpoch&&generation===usageLog.generation&&document.querySelector('#usage-log-body')===host;
+ if(!blob)host.innerHTML=`<div class="data-loading" role="status"><span class="loader" aria-hidden="true"></span><p>${esc(loading)}</p></div>`;
+ try{
+  const response=await fetch(url,{credentials:'same-origin',cache:'no-store',headers:{Accept:blob?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/json':'application/json'},signal:controller.signal});
+  if(!current())return null;
+  if(response.status===401){clearPrivate();renderLogin('登入已失效，請重新登入。');return null;}
+  if(blob&&response.ok&&/spreadsheetml/.test(response.headers.get('Content-Type')||''))return await response.blob();
+  let data=null;try{data=await response.json();}catch{}
+  if(!current())return null;
+  if(!response.ok||data?.ok!==true)throw Object.assign(new Error('Usage log failed'),{status:response.status});
+  return data;
+ }catch(error){
+  if(!current())return null;
+  const reason=error.status?'伺服器回覆 '+error.status:error.name==='AbortError'?(blob?'60':'20')+' 秒內沒有回應':'網絡未能連線';
+  if(blob){toast('未能匯出（'+reason+'），請再按一次。');return null;}
+  host.innerHTML=`<p class="monitor-banner level-bad"><span class="monitor-dot" aria-hidden="true"></span><strong>未能取得使用紀錄（${esc(reason)}），請再按一次。</strong></p>`;
+  return null;
+ }finally{clearTimeout(timeout);pendingRequests.delete(controller);if(usageLog.controller===controller)usageLog.controller=null;}
+}
+async function loadUsageLog(days){
+ if(days!==undefined){usageLog.days=days;document.querySelectorAll('#usage-filters input[type=date]').forEach(input=>{input.value='';});}
+ document.querySelectorAll('[data-usage-days]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.usageDays)===usageLog.days&&!usageFilters().fromDate&&!usageFilters().toDate)));
+ const data=await usageRequest(usageQuery());if(!data)return;
+ usageLog.data=data;usageLog.student=null;document.querySelector('#usage-log-body').innerHTML=usageLogBody(data);
+}
+async function openChatStudent(id){
+ const f=usageFilters(),extra={view:'student',student:id};for(const key of ['fromDate','toDate'])if(f[key])extra[key]=f[key];
+ const p=new URLSearchParams({days:String(usageLog.days),...extra});
+ const data=await usageRequest(ACTIVITY_LOG+'&'+p.toString(),{loading:'正在讀取對話'});if(!data)return;
+ usageLog.student=id;const host=document.querySelector('#usage-log-body');host.innerHTML=conversationBody(data);host.querySelector('[data-action="usage-back"]')?.focus();
+}
+function usageBack(){
+ const host=document.querySelector('#usage-log-body');if(!host)return;
+ if(!usageLog.data){void loadUsageLog();return;}
+ const id=usageLog.student;usageLog.student=null;host.innerHTML=usageLogBody(usageLog.data);
+ host.querySelector(`[data-chat-student="${CSS.escape(id||'')}"]`)?.focus();
+}
+async function exportUsage(button){
+ button.disabled=true;const label=button.textContent;button.textContent='正在匯出';
+ try{const blob=await usageRequest(usageQuery({view:'xlsx'}),{blob:true});if(blob)download(blob,'學生與詩人對話紀錄_'+hkDay(Date.now())+'.xlsx');}
+ finally{button.disabled=false;button.textContent=label;}
+}
+function pupilName(c){return c.name||'（已沒有帳戶）';}
+function pupilClass(c){return [c.grade?(GRADES[c.grade-1]||c.grade)+'年級':'',c.cls?c.cls+'班':'',number(c.classNo)===null?'':c.classNo+'號'].join('');}
+function usageRange(d){const f=d.filters||{};return f.fromDate||f.toDate?(f.fromDate?dayLabel(f.fromDate):'')+' 至 '+(f.toDate?dayLabel(f.toDate):'今日'):d.days===1?'今日':d.days>=400?'全部':'近 '+d.days+' 日';}
 function usageLogBody(d){
- const now=Date.parse(d.generatedAt)||Date.now(),range=d.days===1?'今日':'近 '+d.days+' 日',t=d.teachers||{},c=d.chats||{};
+ const now=Date.parse(d.generatedAt)||Date.now(),range=usageRange(d),t=d.teachers||{},c=d.chats||{};
  const teacherRows=rows(t.teachers);
- const teachers=`<article class="monitor-card level-info"><h2><span class="monitor-dot" aria-hidden="true"></span>教師使用（${esc(range)}）</h2>`+(!t.available?'<p class="monitor-status">未能讀取教師使用紀錄。</p>':teacherRows.length?`<div class="table-area"><table class="monitor-table usage-teachers"><caption>每位老師的次數（「打開後台」按每次隔 30 分鐘以上計）</caption><thead><tr><th scope="col">老師</th>${TEACHER_COUNTS.map(([,label])=>`<th scope="col">${esc(label)}</th>`).join('')}<th scope="col">最近使用</th></tr></thead><tbody>${teacherRows.map(r=>`<tr><th scope="row">${esc(r.name||r.login)}<small>${esc(r.login)}</small></th>${TEACHER_COUNTS.map(([key])=>`<td>${shown(number(r.counts?.[key])||0)}</td>`).join('')}<td>${esc(when(r.lastAt,now))}</td></tr>`).join('')}</tbody></table></div>`:'<p class="monitor-status">這段時間沒有老師使用後台。</p>')+monitorNote(['從 2026-10-10 開始記錄'])+'</article>';
+ const teachers=`<article class="monitor-card level-info"><h2><span class="monitor-dot" aria-hidden="true"></span>教師使用（${esc(d.days>=400?'全部':d.days===1?'今日':'近 '+d.days+' 日')}）</h2>`+(!t.available?'<p class="monitor-status">未能讀取教師使用紀錄。</p>':teacherRows.length?`<div class="table-area"><table class="monitor-table usage-teachers"><caption>每位老師的次數（「打開後台」按每次隔 30 分鐘以上計）</caption><thead><tr><th scope="col">老師</th>${TEACHER_COUNTS.map(([,label])=>`<th scope="col">${esc(label)}</th>`).join('')}<th scope="col">最近使用</th></tr></thead><tbody>${teacherRows.map(r=>`<tr><th scope="row">${esc(r.name||r.login)}<small>${esc(r.login)}</small></th>${TEACHER_COUNTS.map(([key])=>`<td>${shown(number(r.counts?.[key])||0)}</td>`).join('')}<td>${esc(when(r.lastAt,now))}</td></tr>`).join('')}</tbody></table></div>`:'<p class="monitor-status">這段時間沒有老師使用後台。</p>')+monitorNote(['從 2026-10-10 開始記錄'])+'</article>';
  if(!c.available)return teachers+'<article class="monitor-card level-info"><h2><span class="monitor-dot" aria-hidden="true"></span>學生聊天</h2><p class="monitor-status">未能讀取聊天紀錄。</p></article>';
- const top=rows(c.top),recent=rows(c.recent);
+ const f=d.filters||{},scope=[f.grade?f.grade+' 年級':'',f.cls?f.cls+' 班':'',f.poem?'《'+(USAGE_POEMS[f.poem-1]||'')+'》':'',f.q?'含「'+f.q+'」':''].filter(Boolean).join(' · ');
+ const top=rows(c.top),recent=rows(c.recent),students=rows(c.students);
  const stats=monitorStats([['提問',c.questions,' 次'],['學生',c.pupils,' 人'],['點建議問題',c.suggested,' 次'],['自己打字',c.typed,' 次'],['語音輸入',c.voice,' 次']]);
+ const studentTable=students.length?`<div class="table-area"><table class="monitor-table usage-students"><caption>按最近一次提問排列，按「看對話」可看這位學生的全部對話</caption><thead><tr><th scope="col">姓名</th><th scope="col">班別座號</th><th scope="col">登入名稱</th><th scope="col">提問</th><th scope="col">沒有回答</th><th scope="col">最後一次</th><th scope="col">聊過的古詩</th><th scope="col"><span class="sr-only">對話</span></th></tr></thead><tbody>${students.map(s=>`<tr><th scope="row">${esc(pupilName(s))}</th><td>${esc(pupilClass(s))}</td><td>${esc(s.login||'—')}</td><td>${shown(s.count)}</td><td>${shown(s.failed)}</td><td>${esc(when(s.lastAt,now))}</td><td>${esc(rows(s.poems).map(p=>p.title).join('、'))}</td><td><button type="button" class="button small quiet" data-chat-student="${esc(s.student)}">看對話</button></td></tr>`).join('')}</tbody></table></div>${students.length>=number(c.studentLimit)?monitorNote(['只列出最近 '+shown(c.studentLimit)+' 位，請縮小範圍']):''}`:'';
  const topList=top.length?`<ol class="usage-top" aria-label="最多學生問的問題">${top.map(q=>`<li><span><small>《${esc(q.poemTitle||'')}》${q.suggested?' · 建議問題':''}</small>${esc(q.question)}</span><strong>${shown(q.pupils)} 人<small>${shown(q.count)} 次</small></strong></li>`).join('')}</ol>`:'';
- const recentList=recent.length?`<ol class="usage-chats" aria-label="最近的提問">${recent.map(q=>`<li${q.failed?' class="failed"':''}><p class="usage-chat-meta"><time>${esc(when(q.at,now))}</time><span>${esc(pupilLabel(q))}</span><span>《${esc(q.poemTitle||'')}》</span>${q.inputMode?`<span class="usage-mode">${esc(INPUT_MODES[q.inputMode])}</span>`:''}${q.failed?'<span class="usage-mode bad">沒有回答</span>':''}</p><p class="usage-question">${esc(q.question)}</p>${q.reply?`<details><summary>詩人的回答</summary><p>${esc(q.reply)}</p></details>`:''}</li>`).join('')}</ol>`:'<p class="monitor-status">這段時間還沒有聊天紀錄（從 2026-10-10 school55 上線後開始記錄）。</p>';
- return teachers+`<article class="monitor-card level-info usage-chat-card"><h2><span class="monitor-dot" aria-hidden="true"></span>學生聊天（${esc(range)}）</h2>${stats}${top.length?'<h3>最多學生問的問題</h3>'+topList:''}<h3>最近的提問${recent.length>=number(c.limit)?'（最新 '+shown(c.limit)+' 條）':''}</h3>${recentList}${monitorNote(['同一學生在這一頁用同一編號，不顯示姓名'])}</article>`;
+ const recentList=recent.length?`<ol class="usage-chats" aria-label="最近的提問">${recent.map(q=>chatItem(q,now,true)).join('')}</ol>`:'';
+ const empty=!students.length?'<p class="monitor-status">這段時間沒有符合條件的聊天紀錄（從 2026-10-10 school55 上線後開始記錄）。</p>':'';
+ return teachers+`<article class="monitor-card level-info usage-chat-card"><h2><span class="monitor-dot" aria-hidden="true"></span>學生聊天（${esc(range)}${scope?' · '+esc(scope):''}）</h2>${stats}${empty}${students.length?'<h3>學生</h3>'+studentTable:''}${top.length?'<h3>最多學生問的問題</h3>'+topList:''}${recent.length?`<h3>最近的提問${recent.length>=number(c.limit)?'（最新 '+shown(c.limit)+' 條）':''}</h3>`+recentList:''}${monitorNote(['只有網站管理員看得到','老師後台看不到聊天內容'])}</article>`;
+}
+function chatItem(q,now,withName){
+ return `<li${q.failed?' class="failed"':''}><p class="usage-chat-meta"><time>${esc(when(q.at,now))}</time>${withName?`<button type="button" class="usage-name" data-chat-student="${esc(q.student)}">${esc(pupilName(q))}</button><span>${esc(pupilClass(q))}</span>`:''}<span>《${esc(q.poemTitle||'')}》</span>${q.inputMode?`<span class="usage-mode">${esc(INPUT_MODES[q.inputMode])}</span>`:''}${q.failed?'<span class="usage-mode bad">沒有回答</span>':''}</p><p class="usage-question">${esc(q.question)}</p>${q.reply?(withName?`<details><summary>詩人的回答</summary><p>${esc(q.reply)}</p></details>`:`<p class="usage-reply">${esc(q.reply)}</p>`):''}</li>`;
+}
+function conversationBody(d){
+ const now=Date.parse(d.generatedAt)||Date.now(),s=d.student||{},list=rows(d.conversation);
+ const back='<button type="button" class="button small quiet" data-action="usage-back">返回學生列表</button>';
+ if(!d.available)return back+'<p class="monitor-status">未能讀取這位學生的對話。</p>';
+ let day='',body='';
+ for(const q of list){const k=hkDay(q.at);if(k!==day){if(day)body+='</ol>';day=k;body+=`<h3>${esc(dayLabel(k))}</h3><ol class="usage-chats usage-convo">`;}body+=chatItem(q,now,false);}
+ if(day)body+='</ol>';
+ return `<article class="monitor-card level-info usage-chat-card"><div class="monitor-top">${back}</div><h2><span class="monitor-dot" aria-hidden="true"></span>${esc(pupilName(s))} 的對話（${esc(usageRange(d))}）</h2><p class="usage-who">${esc(pupilClass(s))}${s.login?' · 登入名稱 '+esc(s.login):''} · 共 ${shown(list.length)} 次提問${list.length>=number(d.limit)?'（只顯示最早 '+shown(d.limit)+' 次）':''}</p>${body||'<p class="monitor-status">這段時間沒有對話。</p>'}</article>`;
 }
 function renderMonitor(){
  const host=document.querySelector('#site-monitor-body');if(!host)return;const d=monitor.data;
@@ -539,6 +601,7 @@ function renderMonitor(){
 root.addEventListener('submit',event=>{
  if(event.target.id==='teacher-login-form'){event.preventDefault();void login(event.target);}
  if(event.target.id==='teacher-filters'){event.preventDefault();applyFilters(draftFilters());}
+ if(event.target.id==='usage-filters'){event.preventDefault();void loadUsageLog();}
 });
 root.addEventListener('change',event=>{
  if(event.target.id==='student-construct'){state.constructFilter=event.target.value;state.page=0;updateStudentList();document.querySelector('#student-construct')?.focus({preventScroll:true});return;}
@@ -556,6 +619,9 @@ root.addEventListener('compositionend',event=>{if(event.target.id==='student-sea
 function click(event){const button=event.target.closest('button');if(!button||button.disabled)return;
  if(button.dataset.action==='close-monitor'){closeMonitor();document.querySelector('#teacher-site-monitor')?.focus();return;}
  if(button.dataset.usageDays){void loadUsageLog(Number(button.dataset.usageDays));return;}
+ if(button.dataset.chatStudent){void openChatStudent(button.dataset.chatStudent);return;}
+ if(button.dataset.action==='usage-back'){usageBack();return;}
+ if(button.dataset.action==='usage-export'){void exportUsage(button);return;}
  if(button.dataset.studentWords){void openStudentWords(button.dataset.studentWords);return;}
  if(button.dataset.action==='retry-student-words'&&state.detailStudent){void openStudentWords(state.detailStudent.researchId);return;}
  if(button.dataset.action==='more-student-words'&&state.detailStudent&&state.detailData){document.querySelector('#student-dialog-content').innerHTML=studentWordDialog(state.detailStudent,studentLearningBody(state.detailData,true));return;}
