@@ -84,3 +84,18 @@ test('the chat log numbers pupils within the reply and never returns research ID
  assert(!JSON.stringify(log).includes('r_'));
  assert.equal((await chatLog(null,'x')).available,false);
 });
+
+test('teachers never get chat text: the dashboard data and their research export leave it out',()=>{
+ const pupil={id:'s_123456789012345678901234',researchId:'r_123456789012345678901234',role:'student',grade:2,cls:'A',displayName:'x',login:'x'};
+ const at=Date.parse('2026-10-10T01:00:00.000Z');
+ const stored=s.validateBatch({schemaVersion:1,batchId:'33333333-3333-4333-8333-333333333333',actorId:pupil.id,
+  events:[event({poemId:2,clientAt:new Date(at).toISOString(),chat:{question:'秘密問題甲',reply:'秘密回答乙',inputMode:'typed'}})]},pupil,at,'server_verified').events[0];
+ const f=s.filtersFrom({from:'2026-10-10',to:'2026-10-10'});
+ assert.equal(s.matches(stored,f),true);
+ const teacher=s.exportRows([stored],f).content,admin=s.exportRows([stored],f,{includeChat:true}).content;
+ assert.doesNotMatch(teacher,/秘密/);assert.equal(JSON.parse(teacher).event.operation,'chat');
+ assert.match(admin,/秘密問題甲/);assert.match(admin,/秘密回答乙/);
+ assert.doesNotMatch(s.exportRows([stored],f,{format:'csv'}).content,/秘密/);
+ assert.doesNotMatch(JSON.stringify(s.aggregateEvents([stored],f,{includeStudentDetails:true})),/秘密/);
+ assert.equal(stored.event.chat.question,'秘密問題甲');
+});

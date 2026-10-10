@@ -784,7 +784,7 @@ async function analytics(f,{includeStudentDetails=false}={}){
   }
   const data=await readPublished(f);return aggregateEvents(data.rows,f,{source:'published_snapshot',lastImportedAt:data.lastImportedAt,syncStatus:data.manifest.status,integrity:data.manifest.integrity,includeStudentDetails});
 }
-function exportRows(rows,f,{format='jsonl',cursor=0,limit=5000,snapshot}={}){
+function exportRows(rows,f,{format='jsonl',cursor=0,limit=5000,snapshot,includeChat=false}={}){
   integer(cursor,0,MAX_READ_EVENTS);integer(limit,1,5000);
   const selected=rows.filter(r=>matches(r,f)).sort((a,b)=>a.serverReceivedAt.localeCompare(b.serverReceivedAt)||a.event.eventId.localeCompare(b.event.eventId));
   const snapshotId=hash(canonical(selected.map(r=>[r.researchId,r.source,r.event.eventId,r.eventChecksum])));
@@ -794,7 +794,9 @@ function exportRows(rows,f,{format='jsonl',cursor=0,limit=5000,snapshot}={}){
     returned:page.length,totalMatched:selected.length,nextCursor:next,snapshotId,generatedAt:new Date().toISOString(),
     identity:'pseudonymous researchId; no school login or name',scoreTruth:'source identifies client-reported vs server-verified',
     dateBasis:'serverReceivedAt',missingness:'absent/null means not measured; score 0 is measured'};
-  if(format==='jsonl'){const lines=page.map(r=>canonical(r));const content=lines.join('\n')+(lines.length?'\n':'');return {manifest:{...manifest,sha256:hash(content)},content,dictionary:DATA_DICTIONARY};}
+  // Chat text stays on the server: only the site administrator's export carries event.chat.
+  const shown=r=>includeChat||r.event?.chat===undefined?r:{...r,event:Object.fromEntries(Object.entries(r.event).filter(([k])=>k!=='chat'))};
+  if(format==='jsonl'){const lines=page.map(r=>canonical(shown(r)));const content=lines.join('\n')+(lines.length?'\n':'');return {manifest:{...manifest,sha256:hash(content)},content,dictionary:DATA_DICTIONARY};}
   if(format!=='csv')fail('INVALID_EXPORT_FORMAT');
   const columns=['researchId','grade','cls','source','eventId','sessionId','seq','serverReceivedAt','clientAt','poemId','activity','type','attemptId','itemId','appVersion','contentVersion','activeMs','status','score','correct'];
   const escape=value=>{let text=value==null?'':String(value);if(/^[=+@-]/.test(text))text="'"+text;return '"'+text.replaceAll('"','""')+'"';};

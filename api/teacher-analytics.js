@@ -14,7 +14,7 @@ export default async function handler(req,res){
     if(format&&format!=='json'){
       if(!['csv','jsonl'].includes(format))throw new research.ResearchError('INVALID_EXPORT_FORMAT');
       for(const key of ['cursor','limit'])if(req.query[key]!==undefined&&(typeof req.query[key]!=='string'||!/^\d{1,6}$/.test(req.query[key])))throw new research.ResearchError('INVALID_EXPORT_PAGE');
-      const page=await research.researchExport(filters,{format,cursor:Number(req.query.cursor||0),limit:Number(req.query.limit||5000),snapshot:req.query.snapshot});
+      const page=await research.researchExport(filters,{format,cursor:Number(req.query.cursor||0),limit:Number(req.query.limit||5000),snapshot:req.query.snapshot,includeChat:auth.siteAdmin(actor)});
       if(!Number(req.query.cursor||0))void teacherActivity.record(actor,'research_export');
       return res.status(200).json({schemaVersion:1,...page});
     }
