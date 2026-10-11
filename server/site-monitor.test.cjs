@@ -193,10 +193,23 @@ function healthyTraffic(){
   ops.record({route:'school-auth',method:'GET',status:200,relay:'gz:3100',userAgent:CRON,now:T-25000});
 }
 
+test('today counts reset at Hong Kong midnight; the first day starts at the restart',()=>{
+  const midnight=Date.parse('2026-10-09T16:00:00Z'); // 2026-10-10 00:00 in Hong Kong
+  globalThis[ops.KEY]=undefined;delete globalThis[ops.KEY];
+  ops.record({route:'soe',method:'POST',status:200,totalMs:900,now:midnight-120000});
+  let day=ops.snapshot(midnight-60000).day;
+  assert.equal(day.date,'2026-10-09');assert.equal(day.restarted,ops.snapshot(midnight-60000).startedAt>midnight-8*3600000-16*3600000);assert.equal(day.totals.count,1);
+  ops.record({route:'soe',method:'POST',status:504,totalMs:30000,now:midnight+60000});
+  ops.record({route:'tts',method:'POST',status:408,now:midnight+90000});
+  ops.record({route:'school-auth',method:'GET',status:200,relay:'hk:3101',userAgent:CRON,now:midnight+95000});
+  day=ops.snapshot(midnight+120000).day;
+  assert.deepEqual(day,{date:'2026-10-10',since:midnight,restarted:false,totals:{count:2,s5xx:1,s504:1,s408:1,s499:0,s4xx:0}});
+});
+
 test('payload shape: aggregates from injected systemd, database and traffic fakes, nothing identifying',async()=>{
   healthyTraffic();
-  const {monitor:m,log}=fakes({rows:{errors:[{server:false,code:'network',operation:null,n15:2,n60:6},{server:false,code:'<script>',operation:null,n15:1,n60:1},
-      {server:true,code:'timeout',operation:'reading',n15:1,n60:3},{server:true,code:'provider_unavailable',operation:'r_secret',n15:0,n60:1}],
+  const {monitor:m,log}=fakes({rows:{errors:[{server:false,code:'network',operation:null,n60:2,nday:6},{server:false,code:'<script>',operation:null,n60:1,nday:1},
+      {server:true,code:'timeout',operation:'reading',n60:1,nday:3},{server:true,code:'provider_unavailable',operation:'r_secret',n60:0,nday:1}],
     latency:[{kind:'reading',n:12,p50:2310.4,p95:6100.6}]}});
   const p=await m.collect();
   assert.deepEqual(Object.keys(p),['ok','schemaVersion','generatedAt','origin','db','hk','vercel','traffic','students','today','usage','upkeep','verdict']);
@@ -213,9 +226,10 @@ test('payload shape: aggregates from injected systemd, database and traffic fake
   assert.deepEqual(p.traffic[5].routes.map(r=>r.route),ops.STUDENT_ROUTES);
   assert.deepEqual(p.traffic[15].routes[0],{route:'soe',label:'朗讀評分',count:4,p50Ms:2750,p95Ms:3425,s5xx:0,s504:0,s408:0});
   assert.deepEqual(p.traffic.recentErrors,[]);
+  assert.equal(p.traffic.today.date,'2026-10-09');assert.equal(p.traffic.today.totals.count,4);assert.equal(p.traffic.today.totals.s5xx,0);
   assert.equal(p.students.available,true);assert.equal(p.students.active5,3);assert.equal(p.students.active60,41);
-  assert.deepEqual(p.students.clientErrors,{network:{n15:2,n60:6},unknown:{n15:1,n60:1}});
-  assert.deepEqual(p.students.providerErrors,[{operation:'reading',code:'timeout',n15:1,n60:3},{operation:'other',code:'provider_unavailable',n15:0,n60:1}]);
+  assert.deepEqual(p.students.clientErrors,{network:{n60:2,nDay:6},unknown:{n60:1,nDay:1}});
+  assert.deepEqual(p.students.providerErrors,[{operation:'reading',code:'timeout',n60:1,nDay:3},{operation:'other',code:'provider_unavailable',n60:0,nDay:1}]);
   assert.deepEqual(p.students.latency,[{kind:'reading',label:'朗讀評分',count:12,p50Ms:2310,p95Ms:6101},{kind:'report',label:'朗讀報告',count:0,p50Ms:null,p95Ms:null},{kind:'chat',label:'對話',count:0,p50Ms:null,p95Ms:null}]);
   assert.deepEqual(log.sql,['BEGIN READ ONLY',"SET LOCAL statement_timeout = '3s'",monitor.STUDENT_SQL.active,monitor.STUDENT_SQL.errors,monitor.STUDENT_SQL.latency,'COMMIT',
     'BEGIN READ ONLY',"SET LOCAL statement_timeout = '4s'",...Object.values(monitor.DAILY_SQL),'COMMIT']);
@@ -400,10 +414,11 @@ test('verdict rules: each section raises only what needs attention',async()=>{
   p=clone();p.origin.units.find(u=>u.unit==='postgresql@14-main').activeState='inactive';assert.equal(judge(p).sections.db.level,'bad');
   p=clone();p.traffic[15].routes[0].p95Ms=9000;assert.equal(judge(p).sections.latency.level,'warn');
   p=clone();Object.assign(p.traffic[5].totals,{count:20,s5xx:6});assert.equal(judge(p).sections.errors.level,'bad');
-  p=clone();Object.assign(p.traffic[5].totals,{count:500,s5xx:6});Object.assign(p.traffic[15].totals,{count:500,s5xx:6});assert.equal(judge(p).sections.errors.level,'ok','a few errors among many requests');
-  p=clone();p.students.clientErrors={network:{n15:3,n60:3},timeout:{n15:2,n60:2}};assert.equal(judge(p).sections.errors.level,'warn');
-  p=clone();p.students.providerErrors=[{operation:'reading',code:'provider_unavailable',n15:6,n60:6}];assert.match(judge(p).sections.errors.text,/朗讀評分服務失敗 6 次/);
-  p=clone();Object.assign(p.traffic[15].totals,{s504:3,s408:2});assert.equal(judge(p).sections.errors.level,'warn');
+  p=clone();Object.assign(p.traffic[5].totals,{count:500,s5xx:6});Object.assign(p.traffic[60].totals,{count:500,s5xx:6});v=judge(p);assert.equal(v.sections.errors.level,'ok','a few errors among many requests');assert.match(v.sections.errors.text,/近 1 小時有零星錯誤（6 個）/);
+  p=clone();p.students.clientErrors={network:{n60:6,nDay:6},timeout:{n60:3,nDay:3}};assert.equal(judge(p).sections.errors.level,'ok','below ten in an hour');
+  p=clone();p.students.clientErrors={network:{n60:6,nDay:6},timeout:{n60:4,nDay:4}};v=judge(p);assert.equal(v.sections.errors.level,'warn');assert.match(v.sections.errors.text,/近 1 小時學生端有 10 次/);
+  p=clone();p.students.providerErrors=[{operation:'reading',code:'provider_unavailable',n60:12,nDay:30}];assert.match(judge(p).sections.errors.text,/近 1 小時朗讀評分服務失敗 12 次/);
+  p=clone();Object.assign(p.traffic[60].totals,{s504:6,s408:4});assert.equal(judge(p).sections.errors.level,'warn');
 });
 
 test('verdict rules for services and upkeep; the figures sections never change the overall level',async()=>{

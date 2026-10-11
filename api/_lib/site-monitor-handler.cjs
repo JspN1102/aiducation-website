@@ -109,8 +109,8 @@ const STUDENT_SQL={
     count(DISTINCT research_id)::int AS active60 FROM research_events WHERE received_at >= now() - interval '60 minutes'`,
   errors:`SELECT source='server_verified' AS server,record->'event'->'error'->>'code' AS code,
     CASE WHEN source='server_verified' THEN record->'event'->>'operation' END AS operation,
-    count(*) FILTER (WHERE received_at >= now() - interval '15 minutes')::int AS n15,count(*)::int AS n60
-    FROM research_events WHERE received_at >= now() - interval '60 minutes'
+    count(*) FILTER (WHERE received_at >= now() - interval '60 minutes')::int AS n60,count(*) FILTER (WHERE received_at >= $1)::int AS nday
+    FROM research_events WHERE received_at >= least($1::timestamptz,now() - interval '60 minutes')
       AND record->'event'->'error'->>'code' IS NOT NULL AND record->'event'->'error'->>'code' <> 'aborted'
       AND (source='client' AND record->'event'->>'type'='error' OR source='server_verified' AND record->'event'->>'type'='provider_result')
     GROUP BY 1,2,3`,
@@ -123,7 +123,8 @@ const STUDENT_SQL={
     WHERE kind IS NOT NULL GROUP BY kind`
 };
 
-async function studentProbe(pool){
+// dayStart: the start of the Hong Kong day, for the "today" error counts.
+async function studentProbe(pool,dayStart){
   if(!pool)return {available:false,reason:'disabled'};
   let client;
   try{
@@ -131,15 +132,15 @@ async function studentProbe(pool){
     await client.query('BEGIN READ ONLY');
     await client.query("SET LOCAL statement_timeout = '3s'");
     const active=(await client.query(STUDENT_SQL.active)).rows[0]||{};
-    const errors=(await client.query(STUDENT_SQL.errors)).rows;
+    const errors=(await client.query(STUDENT_SQL.errors,[new Date(dayStart)])).rows;
     const latency=(await client.query(STUDENT_SQL.latency)).rows;
     await client.query('COMMIT');
     const clientErrors={},providerErrors={};
     for(const row of errors){
-      const code=ERROR_CODES.includes(row.code)?row.code:'unknown',n15=Number(row.n15)||0,n60=Number(row.n60)||0;
-      if(!row.server){const into=clientErrors[code]||(clientErrors[code]={n15:0,n60:0});into.n15+=n15;into.n60+=n60;continue;}
+      const code=ERROR_CODES.includes(row.code)?row.code:'unknown',n60=Number(row.n60)||0,nDay=Number(row.nday)||0;
+      if(!row.server){const into=clientErrors[code]||(clientErrors[code]={n60:0,nDay:0});into.n60+=n60;into.nDay+=nDay;continue;}
       const operation=OPERATIONS.includes(row.operation)?row.operation:'other',key=operation+':'+code;
-      const into=providerErrors[key]||(providerErrors[key]={operation,code,n15:0,n60:0});into.n15+=n15;into.n60+=n60;
+      const into=providerErrors[key]||(providerErrors[key]={operation,code,n60:0,nDay:0});into.n60+=n60;into.nDay+=nDay;
     }
     const byKind=Object.fromEntries(latency.map(row=>[row.kind,row]));
     return {available:true,active5:Number(active.active5)||0,active60:Number(active.active60)||0,clientErrors,providerErrors:Object.values(providerErrors),
@@ -280,14 +281,14 @@ function judge(p,now){
   { // 近期報錯
     const OPS={reading:'朗讀評分',handwriting:'手寫',chat:'對話',report:'報告',challenge:'挑戰'};
     const failed=(p.students.available?p.students.providerErrors:[]).filter(e=>['timeout','provider_unavailable'].includes(e.code));
-    const worst=Object.entries(failed.reduce((a,e)=>(a[e.operation]=(a[e.operation]||0)+e.n15,a),{})).sort((a,b)=>b[1]-a[1])[0];
-    const provider={n:failed.reduce((n,e)=>n+e.n15,0),label:worst?OPS[worst[0]]||'外部':'外部'};
-    const t5=p.traffic[5].totals,t15=p.traffic[15].totals,client=p.students.available?['network','timeout'].reduce((n,c)=>n+(p.students.clientErrors[c]?.n15||0),0):0;
+    const worst=Object.entries(failed.reduce((a,e)=>(a[e.operation]=(a[e.operation]||0)+e.n60,a),{})).sort((a,b)=>b[1]-a[1])[0];
+    const provider={n:failed.reduce((n,e)=>n+e.n60,0),label:worst?OPS[worst[0]]||'外部':'外部'};
+    const t5=p.traffic[5].totals,t60=p.traffic[60]?.totals||{s5xx:0,s504:0,s408:0},client=p.students.available?['network','timeout'].reduce((n,c)=>n+(p.students.clientErrors[c]?.n60||0),0):0;
     if(t5.s5xx>=5&&t5.s5xx/Math.max(1,t5.count)>0.05)sections.errors={level:'bad',text:'近 5 分鐘有 '+t5.s5xx+' 個伺服器錯誤（'+Math.round(t5.s5xx/Math.max(1,t5.count)*100)+'%）。'};
-    else if(client>=5)sections.errors={level:'warn',text:'近 15 分鐘學生端有 '+client+' 次網絡中斷或超時。'};
-    else if(provider.n>=5)sections.errors={level:'warn',text:'近 15 分鐘'+provider.label+'服務失敗 '+provider.n+' 次。'};
-    else if(t15.s504+t15.s408>=5)sections.errors={level:'warn',text:'近 15 分鐘有 '+(t15.s504+t15.s408)+' 個請求超時。'};
-    else sections.errors={level:'ok',text:t15.s5xx?'近 15 分鐘有零星錯誤（'+t15.s5xx+' 個），不影響使用。':'近 15 分鐘沒有伺服器錯誤。'};
+    else if(client>=10)sections.errors={level:'warn',text:'近 1 小時學生端有 '+client+' 次網絡中斷或超時。'};
+    else if(provider.n>=10)sections.errors={level:'warn',text:'近 1 小時'+provider.label+'服務失敗 '+provider.n+' 次。'};
+    else if(t60.s504+t60.s408>=10)sections.errors={level:'warn',text:'近 1 小時有 '+(t60.s504+t60.s408)+' 個請求超時。'};
+    else sections.errors={level:'ok',text:t60.s5xx?'近 1 小時有零星錯誤（'+t60.s5xx+' 個），不影響使用。':'近 1 小時沒有伺服器錯誤。'};
   }
   { // 外部服務（近 1 小時，所有帳戶）及本月額度
     const routes=(p.traffic[60]?.routes||[]).map(r=>({...r,failed:r.s5xx+r.s408})),speech=p.usage?.available?p.usage.speech:null;
@@ -364,7 +365,7 @@ function createSiteMonitor({now=Date.now,clock=()=>performance.now(),uptime=()=>
     let pool=null,rPool=null;
     try{pool=authPool();}catch{}
     try{rPool=researchPool();}catch{}
-    const [db,students]=await Promise.all([dbProbe(pool,rPool,clock),withTimeout(serial(()=>studentProbe(rPool)),4000).catch(()=>({available:false,reason:'timeout'}))]);
+    const [db,students]=await Promise.all([dbProbe(pool,rPool,clock),withTimeout(serial(()=>studentProbe(rPool,hkCalendar(now()).dayStart)),4000).catch(()=>({available:false,reason:'timeout'}))]);
     return {db:{...db,checkedAt:now()},students:{...students,checkedAt:now()}};
   }
   async function daily(){
@@ -408,6 +409,7 @@ function createSiteMonitor({now=Date.now,clock=()=>performance.now(),uptime=()=>
     for(const minutes of [5,15,60]){const w=snap.windows[minutes];
       traffic[minutes]={totals:w.totals,routes:ops.STUDENT_ROUTES.map(route=>{const r=w.routes[route]||{};
         return {route,label:ROUTE_LABELS[route],count:r.count||0,p50Ms:r.p50Ms??null,p95Ms:r.p95Ms??null,s5xx:r.s5xx||0,s504:r.s504||0,s408:r.s408||0};})};}
+    traffic.today={date:snap.day.date,since:snap.day.since,restarted:snap.day.restarted,totals:snap.day.totals};
     traffic.recentErrors=snap.errors.map(e=>({at:e.at,route:e.route,label:ROUTE_LABELS[e.route]||'其他',status:e.status}));
     traffic.series=(snap.series||[]).map(m=>({at:m.at,count:m.count,failed:m.failed}));
     const payload={ok:true,schemaVersion:1,generatedAt:new Date(t).toISOString(),origin,db:data.db,hk,vercel,traffic,students:data.students,

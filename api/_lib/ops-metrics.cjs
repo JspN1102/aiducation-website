@@ -6,7 +6,7 @@
 const {monitorEventLoopDelay}=require('node:perf_hooks');
 
 const KEY=Symbol.for('maanshan.ops.v1');
-const MINUTE=60000,BUCKETS=60,SAMPLES=120,RECENT_ERRORS=20;
+const MINUTE=60000,BUCKETS=60,SAMPLES=120,RECENT_ERRORS=20,HK_OFFSET=8*3600000;
 const LABEL=/^(hop-)?(hk|gz):(310[0-2])$/;
 const CRON=/^vercel-cron\//i;
 // Pupil-facing routes whose latency is reported; heartbeats, research uploads
@@ -46,6 +46,17 @@ function bucketFor(s,now){
 function routeStats(bucket,route){
   return bucket.routes[route]||(bucket.routes[route]={count:0,s5xx:0,s504:0,s408:0,s499:0,s4xx:0,samples:[],sampled:0});
 }
+// Hong Kong calendar day: counts for "today" reset at Hong Kong midnight (and on restart).
+const hkDate=now=>new Date(now+HK_OFFSET).toISOString().slice(0,10);
+function dayFor(s,now){
+  const date=hkDate(now);
+  if(s.day?.date!==date){
+    // The first day of a process starts at the restart; later days at midnight.
+    const midnight=now-(now+HK_OFFSET)%86400000,restarted=!s.day&&s.startedAt>midnight;
+    s.day={date,since:restarted?s.startedAt:midnight,restarted,totals:{count:0,s5xx:0,s504:0,s408:0,s499:0,s4xx:0}};
+  }
+  return s.day;
+}
 function rotateLoop(s,now){
   const loop=s.loop;if(!loop||now-loop.since<MINUTE)return;
   const h=loop.histogram;
@@ -66,9 +77,10 @@ function record({route,method,status,totalMs,relay,userAgent,now=Date.now()}={})
   if(beat){bucket.beats++;if(status<500)s.heartbeat[beat]=now;}
   if(status>=500||status===408||(status===413&&route==='tts')){s.errors.push({at:now,route,status});if(s.errors.length>RECENT_ERRORS)s.errors.splice(0,s.errors.length-RECENT_ERRORS);}
   if(beat&&status<500)return;
-  const stats=routeStats(bucket,route);stats.count++;
-  if(status>=500)stats.s5xx++;
-  if(status===504)stats.s504++;else if(status===408)stats.s408++;else if(status===499)stats.s499++;else if(status>=400&&status<500)stats.s4xx++;
+  const stats=routeStats(bucket,route),day=dayFor(s,now).totals;stats.count++;day.count++;
+  const key=status===504?'s504':status===408?'s408':status===499?'s499':status>=400&&status<500?'s4xx':null;
+  if(status>=500){stats.s5xx++;day.s5xx++;}
+  if(key){stats[key]++;day[key]++;}
   if(SAMPLED.has(route)&&status<400&&Number.isFinite(totalMs)&&totalMs>=0){
     // Reservoir sample: a fixed amount of memory per route and minute.
     stats.sampled++;
@@ -121,7 +133,7 @@ function snapshot(now=Date.now()){
   const h=s.loop?.histogram,current=h&&h.count>0?{p50Ms:h.percentile(50)/1e6,p99Ms:h.percentile(99)/1e6,maxMs:h.max/1e6,at:now}:null;
   return {startedAt:s.startedAt,now,heartbeat:{...s.heartbeat},ports:{...s.ports},lastHop:s.lastHop,lastDirect:s.lastDirect,
     windows:{5:windowSummary(s,now,5),15:windowSummary(s,now,15),60:windowSummary(s,now,60)},
-    series:series(s,now),errors:s.errors.slice(-RECENT_ERRORS).reverse(),eventLoop:s.loop?.last||current};
+    day:(({date,since,restarted,totals})=>({date,since,restarted,totals:{...totals}}))(dayFor(s,now)),series:series(s,now),errors:s.errors.slice(-RECENT_ERRORS).reverse(),eventLoop:s.loop?.last||current};
 }
 function reset(){const s=globalThis[KEY];s?.loop?.histogram.disable();delete globalThis[KEY];}
 

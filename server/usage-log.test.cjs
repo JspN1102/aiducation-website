@@ -121,7 +121,7 @@ test('line readings count each scored line per pupil and poem, and the text sear
  const q=seen[0];assert.match(q.sql,/operation'='reading'/);assert.doesNotMatch(q.sql,/ILIKE/);assert.deepEqual(q.params.slice(2),[2]);
 });
 
-test('only the site administrator gets the log, the conversation or the Excel file',async()=>{
+test('only the site administrator gets the log or the conversation; the Excel export is gone',async()=>{
  const auth=require('../api/_lib/school-auth.cjs'),saved={requireActor:auth.requireActor,siteAdmin:auth.siteAdmin};
  let who={role:'teacher',login:'chan'};auth.requireActor=async()=>who;auth.siteAdmin=a=>a.login==='jasper';
  const h=createActivityLog({researchPool:()=>chatPool(),activity:()=>({summary:async()=>({available:true,teachers:[]})}),directory:async()=>({accounts:[{role:'student',researchId:B,displayName:'測試甲',login:'t2a01',grade:2,cls:'A',classNo:1}]}),now:()=>NOW});
@@ -135,11 +135,7 @@ test('only the site administrator gets the log, the conversation or the Excel fi
   r=await call({});assert.equal(r.statusCode,200);assert.equal(r.body.schemaVersion,2);assert.equal(r.body.chats.recent[0].name,'測試甲');assert.equal(r.body.teachers.available,true);
   assert.equal(r.body.readings.students.length,2);
   r=await call({view:'student',student:B});assert.equal(r.statusCode,200);assert.equal(r.body.conversation.length,2);assert.equal(r.body.readingsAvailable,true);assert(r.body.readings.total>0);
-  r=await call({view:'xlsx'});assert.equal(r.statusCode,200);assert.match(r.headers['content-type'],/spreadsheetml/);
-  const ExcelJS=require('exceljs'),wb=new ExcelJS.Workbook();await wb.xlsx.load(r.body);
-  const ws=wb.getWorksheet('對話紀錄');assert.equal(ws.rowCount,4);assert.equal(ws.getRow(2).getCell(5).value,'測試甲');assert.equal(ws.getRow(2).getCell(10).value,'第一問');
-  assert.equal(wb.getWorksheet('學生統計').rowCount,3);
-  const lines=wb.getWorksheet('朗讀測評次數');assert.equal(lines.rowCount,4);assert.equal(lines.getRow(2).getCell(4).value,'測試甲');assert.equal(lines.getRow(2).getCell(9).value,4);
+  r=await call({view:'xlsx'});assert.equal(r.statusCode,400);assert.equal(r.body.code,'INVALID_VIEW');
  }finally{Object.assign(auth,saved);}
 });
 
