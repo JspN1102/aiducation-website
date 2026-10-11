@@ -155,7 +155,6 @@ const DAILY_ROWS={
     {total:false,grade:null,pupils:1,readings:0,chats:0,events:3},{total:true,grade:null,pupils:21,readings:150,chats:25,events:453}],
   peak:[{slot:String((T-3600000)/1000),pupils:6}],
   week:[{day:-6,pupils:3},{day:0,pupils:21},{day:null,pupils:30}],
-  providers:[{operation:'reading',n:150,failed:2},{operation:'chat',n:25,failed:0},{operation:'r_secret',n:1,failed:1}],
   // Per kind: events, pupils and the most from one pupil; the total row counts each pupil once.
   clients:[{total:false,code:'permission_denied',n:30,pupils:3,top:24},{total:false,code:'network',n:12,pupils:4,top:5},{total:false,code:'script',n:10,pupils:3,top:5},
     {total:false,code:'unsupported',n:7,pupils:1,top:7},{total:false,code:'<script>',n:1,pupils:1,top:1},{total:true,code:null,n:60,pupils:9,top:24}],
@@ -166,12 +165,12 @@ const dailyKey=sql=>Object.entries(monitor.DAILY_SQL).find(([,v])=>v===sql)?.[0]
 // Postgres refuses a statement whose parameters do not match its placeholders.
 const placeholders=(sql,params=[])=>assert.equal(params.length,Math.max(0,...[...sql.matchAll(/\$(\d+)/g)].map(m=>Number(m[1]))),'parameters for '+sql.slice(0,40));
 function fakes({units={},systemctl,jobs,certificate,authPool,researchPool,rows={},usage={},uptimeS=5*3600,rssMB=200,now=()=>T}={}){
-  const log={systemctl:0,jobs:0,certs:0,sql:[],params:{},released:0};
+  const log={systemctl:0,jobs:0,certs:0,sql:[],params:{},windows:{},released:0};
   const client={async query(sql,params){log.sql.push(sql);placeholders(sql,params);const key=dailyKey(sql);if(key)log.params[key]=params;
       if(rows.fail&&sql===rows.fail.sql)throw Object.assign(new Error('x'),{code:rows.fail.code});
       if(sql===monitor.STUDENT_SQL.active)return {rows:[rows.active||{active5:3,active60:41}]};
-      if(sql===monitor.STUDENT_SQL.errors)return {rows:rows.errors||[]};
-      if(sql===monitor.STUDENT_SQL.latency)return {rows:rows.latency||[]};
+      // Window queries: rows per interval ('60 minutes' or '24 hours').
+      for(const kind of ['errors','latency','providers'])if(sql===monitor.STUDENT_SQL[kind]){(log.windows[kind]||(log.windows[kind]=[])).push(params[0]);return {rows:rows[kind]?.[params[0]]||[]};}
       if(key)return {rows:(rows.daily||DAILY_ROWS)[key]};
       return {rows:[]};},release(){log.released++;}};
   let tick=0;
@@ -208,9 +207,12 @@ test('today counts reset at Hong Kong midnight; the first day starts at the rest
 
 test('payload shape: aggregates from injected systemd, database and traffic fakes, nothing identifying',async()=>{
   healthyTraffic();
-  const {monitor:m,log}=fakes({rows:{errors:[{server:false,code:'network',operation:null,n60:2,nday:6},{server:false,code:'<script>',operation:null,n60:1,nday:1},
-      {server:true,code:'timeout',operation:'reading',n60:1,nday:3},{server:true,code:'provider_unavailable',operation:'r_secret',n60:0,nday:1}],
-    latency:[{kind:'reading',n:12,p50:2310.4,p95:6100.6}]}});
+  const {monitor:m,log}=fakes({rows:{
+    errors:{'60 minutes':[{server:false,code:'network',operation:null,n:2},{server:false,code:'<script>',operation:null,n:1},{server:true,code:'timeout',operation:'reading',n:1}],
+      '24 hours':[{server:false,code:'network',operation:null,n:6},{server:false,code:'<script>',operation:null,n:1},
+        {server:true,code:'timeout',operation:'reading',n:3},{server:true,code:'provider_unavailable',operation:'r_secret',n:1}]},
+    latency:{'60 minutes':[{kind:'reading',n:12,p50:2310.4,p95:6100.6}],'24 hours':[{kind:'reading',n:300,p50:2500,p95:7000.2},{kind:'chat',n:20,p50:4100,p95:9000}]},
+    providers:{'60 minutes':[{operation:'reading',n:12,failed:1}],'24 hours':[{operation:'reading',n:150,failed:2},{operation:'chat',n:25,failed:0},{operation:'r_secret',n:1,failed:1}]}}});
   const p=await m.collect();
   assert.deepEqual(Object.keys(p),['ok','schemaVersion','generatedAt','origin','db','hk','vercel','traffic','students','today','usage','upkeep','verdict']);
   assert.equal(p.generatedAt,'2026-10-09T03:00:00.000Z');
@@ -228,18 +230,23 @@ test('payload shape: aggregates from injected systemd, database and traffic fake
   assert.deepEqual(p.traffic.recentErrors,[]);
   assert.equal(p.traffic.today.date,'2026-10-09');assert.equal(p.traffic.today.totals.count,4);assert.equal(p.traffic.today.totals.s5xx,0);
   assert.equal(p.students.available,true);assert.equal(p.students.active5,3);assert.equal(p.students.active60,41);
-  assert.deepEqual(p.students.clientErrors,{network:{n60:2,nDay:6},unknown:{n60:1,nDay:1}});
-  assert.deepEqual(p.students.providerErrors,[{operation:'reading',code:'timeout',n60:1,nDay:3},{operation:'other',code:'provider_unavailable',n60:0,nDay:1}]);
+  assert.deepEqual(p.students.clientErrors,{network:2,unknown:1});
+  assert.deepEqual(p.students.providerErrors,[{operation:'reading',code:'timeout',n:1}]);
+  assert.deepEqual(p.students.providers,[{operation:'reading',label:'朗讀評分',count:12,failed:1}]);
   assert.deepEqual(p.students.latency,[{kind:'reading',label:'朗讀評分',count:12,p50Ms:2310,p95Ms:6101},{kind:'report',label:'朗讀報告',count:0,p50Ms:null,p95Ms:null},{kind:'chat',label:'對話',count:0,p50Ms:null,p95Ms:null}]);
-  assert.deepEqual(log.sql,['BEGIN READ ONLY',"SET LOCAL statement_timeout = '3s'",monitor.STUDENT_SQL.active,monitor.STUDENT_SQL.errors,monitor.STUDENT_SQL.latency,'COMMIT',
-    'BEGIN READ ONLY',"SET LOCAL statement_timeout = '4s'",...Object.values(monitor.DAILY_SQL),'COMMIT']);
+  const recent=[monitor.STUDENT_SQL.errors,monitor.STUDENT_SQL.latency,monitor.STUDENT_SQL.providers];
+  assert.deepEqual(log.sql,['BEGIN READ ONLY',"SET LOCAL statement_timeout = '3s'",monitor.STUDENT_SQL.active,...recent,'COMMIT',
+    'BEGIN READ ONLY',"SET LOCAL statement_timeout = '4s'",...Object.values(monitor.DAILY_SQL),...recent,'COMMIT']);
+  assert.deepEqual(log.windows,{errors:['60 minutes','24 hours'],latency:['60 minutes','24 hours'],providers:['60 minutes','24 hours']});
   assert.equal(log.released,2);
-  assert.deepEqual(log.params,{today:['2026-10-08T16:00:00.000Z'],peak:['2026-10-08T16:00:00.000Z'],week:['2026-10-08T16:00:00.000Z'],providers:['2026-10-08T16:00:00.000Z'],
+  assert.deepEqual(log.params,{today:['2026-10-08T16:00:00.000Z'],peak:['2026-10-08T16:00:00.000Z'],week:['2026-10-08T16:00:00.000Z'],
     clients:['2026-10-08T16:00:00.000Z'],month:['2026-09-30T16:00:00.000Z'],last:[],speech:['2026-10']},'Hong Kong day and month');
   assert.deepEqual(p.today,{available:true,date:'2026-10-09',pupils:21,readings:150,chats:25,events:453,
     byGrade:[{grade:1,pupils:12,readings:100,chats:20},{grade:2,pupils:8,readings:50,chats:5}],peak:{pupils:6,at:T-3600000},
     week:{days:['2026-10-03','2026-10-04','2026-10-05','2026-10-06','2026-10-07','2026-10-08','2026-10-09'].map((date,i)=>({date,pupils:i===0?3:i===6?21:0})),pupils:30},
-    providers:[{operation:'reading',label:'朗讀評分',count:150,failed:2},{operation:'chat',label:'對話',count:25,failed:0},{operation:'other',label:'其他',count:1,failed:1}],
+    last24:{clientErrors:{network:6,unknown:1},providerErrors:[{operation:'reading',code:'timeout',n:3},{operation:'other',code:'provider_unavailable',n:1}],
+      providers:[{operation:'reading',label:'朗讀評分',count:150,failed:2},{operation:'chat',label:'對話',count:25,failed:0},{operation:'other',label:'其他',count:1,failed:1}],
+      latency:[{kind:'reading',label:'朗讀評分',count:300,p50Ms:2500,p95Ms:7000},{kind:'report',label:'朗讀報告',count:0,p50Ms:null,p95Ms:null},{kind:'chat',label:'對話',count:20,p50Ms:4100,p95Ms:9000}]},
     clientErrors:[{code:'network',label:'網絡中斷',count:12,pupils:4,topPupil:null},{code:'permission_denied',label:'未允許錄音',count:30,pupils:3,topPupil:24},
       {code:'script',label:'頁面程式錯誤',count:10,pupils:3,topPupil:5},{code:'unsupported',label:'裝置不支援',count:7,pupils:1,topPupil:null},{code:'unknown',label:'其他',count:1,pupils:1,topPupil:null}],
     clientErrorPupils:9,monthReadings:1300,lastRecordAt:T-42000,checkedAt:T});
@@ -252,6 +259,7 @@ test('payload shape: aggregates from injected systemd, database and traffic fake
     {host:'aiducation.hk.cn',label:'展示版證書',daysLeft:70,matches:true,validTo:new Date(T+70*DAY+3600000).toISOString()}]);
   assert.equal(p.traffic.series.length,60);assert.deepEqual(p.traffic.series.at(-2),{at:Math.floor(T/60000)*60000-60000,count:4,failed:0});
   assert.deepEqual(p.traffic[60].routes[0],{route:'soe',label:'朗讀評分',count:4,p50Ms:2750,p95Ms:3425,s5xx:0,s504:0,s408:0});
+  assert.equal(p.traffic[1440].routes[0].count>=4,true);assert.equal(Number.isFinite(p.traffic.since),true);
   assert.equal(p.verdict.level,'ok');assert.equal(p.verdict.text,'全部正常。');
   assert.deepEqual(Object.keys(p.verdict.sections),['server','hk','vercel','db','latency','errors','services','upkeep','today','week','trend','clients']);
   assert.deepEqual(p.verdict.sections.services,{level:'ok',text:'近 1 小時成功率 100%。'});
@@ -412,12 +420,13 @@ test('verdict rules: each section raises only what needs attention',async()=>{
   v=judge(p);assert.equal(v.sections.vercel.level,'ok','grace period after a restart');assert.equal(v.sections.hk.level,'ok');
   p=clone();p.db.latencyMs=800;assert.equal(judge(p).sections.db.level,'warn');
   p=clone();p.origin.units.find(u=>u.unit==='postgresql@14-main').activeState='inactive';assert.equal(judge(p).sections.db.level,'bad');
-  p=clone();p.traffic[15].routes[0].p95Ms=9000;assert.equal(judge(p).sections.latency.level,'warn');
+  p=clone();Object.assign(p.traffic[60].routes[0],{count:5,p95Ms:9000});v=judge(p);assert.equal(v.sections.latency.level,'warn');assert.match(v.sections.latency.text,/近 1 小時朗讀評分偏慢/);
+  p=clone();Object.assign(p.traffic[60].routes[0],{count:2,p95Ms:9000});assert.equal(judge(p).sections.latency.level,'ok','too few to judge');
   p=clone();Object.assign(p.traffic[5].totals,{count:20,s5xx:6});assert.equal(judge(p).sections.errors.level,'bad');
   p=clone();Object.assign(p.traffic[5].totals,{count:500,s5xx:6});Object.assign(p.traffic[60].totals,{count:500,s5xx:6});v=judge(p);assert.equal(v.sections.errors.level,'ok','a few errors among many requests');assert.match(v.sections.errors.text,/近 1 小時有零星錯誤（6 個）/);
-  p=clone();p.students.clientErrors={network:{n60:6,nDay:6},timeout:{n60:3,nDay:3}};assert.equal(judge(p).sections.errors.level,'ok','below ten in an hour');
-  p=clone();p.students.clientErrors={network:{n60:6,nDay:6},timeout:{n60:4,nDay:4}};v=judge(p);assert.equal(v.sections.errors.level,'warn');assert.match(v.sections.errors.text,/近 1 小時學生端有 10 次/);
-  p=clone();p.students.providerErrors=[{operation:'reading',code:'provider_unavailable',n60:12,nDay:30}];assert.match(judge(p).sections.errors.text,/近 1 小時朗讀評分服務失敗 12 次/);
+  p=clone();p.students.clientErrors={network:6,timeout:3};assert.equal(judge(p).sections.errors.level,'ok','below ten in an hour');
+  p=clone();p.students.clientErrors={network:6,timeout:4};v=judge(p);assert.equal(v.sections.errors.level,'warn');assert.match(v.sections.errors.text,/近 1 小時學生端有 10 次/);
+  p=clone();p.students.providerErrors=[{operation:'reading',code:'provider_unavailable',n:12}];assert.match(judge(p).sections.errors.text,/近 1 小時朗讀評分服務失敗 12 次/);
   p=clone();Object.assign(p.traffic[60].totals,{s504:6,s408:4});assert.equal(judge(p).sections.errors.level,'warn');
 });
 
