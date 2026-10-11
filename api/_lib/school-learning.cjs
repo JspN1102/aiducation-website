@@ -5,6 +5,7 @@ const {getPoem} = require('./poems.js');
 const challenges = require('./challenge-loader.cjs');
 const grade = require('./writing-grade.cjs');
 const replay = require('./request-replay.cjs');
+const chatQuota = () => require('./chat-quota.cjs');
 const score = value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100 ? value : null;
 
 async function referenceFor(req, operation) {
@@ -159,8 +160,24 @@ function withSchoolLearning(operation, handler) {
     if(operation==='handwriting')res.setHeader('Server-Timing',`handwriting_auth;dur=${(performance.now()-authStarted).toFixed(1)}`);
     // A resent recording or drawing (same requestId) gets the first copy's answer.
     if(operation==='reading'||operation==='handwriting')return replay.coalesce(operation,actor.id,req,res,()=>respond(req,res,actor,reference));
+    if(operation==='chat')return limitedChat(req,res,actor,reference);
     return respond(req,res,actor,reference);
   };
+  // 和詩人對話 daily limit (chat-quota.cjs). A question without an answer is given back.
+  async function limitedChat(req,res,actor,reference){
+    const quota=await chatQuota().take(actor);
+    if(!quota.limited)return respond(req,res,actor,reference);
+    res.setHeader('X-Chat-Limit',String(quota.limit));
+    if(!quota.allowed){
+      res.setHeader('X-Chat-Remaining','0');res.setHeader('Cache-Control','private, no-store');
+      return res.status(429).json({ok:false,code:'CHAT_DAILY_LIMIT',error:'今天的對話次數已用完',limit:quota.limit,retryable:false});
+    }
+    res.setHeader('X-Chat-Remaining',String(quota.remaining));
+    const inner=res.json;let answered=false;
+    res.json=body=>{answered=(res.statusCode||200)<400&&!!body&&typeof body==='object'&&!body.error&&typeof body.reply==='string'&&!!body.reply.trim();return inner.call(res,body);};
+    try{return await respond(req,res,actor,reference);}
+    finally{res.json=inner;if(!answered)await quota.refund();}
+  }
   async function respond(req,res,actor,reference){
     if (!reference || !auth.researchEligible(actor)) return handler(req,res);
     const originalJSON=res.json.bind(res), started=performance.now();

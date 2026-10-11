@@ -17,7 +17,7 @@ import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './ch
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school22';
 import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, micDeniedHelp, micNeedsReload, prewarmAssessment} from './recording-audio.mjs?v=20261009-school54';
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
-import {requestJSON, requestChat} from './network.mjs?v=20261008-school49';
+import {requestJSON, requestChat} from './network.mjs?v=20261011-school58';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
 import {schoolSession} from './bootstrap.mjs?v=20261010-school55';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261009-school54';
@@ -1119,6 +1119,12 @@ function chatGreeting(p=poem){
   if(Math.min(studentGrade(p),p.grade)<=3)return `你好，我是${p.author}。`+(({1:'你見過白鵝嗎？',2:'你喜歡和朋友一起玩嗎？',3:'你喜歡看山嗎？',7:'你見過下雪嗎？',8:'你見過公雞嗎？',9:'你喜歡吃豆子嗎？'})[p.id]||'我們一起讀一句詩，好嗎？');
   return `你好，我是${p.author}。想聊《${titleOf(p)}》、別的詩，還是今天的趣事？也可以一起寫一首新詩！`;
 }
+// 和詩人對話 daily limit (20 questions; the day turns at 06:00 Hong Kong time, as on the server).
+// Once used up, every further question is answered by the poet with CHAT_ENOUGH, without a request.
+const CHAT_ENOUGH='今天聊得夠多啦，先把詩讀熟，明天再來找我。';
+let chatQuota=null;
+const chatDay=()=>new Date(Date.now()+2*3600000).toISOString().slice(0,10);
+const chatUsedUp=()=>chatQuota?.day===chatDay()&&chatQuota.user===(schoolState().user?.id||null);
 function renderChat() {
   chatVoiceInserted=false;
   const messages=state(poem).chat;
@@ -1139,6 +1145,10 @@ async function sendChat(text,retry=false,presetId=null,inputMode=null) {
   const p=poem,version=routeVersion,s=state(p);
   let mode=null;
   if(retry){if(s.chat.at(-1)?.role!=='user')return;}
+  if(chatUsedUp()){
+    if(!retry){if(!text?.trim())return;s.chat.push({role:'user',content:text.trim().slice(0,1000)});}
+    s.chat.push({role:'assistant',content:CHAT_ENOUGH});s.chat=s.chat.slice(-30);persist();renderChat();return;
+  }
   else {if(!text?.trim())return;mode=inputMode==='suggestion'?'suggestion':chatVoiceInserted?'voice':'typed';chatVoiceInserted=false;const content=text.trim().slice(0,1000),preset=matchPoetPreset(p.id,content);s.chat.push({role:'user',content,...(presetId&&preset?.id===presetId?{presetId,presetVersion:preset.version}:{})});s.chat=s.chat.slice(-30);persist();}
   const audit=research.context({activity:'chat',itemId:'p'+p.id+'.chat'}),requestedAt=performance.now();
   research.emit(retry?'retry':'attempt_started',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,metrics:{userCharacters:s.chat.at(-1)?.content?.length||0},...(retry?{retryCount:1}:{}),...(mode?{context:{inputMode:mode}}:{})});
@@ -1168,12 +1178,17 @@ async function sendChat(text,retry=false,presetId=null,inputMode=null) {
     research.emit('feedback_shown',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,metrics:{assistantCharacters:Math.min(20000,data.reply.length),latencyMs:Math.min(600000,Math.round(performance.now()-requestedAt)),...researchExtra(()=>firstAt!==null?{firstResponseMs:Math.min(600000,Math.max(0,Math.round(firstAt-requestedAt)))}:{})}});
   } catch(error) {
     partial?.closest('[data-streaming]')?.remove();
+    if(error?.code==='CHAT_DAILY_LIMIT'){
+      chatQuota={day:chatDay(),user:schoolState().user?.id||null};
+      if(version===routeVersion&&s.chat.at(-1)?.role==='user'){s.chat.push({role:'assistant',content:CHAT_ENOUGH});persist();}
+      return;
+    }
     if(version===routeVersion)showChatRetry(error.message);
     research.emit('error',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,error:{code:researchErrorCode(error),retryable:true},context:researchErrorContext(error)});
   } finally {
     requests.delete(controller);
     clearTimeout(waiting);
-    if(version===routeVersion){chatBusy=false;$('#chat-send').disabled=false;chatVoiceUI();}
+    if(version===routeVersion){chatBusy=false;$('#chat-send').disabled=false;chatVoiceUI();if(chatUsedUp())renderChat();}
   }
 }
 // Speech input: record one question, turn it into Hong Kong traditional text

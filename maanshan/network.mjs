@@ -12,6 +12,8 @@ export async function requestChat(body,{signal,onDelta,timeout=30000,fetchImpl=s
   const timer=setTimeout(()=>{expired=true;controller.abort();},timeout);
   try{
     const response=await fetchImpl('/api/maanshan-chat/',{method:'POST',headers:{'Content-Type':'application/json',Accept:'text/event-stream'},body:JSON.stringify({...body,stream:true}),signal:controller.signal});
+    // 和詩人對話 daily limit: not a fault, so it carries its own code and no research tag.
+    if(response.status===429){const info=await response.json().catch(()=>null);if(info?.code==='CHAT_DAILY_LIMIT')throw Object.assign(new Error('今天的對話次數已用完。'),{code:'CHAT_DAILY_LIMIT',chatLimit:Number(info.limit)||null});}
     if(!response.ok)throw tag(new Error(response.status===429?'現在較多人使用，稍後再試一次吧。':'暫時未能回答，可以再送一次。'),response.status===429?'busy':'service',response.status);
     if(!/^text\/event-stream(?:;|$)/i.test(response.headers.get('content-type')||'')){
       const data=await response.json();
