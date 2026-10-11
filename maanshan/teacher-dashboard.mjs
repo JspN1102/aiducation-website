@@ -92,7 +92,7 @@ async function logout(){
  catch(error){if(epoch!==sessionEpoch)return;if(error.status===401){broadcastSession('signed-out');clearPrivate();renderLogin();}else toast('登出尚未完成，請檢查連線後再試。');}
 }
 async function enterDashboard(){
- updateIdentity();renderShell();
+ updateIdentity();renderShell();if(location.hash===MONITOR_HASH)openMonitor();
  if(state.legacy){try{state.poems=(await requestJSON('./poems.json')).poems||[];}catch{state.poems=[];}renderFilters();await loadData();return;}
  const generation=++state.rosterGeneration,epoch=sessionEpoch;
  const current=()=>generation===state.rosterGeneration&&epoch===sessionEpoch;
@@ -383,13 +383,16 @@ function monitorOpen(){return !!document.querySelector('#site-monitor');}
 function stopMonitor(){monitor.generation++;clearTimeout(monitor.timer);monitor.timer=null;monitor.controller?.abort();monitor.controller=null;}
 function resetMonitor(){stopMonitor();Object.assign(monitor,{data:null,link:'',failed:'',failures:0});}
 function scheduleMonitor(seconds){clearTimeout(monitor.timer);monitor.timer=null;if(monitorOpen()&&document.visibilityState==='visible')monitor.timer=setTimeout(()=>{monitor.timer=null;void pollMonitor();},Math.min(300,Math.max(10,Number(seconds)||10))*1000);}
+// 網站後台 is marked in the address (#site-monitor) so a refresh comes back to it.
+const MONITOR_HASH='#site-monitor';
+function markMonitorAddress(open){try{if((location.hash===MONITOR_HASH)!==open)history.replaceState(history.state,'',location.pathname+location.search+(open?MONITOR_HASH:''));}catch{}}
 function markMonitorButton(open){document.querySelector('#teacher-site-monitor')?.setAttribute('aria-pressed',String(open));}
 function openMonitor(){
  const main=document.querySelector('#teacher-main.workspace');if(!siteAdmin()||!main)return;
  if(!monitorOpen()){main.classList.add('monitor-mode');main.insertAdjacentHTML('beforeend','<section id="site-monitor" class="site-monitor" aria-labelledby="site-monitor-title"><div class="monitor-top"><h1 id="site-monitor-title">網站後台</h1><button type="button" class="button small" data-action="close-monitor">返回教師後台</button></div><div id="site-monitor-body"></div>'+usageLogShell()+'</section>');}
- markMonitorButton(true);renderMonitor();window.scrollTo(0,0);void pollMonitor();
+ markMonitorButton(true);markMonitorAddress(true);renderMonitor();window.scrollTo(0,0);void pollMonitor();
 }
-function closeMonitor(){usageLog.generation++;usageLog.data=null;usageLog.student=null;usageLog.controller?.abort();usageLog.controller=null;resetMonitor();document.querySelector('#site-monitor')?.remove();document.querySelector('#teacher-main')?.classList.remove('monitor-mode');markMonitorButton(false);}
+function closeMonitor(){usageLog.generation++;usageLog.data=null;usageLog.student=null;usageLog.controller?.abort();usageLog.controller=null;resetMonitor();document.querySelector('#site-monitor')?.remove();document.querySelector('#teacher-main')?.classList.remove('monitor-mode');markMonitorButton(false);markMonitorAddress(false);}
 function connectionText(headers,rtt){
  const route=headers.get('X-Relay-Route'),port=headers.get('X-Relay-Port')||'';
  const via=headers.get('X-Relay-Hop')==='iad1'?'香港未能接通，經美國備用線路':route==='hk'&&/^310[0-2]$/.test(port)?'經香港 '+port:route==='gz'?'經美國節點':'直接連到廣州';
