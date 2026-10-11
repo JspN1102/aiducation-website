@@ -207,7 +207,7 @@ if (require.main === module) {
   const port = Number(process.env.PORT || 3000);
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid PORT');
   // 網站後台 counts survive restarts: kept next to app.env, outside the release.
-  const saveOps = opsMetrics.persist(process.env.OPS_METRICS_FILE || require('node:path').join(require('node:os').homedir(), 'maanshan-shared', 'ops-metrics.json'));
+  const saveOps = opsMetrics.persist(process.env.OPS_METRICS_FILE || require('node:path').join(require('node:os').homedir(), 'maanshan-shared', 'ops-metrics.json'), { backfill: require('./ops-journal.cjs').readApiLog });
   const server = createApiServer();
   server.listen(port, host, () => console.log(`Mandarin API listening on ${host}:${port}`));
   server.on('error', error => { console.error(`API server error: ${error.code || 'unknown'}`); process.exitCode = 1; });

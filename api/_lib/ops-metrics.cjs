@@ -89,11 +89,51 @@ function record({route,method,status,totalMs,relay,userAgent,now=Date.now()}={})
   if(beat){bucket.beats++;if(status<500)s.heartbeat[beat]=now;}
   if(status>=500||status===408||(status===413&&route==='tts')){s.errors.push({at:now,route,status});if(s.errors.length>RECENT_ERRORS)s.errors.splice(0,s.errors.length-RECENT_ERRORS);}
   if(beat&&status<500)return;
-  const stats=routeStats(bucket,route),hourly=routeStats(hourFor(s,now),route),day=dayFor(s,now).totals;stats.count++;hourly.count++;day.count++;
+  tally(route,status,totalMs,routeStats(bucket,route),routeStats(hourFor(s,now),route),dayFor(s,now).totals);
+}
+// Adds one request to its minute, hour and day (any of them may be left out).
+function tally(route,status,totalMs,minute,hourly,day){
   const key=status===504?'s504':status===408?'s408':status===499?'s499':status>=400&&status<500?'s4xx':null;
-  if(status>=500){stats.s5xx++;hourly.s5xx++;day.s5xx++;}
-  if(key){stats[key]++;hourly[key]++;day[key]++;}
-  if(SAMPLED.has(route)&&status<400&&Number.isFinite(totalMs)&&totalMs>=0){sample(stats,totalMs,SAMPLES);sample(hourly,totalMs,HOUR_SAMPLES);}
+  for(const t of [minute,hourly,day])if(t){t.count++;if(status>=500)t.s5xx++;if(key)t[key]++;}
+  if(SAMPLED.has(route)&&status<400&&Number.isFinite(totalMs)&&totalMs>=0){if(minute)sample(minute,totalMs,SAMPLES);if(hourly)sample(hourly,totalMs,HOUR_SAMPLES);}
+}
+// Requests the counters never saw (before counting began, or between the last
+// save and a restart) are read back from the service log, so a deploy does not
+// empty the last 24 hours. The log has no user agent: successful GET
+// school-auth lines are skipped because cron heartbeats look the same there.
+function replay(entries,now=Date.now()){
+  const s=state(),day=dayFor(s,now);let added=0;
+  for(const e of Array.isArray(entries)?entries:[]){
+    const {at,route,method,status,totalMs,relay}=e||{};
+    if(!Number.isFinite(at)||at<=now-HOURS*HOUR||at>now||typeof route!=='string'||!ROUTE.test(route)||route==='health'||route==='unknown'||!Number.isInteger(status))continue;
+    if(status>=500||status===408||(status===413&&route==='tts'))s.errors.push({at,route,status});
+    if(route==='school-auth'&&method==='GET'&&status<500)continue;
+    const bucket=at>now-BUCKETS*MINUTE?bucketFor(s,at):null,m=bucket&&typeof relay==='string'?LABEL.exec(relay):null;
+    if(m)bucket.relay[m[0]]=(bucket.relay[m[0]]||0)+1;
+    tally(route,status,totalMs,bucket&&routeStats(bucket,route),routeStats(hourFor(s,at),route),hkDate(at)===day.date?day.totals:null);
+    added++;
+  }
+  s.errors.sort((a,b)=>a.at-b.at);if(s.errors.length>RECENT_ERRORS)s.errors.splice(0,s.errors.length-RECENT_ERRORS);
+  return added;
+}
+// read(from,until) resolves to [{at,route,method,status,totalMs,relay}].
+async function backfill(read,now=Date.now()){
+  const s=state(),from=now-HOURS*HOUR,gaps=[];
+  if(s.since>from+MINUTE)gaps.push(['before',from,s.since]);
+  if(Number.isFinite(s.restoredAt)&&s.startedAt>s.restoredAt&&s.startedAt>from)gaps.push(['restart',Math.max(s.restoredAt,from),s.startedAt]);
+  let added=0;
+  for(const [kind,a,b] of gaps){
+    let entries;
+    try{entries=await read(a,b);}catch{continue;}
+    added+=replay((Array.isArray(entries)?entries:[]).filter(e=>e?.at>=a&&e.at<b),Date.now());
+    if(kind==='before'){
+      s.since=Math.min(s.since,a);
+      const midnight=now-(now+HK_OFFSET)%86400000,day=dayFor(s,now);
+      if(day.since>a){day.since=Math.max(midnight,a);day.restarted=day.since>midnight;}
+    }
+  }
+  s.backfilled={at:Date.now(),added};
+  return added;
 }
 // Reservoir sample: a fixed amount of memory per route and minute (or hour).
 function sample(stats,ms,size){
@@ -226,13 +266,14 @@ function save(file,now=Date.now()){
 }
 // Reads the file once and saves every minute; returns a function that saves
 // one last time and stops (call it on shutdown).
-function persist(file){
+function persist(file,{backfill:read}={}){
   if(typeof file!=='string'||!file)return ()=>{};
   load(file);
   const s=state();
+  if(typeof read==='function')backfill(read).then(()=>save(file),()=>{});
   if(s.timer)clearInterval(s.timer);
   s.timer=setInterval(()=>save(file),SAVE_MS);s.timer.unref?.();
   return ()=>{clearInterval(s.timer);s.timer=null;save(file);};
 }
 
-module.exports={record,snapshot,reset,heartbeatOf,percentile,persist,load,save,STUDENT_ROUTES,KEY};
+module.exports={record,snapshot,reset,heartbeatOf,percentile,persist,load,save,replay,backfill,STUDENT_ROUTES,KEY};
