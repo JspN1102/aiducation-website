@@ -377,7 +377,7 @@ async function loadLegacy(signal){
 // state) and polls every 10 s while it is open and the tab is visible.
 const SITE_STATUS='/api/teacher-tools?tool=site-status',LEVELS={ok:'正常',warn:'需要留意',bad:'有問題',unknown:'未能判斷',info:'資料'};
 const STATUS_TEXT={413:'文字太長',500:'程式錯誤',502:'中轉失敗',503:'暫停服務',504:'超時',408:'上傳超時'};
-const monitor={timer:null,controller:null,generation:0,data:null,link:'',failed:'',failures:0};
+const monitor={timer:null,controller:null,generation:0,data:null,link:'',failed:'',failures:0,span:60};
 function siteAdmin(){return !DEMO&&!state.legacy&&state.auth?.user?.role==='teacher'&&state.auth.user.siteAdmin===true;}
 function monitorOpen(){return !!document.querySelector('#site-monitor');}
 function stopMonitor(){monitor.generation++;clearTimeout(monitor.timer);monitor.timer=null;monitor.controller?.abort();monitor.controller=null;}
@@ -570,28 +570,30 @@ function renderMonitor(){
  const pool=db.pools?.auth,today=d.today;
  const database=monitorCard('資料庫',s.db,monitorStats([['回應時間',db.ok?db.latencyMs:null,' ms'],['使用中連線',pool?pool.total-pool.idle:null,pool?' / '+pool.total:''],['學習紀錄查詢',st.available?'正常':st.reason==='timeout'?'超時':st.reason==='disabled'?'未啟用':'未能讀取'],
   ...(d.usage||d.today?[['資料庫大小',d.usage?.available?d.usage.dbMB:null,' MB'],['最新學習紀錄',...(today?.available?since(today.lastRecordAt,now):['—'])],['今日學習紀錄',today?.available?today.events:null,' 條']]:[])]));
- // Server counts are saved every minute and survive restarts; until the first
- // full day after school59 the 24 hours start when counting began.
+ // 學生使用, 近期報錯, 外部服務: one switch for all three between the last hour
+ // and the last 24 hours. Server counts are saved every minute and survive
+ // restarts; until a full day after school59 the 24 hours start when counting began.
+ const wide=monitor.span===1440,span=wide?'近 24 小時':'近 1 小時';
  const w60=d.traffic?.[60]||{},w24=d.traffic?.[1440]||null,last24=today?.available?today.last24||null:null;
- const counted=number(d.traffic?.since),partDay=counted!==null&&now-counted<86400000?'近 24 小時由 '+when(counted,now)+' 開始統計':'';
- const r60=rows(w60.routes),r24=rows(w24?.routes),soe=r60.find(r=>r.route==='soe');
- const timing=r=>!r||!number(r.count)?'—':(number(r.p50Ms)===null?'':seconds(r.p50Ms)+' / '+seconds(r.p95Ms)+' 秒<br>')+'<small>'+shown(r.count)+' 次</small>';
- const pair=(caption,list)=>list.length?`<div class="table-area"><table class="monitor-table monitor-window-table"><caption>${esc(caption)}</caption><thead><tr><th scope="col">功能</th><th scope="col">近 1 小時</th><th scope="col">近 24 小時</th></tr></thead><tbody>${list.map(([label,hour,day])=>`<tr><th scope="row">${esc(label)}</th><td>${hour}</td><td>${day}</td></tr>`).join('')}</tbody></table></div>`:'';
- const served=r60.map(r=>r.route).concat(r24.map(r=>r.route)).filter((route,i,all)=>all.indexOf(route)===i&&(r60.find(r=>r.route===route)?.count||r24.find(r=>r.route===route)?.count));
- const waits=rows(st.latency).map(r=>r.kind).concat(rows(last24?.latency).map(r=>r.kind)).filter((kind,i,all)=>all.indexOf(kind)===i&&(rows(st.latency).find(r=>r.kind===kind)?.count||rows(last24?.latency).find(r=>r.kind===kind)?.count));
- const latency=monitorCard('學生使用（回應時間）',s.latency,monitorStats([['在線學生（5 分鐘）',st.available?st.active5:null,' 人'],['近 1 小時學生',st.available?st.active60:null,' 人'],['朗讀評分中位（1 小時）',seconds(soe?.p50Ms),' 秒'],['最慢一成（1 小時）',seconds(soe?.p95Ms),' 秒']])
-  +pair('伺服器回應（中位 / 最慢一成）',served.map(route=>{const a=r60.find(r=>r.route===route),b=r24.find(r=>r.route===route);return [(a||b).label,timing(a),w24?timing(b):'—'];}))
-  +pair('學生畫面等候（中位 / 最慢一成）',waits.map(kind=>{const a=rows(st.latency).find(r=>r.kind===kind),b=rows(last24?.latency).find(r=>r.kind===kind);return [(a||b).label,st.available?timing(a):'—',last24?timing(b):'—'];}))
-  +(served.length||waits.length?'':'<p class="monitor-status">近 24 小時沒有學生使用。</p>')+monitorNote([partDay]));
- // 近期報錯: the last hour and the last 24 hours.
- const hour=w60.totals||{},day=w24?.totals||{};
+ const counted=number(d.traffic?.since),partDay=wide&&counted!==null&&now-counted<86400000?'伺服器數字由 '+when(counted,now)+' 開始統計':'';
+ const win=wide?w24:w60,routesIn=rows(win?.routes).filter(r=>number(r.count)),pupil=wide?last24:(st.available?st:null);
+ const soe=routesIn.find(r=>r.route==='soe'),waits=rows(pupil?.latency).filter(r=>number(r.count));
+ const toggle=`<div class="usage-days monitor-span" role="group" aria-label="時間範圍">${[[60,'近 1 小時'],[1440,'近 24 小時']].map(([v,label])=>`<button type="button" class="button small quiet" data-monitor-span="${v}" aria-pressed="${monitor.span===v}">${label}</button>`).join('')}</div>`;
+ const sec=v=>number(v)===null?'—':seconds(v)+' 秒';
+ const timingTable=(caption,list)=>list.length?`<div class="table-area"><table class="monitor-table"><caption>${esc(caption)}（${span}）</caption><thead><tr><th scope="col">功能</th><th scope="col">次數</th><th scope="col">中位</th><th scope="col">最慢一成</th></tr></thead><tbody>${list.map(r=>`<tr><th scope="row">${esc(r.label)}</th><td>${shown(r.count)}</td><td>${sec(r.p50Ms)}</td><td>${sec(r.p95Ms)}</td></tr>`).join('')}</tbody></table></div>`:'';
+ const sampled=routesIn.filter(r=>number(r.p50Ms)!==null||number(r.p95Ms)!==null);
+ // The verdict speaks for the last hour; the 24-hour view states its own figures.
+ const latencyText=wide?{...s.latency,text:!w24?'未能讀取近 24 小時的數字。':routesIn.length?'近 24 小時共 '+shown(routesIn.reduce((n,r)=>n+r.count,0))+' 個學生請求'+(soe&&number(soe.p50Ms)!==null?'，朗讀評分中位 '+seconds(soe.p50Ms)+' 秒':'')+'。':'近 24 小時沒有學生使用。'}:s.latency;
+ const latency=monitorCard('學生使用（回應時間）',latencyText,toggle+monitorStats([['在線學生（5 分鐘）',st.available?st.active5:null,' 人'],['近 1 小時學生',st.available?st.active60:null,' 人'],['朗讀評分中位',seconds(soe?.p50Ms),' 秒'],['最慢一成',seconds(soe?.p95Ms),' 秒']])
+  +timingTable('伺服器回應',sampled)+timingTable('學生畫面等候',waits)+monitorNote([partDay]));
+ const totals=win?.totals||{},timeouts=t=>number(t.s504)===null?null:t.s504+(number(t.s408)||0);
  const clientN=src=>src?['network','timeout'].reduce((n,code)=>n+(number(src.clientErrors?.[code])||0),0):null,providerN=src=>src?rows(src.providerErrors).reduce((n,e)=>n+(number(e.n)||0),0):null;
- const timeouts=t=>number(t.s504)===null?null:t.s504+(number(t.s408)||0),live=st.available?st:null;
- const errorRows=[['伺服器錯誤',hour.s5xx,day.s5xx,' 個'],['請求超時',timeouts(hour),timeouts(day),' 個'],['學生網絡中斷',clientN(live),clientN(last24),' 次'],['外部服務出錯',providerN(live),providerN(last24),' 次']];
- const recent=(Array.isArray(d.traffic?.recentErrors)?d.traffic.recentErrors:[]).slice(0,5);
- const errors=monitorCard('近期報錯',s.errors,`<div class="table-area"><table class="monitor-table monitor-error-table"><caption class="sr-only">近 1 小時及近 24 小時的報錯次數</caption><thead><tr><th scope="col">類別</th><th scope="col">近 1 小時</th><th scope="col">近 24 小時</th></tr></thead><tbody>${errorRows.map(([label,hour,day,unit])=>`<tr><th scope="row">${label}</th><td${number(hour)?' class="bad"':''}>${number(hour)===null?'—':shown(hour)+unit}</td><td>${number(day)===null?'—':shown(day)+unit}</td></tr>`).join('')}</tbody></table></div>`
-  +monitorNote([partDay?'伺服器錯誤及請求超時的'+partDay:''])
-  +(recent.length?`<ol class="monitor-errors" aria-label="最近的伺服器錯誤">${recent.map(e=>`<li><time>${esc(when(e.at,now))}</time><span>${esc(e.label)}</span><strong>${esc(STATUS_TEXT[e.status]||'錯誤 '+e.status)}</strong></li>`).join('')}</ol>`:'<p class="monitor-note">近期沒有伺服器錯誤紀錄。</p>'));
+ const errorRows=[['伺服器錯誤',win?totals.s5xx:null,' 個'],['請求超時',win?timeouts(totals):null,' 個'],['學生網絡中斷',clientN(pupil),' 次'],['外部服務出錯',providerN(pupil),' 次']];
+ const recent=(Array.isArray(d.traffic?.recentErrors)?d.traffic.recentErrors:[]).filter(e=>wide||now-e.at<3600000).slice(0,5);
+ const errorsText=wide?{...s.errors,text:!w24?'未能讀取近 24 小時的數字。':number(totals.s5xx)?'近 24 小時有 '+shown(totals.s5xx)+' 個伺服器錯誤。':'近 24 小時沒有伺服器錯誤。'}:s.errors;
+ const errors=monitorCard('近期報錯',errorsText,toggle+`<div class="table-area"><table class="monitor-table monitor-error-table"><caption class="sr-only">${span}的報錯次數</caption><thead><tr><th scope="col">類別</th><th scope="col">${span}</th></tr></thead><tbody>${errorRows.map(([label,n,unit])=>`<tr><th scope="row">${label}</th><td${number(n)?' class="bad"':''}>${number(n)===null?'—':shown(n)+unit}</td></tr>`).join('')}</tbody></table></div>`
+  +monitorNote([partDay])
+  +(recent.length?`<ol class="monitor-errors" aria-label="最近的伺服器錯誤">${recent.map(e=>`<li><time>${esc(when(e.at,now))}</time><span>${esc(e.label)}</span><strong>${esc(STATUS_TEXT[e.status]||'錯誤 '+e.status)}</strong></li>`).join('')}</ol>`:`<p class="monitor-note">${span}沒有伺服器錯誤紀錄。</p>`));
  let summary='',week='',trend='',services='',upkeep='',clients='';
  if(today?.available){
   const peak=today.peak?[today.peak.pupils,' 人（'+hourMinute(today.peak.at)+'）']:[0,' 人'];
@@ -611,13 +613,12 @@ function renderMonitor(){
  }
  const usage=d.usage;
  if(d.traffic?.[60]||usage){
-  const outcome=r=>{if(!r||!number(r.count))return '—';const bad=(number(r.s5xx)||0)+(number(r.s408)||0);return shown(Math.floor((r.count-bad)/r.count*1000)/10,1)+'%<br><small>'+shown(r.count)+' 次'+(bad?'，失敗 '+shown(bad):'')+'</small>';};
-  const failedIn=r=>(number(r?.s5xx)||0)+(number(r?.s408)||0);
-  const used=served.map(route=>[r60.find(r=>r.route===route),r24.find(r=>r.route===route)]);
-  const table=used.length?`<div class="table-area"><table class="monitor-table monitor-window-table"><caption>各服務次數及成功率（所有帳戶）</caption><thead><tr><th scope="col">服務</th><th scope="col">近 1 小時</th><th scope="col">近 24 小時</th></tr></thead><tbody>${used.map(([a,b])=>`<tr><th scope="row">${esc((a||b).label)}</th><td${failedIn(a)?' class="bad"':''}>${outcome(a)}</td><td${failedIn(b)?' class="bad"':''}>${w24?outcome(b):'—'}</td></tr>`).join('')}</tbody></table></div>`:'<p class="monitor-status">近 24 小時沒有人使用外部服務。</p>';
-  const speech=usage?.available?usage.speech:null,pupils=list=>rows(list).map(p=>p.label+' '+p.count+' 次'+(p.failed?'（失敗 '+p.failed+'）':'')).join('、');
-  services=monitorCard('外部服務',s.services,monitorStats([['本月語音輸入',speech?speech.used:null,speech?' / '+speech.limit+' 次':''],['本月學生朗讀評分',today?.available?today.monthReadings:null,' 次']])+table
-   +monitorNote([st.available&&rows(st.providers).length?'學生近 1 小時：'+pupils(st.providers):'',last24&&rows(last24.providers).length?'學生近 24 小時：'+pupils(last24.providers):'',partDay]));
+  const failedIn=r=>(number(r.s5xx)||0)+(number(r.s408)||0),count=routesIn.reduce((n,r)=>n+r.count,0),failed=routesIn.reduce((n,r)=>n+failedIn(r),0);
+  const table=routesIn.length?`<div class="table-area"><table class="monitor-table"><caption>各服務（${span}，所有帳戶）</caption><thead><tr><th scope="col">服務</th><th scope="col">次數</th><th scope="col">失敗</th><th scope="col">成功率</th></tr></thead><tbody>${routesIn.map(r=>{const bad=failedIn(r);return `<tr><th scope="row">${esc(r.label)}</th><td>${shown(r.count)}</td><td${bad?' class="bad"':''}>${shown(bad)}</td><td>${shown(Math.floor((r.count-bad)/r.count*1000)/10,1)}%</td></tr>`;}).join('')}</tbody></table></div>`:'';
+  const speech=usage?.available?usage.speech:null,providers=rows(pupil?.providers);
+  const servicesText=wide?{...s.services,text:!w24?'未能讀取近 24 小時的數字。':count?'近 24 小時成功率 '+shown(Math.floor((count-failed)/count*1000)/10,1)+'%。':'近 24 小時沒有人使用外部服務。'}:s.services;
+  services=monitorCard('外部服務',servicesText,toggle+monitorStats([['本月語音輸入',speech?speech.used:null,speech?' / '+speech.limit+' 次':''],['本月學生朗讀評分',today?.available?today.monthReadings:null,' 次']])+table
+   +monitorNote([providers.length?'學生'+span+'：'+providers.map(p=>p.label+' '+p.count+' 次'+(p.failed?'（失敗 '+p.failed+'）':'')).join('、'):'',partDay]));
  }
  if(d.upkeep){
   const items=rows(d.upkeep.jobs).map(job=>{const [level,text]=jobState(job,now);return [level,job.label,text,'上次 '+when(job.lastAt,now)+(number(job.nextAt)!==null?' · 下次 '+when(job.nextAt,now):'')];})
@@ -652,6 +653,8 @@ root.addEventListener('input',event=>{
 root.addEventListener('compositionend',event=>{if(event.target.id==='student-search')event.target.dispatchEvent(new Event('input',{bubbles:true}));});
 function click(event){const button=event.target.closest('button');if(!button||button.disabled)return;
  if(button.dataset.action==='close-monitor'){closeMonitor();document.querySelector('#teacher-site-monitor')?.focus();return;}
+ if(button.dataset.monitorSpan){monitor.span=Number(button.dataset.monitorSpan)===1440?1440:60;const title=button.closest('.monitor-card')?.querySelector('h2')?.textContent;renderMonitor();
+  [...document.querySelectorAll('.monitor-card')].find(card=>card.querySelector('h2')?.textContent===title)?.querySelector(`[data-monitor-span="${monitor.span}"]`)?.focus();return;}
  if(button.dataset.usageDays){void loadUsageLog(Number(button.dataset.usageDays));return;}
  if(button.dataset.chatStudent){void openChatStudent(button.dataset.chatStudent);return;}
  if(button.dataset.action==='usage-back'){usageBack();return;}
