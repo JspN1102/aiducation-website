@@ -22,6 +22,12 @@ export function micDeniedHelp(device, {keep = false} = {}) {
   return '請在瀏覽器設定中允許本網站使用麥克風' + then;
 }
 
+// No recording API at all (AUDIO_UNSUPPORTED), mostly an in-app browser such as WeChat: only another browser helps.
+export function unsupportedHelp(device) {
+  const ua = String(device?.userAgent || ''), browser = /Android/i.test(ua) ? 'Chrome' : 'Safari';
+  return IN_APP.test(ua) ? '請改用 ' + browser + ' 開啟本網站。' : '如果是從微信等 app 打開，請改用 ' + browser + ' 開啟本網站；也可以換用新版 Safari、Chrome 或 Edge。';
+}
+
 // WebKit (every iOS browser, Mac Safari) keeps refusing on this page until it is reloaded.
 export function micNeedsReload(device) {
   const ua = String(device?.userAgent || '');

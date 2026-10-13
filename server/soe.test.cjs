@@ -272,6 +272,10 @@ test('a refused microphone tells the pupil where to allow it',async()=>{
   assert.equal(recordingErrorMessage(new DOMException('x','NotFoundError'),true,device),'找不到麥克風，請檢查裝置。',label);
  }
  assert.equal(micDeniedHelp(null),general);assert.equal(micDeniedHelp(),general);
+ const {unsupportedHelp}=await import('../maanshan/recording-audio.mjs');
+ assert.equal(unsupportedHelp({userAgent:'Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.50'}),'請改用 Safari 開啟本網站。');
+ assert.equal(unsupportedHelp({userAgent:'Mozilla/5.0 (Linux; Android 14; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0 Mobile Safari/537.36 MicroMessenger/8.0.50'}),'請改用 Chrome 開啟本網站。');
+ assert.equal(unsupportedHelp(null),'如果是從微信等 app 打開，請改用 Safari 開啟本網站；也可以換用新版 Safari、Chrome 或 Edge。');
  // A kept recording would be lost on reload, so its step stops at 允許.
  assert.equal(micDeniedHelp({userAgent:windows(''),maxTouchPoints:0},{keep:true}),'按網址列左邊的圖示 ›「麥克風」選「允許」。');
  assert.equal(micDeniedHelp({userAgent:mac,maxTouchPoints:5},{keep:true}),'到「設定」›「Safari」›「麥克風」選「允許」。');

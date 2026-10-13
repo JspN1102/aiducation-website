@@ -145,8 +145,28 @@ async function phone(){
   }
  }finally{await env.close();}
 }
+// school62b: a browser without any recording API (here a WeChat iPad) keeps one notice, with nothing to press again, until reloaded.
+const WECHAT_IPAD='Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.50(0x1800323a) NetType/WIFI Language/zh_HK';
+async function unsupported(){
+ const env=await setup({userAgent:WECHAT_IPAD,viewport:{width:1024,height:768},touchPoints:5}),{page,go,shown,plainMic}=env;try{
+  await env.context.addInitScript(()=>{delete window.MediaRecorder;});await page.reload({waitUntil:'domcontentloaded'});await page.locator('.poem-entry').first().waitFor();
+  await go('#yong-e/record');await page.locator('#record-controls [data-action=record-start]').click();await env.panel.waitFor({timeout:15000});
+  const first=await shown();
+  check('a browser that cannot record shows a notice naming Safari, with no button to press again',first?.title==='這個瀏覽器不能錄音'&&first.help==='請改用 Safari 開啟本網站。'&&first.buttons.length===0&&await plainMic()===0);
+  await page.waitForTimeout(5500);
+  check('the notice is still on screen after 5 seconds',JSON.stringify(await shown())===JSON.stringify(first));
+  await page.locator('[data-action=record-step][data-value="1"]').click();
+  check('the notice stays on the next line',(await shown())?.title==='這個瀏覽器不能錄音'&&await plainMic()===0);
+  await go('');await go('#yong-e/record');
+  check('the notice stays after leaving and coming back',(await shown())?.title==='這個瀏覽器不能錄音'&&await plainMic()===0);
+  await until(async()=>(await env.researchEvents()).some(event=>event.type==='error'&&event.error?.code==='unsupported'),'unsupported research event');
+  const refused=(await env.researchEvents()).filter(event=>event.type==='error'&&event.error?.code==='unsupported');
+  let valid=true;try{validateEvent(refused[0]);}catch{valid=false;}
+  check('the press is recorded once as unsupported, accepted by the server schema, without asking for the microphone',refused.length===1&&refused[0].context?.errorDetail==='unsupported'&&valid&&await page.evaluate(()=>window.__mic.calls)===0);
+ }finally{await env.close();}
+}
 (async()=>{
  browser=await chromium.launch({channel:'msedge',headless:true,args:['--no-proxy-server','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});
- await desktop();await ipad();await phone();
+ await desktop();await ipad();await phone();await unsupported();
  check('no browser exceptions',errors.length===0);
 })().catch(error=>{results.push({label:'suite',passed:false,error:error.stack});process.exitCode=1;}).finally(async()=>{await browser?.close();console.log(JSON.stringify({ok:results.every(r=>r.passed),syntheticOnly:true,noProductionRequests:true,checks:results,errors},null,2));});

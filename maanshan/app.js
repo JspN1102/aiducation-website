@@ -15,7 +15,7 @@ import {mountLessonMap} from './lesson-map.mjs?v=20261006-school43';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261006-school43';
 import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20261006-school43';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school22';
-import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, micDeniedHelp, micNeedsReload, prewarmAssessment} from './recording-audio.mjs?v=20261013-school62b';
+import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, micDeniedHelp, micNeedsReload, unsupportedHelp, prewarmAssessment} from './recording-audio.mjs?v=20261013-school62b';
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
 import {requestJSON, requestChat} from './network.mjs?v=20261011-school58';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
@@ -107,7 +107,7 @@ if(school.enabled){
 }
 let poems=[], poem=null, view='record', routeVersion=0, showPinyin=true, sessionLocked=false;
 let transientAudio=null, transientUrl=null, speechVersion=0, toastTimer=null;
-let currentLine=0, recorder=null, stream=null, recordContext=null, recordTimer=null, recordStarted=0, recordBusy=false, recordingVersion=0, micDenied='';
+let currentLine=0, recorder=null, stream=null, recordContext=null, recordTimer=null, recordStarted=0, recordBusy=false, recordingVersion=0, micDenied='', recordUnsupported=false;
 let recordStep='read', recordWordIndex=0;
 let reportGeneration=0;
 let chatBusy=false,chatVoice=null,chatVoiceInserted=false,recordStopReason='manual';
@@ -748,6 +748,8 @@ function recordControlsHTML(){
   const pending=pendingRecordings.get(`${poem.id}-${currentLine}`);
   // A refused microphone keeps this browser's one step on screen until a retry, another line or page.
   if(micDenied!==routeVersion+':'+poem.id+'-'+currentLine)micDenied='';
+  // No recording API in this browser: the notice stays (no button to press again) until the page is reloaded.
+  if(recordUnsupported&&!recordBusy)return '<div class="record-recovery record-mic-denied"><p class="record-mic-title">這個瀏覽器不能錄音</p><p class="record-status" id="record-status" role="status">'+esc(unsupportedHelp(navigator))+'</p></div>';
   // A score already being paid for: no resend or re-record until it settles
   // (the request is time-limited, then this line shows its result or retry).
   if(pending?.scoring&&!recordBusy)return '<div class="record-recovery"><p class="record-status" id="record-status" role="status"><span class="spinner"></span> 正在等候評測，錄音已保留</p><button class="text-button" data-action="record-pending-play">'+icon('headphones')+'聽我的錄音</button></div>';
@@ -760,7 +762,8 @@ function recordControlsHTML(){
 }
 function assessmentStatus(message){const controls=$('#record-controls');if(controls)controls.innerHTML='<p class="record-status" role="status"><span class="spinner"></span> '+esc(message)+'</p>';}
 async function startRecording() {
-  if(recordBusy)return;stopMedia();cancelRecording();recordBusy=true;micDenied='';
+  if(recordBusy)return;if(recordUnsupported){recordStep='read';renderRecord();return;}
+  stopMedia();cancelRecording();recordBusy=true;micDenied='';
   // Warm the relay now so a cold connection is not paid for when the score is awaited.
   prewarmAssessment();
   recordStep='read';renderRecord();
@@ -797,7 +800,8 @@ async function startRecording() {
     research.emit('error',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,error:{code:researchErrorCode(error),retryable:true},context:researchErrorContext(error),...researchExtra(()=>denied?{metrics:{latencyMs:Math.min(600000,Math.max(0,Math.round(performance.now()-tOpen)))}}:{})});
     if(!isCurrent())return;cancelRecording();
     // A refused microphone shows steps that stay (not a passing toast); a kept recording keeps its resend instead.
-    if(denied&&!pendingRecordings.has(`${p.id}-${index}`)){micDenied=version+':'+p.id+'-'+index;renderRecord();}
+    if(error?.code==='AUDIO_UNSUPPORTED'){recordUnsupported=true;renderRecord();}
+    else if(denied&&!pendingRecordings.has(`${p.id}-${index}`)){micDenied=version+':'+p.id+'-'+index;renderRecord();}
     else{renderRecord();toast(denied?'請先允許使用麥克風：'+micDeniedHelp(navigator,{keep:true}):recordingErrorMessage(error));}
   }
 }
