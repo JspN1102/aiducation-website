@@ -127,6 +127,7 @@ export function submitAssessment(payload, options = {}) {
 export function submitSpeech(payload, options = {}) {
   return postRecording('/api/speech-to-text/', payload, {timeout:40000, ...options}, {busy:'語音輸入現在繁忙，請稍後再試，或者先打字。', service:'暫時未能把聲音變成文字，請再說一次，或者先打字。'});
 }
+const REJECTED = {text:'這一句暫時未能評分，可以先讀下一句。', audio:'這次錄音聽不清楚，請靠近一點，大聲把整句讀完再試。', other:'這一句這次未能評分，可以重新朗讀，或者先讀下一句。'};
 const aborted = () => new DOMException('Aborted', 'AbortError');
 function shown(page, signal) {
   return new Promise((resolve, reject) => {
@@ -162,6 +163,8 @@ async function postRecording(url, payload, {signal, onRetry, onWaiting, fetchImp
         if (response.status === 429) throw Object.assign(audioError('BUSY', messages.busy, true), {researchHttpStatus:response.status});
         // Definite, pre-scoring refusal of the compact upload: the caller re-sends PCM once.
         if (response.status === 422 && data?.code === 'AUDIO_TRANSCODE_FAILED') throw Object.assign(audioError('TRANSCODE', '錄音處理未能完成，請再試一次。', true), {researchHttpStatus:response.status});
+        // The scorer refused this line or this audio: sending the same recording again cannot help.
+        if (response.status === 422 && data?.code === 'SOE_REJECTED') throw Object.assign(audioError('REJECTED', REJECTED[data.reason] || REJECTED.other), {researchHttpStatus:response.status});
         // The relay or gateway lost the answer, or it broke off: the reading may well have been scored.
         lost = [502, 503, 504].includes(response.status) || (response.ok && !data);
         throw Object.assign(audioError('SERVICE', messages.service, true), response.ok ? {} : {researchHttpStatus:response.status});

@@ -164,7 +164,7 @@ test('(d) researchErrorContext maps errors to enum detail, and researchErrorCode
     [named('TimeoutError'),'timeout','timeout'],[coded('TIMEOUT'),'timeout','timeout'],
     [coded('AUDIO_UNSUPPORTED'),'unsupported','unsupported'],[coded('TOO_SHORT'),'too-short','unknown'],[coded('TOO_LONG'),'too-long','unknown'],
     [coded('OFFLINE'),'offline','network'],[coded('NETWORK'),'network','network'],[new TypeError('Failed to fetch'),'network','network'],
-    [coded('BUSY'),'busy','provider_unavailable'],[coded('SERVICE'),'service','provider_unavailable'],[coded('TRANSCODE'),'transcode','unknown'],
+    [coded('BUSY'),'busy','provider_unavailable'],[coded('SERVICE'),'service','provider_unavailable'],[coded('TRANSCODE'),'transcode','unknown'],[coded('REJECTED'),'other','invalid_response'],
     [coded('AUDIO_DECODE'),'decode','unknown'],[coded('AUDIO_RENDER'),'decode','unknown'],
     [new Error('plain'),'other','unknown'],[null,'other','unknown'],[undefined,'other','unknown'],['text','other','unknown']];
   for(const [error,detail,code] of table){

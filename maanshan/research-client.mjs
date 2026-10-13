@@ -217,6 +217,7 @@ export function researchErrorCode(error) {
   if (error instanceof TypeError || ['NETWORK','OFFLINE'].includes(error?.code)) return 'network';
   if (error?.code === 'AUDIO_UNSUPPORTED') return 'unsupported';
   if (error?.code === 'SERVICE' || error?.code === 'BUSY') return 'provider_unavailable';
+  if (error?.code === 'REJECTED') return 'invalid_response';
   return 'unknown';
 }
 // Finer, enum-only reason for an error event's context; never throws.

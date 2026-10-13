@@ -15,12 +15,12 @@ import {mountLessonMap} from './lesson-map.mjs?v=20261006-school43';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261006-school43';
 import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20261006-school43';
 import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school22';
-import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, micDeniedHelp, micNeedsReload, prewarmAssessment} from './recording-audio.mjs?v=20261009-school54';
+import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, micDeniedHelp, micNeedsReload, prewarmAssessment} from './recording-audio.mjs?v=20261013-school62b';
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
 import {requestJSON, requestChat} from './network.mjs?v=20261011-school58';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
 import {schoolSession} from './bootstrap.mjs?v=20261010-school55';
-import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261009-school54';
+import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261013-school62b';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20261013-school60';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school41';
 import {getPoetSuggestions, matchPoetPreset} from './poet-presets.mjs?v=20261005-school40';
@@ -809,7 +809,7 @@ async function assessRecording(blob,p,index,version,generation,context,existing=
   // recording is still the line's latest one and the session is unchanged.
   const latest=()=>!sessionLocked&&pendingRecordings.get(key)===pending;
   const controller=new AbortController();pending.scoring=true;let committed=false,abortRecorded=false;
-  const failed=(code,ctx)=>research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code,retryable:true},...(ctx?{context:ctx}:{})});
+  const failed=(code,ctx,retryable=true)=>research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code,retryable},...(ctx?{context:ctx}:{})});
   // Logout records the abort at once, so it is uploaded before the closing span.
   scoringRequests.set(controller,()=>{if(!controller.signal.aborted){abortRecorded=true;failed('aborted');}controller.abort();});
   const closeContext=()=>{if(context?.state!=='closed')context?.close().catch(()=>{});if(recordContext===context)recordContext=null;context=null;};
@@ -854,8 +854,10 @@ async function assessRecording(blob,p,index,version,generation,context,existing=
     committed=true;if(isCurrent()){recordStep='result';recordWordIndex=0;}
     queueReading(p,{lineIdx:index,lineScore:result.total_score});
   } catch(error) {
-    if(!abortRecorded)failed(researchErrorCode(error),researchErrorContext(error));
-    pending.canRetry=Boolean(error.canRetry||pending.encoded||pending.compact);pending.message=recordingErrorMessage(error);
+    // A refused line or recording (REJECTED) offers 重新朗讀 only, never the same audio again.
+    const rejected=error?.code==='REJECTED';
+    if(!abortRecorded)failed(researchErrorCode(error),researchErrorContext(error),!rejected);
+    pending.canRetry=!rejected&&Boolean(error.canRetry||pending.encoded||pending.compact);pending.message=recordingErrorMessage(error);
     if(isCurrent()){recordStep='read';if(!pendingRecordings.has(key))toast(pending.message);}
   }
   finally {

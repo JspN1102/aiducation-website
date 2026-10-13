@@ -152,6 +152,26 @@ test('SOE compact path reports the decoded length; a provider error keeps only i
  other.clients[0].emit('message',Buffer.from(JSON.stringify({code:'E1',message:'x'})));await call.pending;
  assert.equal(call.res.statusCode,502);assert.deepEqual(plain(call.res.body),{error:'x',code:'E1'});assert.equal('providerCode' in call.res.researchExtras.service,false);
 });
+test('SOE refusals of the line or audio are 422 SOE_REJECTED and keep the provider code; service codes stay 502',async()=>{
+ for(const [code,status,reason] of [[4103,422,'text'],[4007,422,'audio'],[4100,422,'other'],[4199,422,'other'],[4001,502],[4006,502],[4008,502],[4200,502],[5000,502]]){
+  const f=fixture(),{res,pending}=f.call({refText:'鹅鹅鹅',audio:Buffer.alloc(1600,27).toString('base64')});await settle();
+  f.clients[0].emit('message',Buffer.from(JSON.stringify({code,message:'synthetic'})));await pending;
+  assert.equal(res.statusCode,status,String(code));assert.equal(res.researchExtras.service.providerCode,code);
+  assert.deepEqual(plain(res.body),reason?{error:'synthetic',code:'SOE_REJECTED',reason,providerCode:code}:{error:'synthetic',code});
+ }
+});
+test('a refused line is shown its own message, is never resent and offers no retry of the same audio',async()=>{
+ globalThis.location??=new URL('https://mandarin.aiducation.asia/school/');
+ const {submitAssessment}=await import('../maanshan/recording-audio.mjs');
+ for(const [reason,message] of [['text','這一句暫時未能評分，可以先讀下一句。'],['audio','這次錄音聽不清楚，請靠近一點，大聲把整句讀完再試。'],['other','這一句這次未能評分，可以重新朗讀，或者先讀下一句。'],['new','這一句這次未能評分，可以重新朗讀，或者先讀下一句。']]){
+  let sent=0;const fetchImpl=async()=>{sent++;return {ok:false,status:422,json:async()=>({error:'x',code:'SOE_REJECTED',reason,providerCode:4103})};};
+  await assert.rejects(submitAssessment({audio:'AAAA',refText:'鹅'},{fetchImpl,page:null}),error=>error.code==='REJECTED'&&error.canRetry===false&&error.message===message&&error.researchHttpStatus===422&&!/稍後/.test(error.message));
+  assert.equal(sent,1,reason);
+ }
+ // A pre-school62b 502 for the same refusal is still resent once and shown the service text.
+ let sent=0;const legacy=async()=>{sent++;return {ok:false,status:502,json:async()=>({error:'x',code:4103})};};
+ await assert.rejects(submitAssessment({audio:'AAAA',refText:'鹅'},{fetchImpl:legacy,page:null}),error=>error.code==='SERVICE');assert.equal(sent,2);
+});
 test('SOE socket failures keep their responses and leave only the preparation time and path',async()=>{
  for(const [fail,error] of [[ws=>ws.emit('error',new Error('synthetic socket failure')),'synthetic socket failure'],[ws=>ws.emit('close'),'No final result received']]){
   const f=fixture(),{res,pending}=f.call({refText:'鹅鹅鹅',audio:Buffer.alloc(1600,27).toString('base64')});await settle();fail(f.clients[0]);await pending;

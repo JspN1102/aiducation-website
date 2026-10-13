@@ -213,6 +213,9 @@ test('server-only research detail never changes the verified score, word scores 
  const failed=outcomeFor('reading',{error:'x'},502,reference,10,undefined,{relay:'gz',service:{audioPath:'pcm',textMode:0,prepareMs:1,providerCode:4002}});
  assert.deepEqual(failed.error,outcomeFor('reading',{error:'x'},502,reference,10).error);assert.deepEqual(failed.service,{relay:'gz',audioPath:'pcm',textMode:0,prepareMs:1,providerCode:4002});
  assert.equal(failed.providerWords,undefined);
+ // school62b: a refused line (4103) is recorded as not retryable, with its provider code.
+ const refused=outcomeFor('reading',{error:'x',code:'SOE_REJECTED',reason:'text',providerCode:4103},422,reference,10,undefined,{relay:'gz',service:{audioPath:'pcm',textMode:0,prepareMs:1,providerCode:4103}});
+ assert.deepEqual(refused.error,{code:'invalid_response',retryable:false});assert.equal(refused.result.status,'error');assert.equal(refused.service.providerCode,4103);
  for(const extras of [undefined,null,{},{service:'x'},{service:{relay:'hk:8443',audioPath:'wav',textMode:2,audioMs:-1,prepareMs:1.5,providerCode:'4002'}},{rawWords:'x'},{rawWords:[null]}]){
   const value=outcomeFor('reading',payload,200,reference,10,undefined,extras);
   assert.deepEqual(value.result,plain.result);assert.deepEqual(value.wordScores,plain.wordScores);assert.equal(value.service,undefined);

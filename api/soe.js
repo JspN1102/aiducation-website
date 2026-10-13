@@ -142,7 +142,10 @@ module.exports = withSchoolLearning('reading', async function handler(req, res) 
             settled = true;
             clearTimeout(timeout);
             setExtras({prepareMs: Math.round(prepared - started), ...(Number.isInteger(msg.code) ? {providerCode: msg.code} : {})});
-            res.status(502).json({ error: msg.message, code: msg.code });
+            const reason = rejection(msg.code);
+            // A refusal of this line or audio: 422 is not resent and an older page still shows its retry text.
+            if (reason) res.status(422).json({ error: msg.message, code: 'SOE_REJECTED', reason, providerCode: msg.code });
+            else res.status(502).json({ error: msg.message, code: msg.code });
             ws.close();
             resolve();
           }
@@ -178,6 +181,16 @@ module.exports = withSchoolLearning('reading', async function handler(req, res) 
     });
   });
 });
+
+// Tencent SOE refusals that no resend of the same line and audio can change:
+// 4103 RefTextOOV (a character outside the lexicon), 4007 audio decode failed,
+// other 41xx evaluation errors. Account, concurrency, upload-timeout and server
+// codes (4001-4006, 4008+, 5xxx) stay 502 and are resent as before.
+function rejection(code) {
+  if (code === 4103) return 'text';
+  if (code === 4007) return 'audio';
+  return Number.isInteger(code) && code >= 4100 && code < 4200 ? 'other' : null;
+}
 
 function mapResult(r) {
   return {
