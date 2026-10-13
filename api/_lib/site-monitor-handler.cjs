@@ -208,21 +208,25 @@ async function dailyProbe(pool,t){
     await client.query("SET LOCAL statement_timeout = '4s'");
     const rows={};
     for(const [key,sql] of Object.entries(DAILY_SQL))rows[key]=(await client.query(sql,key==='month'?[params[1]]:sql.includes('$1')?[params[0]]:[])).rows;
+    // 學生端問題 can also be read over 3 days: today and the two days before (Hong Kong).
+    rows.clients3=(await client.query(DAILY_SQL.clients,[new Date(cal.dayStart-2*24*HOUR).toISOString()])).rows;
     const last24=await recentFigures(client,'24 hours');
     await client.query('COMMIT');
     const total=rows.today.find(r=>r.total)||{},peak=rows.peak[0],weekTotal=rows.week.find(r=>r.day===null);
     const days=Array.from({length:7},(_,i)=>{const day=i-6,row=rows.week.find(r=>r.day===day);return {date:hkCalendar(cal.dayStart+day*24*HOUR).date,pupils:Number(row?.pupils)||0};});
-    const clients={};
-    for(const row of rows.clients.filter(r=>!r.total)){const code=Object.hasOwn(CLIENT_ERROR_LABELS,row.code)?row.code:'unknown',into=clients[code]||(clients[code]={code,label:CLIENT_ERROR_LABELS[code],count:0,pupils:0,top:0});
+    const clientSummary=list=>{const clients={};
+    for(const row of list.filter(r=>!r.total)){const code=Object.hasOwn(CLIENT_ERROR_LABELS,row.code)?row.code:'unknown',into=clients[code]||(clients[code]={code,label:CLIENT_ERROR_LABELS[code],count:0,pupils:0,top:0});
       into.count+=Number(row.n)||0;into.pupils+=Number(row.pupils)||0;into.top=Math.max(into.top,Number(row.top)||0);}
     // topPupil: one pupil's events when they are half or more of the label's (and 5 or more); a count only.
-    const clientErrors=Object.values(clients).map(({top,...e})=>({...e,topPupil:top>=5&&top*2>=e.count&&e.pupils>1?top:null})).sort((a,b)=>b.pupils-a.pupils||b.count-a.count);
+    return Object.values(clients).map(({top,...e})=>({...e,topPupil:top>=5&&top*2>=e.count&&e.pupils>1?top:null})).sort((a,b)=>b.pupils-a.pupils||b.count-a.count);};
+    const clientErrors=clientSummary(rows.clients);
     const last=Number(rows.last[0]?.at);
     return {available:true,date:cal.date,pupils:Number(total.pupils)||0,readings:Number(total.readings)||0,chats:Number(total.chats)||0,events:Number(total.events)||0,
       byGrade:rows.today.filter(r=>!r.total&&Number.isInteger(r.grade)&&r.grade>=1&&r.grade<=6).sort((a,b)=>a.grade-b.grade).map(r=>({grade:r.grade,pupils:Number(r.pupils)||0,readings:Number(r.readings)||0,chats:Number(r.chats)||0})),
       peak:peak&&Number(peak.pupils)>0?{pupils:Number(peak.pupils),at:Number(peak.slot)*1000}:null,
       week:{days,pupils:Number(weekTotal?.pupils)||0},
       last24,clientErrors,clientErrorPupils:Number(rows.clients.find(r=>r.total)?.pupils)||0,
+      clientErrors3:clientSummary(rows.clients3),clientErrorPupils3:Number(rows.clients3.find(r=>r.total)?.pupils)||0,
       monthReadings:Number(rows.month[0]?.readings)||0,lastRecordAt:Number.isFinite(last)&&last>0?Math.round(last):null};
   }catch(error){
     if(client)await client.query('ROLLBACK').catch(()=>{});
@@ -338,6 +342,8 @@ function judge(p,now){
     sections.trend={level:'info',text:count?'共 '+count+' 個請求'+(failed?'，'+failed+' 個出錯':'')+'，最忙一分鐘 '+busiest+' 個。':fresh?'伺服器剛重啟，正在重新統計。':'近 60 分鐘沒有請求。'};
     const total=d?.available?d.clientErrors.reduce((n,e)=>n+e.count,0):0,who=d?.clientErrorPupils;
     sections.clients=!d?.available?unread:{level:'info',text:total?(who>0?'今天有 '+who+' 位學生遇到問題，共 '+total+' 次，最多學生遇到「':'今天共 '+total+' 次，最多是「')+d.clientErrors[0].label+'」。':'今天學生裝置沒有回報問題。'};
+    const total3=d?.available&&d.clientErrors3?d.clientErrors3.reduce((n,e)=>n+e.count,0):0,who3=d?.clientErrorPupils3;
+    sections.clients3=!d?.available||!d.clientErrors3?unread:{level:'info',text:total3?(who3>0?'3 日內有 '+who3+' 位學生遇到問題，共 '+total3+' 次，最多學生遇到「':'3 日內共 '+total3+' 次，最多是「')+d.clientErrors3[0].label+'」。':'3 日內學生裝置沒有回報問題。'};
   }
   const overall=level(...Object.values(sections).map(s=>s.level));
   const NAMES={server:'廣州伺服器',hk:'香港中轉',vercel:'Vercel',db:'資料庫',latency:'學生使用',errors:'近期報錯',services:'外部服務',upkeep:'維護與備份'};

@@ -236,11 +236,11 @@ test('payload shape: aggregates from injected systemd, database and traffic fake
   assert.deepEqual(p.students.latency,[{kind:'reading',label:'朗讀評分',count:12,p50Ms:2310,p95Ms:6101},{kind:'report',label:'朗讀報告',count:0,p50Ms:null,p95Ms:null},{kind:'chat',label:'對話',count:0,p50Ms:null,p95Ms:null}]);
   const recent=[monitor.STUDENT_SQL.errors,monitor.STUDENT_SQL.latency,monitor.STUDENT_SQL.providers];
   assert.deepEqual(log.sql,['BEGIN READ ONLY',"SET LOCAL statement_timeout = '3s'",monitor.STUDENT_SQL.active,...recent,'COMMIT',
-    'BEGIN READ ONLY',"SET LOCAL statement_timeout = '4s'",...Object.values(monitor.DAILY_SQL),...recent,'COMMIT']);
+    'BEGIN READ ONLY',"SET LOCAL statement_timeout = '4s'",...Object.values(monitor.DAILY_SQL),monitor.DAILY_SQL.clients,...recent,'COMMIT']);
   assert.deepEqual(log.windows,{errors:['60 minutes','24 hours'],latency:['60 minutes','24 hours'],providers:['60 minutes','24 hours']});
   assert.equal(log.released,2);
   assert.deepEqual(log.params,{today:['2026-10-08T16:00:00.000Z'],peak:['2026-10-08T16:00:00.000Z'],week:['2026-10-08T16:00:00.000Z'],
-    clients:['2026-10-08T16:00:00.000Z'],month:['2026-09-30T16:00:00.000Z'],last:[],speech:['2026-10']},'Hong Kong day and month');
+    clients:['2026-10-06T16:00:00.000Z'],month:['2026-09-30T16:00:00.000Z'],last:[],speech:['2026-10']},'Hong Kong day and month; 學生端問題 last read over 3 days');
   assert.deepEqual(p.today,{available:true,date:'2026-10-09',pupils:21,readings:150,chats:25,events:453,
     byGrade:[{grade:1,pupils:12,readings:100,chats:20},{grade:2,pupils:8,readings:50,chats:5}],peak:{pupils:6,at:T-3600000},
     week:{days:['2026-10-03','2026-10-04','2026-10-05','2026-10-06','2026-10-07','2026-10-08','2026-10-09'].map((date,i)=>({date,pupils:i===0?3:i===6?21:0})),pupils:30},
@@ -249,7 +249,7 @@ test('payload shape: aggregates from injected systemd, database and traffic fake
       latency:[{kind:'reading',label:'朗讀評分',count:300,p50Ms:2500,p95Ms:7000},{kind:'report',label:'朗讀報告',count:0,p50Ms:null,p95Ms:null},{kind:'chat',label:'對話',count:20,p50Ms:4100,p95Ms:9000}]},
     clientErrors:[{code:'network',label:'網絡中斷',count:12,pupils:4,topPupil:null},{code:'permission_denied',label:'未允許錄音',count:30,pupils:3,topPupil:24},
       {code:'script',label:'頁面程式錯誤',count:10,pupils:3,topPupil:5},{code:'unsupported',label:'裝置不支援',count:7,pupils:1,topPupil:null},{code:'unknown',label:'其他',count:1,pupils:1,topPupil:null}],
-    clientErrorPupils:9,monthReadings:1300,lastRecordAt:T-42000,checkedAt:T});
+    clientErrorPupils:9,clientErrors3:p.today.clientErrors,clientErrorPupils3:9,monthReadings:1300,lastRecordAt:T-42000,checkedAt:T});
   assert.deepEqual(p.usage,{available:true,dbMB:145,speech:{month:'2026-10',used:19,limit:4800},checkedAt:T});
   assert.equal(p.upkeep.available,true);assert.equal(p.upkeep.checkedAt,T);
   assert.deepEqual(p.upkeep.jobs[0],{unit:'maanshan-backup',label:'每日備份',loadState:'loaded',running:false,result:'success',lastAt:Date.UTC(2026,9,9,2,45),
@@ -261,7 +261,7 @@ test('payload shape: aggregates from injected systemd, database and traffic fake
   assert.deepEqual(p.traffic[60].routes[0],{route:'soe',label:'朗讀評分',count:4,p50Ms:2750,p95Ms:3425,s5xx:0,s504:0,s408:0});
   assert.equal(p.traffic[1440].routes[0].count>=4,true);assert.equal(Number.isFinite(p.traffic.since),true);
   assert.equal(p.verdict.level,'ok');assert.equal(p.verdict.text,'全部正常。');
-  assert.deepEqual(Object.keys(p.verdict.sections),['server','hk','vercel','db','latency','errors','services','upkeep','today','week','trend','clients']);
+  assert.deepEqual(Object.keys(p.verdict.sections),['server','hk','vercel','db','latency','errors','services','upkeep','today','week','trend','clients','clients3']);
   assert.deepEqual(p.verdict.sections.services,{level:'ok',text:'近 1 小時成功率 100%。'});
   assert.deepEqual(p.verdict.sections.upkeep,{level:'ok',text:'備份、健康檢查、恢復演練都正常，證書還有 70 天。'});
   assert.deepEqual(p.verdict.sections.today,{level:'info',text:'今天有 21 位學生用過，朗讀 150 句。'});
@@ -285,6 +285,7 @@ test('pupil-side problems: page-script errors apart, pupils per kind and per day
   let p=await fakes({rows:{daily}}).monitor.collect();
   assert.deepEqual(p.today.clientErrors,[{code:'unknown',label:'其他',count:10,pupils:3,topPupil:6},{code:'permission_denied',label:'未允許錄音',count:5,pupils:2,topPupil:null}]);
   assert.equal(p.today.clientErrorPupils,3);assert.equal(p.verdict.sections.clients.text,'今天有 3 位學生遇到問題，共 15 次，最多學生遇到「其他」。');
+  assert.deepEqual(p.today.clientErrors3,p.today.clientErrors);assert.equal(p.today.clientErrorPupils3,3);assert.equal(p.verdict.sections.clients3.text,'3 日內有 3 位學生遇到問題，共 15 次，最多學生遇到「其他」。');
   // No problems today: Postgres still returns the empty total row.
   p=await fakes({rows:{daily:{...DAILY_ROWS,clients:[{total:true,code:null,n:null,pupils:0,top:null}]}}}).monitor.collect();
   assert.deepEqual([p.today.clientErrors,p.today.clientErrorPupils,p.verdict.sections.clients.text],[[],0,'今天學生裝置沒有回報問題。']);

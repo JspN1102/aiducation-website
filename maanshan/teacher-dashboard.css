@@ -123,6 +123,6 @@
 .student-dialog .dialog-header{position:sticky;top:0;z-index:2}
 /* 朗讀測評次數 (jasper, molly) below the downloads panel. */
 .reading-log{display:grid;gap:14px;min-width:0}.reading-log-top{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap}.reading-log h2{font-size:23px}#reading-log-body{display:grid;gap:12px;min-width:0}
-.reading-log-filters{grid-template-columns:repeat(2,minmax(120px,180px)) minmax(180px,320px)}.reading-log-filters .usage-search{grid-column:auto}.reading-log-summary{font-size:17px}.reading-log-table td:nth-child(4){white-space:normal;text-align:left;min-width:160px;font-size:14px}.reading-log-table td:last-child{text-align:right}
+.reading-log-filters{grid-template-columns:repeat(2,minmax(120px,180px)) minmax(180px,320px)}.reading-log-filters .usage-search{grid-column:auto}.reading-log-summary{font-size:17px}.reading-log-table td:nth-child(4){white-space:normal;text-align:left;min-width:160px;font-size:14px}.reading-log-table td:last-child{text-align:right}.reading-log-table td:nth-child(3),.reading-log-table th:nth-child(3){padding-right:14px}.reading-log-table td:nth-child(4),.reading-log-table th:nth-child(4){border-left:1px solid #d5ddd5;padding-left:14px}
 .reading-export{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.reading-lines-body .usage-lines th[scope=row]{white-space:normal}
 @media(max-width:540px){.reading-log-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.reading-log-filters .usage-search{grid-column:1/-1}.reading-export .button{width:100%}}

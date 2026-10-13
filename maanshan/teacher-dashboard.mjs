@@ -381,7 +381,7 @@ async function loadLegacy(signal){
 // state) and polls every 10 s while it is open and the tab is visible.
 const SITE_STATUS='/api/teacher-tools?tool=site-status',LEVELS={ok:'正常',warn:'需要留意',bad:'有問題',unknown:'未能判斷',info:'資料'};
 const STATUS_TEXT={413:'文字太長',500:'程式錯誤',502:'中轉失敗',503:'暫停服務',504:'超時',408:'上傳超時'};
-const monitor={timer:null,controller:null,generation:0,data:null,link:'',failed:'',failures:0,spans:{latency:60,errors:60,services:60}};
+const monitor={timer:null,controller:null,generation:0,data:null,link:'',failed:'',failures:0,spans:{latency:60,errors:60,services:60},clientDays:1};
 function siteAdmin(){return !DEMO&&!state.legacy&&state.auth?.user?.role==='teacher'&&state.auth.user.siteAdmin===true;}
 function monitorOpen(){return !!document.querySelector('#site-monitor');}
 function stopMonitor(){monitor.generation++;clearTimeout(monitor.timer);monitor.timer=null;monitor.controller?.abort();monitor.controller=null;}
@@ -675,8 +675,10 @@ function renderMonitor(){
    +monitorNote(['同時在線按每 5 分鐘計']));
   const days=rows(today.week?.days),busiest=days.reduce((a,b)=>(number(b.pupils)||0)>(number(a?.pupils)||0)?b:a,null);
   week=monitorCard('近 7 日',s.week,monitorStats([['7 日內學生',today.week?.pupils,' 人'],['最多一天',busiest?busiest.pupils:null,busiest?' 人（'+dayLabel(busiest.date)+'）':'']])+(days.length?dayBars(days):''));
-  const list=rows(today.clientErrors);
-  clients=monitorCard('學生端問題（今日）',s.clients,monitorList(clientErrorItems(list))+monitorNote(['學生裝置自動回報，不含學生自己取消的操作']));
+  // 今日 or 3 日 (today and the two days before); an older server sends today only.
+  const three=Array.isArray(today.clientErrors3)&&s.clients3,wide=three&&monitor.clientDays===3,list=rows(wide?today.clientErrors3:today.clientErrors);
+  const dayToggle=three?`<div class="usage-days monitor-span" role="group" aria-label="時間範圍">${[[1,'今日'],[3,'近 3 日']].map(([v,label])=>`<button type="button" class="button small quiet" data-monitor-client-days="${v}" aria-pressed="${monitor.clientDays===v}">${label}</button>`).join('')}</div>`:'';
+  clients=monitorCard(wide?'學生端問題（近 3 日）':'學生端問題（今日）',wide?s.clients3:s.clients,dayToggle+monitorList(clientErrorItems(list))+monitorNote(['學生裝置自動回報，不含學生自己取消的操作']));
  }else if(today)summary=monitorCard('今日概況',s.today,'');
  const series=rows(d.traffic?.series);
  if(series.length){
@@ -728,6 +730,7 @@ root.addEventListener('input',event=>{if(event.isComposing||event.target.id!=='r
 root.addEventListener('compositionend',event=>{if(event.target.id==='reading-search')event.target.dispatchEvent(new Event('input',{bubbles:true}));if(event.target.id==='student-search')event.target.dispatchEvent(new Event('input',{bubbles:true}));});
 function click(event){const button=event.target.closest('button');if(!button||button.disabled)return;
  if(button.dataset.action==='close-monitor'){closeMonitor();document.querySelector('#teacher-site-monitor')?.focus();return;}
+ if(button.dataset.monitorClientDays){monitor.clientDays=button.dataset.monitorClientDays==='3'?3:1;renderMonitor();document.querySelector(`[data-monitor-client-days="${monitor.clientDays}"]`)?.focus();return;}
  if(button.dataset.monitorSpan){const [card,span]=button.dataset.monitorSpan.split(':');if(!(card in monitor.spans))return;monitor.spans[card]=span==='1440'?1440:60;renderMonitor();
   document.querySelector(`[data-monitor-span="${card}:${monitor.spans[card]}"]`)?.focus();return;}
  if(button.dataset.usageDays){void loadUsageLog(Number(button.dataset.usageDays));return;}

@@ -4,6 +4,10 @@ const { catalog: poems } = require('./poems.js');
 const polyphonic = new Set(Array.from('曲乘將将行踏橫横看側侧識识只中泊間间祇數数重綠绿還还種种盛興兴荷長长露衣霑好處处都'+
   // Preview poems 7-12.
   '冠語语為为相度寧宁遂得罷罢舍見见曾掃扫與与飲饮盡尽'));
+// Characters missing from the SOE lexicon (4103 RefTextOOV): always sent with their reading.
+// Checked 2026-10-13 against every line's simplified text; only 萁 (七步詩) was missing.
+const outOfLexicon = new Set(Array.from('萁'));
+const pronounced = char => polyphonic.has(char) || outOfLexicon.has(char);
 const compactText = text => text.replace(/[\s，。！？；、：「」『』,.!?;:]/gu, '');
 function numberedPinyin(value) {
   let tone=5;const marks=['āēīōūǖ','áéíóúǘ','ǎěǐǒǔǚ','àèìòùǜ'];
@@ -23,10 +27,10 @@ for(const poem of poems)for(const line of poem.lines){
 function assessmentReference(refText) {
   if (typeof refText !== 'string') return { ref_text: refText, text_mode: 0 };
   const reference=references.get(compactText(refText));
-  if (!reference || !reference.traditional.some(char=>polyphonic.has(char))) {
+  if (!reference || !reference.traditional.some(pronounced)) {
     return { ref_text: refText, text_mode: 0 };
   }
-  const wordList = reference.characters.map((word,index)=>polyphonic.has(reference.traditional[index])
+  const wordList = reference.characters.map((word,index)=>pronounced(reference.traditional[index])
     ? {word,pron:[[numberedPinyin(reference.readings[index])]]}:{word});
   return { ref_text: JSON.stringify({ wordList }), text_mode: 1 };
 }

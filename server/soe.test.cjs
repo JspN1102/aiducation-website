@@ -270,3 +270,9 @@ test('long poet replies are read in parts Tencent accepts, in order, without los
  assert.equal(parts.join(''),long);
  assert(parts.slice(0,2).every(part=>/[。，]$/.test(part)));
 });
+test('七步詩「萁」is outside the SOE lexicon (4103) and is always sent with its reading',()=>{
+ const {assessmentReference}=require('../api/_lib/soe-reference.js');
+ for(const text of ['萁在釜下燃，豆在釜中泣','萁在釜下燃']){const r=assessmentReference(text);assert.equal(r.text_mode,1);
+  assert.deepEqual(JSON.parse(r.ref_text).wordList[0],{word:'萁',pron:[['qi2']]});}
+ assert.deepEqual(assessmentReference('鹅鹅鹅'),{ref_text:'鹅鹅鹅',text_mode:0});
+});
