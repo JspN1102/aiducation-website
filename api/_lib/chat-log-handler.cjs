@@ -2,7 +2,8 @@
 // AI聊天次數 (teacher dashboard, beside 朗讀測評次數; jasper, molly and llp-pslau): how many
 // questions each pupil asked the AI 詩人 and of what kind. Counts only: no question, no
 // keyword and no reply ever leaves here. A question flagged 罵人粗口 / 欺凌 / 自傷 / 其他不當
-// shows only as 「⚠ 需要關注」 with its kind; the words are in 網站後台 (concerns below).
+// shows as 「⚠ 需要關注」 with its kind to jasper (siteAdmin) only; molly and llp-pslau
+// never get any concern count or label. The words are in 網站後台 (concerns below).
 const auth=require('./school-auth.cjs');
 const log=require('./activity-log-handler.cjs');
 const topics=require('./chat-topics.cjs');
@@ -61,7 +62,7 @@ async function teacher(req,res,{roles=['teacher']}={}){
   if(!actor){res.status(503).json({ok:false,code:'AUTH_DISABLED',error:'需要學校帳戶服務。'});return null;}
   return actor;
 }
-const labels={topics:topics.TOPICS,concerns:topics.CONCERNS};
+const labels={topics:topics.TOPICS,concerns:topics.CONCERNS},topicLabels={topics:topics.TOPICS};
 
 function createChatLog({researchPool=defaultResearch,directory=()=>auth.directory(),cohort=log.cohortStart,now=Date.now}={}){
   return async function handler(req,res){
@@ -73,12 +74,14 @@ function createChatLog({researchPool=defaultResearch,directory=()=>auth.director
     if(f.error)return res.status(400).json({ok:false,code:f.error,error:'查詢條件不正確。'});
     f.since=await cohort();
     const map=await log.people(directory),r=await counts(researchPool(),f,map);
-    const base={ok:true,schemaVersion:1,generatedAt:new Date(t).toISOString(),days:f.days,filters:{days:f.days,grade:f.grade||null,cls:f.cls||null},labels};
+    const admin=auth.siteAdmin(actor);
+    const base={ok:true,schemaVersion:1,generatedAt:new Date(t).toISOString(),days:f.days,filters:{days:f.days,grade:f.grade||null,cls:f.cls||null},labels:admin?labels:topicLabels};
     if(!r.available)return res.status(200).json({...base,available:false});
-    // Names, class and seat with counts only: no login, no time, no words.
-    return res.status(200).json({...base,available:true,questions:r.questions,invalid:r.invalid,unclassified:r.unclassified,concern:r.concern,truncated:r.truncated,
+    // Names, class and seat with counts only: no login, no time, no words. ⚠ only for jasper.
+    const flags=x=>admin?{concerns:x.concerns,concern:x.concern}:{};
+    return res.status(200).json({...base,available:true,questions:r.questions,invalid:r.invalid,unclassified:r.unclassified,...(admin?{concern:r.concern}:{}),truncated:r.truncated,
       students:r.students.map(s=>({student:s.student,name:s.name,grade:s.grade,cls:s.cls,classNo:s.classNo,questions:s.questions,invalid:s.invalid,
-        unclassified:s.unclassified,topics:s.topics,concerns:s.concerns,concern:s.concern}))});
+        unclassified:s.unclassified,topics:s.topics,...flags(s)}))});
   };
 }
 function createChatConcerns({researchPool=defaultResearch,directory=()=>auth.directory(),cohort=log.cohortStart,now=Date.now}={}){

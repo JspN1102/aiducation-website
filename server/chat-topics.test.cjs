@@ -83,8 +83,16 @@ test('AI聊天次數 is for jasper, molly and llp-pslau only; ranges 今日 / 7 
  const f=filters({days:'30',grade:'2',cls:'A',q:'x',student:B},NOW);assert.equal(f.q,undefined);assert.equal(f.student,undefined);
 });
 
+test('only jasper gets ⚠ 需要關注 in the list; molly and llp-pslau get no concern count or label',async()=>{
+ for(const login of ['molly','llp-pslau']){
+  const r=await withActor({role:'teacher',login},()=>caller(createChatLog(deps([])))({days:'7',grade:'2'}));
+  assert.equal(r.statusCode,200);assert.equal(r.body.students.find(s=>s.student===B).questions,8);
+  assert.doesNotMatch(JSON.stringify(r.body),/concern|abuse|罵人|欺凌|自傷|其他不當/,login);
+ }
+});
+
 test('the teacher list has counts by kind, 無效輸入 and ⚠ with its kind, and never the words',async()=>{
- const seen=[],r=await withActor({role:'teacher',login:'molly'},()=>caller(createChatLog(deps(seen)))({days:'7',grade:'2'}));
+ const seen=[],r=await withActor({role:'teacher',login:'jasper'},()=>caller(createChatLog(deps(seen)))({days:'7',grade:'2'}));
  assert.equal(r.statusCode,200);assert.equal(r.body.available,true);
  const b=r.body.students.find(s=>s.student===B);
  assert.equal(b.name,'測試甲');assert.equal(b.questions,8);assert.equal(b.invalid,2);assert.equal(b.unclassified,3);assert.equal(b.concern,1);
