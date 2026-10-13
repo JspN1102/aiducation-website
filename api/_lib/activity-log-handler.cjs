@@ -175,4 +175,4 @@ function createActivityLog({researchPool=defaultResearch,activity=()=>require('.
 function defaultResearch(){const research=require('./research-store.cjs');return research.mode()==='postgres'?research.getPool():null;}
 
 module.exports=createActivityLog();
-Object.assign(module.exports,{createActivityLog,chatLog,conversation,readings,filtersFrom,where,readOnly,people,identity,cohortStart,CHAT_SQL,MODES,READ,title,lineText});
+Object.assign(module.exports,{createActivityLog,chatLog,conversation,readings,filtersFrom,where,readOnly,people,identity,cohortStart,CHAT_SQL,MODES,CHAT,READ,title,lineText});
