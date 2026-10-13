@@ -1,5 +1,5 @@
 const { getPoem, requestPoemText } = require('./_lib/poems.js');
-const {poetSystemPrompt,POET_PROMPT_VERSION}=require('./_lib/poet-prompt.cjs');
+const {poetSystemPrompt,POET_PROMPT_VERSION,POET_LIVE_VERSION}=require('./_lib/poet-prompt.cjs');
 const presetCache=require('./_lib/poet-preset-cache.cjs');
 const {withSchoolLearning} = require('./_lib/school-learning.cjs');
 
@@ -52,10 +52,10 @@ module.exports = withSchoolLearning('chat', async function handler(req, res) {
     return res.status(200).json({reply:prepared.reply,responseSource:'preset_cache'});
   }
 
-  const system = poetSystemPrompt(poem, grade);
+  const system = poetSystemPrompt(poem, grade, {facts:true});
 
   return requestPoemText(res, preset?presetCache.preparedMessages(poem,preset,grade):[
     { role: 'system', content: system },
     ...messages.slice(-10).map(({ role, content }) => ({ role, content }))
-  ], { field: 'reply', temperature: 0.8, timeoutMs: 20000, maxTokens: grade<=3?450:900, stream:res.chatStreaming===true,providerVersion:POET_PROMPT_VERSION });
+  ], { field: 'reply', temperature: 0.8, timeoutMs: 20000, maxTokens: grade<=3?450:900, stream:res.chatStreaming===true,providerVersion:preset?POET_PROMPT_VERSION:POET_LIVE_VERSION });
 });

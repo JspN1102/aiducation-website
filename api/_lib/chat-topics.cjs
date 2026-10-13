@@ -32,8 +32,9 @@ const PROMPT=`你為小學中文課分類學生對「AI 詩人」說的一句話
 topic 只可選一個：
 meaning＝問詩句、字詞意思或詩的內容情感；poet＝問詩人生平、朝代、寫詩背景；pronounce＝問讀音、寫法、筆畫、字形；
 chat＝和詩人日常閒聊、打招呼、說感受；unrelated＝與這首詩和學習無關（遊戲、動漫、其他話題）；invalid＝亂打、看不懂。
-concern 只可選一個：none＝沒有問題；abuse＝罵人、粗口、髒話；bully＝欺凌、取笑或威脅別人；selfharm＝想傷害自己、不想活；other＝其他不適合小學生的內容（色情、暴力等）。
-只按學生的話判斷，不要回答學生，不要解釋。`;
+concern 只可選一個：none＝沒有問題；abuse＝粗口、髒話，或用侮辱字眼罵人；bully＝欺凌、取笑或威脅同學、別人；selfharm＝學生說自己想死、想傷害自己、不想活；other＝色情、要傷害別人、危險行為等明顯不適合小學生的內容。
+以下都是 none：問詩人或他家人的年紀、生病、去世、死因、婚姻、坐牢等生平；說古人已經死了；故事、卡通、遊戲裏的鬼怪或打鬥；開玩笑說想和詩人結婚、說詩人帥或傻、說不喜歡詩人；說自己生氣、討厭某科、不想上學；流行語、數字或表情（如 67）。
+只有學生的話本身明顯屬於上面四類才標記；拿不準就用 none。只按學生的話判斷，不要回答學生，不要解釋。`;
 // Lenient: the first {...} in the reply, codes checked against the lists above.
 function parse(text){
   const m=/\{[^{}]*\}/.exec(String(text||''));if(!m)return null;
@@ -90,5 +91,5 @@ function classifyLater({eventId,question,poemTitle},{pool=defaultPool,...options
 }
 function defaultPool(){try{const research=require('./research-store.cjs');return research.mode()==='postgres'?research.getPool():null;}catch{return null;}}
 
-module.exports={TOPICS,CONCERNS,SCHEMA,schema,gibberish,parse,classify,remote,save,classifyLater,endpoint,modelName,LOCAL,
+module.exports={TOPICS,CONCERNS,SCHEMA,PROMPT,schema,gibberish,parse,classify,remote,save,classifyLater,endpoint,modelName,LOCAL,
   _reset(){cache.clear();inflight=0;}};

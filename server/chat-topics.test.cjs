@@ -115,7 +115,9 @@ test('需要關注的聊天 is 網站後台 only, today or 3 days, with words, p
 });
 
 test('the backfill dry run only counts; --apply classifies what has no row yet',async()=>{
- assert.deepEqual(backfill.parseArgs([]),{apply:false,limit:2000});assert.deepEqual(backfill.parseArgs(['--apply','--limit','50']),{apply:true,limit:50});
+ assert.deepEqual(backfill.parseArgs([]),{apply:false,limit:2000,recheck:false});assert.deepEqual(backfill.parseArgs(['--apply','--limit','50']),{apply:true,limit:50,recheck:false});
+ assert.deepEqual(backfill.parseArgs(['--recheck-concerns']),{apply:false,limit:2000,recheck:true});
+ assert.match(backfill.FLAGGED(10),/t\.concern IS NOT NULL/);
  assert.throws(()=>backfill.parseArgs(['--limit','x']));
  assert.match(backfill.PENDING(10),/NOT EXISTS \(SELECT 1 FROM chat_topics/);
  const rows=[{event_id:EVENT,poem:1,question:'😎😎'},{event_id:'4f1c2d4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f',poem:1,question:'甚麼意思'},{event_id:'5f1c2d4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f',poem:1,question:'甚麼意思'}];
@@ -124,6 +126,14 @@ test('the backfill dry run only counts; --apply classifies what has no row yet',
  assert.equal(dry.pending,3);assert.equal(dry.localInvalid,1);assert.equal(dry.deepseekCalls,1);assert.doesNotMatch(JSON.stringify(out),/甚麼意思|😎/);
  const saved=[];const done=await backfill.run({db,apply:true,emit:()=>{},classify:async q=>topics.gibberish(q)?{topic:'invalid',concern:null,model:'local'}:{topic:'meaning',concern:null,model:'m'},save:async(_,id,v)=>saved.push([id,v.topic])});
  assert.equal(done.classified,3);assert.deepEqual(done.byTopic,{invalid:1,meaning:2});assert.equal(saved.length,3);
+ const flaggedDb={query:async sql=>({rows:sql.includes('t.concern IS NOT NULL')?rows.slice(1,2):[]})};
+ const again=await backfill.run({db:flaggedDb,apply:true,recheck:true,emit:()=>{},classify:async()=>({topic:'poet',concern:null,model:'m'}),save:async()=>{}});
+ assert.equal(again.pending,1);assert.equal(again.classified,1);assert.equal(again.concern,0);
+});
+
+test('the concern rules say questions about the poet life and death, jokes and slang are none',()=>{
+ const p=topics.PROMPT;
+ for(const words of ['去世','死因','結婚','卡通','67','拿不準就用 none'])assert.ok(p.includes(words),words);
 });
 
 test('a recorded chat question is handed over after the reply, which never waits for the classifying',async t=>{
