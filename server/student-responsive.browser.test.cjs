@@ -76,7 +76,7 @@ async function reports(width,height){const {page,context}=await setup(width,heig
   document.querySelector('.workspace').className='workspace lesson-shell view-quiz';
   document.querySelector('#view').innerHTML='<section class="challenge-shell"><div class="challenge-body"><div class="challenge-writing-layout"><div class="challenge-writing-heading"><p class="challenge-prompt">請寫出「滋潤」的「潤」。</p></div><div id="writing-fixture"></div></div></div></section>';
   const {mountChallengeWriting}=await import('/maanshan/challenge-writing.mjs');
-  window.writing=mountChallengeWriting(document.querySelector('#writing-fixture'),{target:{char:'潤',pinyin:'rùn'},recognize:async()=>({candidates:['潤']})});
+  window.writing=mountChallengeWriting(document.querySelector('#writing-fixture'),{target:{char:'潤',pinyin:'rùn'},checkNeatness:()=>null,recognize:async()=>({candidates:['潤']})});
  });
  await page.locator('.cw-board').scrollIntoViewIfNeeded();
  const writing=await page.locator('.challenge-writing').evaluate(el=>({skip:parseFloat(getComputedStyle(el.querySelector('.cw-skip')).fontSize),status:parseFloat(getComputedStyle(el.querySelector('.cw-status')).fontSize),targets:[...el.querySelectorAll('button')].filter(b=>b.getClientRects().length).map(b=>b.getBoundingClientRect().height),white:[...el.querySelector('canvas').getContext('2d').getImageData(0,0,1,1).data],noOverflow:document.documentElement.scrollWidth<=innerWidth+1}));

@@ -1,13 +1,26 @@
 import {createHandwritingPad} from './handwriting-pad.mjs?v=20260921-school10';
 import {loadHanziWriter} from './hanzi-library.mjs?v=20260922-school12b';
 import {gradeCandidates,loadStrokeCounts} from './writing-grade.mjs?v=20260923-school23';
+import {judgeNeatness} from './writing-neatness.mjs?v=20261014-school64';
+
+// Browsers keep vendor files for 30 days: change the tag whenever the stroke data changes.
+const strokeData = character => new URL(`./vendor/hanzi-data/${character.codePointAt(0).toString(16)}.json?v=hk-20260929`,import.meta.url);
+// A recognised answer must also be written neatly (writing-neatness.mjs). Without
+// the stroke data (offline, or a character not in it) there is no verdict and it passes.
+async function defaultNeatness(ink,character,view) {
+  const controller=new view.AbortController(),timer=view.setTimeout(()=>controller.abort(),6000);
+  try {
+    const response=await view.fetch(strokeData(character),{signal:controller.signal});
+    return response.ok?judgeNeatness(ink,(await response.json())?.medians):null;
+  } catch {return null;} finally {view.clearTimeout(timer);}
+}
 
 // Demonstration and tracing are local learning activities. Only independent
 // handwriting is sent to recognition; later corrections preserve that answer.
 export function mountChallengeWriting(holder, {
   target, recognize, onSubmit = () => {}, onCorrection = () => {}, onTraceComplete = () => {},
   onAdvanceStateChange = () => {}, onResearch = () => {},
-  isAnswered = () => false, initialResult = null, initialCorrection = null
+  isAnswered = () => false, initialResult = null, initialCorrection = null, checkNeatness = defaultNeatness
 } = {}) {
   if (!holder?.ownerDocument || !target || Array.from(target.char || '').length !== 1) throw new TypeError('A holder and a single target character are required.');
   if (typeof recognize !== 'function') throw new TypeError('A recognition function is required.');
@@ -107,7 +120,7 @@ export function mountChallengeWriting(holder, {
     busy = true;const correcting = Boolean(result), count = correcting?++correctionCount:++recognitionCount;
     auditWriting(count>1?'retry':'attempt_started',{retryCount:count-1,metrics:{strokeCount:strokes.length,eraseCount}});
     const request = ++operation, started = view.performance.now();status.textContent = '正在辨認你的字…';updateControls();
-    let candidates, verdict;
+    let candidates, verdict, neat = null;
     try {
       const context = {mode:correcting?'review':'standard',phase:correcting?'correction':'assessment',attemptNo:count};
       const parse = response => Array.isArray(response?.candidates)?response.candidates.filter(v=>typeof v==='string'&&v.trim()).map(normalize):[];
@@ -125,6 +138,9 @@ export function mountChallengeWriting(holder, {
         const strokeOf = await loadStrokeCounts(view).catch(()=>null);if (stale()) return;
         verdict = gradeCandidates(candidates,accepted,{drawn:strokes.length,strokeOf:strokeOf||(()=>0)});
       }
+      if (verdict.correct && verdict.recognized===character && typeof checkNeatness==='function') {
+        neat = await Promise.resolve(checkNeatness(strokes.map(stroke=>stroke.map(p=>[p.x,p.y])),character,view)).catch(()=>null);if (stale()) return;
+      }
     } catch {
       if (!destroyed && request===operation) {
         auditWriting('error',{error:{code:'provider_unavailable',retryable:true},metrics:{strokeCount:strokes.length}});
@@ -132,16 +148,20 @@ export function mountChallengeWriting(holder, {
       }return;
     } finally {if (!destroyed && request===operation) {busy=false;updateControls();}}
     const latencyMs = Math.min(600000,Math.round(view.performance.now()-started));
-    const {correct, recognized} = verdict;
+    if (neat && neat.pass===false) {
+      status.textContent = `認得出是「${character}」，但字寫得不夠工整。清空後寫端正一點，再按「檢查」。`;return;
+    }
+    const {correct, recognized} = verdict, tidier = neat?.hint ? ' 下次可以寫得再端正一點。' : '';
     if (correcting) {
       const latest = Object.freeze({status:correct?'corrected':'incorrect',correct,independent:false,mode:'review',recognized,candidates:Object.freeze(candidates.slice(0,10)),attemptNo:count,submittedAt:Date.now()});
       if (correct || !['corrected','skipped'].includes(correction?.status)) correction = latest;
-      status.textContent = correct?'這次寫對了！可以繼續下一題。':`辨認為「${recognized}」，清空後再試一次。`;
+      status.textContent = correct?'這次寫對了！可以繼續下一題。'+tidier:`辨認為「${recognized}」，清空後再試一次。`;
       auditWriting('feedback_shown',{attemptNo:count,result:{status:correct?'correct':'incorrect',correct,score:null},metrics:{latencyMs}});
       onCorrection({...latest,candidates:[...latest.candidates]});updateControls();
     } else {
       auditWriting('item_interacted',{interaction:'game_action',metrics:{latencyMs}});
       commit(correct?'correct':'incorrect',candidates.slice(0,10),recognized);
+      if (correct && tidier && result) status.textContent += tidier;
     }
   }
   function startTracing() {
@@ -176,8 +196,7 @@ export function mountChallengeWriting(holder, {
     const signal=animationRequest.signal, timer=view.setTimeout(()=>animationRequest?.abort(),12000);
     auditLearning('hint_used',{hint:{kind:'stroke',count:1}});
     try {
-      // Browsers keep vendor files for 30 days: change the tag whenever the stroke data changes.
-      const resource=new URL(`./vendor/hanzi-data/${character.codePointAt(0).toString(16)}.json?v=hk-20260929`,import.meta.url);
+      const resource=strokeData(character);
       const [HanziWriter,data]=await Promise.all([loadHanziWriter(view,{signal}),view.fetch(resource,{signal}).then(response=>{if(!response.ok)throw new Error('Stroke data is unavailable.');return response.json();})]);
       view.clearTimeout(timer);if(destroyed||request!==strokeOperation)return;
       const size=Math.max(1,board.clientWidth);

@@ -28,7 +28,7 @@ async function mount(page,kind='sound',savedMode='fresh'){
   window.currentItems=attemptItems(saved,set);window.challenge=mountChallenge(document.querySelector('#view'),{poem,saved,
    onChange:value=>window.saved=value,onAnswer:value=>submissions.push(value),onCorrectionProgress:value=>correctionSaves.push(value),onResearch:(type,event)=>audit.push({type,...event}),
    playAudio:()=>window.audioMode==='pending'?new Promise(resolve=>window.resolveAudio=resolve):Promise.resolve(window.audioMode==='success'),
-   recognize:async(ink,context)=>{recognitionCalls.push({ink,context});return{candidates:[candidates.shift()||'口']};}});
+   checkNeatness:()=>null,recognize:async(ink,context)=>{recognitionCalls.push({ink,context});return{candidates:[candidates.shift()||'口']};}});
   window.item=window.currentItems[challenge.getAttempt().cursor];
  },{kind,savedMode});
  if(kind==='dictation'&&savedMode==='fresh')await finishLearning(page);

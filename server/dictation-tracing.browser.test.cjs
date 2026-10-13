@@ -26,7 +26,7 @@ async function mount(page,char='岸'){
    window.instrumentedWriter=true;
   }
   const {mountChallengeWriting}=await import('/maanshan/challenge-writing.mjs');
-  window.widget=mountChallengeWriting(document.querySelector('.challenge-writing-holder'),{target:{char,pinyin:char==='一'?'yī':'àn'},recognize:async(ink,options)=>{recognitions.push({ink,options});return{candidates:[char]};},onSubmit:result=>answers.push(result),onAdvanceStateChange:state=>states.push(state)});
+  window.widget=mountChallengeWriting(document.querySelector('.challenge-writing-holder'),{target:{char,pinyin:char==='一'?'yī':'àn'},recognize:async(ink,options)=>{recognitions.push({ink,options});return{candidates:[char]};},checkNeatness:()=>null,onSubmit:result=>answers.push(result),onAdvanceStateChange:state=>states.push(state)});
  },char);
  await page.locator('.challenge-writing[data-phase]').waitFor();
 }

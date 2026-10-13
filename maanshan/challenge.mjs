@@ -1,7 +1,7 @@
 import {imageAsset} from './media-images.mjs?v=20261007-school46';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261006-school43';
 import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20261006-school43';
-import {mountChallengeWriting} from './challenge-writing.mjs?v=20260929-hk1';
+import {mountChallengeWriting} from './challenge-writing.mjs?v=20261014-school64';
 import {mountChallengeModel} from './challenge-model.mjs?v=20261006-school43';
 import {mountLivingField} from './living-field.mjs?v=20261007-school46';
 
@@ -85,7 +85,7 @@ const soundIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const tone = shape => shape ? `<svg class="challenge-tone" viewBox="0 0 70 35" aria-hidden="true"><path d="${{level:'M8 10H62', rising:'M8 28 62 6', dipping:'M8 13 32 29 62 6', falling:'M8 6 62 28'}[shape]}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>` : '';
 const makeURL = path => new URL(path, import.meta.url).href;
 
-export function mountChallenge(container, {poem, saved, onChange, onComplete, playAudio, stopAudio, recognize, prewarm = () => {}, prefetchAudio = () => {}, onResearch = () => {}, onAnswer = () => {}, onCorrectionProgress = () => {}} = {}) {
+export function mountChallenge(container, {poem, saved, onChange, onComplete, playAudio, stopAudio, recognize, prewarm = () => {}, prefetchAudio = () => {}, onResearch = () => {}, onAnswer = () => {}, onCorrectionProgress = () => {}, checkNeatness} = {}) {
   const set = CHALLENGE_SETS[poem.slug];
   if (!set) throw new Error('missing-challenge');
   let attempt = prepareAttempt(set, saved), dead = false, screen = attempt.cursor;
@@ -133,7 +133,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     writingTraced=answer?.traceCompleted===true;
     prewarm();
     writingAdvance=answer?.status==='correct'||!!initialCorrection;
-    writing=mountChallengeWriting(q('.challenge-writing-holder'),{target:item.target,recognize:recognizeItem,onResearch:audit,
+    writing=mountChallengeWriting(q('.challenge-writing-holder'),{target:item.target,recognize:recognizeItem,onResearch:audit,...(checkNeatness?{checkNeatness}:{}),
       initialResult:answer,initialCorrection,onSubmit:result=>submit(result),
       onTraceComplete:()=>{
         if(dead||generation!==renderGeneration)return;

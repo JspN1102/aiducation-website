@@ -24,7 +24,7 @@ async function fixture(browser,mode='ready'){
  const mount=async()=>page.evaluate(async()=>{
   window.widget?.destroy();document.querySelector('#holder').replaceChildren();window.ink=[];
   const {mountChallengeWriting}=await import('/maanshan/challenge-writing.mjs');
-  window.widget=mountChallengeWriting(document.querySelector('#holder'),{target:{char:'岸',pinyin:'àn'},recognize:async value=>{ink.push(value);return{candidates:['岸']};}});
+  window.widget=mountChallengeWriting(document.querySelector('#holder'),{target:{char:'岸',pinyin:'àn'},checkNeatness:()=>null,recognize:async value=>{ink.push(value);return{candidates:['岸']};}});
  });
  const release=()=>{state.mode='ready';for(const resolve of state.releases.splice(0))resolve();};
  return{page,context,state,mount,release};

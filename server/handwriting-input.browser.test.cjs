@@ -17,7 +17,7 @@ async function mount(page,{audio='failed'}={}){
   const {mountChallenge}=await import('/maanshan/challenge.mjs'),{CHALLENGE_SETS}=await import('/maanshan/challenge-data.mjs'),{newAttempt,attemptItems,recordAnswer}=await import('/maanshan/challenge-state.mjs');
   const poems=await(await fetch('/maanshan/poems.json')).json(),poem=poems.poems.find(p=>p.grade===6),set=CHALLENGE_SETS[poem.slug],saved=newAttempt(set,{seed:'tablet-writing-input'}),items=attemptItems(saved,set),index=items.findIndex(i=>i.type==='dictation');
   for(let i=0;i<index;i++)recordAnswer(saved,set,i,{status:'skipped'});saved.cursor=index;window.target=items[index].target;
-  window.challenge=mountChallenge(document.querySelector('#view'),{poem,saved,onChange:state=>{window.saved=state;},onAnswer:value=>submissions.push(value),onResearch:(type,event)=>audit.push({type,...event}),playAudio:()=>audioMode==='pending'?new Promise(resolve=>window.resolveAudio=resolve):Promise.resolve(audioMode==='success'),recognize:async ink=>{inkRequests.push(ink);return{candidates:[target.char]};}});
+  window.challenge=mountChallenge(document.querySelector('#view'),{poem,saved,onChange:state=>{window.saved=state;},onAnswer:value=>submissions.push(value),onResearch:(type,event)=>audit.push({type,...event}),playAudio:()=>audioMode==='pending'?new Promise(resolve=>window.resolveAudio=resolve):Promise.resolve(audioMode==='success'),recognize:async ink=>{inkRequests.push(ink);return{candidates:[target.char]};},checkNeatness:()=>null});
  },{audio});
  await page.locator('.cw-board').waitFor();await finishLearning(page);await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
 }

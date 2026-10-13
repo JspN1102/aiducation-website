@@ -13,9 +13,11 @@ const check=(label,ok)=>{assert(ok,label);checks.push(label);};
 async function mount(page,options={}){
  await installLearningFixture(page);
  await page.evaluate(async options=>{
-  window.widget?.destroy();window.calls=[];window.answers=[];window.corrections=[];window.states=[];window.audit=[];window.nextCandidates=['土'];window.recognizeMode='ready';
+  window.widget?.destroy();window.calls=[];window.answers=[];window.corrections=[];window.states=[];window.audit=[];window.nextCandidates=['土'];window.recognizeMode='ready';window.neatMode=null;
   const {mountChallengeWriting}=await import('/maanshan/challenge-writing.mjs');
-  window.widget=mountChallengeWriting(document.querySelector('.challenge-writing-holder'),{target:{char:'岸',pinyin:'àn'},...options,
+  // The scribbles below are never a neat 岸: neatness is stubbed unless a case asks for the real check.
+  const {realNeatness,...rest}=options,neat=realNeatness?{}:{checkNeatness:async()=>neatMode==='messy'?{pass:false,hint:false,residual:0.1,missing:0,extra:0}:neatMode==='hint'?{pass:true,hint:true,residual:0.07,missing:0,extra:0}:null};
+  window.widget=mountChallengeWriting(document.querySelector('.challenge-writing-holder'),{target:{char:'岸',pinyin:'àn'},...rest,...neat,
    recognize:async(ink,context)=>{calls.push({ink,context});if(recognizeMode==='fail')throw Error('Offline');if(recognizeMode==='pending')await new Promise(resolve=>window.releaseRecognition=resolve);return{candidates:Array.isArray(nextCandidates[0])?nextCandidates.shift():nextCandidates};},
    onSubmit:r=>answers.push(r),onCorrection:r=>corrections.push(r),onResearch:(type,fields)=>audit.push({type,...fields}),
    onAdvanceStateChange:state=>{states.push(state);document.querySelector('#next').disabled=!state.canContinue;}
@@ -34,6 +36,14 @@ async function draw(page){
 async function drawStrokes(page,count){
  await page.locator('canvas').scrollIntoViewIfNeeded();const b=await page.locator('canvas').boundingBox();
  for(let i=0;i<count;i++){const y=b.y+b.height*(0.2+0.6*i/count);await page.mouse.move(b.x+b.width*.25,y);await page.mouse.down();await page.mouse.move(b.x+b.width*.7,y+b.height*.03,{steps:6});await page.mouse.up();}
+}
+// The standard 岸 (hanzi-writer medians, y up in a 1024 box) written stroke by stroke on the board.
+async function drawMedians(page){
+ const b=await page.locator('canvas').boundingBox(),medians=JSON.parse(fs.readFileSync(path.join(repo,'maanshan/vendor/hanzi-data/5cb8.json'),'utf8')).medians;
+ for(const median of medians){
+  const points=median.map(([x,y])=>({x:b.x+b.width*(0.1+0.8*x/1024),y:b.y+b.height*(0.1+0.8*(900-y)/1024)}));
+  await page.mouse.move(points[0].x,points[0].y);await page.mouse.down();for(const point of points.slice(1))await page.mouse.move(point.x,point.y,{steps:4});await page.mouse.up();
+ }
 }
 async function submit(page){await page.locator('[data-cw=submit]').click();await page.waitForFunction(()=>document.querySelector('.cw-expanded').getAttribute('aria-busy')==='false');}
 async function state(page){return page.evaluate(()=>({calls,answers,corrections,audit,result:widget.getResult(),correction:widget.getCorrection(),canContinue:widget.canContinue()}));}
@@ -102,6 +112,17 @@ async function state(page){return page.evaluate(()=>({calls,answers,corrections,
    check(engine+' the same ranking with too few strokes stays wrong',data.result.status==='incorrect'&&data.result.recognized==='山');
    await mount(page);await drawStrokes(page,8);await page.evaluate(()=>{nextCandidates=['崖','岸'];});await submit(page);data=await state(page);
    check(engine+' a different full-size character ranked first stays wrong',data.result.status==='incorrect'&&data.result.recognized==='崖');
+   // Neatness: a recognised 岸 written too messily is not graded; a borderline one passes with a hint.
+   await mount(page);await draw(page);await page.evaluate(()=>{nextCandidates=['岸'];neatMode='messy';});await submit(page);data=await state(page);
+   check(engine+' a recognised but messy character is not graded and asks for a neater rewrite',data.result===null&&data.answers.length===0&&!data.canContinue&&await page.locator('.cw-status').textContent().then(value=>value.includes('不夠工整')));
+   await page.locator('[data-cw=clear]').click();await draw(page);await page.evaluate(()=>{neatMode='hint';});await submit(page);data=await state(page);
+   check(engine+' a borderline neat character passes with a hint',data.result.status==='correct'&&data.canContinue&&data.calls.length===2&&await page.locator('.cw-status').textContent().then(value=>value.includes('寫對了')&&value.includes('端正')));
+   await mount(page,{realNeatness:true});await draw(page);await page.evaluate(()=>{nextCandidates=['岸'];});await submit(page);data=await state(page);
+   check(engine+' the real check rejects one scribbled line recognised as 岸',data.result===null&&await page.locator('.cw-status').textContent().then(value=>value.includes('不夠工整')));
+   await mount(page,{realNeatness:true});await drawMedians(page);await page.evaluate(()=>{nextCandidates=['岸'];});await submit(page);data=await state(page);
+   check(engine+' the real check passes the standard strokes of 岸',data.result?.status==='correct'&&await page.locator('.cw-status').textContent().then(value=>value.includes('寫對了')&&!value.includes('端正')));
+   await mount(page,{realNeatness:true});await page.route('**/hanzi-data/5cb8.json*',route=>route.fulfill({status:503,body:''}));await draw(page);await page.evaluate(()=>{nextCandidates=['岸'];});await submit(page);data=await state(page);
+   check(engine+' without stroke data a recognised character still passes',data.result?.status==='correct');await page.unroute('**/hanzi-data/5cb8.json*');
    for(const [width,height,minimum]of [[390,844,275],[768,1024,400],[1180,820,320]]){
     await page.setViewportSize({width,height});await mount(page);const before=await page.locator('.cw-board').boundingBox();
     await mount(page,{initialResult:{status:'incorrect',recognized:'土'}});const after=await page.locator('.cw-board').boundingBox();
