@@ -133,7 +133,7 @@ test('the backfill dry run only counts; --apply classifies what has no row yet',
 
 test('the concern rules say questions about the poet life and death, jokes and slang are none',()=>{
  const p=topics.PROMPT;
- for(const words of ['去世','死因','結婚','卡通','67','拿不準就用 none'])assert.ok(p.includes(words),words);
+ for(const words of ['去世','死因','結婚','卡通','67','我靠','拿不準就用 none'])assert.ok(p.includes(words),words);
 });
 
 test('a recorded chat question is handed over after the reply, which never waits for the classifying',async t=>{
