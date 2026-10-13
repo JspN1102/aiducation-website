@@ -16,8 +16,8 @@ import {publicImagesReady} from './media-images.mjs?v=20261007-school46';
 
 export const HEDGE_MS = 3000;
 export const FONTS = Object.freeze([
-  {family: 'Noto Serif HK', path: '/maanshan/vendor/fonts/noto-serif-hk.woff2', version: '96a12cf65f'},
-  {family: 'Noto Sans HK', path: '/maanshan/vendor/fonts/noto-sans-hk.woff2', version: '069357c0c5'}
+  {family: 'Noto Serif HK', path: '/maanshan/vendor/fonts/noto-serif-hk.woff2', version: '5e18d61996'},
+  {family: 'Noto Sans HK', path: '/maanshan/vendor/fonts/noto-sans-hk.woff2', version: '92d8bc1051'}
 ]);
 
 // Ordered routes for one font file. The local copy keeps the cache-busting

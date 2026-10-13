@@ -6,6 +6,7 @@ const challenges = require('./challenge-loader.cjs');
 const grade = require('./writing-grade.cjs');
 const replay = require('./request-replay.cjs');
 const chatQuota = () => require('./chat-quota.cjs');
+const chatTopics = () => require('./chat-topics.cjs');
 const score = value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100 ? value : null;
 
 async function referenceFor(req, operation) {
@@ -183,6 +184,8 @@ function withSchoolLearning(operation, handler) {
     const originalJSON=res.json.bind(res), started=performance.now();
     // Server-only research detail: the relay path (no port) and what the provider handler left on res.researchExtras.
     const extrasFor=()=>{try{const raw=req.headers?.['x-school-relay'];const m=typeof raw==='string'&&/^(hop-)?(hk|gz):\d{4}$/.exec(raw);return {...(res.researchExtras&&typeof res.researchExtras==='object'?res.researchExtras:{}),relay:m?(m[1]||'')+m[2]:'none'};}catch{return {};}};
+    // 問了甚麼類別: a recorded chat question is classified afterwards, off the pupil's path.
+    const recordedFrom=r=>{try{const chat=operation==='chat'&&r?.recorded===true?extrasFor().chat:null;if(chat?.question)void chatTopics().classifyLater({eventId:r.eventId,question:chat.question,poemTitle:reference.poem?.title});}catch{}return r?.recorded===true;};
     let responseWork=null;
     res.json=body=>{
       if (responseWork) return res;
@@ -190,7 +193,7 @@ function withSchoolLearning(operation, handler) {
       responseWork=(async()=>{
         const recordStarted=performance.now();
         let recorded=false;
-        try { recorded=(await research.recordVerifiedOutcome(req,outcomeFor(operation,body,status,reference,performance.now()-started,res.providerMetadata,extrasFor()))).recorded===true; }
+        try { recorded=recordedFrom(await research.recordVerifiedOutcome(req,outcomeFor(operation,body,status,reference,performance.now()-started,res.providerMetadata,extrasFor()))); }
         catch { /* The learner still receives the provider result and an explicit collection flag. */ }
         if(operation==='handwriting')res.setHeader('Server-Timing',[res.getHeader?.('Server-Timing'),`handwriting_record;dur=${(performance.now()-recordStarted).toFixed(1)}`].filter(Boolean).join(', '));
         return originalJSON({...body,researchRecorded:recorded});
@@ -203,7 +206,7 @@ function withSchoolLearning(operation, handler) {
       const timedOut=error?.name==='TimeoutError'||error?.code==='TIMEOUT';
       const outcome=outcomeFor(operation,{},timedOut?504:500,reference,performance.now()-started,res.providerMetadata,extrasFor());
       if(error?.name==='AbortError'){outcome.result.status='cancelled';outcome.error={code:'aborted',retryable:true};}
-      let recorded=false;try{recorded=(await research.recordVerifiedOutcome(req,outcome)).recorded===true;}catch{}
+      let recorded=false;try{recorded=recordedFrom(await research.recordVerifiedOutcome(req,outcome));}catch{}
       if(res.chatStreaming&&!res.chatSignal?.aborted){res.status(timedOut?504:500);return originalJSON({error:timedOut?'GPT timeout':'Chat service unavailable',researchRecorded:recorded});}
       throw error;
     }

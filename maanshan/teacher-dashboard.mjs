@@ -49,7 +49,7 @@ async function requestJSON(url,{signal,headers={},timeoutMs=25000,...options}={}
   if(!data||typeof data!=='object')throw new Error('回應格式不完整');return data;
  }finally{pendingRequests.delete(controller);clearTimeout(timeout);signal?.removeEventListener('abort',abort);}
 }
-function clearPrivate(){state.scopeCache.clear();usageLog.data=null;usageLog.student=null;readingLog.generation++;readingLog.data=null;readingLog.student=null;clearTeacherTools();state.exportJob?.controller.abort();state.exportJob=null;state.detailData=null;state.studentsOpen=false;state.studentFilter='all';state.constructFilter='';sessionEpoch++;for(const controller of pendingRequests)controller.abort();pendingRequests.clear();sessionCheck=null;state.request?.abort();state.detailRequest?.abort();state.generation++;state.data=null;state.roster=null;state.rosterError=false;state.auth=null;state.legacyCode='';state.search='';state.page=0;state.detailStudent=null;if(dialog.open)dialog.close();document.querySelector('#student-dialog-content').replaceChildren();const identity=document.querySelector('#teacher-identity');identity.textContent='';identity.hidden=true;document.querySelector('#teacher-logout').hidden=true;document.querySelector('#teacher-change-password')?.remove();resetMonitor();document.querySelector('#teacher-site-monitor')?.remove();}
+function clearPrivate(){state.scopeCache.clear();usageLog.data=null;usageLog.student=null;readingLog.generation++;readingLog.data=readingLog.chat=null;readingLog.student=null;resetChatConcerns();clearTeacherTools();state.exportJob?.controller.abort();state.exportJob=null;state.detailData=null;state.studentsOpen=false;state.studentFilter='all';state.constructFilter='';sessionEpoch++;for(const controller of pendingRequests)controller.abort();pendingRequests.clear();sessionCheck=null;state.request?.abort();state.detailRequest?.abort();state.generation++;state.data=null;state.roster=null;state.rosterError=false;state.auth=null;state.legacyCode='';state.search='';state.page=0;state.detailStudent=null;if(dialog.open)dialog.close();document.querySelector('#student-dialog-content').replaceChildren();const identity=document.querySelector('#teacher-identity');identity.textContent='';identity.hidden=true;document.querySelector('#teacher-logout').hidden=true;document.querySelector('#teacher-change-password')?.remove();resetMonitor();document.querySelector('#teacher-site-monitor')?.remove();}
 function lockSession(){clearPrivate();state.legacy=false;renderLogin('帳戶已登出或在另一個分頁切換，請重新登入。');}
 function validateAuth(auth){if(typeof auth.enabled!=='boolean'||requiresSchoolAuth&&!auth.enabled||auth.authenticated&&(!auth.user?.id||!['student','teacher'].includes(auth.user.role)||typeof auth.csrfToken!=='string'||!auth.csrfToken))throw new Error('帳戶服務回覆不完整');return auth;}
 async function checkSession(){
@@ -396,7 +396,7 @@ function openMonitor(){
  if(!monitorOpen()){main.classList.add('monitor-mode');main.insertAdjacentHTML('beforeend','<section id="site-monitor" class="site-monitor" aria-labelledby="site-monitor-title"><div class="monitor-top"><h1 id="site-monitor-title">網站後台</h1><button type="button" class="button small" data-action="close-monitor">返回教師後台</button></div><div id="site-monitor-body"></div>'+usageLogShell()+'</section>');}
  markMonitorButton(true);markMonitorAddress(true);renderMonitor();window.scrollTo(0,0);void pollMonitor();
 }
-function closeMonitor(){usageLog.generation++;usageLog.data=null;usageLog.student=null;usageLog.controller?.abort();usageLog.controller=null;resetMonitor();document.querySelector('#site-monitor')?.remove();document.querySelector('#teacher-main')?.classList.remove('monitor-mode');markMonitorButton(false);markMonitorAddress(false);}
+function closeMonitor(){resetChatConcerns();usageLog.generation++;usageLog.data=null;usageLog.student=null;usageLog.controller?.abort();usageLog.controller=null;resetMonitor();document.querySelector('#site-monitor')?.remove();document.querySelector('#teacher-main')?.classList.remove('monitor-mode');markMonitorButton(false);markMonitorAddress(false);}
 function connectionText(headers,rtt){
  const route=headers.get('X-Relay-Route'),port=headers.get('X-Relay-Port')||'';
  const via=headers.get('X-Relay-Hop')==='iad1'?'香港未能接通，經美國備用線路':route==='hk'&&/^310[0-2]$/.test(port)?'經香港 '+port:route==='gz'?'經美國節點':'直接連到廣州';
@@ -421,7 +421,7 @@ async function pollMonitor(){
   Object.assign(monitor,{data,link:connectionText(response.headers,rtt),failed:'',failures:0});
  }catch(error){if(!current())return;monitor.failures++;monitor.failed=error.status?'伺服器回覆 '+error.status:error.name==='AbortError'?'15 秒內沒有回應':error.name==='TypeError'?'網絡未能連線':'回覆內容不完整';}
  finally{clearTimeout(timeout);pendingRequests.delete(controller);if(monitor.controller===controller)monitor.controller=null;}
- if(!current())return;renderMonitor();scheduleMonitor(retry);
+ if(!current())return;renderMonitor();scheduleMonitor(retry);void loadChatConcerns();
 }
 function clockTime(value){return new Intl.DateTimeFormat('zh-HK',{timeZone:'Asia/Hong_Kong',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(value));}
 function since(at,now){if(number(at)===null)return ['—'];const s=Math.max(0,Math.round((now-at)/1000));return s<90?[s,' 秒前']:s<5400?[Math.round(s/60),' 分鐘前']:[Math.round(s/3600),' 小時前'];}
@@ -445,6 +445,33 @@ function dayBars(days){const max=Math.max(1,...days.map(d=>number(d.pupils)||0))
  return `<ol class="monitor-days">${days.map((d,i)=>{const n=number(d.pupils)||0;return `<li><strong>${shown(n)}</strong><span class="bar"><span style="height:${n?Math.max(6,Math.round(n/max*100)):0}%"></span></span><small>${i===days.length-1?'今天':esc(dayLabel(d.date))}</small><span class="sr-only"> ${shown(n)} 人</span></li>`;}).join('')}</ol>`;}
 function monitorList(items){return items.length?`<ul class="monitor-list">${items.map(([level,label,value,detail])=>`<li class="level-${level}"><span class="monitor-dot" aria-hidden="true"></span><span>${esc(label)}${detail?`<small>${esc(detail)}</small>`:''}</span><strong>${esc(value)}</strong></li>`).join('')}</ul>`:'';}
 // 學生端問題: times and pupils per kind; an older server sends no pupil figures.
+// 需要關注的聊天 (網站後台, Jasper only), inside 學生端問題: each question the AI flagged
+// (罵人粗口 / 欺凌 / 自傷 / 其他不當) with its words, the pupil and the time, for Jasper to check
+// before telling a teacher. Loaded on its own (not with the 10 s poll), at most once a minute.
+// Its range follows 學生端問題's 今日 / 近 3 日 (monitor.clientDays, 今日 when absent).
+const CHAT_CONCERNS_URL='/api/teacher-tools?tool=chat-concerns',chatConcerns={days:1,data:null,at:0,controller:null,generation:0,failed:''};
+function resetChatConcerns(){chatConcerns.generation++;chatConcerns.controller?.abort();Object.assign(chatConcerns,{data:null,at:0,controller:null,failed:''});}
+async function loadChatConcerns({force=false}={}){
+ if(!siteAdmin()||!monitorOpen())return;
+ if(chatConcerns.controller){if(!force)return;chatConcerns.controller.abort();chatConcerns.controller=null;}
+ if(!force&&chatConcerns.data?.days===chatConcerns.days&&Date.now()-chatConcerns.at<60000)return;
+ const controller=new AbortController(),generation=++chatConcerns.generation,days=chatConcerns.days;chatConcerns.controller=controller;
+ try{
+  const data=await requestJSON(CHAT_CONCERNS_URL+'&days='+days,{signal:controller.signal,timeoutMs:20000});if(generation!==chatConcerns.generation)return;
+  Object.assign(chatConcerns,{data,at:Date.now(),failed:''});
+ }catch(error){if(generation!==chatConcerns.generation)return;chatConcerns.failed=error.status?'伺服器回覆 '+error.status:'網絡未能連線';}
+ finally{if(chatConcerns.controller===controller)chatConcerns.controller=null;}
+ if(generation===chatConcerns.generation)renderMonitor();
+}
+function chatConcernsMarkup(now){
+ const want=monitor.clientDays===3?3:1;if(chatConcerns.days!==want){chatConcerns.days=want;chatConcerns.failed='';queueMicrotask(()=>void loadChatConcerns({force:true}));}
+ const d=chatConcerns.data,span=chatConcerns.days===3?'近 3 日':'今日',title=`<h3 class="chat-concerns-title">需要關注的聊天（${span}）</h3>`;
+ if(!d||d.days!==chatConcerns.days)return `<div class="chat-concerns">${title}<p class="monitor-note">${chatConcerns.failed?'未能讀取（'+esc(chatConcerns.failed)+'）':'正在讀取…'}</p></div>`;
+ if(!d.available)return `<div class="chat-concerns">${title}<p class="monitor-note">未能讀取聊天紀錄。</p></div>`;
+ const list=rows(d.items),concern=k=>CHAT_CONCERNS[k]||'其他不當',topic=k=>CHAT_TOPICS[k]||(k==='invalid'?'無效輸入':'');
+ return `<div class="chat-concerns">${title}${list.length?`<ol class="chat-concern-list">${list.map(c=>`<li><p class="chat-concern-meta"><strong class="chat-flag">⚠ ${esc(concern(c.concern))}</strong><span>${esc(pupilName(c))} · ${esc(pupilClass(c))}${c.poemTitle?' · 《'+esc(c.poemTitle)+'》':''}${topic(c.topic)?' · '+esc(topic(c.topic)):''}</span><time>${esc(when(c.at,now))}</time></p><blockquote>${esc(c.question||'')}</blockquote></li>`).join('')}</ol>`:`<p class="monitor-note">${span}沒有需要關注的聊天。</p>`}`
+  +monitorNote([list.length>=number(d.limit)?'只列出最近 '+d.limit+' 條':'','由 AI 自動標記，請先核實；老師後台只顯示「⚠ 需要關注」及類別，看不到原話'])+'</div>';
+}
 function clientErrorItems(list){return list.map(e=>['info',e.label||'其他',shown(e.count)+' 次'+(number(e.pupils)===null?'':'（'+shown(e.pupils)+' 位學生）'),number(e.topPupil)===null?'':'其中 1 位學生就有 '+shown(e.topPupil)+' 次']);}
 function jobState(job,now){
  if(job.loadState!=='loaded')return ['unknown','未安裝'];
@@ -547,33 +574,39 @@ function conversationBody(d){
 }
 // 朗讀測評次數 (jasper, molly and llp-pslau), below the downloads panel: each pupil's scored line readings by name,
 // every line's count in a dialog, and every attempt's score as Excel. Starts at the 2026-10-03 cohort reset.
-const READING_LOG='/api/teacher-tools?tool=reading-log',readingLog={days:7,grade:'',cls:'',q:'',data:null,generation:0,controller:null,student:null,detail:null,exporting:false};
+// Its other tab, AI聊天次數, counts each pupil's questions to the AI 詩人 by kind (never their words).
+const READING_LOG='/api/teacher-tools?tool=reading-log',CHAT_LOG='/api/teacher-tools?tool=chat-log',readingLog={view:'reading',days:7,grade:'',cls:'',q:'',data:null,chat:null,generation:0,controller:null,student:null,detail:null,exporting:false};
+const CHAT_TOPICS={meaning:'問詩句意思',poet:'問詩人生平',pronounce:'讀音寫法',chat:'日常閒聊',offtopic:'與學習無關'},CHAT_CONCERNS={abuse:'罵人粗口',bully:'欺凌',selfharm:'自傷',other:'其他不當'};
 const READING_RANGES=[[1,'今日'],[7,'近 7 日'],[30,'近 30 日'],[400,'全部']];
 function readingLogAllowed(){return !DEMO&&!state.legacy&&state.auth?.user?.role==='teacher'&&state.auth.user.readingLog===true;}
 function readingRange(days){return (READING_RANGES.find(([d])=>d===days)||[0,''])[1];}
 function readingLogShell(){
  const options=(list,value)=>`<option value="">全部</option>`+list.map(([v,t])=>`<option value="${esc(v)}" ${String(v)===value?'selected':''}>${esc(t)}</option>`).join('');
- return `<section id="reading-log" class="downloads-panel reading-log" aria-labelledby="reading-log-title"><div class="reading-log-top"><h2 id="reading-log-title">朗讀測評次數</h2><div class="usage-days" role="group" aria-label="時間範圍">${READING_RANGES.map(([d,label])=>`<button type="button" class="button small quiet" data-reading-days="${d}" aria-pressed="${readingLog.days===d}">${label}</button>`).join('')}</div></div>
+ return `<section id="reading-log" class="downloads-panel reading-log" aria-labelledby="reading-log-title"><div class="reading-log-top"><h2 id="reading-log-title" class="sr-only">朗讀測評次數及AI聊天次數</h2><div class="reading-tabs" role="group" aria-label="查看">${[['reading','朗讀測評次數'],['chat','AI聊天次數']].map(([v,label])=>`<button type="button" class="reading-tab" data-reading-view="${v}" aria-pressed="${readingLog.view===v}">${label}</button>`).join('')}</div><div class="usage-days" role="group" aria-label="時間範圍">${READING_RANGES.map(([d,label])=>`<button type="button" class="button small quiet" data-reading-days="${d}" aria-pressed="${readingLog.days===d}">${label}</button>`).join('')}</div></div>
 <div class="usage-filters reading-log-filters"><label class="field">年級<select name="grade" data-reading-filter>${options([1,2,3,4,5,6].map(g=>[g,g+' 年級']),readingLog.grade)}</select></label><label class="field">班別<select name="cls" data-reading-filter>${options('ABCDEFGH'.split('').map(c=>[c,c+' 班']),readingLog.cls)}</select></label><label class="field usage-search">搜尋學生<input type="search" id="reading-search" value="${esc(readingLog.q)}" placeholder="姓名、班別或座號" autocomplete="off"></label></div>
 <div id="reading-log-body"></div></section>`;}
-function readingQuery(extra={}){
+function readingQuery(extra={},path=READING_LOG){
  const p=new URLSearchParams({days:String(readingLog.days)});if(readingLog.grade)p.set('grade',readingLog.grade);if(readingLog.cls)p.set('cls',readingLog.cls);
- for(const [key,value] of Object.entries(extra))p.set(key,value);return READING_LOG+'&'+p.toString();
+ for(const [key,value] of Object.entries(extra))p.set(key,value);return path+'&'+p.toString();
 }
-function showReadingLog(){const host=document.querySelector('#reading-log-body');if(!host)return;if(readingLog.data)host.innerHTML=readingLogBody(readingLog.data);else void loadReadingLog();}
+function readingCurrent(){return readingLog.view==='chat'?readingLog.chat:readingLog.data;}
+function readingBody(){return readingLog.view==='chat'?chatLogBody(readingLog.chat):readingLogBody(readingLog.data);}
+function showReadingLog(){const host=document.querySelector('#reading-log-body');if(!host)return;
+ document.querySelectorAll('[data-reading-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.readingView===readingLog.view)));
+ if(readingCurrent())host.innerHTML=readingBody();else void loadReadingLog();}
 async function loadReadingLog(){
  const host=document.querySelector('#reading-log-body');if(!readingLogAllowed()||!host)return;
- readingLog.controller?.abort();const controller=new AbortController(),generation=++readingLog.generation;readingLog.controller=controller;
+ readingLog.controller?.abort();const controller=new AbortController(),generation=++readingLog.generation,chat=readingLog.view==='chat',what=chat?'AI聊天次數':'朗讀測評次數';readingLog.controller=controller;
  document.querySelectorAll('[data-reading-days]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.readingDays)===readingLog.days)));
- host.innerHTML='<div class="data-loading" role="status"><span class="loader" aria-hidden="true"></span><p>正在讀取朗讀測評次數</p></div>';
+ host.innerHTML=`<div class="data-loading" role="status"><span class="loader" aria-hidden="true"></span><p>正在讀取${what}</p></div>`;
  try{
-  const data=await requestJSON(readingQuery(),{signal:controller.signal,timeoutMs:20000});if(generation!==readingLog.generation)return;
-  readingLog.data=data;host.innerHTML=readingLogBody(data);
+  const data=await requestJSON(readingQuery({},chat?CHAT_LOG:READING_LOG),{signal:controller.signal,timeoutMs:20000});if(generation!==readingLog.generation)return;
+  readingLog[chat?'chat':'data']=data;host.innerHTML=readingBody();
  }catch(error){
   if(generation!==readingLog.generation)return;
   if(error.status===401){clearPrivate();renderLogin('登入已失效，請重新登入。');return;}
   if(error.status===403){document.querySelector('#reading-log')?.remove();return;}
-  host.innerHTML=`<p class="status-strip error" role="alert">未能讀取朗讀測評次數（${esc(error.name==='AbortError'?'20 秒內沒有回應':error.status?'伺服器回覆 '+error.status:'網絡未能連線')}）。<button type="button" class="button small" data-action="reading-retry">再試一次</button></p>`;
+  host.innerHTML=`<p class="status-strip error" role="alert">未能讀取${what}（${esc(error.name==='AbortError'?'20 秒內沒有回應':error.status?'伺服器回覆 '+error.status:'網絡未能連線')}）。<button type="button" class="button small" data-action="reading-retry">再試一次</button></p>`;
  }finally{if(readingLog.controller===controller)readingLog.controller=null;}
 }
 // 搜尋學生 narrows the loaded list in the browser: name, class (2A, 二年級A班) or seat.
@@ -595,6 +628,27 @@ function readingLinesBody(s){
  const exportBar=`<div class="reading-export"><button type="button" class="button primary" data-action="reading-export" ${poems.length?'':'disabled'}>${icon('download')}匯出 Excel（每句每次的分數）</button><p id="reading-export-status" class="helper" role="status"></p></div>`;
  if(!poems.length)return '<p class="helper">這段時間沒有朗讀測評。</p>'+exportBar;
  return `<p class="helper">共 ${shown(s.total)} 次測評${s.failed?'，其中 '+shown(s.failed)+' 次沒有結果':''}</p>${exportBar}`+poems.map(p=>`<div class="table-area"><table class="monitor-table usage-lines"><caption>《${esc(p.title)}》 ${shown(p.total)} 次</caption><thead><tr><th scope="col">句</th><th scope="col">句子</th><th scope="col">測評次數</th><th scope="col">沒有結果</th></tr></thead><tbody>${rows(p.lines).map(l=>`<tr><td>第 ${shown(l.line)} 句</td><th scope="row">${esc(l.text||'')}</th><td>${shown(l.count)}</td><td>${shown(l.failed)}</td></tr>`).join('')}</tbody></table></div>`).join('');
+}
+// AI聊天次數: counts per pupil only. The words of a flagged question are checked in 網站後台.
+function chatConcernText(s){return Object.entries(CHAT_CONCERNS).filter(([k])=>number(s.concerns?.[k])).map(([k,label])=>label+' '+shown(s.concerns[k])).join('、');}
+function chatLogBody(d){
+ const all=rows(d.students),list=readingMatches(all),range=readingRange(d.days),f=d.filters||{},scope=[f.grade?f.grade+' 年級':'',f.cls?f.cls+' 班':''].filter(Boolean).join(' · ')||'全校';
+ if(!d.available)return '<p class="status-strip error" role="alert">未能讀取AI聊天紀錄。<button type="button" class="button small" data-action="reading-retry">再試一次</button></p>';
+ if(!all.length)return `<p class="reading-log-summary">${esc(range)}（${esc(scope)}）沒有學生和 AI 詩人聊天。</p>`;
+ if(!list.length)return `<p class="reading-log-summary">${esc(range)}（${esc(scope)}）找不到「${esc(readingLog.q.trim())}」。</p>`;
+ const searching=list.length!==all.length,sum=key=>searching?list.reduce((n,s)=>n+(number(s[key])||0),0):number(d[key])||0,flagged=sum('concern');
+ return `<p class="reading-log-summary">${esc(range)} · ${esc(scope)}：<strong>${shown(list.length)}</strong> 位學生${searching?`（共 ${shown(all.length)} 位）`:''}，共 <strong>${shown(sum('questions'))}</strong> 次提問${sum('invalid')?`（另有 ${shown(sum('invalid'))} 次無效輸入）`:''}${flagged?`，<span class="chat-flag">⚠ ${shown(flagged)} 次需要關注</span>`:''}</p><div class="table-area"><table class="monitor-table usage-students reading-log-table chat-log-table"><caption class="sr-only">每位學生問 AI 詩人的次數；按「看聊天」可看問題的類別</caption><thead><tr><th scope="col">姓名</th><th scope="col">班別座號</th><th scope="col">提問</th><th scope="col">無效輸入</th><th scope="col">需要關注</th><th scope="col"><span class="sr-only">類別</span></th></tr></thead><tbody>${list.map(s=>`<tr><th scope="row">${esc(pupilName(s))}</th><td>${esc(pupilClass(s))}</td><td>${shown(s.questions)}</td><td>${shown(s.invalid)}</td><td>${s.concern?`<span class="chat-flag">⚠ 需要關注</span><small>${esc(chatConcernText(s))}</small>`:'—'}</td><td><button type="button" class="button small quiet" data-chat-topics="${esc(s.student)}">看聊天</button></td></tr>`).join('')}</tbody></table></div>${d.truncated?'<p class="tools-hint">紀錄太多，只列出部分，請選擇年級或班別。</p>':''}<p class="tools-hint">學生每送出一個問題算一次；亂打的字、純表情或數字算「無效輸入」，不計入提問。類別由 AI 自動判斷，只供參考，這裏不顯示學生的原話。「⚠ 需要關注」的原話由網站管理員核實後再決定是否告知老師。</p>`;
+}
+function openChatTopics(id){
+ const s=rows(readingLog.chat?.students).find(x=>x.student===id);if(!s)return;
+ state.detailRequest?.abort();state.detailStudent=null;state.detailData=null;readingLog.detail?.abort();readingLog.student=null;
+ const topics=Object.entries(CHAT_TOPICS).map(([k,label])=>[label,number(s.topics?.[k])||0]).concat(number(s.unclassified)?[['未分類',s.unclassified]]:[]);
+ const concerns=Object.entries(CHAT_CONCERNS).filter(([k])=>number(s.concerns?.[k]));
+ const body=`<p class="helper">共 ${shown(s.questions)} 次提問${s.invalid?'，另有 '+shown(s.invalid)+' 次無效輸入':''}</p><div class="table-area"><table class="monitor-table usage-lines chat-topic-table"><caption>問題類別</caption><thead><tr><th scope="col">類別</th><th scope="col">次數</th></tr></thead><tbody>${topics.map(([label,n])=>`<tr><th scope="row">${esc(label)}</th><td>${shown(n)}</td></tr>`).join('')}</tbody></table></div>`
+  +(concerns.length?`<div class="chat-concern-box"><p><span class="chat-flag">⚠ 需要關注</span></p><ul>${concerns.map(([k,label])=>`<li>${esc(label)}<strong>${shown(s.concerns[k])} 次</strong></li>`).join('')}</ul><p class="helper">原話由網站管理員核實後再決定是否告知老師。</p></div>`:'')
+  +'<p class="helper">類別由 AI 自動判斷，只供參考；這裏不顯示學生的原話和詩人的回覆。</p>';
+ document.querySelector('#student-dialog-content').innerHTML=`<header class="dialog-header"><div><h2 id="student-dialog-title">${esc(pupilName(s))}</h2><p class="helper">${esc(pupilClass(s))} · ${esc(readingRange(readingLog.days))} · AI聊天</p></div><button type="button" class="button icon-only" data-action="close-dialog" aria-label="關閉AI聊天次數">×</button></header><div class="dialog-body reading-lines-body">${body}</div>`;
+ if(!dialog.open)dialog.showModal();dialog.scrollTop=0;
 }
 async function openReadingStudent(id){
  const row=rows(readingLog.data?.students).find(s=>s.student===id);if(!row)return;
@@ -676,7 +730,7 @@ function renderMonitor(){
   const days=rows(today.week?.days),busiest=days.reduce((a,b)=>(number(b.pupils)||0)>(number(a?.pupils)||0)?b:a,null);
   week=monitorCard('近 7 日',s.week,monitorStats([['7 日內學生',today.week?.pupils,' 人'],['最多一天',busiest?busiest.pupils:null,busiest?' 人（'+dayLabel(busiest.date)+'）':'']])+(days.length?dayBars(days):''));
   const list=rows(today.clientErrors);
-  clients=monitorCard('學生端問題（今日）',s.clients,monitorList(clientErrorItems(list))+monitorNote(['學生裝置自動回報，不含學生自己取消的操作']));
+  clients=monitorCard('學生端問題（今日）',s.clients,monitorList(clientErrorItems(list))+monitorNote(['學生裝置自動回報，不含學生自己取消的操作'])+chatConcernsMarkup(now));
  }else if(today)summary=monitorCard('今日概況',s.today,'');
  const series=rows(d.traffic?.series);
  if(series.length){
@@ -698,6 +752,7 @@ function renderMonitor(){
    .concat(rows(d.upkeep.certs).map(c=>[number(c.daysLeft)===null?'unknown':!c.matches||c.daysLeft<7?'bad':c.daysLeft<20?'warn':'ok',c.label,number(c.daysLeft)===null?'未能讀取':c.matches?c.daysLeft+' 天後到期':'與網址不符',c.host]));
   upkeep=monitorCard('維護與備份',s.upkeep,d.upkeep.available||rows(d.upkeep.certs).length?monitorList(items):'');
  }
+ if(!clients)clients=monitorCard('需要關注的聊天',{level:'info',text:'由 AI 自動標記，請先核實。'},chatConcernsMarkup(now));
  const lost=monitor.failures>=3,level=lost?'bad':levelOf(d.verdict);
  host.innerHTML=`<div class="monitor-banner level-${level}"><span class="monitor-dot" aria-hidden="true"></span><strong>${esc(lost?`連續 ${monitor.failures} 次未能取得網站狀態（${monitor.failed}），學生可能也連不上。`:d.verdict.text)}</strong></div><p class="monitor-meta"><span>更新於 ${clockTime(now)}</span>${monitor.link?`<span>${esc(monitor.link)}</span>`:''}${monitor.failed&&!lost?`<span class="monitor-stale">最近一次更新未完成（${esc(monitor.failed)}）</span>`:''}</p><div class="monitor-grid${lost?' stale':''}">${summary}${week}${trend}${server}${relay}${vercel}${database}${latency}${errors}${services}${upkeep}${clients}</div>`;
 }
@@ -707,7 +762,7 @@ root.addEventListener('submit',event=>{
  if(event.target.id==='usage-filters'){event.preventDefault();void loadUsageLog();}
 });
 root.addEventListener('change',event=>{
- if(event.target.matches('[data-reading-filter]')){readingLog[event.target.name]=event.target.value;void loadReadingLog();return;}
+ if(event.target.matches('[data-reading-filter]')){readingLog[event.target.name]=event.target.value;readingLog.data=readingLog.chat=null;void loadReadingLog();return;}
  if(event.target.name==='grade'&&event.target.form?.id==='usage-filters'){
   const poem=event.target.form.elements.poem,keep=poem.value,list=usagePoemsOf(event.target.value);
   poem.innerHTML='<option value="">全部</option>'+list.map(([v,t])=>`<option value="${v}">${esc(t)}</option>`).join('');
@@ -724,7 +779,7 @@ root.addEventListener('input',event=>{
  if(event.target.closest('#teacher-filters'))return;
  if(event.isComposing||event.target.id!=='student-search')return;state.search=event.target.value;state.page=0;const cursor=event.target.selectionStart;updateStudentList();const input=document.querySelector('#student-search');input?.focus();try{input?.setSelectionRange(cursor,cursor);}catch{}
 });
-root.addEventListener('input',event=>{if(event.isComposing||event.target.id!=='reading-search')return;readingLog.q=event.target.value;const host=document.querySelector('#reading-log-body');if(host&&readingLog.data)host.innerHTML=readingLogBody(readingLog.data);});
+root.addEventListener('input',event=>{if(event.isComposing||event.target.id!=='reading-search')return;readingLog.q=event.target.value;const host=document.querySelector('#reading-log-body');if(host&&readingCurrent())host.innerHTML=readingBody();});
 root.addEventListener('compositionend',event=>{if(event.target.id==='reading-search')event.target.dispatchEvent(new Event('input',{bubbles:true}));if(event.target.id==='student-search')event.target.dispatchEvent(new Event('input',{bubbles:true}));});
 function click(event){const button=event.target.closest('button');if(!button||button.disabled)return;
  if(button.dataset.action==='close-monitor'){closeMonitor();document.querySelector('#teacher-site-monitor')?.focus();return;}
@@ -733,7 +788,9 @@ function click(event){const button=event.target.closest('button');if(!button||bu
  if(button.dataset.usageDays){void loadUsageLog(Number(button.dataset.usageDays));return;}
  if(button.dataset.chatStudent){void openChatStudent(button.dataset.chatStudent);return;}
  if(button.dataset.action==='usage-back'){usageBack();return;}
- if(button.dataset.readingDays){readingLog.days=Number(button.dataset.readingDays)||7;void loadReadingLog();return;}
+ if(button.dataset.readingDays){readingLog.days=Number(button.dataset.readingDays)||7;readingLog.data=readingLog.chat=null;void loadReadingLog();return;}
+ if(button.dataset.readingView){readingLog.view=button.dataset.readingView==='chat'?'chat':'reading';showReadingLog();return;}
+ if(button.dataset.chatTopics){openChatTopics(button.dataset.chatTopics);return;}
  if(button.dataset.readingStudent){void openReadingStudent(button.dataset.readingStudent);return;}
  if(button.dataset.action==='reading-retry'){void loadReadingLog();return;}
  if(button.dataset.action==='reading-export'){void exportReadingScores(button);return;}
