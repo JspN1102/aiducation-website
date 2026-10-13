@@ -11,7 +11,7 @@ function analyticsHandler(stubs){const file=path.join(__dirname,'../api/teacher-
 test('poem filtering is optional for research and is applied in SQL and published-row matching',async()=>{
  const all=research.filtersFrom({from:'2026-09-01',to:'2026-09-21'}),f=research.filtersFrom({from:all.from,to:all.to,grade:'2',poemId:'2',cls:'A'});
  assert.equal(all.poemId,undefined);assert.equal(f.poemId,2);
- for(const poemId of ['0','7','2 OR 1=1',['2'],'02x'])assert.throws(()=>research.filtersFrom({poemId}));
+ for(const poemId of ['0','13','2 OR 1=1',['2'],'02x'])assert.throws(()=>research.filtersFrom({poemId}));assert.equal(research.filtersFrom({from:all.from,to:all.to,grade:'2',poemId:'8'}).poemId,8);
  const row={serverReceivedAt:'2026-09-20T00:00:00.000Z',grade:2,cls:'A',event:{poemId:2}};
  assert.equal(research.matches(row,f),true);assert.equal(research.matches({...row,event:{poemId:6}},f),false);
  let query;await research.readPostgres(f,{query:async(sql,values)=>{query={sql,values};return {rows:[]};}});

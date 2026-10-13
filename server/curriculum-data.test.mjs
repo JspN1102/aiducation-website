@@ -47,7 +47,7 @@ test('the preview poems load only on request and carry their scene pictures', as
     await loadCurriculum();
     assert.equal(calls.some(url => url.includes('preview')), false);
     assert.deepEqual(await loadPreviewCurriculum(), {poems:[{id:7}], scenePreviews:{'yong-xue':['scene']}});
-    assert(calls.some(url => url.endsWith('poems-preview.json?v=20261005-school40')));
+    assert(calls.some(url => url.endsWith('poems-preview.json?v=20261005-school41')));
     assert(calls.some(url => url.endsWith('scene-previews-preview.json?v=20261005-school40')));
   } finally {globalThis.fetch = original;}
 });

@@ -77,26 +77,30 @@ test('challenge submission denies cross-grade students and grades teacher/test a
  const denied=response();await challenge({method:'POST',body:structuredClone(body)},denied);assert.equal(denied.statusCode,422);
  for(const person of [{...actor,isTest:true,learningScope:'all-grades'},{...actor,role:'teacher',grade:null}]){learner=person;const res=response();await challenge({method:'POST',body:structuredClone(body)},res);assert.equal(res.statusCode,200);assert.equal(res.body.researchExcluded,true);assert.equal(res.body.researchRecorded,false);assert.equal(res.body.result.correct,true);}
 });
-test('poems 7-12 reach providers and challenge grading only for the two preview teachers',async t=>{
- t.mock.method(auth,'enabled',()=>true);let learner;
- t.mock.method(auth,'requireActor',async()=>learner);t.mock.method(research,'recordVerifiedOutcome',async()=>assert.fail('preview practice reached research'));
+test('poems 7-12 reach providers and challenge grading for every teacher and for pupils of their grade, with research',async t=>{
+ t.mock.method(auth,'enabled',()=>true);let learner;const recorded=[];
+ t.mock.method(auth,'requireActor',async()=>learner);t.mock.method(research,'recordVerifiedOutcome',async(req,input)=>{recorded.push([learner.id,input.poemId??input.context?.poemId??req.body?.researchContext?.poemId]);return {recorded:true};});
  const {CHALLENGE_SETS}=await loader.load(),teacher={id:'t_'+'b'.repeat(24),role:'teacher',login:'molly',grade:null,cls:null};
- const preview={...teacher,previewPoems:true},others=[{...teacher,login:'teacher2'},{...actor,isTest:true,learningScope:'all-grades',login:'jasper'},actor];
+ const staff=[teacher,{...teacher,login:'teacher2'},{...actor,isTest:true,learningScope:'all-grades',login:'jasper'}];
  let calls=0;
  for(let poemId=7;poemId<=12;poemId++){
-  const poem=getPoem(poemId),item=CHALLENGE_SETS[poem.slug].bank.find(i=>i.type==='sound');
-  const requests=[['chat',{poemId,grade:1}],['reading',{poemId,refText:poem.lines.at(-1).simplified}]];
+  const poem=getPoem(poemId),item=CHALLENGE_SETS[poem.slug].bank.find(i=>i.type==='sound'),last=poem.lines.length-1;
+  const requests=person=>[['chat',{poemId,grade:poem.grade,...person.role==='student'&&!person.isTest?{researchContext:{actorId:person.id,poemId}}:{}}],
+   ['reading',{poemId,refText:poem.lines[last].simplified,...person.role==='student'&&!person.isTest?{researchContext:{actorId:person.id,poemId,itemId:`p${poemId}.l${last}`}}:{}}]];
   const answer=person=>({poemId,itemId:item.id,status:'correct',response:{choiceId:item.answerId},researchContext:{actorId:person.id,poemId,itemId:item.id}});
-  learner=preview;
-  for(const [operation,body] of requests){const res=response();await withSchoolLearning(operation,async(req,res)=>{calls++;return res.json({ok:true});})({method:'POST',body:structuredClone(body)},res);assert.equal(res.statusCode,200,operation+' '+poemId);}
-  const graded=response();await challenge({method:'POST',body:answer(preview)},graded);assert.equal(graded.statusCode,200);assert.equal(graded.body.result.correct,true);
-  for(const person of others){
+  const pupil={...actor,grade:poem.grade};
+  for(const person of [...staff,pupil]){
    learner=person;
-   for(const [operation,body] of requests){const res=response();await withSchoolLearning(operation,async()=>assert.fail('provider called for '+person.login))({method:'POST',body:structuredClone(body)},res);assert.equal(res.statusCode,422);assert.equal(res.body.code,'POEM_GRADE_FORBIDDEN');}
-   const denied=response();await challenge({method:'POST',body:answer(person)},denied);assert.equal(denied.statusCode,422);
+   for(const [operation,body] of requests(person)){const res=response();await withSchoolLearning(operation,async(req,res)=>{calls++;return res.json({ok:true});})({method:'POST',body:structuredClone(body)},res);assert.equal(res.statusCode,200,operation+' '+poemId+' '+person.login);}
+   const graded=response();await challenge({method:'POST',body:answer(person)},graded);assert.equal(graded.statusCode,200,poemId+' '+person.login);assert.equal(graded.body.result.correct,true);
   }
+  learner={...actor,grade:poem.grade===6?1:poem.grade+1};
+  for(const [operation,body] of requests(learner)){const res=response();await withSchoolLearning(operation,async()=>assert.fail('provider called for another grade'))({method:'POST',body:structuredClone(body)},res);assert.equal(res.statusCode,422);assert.equal(res.body.code,'POEM_GRADE_FORBIDDEN');}
+  const denied=response();await challenge({method:'POST',body:answer(learner)},denied);assert.equal(denied.statusCode,422);
  }
- assert.equal(calls,12);
+ assert.equal(calls,6*4*2);
+ // Only the pupils' practice is research: chat, reading and the answer for each poem.
+ assert.deepEqual(recorded.map(r=>r[1]),[7,7,7,8,8,8,9,9,9,10,10,10,11,11,11,12,12,12]);assert(recorded.every(r=>r[0]===actor.id));
 });
 test('provider response awaits durable recording, enforces school grade and binds actor',async t=>{
  t.mock.method(auth,'enabled',()=>true);t.mock.method(auth,'requireActor',async()=>actor);

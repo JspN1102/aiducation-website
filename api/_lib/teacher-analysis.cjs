@@ -133,10 +133,10 @@ function aggregateEvidence(dataset){
  const days=(analytics.trend||[]).filter(item=>/^\d{4}-\d\d-\d\d$/.test(item.date)).slice(-31);
  for(const item of days){add('有記錄學生',safeCount(item.nStudents),'人',item.date);add('收集記錄',safeCount(item.nEvents),'筆',item.date);}
  for(const word of (analytics.readingWords||[]).slice(0,20)){
-  if(typeof word.char!=='string'||[...word.char].length!==1||!Number.isInteger(word.poemId)||word.poemId<1||word.poemId>6||safeScore(word.meanScore)===null)continue;
+  if(typeof word.char!=='string'||[...word.char].length!==1||!Number.isInteger(word.poemId)||word.poemId<1||word.poemId>12||safeScore(word.meanScore)===null)continue;
   add('「'+word.char+'」字音觀察',{meanScore:word.meanScore,observations:safeCount(word.count),below60:safeCount(word.below60Count)},'字音評分','第'+word.poemId+'首古詩','平台評分');
  }
- for(const poem of (analytics.readingCharacterAnalysis?.poems||[]).slice(0,6)){
+ for(const poem of (analytics.readingCharacterAnalysis?.poems||[]).slice(0,12)){
   const measured=(poem.lines||[]).flatMap(line=>(line.words||[]).filter(word=>safeScore(word.meanScore)!==null&&safeCount(word.count)>0).map(word=>({...word,lineIndex:line.lineIndex}))).sort((left,right)=>left.meanScore-right.meanScore||right.count-left.count);
   if(!measured.length)continue;
   add('全詩逐字平均的觀察範圍',{measuredPositions:measured.length,meanBelow80Positions:measured.filter(word=>word.meanScore<80).length},'字位',poem.grade+'年級《'+poem.title+'》','平台評分');
@@ -144,7 +144,7 @@ function aggregateEvidence(dataset){
  }
  if(facts.length>2000)fail('NARROW_DATE_OR_CLASS_FILTER',413,false);
  const syncStatus=['current','catching_up','attention','direct','published','unavailable'].includes(analytics.sync?.status)?analytics.sync.status:'unavailable';
- const curriculum=require('../../maanshan/poems.json').poems.filter(poem=>!dataset.filters.grade||poem.grade===dataset.filters.grade).map(poem=>({grade:poem.grade,title:poem.title,lines:poem.lines.map(line=>({text:line.text,pinyin:line.pinyin})),dictation:poem.dictation.slice(0,poem.grade<=2?1:poem.grade<=4?2:3).map(item=>({char:item.char,pinyin:item.pinyin,word:item.word}))}));
+ const curriculum=require('./all-poems.cjs').poems.filter(poem=>!dataset.filters.grade||poem.grade===dataset.filters.grade&&(!dataset.filters.poemId||poem.id===Number(dataset.filters.poemId))).map(poem=>({grade:poem.grade,title:poem.title,lines:poem.lines.map(line=>({text:line.text,pinyin:line.pinyin})),dictation:poem.dictation.slice(0,poem.grade<=2?1:poem.grade<=4?2:3).map(item=>({char:item.char,pinyin:item.pinyin,word:item.word}))}));
  const teachingConstraints=curriculum.map(poem=>({grade:poem.grade,poem:poem.title,writing:poem.grade<=2?{maxCharactersAcrossWholeReport:1,allowedCharacters:poem.dictation.slice(0,1).map(item=>item.char),instruction:'整份報告最多安排一個字，只選allowedCharacters；其餘全用聽選、短句跟讀。下次複查也沿用同一字，不能默寫詞語或字表。'}:{maxCharactersAcrossWholeReport:poem.grade<=4?2:3,allowedCharacters:poem.dictation.slice(0,poem.grade<=4?2:3).map(item=>item.char)}}));
  // These are lesson choices, not additional measurements. Keep every proposed
  // target in its source line so follow-up never assesses an unpractised word.

@@ -18,13 +18,13 @@ test('save rejects cross-grade and self-granted capability; teacher/test progres
  }
 });
 
-test('progress GET filters old other-grade history without deleting it and teachers/test accounts see only their own six poems',async()=>{
- const historical=Array.from({length:6},(_,i)=>({poem_id:i+1,section:'reading',payload:{testGrade:i+1}}));
+test('progress GET filters old other-grade history without deleting it and teachers/test accounts see only their own poems',async()=>{
+ const historical=Array.from({length:12},(_,i)=>({poem_id:i+1,section:'reading',payload:{testGrade:i+1}}));
  for(const learner of [actor,{...actor,isTest:true,learningScope:'all-grades'},{...actor,id:'t_'+'c'.repeat(24),role:'teacher',grade:null,cls:null}]){
   const reads=[];
   const pool={query:async(sql,args)=>{reads.push(sql);assert.match(sql,/^SELECT/);assert(!/DELETE|UPDATE/.test(sql));assert.equal(args[0],learner.id);assert.deepEqual(args[3],auth.allowedPoemIds(learner));return {rows:sql.includes(' AS challenge')?[]:structuredClone(historical)};}};
   const handler=loadHandler('school-auth.js',dependencies(learner,{getStore:()=>({pool})})),res=response();await handler({method:'GET',query:{action:'progress',grade:6,isTest:true}},res);
-  assert.equal(res.statusCode,200);assert.equal(res.body.userId,learner.id);assert.deepEqual(Object.keys(res.body.poems).map(Number),auth.allowedPoemIds(learner));assert.equal(reads.length,2);assert.match(reads[0],/DISTINCT ON \(poem_id,section\)/);assert.match(reads[1],/ AS challenge/);assert.equal(historical.length,6);
+  assert.equal(res.statusCode,200);assert.equal(res.body.userId,learner.id);assert.deepEqual(Object.keys(res.body.poems).map(Number),auth.allowedPoemIds(learner));assert.equal(reads.length,2);assert.match(reads[0],/DISTINCT ON \(poem_id,section\)/);assert.match(reads[1],/ AS challenge/);assert.equal(historical.length,12);
  }
 });
 

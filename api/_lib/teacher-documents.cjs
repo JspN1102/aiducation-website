@@ -2,7 +2,7 @@
 const ExcelJS=require('exceljs');
 const docx=require('docx');
 const {CONSTRUCTS,TeacherDataError}=require('./teacher-data.cjs');
-const poems=require('../../maanshan/poems.json').poems;
+const poems=require('./all-poems.cjs').poems;
 const MAX_BYTES=4*1024*1024;
 const ACTIVITY={navigation:'選詩',listen:'聆聽',read:'朗讀',animation:'動畫',challenge:'練習',writing:'聽寫',explore:'探索',chat:'詩人對話'};
 const SYNC={direct:'已更新',published:'已更新',ready:'已就緒',synced:'已同步',current:'最新',fresh:'最新',live:'即時',ok:'已就緒',catching_up:'正在補傳',attention:'部分資料待更新',unavailable:'尚未同步'};

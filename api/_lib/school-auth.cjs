@@ -71,17 +71,19 @@ function validateDirectory(data) {
 function publicActor(account) {
   return {...Object.fromEntries(['id', 'researchId', 'role', 'login', 'displayName', 'grade', 'cls', 'classNo'].map(key => [key, account[key]])),
     isTest: account.isTest === true, learningScope: allGrades(account) ? 'all-grades' : 'own-grade', researchEnabled: researchEligible(account),
-    previewPoems: previewPoems(account), siteAdmin: siteAdmin(account)};
+    previewPoems: previewPoems(account), siteAdmin: siteAdmin(account), readingLog: readingLog(account)};
 }
 function allGrades(actor) { return actor?.role === 'teacher' || actor?.role === 'student' && actor.isTest === true && actor.learningScope === 'all-grades'; }
 function researchEligible(actor) { return actor?.role === 'student' && actor.isTest !== true; }
-// The second set of poems (poems-preview.json) is still being checked by these
-// two teachers. Nobody else is offered them or may practise them.
-const PREVIEW_LOGINS = new Set(['jasper', 'molly']);
-function previewPoems(actor) { return actor?.role === 'teacher' && PREVIEW_LOGINS.has(actor.login); }
+// The second set of poems (poems-preview.json, 7-12) was released to every
+// teacher and pupil on 2026-10-13; pupils still see only their own grade's poems.
+function previewPoems(actor) { return actor?.role === 'teacher' || actor?.role === 'student'; }
 // Only this teacher sees the site monitor (server, relay and error aggregates).
 const SITE_ADMIN_LOGINS = new Set(['jasper']);
 function siteAdmin(actor) { return actor?.role === 'teacher' && SITE_ADMIN_LOGINS.has(actor.login); }
+// 朗讀測評次數 in the teacher dashboard: each named pupil's line readings and scores.
+const READING_LOG_LOGINS = new Set(['jasper', 'molly']);
+function readingLog(actor) { return actor?.role === 'teacher' && READING_LOG_LOGINS.has(actor.login); }
 function poemVisible(actor, poem) { return (!poem.preview || previewPoems(actor)) && (allGrades(actor) || actor?.role === 'student' && poem.grade === actor.grade); }
 function allowedPoemIds(actor) { return require('./poems.js').catalog.filter(poem => poemVisible(actor, poem)).map(poem => poem.id); }
 function assertPoemAccess(actor, poemId) {
@@ -434,5 +436,5 @@ function sendError(res, error) {
 }
 const singleton = createAuth();
 module.exports = { NAMESPACE, COOKIE, SESSION_MS, TERMS_VERSION, FORMAT, SCHEMA, AuthError, Conflict, MAX_OBJECT,
-  hashPassword, verifyPassword, normalizeLogin, validateDirectory, directoryHash, validAccount, publicActor, allGrades, researchEligible, previewPoems, siteAdmin, allowedPoemIds, assertPoemAccess,
+  hashPassword, verifyPassword, normalizeLogin, validateDirectory, directoryHash, validAccount, publicActor, allGrades, researchEligible, previewPoems, siteAdmin, readingLog, allowedPoemIds, assertPoemAccess,
   createBlobStore, createPostgresStore, getStore, createAuth, sendError, ...singleton };

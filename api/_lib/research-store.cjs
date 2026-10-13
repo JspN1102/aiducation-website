@@ -3,7 +3,7 @@
 const crypto = require('node:crypto');
 const blob = require('@vercel/blob');
 const { Pool } = require('pg');
-const { poems } = require('../../maanshan/poems.json');
+const { poems } = require('./all-poems.cjs');
 const {buildCharacterAnalysis}=require('./teacher-character-analysis.cjs');
 const {buildPracticeSummary}=require('./teacher-practice-summary.cjs');
 // Embedded from docs/research-data-dictionary.json; tested for equality.
@@ -80,7 +80,7 @@ const DATA_DICTIONARY = {
     },
     {
       "name": "event.poemId",
-      "type": "integer 1..6 | null",
+      "type": "integer 1..12 | null",
       "meaning": "Curriculum poem ID; null for navigation not associated with a poem."
     },
     {
@@ -225,7 +225,7 @@ const DATA_DICTIONARY = {
     },
     "practiceOutcomeN": "Count of eligible assessment outcome events in review/free modes, excluded from independent assessment summaries. Process feedback and game completion do not add assessment outcomes.",
     "readingWords": "Top-level readingWords only: at most 50 groups from selected server_verified reading outcomes, excluding review/free and invalid records. Group by poemId/itemId/contentVersion/index/char. Each entry has count, meanScore and below60Count; zero is measured, absent word scores do not add samples. readingWordSummary declares cutoff=60, totalGroups, returnedGroups, truncated and character_scores_not_phoneme_diagnosis. Lower scores are practice observations, not a consonant/tone disorder diagnosis. The limit affects teacher display only; raw exports are complete.",
-    "readingCharacterAnalysis": "Complete curriculum lines per selected grade (all six poems separately when unfiltered). Verified character scores only, aligned to poemId, line index and Han-character index; punctuation is retained for display but excluded from SOE indices. Keep one selected recording per learner and line across content versions, then average measured character scores without rounding before the 80-point colour threshold. Missing scores remain null and are never inferred from sentence totals. Includes pinyin, counts, and all positions, including repeated characters. Student-only practiceSummary retains the latest actual completed or scored result per item across attempts, plus its best result; opening, skipping or unmeasured retries do not erase a prior score. Original attempts remain in event history. Game completion is never a correct exam answer and browser-only results are unmeasured.",
+    "readingCharacterAnalysis": "Complete curriculum lines per selected grade (every poem separately when unfiltered). Verified character scores only, aligned to poemId, line index and Han-character index; punctuation is retained for display but excluded from SOE indices. Keep one selected recording per learner and line across content versions, then average measured character scores without rounding before the 80-point colour threshold. Missing scores remain null and are never inferred from sentence totals. Includes pinyin, counts, and all positions, including repeated characters. Student-only practiceSummary retains the latest actual completed or scored result per item across attempts, plus its best result; opening, skipping or unmeasured retries do not erase a prior score. Original attempts remain in event history. Game completion is never a correct exam answer and browser-only results are unmeasured.",
     "capacity": "Default analytics exceeding 100000 events or the snapshot byte bound does not block publication of the manifest and class/date chunks. The manifest marks overview.status=filter_required, and the API returns NARROW_DATE_OR_CLASS_FILTER with a class/date suggestion. This is not an empty dataset.",
     "answerReplay": "Challenge answer requests may carry stable requestId/requestedAt in researchContext. A server-derived event ID is scoped to the authenticated actor, and original clientAt and event contents remain stable across retries. The immutable request intent alone is not a receipt: successful current-hour outbox persistence determines the transport serverReceivedAt. Same-hour retries reuse that durable receipt; later-hour retries create new transport objects so a passed synchronization watermark cannot miss recovery. PostgreSQL deduplicates these objects and retains the first imported event row and receive date. Provider remeasurement is not replayed. Timestamps ahead of the server (a fast tablet clock) or old offline requests remain accepted unchanged, so retries stay identical, and are quality-flagged client_clock_out_of_range when over five minutes ahead or 30 days old.",
     "guidedWriting": "For flow trace-dictation-v1, local stroke tracing is a learning process and never receives a correctness score. Raw independent handwriting provider outcomes, including first errors and later corrections, remain in history but are excluded from teacher score aggregates. Teacher practiceSummary uses the latest confirmed challenge acknowledgement: traceCompleted and dictationCompleted must both be true for completed; otherwise incomplete. Trace-only acknowledgements use status completed with dictationCompleted false, never skipped. Actual independent skipping stays skipped. Guided completion does not increase correctN or measuredN, and an unfinished later attempt cannot erase a prior completed item. Legacy independent dictation and sound-choice assessment semantics are unchanged."
@@ -257,6 +257,9 @@ const MAX_READ_EVENTS = 100000;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const TOKEN = /^[a-zA-Z0-9][a-zA-Z0-9._:/-]*$/;
 const ACTIVITIES = ['listen', 'read', 'animation', 'explore', 'challenge', 'writing', 'chat', 'navigation'];
+// 練習次數 in the teacher dashboard: reading aloud, 練一練 and 默寫 only, not listening to the
+// model reading, watching the animation or chatting with the poet.
+const PRACTICE_ACTIVITIES = new Set(['read', 'challenge', 'writing']);
 const TYPES = ['session_start','activity_start','activity_end','item_presented','attempt_started',
   'answer_submitted','feedback_shown','hint_used','retry','playback_started','playback_ended',
   'recording_started','recording_stopped','item_interacted','error'];
@@ -314,7 +317,7 @@ function validateEvent(event, server = false) {
   ['eventId','sessionId','seq','clientAt','activeMs','poemId','activity','type','appVersion','contentVersion']);
   uuid(event.eventId); uuid(event.sessionId); integer(event.seq,0,10000000); integer(event.activeMs,0,21600000);
   if (!iso(event.clientAt) || !ACTIVITIES.includes(event.activity) || !(server ? [...TYPES,'provider_result'] : TYPES).includes(event.type)) fail();
-  if (event.poemId !== null) integer(event.poemId,1,6);
+  if (event.poemId !== null) integer(event.poemId,1,12);
   token(event.appVersion,64); token(event.contentVersion,64);
   if (event.attemptId !== undefined) uuid(event.attemptId);
   if (event.itemId !== undefined) token(event.itemId,80);
@@ -589,7 +592,8 @@ function filtersFrom(query={},now=Date.now()) {
   if(typeof to!=='string'||!/^\d{4}-\d\d-\d\d$/.test(to)||!Number.isFinite(Date.parse(to)))fail('INVALID_DATE');
   const from=query.from||new Date(Date.parse(to)-29*86400000).toISOString().slice(0,10);
   for(const date of [from,to])if(typeof date!=='string'||!/^\d{4}-\d\d-\d\d$/.test(date)||!Number.isFinite(Date.parse(date))||new Date(date).toISOString().slice(0,10)!==date)fail('INVALID_DATE');
-  if(from>to || Date.parse(to)-Date.parse(from)>30*86400000)fail('DATE_RANGE_MAX_31_DAYS');
+  // 「全部」 in the teacher dashboard asks for everything since the cohort start.
+  if(from>to || Date.parse(to)-Date.parse(from)>399*86400000)fail('DATE_RANGE_TOO_LONG');
   const f={from,to,attempt:query.attempt||'latest'};
   if(!['first','latest','best'].includes(f.attempt))fail('INVALID_ATTEMPT_FILTER');
   if(query.grade!==undefined){if(typeof query.grade!=='string'||!/^[1-6]$/.test(query.grade))fail();f.grade=Number(query.grade);}
@@ -619,7 +623,7 @@ function constructFor(row){
     return null;
   }
   if(row.source!=='client')return null;
-  if(e.activity==='read'&&e.type==='feedback_shown'&&/^p[1-6]\.l\d+$/.test(e.itemId||''))return 'reading.pronunciation';
+  if(e.activity==='read'&&e.type==='feedback_shown'&&/^p\d+\.l\d+$/.test(e.itemId||''))return 'reading.pronunciation';
   if(e.type==='answer_submitted'&&['challenge','writing'].includes(e.activity))return ITEM_CONSTRUCTS[e.context?.itemType]||null;
   return null;
 }
@@ -679,6 +683,7 @@ function summarize(rows,which='latest',includeModes=false){
   const quality=qualityAndDuration(rows),valid=rows.filter(r=>!quality.flags.has(r.researchId+'/'+r.source+'/'+r.event.eventId));
   return {nEvents:rows.length,nStudents:new Set(rows.map(r=>r.researchId)).size,
     nAttempts:new Set(rows.filter(r=>r.event.attemptId).map(r=>r.researchId+'/'+r.event.attemptId)).size,
+    nPracticeAttempts:new Set(rows.filter(r=>r.event.attemptId&&PRACTICE_ACTIVITIES.has(r.event.activity)).map(r=>r.researchId+'/'+r.event.attemptId)).size,
     completedN:rows.filter(r=>r.event.type==='activity_end'&&r.event.result?.status==='completed').length,
     activeMs:quality.activeMs,nInvalidEvents:quality.nInvalidEvents,qualityFlags:quality.qualityFlags,
     ...assessmentSummary(valid,which),

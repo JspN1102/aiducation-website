@@ -1,5 +1,5 @@
 'use strict';
-const {poems}=require('../../maanshan/poems.json');
+const {poems}=require('./all-poems.cjs');
 const TYPES=new Set(['sound','dictation','microgame','match','sequence','scene-builder']);
 function buildPracticeSummary(rows){
  const rounds=new Map();

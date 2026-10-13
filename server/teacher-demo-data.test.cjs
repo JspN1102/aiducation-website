@@ -60,7 +60,7 @@ test('same-day snapshots are repeatable and defensive; day rollover is domain se
   const a=createDemoDataset({grade:1,cls:'A'},options),id=a.snapshotId;a.students[0].displayName='poison';a.analytics.summary.nEvents=-1;
   const b=createDemoDataset({grade:1,cls:'A'},{now:NOW+10000});assert.equal(b.snapshotId,id);assert.notEqual(b.students[0].displayName,'poison');assert(b.analytics.summary.nEvents>0);
   const c=createDemoDataset({grade:1,cls:'A'},{now:NOW+86400000});assert.notEqual(c.snapshotId,id);assert.equal(c.filters.to,'2026-09-21');
-  assert.throws(()=>createDemoDataset({grade:7},options));assert.throws(()=>createDemoDataset({from:'2026-01-01',to:'2026-09-20'},options));assert.throws(()=>createDemoDataset({unknown:true},options));
+  assert.throws(()=>createDemoDataset({grade:7},options));assert.throws(()=>createDemoDataset({from:'2025-01-01',to:'2026-09-20'},options));assert.throws(()=>createDemoDataset({unknown:true},options));
 });
 test('real XLSX can export a full demo class with explicit fictional names and null distinct from zero',async()=>{
   const dataset=createDemoDataset({grade:2,cls:'A'},options),buffer=await buildXlsx(dataset),wb=new ExcelJS.Workbook();await wb.xlsx.load(buffer);

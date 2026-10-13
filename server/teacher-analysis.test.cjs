@@ -240,7 +240,7 @@ test('whole-school summaries retain all 31 classes and six grades in the focused
  assert(Buffer.byteLength(JSON.stringify(payload))<160*1024);
  assert.equal(payload.detailLevel,'school_and_grades_with_class_participation');
  for(const row of input.analytics.byClass)assert(payload.evidence.some(f=>f.scope===row.grade+row.cls+'班'));
- assert.equal(payload.curriculum.length,6);
+ assert.equal(payload.curriculum.length,12);
  let sent;
  const generated=await analysis.requestAnalysis(payload,analysis.modelConfig(env),{fetchImpl:async(url,options)=>{sent=JSON.parse(JSON.parse(options.body).messages[1].content);return provider(validOutput());}});
  assert(generated.analysis.overview);
@@ -248,7 +248,7 @@ test('whole-school summaries retain all 31 classes and six grades in the focused
  for(let grade=1;grade<=6;grade++){
   for(const construct of ['朗讀字音評分','默寫辨識準確度','辨音答題準確度'])assert(sent.evidence.some(f=>f.scope===grade+'年級'&&f.label===construct+'：有效測量'));
  }
- assert.equal(sent.curriculum.length,6);assert.equal(sent.teachingFocus.length,6);assert.equal(sent.interpretationRules,undefined);
+ assert.equal(sent.curriculum.length,12);assert.equal(sent.teachingFocus.length,12);assert.equal(sent.interpretationRules,undefined);
  assert(!sent.evidence.some(f=>f.label.endsWith('：平均值')&&!f.label.startsWith('朗讀')));
 });
 

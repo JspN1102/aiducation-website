@@ -3,7 +3,7 @@ const auth=require('./school-auth.cjs');
 const research=require('./research-store.cjs');
 const data=require('./teacher-data.cjs');
 const documents=require('./teacher-documents.cjs');
-const {poems}=require('../../maanshan/poems.json');
+const {poems}=require('./all-poems.cjs');
 const MIME={xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'};
 function createHandler({requireTeacher=req=>auth.requireActor(req,{roles:['teacher'],csrf:true}),loadDataset=data.loadTeacherDataset,getReport=id=>require('./teacher-analysis.cjs').getReport(id),xlsx=documents.buildXlsx,docx=documents.buildDocx,timeoutMs=22000,maxConcurrent=2}={}){
   let active=0;
@@ -29,7 +29,7 @@ function createHandler({requireTeacher=req=>auth.requireActor(req,{roles:['teach
       const result=await Promise.race([work,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new data.TeacherDataError('EXPORT_TIMEOUT',504)),timeoutMs);})]);
       const f=result.dataset.filters,date=f.from.replaceAll('-','')+'-'+f.to.replaceAll('-',''),scope=f.grade?f.grade+(f.cls?f.cls+'班':'年級'):'全校'+(f.cls?'_'+f.cls+'班':'');
       const poem=poems.find(item=>item.id===Number(f.poemId));
-      const filename=`${result.dataset.demo?'模擬_':''}${body.action==='docx'?'普通話教研報告':'學生數據表格'}_${scope}_${poem.title}_${date}.${body.action}`;
+      const filename=`${result.dataset.demo?'模擬_':''}${body.action==='docx'?'普通話教研報告':'學生數據表格'}_${scope}_${poem?.title||'古詩'}_${date}.${body.action}`;
       res.setHeader('Content-Type',MIME[body.action]);res.setHeader('Content-Disposition',`attachment; filename="mandarin-learning-${date}.${body.action}"; filename*=UTF-8''${encodeURIComponent(filename)}`);res.setHeader('Content-Length',String(result.bytes.length));res.setHeader('X-Data-Snapshot',result.dataset.snapshotId);
       if(!result.dataset.demo)void require('./teacher-activity.cjs').record(actor,body.action);
       return res.status(200).send(Buffer.from(result.bytes));

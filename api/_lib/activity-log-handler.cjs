@@ -45,6 +45,7 @@ function filtersFrom(query,t){
 function where(f,kind=CHAT){
   const params=[f.from,f.to],clauses=['received_at >= $1','received_at < $2',kind];
   const add=(sql,value)=>{params.push(value);clauses.push(sql.replace('?','$'+params.length));};
+  if(f.since)add('received_at >= ?',f.since);
   if(f.grade)add('grade = ?',f.grade);
   if(f.cls)add('cls = ?',f.cls);
   if(f.poem)add('poem_id = ?',f.poem);
@@ -92,6 +93,11 @@ function chatRow(r,map){const chat=r.chat&&typeof r.chat==='object'?r.chat:{};
     suggested:typeof chat.presetId==='string',presetId:typeof chat.presetId==='string'?chat.presetId:null,
     question:text(chat.question,1000),reply:text(chat.reply,4000),failed:r.status==='error'};}
 
+// Everything before the whole-cohort reset (初始化, 2026-10-03) was staff testing
+// on pupils' accounts; the teacher dashboard already starts there, and so do these.
+async function cohortStart(){
+  try{return (await require('./student-learning-reset.cjs').current())?.resetAt||null;}catch{return null;}
+}
 async function readOnly(pool,work){
   if(!pool)return {available:false,reason:'disabled'};
   let client;
@@ -142,7 +148,7 @@ function readings(pool,f,map=new Map()){
   });
 }
 
-function createActivityLog({researchPool=defaultResearch,activity=()=>require('./teacher-activity.cjs'),directory=()=>auth.directory(),now=Date.now}={}){
+function createActivityLog({researchPool=defaultResearch,activity=()=>require('./teacher-activity.cjs'),directory=()=>auth.directory(),cohort=cohortStart,now=Date.now}={}){
   return async function handler(req,res){
     res.setHeader('Cache-Control','private, no-store');res.setHeader('Vary','Cookie');
     if(req.method!=='GET'){res.setHeader('Allow','GET');return res.status(405).json({ok:false,code:'GET_ONLY',error:'使用紀錄只供查看。'});}
@@ -159,13 +165,14 @@ function createActivityLog({researchPool=defaultResearch,activity=()=>require('.
     const map=await people(directory),pool=researchPool();
     const filters={days:f.days,fromDate:f.fromDate,toDate:f.toDate,grade:f.grade||null,cls:f.cls||null,poem:f.poem||null,q:f.q||null,student:f.student||null};
     const base={ok:true,schemaVersion:2,generatedAt:new Date(t).toISOString(),days:f.days,from:f.from,to:f.to,filters};
-    if(view==='student'){const [chat,read]=await Promise.all([conversation(pool,f,map),readings(pool,f,map)]);
-      return res.status(200).json({...base,...chat,readings:read.available?read.students[0]||null:null,readingsAvailable:read.available});}
-    const [chats,reads,teachers]=await Promise.all([chatLog(pool,f,map),readings(pool,f,map),activity().summary(Math.min(f.days,MAX_DAYS))]);
-    return res.status(200).json({...base,chats,readings:reads,teachers});
+    // 朗讀測評次數 moved to the teacher dashboard (reading-log-handler.cjs).
+    f.since=await cohort();
+    if(view==='student')return res.status(200).json({...base,...await conversation(pool,f,map)});
+    const [chats,teachers]=await Promise.all([chatLog(pool,f,map),activity().summary(Math.min(f.days,MAX_DAYS))]);
+    return res.status(200).json({...base,chats,teachers});
   };
 }
 function defaultResearch(){const research=require('./research-store.cjs');return research.mode()==='postgres'?research.getPool():null;}
 
 module.exports=createActivityLog();
-Object.assign(module.exports,{createActivityLog,chatLog,conversation,readings,filtersFrom,where,CHAT_SQL,MODES});
+Object.assign(module.exports,{createActivityLog,chatLog,conversation,readings,filtersFrom,where,readOnly,people,identity,cohortStart,CHAT_SQL,MODES,READ,title,lineText});

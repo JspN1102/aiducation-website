@@ -59,7 +59,7 @@
 @media(max-width:620px){.character-score.precise{font-size:13px;letter-spacing:-.02em}}
 .filters{grid-template-columns:minmax(110px,.8fr) minmax(200px,1.5fr) minmax(120px,.9fr) minmax(200px,1.2fr);max-width:none}
 .field select:disabled{color:#859086;background:#f0f3ef;border-color:#dce4da}
-@media(max-width:1000px){.filters{grid-template-columns:minmax(110px,1fr) minmax(180px,1.5fr) minmax(120px,1fr)}.date-presets{grid-column:1/-1;display:flex;gap:18px;align-items:center}.date-presets .field-label{margin:0}.date-presets>div{min-width:230px;max-width:320px}}
+@media(max-width:1000px){.filters{grid-template-columns:minmax(110px,1fr) minmax(180px,1.5fr) minmax(120px,1fr)}.date-presets{grid-column:1/-1;display:flex;gap:18px;align-items:center}.date-presets .field-label{margin:0}.date-presets>div{min-width:300px;max-width:420px}}
 @media(max-width:540px){.filters{grid-template-columns:minmax(0,1fr) minmax(0,1.35fr)}.filters .field[for=filter-class]{grid-column:1/-1}.date-presets>div{min-width:0;max-width:none}.scope-line h1{font-size:22px;line-height:1.5;overflow-wrap:anywhere}.scope-actions{flex:none}}
 /* Score colour bands (teacher request 2026-10-08): 80–100 green, 60–79 yellow, below 60 red,
    from the number as displayed; a missing score stays neutral. Each band is a tinted chip with
@@ -119,3 +119,10 @@
 @media(max-width:1050px){.monitor-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:800px){.monitor-top h1{font-size:25px}.monitor-card{padding:18px}.monitor-banner{font-size:19px;padding:15px 18px}}
 @media(max-width:540px){.header-actions{flex-wrap:wrap;row-gap:2px}.monitor-grid{grid-template-columns:1fr;gap:12px}.site-monitor{gap:13px}.monitor-top h1{font-size:23px}.monitor-banner{font-size:18px;padding:14px 16px;border-radius:14px}.monitor-card{padding:16px;border-radius:14px}.monitor-stats dd{font-size:20px}.monitor-meta{font-size:14px}}
+/* The dialog scrolls as a whole; its header (name and ×) stays at the top. */
+.student-dialog .dialog-header{position:sticky;top:0;z-index:2}
+/* 朗讀測評次數 (jasper, molly) below the downloads panel. */
+.reading-log{display:grid;gap:14px;min-width:0}.reading-log-top{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap}.reading-log h2{font-size:23px}#reading-log-body{display:grid;gap:12px;min-width:0}
+.reading-log-filters{grid-template-columns:repeat(2,minmax(120px,180px))}.reading-log-summary{font-size:17px}.reading-log-table td:nth-child(4){white-space:normal;text-align:left;min-width:160px;font-size:14px}.reading-log-table td:last-child{text-align:right}
+.reading-export{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.reading-lines-body .usage-lines th[scope=row]{white-space:normal}
+@media(max-width:540px){.reading-log-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.reading-export .button{width:100%}}

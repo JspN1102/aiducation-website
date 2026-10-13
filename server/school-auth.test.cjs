@@ -148,8 +148,8 @@ test('learning capability comes only from stored identity, with teacher/test acc
  Object.assign(directory.accounts[1],{isTest:true,learningScope:'all-grades'});directory.sha256=auth.directoryHash(directory.accounts);
  const forged=request();Object.assign(forged.body,{isTest:true,learningScope:'all-grades',researchEnabled:false,grade:6});
  const pupil=await f.service.login(forged,response());assert.equal(pupil.user.learningScope,'own-grade');assert.equal(pupil.user.isTest,false);assert.equal(pupil.user.researchEnabled,true);
- assert.deepEqual(auth.allowedPoemIds(pupil.user),[2]);assert.throws(()=>auth.assertPoemAccess(pupil.user,6),e=>e.status===422&&e.code==='POEM_GRADE_FORBIDDEN');
- const demo=await login(f,{login:'test1',password:'test-password-1'});assert.equal(demo.state.user.learningScope,'all-grades');assert.equal(demo.state.user.researchEnabled,false);assert.deepEqual(auth.allowedPoemIds(demo.state.user),[1,2,3,4,5,6]);
+ assert.deepEqual(auth.allowedPoemIds(pupil.user),[2,8]);assert.throws(()=>auth.assertPoemAccess(pupil.user,6),e=>e.status===422&&e.code==='POEM_GRADE_FORBIDDEN');
+ const demo=await login(f,{login:'test1',password:'test-password-1'});assert.equal(demo.state.user.learningScope,'all-grades');assert.equal(demo.state.user.researchEnabled,false);assert.deepEqual(auth.allowedPoemIds(demo.state.user),[1,2,3,4,5,6,7,8,9,10,11,12]);
  assert.equal((await f.service.state(request({method:'GET',cookie:demo.cookie}))).user.isTest,true);
  const teacher=await login(f,{login:'test2',password:'test-password-2'});assert.equal(teacher.state.user.learningScope,'all-grades');assert.equal(teacher.state.user.researchEnabled,false);assert.equal(auth.assertPoemAccess(teacher.state.user,6).grade,6);
  const roster=await f.service.roster(request({method:'GET',cookie:teacher.cookie}));assert.deepEqual(roster.students.map(p=>p.id),[accounts[0].id]);assert.equal(roster.teachers.length,1);
@@ -157,26 +157,26 @@ test('learning capability comes only from stored identity, with teacher/test acc
  assert.equal(auth.publicActor({...accounts[0],researchEnabled:false}).researchEnabled,true);
 });
 
-test('poems 7-12 are offered and accepted only for the two preview teacher accounts', async () => {
+test('poems 7-12 (released 2026-10-13) are offered to every teacher and to pupils of their grade', async () => {
   const f = fixture(), directory = f.records.get('directory/current').value;
-  // test0 pupil, test1 all-grades test pupil renamed jasper (a pupil may not unlock them), test2 teacher molly.
+  // test0 grade-2 pupil, test1 all-grades test pupil, test2 teacher molly; teacher2 is any other teacher.
   Object.assign(directory.accounts[1], { login: 'jasper', isTest: true, learningScope: 'all-grades' });
   directory.accounts[2].login = 'molly'; directory.sha256 = auth.directoryHash(directory.accounts); f.service.clearCache();
-  const preview = [7, 8, 9, 10, 11, 12];
+  const all = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
   const molly = await login(f, { login: 'MOLLY ', password: 'test-password-2' });
-  assert.equal(molly.state.user.previewPoems, true);
   const sessionActor = await f.service.requireActor(request({ method: 'GET', cookie: molly.cookie }));
-  assert.equal(sessionActor.previewPoems, true);
-  assert.deepEqual(auth.allowedPoemIds(sessionActor), [1, 2, 3, 4, 5, 6, ...preview]);
-  for (const id of preview) assert.equal(auth.assertPoemAccess(sessionActor, id).id, id);
   const testPupil = await login(f, { login: 'jasper', password: 'test-password-1' });
-  const pupil = await login(f);
   const otherTeacher = auth.publicActor({ ...directory.accounts[2], login: 'teacher2' });
-  for (const actor of [testPupil.state.user, pupil.state.user, otherTeacher]) {
-    assert.equal(actor.previewPoems, false);
-    assert.equal(auth.allowedPoemIds(actor).some(id => id > 6), false);
-    for (const id of preview) assert.throws(() => auth.assertPoemAccess(actor, id), e => e.status === 422 && e.code === 'POEM_GRADE_FORBIDDEN');
+  for (const actor of [molly.state.user, sessionActor, testPupil.state.user, otherTeacher]) {
+    assert.equal(actor.previewPoems, true);
+    assert.deepEqual(auth.allowedPoemIds(actor), all);
+    for (const id of all) assert.equal(auth.assertPoemAccess(actor, id).id, id);
   }
+  const pupil = (await login(f)).state.user;
+  assert.equal(pupil.previewPoems, true);
+  assert.deepEqual(auth.allowedPoemIds(pupil), [2, 8]);
+  assert.equal(auth.assertPoemAccess(pupil, 8).id, 8);
+  for (const id of [7, 9, 10, 11, 12]) assert.throws(() => auth.assertPoemAccess(pupil, id), e => e.status === 422 && e.code === 'POEM_GRADE_FORBIDDEN');
   assert.throws(() => auth.assertPoemAccess(sessionActor, 13), e => e.status === 400);
 });
 

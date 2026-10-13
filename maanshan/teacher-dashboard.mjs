@@ -33,6 +33,9 @@ function bandLegend(bands=null){return `<p class="band-legend"><span class="sr-o
 function scoreMarkup(value){const n=score(value);if(n===null)return '<span class="score band-pill band-none missing">未測</span>';const text=shown(n,1);return `<span class="score band-pill band-${scoreBand(text)}">${text}</span>`;}
 function mean(values){const valid=values.filter(v=>number(v)!==null);return valid.length?valid.reduce((a,b)=>a+b,0)/valid.length:null;}
 function dayOffset(offset){const date=new Date();date.setUTCDate(date.getUTCDate()+offset);return date.toISOString().slice(0,10);}
+// 「全部」 starts at the whole-cohort reset (初始化, 2026-10-03); the server allows at most 400 days.
+const DATE_PRESETS=[[0,'今日'],[-6,'近 7 天'],[-29,'近 30 天'],['all','全部']],ALL_FROM='2026-10-03';
+function presetFrom(offset){if(offset!=='all')return dayOffset(Number(offset));const floor=dayOffset(-399);return ALL_FROM>floor?ALL_FROM:floor;}
 function timestamp(value,short=false){if(!value||!Number.isFinite(new Date(value).getTime()))return '尚未同步';return new Intl.DateTimeFormat('zh-HK',{timeZone:'Asia/Hong_Kong',month:'2-digit',day:'2-digit',...(short?{}:{hour:'2-digit',minute:'2-digit'}),hour12:false}).format(new Date(value));}
 function empty(title,note=''){return `<div class="empty"><span class="empty-icon">${icon('empty')}</span><strong>${esc(title)}</strong>${esc(note)}</div>`;}
 function toast(message){const el=document.querySelector('#teacher-notice');el.textContent=message;el.hidden=false;clearTimeout(toast.timer);toast.timer=setTimeout(()=>{el.hidden=true;},4500);}
@@ -46,7 +49,7 @@ async function requestJSON(url,{signal,headers={},timeoutMs=25000,...options}={}
   if(!data||typeof data!=='object')throw new Error('回應格式不完整');return data;
  }finally{pendingRequests.delete(controller);clearTimeout(timeout);signal?.removeEventListener('abort',abort);}
 }
-function clearPrivate(){state.scopeCache.clear();usageLog.data=null;usageLog.student=null;clearTeacherTools();state.exportJob?.controller.abort();state.exportJob=null;state.detailData=null;state.studentsOpen=false;state.studentFilter='all';state.constructFilter='';sessionEpoch++;for(const controller of pendingRequests)controller.abort();pendingRequests.clear();sessionCheck=null;state.request?.abort();state.detailRequest?.abort();state.generation++;state.data=null;state.roster=null;state.rosterError=false;state.auth=null;state.legacyCode='';state.search='';state.page=0;state.detailStudent=null;if(dialog.open)dialog.close();document.querySelector('#student-dialog-content').replaceChildren();const identity=document.querySelector('#teacher-identity');identity.textContent='';identity.hidden=true;document.querySelector('#teacher-logout').hidden=true;document.querySelector('#teacher-change-password')?.remove();resetMonitor();document.querySelector('#teacher-site-monitor')?.remove();}
+function clearPrivate(){state.scopeCache.clear();usageLog.data=null;usageLog.student=null;readingLog.generation++;readingLog.data=null;readingLog.student=null;clearTeacherTools();state.exportJob?.controller.abort();state.exportJob=null;state.detailData=null;state.studentsOpen=false;state.studentFilter='all';state.constructFilter='';sessionEpoch++;for(const controller of pendingRequests)controller.abort();pendingRequests.clear();sessionCheck=null;state.request?.abort();state.detailRequest?.abort();state.generation++;state.data=null;state.roster=null;state.rosterError=false;state.auth=null;state.legacyCode='';state.search='';state.page=0;state.detailStudent=null;if(dialog.open)dialog.close();document.querySelector('#student-dialog-content').replaceChildren();const identity=document.querySelector('#teacher-identity');identity.textContent='';identity.hidden=true;document.querySelector('#teacher-logout').hidden=true;document.querySelector('#teacher-change-password')?.remove();resetMonitor();document.querySelector('#teacher-site-monitor')?.remove();}
 function lockSession(){clearPrivate();state.legacy=false;renderLogin('帳戶已登出或在另一個分頁切換，請重新登入。');}
 function validateAuth(auth){if(typeof auth.enabled!=='boolean'||requiresSchoolAuth&&!auth.enabled||auth.authenticated&&(!auth.user?.id||!['student','teacher'].includes(auth.user.role)||typeof auth.csrfToken!=='string'||!auth.csrfToken))throw new Error('帳戶服務回覆不完整');return auth;}
 async function checkSession(){
@@ -96,12 +99,12 @@ async function enterDashboard(){
  if(state.legacy){try{state.poems=(await requestJSON('./poems.json')).poems||[];}catch{state.poems=[];}renderFilters();await loadData();return;}
  const generation=++state.rosterGeneration,epoch=sessionEpoch;
  const current=()=>generation===state.rosterGeneration&&epoch===sessionEpoch;
- try{const [roster,catalog]=await Promise.all([requestJSON(DEMO?'/api/teacher-tools?tool=demo-data&kind=roster':AUTH+'?action=roster'),state.poems.length?Promise.resolve(null):requestJSON('./poems.json').catch(()=>null)]);if(!current())return;if(!Array.isArray(roster.students))throw new Error('名冊回覆不完整');state.roster=roster.students;state.rosterError=false;if(Array.isArray(catalog?.poems))state.poems=catalog.poems;}
+ try{const [roster,catalog]=await Promise.all([requestJSON(DEMO?'/api/teacher-tools?tool=demo-data&kind=roster':AUTH+'?action=roster'),state.poems.length?Promise.resolve(null):Promise.all([requestJSON('./poems.json'),DEMO?{poems:[]}:requestJSON('./poems-preview.json?v=20261013-school60').catch(()=>({poems:[]}))]).then(([first,second])=>({poems:[...rows(first.poems),...rows(second.poems)]})).catch(()=>null)]);if(!current())return;if(!Array.isArray(roster.students))throw new Error('名冊回覆不完整');state.roster=roster.students;state.rosterError=false;if(Array.isArray(catalog?.poems))state.poems=catalog.poems;}
  catch(error){if(!current())return;if(error.status===401||error.status===403){clearPrivate();renderLogin('登入已失效，請重新登入。');return;}state.rosterError=true;state.roster=null;}
  if(!current())return;renderFilters();await loadData();
 }
 function renderShell(){
- root.innerHTML=`<main class="teacher-main workspace" id="teacher-main"><section class="cohort-panel" aria-labelledby="view-title"><div class="teacher-controls"><div id="filter-holder"></div></div><div class="cohort-content"><div class="scope-line"><h1 id="view-title">${esc(scopeLabel())}</h1><div class="scope-actions"><span id="sync-state" class="sync-state" role="status"></span><button type="button" class="button quiet" data-action="refresh" aria-label="更新學生資料">${icon('refresh')}更新</button></div></div><div id="dashboard-content"></div></div></section><div id="teacher-tools" class="downloads-panel"></div></main>`;renderFilters();renderTeacherTools();
+ root.innerHTML=`<main class="teacher-main workspace" id="teacher-main"><section class="cohort-panel" aria-labelledby="view-title"><div class="teacher-controls"><div id="filter-holder"></div></div><div class="cohort-content"><div class="scope-line"><h1 id="view-title">${esc(scopeLabel())}</h1><div class="scope-actions"><span id="sync-state" class="sync-state" role="status"></span><button type="button" class="button quiet" data-action="refresh" aria-label="更新學生資料">${icon('refresh')}更新</button></div></div><div id="dashboard-content"></div></div></section><div id="teacher-tools" class="downloads-panel"></div>${readingLogAllowed()?readingLogShell():''}</main>`;renderFilters();renderTeacherTools();if(readingLogAllowed())showReadingLog();
 }
 function renderFilters(){
  const f=state.filters,classes=[...new Set((state.roster||[]).filter(s=>!f.grade||String(s.grade)===f.grade).map(s=>String(s.cls||'')))].filter(Boolean).sort();
@@ -109,23 +112,23 @@ function renderFilters(){
  if(state.legacy&&!classes.length)classes.push('A','B','C','D','E','F');
  const holder=document.querySelector('#filter-holder');if(!holder)return;
  const focused=holder.contains(document.activeElement)?document.activeElement:null;
- holder.innerHTML=`<form class="filters" id="teacher-filters"><label class="field" for="filter-grade">年級<select id="filter-grade" name="grade"><option value="">選擇年級</option>${[1,2,3,4,5,6].map(g=>`<option value="${g}" ${f.grade===String(g)?'selected':''}>${g} 年級</option>`).join('')}</select></label><label class="field" for="filter-poem">古詩<select id="filter-poem" name="poemId" ${!f.grade||!poems.length?'disabled':''}><option value="">${f.grade?'選擇古詩':'先選年級'}</option>${poems.map(p=>`<option value="${p.id}" ${f.poemId===String(p.id)?'selected':''}>${esc(p.title)}</option>`).join('')}</select></label><label class="field" for="filter-class">班級<select id="filter-class" name="cls" ${scopeReady()?'':'disabled'}><option value="">${scopeReady()?'全部班級':'先選古詩'}</option>${classes.map(c=>`<option value="${esc(c)}" ${f.cls===c?'selected':''}>${esc(c)} 班</option>`).join('')}</select></label><div class="date-presets"><span class="field-label">日期</span><div role="group" aria-label="日期範圍">${[[-6,'近 7 天'],[-29,'近 30 天']].map(([offset,label])=>`<button class="date-preset" type="button" data-date-offset="${offset}" aria-pressed="${f.from===dayOffset(offset)&&f.to===dayOffset(0)}" ${state.legacy?'disabled':''}>${label}</button>`).join('')}</div></div>${['from','to','attempt','activity'].map(key=>`<input type="hidden" name="${key}" value="${esc(f[key])}">`).join('')}</form>`;
+ holder.innerHTML=`<form class="filters" id="teacher-filters"><label class="field" for="filter-grade">年級<select id="filter-grade" name="grade"><option value="">選擇年級</option>${[1,2,3,4,5,6].map(g=>`<option value="${g}" ${f.grade===String(g)?'selected':''}>${g} 年級</option>`).join('')}</select></label><label class="field" for="filter-poem">古詩<select id="filter-poem" name="poemId" ${!f.grade||!poems.length?'disabled':''}><option value="">${f.grade?'選擇古詩':'先選年級'}</option>${poems.map(p=>`<option value="${p.id}" ${f.poemId===String(p.id)?'selected':''}>${esc(p.title)}</option>`).join('')}</select></label><label class="field" for="filter-class">班級<select id="filter-class" name="cls" ${scopeReady()?'':'disabled'}><option value="">${scopeReady()?'全部班級':'先選古詩'}</option>${classes.map(c=>`<option value="${esc(c)}" ${f.cls===c?'selected':''}>${esc(c)} 班</option>`).join('')}</select></label><div class="date-presets"><span class="field-label">日期</span><div role="group" aria-label="日期範圍">${DATE_PRESETS.map(([offset,label])=>`<button class="date-preset" type="button" data-date-offset="${offset}" aria-pressed="${f.from===presetFrom(offset)&&f.to===dayOffset(0)}" ${state.legacy?'disabled':''}>${label}</button>`).join('')}</div></div>${['from','to','attempt','activity'].map(key=>`<input type="hidden" name="${key}" value="${esc(f[key])}">`).join('')}</form>`;
  if(focused?.id)document.getElementById(focused.id)?.focus({preventScroll:true});
  else if(focused?.dataset.dateOffset!==undefined)holder.querySelector('[data-date-offset="'+focused.dataset.dateOffset+'"]')?.focus({preventScroll:true});
 }
 function draftFilters(){const form=document.querySelector('#teacher-filters'),next={...state.filters};if(form)for(const key of ['grade','poemId','cls','from','to','attempt','activity'])if(form.elements[key]&&!form.elements[key].disabled)next[key]=form.elements[key].value;return next;}
 function markFilterDraft(){const draft=draftFilters();if(filterKey(draft)!==filterKey(state.filters))void applyFilters(draft);}
-async function applyFilters(next){if(!state.legacy&&!rangeValid(next)){const detail=document.querySelector('.filter-details');if(detail)detail.open=true;toast('請選擇有效日期，開始至結束日期最多 31 天。');return false;}if(filterKey(next)!==filterKey(state.filters))clearTeacherTools();state.filters=next;state.search='';state.studentFilter='all';state.constructFilter='';state.studentsOpen=false;renderFilters();renderTeacherTools();await loadData();return !!state.data;}
+async function applyFilters(next){if(!state.legacy&&!rangeValid(next)){const detail=document.querySelector('.filter-details');if(detail)detail.open=true;toast('請選擇有效日期（開始日期要早於或等於結束日期）。');return false;}if(filterKey(next)!==filterKey(state.filters))clearTeacherTools();state.filters=next;state.search='';state.studentFilter='all';state.constructFilter='';state.studentsOpen=false;renderFilters();renderTeacherTools();await loadData();return !!state.data;}
 function selectedPoem(filters=state.filters){return state.poems.find(poem=>String(poem.grade)===String(filters.grade)&&String(poem.id)===String(filters.poemId));}
 function scopeReady(filters=state.filters){return !!selectedPoem(filters);}
 function scopeLabel(){const poem=selectedPoem();return state.filters.grade?`${state.filters.grade} 年級${poem?' · '+poem.title:''}${state.filters.cls?' · '+state.filters.cls+' 班':''}`:'選擇年級與古詩';}
-function rangeValid(f=state.filters){const a=new Date(f.from+'T00:00:00Z'),b=new Date(f.to+'T00:00:00Z');return /^\d{4}-\d{2}-\d{2}$/.test(f.from)&&/^\d{4}-\d{2}-\d{2}$/.test(f.to)&&Number.isFinite(a.getTime())&&Number.isFinite(b.getTime())&&a.toISOString().slice(0,10)===f.from&&b.toISOString().slice(0,10)===f.to&&b>=a&&(b-a)/86400000<31;}
+function rangeValid(f=state.filters){const a=new Date(f.from+'T00:00:00Z'),b=new Date(f.to+'T00:00:00Z');return /^\d{4}-\d{2}-\d{2}$/.test(f.from)&&/^\d{4}-\d{2}-\d{2}$/.test(f.to)&&Number.isFinite(a.getTime())&&Number.isFinite(b.getTime())&&a.toISOString().slice(0,10)===f.from&&b.toISOString().slice(0,10)===f.to&&b>=a&&(b-a)/86400000<400;}
 async function loadData({force=false}={}){
  const generation=++state.generation;state.detailRequest?.abort();state.detailStudent=null;state.detailData=null;if(dialog.open)dialog.close();state.request?.abort();const controller=new AbortController();state.request=controller;state.data=null;state.page=0;
  const host=document.querySelector('#dashboard-content');if(!host)return;document.querySelector('#view-title').textContent=scopeLabel();document.querySelector('#sync-state').textContent='';
  renderTeacherTools();
  if(!scopeReady()){host.innerHTML=empty(state.filters.grade?'請選擇一首古詩':'請先選擇年級');state.request=null;renderTeacherTools();return;}
- if(!state.legacy&&!rangeValid()){host.innerHTML='<p class="status-strip error" role="alert">請選擇有效日期，開始至結束日期最多 31 天。</p>';return;}
+ if(!state.legacy&&!rangeValid()){host.innerHTML='<p class="status-strip error" role="alert">請選擇有效日期（開始日期要早於或等於結束日期）。</p>';return;}
  host.innerHTML='<div class="data-loading" role="status"><span class="loader" aria-hidden="true"></span><p>正在整理學習紀錄</p></div>';
  try{
   const key=filterKey(state.filters),cached=state.scopeCache.get(key);
@@ -184,7 +187,7 @@ function wordIssues(data){
  return analysis.poems.flatMap(poem=>(poem.lines||[]).flatMap(line=>(line.words||[]).filter(word=>Number.isInteger(word.count)&&word.count>0&&score(word.meanScore)!==null&&word.meanScore<80).map(word=>({...word,poemId:poem.poemId,itemId:`p${poem.poemId}.l${line.lineIndex}`})))).sort((a,b)=>a.meanScore-b.meanScore||a.poemId-b.poemId||a.itemId.localeCompare(b.itemId)||a.index-b.index);
 }
 function wordContext(word){
- const poem=state.poems.find(p=>Number(p.id)===Number(word.poemId)),match=/^p([1-6])\.l(\d+)$/.exec(String(word.itemId)),lineIndex=match&&Number(match[1])===Number(word.poemId)?Number(match[2]):null,line=lineIndex===null?null:poem?.lines?.[lineIndex]?.text;
+ const poem=state.poems.find(p=>Number(p.id)===Number(word.poemId)),match=/^p(\d+)\.l(\d+)$/.exec(String(word.itemId)),lineIndex=match&&Number(match[1])===Number(word.poemId)?Number(match[2]):null,line=lineIndex===null?null:poem?.lines?.[lineIndex]?.text;
  const title=poem?.title||'古詩',position=lineIndex===null?'':'第 '+(lineIndex+1)+' 句';
  const chars=line?[...line]:[],han=chars.filter(char=>/\p{Script=Han}/u.test(char));const aligned=han[word.index]===word.char;let index=-1;
  return{label:title+(position?' · '+position:''),text:aligned?chars.map(char=>{if(/\p{Script=Han}/u.test(char))index++;return index===word.index&&/\p{Script=Han}/u.test(char)?`<mark>${esc(char)}</mark>`:esc(char);}).join(''):'',position};
@@ -251,8 +254,8 @@ async function openStudentWords(researchId){
 
 function studentList(){
  const filtered=selectedStudents(),size=8,pages=Math.max(1,Math.ceil(filtered.length/size));state.page=Math.min(state.page,pages-1);const page=filtered.slice(state.page*size,(state.page+1)*size);
- const rows=page.map(row=>{const attempts=isActive(row)?number(row.nAttempts):absenceReliable()?0:null;return `<tr><td><button type="button" class="student-name student-word-link" data-student-words="${esc(row.researchId)}" aria-label="查看${esc(row.person.displayName)}的學習紀錄">${esc(row.person.displayName)}</button><p class="student-meta">${esc(row.grade+row.cls)}${row.person.classNo?' · '+esc(row.person.classNo)+' 號':''}</p></td><td class="reading-cell">${scoreMarkup(readingScore(row))}</td><td class="attempt-cell">${shown(attempts)}</td></tr>`;}).join('');
- return `<details class="student-overview" id="student-list" ${state.studentsOpen?'open':''}><summary><span>學生概況 <small>${joinedStudents().length} 人</small></span><span class="details-chevron" aria-hidden="true">⌄</span></summary><div class="student-overview-content"><div class="list-toolbar"><label class="search-field"><span class="sr-only">搜尋學生</span><input type="search" id="student-search" value="${esc(state.search)}" placeholder="搜尋學生" autocomplete="off"></label>${bandLegend()}<span class="list-result">${filtered.length} 人</span></div>${rows?`<div class="table-area"><table class="student-table"><thead><tr><th scope="col">學生</th><th scope="col">朗讀</th><th scope="col" class="attempt-cell">練習次數</th></tr></thead><tbody>${rows}</tbody></table></div>${pages>1?`<div class="pagination"><button class="button small" data-page="${state.page-1}" ${state.page===0?'disabled':''}>上一頁</button><span>${state.page+1} / ${pages}</span><button class="button small" data-page="${state.page+1}" ${state.page+1>=pages?'disabled':''}>下一頁</button></div>`:''}`:empty('暫時沒有符合的學生')}</div></details>`;
+ const rows=page.map(row=>{const attempts=isActive(row)?number(row.nPracticeAttempts):absenceReliable()?0:null;return `<tr><td><button type="button" class="student-name student-word-link" data-student-words="${esc(row.researchId)}" aria-label="查看${esc(row.person.displayName)}的學習紀錄">${esc(row.person.displayName)}</button><p class="student-meta">${esc(row.grade+row.cls)}${row.person.classNo?' · '+esc(row.person.classNo)+' 號':''}</p></td><td class="reading-cell">${scoreMarkup(readingScore(row))}</td><td class="attempt-cell">${shown(attempts)}</td></tr>`;}).join('');
+ return `<details class="student-overview" id="student-list" ${state.studentsOpen?'open':''}><summary><span>學生概況 <small>${joinedStudents().length} 人</small></span><span class="details-chevron" aria-hidden="true">⌄</span></summary><div class="student-overview-content"><div class="list-toolbar"><label class="search-field"><span class="sr-only">搜尋學生</span><input type="search" id="student-search" value="${esc(state.search)}" placeholder="搜尋學生" autocomplete="off"></label>${bandLegend()}<span class="list-result">${filtered.length} 人</span></div>${rows?`<div class="table-area"><table class="student-table"><thead><tr><th scope="col">學生</th><th scope="col">朗讀</th><th scope="col" class="attempt-cell" title="朗讀、練一練、默寫的次數（不計聽示範、看動畫、和詩人聊天）">練習次數</th></tr></thead><tbody>${rows}</tbody></table></div>${pages>1?`<div class="pagination"><button class="button small" data-page="${state.page-1}" ${state.page===0?'disabled':''}>上一頁</button><span>${state.page+1} / ${pages}</span><button class="button small" data-page="${state.page+1}" ${state.page+1>=pages?'disabled':''}>下一頁</button></div>`:''}`:empty('暫時沒有符合的學生')}</div></details>`;
 }
 function updateStudentList(){const previous=document.querySelector('#student-list');if(previous){state.studentsOpen=previous.open;previous.outerHTML=studentList();}}
 
@@ -305,7 +308,7 @@ function toolErrorMessage(error,kind='analysis'){
 async function prepareToolScope(){
  if(state.legacy||state.auth?.user?.role!=='teacher'||state.toolsPreparing)return null;const next=draftFilters();
  if(!scopeReady(next)){toast('請先選擇年級及古詩。');return null;}
- if(!rangeValid(next)){const details=document.querySelector('.filter-details');if(details)details.open=true;toast('請選擇有效日期，開始至結束日期最多 31 天。');return null;}
+ if(!rangeValid(next)){const details=document.querySelector('.filter-details');if(details)details.open=true;toast('請選擇有效日期（開始日期要早於或等於結束日期）。');return null;}
  const epoch=sessionEpoch,key=filterKey(next);state.toolsPreparing=true;
  try{if(key!==filterKey(state.filters)||!state.data){await applyFilters(next);}if(epoch!==sessionEpoch||key!==filterKey(state.filters)||key!==filterKey(draftFilters())||!state.data)return null;return {...state.filters};}
  finally{if(epoch===sessionEpoch){state.toolsPreparing=false;renderTeacherTools();}}
@@ -461,7 +464,7 @@ function usageLogShell(){
  const options=(list,label)=>`<option value="">${label}</option>`+list.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join('');
  return `<section class="usage-log" aria-labelledby="usage-log-title"><div class="monitor-top"><h2 id="usage-log-title">使用紀錄</h2><div class="usage-days" role="group" aria-label="時間範圍">${USAGE_RANGES.map(([d,label])=>`<button type="button" class="button small quiet" data-usage-days="${d}">${label}</button>`).join('')}</div></div>
 <form id="usage-filters" class="usage-filters" aria-label="篩選聊天紀錄"><label class="field">年級<select name="grade">${options([1,2,3,4,5,6].map(g=>[g,g+' 年級']),'全部')}</select></label><label class="field">班別<select name="cls">${options('ABCDEFGH'.split('').map(c=>[c,c+' 班']),'全部')}</select></label><label class="field">古詩<select name="poem">${options(usagePoemsOf(''),'全部')}</select></label><label class="field">由<input type="date" name="fromDate" min="2026-10-10"></label><label class="field">至<input type="date" name="toDate" min="2026-10-10"></label><label class="field usage-search">搜尋問題或回答<input type="search" name="q" maxlength="50" autocomplete="off"></label><div class="usage-actions"><button type="submit" class="button small">查詢</button></div></form>
-<div id="usage-log-body"><p class="monitor-note">每位學生每首古詩每句測評了多少次、和詩人聊了甚麼（姓名、班別、時間、問題和回答），以及每位老師用了多少次後台。只有網站管理員看得到。按上面的時間或「查詢」查看。</p></div></section>`;}
+<div id="usage-log-body"><p class="monitor-note">每位學生和詩人聊了甚麼（姓名、班別、時間、問題和回答），以及每位老師用了多少次後台。只有網站管理員看得到。按上面的時間或「查詢」查看。</p></div></section>`;}
 function usageFilters(){
  const form=document.querySelector('#usage-filters'),out={};if(!form)return out;
  for(const [key,value] of new FormData(form)){const v=String(value).trim();if(v)out[key]=v;}
@@ -518,7 +521,7 @@ function usageLogBody(d){
  const now=Date.parse(d.generatedAt)||Date.now(),range=usageRange(d),t=d.teachers||{},c=d.chats||{};
  const teacherRows=rows(t.teachers);
  const teachers=`<article class="monitor-card level-info"><h2><span class="monitor-dot" aria-hidden="true"></span>教師使用（${esc(d.days>=400?'全部':d.days===1?'今日':'近 '+d.days+' 日')}）</h2>`+(!t.available?'<p class="monitor-status">未能讀取教師使用紀錄。</p>':teacherRows.length?`<div class="table-area"><table class="monitor-table usage-teachers"><caption>每位老師的次數（「打開後台」按每次隔 30 分鐘以上計）</caption><thead><tr><th scope="col">老師</th>${TEACHER_COUNTS.map(([,label])=>`<th scope="col">${esc(label)}</th>`).join('')}<th scope="col">最近使用</th></tr></thead><tbody>${teacherRows.map(r=>`<tr><th scope="row">${esc(r.name||r.login)}${r.name&&String(r.name).toLowerCase()!==String(r.login).toLowerCase()?`<small>${esc(r.login)}</small>`:''}</th>${TEACHER_COUNTS.map(([key])=>`<td>${shown(number(r.counts?.[key])||0)}</td>`).join('')}<td>${esc(when(r.lastAt,now))}</td></tr>`).join('')}</tbody></table></div>`:'<p class="monitor-status">這段時間沒有老師使用後台。</p>')+monitorNote(['從 2026-10-10 開始記錄'])+'</article>';
- if(!c.available)return teachers+readingCard(d,now)+'<article class="monitor-card level-info"><h2><span class="monitor-dot" aria-hidden="true"></span>學生聊天</h2><p class="monitor-status">未能讀取聊天紀錄。</p></article>';
+ if(!c.available)return teachers+'<article class="monitor-card level-info"><h2><span class="monitor-dot" aria-hidden="true"></span>學生聊天</h2><p class="monitor-status">未能讀取聊天紀錄。</p></article>';
  const f=d.filters||{},scope=[f.grade?f.grade+' 年級':'',f.cls?f.cls+' 班':'',f.poem?'《'+(USAGE_POEMS[f.poem-1]||'')+'》':'',f.q?'含「'+f.q+'」':''].filter(Boolean).join(' · ');
  const top=rows(c.top),recent=rows(c.recent),students=rows(c.students);
  const stats=monitorStats([['提問',c.questions,' 次'],['學生',c.pupils,' 人'],['點建議問題',c.suggested,' 次'],['自己打字',c.typed,' 次'],['語音輸入',c.voice,' 次']]);
@@ -526,33 +529,98 @@ function usageLogBody(d){
  const topList=top.length?`<ol class="usage-top" aria-label="最多學生問的問題">${top.map(q=>`<li><span><small>《${esc(q.poemTitle||'')}》${q.suggested?' · 建議問題':''}</small>${esc(q.question)}</span><strong>${shown(q.pupils)} 人<small>${shown(q.count)} 次</small></strong></li>`).join('')}</ol>`:'';
  const recentList=recent.length?`<ol class="usage-chats" aria-label="最近的提問">${recent.map(q=>chatItem(q,now,true)).join('')}</ol>`:'';
  const empty=!students.length?'<p class="monitor-status">這段時間沒有符合條件的聊天紀錄（從 2026-10-10 school55 上線後開始記錄）。</p>':'';
- return teachers+readingCard(d,now)+`<article class="monitor-card level-info usage-chat-card"><h2><span class="monitor-dot" aria-hidden="true"></span>學生聊天（${esc(range)}${scope?' · '+esc(scope):''}）</h2>${stats}${empty}${students.length?'<h3>學生</h3>'+studentTable:''}${top.length?'<h3>最多學生問的問題</h3>'+topList:''}${recent.length?`<h3>最近的提問${recent.length>=number(c.limit)?'（最新 '+shown(c.limit)+' 條）':''}</h3>`+recentList:''}${monitorNote(['只有網站管理員看得到','老師後台看不到聊天內容'])}</article>`;
+ return teachers+`<article class="monitor-card level-info usage-chat-card"><h2><span class="monitor-dot" aria-hidden="true"></span>學生聊天（${esc(range)}${scope?' · '+esc(scope):''}）</h2>${stats}${empty}${students.length?'<h3>學生</h3>'+studentTable:''}${top.length?'<h3>最多學生問的問題</h3>'+topList:''}${recent.length?`<h3>最近的提問${recent.length>=number(c.limit)?'（最新 '+shown(c.limit)+' 條）':''}</h3>`+recentList:''}${monitorNote(['只有網站管理員看得到','老師後台看不到聊天內容'])}</article>`;
 }
 function chatItem(q,now,withName){
  return `<li${q.failed?' class="failed"':''}><p class="usage-chat-meta"><time>${esc(when(q.at,now))}</time>${withName?`<button type="button" class="usage-name" data-chat-student="${esc(q.student)}">${esc(pupilName(q))}</button><span>${esc(pupilClass(q))}</span>`:''}<span>《${esc(q.poemTitle||'')}》</span>${q.inputMode?`<span class="usage-mode">${esc(INPUT_MODES[q.inputMode])}</span>`:''}${q.failed?'<span class="usage-mode bad">沒有回答</span>':''}</p><p class="usage-question">${esc(q.question)}</p>${q.reply?(withName?`<details><summary>詩人的回答</summary><p>${esc(q.reply)}</p></details>`:`<p class="usage-reply">${esc(q.reply)}</p>`):''}</li>`;
 }
-// 朗讀測評: how many times each pupil had each line of each poem scored.
-function readingCard(d,now){
- const r=d.readings||{},list=rows(r.students),total=list.reduce((n,s)=>n+(number(s.total)||0),0);
- const head='<article class="monitor-card level-info usage-read-card"><h2><span class="monitor-dot" aria-hidden="true"></span>朗讀測評次數（'+esc(usageRange(d))+'）</h2>';
- if(!r.available)return head+'<p class="monitor-status">未能讀取朗讀測評紀錄。</p></article>';
- if(!list.length)return head+'<p class="monitor-status">這段時間沒有符合條件的朗讀測評。</p></article>';
- return head+monitorStats([['測評',total,' 次'],['學生',list.length,' 人']])+`<div class="table-area"><table class="monitor-table usage-students"><caption>每句錄音送去評分一次算一次；按「看每句」可看每首古詩每一句的次數</caption><thead><tr><th scope="col">姓名</th><th scope="col">班別座號</th><th scope="col">登入名稱</th><th scope="col">測評</th><th scope="col">每首古詩</th><th scope="col">最後一次</th><th scope="col"><span class="sr-only">詳情</span></th></tr></thead><tbody>${list.map(s=>`<tr><th scope="row">${esc(pupilName(s))}</th><td>${esc(pupilClass(s))}</td><td>${esc(s.login||'—')}</td><td>${shown(s.total)}</td><td>${esc(rows(s.poems).map(p=>p.title+' '+p.total).join('、'))}</td><td>${esc(when(s.lastAt,now))}</td><td><button type="button" class="button small quiet" data-chat-student="${esc(s.student)}">看每句</button></td></tr>`).join('')}</tbody></table></div>${r.truncated?monitorNote(['資料太多，只列出部分，請縮小範圍']):''}</article>`;
-}
-function readingLines(s,now){
- if(!s)return '<p class="monitor-status">這段時間沒有朗讀測評。</p>';
- return `<p class="usage-who">共 ${shown(s.total)} 次測評${s.failed?'，其中 '+shown(s.failed)+' 次沒有結果':''}</p>`+rows(s.poems).map(p=>`<div class="table-area"><table class="monitor-table usage-lines"><caption>《${esc(p.title)}》 ${shown(p.total)} 次</caption><thead><tr><th scope="col">句</th><th scope="col">句子</th><th scope="col">測評次數</th><th scope="col">沒有結果</th><th scope="col">最後一次</th></tr></thead><tbody>${rows(p.lines).map(l=>`<tr><td>第 ${shown(l.line)} 句</td><th scope="row">${esc(l.text||'')}</th><td>${shown(l.count)}</td><td>${shown(l.failed)}</td><td>${esc(when(l.lastAt,now))}</td></tr>`).join('')}</tbody></table></div>`).join('');
-}
 function conversationBody(d){
- const now=Date.parse(d.generatedAt)||Date.now(),s=d.student||d.readings||{},list=rows(d.conversation);
+ const now=Date.parse(d.generatedAt)||Date.now(),s=d.student||{},list=rows(d.conversation);
  const back='<button type="button" class="button small quiet" data-action="usage-back">返回學生列表</button>';
- if(!d.available&&!d.readingsAvailable)return back+'<p class="monitor-status">未能讀取這位學生的紀錄。</p>';
+ if(!d.available)return back+'<p class="monitor-status">未能讀取這位學生的紀錄。</p>';
  let day='',body='';
  for(const q of list){const k=hkDay(q.at);if(k!==day){if(day)body+='</ol>';day=k;body+=`<h3>${esc(dayLabel(k))}</h3><ol class="usage-chats usage-convo">`;}body+=chatItem(q,now,false);}
  if(day)body+='</ol>';
- const reading=d.readingsAvailable===false?'<p class="monitor-status">未能讀取朗讀測評紀錄。</p>':readingLines(d.readings,now);
- const chats=!d.available?'<p class="monitor-status">未能讀取這位學生的對話。</p>':`<p class="usage-who">共 ${shown(list.length)} 次提問${list.length>=number(d.limit)?'（只顯示最早 '+shown(d.limit)+' 次）':''}</p>${body||'<p class="monitor-status">這段時間沒有對話。</p>'}`;
- return `<article class="monitor-card level-info usage-chat-card"><div class="monitor-top">${back}</div><h2><span class="monitor-dot" aria-hidden="true"></span>${esc(pupilName(s))}（${esc(usageRange(d))}）</h2><p class="usage-who">${esc(pupilClass(s))}${s.login?' · 登入名稱 '+esc(s.login):''}</p><h3>朗讀測評次數</h3>${reading}<h3>和詩人的對話</h3>${chats}</article>`;
+ const chats=`<p class="usage-who">共 ${shown(list.length)} 次提問${list.length>=number(d.limit)?'（只顯示最早 '+shown(d.limit)+' 次）':''}</p>${body||'<p class="monitor-status">這段時間沒有對話。</p>'}`;
+ return `<article class="monitor-card level-info usage-chat-card"><div class="monitor-top">${back}</div><h2><span class="monitor-dot" aria-hidden="true"></span>${esc(pupilName(s))}（${esc(usageRange(d))}）</h2><p class="usage-who">${esc(pupilClass(s))}${s.login?' · 登入名稱 '+esc(s.login):''}</p><h3>和詩人的對話</h3>${chats}</article>`;
+}
+// 朗讀測評次數 (jasper and molly), below the downloads panel: each pupil's scored line readings by name,
+// every line's count in a dialog, and every attempt's score as Excel. Starts at the 2026-10-03 cohort reset.
+const READING_LOG='/api/teacher-tools?tool=reading-log',readingLog={days:7,grade:'',cls:'',data:null,generation:0,controller:null,student:null,detail:null,exporting:false};
+const READING_RANGES=[[1,'今日'],[7,'近 7 日'],[30,'近 30 日'],[400,'全部']];
+function readingLogAllowed(){return !DEMO&&!state.legacy&&state.auth?.user?.role==='teacher'&&state.auth.user.readingLog===true;}
+function readingRange(days){return (READING_RANGES.find(([d])=>d===days)||[0,''])[1];}
+function readingLogShell(){
+ const options=(list,value)=>`<option value="">全部</option>`+list.map(([v,t])=>`<option value="${esc(v)}" ${String(v)===value?'selected':''}>${esc(t)}</option>`).join('');
+ return `<section id="reading-log" class="downloads-panel reading-log" aria-labelledby="reading-log-title"><div class="reading-log-top"><h2 id="reading-log-title">朗讀測評次數</h2><div class="usage-days" role="group" aria-label="時間範圍">${READING_RANGES.map(([d,label])=>`<button type="button" class="button small quiet" data-reading-days="${d}" aria-pressed="${readingLog.days===d}">${label}</button>`).join('')}</div></div>
+<div class="usage-filters reading-log-filters"><label class="field">年級<select name="grade" data-reading-filter>${options([1,2,3,4,5,6].map(g=>[g,g+' 年級']),readingLog.grade)}</select></label><label class="field">班別<select name="cls" data-reading-filter>${options('ABCDEFGH'.split('').map(c=>[c,c+' 班']),readingLog.cls)}</select></label></div>
+<div id="reading-log-body"></div></section>`;}
+function readingQuery(extra={}){
+ const p=new URLSearchParams({days:String(readingLog.days)});if(readingLog.grade)p.set('grade',readingLog.grade);if(readingLog.cls)p.set('cls',readingLog.cls);
+ for(const [key,value] of Object.entries(extra))p.set(key,value);return READING_LOG+'&'+p.toString();
+}
+function showReadingLog(){const host=document.querySelector('#reading-log-body');if(!host)return;if(readingLog.data)host.innerHTML=readingLogBody(readingLog.data);else void loadReadingLog();}
+async function loadReadingLog(){
+ const host=document.querySelector('#reading-log-body');if(!readingLogAllowed()||!host)return;
+ readingLog.controller?.abort();const controller=new AbortController(),generation=++readingLog.generation;readingLog.controller=controller;
+ document.querySelectorAll('[data-reading-days]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.readingDays)===readingLog.days)));
+ host.innerHTML='<div class="data-loading" role="status"><span class="loader" aria-hidden="true"></span><p>正在讀取朗讀測評次數</p></div>';
+ try{
+  const data=await requestJSON(readingQuery(),{signal:controller.signal,timeoutMs:20000});if(generation!==readingLog.generation)return;
+  readingLog.data=data;host.innerHTML=readingLogBody(data);
+ }catch(error){
+  if(generation!==readingLog.generation)return;
+  if(error.status===401){clearPrivate();renderLogin('登入已失效，請重新登入。');return;}
+  if(error.status===403){document.querySelector('#reading-log')?.remove();return;}
+  host.innerHTML=`<p class="status-strip error" role="alert">未能讀取朗讀測評次數（${esc(error.name==='AbortError'?'20 秒內沒有回應':error.status?'伺服器回覆 '+error.status:'網絡未能連線')}）。<button type="button" class="button small" data-action="reading-retry">再試一次</button></p>`;
+ }finally{if(readingLog.controller===controller)readingLog.controller=null;}
+}
+function readingLogBody(d){
+ const list=rows(d.students),range=readingRange(d.days),f=d.filters||{},scope=[f.grade?f.grade+' 年級':'',f.cls?f.cls+' 班':''].filter(Boolean).join(' · ')||'全校';
+ if(!d.available)return '<p class="status-strip error" role="alert">未能讀取朗讀測評紀錄。<button type="button" class="button small" data-action="reading-retry">再試一次</button></p>';
+ if(!list.length)return `<p class="reading-log-summary">${esc(range)}（${esc(scope)}）沒有朗讀測評。</p>`;
+ return `<p class="reading-log-summary">${esc(range)} · ${esc(scope)}：<strong>${shown(list.length)}</strong> 位學生，共 <strong>${shown(d.readings)}</strong> 次測評</p><div class="table-area"><table class="monitor-table usage-students reading-log-table"><caption class="sr-only">每位學生的朗讀測評次數；按「看每句」可看每一句測評了多少次</caption><thead><tr><th scope="col">姓名</th><th scope="col">班別座號</th><th scope="col">測評</th><th scope="col">每首古詩</th><th scope="col"><span class="sr-only">每句</span></th></tr></thead><tbody>${list.map(s=>`<tr><th scope="row">${esc(pupilName(s))}</th><td>${esc(pupilClass(s))}</td><td>${shown(s.total)}</td><td>${esc(rows(s.poems).map(p=>p.title+' '+p.total).join('、'))}</td><td><button type="button" class="button small quiet" data-reading-student="${esc(s.student)}">看每句</button></td></tr>`).join('')}</tbody></table></div>${d.truncated?'<p class="tools-hint">紀錄太多，只列出部分，請選擇年級或班別。</p>':''}<p class="tools-hint">每句錄音送去評分一次算一次。由 2026-10-03 初始化後開始計算，之前的測試紀錄不計。</p>`;
+}
+function readingDialog(s,body){
+ return `<header class="dialog-header"><div><h2 id="student-dialog-title">${esc(pupilName(s))}</h2><p class="helper">${esc(pupilClass(s))} · ${esc(readingRange(readingLog.days))}</p></div><button type="button" class="button icon-only" data-action="close-dialog" aria-label="關閉朗讀測評次數">×</button></header><div class="dialog-body reading-lines-body">${body}</div>`;
+}
+function readingLinesBody(s){
+ const poems=rows(s.poems);
+ const exportBar=`<div class="reading-export"><button type="button" class="button primary" data-action="reading-export" ${poems.length?'':'disabled'}>${icon('download')}匯出 Excel（每句每次的分數）</button><p id="reading-export-status" class="helper" role="status"></p></div>`;
+ if(!poems.length)return '<p class="helper">這段時間沒有朗讀測評。</p>'+exportBar;
+ return `<p class="helper">共 ${shown(s.total)} 次測評${s.failed?'，其中 '+shown(s.failed)+' 次沒有結果':''}</p>${exportBar}`+poems.map(p=>`<div class="table-area"><table class="monitor-table usage-lines"><caption>《${esc(p.title)}》 ${shown(p.total)} 次</caption><thead><tr><th scope="col">句</th><th scope="col">句子</th><th scope="col">測評次數</th><th scope="col">沒有結果</th></tr></thead><tbody>${rows(p.lines).map(l=>`<tr><td>第 ${shown(l.line)} 句</td><th scope="row">${esc(l.text||'')}</th><td>${shown(l.count)}</td><td>${shown(l.failed)}</td></tr>`).join('')}</tbody></table></div>`).join('');
+}
+async function openReadingStudent(id){
+ const row=rows(readingLog.data?.students).find(s=>s.student===id);if(!row)return;
+ state.detailRequest?.abort();state.detailStudent=null;state.detailData=null;readingLog.detail?.abort();
+ const controller=new AbortController();readingLog.detail=controller;readingLog.student=row;
+ const content=document.querySelector('#student-dialog-content');content.innerHTML=readingDialog(row,'<div class="empty" role="status"><span class="loader" aria-hidden="true"></span><p>正在讀取每句的次數</p></div>');
+ if(!dialog.open)dialog.showModal();dialog.scrollTop=0;
+ const current=()=>!controller.signal.aborted&&readingLog.student===row&&dialog.open;
+ try{
+  const data=await requestJSON(readingQuery({view:'student',student:id}),{signal:controller.signal,timeoutMs:20000});if(!current())return;
+  if(!data.available||data.student?.student!==id)throw new Error('Reading scope mismatch');
+  content.innerHTML=readingDialog(row,readingLinesBody(data.student));
+ }catch(error){if(!current())return;if(error.status===401){dialog.close();clearPrivate();renderLogin('登入已失效，請重新登入。');return;}
+  content.innerHTML=readingDialog(row,'<p class="helper">暫時未能讀取每句的次數。</p><button type="button" class="button" data-reading-student="'+esc(id)+'">再試一次</button>');}
+ finally{if(readingLog.detail===controller)readingLog.detail=null;}
+}
+async function exportReadingScores(button){
+ const s=readingLog.student;if(!s||readingLog.exporting)return;
+ const say=text=>{const el=document.querySelector('#reading-export-status');if(el)el.textContent=text;};
+ readingLog.exporting=true;button.disabled=true;say('正在匯出…');
+ const controller=new AbortController(),epoch=sessionEpoch,timeout=setTimeout(()=>controller.abort(),30000);pendingRequests.add(controller);
+ try{
+  const response=await fetch(readingQuery({view:'xlsx',student:s.student}),{credentials:'same-origin',cache:'no-store',signal:controller.signal});
+  if(epoch!==sessionEpoch)return;
+  if(response.status===401){dialog.close();clearPrivate();renderLogin('登入已失效，請重新登入。');return;}
+  if(!response.ok){let data=null;try{data=await response.json();}catch{}throw new Error(data?.error||'匯出未完成，請再試一次。');}
+  const blob=await response.blob();if(epoch!==sessionEpoch)return;
+  const head=new Uint8Array(await blob.slice(0,4).arrayBuffer());if(blob.size<4||head[0]!==80||head[1]!==75||head[2]!==3||head[3]!==4)throw new Error('匯出檔案不完整，請再試一次。');
+  download(blob,`朗讀測評分數_${s.grade||''}${s.cls||''}${number(s.classNo)===null?'':'_'+s.classNo+'號'}_${pupilName(s)}_${readingRange(readingLog.days)}.xlsx`.replace(/[\\/:*?"<>|\s]/g,''));
+  say('已下載。');
+ }catch(error){if(epoch===sessionEpoch)say(error.name==='AbortError'?'30 秒內沒有回應，請再試一次。':error.message||'匯出未完成，請再試一次。');}
+ finally{clearTimeout(timeout);pendingRequests.delete(controller);readingLog.exporting=false;if(document.contains(button))button.disabled=false;}
 }
 function renderMonitor(){
  const host=document.querySelector('#site-monitor-body');if(!host)return;const d=monitor.data;
@@ -633,6 +701,7 @@ root.addEventListener('submit',event=>{
  if(event.target.id==='usage-filters'){event.preventDefault();void loadUsageLog();}
 });
 root.addEventListener('change',event=>{
+ if(event.target.matches('[data-reading-filter]')){readingLog[event.target.name]=event.target.value;void loadReadingLog();return;}
  if(event.target.name==='grade'&&event.target.form?.id==='usage-filters'){
   const poem=event.target.form.elements.poem,keep=poem.value,list=usagePoemsOf(event.target.value);
   poem.innerHTML='<option value="">全部</option>'+list.map(([v,t])=>`<option value="${v}">${esc(t)}</option>`).join('');
@@ -657,6 +726,10 @@ function click(event){const button=event.target.closest('button');if(!button||bu
  if(button.dataset.usageDays){void loadUsageLog(Number(button.dataset.usageDays));return;}
  if(button.dataset.chatStudent){void openChatStudent(button.dataset.chatStudent);return;}
  if(button.dataset.action==='usage-back'){usageBack();return;}
+ if(button.dataset.readingDays){readingLog.days=Number(button.dataset.readingDays)||7;void loadReadingLog();return;}
+ if(button.dataset.readingStudent){void openReadingStudent(button.dataset.readingStudent);return;}
+ if(button.dataset.action==='reading-retry'){void loadReadingLog();return;}
+ if(button.dataset.action==='reading-export'){void exportReadingScores(button);return;}
 
  if(button.dataset.studentWords){void openStudentWords(button.dataset.studentWords);return;}
  if(button.dataset.action==='retry-student-words'&&state.detailStudent){void openStudentWords(state.detailStudent.researchId);return;}
@@ -665,14 +738,14 @@ function click(event){const button=event.target.closest('button');if(!button||bu
  if(button.dataset.action==='refresh'||button.dataset.action==='retry-roster'){if(state.rosterError||!state.poems.length||button.dataset.action==='retry-roster')void enterDashboard();else void loadData({force:true});}
  if(button.dataset.action==='boot')void boot();if(button.dataset.action==='logout')void logout();
  if(button.dataset.action==='reset-filters')applyFilters({grade:'',poemId:'',cls:'',from:dayOffset(-29),to:dayOffset(0),attempt:'best',activity:''});
- if(button.dataset.dateOffset!==undefined){const form=document.querySelector('#teacher-filters');form.elements.from.value=dayOffset(Number(button.dataset.dateOffset));form.elements.to.value=dayOffset(0);markFilterDraft();}
- if(button.dataset.action==='close-dialog'){state.detailRequest?.abort();state.detailStudent=null;state.detailData=null;dialog.close();document.querySelector('#student-dialog-content').replaceChildren();}
+ if(button.dataset.dateOffset!==undefined){const form=document.querySelector('#teacher-filters');form.elements.from.value=presetFrom(button.dataset.dateOffset);form.elements.to.value=dayOffset(0);markFilterDraft();}
+ if(button.dataset.action==='close-dialog'){readingLog.detail?.abort();readingLog.student=null;state.detailRequest?.abort();state.detailStudent=null;state.detailData=null;dialog.close();document.querySelector('#student-dialog-content').replaceChildren();}
  if(button.dataset.page!==undefined){state.page=Math.max(0,Number(button.dataset.page)||0);updateStudentList();document.querySelector('#student-list')?.scrollIntoView({block:'start',behavior:'instant'});}
  if(button.dataset.groupGrade)applyFilters({...state.filters,grade:button.dataset.groupGrade,cls:button.dataset.groupClass||''});
 }
 root.addEventListener('click',click);dialog.addEventListener('click',click);
 root.addEventListener('toggle',event=>{if(event.target.id==='student-list')state.studentsOpen=event.target.open;},true);
-dialog.addEventListener('close',()=>{if(dialog.open)return;state.detailRequest?.abort();state.detailStudent=null;state.detailData=null;document.querySelector('#student-dialog-content').replaceChildren();});
+dialog.addEventListener('close',()=>{if(dialog.open)return;readingLog.detail?.abort();readingLog.student=null;state.detailRequest?.abort();state.detailStudent=null;state.detailData=null;document.querySelector('#student-dialog-content').replaceChildren();});
 dialog.addEventListener('submit',event=>{if(event.target.id==='teacher-password-form'){event.preventDefault();void changePassword(event.target);}});document.querySelector('#teacher-logout').addEventListener('click',logout);
 // Remove the old teacher-token persistence once; school credentials are never stored in browser storage.
 try{sessionStorage.removeItem('maanshan-teacher-access');}catch{}

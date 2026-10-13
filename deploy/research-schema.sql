@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS research_events (
   imported_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   grade smallint NOT NULL CHECK (grade BETWEEN 1 AND 6),
   cls char(1) NOT NULL CHECK (cls ~ '^[A-Z]$'),
-  poem_id smallint CHECK (poem_id BETWEEN 1 AND 6),
+  poem_id smallint CHECK (poem_id BETWEEN 1 AND 12),
   activity varchar(24) NOT NULL,
   event_checksum char(64) NOT NULL CHECK (event_checksum ~ '^[a-f0-9]{64}$'),
   record jsonb NOT NULL CHECK (record->>'schemaVersion' = '1'),

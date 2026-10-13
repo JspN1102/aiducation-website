@@ -1,7 +1,7 @@
 'use strict';
 const research = require('./research-store.cjs');
 const auth = require('./school-auth.cjs');
-const {poems} = require('../../maanshan/poems.json');
+const {poems} = require('./all-poems.cjs');
 const CONSTRUCTS = Object.freeze({ 'reading.pronunciation':'朗讀字音評分', 'writing.dictation':'聽寫', 'sound.recognition':'聽音辨識', 'match.accuracy':'配對', 'sequence.accuracy':'排序', 'scene_builder.accuracy':'場景組合' });
 const SOURCES = Object.freeze({serverVerified:'平台評分',clientReported:'練習回報'});
 class TeacherDataError extends Error { constructor(code,status=503){super(code);this.code=code;this.status=status;} }

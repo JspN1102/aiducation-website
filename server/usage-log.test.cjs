@@ -121,10 +121,10 @@ test('line readings count each scored line per pupil and poem, and the text sear
  const q=seen[0];assert.match(q.sql,/operation'='reading'/);assert.doesNotMatch(q.sql,/ILIKE/);assert.deepEqual(q.params.slice(2),[2]);
 });
 
-test('only the site administrator gets the log or the conversation; the Excel export is gone',async()=>{
+test('only the site administrator gets the log or the conversation; readings and the Excel export are gone',async()=>{
  const auth=require('../api/_lib/school-auth.cjs'),saved={requireActor:auth.requireActor,siteAdmin:auth.siteAdmin};
  let who={role:'teacher',login:'chan'};auth.requireActor=async()=>who;auth.siteAdmin=a=>a.login==='jasper';
- const h=createActivityLog({researchPool:()=>chatPool(),activity:()=>({summary:async()=>({available:true,teachers:[]})}),directory:async()=>({accounts:[{role:'student',researchId:B,displayName:'測試甲',login:'t2a01',grade:2,cls:'A',classNo:1}]}),now:()=>NOW});
+ const h=createActivityLog({researchPool:()=>chatPool(),activity:()=>({summary:async()=>({available:true,teachers:[]})}),cohort:async()=>'2026-10-03T05:17:00.000Z',directory:async()=>({accounts:[{role:'student',researchId:B,displayName:'測試甲',login:'t2a01',grade:2,cls:'A',classNo:1}]}),now:()=>NOW});
  const call=async query=>{const res={statusCode:0,headers:{},body:null,setHeader(k,v){this.headers[k.toLowerCase()]=v;},json(b){this.body=b;return this;},send(b){this.body=b;return this;},end(b){this.body=b;return this;}};
   res.status=function(n){res.statusCode=n;return res;};await h({method:'GET',query,headers:{}},res);return res;};
  try{
@@ -133,8 +133,8 @@ test('only the site administrator gets the log or the conversation; the Excel ex
   r=await call({grade:'9'});assert.equal(r.statusCode,400);
   r=await call({view:'student'});assert.equal(r.statusCode,400);
   r=await call({});assert.equal(r.statusCode,200);assert.equal(r.body.schemaVersion,2);assert.equal(r.body.chats.recent[0].name,'測試甲');assert.equal(r.body.teachers.available,true);
-  assert.equal(r.body.readings.students.length,2);
-  r=await call({view:'student',student:B});assert.equal(r.statusCode,200);assert.equal(r.body.conversation.length,2);assert.equal(r.body.readingsAvailable,true);assert(r.body.readings.total>0);
+  assert.equal(r.body.readings,undefined);
+  r=await call({view:'student',student:B});assert.equal(r.statusCode,200);assert.equal(r.body.conversation.length,2);assert.equal(r.body.readings,undefined);assert.equal(r.body.readingsAvailable,undefined);
   r=await call({view:'xlsx'});assert.equal(r.statusCode,400);assert.equal(r.body.code,'INVALID_VIEW');
  }finally{Object.assign(auth,saved);}
 });
@@ -152,4 +152,16 @@ test('teachers never get chat text: the dashboard data and their research export
  assert.doesNotMatch(s.exportRows([stored],f,{format:'csv'}).content,/秘密/);
  assert.doesNotMatch(JSON.stringify(s.aggregateEvents([stored],f,{includeStudentDetails:true})),/秘密/);
  assert.equal(stored.event.chat.question,'秘密問題甲');
+});
+
+test('the 2026-10-03 reset (初始化) is the floor: staff tests on pupils’ accounts before it are left out',async()=>{
+ const g={...filtersFrom({days:'30',grade:'2'},NOW),since:'2026-10-03T05:17:00.000Z'},w=where(g);
+ assert.deepEqual(w.params,[g.from,g.to,'2026-10-03T05:17:00.000Z',2]);assert.match(w.sql,/received_at >= \$3 AND grade = \$4/);
+ assert.doesNotMatch(where(filtersFrom({},NOW)).sql,/\$3/);
+ const auth=require('../api/_lib/school-auth.cjs'),saved={requireActor:auth.requireActor,siteAdmin:auth.siteAdmin};
+ auth.requireActor=async()=>({role:'teacher',login:'jasper'});auth.siteAdmin=a=>a.login==='jasper';
+ const seen=[],h=createActivityLog({researchPool:()=>chatPool(seen),activity:()=>({summary:async()=>({available:true,teachers:[]})}),cohort:async()=>'2026-10-03T05:17:00.000Z',directory:async()=>({accounts:[]}),now:()=>NOW});
+ const res={setHeader(){},status(){return res;},json(b){res.body=b;return res;}};
+ try{await h({method:'GET',query:{days:'30'},headers:{}},res);}finally{Object.assign(auth,saved);}
+ assert(seen.length&&seen.filter(q=>!q.sql.includes('DISTINCT grade,cls')).every(q=>q.params.includes('2026-10-03T05:17:00.000Z')));
 });

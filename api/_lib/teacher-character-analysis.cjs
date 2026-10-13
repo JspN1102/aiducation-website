@@ -1,5 +1,5 @@
 'use strict';
-const {poems}=require('../../maanshan/poems.json');
+const {poems}=require('./all-poems.cjs');
 const han=value=>[...value].filter(char=>/\p{Script=Han}/u.test(char));
 const measured=value=>typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<=100;
 
@@ -13,7 +13,7 @@ function buildCharacterAnalysis(outcomes,filters={}){
   const selected=new Map();
   for(const row of outcomes){
     const event=row.event,poem=catalog.find(item=>item.id===event.poemId);
-    const match=/^p([1-6])\.l(\d+)$/.exec(event.itemId||'');
+    const match=/^p(\d+)\.l(\d+)$/.exec(event.itemId||'');
     if(!poem||row.grade!==poem.grade||!match||Number(match[1])!==poem.id||!poem.lines[Number(match[2])])continue;
     const key=JSON.stringify([row.researchId,event.poemId,Number(match[2])]),previous=selected.get(key);
     if(!previous||(filters.attempt==='first'?row.serverReceivedAt<previous.serverReceivedAt:filters.attempt==='best'?lineScore(row)>lineScore(previous)||lineScore(row)===lineScore(previous)&&row.serverReceivedAt>previous.serverReceivedAt:row.serverReceivedAt>previous.serverReceivedAt))selected.set(key,row);

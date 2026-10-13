@@ -12,7 +12,7 @@ export function createAnswerOutbox({actorId,csrfToken,learningEpoch,enabled=true
   const epoch=/^[a-f0-9]{32}$/.test(learningEpoch||'')?learningEpoch:null;
   queue=createPersistentQueue({prefix:'maanshan-answer-v1:'+(epoch?'epoch:'+epoch+':':'')+actorId+':',storage,notify,limit:1000,
     identify:item=>item.researchContext.requestId,
-    valid:item=>item?.researchContext?.actorId===actorId&&isUuid(item.researchContext.requestId)&&Number.isFinite(Date.parse(item.researchContext.requestedAt))&&Number.isInteger(item.poemId)&&item.poemId>=1&&item.poemId<=6&&typeof item.itemId==='string'&&(['correct','incorrect','skipped'].includes(item.status)||item.status==='completed'&&item.researchContext.context?.flow==='trace-dictation-v1'&&item.researchContext.context.itemType==='dictation'&&item.researchContext.context.traceCompleted===true&&item.researchContext.context.dictationCompleted===false),
+    valid:item=>item?.researchContext?.actorId===actorId&&isUuid(item.researchContext.requestId)&&Number.isFinite(Date.parse(item.researchContext.requestedAt))&&Number.isInteger(item.poemId)&&item.poemId>=1&&item.poemId<=12&&typeof item.itemId==='string'&&(['correct','incorrect','skipped'].includes(item.status)||item.status==='completed'&&item.researchContext.context?.flow==='trace-dictation-v1'&&item.researchContext.context.itemType==='dictation'&&item.researchContext.context.traceCompleted===true&&item.researchContext.context.dictationCompleted===false),
     compare:(a,b)=>a.researchContext.requestedAt.localeCompare(b.researchContext.requestedAt)});
   function enqueue(input){
     if(!enabled||stopped)return false;

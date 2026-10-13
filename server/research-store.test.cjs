@@ -23,6 +23,9 @@ test('identity is bound to cookie actor; raw or impersonated fields never enter 
 
 test('formal intake rejects cross-grade events and excludes teacher/test sessions before storage',async()=>{
  assert.throws(()=>s.validateBatch(input([event({poemId:6})]),actor,now),e=>e.code==='POEM_GRADE_FORBIDDEN'&&e.status===422);
+ // Round two (released 2026-10-13): a grade-2 pupil's poem 8 is research; poem 9 is another grade; 13 does not exist.
+ assert.equal(s.validateBatch(input([event({poemId:8,itemId:'p8.l0'})]),actor,now).events[0].event.poemId,8);
+ assert.throws(()=>s.validateBatch(input([event({poemId:9})]),actor,now),e=>e.code==='POEM_GRADE_FORBIDDEN');assert.throws(()=>s.validateBatch(input([event({poemId:13})]),actor,now));
  assert.throws(()=>s.validateBatch(input([event()]),{...actor,isTest:true,learningScope:'all-grades'},now),e=>e.code==='RESEARCH_EXCLUDED'&&e.status===422);
  const db={query:async()=>assert.fail('excluded event reached database')};
  for(const person of [{...actor,isTest:true,learningScope:'all-grades'},{...actor,role:'teacher',grade:null}])await assert.rejects(s.ingest(input([event()]),person,{storage:'postgres',db}),e=>e.code==='RESEARCH_EXCLUDED'&&e.status===422);
@@ -42,7 +45,7 @@ test('schema/ranges reject oversized batches, invalid dates, nonfinite metrics, 
   assert.throws(()=>s.validateEvent(event({result:{status:'skipped',score:0}})));
   assert.doesNotThrow(()=>s.validateEvent(event({result:{status:'incorrect',score:0,correct:false},metrics:{lostEventCount:3,playbackRate:.8}})));
   assert.throws(()=>s.filtersFrom({to:'invalid'}),e=>e.status===400);
-  assert.throws(()=>s.filtersFrom({from:'2026-01-01',to:'2026-09-20'}));
+  assert.throws(()=>s.filtersFrom({from:'2025-01-01',to:'2026-09-20'}));
 });
 test('checksums detect changes; server words must belong to the poem and are never client accepted',()=>{
   const batch=s.validateBatch(input([event()]),actor,now);s.verifyStoredBatch(batch);
@@ -425,4 +428,17 @@ test('the dictionary documents the school48 fields as optional and keeps exclusi
   for(const key of ['fallbackCount','mediaDurationMs','seekFromMs','stallCount','selectionChanges','firstResponseMs','prepareMs','pendingCount','heldCount'])assert.ok(field('event.metrics').meaning.includes(key),key);
   for(const item of ['browser error message, script URL or stack trace','provider error text','user agent','exact screen size','persistent device identifier','inserted speech content','IP address','device fingerprint'])assert.ok(d.export.excluded.includes(item),item);
   assert.doesNotMatch(JSON.stringify(d),/self[- ]?assess/i);
+});
+test('練習次數 counts reading, 練一練 and 默寫 only, not listening, the animation or chatting with the poet',()=>{
+  const att=activity=>row({activity,itemId:'poem-2/item-1',attemptId:randomUUID(),result:{status:'completed'}},now);
+  const rows=[att('read'),att('read'),att('challenge'),att('writing'),att('listen'),att('listen'),att('animation'),att('chat')];
+  const result=s.aggregateEvents(rows,f);
+  assert.equal(result.summary.nAttempts,8);assert.equal(result.summary.nPracticeAttempts,4);
+  assert.equal(result.students[0].nPracticeAttempts,4);
+  const listening=s.aggregateEvents([att('listen'),att('chat')],f);assert.equal(listening.students[0].nPracticeAttempts,0);
+});
+test('「全部」 in the teacher dashboard: up to 400 days are accepted, longer is refused',()=>{
+  assert.equal(s.filtersFrom({from:'2025-09-09',to:'2026-10-13'},now).from,'2025-09-09');
+  assert.equal(s.filtersFrom({from:'2026-10-03',to:'2026-10-13'},now).from,'2026-10-03');
+  assert.throws(()=>s.filtersFrom({from:'2025-09-08',to:'2026-10-13'},now),/DATE_RANGE_TOO_LONG/);
 });

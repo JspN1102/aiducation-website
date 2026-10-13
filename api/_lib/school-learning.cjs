@@ -14,7 +14,7 @@ async function referenceFor(req, operation) {
   const poem = getPoem(context.poemId, null);
   if (!poem || (req.body.poemId !== undefined && req.body.poemId !== poem.id)) throw new auth.AuthError(400, 'INVALID_LEARNING_CONTEXT');
   if (operation === 'reading') {
-    const match = /^p([1-6])\.l(\d+)$/.exec(context.itemId || '');
+    const match = /^p(\d+)\.l(\d+)$/.exec(context.itemId || '');
     const line = match && Number(match[1]) === poem.id ? poem.lines[Number(match[2])] : null;
     if (!line || req.body.refText !== line.simplified) throw new auth.AuthError(400, 'INVALID_LEARNING_CONTEXT');
     context.activity='read';
