@@ -19,7 +19,7 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
 import {requestJSON, requestChat} from './network.mjs?v=20261011-school58';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
-import {schoolSession} from './bootstrap.mjs?v=20261010-school55';
+import {schoolSession} from './bootstrap.mjs?v=20261013-school62d';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261013-school62b';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20261013-school60';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school41';
