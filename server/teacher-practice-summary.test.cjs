@@ -66,3 +66,14 @@ test('teacher per-item display does not fabricate missing ordinal slots or label
  assert.equal((html.match(/<li>/g)||[]).length,2);assert.match(html,/各題最近成績/);assert.doesNotMatch(html,/最近一輪|\/ 5|尚未作答/);
  assert.match(html,/<span class="practice-position">1<\/span>/);assert.match(html,/<span class="practice-position">2<\/span>/);
 });
+
+test('steps inside one 詩裏玩一玩 game are not listed as questions; a game left unfinished reads 未完成',()=>{
+ const steps=[0,1,2].map(i=>event({item:'game.river.slot.'+i,position:i+1,at:10+i,source:'client',result:{status:'correct',score:null,correct:null}}));
+ const done=buildPracticeSummary([event({item:'g4-play',position:1}),...steps,event({item:'sound',type:'sound',position:2,result:{status:'correct',score:100,correct:true}})]);
+ assert.deepEqual(done.items.map(item=>[item.itemId,item.status]),[['g4-play','completed'],['sound','correct']]);assert.equal(done.total,5);
+ const left=buildPracticeSummary([event({item:'g4-play',source:'client',result:{status:'correct',score:null,correct:null}}),...steps]);
+ assert.deepEqual(left.items.map(item=>item.status),['incomplete']);assert.equal(left.completedN,0);
+ // The game's own 完成 reached the server even if its acknowledgement did not.
+ const finished=buildPracticeSummary([event({item:'g4-play',source:'client',result:{status:'completed',score:null,correct:null}}),...steps]);
+ assert.deepEqual(finished.items.map(item=>item.status),['completed']);assert.equal(finished.completedN,1);assert.equal(typeof finished.updatedAt,'string');
+});

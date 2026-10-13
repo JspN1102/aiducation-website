@@ -1,11 +1,15 @@
 'use strict';
 const {poems}=require('./all-poems.cjs');
 const TYPES=new Set(['sound','dictation','microgame','match','sequence','scene-builder']);
+const gameStep=itemId=>typeof itemId==='string'&&itemId.startsWith('game.');
 function buildPracticeSummary(rows){
  const rounds=new Map();
  for(const row of rows){const event=row.event;
   const guidedReceipt=row.source==='server_verified'&&event.type==='provider_result'&&event.operation==='challenge'&&event.context?.itemType==='dictation'&&event.context?.flow==='trace-dictation-v1';
   if(!event.attemptId||!['challenge','writing'].includes(event.activity)||!TYPES.has(event.context?.itemType)||event.context?.mode==='free'||event.context?.mode==='review'&&!guidedReceipt)continue;
+  // Steps inside one 詩裏玩一玩 game (game.river.slot.3, game.garden.weed-a …) carry the game's own
+  // positions; the game itself is the practice item, so its steps are not listed as questions.
+  if(gameStep(event.itemId))continue;
   const key=JSON.stringify([row.researchId,event.poemId,event.attemptId]);let round=rounds.get(key);
   if(!round)rounds.set(key,round={poemId:event.poemId,attemptId:event.attemptId,firstAt:row.serverReceivedAt,lastAt:row.serverReceivedAt,rows:[]});
   round.firstAt=round.firstAt<row.serverReceivedAt?round.firstAt:row.serverReceivedAt;round.lastAt=round.lastAt>row.serverReceivedAt?round.lastAt:row.serverReceivedAt;round.rows.push(row);
@@ -20,7 +24,7 @@ function buildPracticeSummary(rows){
   let item=items.get(event.itemId);if(!item)items.set(event.itemId,item={itemId:event.itemId,type:event.context.itemType,position:null,ack:null,assessment:null,submitted:false,observed:false});
   if(item.type==='dictation'&&event.context.flow==='trace-dictation-v1')item.flow='trace-dictation-v1';
   if(Number.isInteger(event.context.position)&&event.context.position>=1&&event.context.position<=30)item.position=event.context.position;
-  if(row.source==='client'&&event.type==='answer_submitted'){item.submitted=true;item.submittedAt=row.serverReceivedAt;}
+  if(row.source==='client'&&event.type==='answer_submitted'){item.submitted=true;item.submittedAt=row.serverReceivedAt;if(item.type==='microgame'&&event.result?.status==='completed')item.played=true;}
   if(row.source!=='server_verified'||event.type!=='provider_result')continue;
   item.observed=true;item.observedAt=row.serverReceivedAt;
   if(event.operation==='challenge'){
@@ -35,13 +39,13 @@ function buildPracticeSummary(rows){
   const guided=item.flow==='trace-dictation-v1';
   const traceCompleted=guided&&item.ackContext?.traceCompleted===true;
   const dictationCompleted=traceCompleted&&item.ackContext?.dictationCompleted===true&&item.ack?.status==='completed';
-  const status=guided?(dictationCompleted?'completed':'incomplete'):item.ack?.status==='skipped'?'skipped':item.assessment?item.assessment.correct?'correct':'incorrect':item.type==='microgame'&&['completed','correct','incorrect'].includes(item.ack?.status)?'completed':item.observed||item.submitted?'unmeasured':'unanswered';
+  const status=guided?(dictationCompleted?'completed':'incomplete'):item.ack?.status==='skipped'?'skipped':item.assessment?item.assessment.correct?'correct':'incorrect':item.type==='microgame'&&(['completed','correct','incorrect'].includes(item.ack?.status)||item.played)?'completed':item.type==='microgame'&&(item.observed||item.submitted)?'incomplete':item.observed||item.submitted?'unmeasured':'unanswered';
   const key=JSON.stringify([round.poemId,item.itemId]),prior=records.get(key);
   // Merely displaying a new round, or leaving a repeated prompt unanswered,
   // is not a new outcome for that item. A skip retains an earlier answer too.
   if(['unanswered','skipped','unmeasured','incomplete'].includes(status)&&prior&&['correct','incorrect','completed'].includes(prior.status))continue;
   if(status==='unanswered'&&prior)continue;
-  const updatedAt=['correct','incorrect'].includes(status)?item.assessmentAt:status==='completed'||status==='skipped'?item.ackAt:item.observedAt||item.submittedAt||round.lastAt;
+  const updatedAt=['correct','incorrect'].includes(status)?item.assessmentAt:status==='completed'||status==='skipped'?item.ackAt||item.submittedAt:item.observedAt||item.submittedAt||round.lastAt;
   const result={itemId:item.itemId,type:item.type,position:item.position,status,score:!guided&&item.assessment&&status!=='skipped'?item.assessment.score:null,attemptId:round.attemptId,poemId:round.poemId,updatedAt,...(guided?{flow:item.flow,traceCompleted,dictationCompleted}:{})};
   const rank=value=>value?.status==='correct'?3:value?.status==='completed'?2:value?.status==='incorrect'?1:0;
   const previousBest=prior?.best;
@@ -59,4 +63,4 @@ function buildPracticeSummary(rows){
  const completed=actual.filter(item=>['correct','incorrect','completed'].includes(item.status));
  return {poemId:latest.poemId,title:poems.find(poem=>poem.id===latest.poemId)?.title||'古詩',scope:'per-item',attemptId:latest.attemptId,updatedAt:latest.lastAt,total:Math.max(total||0,actual.length)||null,completedN:completed.length,correctN:actual.filter(item=>item.status==='correct').length,measuredN:actual.filter(item=>['correct','incorrect'].includes(item.status)).length,items:actual};
 }
-module.exports={buildPracticeSummary};
+module.exports={buildPracticeSummary,gameStep};

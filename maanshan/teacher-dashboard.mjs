@@ -225,7 +225,7 @@ function studentPracticeBody(data){
  const summary=data?.practiceSummary;
  if(!summary||!Array.isArray(summary.items))return '<section class="student-practice"><h3>練一練</h3><p class="helper">尚未有練習紀錄</p></section>';
  const types={sound:'聽音辨字',dictation:'聽寫',microgame:'詩裏玩一玩',match:'練習',sequence:'練習','scene-builder':'練習'};
- const status={correct:'答對',incorrect:'再試一次',completed:'已完成',skipped:'已跳過',unmeasured:'未評分',unanswered:'尚未作答'};
+ const status={correct:'答對',incorrect:'再試一次',completed:'已完成',incomplete:'未完成',skipped:'已跳過',unmeasured:'未評分',unanswered:'尚未作答'};
  const perItem=summary.scope==='per-item',items=summary.items.slice(0,perItem?256:10),positions=new Set(items.map(item=>item.position));
  if(!perItem&&Number.isInteger(summary.total)&&summary.total>0&&summary.total<=10)for(let position=1;position<=summary.total;position++)if(!positions.has(position))items.push({position,type:null,status:'unanswered'});
  items.sort((a,b)=>(a.position??99)-(b.position??99));
@@ -254,8 +254,9 @@ async function openStudentWords(researchId){
 
 function studentList(){
  const filtered=selectedStudents(),size=8,pages=Math.max(1,Math.ceil(filtered.length/size));state.page=Math.min(state.page,pages-1);const page=filtered.slice(state.page*size,(state.page+1)*size);
- const rows=page.map(row=>{const attempts=isActive(row)?number(row.nPracticeAttempts):absenceReliable()?0:null;return `<tr><td><button type="button" class="student-name student-word-link" data-student-words="${esc(row.researchId)}" aria-label="查看${esc(row.person.displayName)}的學習紀錄">${esc(row.person.displayName)}</button><p class="student-meta">${esc(row.grade+row.cls)}${row.person.classNo?' · '+esc(row.person.classNo)+' 號':''}</p></td><td class="reading-cell">${scoreMarkup(readingScore(row))}</td><td class="attempt-cell">${shown(attempts)}</td></tr>`;}).join('');
- return `<details class="student-overview" id="student-list" ${state.studentsOpen?'open':''}><summary><span>學生概況 <small>${joinedStudents().length} 人</small></span><span class="details-chevron" aria-hidden="true">⌄</span></summary><div class="student-overview-content"><div class="list-toolbar"><label class="search-field"><span class="sr-only">搜尋學生</span><input type="search" id="student-search" value="${esc(state.search)}" placeholder="搜尋學生" autocomplete="off"></label>${bandLegend()}<span class="list-result">${filtered.length} 人</span></div>${rows?`<div class="table-area"><table class="student-table"><thead><tr><th scope="col">學生</th><th scope="col">朗讀</th><th scope="col" class="attempt-cell" title="朗讀、練一練、默寫的次數（不計聽示範、看動畫、和詩人聊天）">練習次數</th></tr></thead><tbody>${rows}</tbody></table></div>${pages>1?`<div class="pagination"><button class="button small" data-page="${state.page-1}" ${state.page===0?'disabled':''}>上一頁</button><span>${state.page+1} / ${pages}</span><button class="button small" data-page="${state.page+1}" ${state.page+1>=pages?'disabled':''}>下一頁</button></div>`:''}`:empty('暫時沒有符合的學生')}</div></details>`;
+ const count=(row,key)=>isActive(row)?number(row[key]):absenceReliable()?0:null;
+ const rows=page.map(row=>{return `<tr><td><button type="button" class="student-name student-word-link" data-student-words="${esc(row.researchId)}" aria-label="查看${esc(row.person.displayName)}的學習紀錄">${esc(row.person.displayName)}</button><p class="student-meta">${esc(row.grade+row.cls)}${row.person.classNo?' · '+esc(row.person.classNo)+' 號':''}</p></td><td class="reading-cell">${scoreMarkup(readingScore(row))}</td><td class="attempt-cell">${shown(count(row,'nExerciseItems'))}</td><td class="attempt-cell">${shown(count(row,'nReadingLines'))}</td></tr>`;}).join('');
+ return `<details class="student-overview" id="student-list" ${state.studentsOpen?'open':''}><summary><span>學生概況 <small>${joinedStudents().length} 人</small></span><span class="details-chevron" aria-hidden="true">⌄</span></summary><div class="student-overview-content"><div class="list-toolbar"><label class="search-field"><span class="sr-only">搜尋學生</span><input type="search" id="student-search" value="${esc(state.search)}" placeholder="搜尋學生" autocomplete="off"></label>${bandLegend()}<span class="list-result">${filtered.length} 人</span></div>${rows?`<div class="table-area"><table class="student-table"><thead><tr><th scope="col">學生</th><th scope="col">朗讀</th><th scope="col" class="attempt-cell" title="練一練、詩裏玩一玩、默寫答了幾題（每輪每題算一次，跳過的不計）">做習題</th><th scope="col" class="attempt-cell" title="朗讀時送去評分的句數（每句錄音算一次）">朗讀句子</th></tr></thead><tbody>${rows}</tbody></table></div>${pages>1?`<div class="pagination"><button class="button small" data-page="${state.page-1}" ${state.page===0?'disabled':''}>上一頁</button><span>${state.page+1} / ${pages}</span><button class="button small" data-page="${state.page+1}" ${state.page+1>=pages?'disabled':''}>下一頁</button></div>`:''}`:empty('暫時沒有符合的學生')}</div></details>`;
 }
 function updateStudentList(){const previous=document.querySelector('#student-list');if(previous){state.studentsOpen=previous.open;previous.outerHTML=studentList();}}
 
@@ -544,16 +545,16 @@ function conversationBody(d){
  const chats=`<p class="usage-who">共 ${shown(list.length)} 次提問${list.length>=number(d.limit)?'（只顯示最早 '+shown(d.limit)+' 次）':''}</p>${body||'<p class="monitor-status">這段時間沒有對話。</p>'}`;
  return `<article class="monitor-card level-info usage-chat-card"><div class="monitor-top">${back}</div><h2><span class="monitor-dot" aria-hidden="true"></span>${esc(pupilName(s))}（${esc(usageRange(d))}）</h2><p class="usage-who">${esc(pupilClass(s))}${s.login?' · 登入名稱 '+esc(s.login):''}</p><h3>和詩人的對話</h3>${chats}</article>`;
 }
-// 朗讀測評次數 (jasper and molly), below the downloads panel: each pupil's scored line readings by name,
+// 朗讀測評次數 (jasper, molly and llp-pslau), below the downloads panel: each pupil's scored line readings by name,
 // every line's count in a dialog, and every attempt's score as Excel. Starts at the 2026-10-03 cohort reset.
-const READING_LOG='/api/teacher-tools?tool=reading-log',readingLog={days:7,grade:'',cls:'',data:null,generation:0,controller:null,student:null,detail:null,exporting:false};
+const READING_LOG='/api/teacher-tools?tool=reading-log',readingLog={days:7,grade:'',cls:'',q:'',data:null,generation:0,controller:null,student:null,detail:null,exporting:false};
 const READING_RANGES=[[1,'今日'],[7,'近 7 日'],[30,'近 30 日'],[400,'全部']];
 function readingLogAllowed(){return !DEMO&&!state.legacy&&state.auth?.user?.role==='teacher'&&state.auth.user.readingLog===true;}
 function readingRange(days){return (READING_RANGES.find(([d])=>d===days)||[0,''])[1];}
 function readingLogShell(){
  const options=(list,value)=>`<option value="">全部</option>`+list.map(([v,t])=>`<option value="${esc(v)}" ${String(v)===value?'selected':''}>${esc(t)}</option>`).join('');
  return `<section id="reading-log" class="downloads-panel reading-log" aria-labelledby="reading-log-title"><div class="reading-log-top"><h2 id="reading-log-title">朗讀測評次數</h2><div class="usage-days" role="group" aria-label="時間範圍">${READING_RANGES.map(([d,label])=>`<button type="button" class="button small quiet" data-reading-days="${d}" aria-pressed="${readingLog.days===d}">${label}</button>`).join('')}</div></div>
-<div class="usage-filters reading-log-filters"><label class="field">年級<select name="grade" data-reading-filter>${options([1,2,3,4,5,6].map(g=>[g,g+' 年級']),readingLog.grade)}</select></label><label class="field">班別<select name="cls" data-reading-filter>${options('ABCDEFGH'.split('').map(c=>[c,c+' 班']),readingLog.cls)}</select></label></div>
+<div class="usage-filters reading-log-filters"><label class="field">年級<select name="grade" data-reading-filter>${options([1,2,3,4,5,6].map(g=>[g,g+' 年級']),readingLog.grade)}</select></label><label class="field">班別<select name="cls" data-reading-filter>${options('ABCDEFGH'.split('').map(c=>[c,c+' 班']),readingLog.cls)}</select></label><label class="field usage-search">搜尋學生<input type="search" id="reading-search" value="${esc(readingLog.q)}" placeholder="姓名、班別或座號" autocomplete="off"></label></div>
 <div id="reading-log-body"></div></section>`;}
 function readingQuery(extra={}){
  const p=new URLSearchParams({days:String(readingLog.days)});if(readingLog.grade)p.set('grade',readingLog.grade);if(readingLog.cls)p.set('cls',readingLog.cls);
@@ -575,11 +576,16 @@ async function loadReadingLog(){
   host.innerHTML=`<p class="status-strip error" role="alert">未能讀取朗讀測評次數（${esc(error.name==='AbortError'?'20 秒內沒有回應':error.status?'伺服器回覆 '+error.status:'網絡未能連線')}）。<button type="button" class="button small" data-action="reading-retry">再試一次</button></p>`;
  }finally{if(readingLog.controller===controller)readingLog.controller=null;}
 }
+// 搜尋學生 narrows the loaded list in the browser: name, class (2A, 二年級A班) or seat.
+function readingSearchKey(s){return [pupilName(s),pupilClass(s),`${s.grade||''}${s.cls||''}`,number(s.classNo)===null?'':s.classNo+'號'].join(' ').toLowerCase();}
+function readingMatches(list){const words=readingLog.q.trim().toLowerCase().split(/\s+/).filter(Boolean);return words.length?list.filter(s=>{const key=readingSearchKey(s);return words.every(w=>key.includes(w));}):list;}
 function readingLogBody(d){
- const list=rows(d.students),range=readingRange(d.days),f=d.filters||{},scope=[f.grade?f.grade+' 年級':'',f.cls?f.cls+' 班':''].filter(Boolean).join(' · ')||'全校';
+ const all=rows(d.students),list=readingMatches(all),range=readingRange(d.days),f=d.filters||{},scope=[f.grade?f.grade+' 年級':'',f.cls?f.cls+' 班':''].filter(Boolean).join(' · ')||'全校';
  if(!d.available)return '<p class="status-strip error" role="alert">未能讀取朗讀測評紀錄。<button type="button" class="button small" data-action="reading-retry">再試一次</button></p>';
- if(!list.length)return `<p class="reading-log-summary">${esc(range)}（${esc(scope)}）沒有朗讀測評。</p>`;
- return `<p class="reading-log-summary">${esc(range)} · ${esc(scope)}：<strong>${shown(list.length)}</strong> 位學生，共 <strong>${shown(d.readings)}</strong> 次測評</p><div class="table-area"><table class="monitor-table usage-students reading-log-table"><caption class="sr-only">每位學生的朗讀測評次數；按「看每句」可看每一句測評了多少次</caption><thead><tr><th scope="col">姓名</th><th scope="col">班別座號</th><th scope="col">測評</th><th scope="col">每首古詩</th><th scope="col"><span class="sr-only">每句</span></th></tr></thead><tbody>${list.map(s=>`<tr><th scope="row">${esc(pupilName(s))}</th><td>${esc(pupilClass(s))}</td><td>${shown(s.total)}</td><td>${esc(rows(s.poems).map(p=>p.title+' '+p.total).join('、'))}</td><td><button type="button" class="button small quiet" data-reading-student="${esc(s.student)}">看每句</button></td></tr>`).join('')}</tbody></table></div>${d.truncated?'<p class="tools-hint">紀錄太多，只列出部分，請選擇年級或班別。</p>':''}<p class="tools-hint">每句錄音送去評分一次算一次。由 2026-10-03 初始化後開始計算，之前的測試紀錄不計。</p>`;
+ if(!all.length)return `<p class="reading-log-summary">${esc(range)}（${esc(scope)}）沒有朗讀測評。</p>`;
+ if(!list.length)return `<p class="reading-log-summary">${esc(range)}（${esc(scope)}）找不到「${esc(readingLog.q.trim())}」。</p>`;
+ const searching=list.length!==all.length,total=searching?list.reduce((n,s)=>n+(number(s.total)||0),0):d.readings;
+ return `<p class="reading-log-summary">${esc(range)} · ${esc(scope)}：<strong>${shown(list.length)}</strong> 位學生${searching?`（共 ${shown(all.length)} 位）`:''}，共 <strong>${shown(total)}</strong> 次測評</p><div class="table-area"><table class="monitor-table usage-students reading-log-table"><caption class="sr-only">每位學生的朗讀測評次數；按「看每句」可看每一句測評了多少次</caption><thead><tr><th scope="col">姓名</th><th scope="col">班別座號</th><th scope="col">測評</th><th scope="col">每首古詩</th><th scope="col"><span class="sr-only">每句</span></th></tr></thead><tbody>${list.map(s=>`<tr><th scope="row">${esc(pupilName(s))}</th><td>${esc(pupilClass(s))}</td><td>${shown(s.total)}</td><td>${esc(rows(s.poems).map(p=>p.title+' '+p.total).join('、'))}</td><td><button type="button" class="button small quiet" data-reading-student="${esc(s.student)}">看每句</button></td></tr>`).join('')}</tbody></table></div>${d.truncated?'<p class="tools-hint">紀錄太多，只列出部分，請選擇年級或班別。</p>':''}<p class="tools-hint">每句錄音送去評分一次算一次。由 2026-10-03 初始化後開始計算，之前的測試紀錄不計。</p>`;
 }
 function readingDialog(s,body){
  return `<header class="dialog-header"><div><h2 id="student-dialog-title">${esc(pupilName(s))}</h2><p class="helper">${esc(pupilClass(s))} · ${esc(readingRange(readingLog.days))}</p></div><button type="button" class="button icon-only" data-action="close-dialog" aria-label="關閉朗讀測評次數">×</button></header><div class="dialog-body reading-lines-body">${body}</div>`;
@@ -718,7 +724,8 @@ root.addEventListener('input',event=>{
  if(event.target.closest('#teacher-filters'))return;
  if(event.isComposing||event.target.id!=='student-search')return;state.search=event.target.value;state.page=0;const cursor=event.target.selectionStart;updateStudentList();const input=document.querySelector('#student-search');input?.focus();try{input?.setSelectionRange(cursor,cursor);}catch{}
 });
-root.addEventListener('compositionend',event=>{if(event.target.id==='student-search')event.target.dispatchEvent(new Event('input',{bubbles:true}));});
+root.addEventListener('input',event=>{if(event.isComposing||event.target.id!=='reading-search')return;readingLog.q=event.target.value;const host=document.querySelector('#reading-log-body');if(host&&readingLog.data)host.innerHTML=readingLogBody(readingLog.data);});
+root.addEventListener('compositionend',event=>{if(event.target.id==='reading-search')event.target.dispatchEvent(new Event('input',{bubbles:true}));if(event.target.id==='student-search')event.target.dispatchEvent(new Event('input',{bubbles:true}));});
 function click(event){const button=event.target.closest('button');if(!button||button.disabled)return;
  if(button.dataset.action==='close-monitor'){closeMonitor();document.querySelector('#teacher-site-monitor')?.focus();return;}
  if(button.dataset.monitorSpan){const [card,span]=button.dataset.monitorSpan.split(':');if(!(card in monitor.spans))return;monitor.spans[card]=span==='1440'?1440:60;renderMonitor();

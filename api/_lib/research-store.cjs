@@ -5,7 +5,7 @@ const blob = require('@vercel/blob');
 const { Pool } = require('pg');
 const { poems } = require('./all-poems.cjs');
 const {buildCharacterAnalysis}=require('./teacher-character-analysis.cjs');
-const {buildPracticeSummary}=require('./teacher-practice-summary.cjs');
+const {buildPracticeSummary,gameStep}=require('./teacher-practice-summary.cjs');
 // Embedded from docs/research-data-dictionary.json; tested for equality.
 const DATA_DICTIONARY = {
   "version": "research-v1",
@@ -207,6 +207,8 @@ const DATA_DICTIONARY = {
   "aggregation": {
     "firstLatest": "Within filtered receipt dates, consolidate assessment results per researchId/poemId/activity/itemId/contentVersion/mode/construct/operation/attemptId; use latest eligible measurement inside each attempt, then earliest/latest observed attempt per item and construct. Missing attemptId falls back to eventId. Process feedback never replaces an assessment. Within one attempt, an error/unmeasured retry never replaces an existing measured result; later measured results may replace earlier measurements. A genuinely different later attempt can remain unmeasured. Original failures remain in exports.",
     "nAttempts": "Distinct researchId+attemptId in all filtered events, regardless of first/latest choice; includes review/free. Units differ by activity: a reading recording versus a challenge round. Do not interpret a pooled count as comparable test attempts.",
+    "nExerciseItems": "Distinct researchId+attemptId+itemId answered in challenge/writing (client answer_submitted or server provider_result, not skipped); steps inside a microgame (itemId game.*) are excluded. Shown to teachers as 做習題.",
+    "nReadingLines": "Count of server-verified reading provider_result events for a poem line (one scored line recording each, failures included). Shown to teachers as 朗讀句子.",
     "completedN": "Count of activity_end events with completed status, not count of unique students or attempts.",
     "meanScore": "Within one construct and source, arithmetic mean across selected measured item outcomes, not weighted by duration. Missing scores are excluded and counted separately. Overall meanScore is null and mixedConstructs=true if multiple measured constructs are present; never pool pronunciation scores with binary task accuracy.",
     "date": "UTC serverReceivedAt, inclusive from/to calendar dates.",
@@ -257,7 +259,7 @@ const MAX_READ_EVENTS = 100000;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const TOKEN = /^[a-zA-Z0-9][a-zA-Z0-9._:/-]*$/;
 const ACTIVITIES = ['listen', 'read', 'animation', 'explore', 'challenge', 'writing', 'chat', 'navigation'];
-// 練習次數 in the teacher dashboard: reading aloud, 練一練 and 默寫 only, not listening to the
+// nPracticeAttempts (kept for older clients; the dashboard now shows 做習題 and 朗讀句子): reading aloud, 練一練 and 默寫 only, not listening to the
 // model reading, watching the animation or chatting with the poet.
 const PRACTICE_ACTIVITIES = new Set(['read', 'challenge', 'writing']);
 const TYPES = ['session_start','activity_start','activity_end','item_presented','attempt_started',
@@ -679,11 +681,20 @@ function qualityAndDuration(rows){
   }
   return {activeMs,flags,nInvalidEvents:flags.size,qualityFlags:[...new Set([...flags.values()].flatMap(s=>[...s]))]};
 }
+// 做習題: each 練一練 or 默寫 question answered once per attempt (skipped ones and the steps
+// inside a 詩裏玩一玩 game are not questions). 朗讀句子: each line sent for scoring.
+function exerciseAnswer(r){const e=r.event;
+  if(!['challenge','writing'].includes(e.activity)||!e.attemptId||typeof e.itemId!=='string'||gameStep(e.itemId)||e.result?.status==='skipped')return false;
+  return (r.source==='client'&&e.type==='answer_submitted')||(r.source==='server_verified'&&e.type==='provider_result'&&e.operation!=='reading');
+}
+const readingScored=r=>r.source==='server_verified'&&r.event.activity==='read'&&r.event.type==='provider_result'&&r.event.operation==='reading'&&/^p[0-9]+[.]l[0-9]+$/.test(r.event.itemId||'');
 function summarize(rows,which='latest',includeModes=false){
   const quality=qualityAndDuration(rows),valid=rows.filter(r=>!quality.flags.has(r.researchId+'/'+r.source+'/'+r.event.eventId));
   return {nEvents:rows.length,nStudents:new Set(rows.map(r=>r.researchId)).size,
     nAttempts:new Set(rows.filter(r=>r.event.attemptId).map(r=>r.researchId+'/'+r.event.attemptId)).size,
     nPracticeAttempts:new Set(rows.filter(r=>r.event.attemptId&&PRACTICE_ACTIVITIES.has(r.event.activity)).map(r=>r.researchId+'/'+r.event.attemptId)).size,
+    nExerciseItems:new Set(rows.filter(exerciseAnswer).map(r=>r.researchId+'/'+r.event.attemptId+'/'+r.event.itemId)).size,
+    nReadingLines:rows.filter(readingScored).length,
     completedN:rows.filter(r=>r.event.type==='activity_end'&&r.event.result?.status==='completed').length,
     activeMs:quality.activeMs,nInvalidEvents:quality.nInvalidEvents,qualityFlags:quality.qualityFlags,
     ...assessmentSummary(valid,which),

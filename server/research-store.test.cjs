@@ -437,6 +437,21 @@ test('練習次數 counts reading, 練一練 and 默寫 only, not listening, the
   assert.equal(result.students[0].nPracticeAttempts,4);
   const listening=s.aggregateEvents([att('listen'),att('chat')],f);assert.equal(listening.students[0].nPracticeAttempts,0);
 });
+test('學生概況 splits 做習題 (questions answered) from 朗讀句子 (lines scored); game steps and skips are not questions',()=>{
+  const a=randomUUID(),b=randomUUID(),sv=(c)=>row({...c,type:'provider_result',provider:'test',model:'test',providerVersion:'v1'},now,'server_verified');
+  const rows=[
+    row({attemptId:a,itemId:'sound-1',result:{status:'correct'}}),sv({attemptId:a,itemId:'sound-1',operation:'challenge',result:{status:'correct',score:100,correct:true}}),
+    row({attemptId:a,itemId:'sound-2',result:{status:'incorrect'}}),row({attemptId:b,itemId:'sound-1',result:{status:'correct'}}),
+    row({attemptId:a,itemId:'g4-play',context:{itemType:'microgame'},result:{status:'completed'}}),
+    row({attemptId:a,itemId:'game.river.slot.3',context:{itemType:'microgame'},result:{status:'correct'}}),
+    row({attemptId:a,itemId:'sound-3',result:{status:'skipped'}}),
+    row({activity:'writing',attemptId:b,itemId:'dict-1',context:{itemType:'dictation'},result:{status:'completed'}}),
+    sv({activity:'read',attemptId:a,itemId:'p2.l0',operation:'reading'}),sv({activity:'read',attemptId:a,itemId:'p2.l0',operation:'reading'}),sv({activity:'read',attemptId:a,itemId:'p2.l1',operation:'reading'}),
+    row({activity:'read',type:'feedback_shown',attemptId:a,itemId:'p2.l1'}),row({activity:'chat',attemptId:b,itemId:'chat'})];
+  const result=s.aggregateEvents(rows,f);
+  assert.equal(result.students[0].nExerciseItems,5);assert.equal(result.students[0].nReadingLines,3);
+  assert.equal(result.summary.nExerciseItems,5);assert.equal(result.summary.nReadingLines,3);
+});
 test('「全部」 in the teacher dashboard: up to 400 days are accepted, longer is refused',()=>{
   assert.equal(s.filtersFrom({from:'2025-09-09',to:'2026-10-13'},now).from,'2025-09-09');
   assert.equal(s.filtersFrom({from:'2026-10-03',to:'2026-10-13'},now).from,'2026-10-03');

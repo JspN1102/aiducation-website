@@ -1,5 +1,5 @@
 'use strict';
-// 朗讀測評次數 in the teacher dashboard (jasper and molly): who may see it, the
+// 朗讀測評次數 in the teacher dashboard (jasper, molly and llp-pslau): who may see it, the
 // list without login or last-used time, every line's count, and the Excel of scores.
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
@@ -32,15 +32,15 @@ function caller(h){
 }
 const handler=(seen=[])=>createReadingLog({researchPool:()=>pool(seen),directory:async()=>({accounts:ACCOUNTS}),cohort:async()=>RESET,now:()=>NOW});
 
-test('only jasper and molly may see reading counts; other teachers and pupils get nothing',async()=>{
- assert.equal(auth.readingLog({role:'teacher',login:'jasper'}),true);assert.equal(auth.readingLog({role:'teacher',login:'molly'}),true);
+test('only jasper, molly and llp-pslau may see reading counts; other teachers and pupils get nothing',async()=>{
+ assert.equal(auth.readingLog({role:'teacher',login:'jasper'}),true);assert.equal(auth.readingLog({role:'teacher',login:'molly'}),true);assert.equal(auth.readingLog({role:'teacher',login:'llp-pslau'}),true);assert.equal(auth.siteAdmin({role:'teacher',login:'llp-pslau'}),false);assert.equal(auth.siteAdmin({role:'teacher',login:'molly'}),false);
  assert.equal(auth.readingLog({role:'teacher',login:'chan'}),false);assert.equal(auth.readingLog({role:'student',login:'jasper'}),false);
  assert.equal(auth.publicActor({role:'teacher',login:'molly'}).readingLog,true);assert.equal(auth.publicActor({role:'teacher',login:'chan'}).readingLog,false);
  const call=caller(handler());
  for(const who of [{role:'teacher',login:'chan'},{role:'student',login:'molly'}]){
   const r=await withActor(who,()=>call({}));assert.equal(r.statusCode,403);assert.doesNotMatch(JSON.stringify(r.body),/測試甲/);
  }
- for(const login of ['jasper','molly'])assert.equal((await withActor({role:'teacher',login},()=>call({}))).statusCode,200);
+ for(const login of ['jasper','molly','llp-pslau'])assert.equal((await withActor({role:'teacher',login},()=>call({}))).statusCode,200);
 });
 
 test('ranges are 今日, 7, 30 days or 全部 (400); grade and class are the only other filters',()=>{

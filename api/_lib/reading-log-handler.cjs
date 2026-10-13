@@ -1,5 +1,5 @@
 'use strict';
-// 朗讀測評次數 (teacher dashboard, jasper and molly only): how many times each
+// 朗讀測評次數 (teacher dashboard, jasper, molly and llp-pslau only): how many times each
 // pupil had each line of each poem scored, and every attempt's score as Excel.
 // Readings before the whole-cohort reset (2026-10-03) were staff tests and are left out.
 const auth=require('./school-auth.cjs');

@@ -82,7 +82,7 @@ function previewPoems(actor) { return actor?.role === 'teacher' || actor?.role =
 const SITE_ADMIN_LOGINS = new Set(['jasper']);
 function siteAdmin(actor) { return actor?.role === 'teacher' && SITE_ADMIN_LOGINS.has(actor.login); }
 // 朗讀測評次數 in the teacher dashboard: each named pupil's line readings and scores.
-const READING_LOG_LOGINS = new Set(['jasper', 'molly']);
+const READING_LOG_LOGINS = new Set(['jasper', 'molly', 'llp-pslau']);
 function readingLog(actor) { return actor?.role === 'teacher' && READING_LOG_LOGINS.has(actor.login); }
 function poemVisible(actor, poem) { return (!poem.preview || previewPoems(actor)) && (allGrades(actor) || actor?.role === 'student' && poem.grade === actor.grade); }
 function allowedPoemIds(actor) { return require('./poems.js').catalog.filter(poem => poemVisible(actor, poem)).map(poem => poem.id); }
