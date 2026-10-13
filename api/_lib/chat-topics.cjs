@@ -38,7 +38,9 @@ concern 只可選一個：none＝沒有問題；abuse＝罵人、粗口、髒話
 function parse(text){
   const m=/\{[^{}]*\}/.exec(String(text||''));if(!m)return null;
   let v;try{v=JSON.parse(m[0]);}catch{return null;}
-  const topic=String(v?.topic||'').trim().toLowerCase(),concern=String(v?.concern||'none').trim().toLowerCase();
+  // The model often garbles offtopic as "of topic", "of" or "oftext" (seen 2026-10-13).
+  let topic=String(v?.topic||'').trim().toLowerCase().replace(/[^a-z]/g,'');const concern=String(v?.concern||'none').trim().toLowerCase();
+  if(topic.startsWith('of'))topic='offtopic';
   if(!Object.hasOwn(TOPICS,topic))return null;
   return {topic,concern:Object.hasOwn(CONCERNS,concern)?concern:null};
 }

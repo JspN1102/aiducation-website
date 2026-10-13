@@ -40,6 +40,7 @@ test('the reply is read leniently and only the listed kinds are kept',()=>{
  assert.deepEqual(topics.parse('{"topic":"meaning","concern":"none"}'),{topic:'meaning',concern:null});
  assert.deepEqual(topics.parse('好的：{"topic":"offtopic","concern":"bully"} 完'),{topic:'offtopic',concern:'bully'});
  assert.deepEqual(topics.parse('{"topic":"POET"}'),{topic:'poet',concern:null});
+ for(const garbled of ['of topic','of','oftext','off-topic'])assert.deepEqual(topics.parse(`{"topic":"${garbled}","concern":"other"}`),{topic:'offtopic',concern:'other'},garbled);
  for(const bad of ['','meaning','{"topic":"weather"}','{topic:meaning}'])assert.equal(topics.parse(bad),null,bad);
 });
 
