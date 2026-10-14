@@ -29,16 +29,26 @@ test('bent strokes: a little passes, more gets a hint, a scramble fails',async()
  assert.ok(results.at(-1).pass===false&&results.at(-1).residual>=NEATNESS.fail,JSON.stringify(results.at(-1)));
  for(let i=1;i<results.length;i++)assert.ok(results[i].residual>=results[i-1].residual-0.005,'residual rises with the mess');
 });
-test('two or more strokes over fail; one over is allowed',async()=>{
- const {judgeNeatness}=await load(),m=medians('5cb8.json'),ink=onCanvas(m);
- assert.equal(judgeNeatness([...ink,ink[0]],m).pass,true);
+test('one stroke over: a stroke written in two pieces passes, a stray stroke fails; two over fail',async()=>{
+ const {judgeNeatness}=await load(),m=medians('5cb8.json'),ink=onCanvas(m),s=ink[3],half=s.length>>1;
+ const split=[...ink.slice(0,3),s.slice(0,half+1),s.slice(half),...ink.slice(4)];
+ assert.equal(judgeNeatness(split,m).pass,true,JSON.stringify(judgeNeatness(split,m)));
+ // a short stroke out in the empty top-right corner
+ const stray=[...ink,[[420,40],[440,60],[455,75]]];
+ assert.equal(judgeNeatness(stray,m).pass,false,JSON.stringify(judgeNeatness(stray,m)));
  assert.equal(judgeNeatness([...ink,ink[0],ink[1]],m).pass,false);
 });
-test('two or more missing strokes fail; one missing stroke is allowed',async()=>{
+test('one stroke short: two strokes joined in one go pass, a stroke left out fails',async()=>{
  const {judgeNeatness}=await load(),m=medians('5cb8.json'),ink=onCanvas(m);
- const one=judgeNeatness(ink.slice(0,-1),m),two=judgeNeatness(ink.slice(0,-2),m);
- assert.ok(one.pass&&one.missing===1,JSON.stringify(one));
- assert.ok(!two.pass&&two.missing>=2,JSON.stringify(two));
+ for(let j=0;j+1<ink.length;j++){
+  const joined=[...ink.slice(0,j),[...ink[j],...ink[j+1]],...ink.slice(j+2)],r=judgeNeatness(joined,m);
+  assert.ok(r.pass,`strokes ${j}+${j+1} joined: `+JSON.stringify(r));
+ }
+ for(let j=0;j<ink.length;j++){
+  const r=judgeNeatness(ink.filter((_,i)=>i!==j),m);
+  assert.ok(!r.pass,`stroke ${j} left out: `+JSON.stringify(r));
+ }
+ assert.equal(judgeNeatness(ink.slice(0,-2),m).pass,false);
 });
 test('one scribbled line for a many-stroke character fails',async()=>{
  const {judgeNeatness}=await load();

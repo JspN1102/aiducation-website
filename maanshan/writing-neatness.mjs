@@ -9,9 +9,14 @@
 // (0.063-0.119), so it no longer blocks unless the writing is a scramble (>= 0.14)
 // and only adds a "neater next time" hint from 0.10. What did separate them is the
 // number of strokes drawn: every character that should pass was within one of the
-// standard count, so two or more strokes short or over fails. The matcher's own
-// missing/extra counts misfired on tidy writing and only guard the rescue (close).
-export const NEATNESS = Object.freeze({fail: 0.14, hint: 0.10, rescue: 0.07, structural: 2, match: 0.22, cover: 0.09});
+// standard count, so two or more strokes short or over fails. One short or over is
+// told apart by ink (second batch, 52 more): one short passes when the left-over
+// standard stroke still lies under the pupil's ink (two strokes joined in one go,
+// 連筆), fails when it does not (a stroke left out); one over passes when the spare
+// stroke lies on the standard strokes (one stroke in two pieces), fails when it is
+// a stray stroke. The matcher's own missing/extra counts misfired on tidy writing
+// and only guard the rescue (close).
+export const NEATNESS = Object.freeze({fail: 0.14, hint: 0.10, rescue: 0.07, structural: 2, joined: 0.2, split: 0.95, near: 0.06, match: 0.22, cover: 0.09});
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 
@@ -122,16 +127,34 @@ export function judgeNeatness(pupil, medians, o = NEATNESS) {
     const a = resample(q.reversed ? [...P[q.p]].reverse() : P[q.p], 16), b = resample(S[q.s], 16);
     a.forEach((p, i) => {src.push(p);dst.push(b[i]);});
   }
-  const structural = Math.abs(P.length - S.length) >= o.structural;
-  let residual = null;
+  const off = P.length - S.length;
+  let structural = Math.abs(off) >= o.structural, residual = null, map = null;
   if (src.length >= 3) {
     const M = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], bx = [0, 0, 0], by = [0, 0, 0];
     src.forEach(([x, y], i) => {const v = [x, y, 1];for (let j = 0; j < 3; j++) {for (let k = 0; k < 3; k++) M[j][k] += v[j] * v[k];bx[j] += v[j] * dst[i][0];by[j] += v[j] * dst[i][1];}});
     const ax = solve3(M, bx), ay = solve3(M, by);
     if (ax && ay) {
-      const d = src.map(([x, y], i) => Math.hypot(ax[0] * x + ax[1] * y + ax[2] - dst[i][0], ay[0] * x + ay[1] * y + ay[2] - dst[i][1]));
+      map = ([x, y]) => [ax[0] * x + ax[1] * y + ax[2], ay[0] * x + ay[1] * y + ay[2]];
+      const d = src.map((p, i) => dist(map(p), dst[i]));
       residual = Math.sqrt(d.reduce((t, v) => t + v * v, 0) / d.length);
     }
+  }
+  // One stroke short or over: fine when it is two strokes joined (the ink still runs over the stroke the
+  // matcher left unpaired) or one stroke in two pieces (the spare piece lies on the standard ink);
+  // a stroke really left out or added fails. Unknowable without the map, so then it fails too.
+  if (Math.abs(off) === 1) {
+    const ink = strokes => strokes.flatMap(st => resample(st, 40)), onInk = (pts, cloud) => pts.filter(p => cloud.some(q => dist(p, q) < o.near)).length / pts.length;
+    const paired = new Set(pairs.map(q => off < 0 ? q.s : q.p)), spare = (off < 0 ? S : P).map((_, i) => i).filter(i => !paired.has(i));
+    if (!map) structural = true;
+    else if (off < 0) {
+      // Only the stretch of the stroke clear of the other standard strokes tells (a short vertical stroke crossing two 一 is mostly near them).
+      const cloud = ink(P.map(st => st.map(map)));
+      structural = spare.some(j => {
+        const others = ink(S.filter((_, k) => k !== j)), own = resample(S[j], 40).filter(p => !others.some(q => dist(p, q) < o.near));
+        return !own.length || onInk(own, cloud) < o.joined;
+      });
+    }
+    else {const cloud = ink(S);structural = spare.some(i => onInk(resample(P[i].map(map), 40), cloud) < o.split);}
   }
   if (residual === null && !structural) return null;
   const messy = residual !== null && residual >= o.fail;
