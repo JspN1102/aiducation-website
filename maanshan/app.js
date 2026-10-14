@@ -19,7 +19,7 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
 import {requestJSON, requestChat} from './network.mjs?v=20261011-school58';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
-import {schoolSession} from './bootstrap.mjs?v=20261014-school65';
+import {schoolSession} from './bootstrap.mjs?v=20261015-school66';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261013-school62b';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20261013-school60';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school41';
@@ -112,6 +112,17 @@ let recordStep='read', recordWordIndex=0;
 let reportGeneration=0;
 let chatBusy=false,chatVoice=null,chatVoiceInserted=false,recordStopReason='manual';
 let sceneStage=null, exploration=null, activeSpeechButton=null, finishTransient=null;
+// Every clip plays on one <audio>: iPad Safari lets an element play without a tap once a tap has started it,
+// so the line a game reads when a piece is dropped (a drag is not a tap there) still plays. A silent clip
+// started by the first tap unlocks it; taps that open the microphone are left alone.
+const sharedAudio=new Audio(),SILENT_CLIP='data:audio/wav;base64,UklGRsQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YaAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
+let audioUnlocked=false;
+function unlockAudio(event){
+  if(audioUnlocked||transientAudio||stream||recordBusy||event.target?.closest?.('[data-action="record-start"],[data-action="chat-voice"]'))return;
+  sharedAudio.src=SILENT_CLIP;
+  sharedAudio.play().then(()=>{audioUnlocked=true;if(!transientAudio&&sharedAudio.src===SILENT_CLIP)sharedAudio.pause();}).catch(()=>{});
+}
+for(const type of ['touchend','click','keydown'])document.addEventListener(type,unlockAudio,{capture:true,passive:true});
 let shishi=null,libraryShishi=null,teacherReset=null,challenge=null,lessonMap=null,poemSwipe=null;
 let animationPlayer=null,disposeAnimation=null;
 let activityLoad=0;
@@ -317,7 +328,9 @@ function playSource(url,revoke=false,playbackRate=1,meta={}) {
     // a recording made on the spot has one.
     const routes=revoke?[{route:'local',url}]:publishedSpeech.has(url)?orderRoutes(url,publishedSpeech.get(url)):audioCandidates(url);
     let attempt=0;
-    const player=new Audio(routes[0].url);player.preload='auto';player.defaultPlaybackRate=playbackRate;
+    // A clip still settling on the shared element ends first, so its handlers cannot reach this one.
+    finishTransient?.(false);
+    const player=sharedAudio;player.src=routes[0].url;player.preload='auto';player.defaultPlaybackRate=playbackRate;
     let settled=false,watchdog,started=false;
     const audit=speechResearchContext||research.context({activity:'listen',itemId:speechResearchItem||(poem?'p'+poem.id+'.l'+currentLine:'demonstration')});
     let audibleAt=null,playedMs=0,playbackReported=false;
@@ -343,7 +356,7 @@ function playSource(url,revoke=false,playbackRate=1,meta={}) {
     // A copy's error may arrive after play() already rejected for it and the element moved on to the other
     // copy; load() cleared player.error then, so a stale event must not count against the new copy.
     player.onerror=()=>{if(player.error)fail();};
-    player.onplaying=()=>{clearTimeout(watchdog);if(attempt>0)rememberRoute(routes[attempt].route);audibleAt=performance.now();research.touch();if(!playbackReported){playbackReported=true;research.emit('playback_started',{activity:audit.activity,poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,...(audit.context?{context:audit.context}:{}),...researchExtra(()=>({context:{...(audit.context||{}),...ext,...(['public','local'].includes(routes[attempt]?.route)?{mediaRoute:routes[attempt].route}:{})}})),metrics:{playbackRate,...researchExtra(()=>({latencyMs:Math.min(600000,Math.max(0,Math.round(performance.now()-t0))),fallbackCount:Math.min(10,attempt),...(Number.isInteger(meta?.prepareMs)?{prepareMs:Math.min(600000,Math.max(0,meta.prepareMs))}:{})}))}});}};player.onwaiting=waitForAudio;waitForAudio();
+    player.onplaying=()=>{clearTimeout(watchdog);audioUnlocked=true;if(attempt>0)rememberRoute(routes[attempt].route);audibleAt=performance.now();research.touch();if(!playbackReported){playbackReported=true;research.emit('playback_started',{activity:audit.activity,poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,...(audit.context?{context:audit.context}:{}),...researchExtra(()=>({context:{...(audit.context||{}),...ext,...(['public','local'].includes(routes[attempt]?.route)?{mediaRoute:routes[attempt].route}:{})}})),metrics:{playbackRate,...researchExtra(()=>({latencyMs:Math.min(600000,Math.max(0,Math.round(performance.now()-t0))),fallbackCount:Math.min(10,attempt),...(Number.isInteger(meta?.prepareMs)?{prepareMs:Math.min(600000,Math.max(0,meta.prepareMs))}:{})}))}});}};player.onwaiting=waitForAudio;waitForAudio();
     // Safari rejects play() instead of firing error when a copy cannot be fetched; that too hands over to the other copy.
     const start=()=>{if(started||settled)return;started=true;const mine=attempt;player.playbackRate=playbackRate;player.play().catch(error=>{if(attempt!==mine||settled)return;if(error?.name!=='NotAllowedError'&&nextRoute())fail();else finish(false);});};
     // Queue playback during the original tap. Waiting for canplay before

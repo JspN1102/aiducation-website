@@ -49,15 +49,15 @@ const scenarios=[
    const context=await browser.newContext({viewport:{width:1180,height:720},serviceWorkers:'block'}),page=await context.newPage();
    page.on('pageerror',e=>errors.push(engine+' '+scenario.name+': '+e.message));
    await context.addInitScript(({actor,stored,memory,cosHost,mirror})=>{
-    localStorage.setItem('maanshan-learning-v2:'+actor,JSON.stringify(stored));window.mediaEvents=[];window.audioElements=0;
+    localStorage.setItem('maanshan-learning-v2:'+actor,JSON.stringify(stored));window.mediaEvents=[];window.mp3Elements=new Set();
     if(memory)sessionStorage.setItem('maanshan:media-route',memory);
     // The public host lives on the local server for this test; the app still chooses between the two URLs itself.
     const publicPrefix='https://'+cosHost+'/';
     const fold=value=>typeof value==='string'&&value.startsWith(publicPrefix)?location.origin+mirror+value.slice(publicPrefix.length):value;
     const src=Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype,'src');
-    Object.defineProperty(HTMLMediaElement.prototype,'src',{configurable:true,get(){return src.get.call(this);},set(value){src.set.call(this,fold(value));}});
+    Object.defineProperty(HTMLMediaElement.prototype,'src',{configurable:true,get(){return src.get.call(this);},set(value){if(String(value).includes('.mp3'))mp3Elements.add(this);src.set.call(this,fold(value));}});
     const NativeAudio=window.Audio;
-    window.Audio=function(...args){const audio=new NativeAudio();if(args.length)audio.src=args[0];if(String(args[0]||'').includes('.mp3'))window.audioElements++;for(const type of ['playing','ended','error'])audio.addEventListener(type,()=>mediaEvents.push({type,url:audio.currentSrc||audio.src}));return audio;};
+    window.Audio=function(...args){const audio=new NativeAudio();if(args.length)audio.src=args[0];for(const type of ['playing','ended','error'])audio.addEventListener(type,()=>mediaEvents.push({type,url:audio.currentSrc||audio.src}));return audio;};
     window.Audio.prototype=NativeAudio.prototype;
    },{actor,stored,memory:scenario.memory,cosHost,mirror});
    await context.route('**/*',async route=>{
@@ -84,7 +84,7 @@ const scenarios=[
     if(!scenario.memory)await page.waitForFunction(()=>sessionStorage.getItem('maanshan:public-images')==='1');
     const started=Date.now();await button.click();
     await page.waitForFunction(()=>mediaEvents.some(e=>e.type==='ended'),null,{timeout:40000}).catch(async error=>{throw new Error(`${engine} ${scenario.name}: ${error.message} ${JSON.stringify({events:await page.evaluate(()=>mediaEvents),requests:scene.requests,player:await page.evaluate(()=>{const a=document.querySelector('audio');return a?{src:a.src,readyState:a.readyState,error:a.error?.code,network:a.networkState}:null;})})}`);});
-    const events=await page.evaluate(()=>mediaEvents),elements=await page.evaluate(()=>audioElements),memory=await page.evaluate(()=>sessionStorage.getItem('maanshan:media-route'));
+    const events=await page.evaluate(()=>mediaEvents),elements=await page.evaluate(()=>mp3Elements.size),memory=await page.evaluate(()=>sessionStorage.getItem('maanshan:media-route'));
     const requests=scene.requests,ended=events.find(e=>e.type==='ended'),file=`grade${poem.grade}-line1.mp3`,detail=JSON.stringify({events,requests,memory});
     const playedHost=ended.url.includes(mirror)?'public':'local';
     check(`${engine} ${scenario.name}: the recording plays to the end from the ${scenario.expect} copy`,ended.url.endsWith('/'+file)&&playedHost===scenario.expect,detail);
