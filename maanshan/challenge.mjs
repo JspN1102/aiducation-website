@@ -1,7 +1,7 @@
 import {imageAsset} from './media-images.mjs?v=20261007-school46';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261006-school43';
 import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20261006-school43';
-import {mountChallengeWriting} from './challenge-writing.mjs?v=20261014-school65';
+import {mountChallengeWriting} from './challenge-writing.mjs?v=20261015-school66';
 import {mountChallengeModel} from './challenge-model.mjs?v=20261006-school43';
 import {mountLivingField} from './living-field.mjs?v=20261007-school46';
 

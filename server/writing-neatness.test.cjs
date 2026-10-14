@@ -18,14 +18,21 @@ test('a slanted, squashed but tidy character still passes',async()=>{
  const ink=onCanvas(m).map(s=>s.map(([x,y])=>[x*1.3+y*0.25,y*0.8]));
  assert.equal(judgeNeatness(ink,m).pass,true);
 });
-test('wobbly strokes in the wrong places fail; a little wobble only gets a hint',async()=>{
+test('bent strokes: a little passes, more gets a hint, a scramble fails',async()=>{
  const {judgeNeatness,NEATNESS}=await load(),m=medians('5cb8.json');
- let seed=3;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647-0.5;
- const shake=amount=>onCanvas(m,1,0,0).map(s=>{const dx=rnd()*amount,dy=rnd()*amount;return s.map(([x,y])=>[x+dx,y+dy]);});
- const results=[20,120,250,400].map(amount=>judgeNeatness(shake(amount),m));
- assert.ok(results[0].pass&&results[0].residual<NEATNESS.hint,JSON.stringify(results[0]));
- assert.ok(results.at(-1).pass===false,JSON.stringify(results.at(-1)));
+ // each stroke pushed sideways along a wave, as an unsteady finger does
+ const bend=amp=>onCanvas(m,1,0,0).map((s,k)=>s.map(([x,y],i)=>[x+amp*Math.sin(i*1.7+k),y+amp*Math.cos(i*1.3+k*2)]));
+ const results=[20,60,100,140,180].map(amount=>judgeNeatness(bend(amount),m));
+ assert.ok(results[0].pass&&!results[0].hint&&results[0].close,JSON.stringify(results[0]));
+ assert.ok(results[2].pass&&!results[2].close,'everyday iPad writing passes but is too loose to rescue a part: '+JSON.stringify(results[2]));
+ assert.ok(results[3].pass&&results[3].hint,JSON.stringify(results[3]));
+ assert.ok(results.at(-1).pass===false&&results.at(-1).residual>=NEATNESS.fail,JSON.stringify(results.at(-1)));
  for(let i=1;i<results.length;i++)assert.ok(results[i].residual>=results[i-1].residual-0.005,'residual rises with the mess');
+});
+test('two or more strokes over fail; one over is allowed',async()=>{
+ const {judgeNeatness}=await load(),m=medians('5cb8.json'),ink=onCanvas(m);
+ assert.equal(judgeNeatness([...ink,ink[0]],m).pass,true);
+ assert.equal(judgeNeatness([...ink,ink[0],ink[1]],m).pass,false);
 });
 test('two or more missing strokes fail; one missing stroke is allowed',async()=>{
  const {judgeNeatness}=await load(),m=medians('5cb8.json'),ink=onCanvas(m);

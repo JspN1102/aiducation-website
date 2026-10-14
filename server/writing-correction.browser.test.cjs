@@ -16,7 +16,7 @@ async function mount(page,options={}){
   window.widget?.destroy();window.calls=[];window.answers=[];window.corrections=[];window.states=[];window.audit=[];window.nextCandidates=['土'];window.nextClosed=null;window.recognizeMode='ready';window.neatMode=null;
   const {mountChallengeWriting}=await import('/maanshan/challenge-writing.mjs');
   // The scribbles below are never a neat 岸: neatness is stubbed unless a case asks for the real check.
-  const {realNeatness,...rest}=options,neat=realNeatness?{}:{checkNeatness:async()=>neatMode==='messy'?{pass:false,hint:false,residual:0.09,missing:0,extra:0}:neatMode==='hint'?{pass:true,hint:true,residual:0.07,missing:0,extra:0}:null};
+  const {realNeatness,...rest}=options,neat=realNeatness?{}:{checkNeatness:async()=>({messy:{pass:false,hint:false,close:false,residual:0.15,missing:0,extra:0},hint:{pass:true,hint:true,close:false,residual:0.11,missing:0,extra:0},loose:{pass:true,hint:false,close:false,residual:0.09,missing:0,extra:0},close:{pass:true,hint:false,close:true,residual:0.05,missing:0,extra:0}})[neatMode]??null};
   window.widget=mountChallengeWriting(document.querySelector('.challenge-writing-holder'),{target:{char:'岸',pinyin:'àn'},...rest,...neat,
    recognize:async(ink,context)=>{calls.push({ink,context});if(recognizeMode==='fail')throw Error('Offline');if(recognizeMode==='pending')await new Promise(resolve=>window.releaseRecognition=resolve);return{candidates:Array.isArray(nextCandidates[0])?nextCandidates.shift():nextCandidates,...(nextClosed?{closedCandidates:nextClosed}:{})};},
    onSubmit:r=>answers.push(r),onCorrection:r=>corrections.push(r),onResearch:(type,fields)=>audit.push({type,...fields}),
@@ -114,11 +114,11 @@ async function state(page){return page.evaluate(()=>({calls,answers,corrections,
    await mount(page);await drawStrokes(page,8);await page.evaluate(()=>{nextCandidates=['崖','岸'];});await submit(page);data=await state(page);
    check(engine+' a different full-size character ranked first stays wrong',data.result.status==='incorrect'&&data.result.recognized==='崖');
    // Only a part recognised (山 for 岸, as 大 for 籬): enough strokes that match the target's own still count.
-   await mount(page);await drawStrokes(page,8);await page.evaluate(()=>{nextCandidates=['山','屾'];neatMode='hint';});await submit(page);data=await state(page);
+   await mount(page);await drawStrokes(page,8);await page.evaluate(()=>{nextCandidates=['山','屾'];neatMode='close';});await submit(page);data=await state(page);
    check(engine+' a lone component over strokes matching the target counts as the target',data.result?.status==='correct'&&data.result.recognized==='岸'&&data.result.candidates[0]==='山');
-   await mount(page);await drawStrokes(page,8);await page.evaluate(()=>{nextCandidates=['山'];neatMode='messy';});await submit(page);data=await state(page);
+   await mount(page);await drawStrokes(page,8);await page.evaluate(()=>{nextCandidates=['山'];neatMode='loose';});await submit(page);data=await state(page);
    check(engine+' a lone component over loosely matching strokes asks for a rewrite without naming the target',data.result===null&&data.answers.length===0&&await page.locator('.cw-status').textContent().then(value=>value.includes('太散')&&!value.includes('岸')));
-   await mount(page);await draw(page);await page.evaluate(()=>{nextCandidates=['山'];neatMode='hint';});await submit(page);data=await state(page);
+   await mount(page);await draw(page);await page.evaluate(()=>{nextCandidates=['山'];neatMode='close';});await submit(page);data=await state(page);
    check(engine+' a lone component with too few strokes stays wrong',data.result?.status==='incorrect'&&data.result.recognized==='山');
    await mount(page,{realNeatness:true});await drawMedians(page);await page.evaluate(()=>{nextCandidates=['山'];});await submit(page);data=await state(page);
    check(engine+' the real check turns 山 over the standard strokes of 岸 into 岸',data.result?.status==='correct'&&data.result.recognized==='岸');

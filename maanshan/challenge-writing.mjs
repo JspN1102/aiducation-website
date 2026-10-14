@@ -1,7 +1,7 @@
 import {createHandwritingPad} from './handwriting-pad.mjs?v=20261014-school65';
 import {loadHanziWriter} from './hanzi-library.mjs?v=20260922-school12b';
 import {gradeCandidates,loadStrokeCounts,mayBeWholeTarget,readsClosed} from './writing-grade.mjs?v=20261014-school65';
-import {judgeNeatness} from './writing-neatness.mjs?v=20261014-school65';
+import {judgeNeatness} from './writing-neatness.mjs?v=20261015-school66';
 
 // Browsers keep vendor files for 30 days: change the tag whenever the stroke data changes.
 const strokeData = character => new URL(`./vendor/hanzi-data/${character.codePointAt(0).toString(16)}.json?v=hk-20260929`,import.meta.url);
@@ -161,7 +161,7 @@ export function mountChallengeWriting(holder, {
         const strokeOf = await loadStrokeCounts(view).catch(()=>null);if (stale()) return;
         if (strokeOf && mayBeWholeTarget(candidates[0],character,strokes.length,strokeOf)) {
           const match = await Promise.resolve(checkNeatness(points(),character,view)).catch(()=>null);if (stale()) return;
-          if (match?.pass && match.extra===0) {verdict = {correct:true,recognized:character,pending:false};neat = match;}
+          if (match?.close && match.extra===0) {verdict = {correct:true,recognized:character,pending:false};neat = match;}
           else loose = Boolean(match && match.residual!==null && match.residual<LOOSE && match.missing<=2 && match.extra<=2);
         }
       }

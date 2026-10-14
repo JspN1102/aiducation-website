@@ -3,12 +3,15 @@
 // data, the file 看筆順 already loads), then one affine map is fitted from the
 // pupil's points to the standard ones, so a slanted or squashed but tidy character
 // is fine. What the map cannot explain is the mess: the mean distance in
-// character-box units (residual). Calibrated on 2026-10-14 against the teacher's
-// scores (pass at 60/100) for 32 characters at 0.04–0.12 (C:/tmp/r2/stroke-check/round2):
-// passed 32/32 at 0.05, 27/32 at 0.06, 11/32 at 0.07, 5/32 at 0.08, none from 0.10.
-// Two or more missing or extra strokes also fail; a single one is allowed, since
-// the matcher misreads one stroke in about one in sixteen tidy characters.
-export const NEATNESS = Object.freeze({fail: 0.07, hint: 0.06, structural: 2, match: 0.22, cover: 0.09});
+// character-box units (residual). Recalibrated 2026-10-14 on 73 characters written
+// with a finger on iPad and labelled by the teacher (writing lab): the residual of
+// characters that should pass ran 0.061-0.125 and overlapped those that should not
+// (0.063-0.119), so it no longer blocks unless the writing is a scramble (>= 0.14)
+// and only adds a "neater next time" hint from 0.10. What did separate them is the
+// number of strokes drawn: every character that should pass was within one of the
+// standard count, so two or more strokes short or over fails. The matcher's own
+// missing/extra counts misfired on tidy writing and only guard the rescue (close).
+export const NEATNESS = Object.freeze({fail: 0.14, hint: 0.10, rescue: 0.07, structural: 2, match: 0.22, cover: 0.09});
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 
@@ -108,7 +111,7 @@ function solve3(A, b) { // 3x3 linear system, Cramer's rule
 }
 
 // pupil: strokes of [x, y] points, y down (canvas); medians: hanzi-writer data (y up).
-// {pass, hint, residual, missing, extra}, or null when there is nothing to judge
+// {pass, hint, close, residual, missing, extra}, or null when there is nothing to judge
 // (no data, or too few strokes matched to fit the map): the caller then lets it pass.
 export function judgeNeatness(pupil, medians, o = NEATNESS) {
   pupil = Array.isArray(pupil) ? pupil.filter(s => Array.isArray(s) && s.length) : [];
@@ -119,7 +122,7 @@ export function judgeNeatness(pupil, medians, o = NEATNESS) {
     const a = resample(q.reversed ? [...P[q.p]].reverse() : P[q.p], 16), b = resample(S[q.s], 16);
     a.forEach((p, i) => {src.push(p);dst.push(b[i]);});
   }
-  const structural = missing >= o.structural || extra >= o.structural;
+  const structural = Math.abs(P.length - S.length) >= o.structural;
   let residual = null;
   if (src.length >= 3) {
     const M = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], bx = [0, 0, 0], by = [0, 0, 0];
@@ -132,6 +135,8 @@ export function judgeNeatness(pupil, medians, o = NEATNESS) {
   }
   if (residual === null && !structural) return null;
   const messy = residual !== null && residual >= o.fail;
+  // close: the old strict standard, kept for rescuing a character the recogniser ranked below one of its parts.
   return {pass: !messy && !structural, hint: !messy && !structural && residual !== null && residual >= o.hint,
+    close: !structural && residual !== null && residual < o.rescue && missing < o.structural && extra < o.structural,
     residual: residual === null ? null : Math.round(residual * 1000) / 1000, missing, extra};
 }
