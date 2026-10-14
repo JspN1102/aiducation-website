@@ -54,7 +54,7 @@ async function workbook(person,list,f,generatedAt){
   const ordinals=list.length?Array.from({length:last-first+1},(_,i)=>first+i):[];
   head(wide.addRow(['古詩','句','句子','次數',...ordinals.map(n=>`第 ${n} 次`)]));
   for(const l of ordered){const by=new Map(l.tries.map(a=>[a.n,a]));
-    const row=wide.addRow([log.title(l.poem),`第 ${l.line} 句`,log.lineText(l.poem,l.line-1)||'',l.tries.length,...ordinals.map(n=>{const a=by.get(n);return !a?null:a.failed?'沒有結果':a.score;})]);
+    const row=wide.addRow([log.title(l.poem),`第 ${l.line} 句`,log.lineText(l.poem,l.line-1)||'',l.tries.length,...ordinals.map(n=>{const a=by.get(n);return !a?null:a.failed?'未能評分':a.score;})]);
     row.font=font;row.alignment={vertical:'middle',horizontal:'center'};row.getCell(3).alignment={vertical:'middle',horizontal:'left'};}
   wide.columns.forEach((c,i)=>{c.width=i===0?12:i===1?8:i===2?20:i===3?7:9;});
   wide.views=[{state:'frozen',xSplit:4,ySplit:2}];
@@ -62,7 +62,7 @@ async function workbook(person,list,f,generatedAt){
   const each=wb.addWorksheet('每次明細',{properties:{defaultRowHeight:22}});
   each.addRow([info]).font={...font,bold:true};
   head(each.addRow(['古詩','句','句子','第幾次','時間（香港）','分數']));
-  for(const l of ordered)for(const a of l.tries){const row=each.addRow([log.title(a.poem),`第 ${a.line} 句`,log.lineText(a.poem,a.line-1)||'',a.n,hk(a.at),a.failed?'沒有結果':a.score]);row.font=font;}
+  for(const l of ordered)for(const a of l.tries){const row=each.addRow([log.title(a.poem),`第 ${a.line} 句`,log.lineText(a.poem,a.line-1)||'',a.n,hk(a.at),a.failed?'未能評分':a.score]);row.font=font;}
   each.columns.forEach((c,i)=>{c.width=[12,8,20,8,20,8][i];});
   each.views=[{state:'frozen',ySplit:2}];
   return Buffer.from(await wb.xlsx.writeBuffer());

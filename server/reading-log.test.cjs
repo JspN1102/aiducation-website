@@ -76,9 +76,9 @@ test('the Excel has 第一句 第 1 次, 第 2 次 … across and every attempt 
  assert.deepEqual(wb.worksheets.map(w=>w.name),['每句分數','每次明細']);
  const wide=wb.getWorksheet('每句分數');
  assert.deepEqual(wide.getRow(2).values.slice(1),['古詩','句','句子','次數','第 1 次','第 2 次','第 3 次']);
- assert.deepEqual(wide.getRow(3).values.slice(1),[getPoem(2).title,'第 1 句',getPoem(2).lines[0].text,3,72,'沒有結果',90]);
+ assert.deepEqual(wide.getRow(3).values.slice(1),[getPoem(2).title,'第 1 句',getPoem(2).lines[0].text,3,72,'未能評分',90]);
  assert.deepEqual(wide.getRow(4).values.slice(1),[getPoem(2).title,'第 2 句',getPoem(2).lines[1].text,1,88]);
- const each=wb.getWorksheet('每次明細');assert.equal(each.rowCount,6);assert.equal(each.getRow(4).getCell(6).value,'沒有結果');
+ const each=wb.getWorksheet('每次明細');assert.equal(each.rowCount,6);assert.equal(each.getRow(4).getCell(6).value,'未能評分');
 });
 
 test('attempts are numbered over all of a pupil’s readings, then narrowed to the chosen days',()=>{
