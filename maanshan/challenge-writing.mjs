@@ -1,7 +1,7 @@
 import {createHandwritingPad} from './handwriting-pad.mjs?v=20261014-school65';
 import {loadHanziWriter} from './hanzi-library.mjs?v=20260922-school12b';
 import {gradeCandidates,loadStrokeCounts,mayBeWholeTarget,readsClosed} from './writing-grade.mjs?v=20261014-school65';
-import {judgeNeatness} from './writing-neatness.mjs?v=20261014-school64';
+import {judgeNeatness} from './writing-neatness.mjs?v=20261014-school65';
 
 // Browsers keep vendor files for 30 days: change the tag whenever the stroke data changes.
 const strokeData = character => new URL(`./vendor/hanzi-data/${character.codePointAt(0).toString(16)}.json?v=hk-20260929`,import.meta.url);

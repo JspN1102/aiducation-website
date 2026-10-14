@@ -4,10 +4,11 @@
 // pupil's points to the standard ones, so a slanted or squashed but tidy character
 // is fine. What the map cannot explain is the mess: the mean distance in
 // character-box units (residual). Calibrated on 2026-10-14 against the teacher's
-// own judgement of sample sheets: 0.03–0.05 fine, 0.07 just about, 0.09+ not.
+// scores (pass at 60/100) for 32 characters at 0.04–0.12 (C:/tmp/r2/stroke-check/round2):
+// passed 32/32 at 0.05, 27/32 at 0.06, 11/32 at 0.07, 5/32 at 0.08, none from 0.10.
 // Two or more missing or extra strokes also fail; a single one is allowed, since
 // the matcher misreads one stroke in about one in sixteen tidy characters.
-export const NEATNESS = Object.freeze({fail: 0.08, hint: 0.06, structural: 2, match: 0.22, cover: 0.09});
+export const NEATNESS = Object.freeze({fail: 0.07, hint: 0.06, structural: 2, match: 0.22, cover: 0.09});
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 
