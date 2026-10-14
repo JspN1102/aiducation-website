@@ -67,6 +67,9 @@ export function mountChallengeWriting(holder, {
     strokeButton = doc.createElement('button');strokeButton.type = 'button';strokeButton.className = 'challenge-strokes';
     strokeButton.dataset.cw = 'strokes';strokeButton.textContent = '看筆順';prompts.append(strokeButton);
   }
+  // In dictation 跳過 sits small beside the prompts, away from the board where a resting palm lands.
+  const skipButton = $('[data-cw="skip"]');
+  if (heading && holder.closest('.challenge-type-dictation')) {prompts.querySelectorAll('.cw-skip').forEach(old => old.remove());prompts.append(skipButton);}
   let review = heading?.querySelector('.cw-review');
   if (!review) {review = doc.createElement('div');review.className = 'cw-review';(heading || root).append(review);}
   review.innerHTML = '<div class="cw-review-actions"><button type="button" data-cw="practise">再寫一次</button></div>';review.hidden = true;
@@ -80,8 +83,8 @@ export function mountChallengeWriting(holder, {
     $('[data-cw="clear"]').disabled = busy || !(phase === 'tracing' || animation.hidden && (hasInk && phase === 'assessment' || result));
     $('[data-cw="submit"]').disabled = !canSubmit() || !hasInk;
     $('[data-cw="submit"]').textContent = busy ? '辨認中…' : '檢查';
-    $('[data-cw="skip"]').hidden = !result && phase !== 'assessment';
-    $('[data-cw="skip"]').disabled = busy || canContinue() || !result && !traceCompleted;
+    skipButton.hidden = !result && phase !== 'assessment';
+    skipButton.disabled = busy || canContinue() || !result && !traceCompleted;
     strokeButton.disabled = busy || phase === 'demonstrating';
     review.hidden = !(demonstrationComplete && !practising);retryButton.disabled = busy;
     canvas.setAttribute('aria-disabled',String(locked()));canvas.setAttribute('aria-hidden',String(!animation.hidden));
@@ -288,6 +291,6 @@ export function mountChallengeWriting(holder, {
   return{
     getResult(){return result?{...result,candidates:[...result.candidates]}:null;},
     getCorrection(){return correction?{...correction,candidates:[...correction.candidates]}:null;},canContinue,skipCorrection,
-    destroy(){if(destroyed)return;destroyed=true;operation++;stopAnimation();resize?.disconnect();controller.abort();pad.destroy();review.hidden=true;root.remove();if(prompt)prompt.textContent=originalPrompt;}
+    destroy(){if(destroyed)return;destroyed=true;operation++;stopAnimation();resize?.disconnect();controller.abort();pad.destroy();review.hidden=true;root.remove();if(!root.contains(skipButton))skipButton.remove();if(prompt)prompt.textContent=originalPrompt;}
   };
 }

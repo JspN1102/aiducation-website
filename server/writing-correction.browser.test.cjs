@@ -55,7 +55,8 @@ async function state(page){return page.evaluate(()=>({calls,answers,corrections,
    const context=await browser.newContext({viewport:{width:1180,height:820},hasTouch:true}),page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
    await page.goto(`http://127.0.0.1:${server.address().port}/fixture`);await mount(page);
    check(engine+' untouched answer blocks advancement',await page.locator('#next').isDisabled());
-   check(engine+' only clear check and skip remain in writing controls',await page.locator('.cw-controls button').evaluateAll(values=>values.map(el=>el.dataset.cw).join(',')==='clear,submit,skip'));
+   check(engine+' only clear and check remain in writing controls',await page.locator('.cw-controls button').evaluateAll(values=>values.map(el=>el.dataset.cw).join(',')==='clear,submit'));
+   check(engine+' dictation skip sits beside the prompts',await page.locator('.challenge-writing-prompts [data-cw=skip]').count()===1&&await page.locator('[data-cw=skip]').count()===1);
    check(engine+' assessment starts with retry hidden',await page.locator('[data-cw=practise]').isHidden());
    const quizzesBeforeReplay=await page.evaluate(()=>window.__traceQuizCount);
    await page.locator('[data-cw=strokes]').click();await page.locator('[data-cw=practise]').waitFor({state:'visible'});

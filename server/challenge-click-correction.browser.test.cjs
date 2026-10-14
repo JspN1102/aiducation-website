@@ -62,7 +62,7 @@ async function assessed(page){await page.waitForFunction(()=>document.querySelec
    {
     const context=await browser.newContext({viewport:{width:1024,height:768},hasTouch:true}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(origin+'/fixture');await mount(page,'dictation');
     check(engine+' listening and stroke controls share the prompt panel',await page.locator('.challenge-writing-prompts [data-ch=listen]').count()===1&&await page.locator('.challenge-writing-prompts [data-cw=strokes]').count()===1);
-    check(engine+' writing controls are only clear check and skip',await page.locator('.cw-controls button').evaluateAll(values=>values.map(el=>el.dataset.cw).join(',')==='clear,submit,skip'));
+    check(engine+' writing controls are only clear and check, skip beside the prompts',await page.locator('.cw-controls button').evaluateAll(values=>values.map(el=>el.dataset.cw).join(',')==='clear,submit')&&await page.locator('.challenge-writing-prompts [data-cw=skip]').count()===1);
     check(engine+' retry starts hidden',await page.locator('[data-cw=practise]').isHidden());
     check(engine+' tracing saves completion progress without an independent answer or recognition call',await page.evaluate(()=>!saved.answers[2]&&recognitionCalls.length===0&&submissions.length===1&&submissions[0].status==='completed'&&submissions[0].context.traceCompleted===true&&submissions[0].context.dictationCompleted===false));
     await draw(page);await page.locator('[data-cw=submit]').click();await assessed(page);

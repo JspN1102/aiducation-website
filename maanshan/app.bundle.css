@@ -5027,6 +5027,15 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts svg {
   flex:none;width:27px;height:27px;
 }
+/* 跳過 is small and beside the prompts, out of reach of a palm resting on the board. */
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts:has(.cw-skip:not([hidden])) {
+  grid-template-columns:repeat(2,minmax(0,1fr)) auto;max-width:500px;
+}
+.workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts button.cw-skip {
+  align-self:center;width:auto;min-width:48px;min-height:40px;padding:6px 12px;
+  border-color:#dfe5da;border-radius:12px;background:transparent;color:#6b7a69;
+  font-size:16px!important;font-weight:400;
+}
 .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading .challenge-audio-status {
   display:block;min-height:0;margin:12px 0 0;color:#526a58;
   font-size:18px;line-height:1.5;text-align:center;
@@ -5073,7 +5082,7 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
   grid-column:1;grid-row:3;display:block;min-width:0;width:100%;align-self:center;
 }
 .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-controls {
-  grid-area:auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) minmax(0,1fr);
+  grid-area:auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);
   align-items:center;gap:10px;
 }
 .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing button {
@@ -5096,7 +5105,7 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
   .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded {
     grid-template-columns:minmax(0,430px) 144px;justify-content:center;max-width:none;gap:12px 22px;
   }
-  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-actions {grid-column:2;grid-row:2;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-actions {grid-column:2;grid-row:2;align-self:start;padding-top:calc(var(--cw-pad-size) * .14);}
   .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing .cw-controls {grid-template-columns:minmax(0,1fr);gap:18px;}
   .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing button {min-height:64px;font-size:24px;}
   .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing button.cw-primary {min-height:86px;font-size:28px;}
@@ -5128,6 +5137,10 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
   .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading .challenge-prompt {font-size:27px;line-height:1.4;margin-bottom:12px;}
   .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts {gap:10px;}
   .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts button {min-height:56px;font-size:22px!important;border-radius:14px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts:has(.cw-skip:not([hidden])) {gap:8px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts:has(.cw-skip:not([hidden])) button {gap:5px;padding-inline:4px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts:has(.cw-skip:not([hidden])) svg {width:22px;height:22px;}
+  .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-prompts button.cw-skip {min-height:38px;padding:5px 8px;font-size:15px!important;}
   .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing-heading .challenge-audio-status {font-size:16px;line-height:1.4;margin-top:8px;}
   .workspace.view-quiz .challenge-shell.challenge-type-dictation .challenge-writing.cw-expanded {--cw-pad-size:min(350px,max(210px,calc(100cqh - 328px)));gap:10px;}
   .workspace.view-quiz .challenge-shell.challenge-type-dictation:has(.cw-review:not([hidden])) .challenge-writing.cw-expanded {--cw-pad-size:min(350px,max(200px,calc(100cqh - 392px)));}
