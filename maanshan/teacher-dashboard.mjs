@@ -468,7 +468,7 @@ function chatConcernsMarkup(now){
  const d=chatConcerns.data,span=chatConcerns.days===3?'近 3 日':'今日',title=`<h3 class="chat-concerns-title">需要關注的聊天（${span}）</h3>`;
  if(!d||d.days!==chatConcerns.days)return `<div class="chat-concerns">${title}<p class="monitor-note">${chatConcerns.failed?'未能讀取（'+esc(chatConcerns.failed)+'）':'正在讀取…'}</p></div>`;
  if(!d.available)return `<div class="chat-concerns">${title}<p class="monitor-note">未能讀取聊天紀錄。</p></div>`;
- const list=rows(d.items),concern=k=>CHAT_CONCERNS[k]||'其他不當',topic=k=>CHAT_TOPICS[k]||(k==='invalid'?'無效輸入':'');
+ const list=rows(d.items),concern=k=>CHAT_CONCERNS[k]||'其他不當',topic=k=>CHAT_TOPICS[CHAT_TOPIC_AS[k]||k]||(k==='invalid'?'無效輸入':'');
  return `<div class="chat-concerns">${title}${list.length?`<ol class="chat-concern-list">${list.map(c=>`<li><p class="chat-concern-meta"><strong class="chat-flag">⚠ ${esc(concern(c.concern))}</strong><span>${esc(pupilName(c))} · ${esc(pupilClass(c))}${c.poemTitle?' · 《'+esc(c.poemTitle)+'》':''}${topic(c.topic)?' · '+esc(topic(c.topic)):''}</span><time>${esc(when(c.at,now))}</time></p><blockquote>${esc(c.question||'')}</blockquote></li>`).join('')}</ol>`:`<p class="monitor-note">${span}沒有需要關注的聊天。</p>`}`
   +monitorNote([list.length>=number(d.limit)?'只列出最近 '+d.limit+' 條':'','由 AI 自動標記，請先核實；老師後台只顯示「⚠ 需要關注」及類別，看不到原話'])+'</div>';
 }
@@ -576,7 +576,8 @@ function conversationBody(d){
 // every line's count in a dialog, and every attempt's score as Excel. Starts at the 2026-10-03 cohort reset.
 // Its other tab, AI聊天次數, counts each pupil's questions to the AI 詩人 by kind (never their words).
 const READING_LOG='/api/teacher-tools?tool=reading-log',CHAT_LOG='/api/teacher-tools?tool=chat-log',readingLog={view:'reading',days:7,grade:'',cls:'',q:'',data:null,chat:null,generation:0,controller:null,student:null,detail:null,exporting:false};
-const CHAT_TOPICS={meaning:'問詩句意思',poet:'問詩人生平',pronounce:'讀音寫法',chat:'日常閒聊',offtopic:'與學習無關'},CHAT_CONCERNS={abuse:'罵人粗口',bully:'欺凌',selfharm:'自傷',other:'其他不當'};
+// The server still files questions unrelated to learning as offtopic; teachers see them under 日常閒聊.
+const CHAT_TOPICS={meaning:'問詩句意思',poet:'問詩人生平',pronounce:'讀音寫法',chat:'日常閒聊'},CHAT_TOPIC_AS={offtopic:'chat'},CHAT_CONCERNS={abuse:'罵人粗口',bully:'欺凌',selfharm:'自傷',other:'其他不當'};
 const READING_RANGES=[[1,'今日'],[7,'近 7 日'],[30,'近 30 日'],[400,'全部']];
 function readingLogAllowed(){return !DEMO&&!state.legacy&&state.auth?.user?.role==='teacher'&&state.auth.user.readingLog===true;}
 function readingRange(days){return (READING_RANGES.find(([d])=>d===days)||[0,''])[1];}
@@ -643,7 +644,7 @@ function chatLogBody(d){
 function openChatTopics(id){
  const s=rows(readingLog.chat?.students).find(x=>x.student===id);if(!s)return;
  state.detailRequest?.abort();state.detailStudent=null;state.detailData=null;readingLog.detail?.abort();readingLog.student=null;
- const topics=Object.entries(CHAT_TOPICS).map(([k,label])=>[label,number(s.topics?.[k])||0]).concat(number(s.unclassified)?[['未分類',s.unclassified]]:[]);
+ const topics=Object.entries(CHAT_TOPICS).map(([k,label])=>[label,Object.keys(s.topics||{}).filter(t=>(CHAT_TOPIC_AS[t]||t)===k).reduce((n,t)=>n+(number(s.topics[t])||0),0)]).concat(number(s.unclassified)?[['未分類',s.unclassified]]:[]);
  const concerns=siteAdmin()?Object.entries(CHAT_CONCERNS).filter(([k])=>number(s.concerns?.[k])):[];
  const body=`<p class="helper">共 ${shown(s.questions)} 次提問${s.invalid?'，另有 '+shown(s.invalid)+' 次無效輸入':''}</p><div class="table-area"><table class="monitor-table usage-lines chat-topic-table"><caption>問題類別</caption><thead><tr><th scope="col">類別</th><th scope="col">次數</th></tr></thead><tbody>${topics.map(([label,n])=>`<tr><th scope="row">${esc(label)}</th><td>${shown(n)}</td></tr>`).join('')}</tbody></table></div>`
   +(concerns.length?`<div class="chat-concern-box"><p><span class="chat-flag">⚠ 需要關注</span></p><ul>${concerns.map(([k,label])=>`<li>${esc(label)}<strong>${shown(s.concerns[k])} 次</strong></li>`).join('')}</ul><p class="helper">原話在網站後台核實。</p></div>`:'')
