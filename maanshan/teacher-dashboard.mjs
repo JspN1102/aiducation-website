@@ -623,11 +623,13 @@ function readingLogBody(d){
 function readingDialog(s,body){
  return `<header class="dialog-header"><div><h2 id="student-dialog-title">${esc(pupilName(s))}</h2><p class="helper">${esc(pupilClass(s))} · ${esc(readingRange(readingLog.days))}</p></div><button type="button" class="button icon-only" data-action="close-dialog" aria-label="關閉朗讀測評次數">×</button></header><div class="dialog-body reading-lines-body">${body}</div>`;
 }
+// 朗讀成功率: the share of tries that came back with a score (a try fails on silence or a network error).
+function readingRate(total,failed){const n=number(total)||0;return n?Math.round((n-(number(failed)||0))/n*100)+'%':'—';}
 function readingLinesBody(s){
  const poems=rows(s.poems);
  const exportBar=`<div class="reading-export"><button type="button" class="button primary" data-action="reading-export" ${poems.length?'':'disabled'}>${icon('download')}匯出 Excel（每句每次的分數）</button><p id="reading-export-status" class="helper" role="status"></p></div>`;
  if(!poems.length)return '<p class="helper">這段時間沒有朗讀測評。</p>'+exportBar;
- return `<p class="helper">共 ${shown(s.total)} 次測評${s.failed?'，其中 '+shown(s.failed)+' 次沒有結果':''}</p>${exportBar}`+poems.map(p=>`<div class="table-area"><table class="monitor-table usage-lines"><caption>《${esc(p.title)}》 ${shown(p.total)} 次</caption><thead><tr><th scope="col">句</th><th scope="col">句子</th><th scope="col">測評次數</th><th scope="col">沒有結果</th></tr></thead><tbody>${rows(p.lines).map(l=>`<tr><td>第 ${shown(l.line)} 句</td><th scope="row">${esc(l.text||'')}</th><td>${shown(l.count)}</td><td>${shown(l.failed)}</td></tr>`).join('')}</tbody></table></div>`).join('');
+ return `<p class="helper">共 ${shown(s.total)} 次測評，朗讀成功率 ${readingRate(s.total,s.failed)}（成功評到分數的次數佔比）</p>${exportBar}`+poems.map(p=>`<div class="table-area"><table class="monitor-table usage-lines"><caption>《${esc(p.title)}》 ${shown(p.total)} 次</caption><thead><tr><th scope="col">句</th><th scope="col">句子</th><th scope="col">測評次數</th><th scope="col">朗讀成功率</th></tr></thead><tbody>${rows(p.lines).map(l=>`<tr><td>第 ${shown(l.line)} 句</td><th scope="row">${esc(l.text||'')}</th><td>${shown(l.count)}</td><td>${readingRate(l.count,l.failed)}</td></tr>`).join('')}</tbody></table></div>`).join('');
 }
 // AI聊天次數: counts per pupil only. 「⚠ 需要關注」 is for jasper (siteAdmin) only: the server
 // sends no concern data to anyone else. The words of a flagged question are checked in 網站後台.
