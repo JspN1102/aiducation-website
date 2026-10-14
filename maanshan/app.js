@@ -19,7 +19,7 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
 import {requestJSON, requestChat} from './network.mjs?v=20261011-school58';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
-import {schoolSession} from './bootstrap.mjs?v=20261015-school66';
+import {schoolSession} from './bootstrap.mjs?v=20261015-school67';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261013-school62b';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20261013-school60';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school41';
@@ -123,6 +123,10 @@ function unlockAudio(event){
   sharedAudio.play().then(()=>{audioUnlocked=true;if(!transientAudio&&sharedAudio.src===SILENT_CLIP)sharedAudio.pause();}).catch(()=>{});
 }
 for(const type of ['touchend','click','keydown'])document.addEventListener(type,unlockAudio,{capture:true,passive:true});
+// A two-finger pinch while playing a game or writing zoomed the whole page on iPad (also when one finger lands
+// beside the game box or the writing square). Safari reports pinches as gesture events; reading pages still zoom.
+const noPagePinch=event=>{if(document.querySelector('.workspace.view-quiz,.workspace.view-write'))event.preventDefault();};
+for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,noPagePinch,{passive:false});
 let shishi=null,libraryShishi=null,teacherReset=null,challenge=null,lessonMap=null,poemSwipe=null;
 let animationPlayer=null,disposeAnimation=null;
 let activityLoad=0;

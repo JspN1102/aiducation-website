@@ -5,8 +5,8 @@
 .workspace .challenge-type-microgame .challenge-count{font-size:24px}
 .workspace .challenge-type-microgame .challenge-body{display:block;justify-content:flex-start;overscroll-behavior:contain}
 .workspace .challenge-game-holder{min-width:0;width:100%}
-/* A two-finger pinch inside a game (say on the 穿鞋 box) must not zoom the whole page on iPad; vertical scrolling stays. */
-.workspace .challenge-game-holder{touch-action:pan-y}
+/* A two-finger pinch in a game or while writing (say on the 穿鞋 box) must not zoom the whole page; vertical scrolling stays. app.js also stops Safari's pinch gesture there. */
+.workspace:is(.view-quiz,.view-write),.workspace .challenge-game-holder{touch-action:pan-y}
 .workspace .challenge-game-loading{display:flex;min-height:220px;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:20px;font-size:20px;line-height:1.6}
 .workspace .challenge-type-microgame .challenge-footer{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 14px;padding-top:8px}
 .workspace .challenge-type-microgame .challenge-footer-actions{display:flex;justify-content:center;align-items:center;flex:none;gap:8px;margin-inline:auto}
