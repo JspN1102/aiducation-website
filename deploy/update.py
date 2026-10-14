@@ -11,6 +11,7 @@ from public_school import is_authoring_file
 ROOT=Path(__file__).resolve().parent.parent
 PUBLIC={'maanshan','mandarin-assessment','assets','poetry','wenhuacun','awards'}
 RUNTIME={'api','server','deploy'}
+KEEP_RELEASES=5  # newest releases kept after a healthy deploy; live and previous are always kept too
 
 def current_release_probe(commit, manifest):
     """Verify a same-version release before deciding a deployment is unnecessary."""
@@ -171,7 +172,25 @@ if [ "$healthy" != 1 ]; then
   exit 1
 fi
 printf 'Deployment healthy. Previous release retained: %s\\n' "$previous"
-""".replace('RELEASE',shlex.quote(release))
+# Prune only after a healthy switch, still holding the deploy lock: keep the newest releases by name
+# (= deploy time), the live and previous releases, and any release a process still runs from.
+# A prune problem never fails a deployment that is already live.
+(
+  set -e
+  root=/srv/maanshan/releases
+  live=$(readlink -f /srv/maanshan/current)
+  if [ "$live" != "$release" ]; then printf 'Prune skipped: current is not the new release.\\n'; exit 0; fi
+  busy=$(for p in /proc/[0-9]*; do readlink "$p/cwd" 2>/dev/null || true; done)
+  for name in $(find "$root" -mindepth 1 -maxdepth 1 -type d -name '20[0-9][0-9]*' -printf '%f\\n' | LC_ALL=C sort | head -n -KEEP_COUNT); do
+    path="$root/$name"
+    [ "$path" = "$live" ] && continue
+    [ "$path" = "$previous" ] && continue
+    case "$busy" in *"$path"*) continue;; esac
+    nice -n 19 ionice -c3 rm -rf --one-file-system -- "$path"
+    printf 'Pruned old release: %s\\n' "$name"
+  done
+) || printf 'Release prune failed; the deployment itself is healthy.\\n'
+""".replace('RELEASE',shlex.quote(release)).replace('KEEP_COUNT',str(KEEP_RELEASES))
         print(command(client,activate,timeout=150),flush=True)
         print('Guangzhou origin verified; public DNS routing is managed separately.')
         print('Release:',release)

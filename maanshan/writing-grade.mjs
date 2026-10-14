@@ -24,6 +24,16 @@ export function gradeCandidates(candidates, accepted, {drawn = 0, strokeOf = nul
   return {correct, recognized: correct ? target : first, pending: false};
 }
 
+// When the first guess is only a part of the target (大 for 籬, 雨 for 霑, 原 for
+// 願) and the target itself is missing or ranked too low, the pupil may still have
+// written the whole target loosely, with its parts spread apart. The caller then
+// compares the strokes with the target's own (writing-neatness.mjs) before deciding.
+export function mayBeWholeTarget(first, target, drawn, strokeOf) {
+  const total = typeof strokeOf === 'function' ? strokeOf(target) : 0;
+  if (!first || total < LENIENCY.minTargetStrokes || !(drawn >= Math.ceil(total * LENIENCY.wholeRatio))) return false;
+  return Array.from(first).length > 1 || strokeOf(first) > 0 && strokeOf(first) <= total * LENIENCY.componentRatio;
+}
+
 export function strokeReader(table) {
   if (typeof table !== 'string' || table.length !== LAST - FIRST + 1) throw new Error('Stroke counts are unavailable.');
   return value => {

@@ -39,3 +39,17 @@ test('the browser copy of the rule gives the same verdicts',async()=>{
  const table=JSON.parse(fs.readFileSync(path.join(repo,'maanshan/vendor/stroke-counts.json'),'utf8')),strokeOf=esm.strokeReader(table);
  for(const c of cases)assert.deepEqual(esm.gradeCandidates(c.candidates,new Set(c.accept),{drawn:c.drawn,strokeOf}),grade.gradeCandidates(c.candidates,new Set(c.accept),{drawn:c.drawn,strokeOf:grade.strokeCount}),c.label);
 });
+test('a lone part of the target may still be the whole target written loosely',async()=>{
+ const esm=await import(pathToFileURL(path.join(repo,'maanshan/writing-grade.mjs')).href);
+ const table=JSON.parse(fs.readFileSync(path.join(repo,'maanshan/vendor/stroke-counts.json'),'utf8')),strokeOf=esm.strokeReader(table);
+ const may=(first,target,drawn)=>esm.mayBeWholeTarget(first,target,drawn,strokeOf);
+ assert.equal(may('大','籬',22),true,'大 over a fully drawn 籬');
+ assert.equal(may('雨','霑',14),true,'雨 over 霑');
+ assert.equal(may('籬離','籬',24),true,'split into two characters');
+ assert.equal(may('大','籬',10),false,'too few strokes for 籬');
+ assert.equal(may('離','籬',19),false,'a full-size character first');
+ assert.equal(may('日','白',5),false,'simple targets never');
+ assert.equal(may('a','籬',25),false,'unknown first guess');
+ assert.equal(may('','籬',25),false,'nothing recognised');
+ assert.equal(esm.mayBeWholeTarget('大','籬',25,null),false,'no stroke table');
+});

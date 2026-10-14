@@ -1,10 +1,14 @@
 import {createHandwritingPad} from './handwriting-pad.mjs?v=20260921-school10';
 import {loadHanziWriter} from './hanzi-library.mjs?v=20260922-school12b';
-import {gradeCandidates,loadStrokeCounts} from './writing-grade.mjs?v=20260923-school23';
+import {gradeCandidates,loadStrokeCounts,mayBeWholeTarget} from './writing-grade.mjs?v=20261014-school65';
 import {judgeNeatness} from './writing-neatness.mjs?v=20261014-school64';
 
 // Browsers keep vendor files for 30 days: change the tag whenever the stroke data changes.
 const strokeData = character => new URL(`./vendor/hanzi-data/${character.codePointAt(0).toString(16)}.json?v=hk-20260929`,import.meta.url);
+// Rescuing a lone component (大 for 籬): pass the neatness check with no extra stroke. Strokes merely close
+// (residual < LOOSE) are asked to be rewritten rather than marked wrong. Calibrated 2026-10-14 on messy
+// synthetic writing of the 85 targets of 8+ strokes against look-alikes sharing a component.
+const LOOSE = 0.10;
 // A recognised answer must also be written neatly (writing-neatness.mjs). Without
 // the stroke data (offline, or a character not in it) there is no verdict and it passes.
 async function defaultNeatness(ink,character,view) {
@@ -120,7 +124,7 @@ export function mountChallengeWriting(holder, {
     busy = true;const correcting = Boolean(result), count = correcting?++correctionCount:++recognitionCount;
     auditWriting(count>1?'retry':'attempt_started',{retryCount:count-1,metrics:{strokeCount:strokes.length,eraseCount}});
     const request = ++operation, started = view.performance.now();status.textContent = '正在辨認你的字…';updateControls();
-    let candidates, verdict, neat = null;
+    let candidates, verdict, neat = null, loose = false;
     try {
       const context = {mode:correcting?'review':'standard',phase:correcting?'correction':'assessment',attemptNo:count};
       const parse = response => Array.isArray(response?.candidates)?response.candidates.filter(v=>typeof v==='string'&&v.trim()).map(normalize):[];
@@ -138,8 +142,18 @@ export function mountChallengeWriting(holder, {
         const strokeOf = await loadStrokeCounts(view).catch(()=>null);if (stale()) return;
         verdict = gradeCandidates(candidates,accepted,{drawn:strokes.length,strokeOf:strokeOf||(()=>0)});
       }
-      if (verdict.correct && verdict.recognized===character && typeof checkNeatness==='function') {
-        neat = await Promise.resolve(checkNeatness(strokes.map(stroke=>stroke.map(p=>[p.x,p.y])),character,view)).catch(()=>null);if (stale()) return;
+      const points = () => strokes.map(stroke=>stroke.map(p=>[p.x,p.y]));
+      if (!verdict.correct && typeof checkNeatness==='function') {
+        // The recogniser can rank one part above the whole (大 for 籬): check the strokes against the target's own.
+        const strokeOf = await loadStrokeCounts(view).catch(()=>null);if (stale()) return;
+        if (strokeOf && mayBeWholeTarget(candidates[0],character,strokes.length,strokeOf)) {
+          const match = await Promise.resolve(checkNeatness(points(),character,view)).catch(()=>null);if (stale()) return;
+          if (match?.pass && match.extra===0) {verdict = {correct:true,recognized:character,pending:false};neat = match;}
+          else loose = Boolean(match && match.residual!==null && match.residual<LOOSE && match.missing<=2 && match.extra<=2);
+        }
+      }
+      if (verdict.correct && verdict.recognized===character && !neat && typeof checkNeatness==='function') {
+        neat = await Promise.resolve(checkNeatness(points(),character,view)).catch(()=>null);if (stale()) return;
       }
     } catch {
       if (!destroyed && request===operation) {
@@ -148,6 +162,7 @@ export function mountChallengeWriting(holder, {
       }return;
     } finally {if (!destroyed && request===operation) {busy=false;updateControls();}}
     const latencyMs = Math.min(600000,Math.round(view.performance.now()-started));
+    if (loose) {status.textContent = '這個字寫得太散，認不出來。清空後寫端正一點，再按「檢查」。';return;}
     if (neat && neat.pass===false) {
       status.textContent = `認得出是「${character}」，但字寫得不夠工整。清空後寫端正一點，再按「檢查」。`;return;
     }

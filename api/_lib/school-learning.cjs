@@ -1,4 +1,5 @@
 'use strict';
+const {gunzipSync} = require('node:zlib');
 const auth = require('./school-auth.cjs');
 const research = require('./research-store.cjs');
 const {getPoem} = require('./poems.js');
@@ -8,6 +9,17 @@ const replay = require('./request-replay.cjs');
 const chatQuota = () => require('./chat-quota.cjs');
 const chatTopics = () => require('./chat-topics.cjs');
 const score = value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100 ? value : null;
+
+// Larger drawings arrive gzipped (maanshan/handwriting-payload.mjs); count their strokes too,
+// or the component leniency and the recorded stroke count see none.
+function inkStrokes(body) {
+  if (Array.isArray(body?.ink)) return body.ink.length;
+  if (typeof body?.inkGzip !== 'string') return 0;
+  try {
+    const ink = JSON.parse(gunzipSync(Buffer.from(body.inkGzip, 'base64'), {maxOutputLength: 512 * 1024}).toString('utf8'));
+    return Array.isArray(ink) ? ink.length : 0;
+  } catch { return 0; }
+}
 
 async function referenceFor(req, operation) {
   const context = req.body?.researchContext;
@@ -28,7 +40,7 @@ async function referenceFor(req, operation) {
     if (!item || item.type !== 'dictation') throw new auth.AuthError(400, 'INVALID_LEARNING_CONTEXT');
     context.activity='writing';
     context.context={...(context.context||{}),itemType:'dictation'};
-    return {poem, item, strokes: Array.isArray(req.body.ink) ? req.body.ink.length : 0};
+    return {poem, item, strokes: inkStrokes(req.body)};
   }
   return {poem};
 }
