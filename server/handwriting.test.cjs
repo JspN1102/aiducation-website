@@ -33,6 +33,43 @@ test('handwriting chooses the relay directly and only forwards ink/context', asy
   assert.equal(calls, 1);
 });
 
+test('parts written far apart get a second reading with the gap closed; normal or relayed ink does not', async t => {
+  const previous = process.env.HANDWRITING_RELAY_URL;
+  process.env.HANDWRITING_RELAY_URL = relay;
+  t.after(() => previous === undefined ? delete process.env.HANDWRITING_RELAY_URL : process.env.HANDWRITING_RELAY_URL = previous);
+  const spread = [[[200, 360], [40, 40], [0, 50]], [[200, 360], [80, 80], [60, 110]], [[200, 360], [480, 480], [120, 170]]];
+  const sent = [];
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    const body = JSON.parse(options.body);
+    sent.push(body.ink);
+    return Response.json({ candidates: sent.length === 1 ? ['二'] : ['三'] });
+  });
+  const result = await invoke({ ink: spread });
+  assert.equal(result.statusCode, 200);
+  assert.deepEqual(result.value, { candidates: ['二'], closedCandidates: ['三'] });
+  assert.deepEqual(sent[0], spread);
+  const ys = sent[1].map(stroke => stroke[1][0]);
+  assert.ok(ys[2] - ys[1] < ys[1] - ys[0], 'the wide empty band is closed');
+  assert.deepEqual(sent[1].map(stroke => stroke[2]), spread.map(stroke => stroke[2]));
+  sent.length = 0;
+  assert.deepEqual((await invoke({ ink })).value, { candidates: ['二'] });
+  assert.equal(sent.length, 1);
+});
+
+test('a slow or failed second reading never holds back or replaces the first', async t => {
+  const previous = process.env.HANDWRITING_RELAY_URL;
+  delete process.env.HANDWRITING_RELAY_URL;
+  t.after(() => previous === undefined ? delete process.env.HANDWRITING_RELAY_URL : process.env.HANDWRITING_RELAY_URL = previous);
+  const spread = [[[200, 360], [40, 40], [0, 50]], [[200, 360], [480, 480], [60, 110]]];
+  let calls = 0;
+  t.mock.method(globalThis, 'fetch', async () => (++calls === 1 ? Response.json(['SUCCESS', [['', ['二']]]]) : Response.json({}, { status: 500 })));
+  assert.deepEqual((await invoke({ ink: spread })).value, { candidates: ['二'] });
+  calls = 0;
+  const relayed = await invoke({ ink: spread }, { 'x-maanshan-handwriting-relay': '1' });
+  assert.deepEqual(relayed.value, { candidates: ['二'] });
+  assert.equal(calls, 1);
+});
+
 test('unset relay retains direct Google recognition including incoming relay marker', async t => {
   const previous = process.env.HANDWRITING_RELAY_URL;
   delete process.env.HANDWRITING_RELAY_URL;

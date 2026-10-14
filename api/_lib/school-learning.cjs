@@ -137,7 +137,13 @@ function outcomeFor(operation, payload, status, reference, elapsedMs, providerMe
     const candidates = (Array.isArray(payload.candidates) ? payload.candidates : []).filter(value => typeof value==='string'&&value.trim()).map(value => value.trim().normalize('NFC'));
     const acceptable = new Set([reference.item.target.char,...(reference.item.target.accept||[])].map(value=>value.normalize('NFC')));
     // The verdict the pupil saw (maanshan/writing-grade.mjs), including the component leniency.
-    const verdict = grade.gradeCandidates(candidates, acceptable, {drawn: reference.strokes || 0, strokeOf: grade.strokeCount});
+    let verdict = grade.gradeCandidates(candidates, acceptable, {drawn: reference.strokes || 0, strokeOf: grade.strokeCount});
+    // ...and the second reading with the gap between far-apart parts closed (api/handwriting.js).
+    const closed = (Array.isArray(payload.closedCandidates) ? payload.closedCandidates : []).filter(value => typeof value==='string'&&value.trim()).map(value => value.trim().normalize('NFC'));
+    if (!verdict.correct && candidates.length && closed.length && grade.readsClosed(reference.item.target.char, reference.strokes || 0, grade.strokeCount)) {
+      const second = grade.gradeCandidates(closed, acceptable, {drawn: reference.strokes || 0, strokeOf: grade.strokeCount});
+      if (second.correct) verdict = second;
+    }
     result.correct = candidates.length ? verdict.correct : null;
     result.score = candidates.length ? verdict.correct?100:0 : null;
     result.status = candidates.length ? verdict.correct?'correct':'incorrect' : 'unmeasured';

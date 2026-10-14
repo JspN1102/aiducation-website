@@ -1,6 +1,6 @@
-import {createHandwritingPad} from './handwriting-pad.mjs?v=20260921-school10';
+import {createHandwritingPad} from './handwriting-pad.mjs?v=20261014-school65';
 import {loadHanziWriter} from './hanzi-library.mjs?v=20260922-school12b';
-import {gradeCandidates,loadStrokeCounts,mayBeWholeTarget} from './writing-grade.mjs?v=20261014-school65';
+import {gradeCandidates,loadStrokeCounts,mayBeWholeTarget,readsClosed} from './writing-grade.mjs?v=20261014-school65';
 import {judgeNeatness} from './writing-neatness.mjs?v=20261014-school64';
 
 // Browsers keep vendor files for 30 days: change the tag whenever the stroke data changes.
@@ -129,9 +129,10 @@ export function mountChallengeWriting(holder, {
       const context = {mode:correcting?'review':'standard',phase:correcting?'correction':'assessment',attemptNo:count};
       const parse = response => Array.isArray(response?.candidates)?response.candidates.filter(v=>typeof v==='string'&&v.trim()).map(normalize):[];
       const stale = () => destroyed || request!==operation || (!correcting && (result || externalAnswered()));
-      candidates = parse(await recognize(ink,context));if (stale()) return;
+      let response = await recognize(ink,context);if (stale()) return;
+      candidates = parse(response);
       // The recogniser sometimes returns nothing for ink it reads a moment later: retry the same strokes once.
-      if (!candidates.length) {candidates = parse(await recognize(ink,context));if (stale()) return;}
+      if (!candidates.length) {response = await recognize(ink,context);if (stale()) return;candidates = parse(response);}
       if (!candidates.length) {
         auditWriting('error',{error:{code:'invalid_response',retryable:true},metrics:{strokeCount:strokes.length}});
         status.textContent = '這次未能辨認，不計對錯。可以寫大一點，再試一次。';return;
@@ -141,6 +142,15 @@ export function mountChallengeWriting(holder, {
         // A lower-ranked target may still count (雨 listed above 霑); deciding needs the stroke table.
         const strokeOf = await loadStrokeCounts(view).catch(()=>null);if (stale()) return;
         verdict = gradeCandidates(candidates,accepted,{drawn:strokes.length,strokeOf:strokeOf||(()=>0)});
+      }
+      const closed = parse({candidates:response?.closedCandidates});
+      if (!verdict.correct && closed.length) {
+        // Parts written far apart were read again with the gap closed (api/handwriting.js).
+        const strokeOf = await loadStrokeCounts(view).catch(()=>null);if (stale()) return;
+        if (strokeOf && readsClosed(character,strokes.length,strokeOf)) {
+          const second = gradeCandidates(closed,accepted,{drawn:strokes.length,strokeOf});
+          if (second.correct) {verdict = second;candidates = closed;}
+        }
       }
       const points = () => strokes.map(stroke=>stroke.map(p=>[p.x,p.y]));
       if (!verdict.correct && typeof checkNeatness==='function') {

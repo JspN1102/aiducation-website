@@ -313,23 +313,46 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
     return {clientX:touch.clientX, clientY:touch.clientY, timeStamp:event.timeStamp};
   }
 
+  // Touches that landed while another touch owned the stroke, e.g. the
+  // writing finger when a resting palm or thumb touched the board first.
+  const waiting = new Map();
+  const STILL = 14;
+
+  function stationary(stroke) {
+    const first = stroke.points[0];
+    return stroke.points.every(point => Math.hypot(point.x - first.x, point.y - first.y) < STILL);
+  }
+
   function startTouch(event) {
     preventBoardGesture(event);
     if (destroyed || isLocked()) return;
-    const touch = event.changedTouches?.[0];
-    if (!touch) return;
-    if (active) {
-      // Reuse the point recorded by pointerdown and accept subsequent native
-      // touch moves. Previously this returned without assigning touchId,
-      // leaving a dot and an enabled submit button when pointer moves stopped.
-      if (active.pointerType === 'touch' && active.touchId === undefined) active.touchId = touch.identifier;
-      return;
+    for (const touch of Array.from(event.changedTouches || [])) {
+      if (active) {
+        // Reuse the point recorded by pointerdown and accept subsequent native
+        // touch moves. Previously this returned without assigning touchId,
+        // leaving a dot and an enabled submit button when pointer moves stopped.
+        if (active.pointerType === 'touch' && active.touchId === undefined) active.touchId = touch.identifier;
+        else waiting.set(touch.identifier, [touchPoint(touch, event)]);
+        continue;
+      }
+      resize();
+      if (!rectangle || rectangle.width <= 0 || rectangle.height <= 0) return;
+      active = {points:[], touchId:touch.identifier, pointerType:'touch', anchor:null, tipBounds:null};
+      appendPoint(touchPoint(touch, event));
+      renderActive();
+      notifyChange();
     }
-    resize();
-    if (!rectangle || rectangle.width <= 0 || rectangle.height <= 0) return;
-    active = {points:[], touchId:touch.identifier, pointerType:'touch', anchor:null, tipBounds:null};
-    appendPoint(touchPoint(touch, event));
-    renderActive();
+  }
+
+  function adopt(identifier, samples) {
+    // A resting palm owns the stroke without moving; the finger that starts
+    // writing takes over and the palm's dot is discarded.
+    const dropped = active;
+    active = {points:[], touchId:identifier, pointerType:'touch', anchor:null, tipBounds:null};
+    if (dropped.pointerId !== undefined) releasePointer(dropped.pointerId);
+    waiting.delete(identifier);
+    samples.forEach(sample => appendPoint(sample));
+    rebuild();
     notifyChange();
   }
 
@@ -337,13 +360,23 @@ export function createHandwritingPad(canvas, { isLocked = () => false, onChange 
     preventBoardGesture(event);
     if (!active || active.touchId === undefined) return;
     if (isLocked()) {commitActive();return;}
-    const touch = Array.from(event.changedTouches || []).find(point => point.identifier === active.touchId);
-    if (!touch) return;
-    appendPoint(touchPoint(touch, event));
-    renderActive();
+    for (const touch of Array.from(event.changedTouches || [])) {
+      if (touch.identifier === active.touchId) {
+        appendPoint(touchPoint(touch, event));
+        renderActive();
+        continue;
+      }
+      const samples = waiting.get(touch.identifier);
+      if (!samples) continue;
+      samples.push(touchPoint(touch, event));
+      const first = samples[0], scale = WRITING_SIZE / Math.max(1, rectangle.width);
+      if (active.pointerType === 'touch' && stationary(active)
+        && Math.hypot(touch.clientX - first.clientX, touch.clientY - first.clientY) * scale >= STILL) adopt(touch.identifier, samples);
+    }
   }
 
   function finishTouch(event) {
+    for (const touch of Array.from(event.changedTouches || [])) waiting.delete(touch.identifier);
     if (!active || active.pointerType !== 'touch') return;
     if (active.touchId !== undefined) {
       const touch = Array.from(event.changedTouches || []).find(point => point.identifier === active.touchId);

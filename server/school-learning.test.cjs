@@ -25,6 +25,15 @@ test('dictation scores the first candidate, preserving no-recognition as missing
  assert.equal(outcomeFor('handwriting',{candidates:[]},200,reference,1).result.score,null);
  assert.equal(outcomeFor('handwriting',{candidates:['雨']},200,reference,1).result.score,100);
 });
+test('the second reading with the gap closed counts only when the first is wrong and the target long and mostly drawn',()=>{
+ const whole={item:{target:{char:'霑',accept:['霑','沾']}},strokes:15};
+ assert.equal(outcomeFor('handwriting',{candidates:['雨','霜'],closedCandidates:['霑']},200,whole,1).result.correct,true);
+ assert.equal(outcomeFor('handwriting',{candidates:['雨','霜'],closedCandidates:['霑']},200,{...whole,strokes:10},1).result.correct,false);
+ assert.equal(outcomeFor('handwriting',{candidates:['雨','霜'],closedCandidates:['霜']},200,whole,1).result.correct,false);
+ assert.equal(outcomeFor('handwriting',{candidates:['日','白'],closedCandidates:['白']},200,{item:{target:{char:'白',accept:['白']}},strokes:5},1).result.correct,false);
+ const value=outcomeFor('handwriting',{candidates:['雨','霜'],closedCandidates:['霑']},200,whole,1);
+ assert.deepEqual(value.recognition,{candidateCount:2,targetRank:0,topCandidate:'雨'});
+});
 test('a component outranking the whole character counts only when the whole character was drawn',async()=>{
  const whole={item:{target:{char:'霑',accept:['霑','沾']}},strokes:15};
  assert.equal(outcomeFor('handwriting',{candidates:['雨','霑']},200,whole,1).result.correct,true);

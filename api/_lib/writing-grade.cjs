@@ -21,6 +21,13 @@ function gradeCandidates(candidates, accepted, {drawn = 0, strokeOf = null} = {}
   return {correct, recognized: correct ? target : first, pending: false};
 }
 
+// A second reading of the same ink with its wide empty bands closed (api/_lib/writing-gaps.cjs)
+// counts only for targets long enough to be written in spread-out parts, most of them drawn.
+function readsClosed(target, drawn, strokeOf) {
+  const total = typeof strokeOf === 'function' ? strokeOf(target) : 0;
+  return total >= LENIENCY.minTargetStrokes && drawn >= Math.ceil(total * LENIENCY.wholeRatio);
+}
+
 function strokeReader(table) {
   if (typeof table !== 'string' || table.length !== LAST - FIRST + 1) throw new Error('Stroke counts are unavailable.');
   return value => {
@@ -40,4 +47,4 @@ function strokeCount(value) {
   return reader(value);
 }
 
-module.exports = {LENIENCY, gradeCandidates, strokeReader, strokeCount};
+module.exports = {LENIENCY, gradeCandidates, readsClosed, strokeReader, strokeCount};

@@ -34,6 +34,13 @@ export function mayBeWholeTarget(first, target, drawn, strokeOf) {
   return Array.from(first).length > 1 || strokeOf(first) > 0 && strokeOf(first) <= total * LENIENCY.componentRatio;
 }
 
+// A second reading of the same ink with its wide empty bands closed (api/_lib/writing-gaps.cjs)
+// counts only for targets long enough to be written in spread-out parts, most of them drawn.
+export function readsClosed(target, drawn, strokeOf) {
+  const total = typeof strokeOf === 'function' ? strokeOf(target) : 0;
+  return total >= LENIENCY.minTargetStrokes && drawn >= Math.ceil(total * LENIENCY.wholeRatio);
+}
+
 export function strokeReader(table) {
   if (typeof table !== 'string' || table.length !== LAST - FIRST + 1) throw new Error('Stroke counts are unavailable.');
   return value => {
