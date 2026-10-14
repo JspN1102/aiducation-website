@@ -33,6 +33,16 @@ test('legacy teacher data excludes private teacher and test-account progress by 
  const handler=loadHandler('maanshan-data.js',{...dependencies(teacher,{listAccounts:async()=>[actor]}),'./_lib/db.js':{isDbReady:()=>true,query:async()=>rows}}),res=response();await handler({method:'GET',query:{grade:'2',cls:'A',poemId:'2'}},res);assert.equal(res.statusCode,200);assert.equal(res.body.stats.total,1);assert.equal(res.body.stats.avg,70);assert.deepEqual(res.body.students.map(p=>p.id),[actor.id]);
 });
 
+test('a pupil saves their own chat for other devices but legacy teacher data never returns it',async()=>{
+ let lastArgs;const db={isDbReady:()=>true,execute:async(_sql,args)=>{lastArgs=args;return {rowCount:1};}};
+ const save=loadHandler('maanshan-save.js',{...dependencies(actor),'./_lib/db.js':db}),saved=response();
+ await save({method:'POST',body:{studentId:actor.id,poemId:2,section:'chat',payload:{messages:[{role:'user',content:'synthetic'}],updatedAt:1}}},saved);
+ assert.equal(saved.statusCode,200);assert.equal(lastArgs[5],'chat');
+ const teacher={id:'t_'+'c'.repeat(24),role:'teacher'},rows=[{student_id:actor.id,name:'Student',section:'chat',payload:{messages:[{role:'user',content:'synthetic'}]},updated_at:'2026-10-15'},{student_id:actor.id,name:'Student',section:'reading',payload:{totalScore:70},updated_at:'2026-10-15'}];
+ const data=loadHandler('maanshan-data.js',{...dependencies(teacher,{listAccounts:async()=>[actor]}),'./_lib/db.js':{isDbReady:()=>true,query:async()=>rows}}),res=response();await data({method:'GET',query:{grade:'2',cls:'A',poemId:'2'}},res);
+ assert.equal(res.statusCode,200);assert.equal(res.body.students.length,1);assert.equal(res.body.students[0].chat,undefined);assert(!JSON.stringify(res.body).includes('synthetic'));
+});
+
 test('legacy teacher data maps only current cohort storage IDs to roster identities with one cohort read',async()=>{
  const teacher={id:'t_'+'c'.repeat(24),role:'teacher'},testActor={...actor,id:'s_'+'d'.repeat(24),isTest:true};
  const other={...actor,id:'s_'+'e'.repeat(24)},cohort={epoch:'f'.repeat(32)},previous={epoch:'0'.repeat(32)};

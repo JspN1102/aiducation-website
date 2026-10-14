@@ -19,7 +19,7 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
 import {requestJSON, requestChat} from './network.mjs?v=20261011-school58';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
-import {schoolSession} from './bootstrap.mjs?v=20261015-school67';
+import {schoolSession} from './bootstrap.mjs?v=20261015-school68';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261013-school62b';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20261013-school60';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school41';
@@ -213,6 +213,14 @@ function queueSection(section,payload,p=poem) {
   if (!profile?.id || !profile.name || (!allGrades && (!profile.grade || !profile.cls))) return;
   sync.add({syncId:crypto.randomUUID(),studentId:profile.id,name:profile.name,grade:allGrades?p.grade:Number(profile.grade),cls:allGrades?'T':profile.cls,poemId:p.id,section,payload,queuedAt:Date.now(),...(learningEpoch?{learningEpoch}:{})});
   sync.flush();
+}
+// A pupil's chat follows them to another device. Each save carries the whole recent conversation, so a lost one is
+// replaced by the next; it skips the sync queue, where an older server refusing the chat section would block progress.
+function saveChat(p=poem) {
+  if(!school.enabled||sessionLocked||!profile?.id||!profile.name||(!allGrades&&(!profile.grade||!profile.cls)))return;
+  const s=state(p);s.chatUpdatedAt=Date.now();persist();
+  const payload={messages:s.chat.slice(-30).map(({role,content})=>({role,content})),updatedAt:s.chatUpdatedAt};
+  void schoolFetch('/api/maanshan-save/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({syncId:crypto.randomUUID(),studentId:profile.id,name:profile.name,grade:allGrades?p.grade:Number(profile.grade),cls:allGrades?'T':profile.cls,poemId:p.id,section:'chat',payload,...(learningEpoch?{learningEpoch}:{})}),signal:AbortSignal.timeout(30000)}).catch(()=>{});
 }
 function queueReading(p=poem,extra={}) {
   const s=state(p),result=poemAssessment(p),groups={};
@@ -1170,7 +1178,7 @@ async function sendChat(text,retry=false,presetId=null,inputMode=null) {
   if(retry){if(s.chat.at(-1)?.role!=='user')return;}
   if(chatUsedUp()){
     if(!retry){if(!text?.trim())return;s.chat.push({role:'user',content:text.trim().slice(0,1000)});}
-    s.chat.push({role:'assistant',content:CHAT_ENOUGH});s.chat=s.chat.slice(-30);persist();renderChat();return;
+    s.chat.push({role:'assistant',content:CHAT_ENOUGH});s.chat=s.chat.slice(-30);saveChat(p);renderChat();return;
   }
   else {if(!text?.trim())return;mode=inputMode==='suggestion'?'suggestion':chatVoiceInserted?'voice':'typed';chatVoiceInserted=false;const content=text.trim().slice(0,1000),preset=matchPoetPreset(p.id,content);s.chat.push({role:'user',content,...(presetId&&preset?.id===presetId?{presetId,presetVersion:preset.version}:{})});s.chat=s.chat.slice(-30);persist();}
   const audit=research.context({activity:'chat',itemId:'p'+p.id+'.chat'}),requestedAt=performance.now();
@@ -1197,7 +1205,7 @@ async function sendChat(text,retry=false,presetId=null,inputMode=null) {
     if(version!==routeVersion)return;
     if(typeof data.reply!=='string'||!data.reply.trim())throw new Error('暫時未能回答，可以再送一次。');
     if(collectResearch&&data.researchRecorded===false)research.emit('error',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,error:{code:'storage_unavailable',retryable:true}});
-    s.chat.push({role:'assistant',content:data.reply});persist();renderChat();
+    s.chat.push({role:'assistant',content:data.reply});saveChat(p);renderChat();
     research.emit('feedback_shown',{poemId:p.id,activity:'chat',attemptId:audit.attemptId,itemId:audit.itemId,metrics:{assistantCharacters:Math.min(20000,data.reply.length),latencyMs:Math.min(600000,Math.round(performance.now()-requestedAt)),...researchExtra(()=>firstAt!==null?{firstResponseMs:Math.min(600000,Math.max(0,Math.round(firstAt-requestedAt)))}:{})}});
   } catch(error) {
     partial?.closest('[data-streaming]')?.remove();
@@ -1512,8 +1520,14 @@ async function init(){
           else if(reading?.learningState?.challenge&&local.challenge)local.challenge=mergeChallengeRecords(local.challenge,reading.learningState.challenge,CHALLENGE_SETS[p.slug]);
           const report=sections?.report;
           if(report?.reportVersion===REPORT_VERSION&&report.studentGrade===school.user.grade&&!local.report){local.report=report.content;local.reportVersion=report.reportVersion;local.reportStudentGrade=report.studentGrade;}
+          const chat=sections?.chat,chatTime=Number(chat?.updatedAt)||0;
+          if(Array.isArray(chat?.messages)&&chatTime>(Number(local.chatUpdatedAt)||0)&&!(chatBusy&&p===poem)){
+            local.chat=chat.messages.filter(m=>['user','assistant'].includes(m?.role)&&typeof m.content==='string').slice(-30).map(({role,content})=>({role,content:content.slice(0,4000)}));
+            local.chatUpdatedAt=chatTime;
+          }
         }
         persist();
+        if(routeVersion===hydratedRoute&&!chatBusy&&poem&&view==='chat')renderChat();
         if(routeVersion===hydratedRoute&&!recordBusy&&poem&&['record','report'].includes(view)){
           if(view==='report')renderReport();else renderRecord();
           if(state(poem).reading.some(Boolean))void recordings.hydrate({poemId:poem.id});

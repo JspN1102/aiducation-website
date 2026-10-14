@@ -14,7 +14,8 @@ const { getPoem } = poemHelpers;
  *
  * Body: {
  *   syncId, studentId, name, grade, cls, poemId,
- *   section: "reading"|"writing"|"report",
+ *   section: "reading"|"writing"|"report"|"chat",
+ *   （chat = 学生自己最近 30 句聊天，只用来换设备时取回，老师端数据不返回）
  *   payload: { ... }
  * }
  */
@@ -47,7 +48,7 @@ export default async function handler(req, res) {
         typeof name !== 'string' || name.length > 64 ||
         !Number.isInteger(grade) || grade < 1 || grade > 6 ||
         typeof cls !== 'string' || !/^[A-Za-z]$/.test(cls) || !getPoem(poemId, null) ||
-        !['reading', 'writing', 'report'].includes(section) ||
+        !['reading', 'writing', 'report', 'chat'].includes(section) ||
         !payload || typeof payload !== 'object' || Array.isArray(payload) ||
         (syncId != null && (typeof syncId !== 'string' || !syncId || syncId.length > 64))) {
       return res.status(400).json({ ok: false, error: 'Invalid student, poem or payload fields' });

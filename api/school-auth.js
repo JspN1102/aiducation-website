@@ -13,7 +13,7 @@ async function progress(req) {
   const allowedPoems=auth.allowedPoemIds(actor);
   if (studentStore.mode()) {
     const targets = allowedPoems.flatMap(poem_id =>
-      ['reading', 'writing', 'report'].map(section => ({ poem_id, section })));
+      ['reading', 'writing', 'report', 'chat'].map(section => ({ poem_id, section })));
     let next = 0;
     await Promise.all(Array.from({ length: 4 }, async () => {
       while (next < targets.length) {

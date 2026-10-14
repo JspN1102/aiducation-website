@@ -134,6 +134,8 @@ export default async function handler(req, res) {
         .map(person => [studentLearning.storageId(person, cohort), person.id]));
     }
     for (const row of rows) {
+      // 聊天全文只有 Jasper 在後台看得到；这里的老师数据不带聊天
+      if (row.section === 'chat') continue;
       if (rosterIds && !rosterIds.has(row.student_id)) continue;
       const sid = rosterIds ? rosterIds.get(row.student_id) : row.student_id;
       if (!studentMap[sid]) studentMap[sid] = { id: sid, name: row.name, sectionTimes: Object.create(null) };

@@ -9,7 +9,7 @@ const MAX_CLASS_RECORDS = 600;
 const MAX_CLASS_BYTES = 16 * 1024 * 1024;
 const MAX_EXPORT_RECORDS = 20000;
 const MAX_EXPORT_BYTES = 256 * 1024 * 1024;
-const SECTIONS = new Set(['reading', 'writing', 'report']);
+const SECTIONS = new Set(['reading', 'writing', 'report', 'chat']);
 const mode = () => process.env.STUDENT_STORE === 'blob';
 const configured = () => !!process.env.BLOB_READ_WRITE_TOKEN && !!process.env.DATA_READ_TOKEN;
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -123,7 +123,7 @@ function createStudentStore({ client = blob, now = Date.now } = {}) {
       if (!result || !Array.isArray(result.blobs)) throw new Error('Invalid student listing');
       for (const item of result.blobs) {
         if (typeof item.pathname !== 'string' || !item.pathname.startsWith(prefix) ||
-            !new RegExp(`^${NAMESPACE}/class/[1-6]/[A-Z]/poem/(?:[1-9]|1[0-2])/[a-f0-9]{64}/(?:reading|writing|report)\\.json$`).test(item.pathname) ||
+            !new RegExp(`^${NAMESPACE}/class/[1-6]/[A-Z]/poem/(?:[1-9]|1[0-2])/[a-f0-9]{64}/(?:reading|writing|report|chat)\\.json$`).test(item.pathname) ||
             !Number.isFinite(item.size) || item.size < 1 || item.size > MAX_RECORD_BYTES || paths.has(item.pathname)) {
           throw new Error('Invalid student listing item');
         }
