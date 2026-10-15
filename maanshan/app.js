@@ -8,18 +8,19 @@ import {getSpeechAudioURL, speechChunks} from './speech-audio.mjs?v=20261010-sch
 import {getRecitationAudioURL,getRecitationSequence} from './recitation-audio.mjs?v=20261005-school40';
 import {schoolTtsURL,schoolTtsRemote} from './school-audio-url.mjs?v=20260930-school29';
 import {mountShishi} from './shishi.mjs?v=20261007-school46';
+import {openSelfCheck, selfCheckClauses} from './self-check.mjs?v=20261015-school69';
 import {mountLibraryShishi} from './library-shishi.mjs?v=20261007-school46';
 import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school9';
 import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school9';
 import {mountLessonMap} from './lesson-map.mjs?v=20261006-school43';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261006-school43';
 import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20261006-school43';
-import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20260922-school22';
+import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20261015-school69';
 import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, micDeniedHelp, micNeedsReload, unsupportedHelp, prewarmAssessment} from './recording-audio.mjs?v=20261013-school62b';
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
 import {requestJSON, requestChat} from './network.mjs?v=20261011-school58';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
-import {schoolSession} from './bootstrap.mjs?v=20261015-school68';
+import {schoolSession} from './bootstrap.mjs?v=20261015-school69';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261013-school62b';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20261013-school60';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school41';
@@ -727,7 +728,18 @@ function renderRecord() {
 // word's status (core.mjs mapAssessment), so a score and its words agree.
 function scoreBand(score){return typeof score!=='number'||!Number.isFinite(score)?'unknown':score<60?'error':score<80?'warn':'ok';}
 // The word score ignores the tone, so a clearly wrong tone is practised too.
-function recordWeakWords(){const line=poem.lines[currentLine];return state(poem).reading[currentLine]?.words.filter(w=>Number.isFinite(w.score)&&(w.score<80||w.missing===true||syllableParts(w,line)?.tone.state==='miss'))||[];}
+function recordWeakWords(){return weakWordsFor(state(poem).reading[currentLine],poem.lines[currentLine]);}
+// school69 card-order study: each recording gets one order at random (from its own
+// random id, so a reload keeps it) and the order shown is logged. position = the
+// line's order; tonefirst = wrong tones, then wrong or unclear initials/finals and
+// unread characters, then the rest, each group in line order.
+function cardOrderArm(result){const last=String(result?.recordingId||'').slice(-1);return /^[0-9a-f]$/i.test(last)&&parseInt(last,16)%2?'tonefirst':'position';}
+function weakWordsFor(result,line){
+  const weak=result?.words?.filter(w=>Number.isFinite(w.score)&&(w.score<80||w.missing===true||syllableParts(w,line)?.tone.state==='miss'))||[];
+  if(cardOrderArm(result)!=='tonefirst')return weak;
+  const rank=w=>{const parts=syllableParts(w,line);if(parts?.tone?.state==='miss')return 0;if(w.missing===true||parts?.missing||['miss','near'].includes(parts?.initial?.state)||['miss','near'].includes(parts?.final?.state))return 1;return 2;};
+  return weak.map((w,order)=>({w,order,rank:rank(w)})).sort((a,b)=>a.rank-b.rank||a.order-b.order).map(({w})=>w);
+}
 const partStates={ok:['check','讀對了'],near:['','差一點'],miss:['x','要再練'],unknown:['','未能判斷'],none:['','沒有聲母']};
 function syllablePartsHTML(parts,char){
   if(!parts||parts.missing)return '';
@@ -786,6 +798,37 @@ function recordControlsHTML(){
   return '<div class="record-actions"><button class="mic-button" data-action="record-start" aria-label="開始朗讀">'+icon('mic')+'<span>開始朗讀</span></button></div><p class="record-status" id="record-status" role="status"></p>';
 }
 function assessmentStatus(message){const controls=$('#record-controls');if(controls)controls.innerHTML='<p class="record-status" role="status"><span class="spinner"></span> '+esc(message)+'</p>';}
+// 輕量自查 (school69): after every SELF_CHECK_EVERY recordings of a poem (any lines, in
+// any mix) the pupil marks the characters they think they misread while the line is
+// scored. The n-th painting given for a poem is the painting of its n-th line, round
+// and round; 跳過 gives none, so the same painting waits for the next time. The counts
+// travel with the poem's progress to the pupil's other devices.
+const SELF_CHECK_EVERY=8;
+let selfCheck=null;
+function selfCheckCount(value){const n=key=>Math.max(0,Math.trunc(Number(value?.[key]))||0);return {reads:n('reads'),checks:Math.max(n('checks'),n('gifts')),gifts:n('gifts')};}
+function maybeSelfCheck(p,index,blob,audit,durationMs){
+  if(durationMs<1500||blob.size<100)return;
+  const s=state(p),count=selfCheckCount(s.selfCheck);
+  count.reads++;
+  if(count.reads<SELF_CHECK_EVERY){s.selfCheck=count;persist();return;}
+  count.reads=0;count.checks++;s.selfCheck=count;persist();
+  const line=p.lines[index],pictureLine=count.gifts%p.lines.length;
+  selfCheck?.handle.close();
+  const handle=openSelfCheck({clauses:selfCheckClauses(line.text,line.pinyin),caption:p.lines[pictureLine].text,
+    picture:imageAsset('media/selfcheck/p'+p.id+'-l'+(pictureLine+1)+'.webp'),
+    stillURL:imageAsset('media/shishi/guide-still-20260919a.webp'),waveURL:imageAsset('media/shishi/guide-wave-20260919a.webp'),
+    speak:(text,button)=>{if(text)void speak(text,'',button);else if(activeSpeechButton?.closest?.('.self-check'))stopTransient();},
+    onAnswer:({choice,tapped,elapsedMs,selectionChanges})=>{
+      if(choice!=='skipped'){const kept=selfCheckCount(state(p).selfCheck);kept.gifts++;state(p).selfCheck=kept;persist();if(school.enabled)queueReading(p);}
+      research.emit('answer_submitted',{activity:'read',poemId:p.id,attemptId:audit.attemptId,itemId:'p'+p.id+'.l'+index+'.selfcheck',
+      response:{choiceId:choice,...(tapped.length?{placements:tapped.slice(0,30).map(i=>({slotId:'c'+i,choiceId:'tapped'}))}:{})},
+      result:{status:choice==='skipped'?'skipped':'completed',score:null,correct:null},
+      metrics:{elapsedMs:Math.min(21600000,elapsedMs),selectionChanges:Math.min(1000,selectionChanges)},
+      context:{lineIndex:index,position:Math.min(200,count.checks),total:p.lines.length}});
+    },
+    onClose:()=>{if(selfCheck?.handle!==handle)return;selfCheck=null;if(view==='record'&&poem===p)$('#record-tool .focus-word, #record-tool .record-feedback-title, #record-tool [data-action="record-start"]')?.focus({preventScroll:true});}});
+  selfCheck={handle,blob};
+}
 async function startRecording() {
   if(recordBusy)return;if(recordUnsupported){recordStep='read';renderRecord();return;}
   stopMedia();cancelRecording();recordBusy=true;micDenied='';
@@ -814,7 +857,7 @@ async function startRecording() {
     const localRecorder=new MediaRecorder(acquired,mime?{mimeType:mime}:{});recorder=localRecorder;const chunks=[];
     localRecorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
     localRecorder.onerror=event=>{research.emit('error',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,error:{code:researchErrorCode(event.error),retryable:true},context:researchErrorContext(event.error)});if(!isCurrent())return;cancelRecording();renderRecord();toast(recordingErrorMessage(event.error));};
-    localRecorder.onstop=()=>{acquired.getTracks().forEach(t=>t.stop());if(isCurrent()){research.emit('recording_stopped',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,metrics:{audioDurationMs:Math.max(0,Math.min(600000,Date.now()-recordStarted))},context:{stopReason:recordStopReason}});stream=null;clearInterval(recordTimer);assessRecording(new Blob(chunks,{type:localRecorder.mimeType}),p,index,version,generation,context);}};
+    localRecorder.onstop=()=>{acquired.getTracks().forEach(t=>t.stop());if(isCurrent()){research.emit('recording_stopped',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,metrics:{audioDurationMs:Math.max(0,Math.min(600000,Date.now()-recordStarted))},context:{stopReason:recordStopReason}});stream=null;clearInterval(recordTimer);const blob=new Blob(chunks,{type:localRecorder.mimeType});maybeSelfCheck(p,index,blob,audit,Date.now()-recordStarted);assessRecording(blob,p,index,version,generation,context);}};
     localRecorder.start();pendingRecordings.delete(`${p.id}-${index}`);recordStarted=Date.now();
     research.emit('recording_started',{activity:'read',poemId:audit.poemId,attemptId:audit.attemptId,itemId:audit.itemId,...researchExtra(()=>{const type=String(localRecorder.mimeType||'').toLowerCase();return {metrics:{latencyMs:Math.min(600000,Math.max(0,Math.round(performance.now()-tOpen)))},context:{recorderFormat:type===''?'default':type.includes('webm')?(type.includes('opus')?'webm-opus':'webm'):type.includes('mp4')?'mp4':type.includes('ogg')?'ogg':'other'}};})});
     controls.innerHTML=`<div class="record-wave live">${'<span></span>'.repeat(19)}</div><div class="record-actions"><button class="mic-button recording" data-action="record-stop" aria-label="完成錄音" title="完成錄音">${icon('square')}<span>讀好了</span></button></div><p class="record-status" id="record-status">錄音中 · 0:00</p>`;icons();
@@ -879,6 +922,8 @@ async function assessRecording(blob,p,index,version,generation,context,existing=
     research.emit('feedback_shown',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,result:{status:'completed',score:result.total_score,correct:null},...researchExtra(()=>({metrics:{latencyMs:Math.min(600000,Math.max(0,Math.round(performance.now()-tAssess)))},context:{...(uploadPath?{uploadPath}:{}),resend:existing!==null}}))});
     if(raw.researchRecorded===false)research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code:'storage_unavailable',retryable:true}});
     pendingRecordings.delete(key);
+    const cards=weakWordsFor(result,p.lines[index]);
+    if(cards.length)research.emit('item_presented',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index+'.cards',response:{choiceId:'order-'+cardOrderArm(result)},context:{lineIndex:index,optionOrder:cards.slice(0,30).map(w=>Number.isInteger(w.i)?'c'+w.i:'x')}});
     if(state(p).reading.every(Boolean))research.emit('activity_end',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.reading',result:{status:'completed',score:null,correct:null}});
     committed=true;if(isCurrent()){recordStep='result';recordWordIndex=0;}
     queueReading(p,{lineIdx:index,lineScore:result.total_score});
@@ -891,6 +936,7 @@ async function assessRecording(blob,p,index,version,generation,context,existing=
   }
   finally {
     closeContext();scoringRequests.delete(controller);pending.scoring=false;
+    if(selfCheck?.blob===blob)selfCheck.handle.scoreReady(committed?'ok':'failed');
     if(isCurrent()){cancelRecording();setRecordStep(recordStep);}
     // The pupil came back to this line (its reading or older result) or its
     // report while it was scored. Audio playing on the report is not cut off.
@@ -1303,7 +1349,7 @@ function route() {
   reportGeneration++;
   sceneStage?.destroy();sceneStage=null;
   exploration?.destroy();exploration=null;
-  routeVersion++;stopMedia();cancelRecording();requests.forEach(c=>c.abort());requests.clear();chatBusy=false;
+  routeVersion++;stopMedia();cancelRecording();selfCheck?.handle.close();requests.forEach(c=>c.abort());requests.clear();chatBusy=false;
   disposeAnimation?.();disposeAnimation=null;
   clearTimeout(toastTimer);$('#toast').classList.remove('visible');
   if($('#video-dialog').open)$('#video-dialog').close();
@@ -1439,7 +1485,7 @@ function reloadLearning(epoch){
   if(!school.enabled||sessionLocked)return;
   sessionLocked=true;routeVersion++;activityLoad++;reportGeneration++;
   recordings.stop();research.stop();answerOutbox.stop();
-  stopMedia();cancelRecording();requests.forEach(controller=>controller.abort());scoringRequests.forEach((_,controller)=>controller.abort());
+  stopMedia();cancelRecording();selfCheck?.handle.close();requests.forEach(controller=>controller.abort());scoringRequests.forEach((_,controller)=>controller.abort());
   poemSwipe?.destroy();sceneStage?.destroy();challenge?.destroy();lessonMap?.destroy();exploration?.destroy();shishi?.destroy();libraryShishi?.destroy();disposeAnimation?.();
   if(isTeacher&&epoch){saved={};writeStorage(STORE,{});writeStorage(PENDING,[]);writeStorage(LEARNING_EPOCH,epoch);}
   history.replaceState(null,'',location.pathname+location.search);location.reload();
@@ -1515,6 +1561,7 @@ async function init(){
             if(Array.isArray(snapshot.reading)&&snapshot.reading.length===p.lines.length)local.reading=snapshot.reading;
             if(snapshot.challenge&&typeof snapshot.challenge==='object')local.challenge=mergeChallengeRecords(snapshot.challenge,local.challenge,CHALLENGE_SETS[p.slug]);
             if(snapshot.exploration&&typeof snapshot.exploration==='object')local.exploration=snapshot.exploration;
+            if(snapshot.selfCheck){const remote=selfCheckCount(snapshot.selfCheck),mine=selfCheckCount(local.selfCheck);if(remote.checks>=mine.checks&&remote.gifts>=mine.gifts)local.selfCheck=remote;}
             local.updatedAt=remoteTime;
           }
           else if(reading?.learningState?.challenge&&local.challenge)local.challenge=mergeChallengeRecords(local.challenge,reading.learningState.challenge,CHALLENGE_SETS[p.slug]);

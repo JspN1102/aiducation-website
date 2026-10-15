@@ -5439,3 +5439,70 @@ html[data-showcase] .site-header{display:none}
   .sound-case *,.sound-case *::after{animation:none!important;transition:none!important}
   .challenge-shell .sound-case-option[aria-pressed="true"]{transform:none}
 }
+
+/* self-check.css */
+/* school69 輕量自查: Shishi asks which characters felt wrong, then gives a small painting. */
+dialog.self-check{--tap:#e2862f;--tap-soft:#fff3e4;width:min(900px,calc(100vw - 36px));max-width:none;max-height:calc(100dvh - 24px);overflow:auto;padding:0;border:0;border-radius:28px;background:#fffdf6;color:var(--ink);box-shadow:0 24px 60px #304c4330,0 0 0 1px #e7e2d2}
+/* Nearly opaque: the score arriving behind the sheet is not visible while the pupil chooses. */
+dialog.self-check::backdrop{background:#f3f1e8f2;backdrop-filter:blur(8px)}
+.self-check-sheet{position:relative;padding:26px 30px 26px}
+.self-check-sheet::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 12% 0,#f4ead2 0,transparent 42%),radial-gradient(circle at 100% 100%,#eef2e4 0,transparent 40%);pointer-events:none}
+.self-check-top{position:relative;display:flex;align-items:flex-end;gap:16px;margin-bottom:22px}
+.self-check-shishi{width:118px;height:160px;flex-shrink:0}
+.self-check-shishi img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 10px #304c4322)}
+.self-check-bubble{position:relative;background:#fff;border:2px solid #e3dcc6;border-radius:22px;padding:16px 22px 15px;margin-bottom:34px;box-shadow:0 6px 0 #ece4cc}
+.self-check-bubble::after{content:"";position:absolute;left:-13px;bottom:22px;width:22px;height:22px;background:#fff;border-left:2px solid #e3dcc6;border-bottom:2px solid #e3dcc6;transform:rotate(45deg);border-radius:0 0 0 5px}
+.self-check-bubble h2{font:700 25px/1.45 var(--serif);margin:0;color:var(--ink)}
+.self-check-bubble p{margin:6px 0 0;font-size:15px;color:var(--muted)}
+.self-check-speak{display:inline-flex;align-items:center;gap:6px;margin-left:8px;vertical-align:3px;min-height:32px;border:0;background:var(--green-soft);color:var(--green);border-radius:99px;padding:4px 12px;font:500 14px var(--sans);cursor:pointer}
+.self-check-speak svg{width:17px;height:17px}
+.self-check-speak[data-audio-state]{background:var(--green);color:#fff}
+.self-check-tiles{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;margin:4px 0 26px}
+.self-check-clause{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.self-check-tile{--size:92px;position:relative;width:var(--size);border:0;background:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font:inherit;color:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.self-check-tiles[data-size="small"] .self-check-tile{--size:68px}
+.self-check-pinyin{font:500 17px 'School Pinyin',var(--sans);color:var(--muted);height:24px;white-space:nowrap}
+.self-check-box{position:relative;width:var(--size);height:var(--size);border-radius:16px;background:#fff;border:2px solid #e6e0cc;display:grid;place-items:center;font:600 calc(var(--size)*.58)/1 var(--serif);box-shadow:0 5px 0 #ebe5d0;transition:transform .15s,background .15s}
+.self-check-box::before{content:"";position:absolute;inset:10px;background:linear-gradient(#dcdccd,#dcdccd) center/1px 100% no-repeat,linear-gradient(#dcdccd,#dcdccd) center/100% 1px no-repeat;opacity:.55;border-radius:4px}
+.self-check-box b{position:relative;font-weight:600}
+.self-check-tile.on .self-check-box{background:var(--tap-soft);border-color:#f0c48f;box-shadow:0 5px 0 #f0d8b4;transform:translateY(-2px)}
+.self-check-tile.on .self-check-pinyin{color:#b8661c}
+.self-check-ring{position:absolute;left:-12%;top:-9%;width:124%;height:118%;pointer-events:none;overflow:visible}
+.self-check-ring path{fill:none;stroke:var(--tap);stroke-width:5.5;stroke-linecap:round}
+.self-check-tile:not(.on) .self-check-ring{display:none}
+.self-check-actions{position:relative;display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
+.self-check-button{min-width:230px;min-height:62px;border-radius:99px;font:600 20px var(--sans);display:inline-flex;align-items:center;justify-content:center;gap:10px;border:2px solid transparent;padding:10px 26px;cursor:pointer;touch-action:manipulation}
+.self-check-button svg{width:24px;height:24px}
+.self-check-button.done{background:var(--green);color:#fff;box-shadow:0 5px 0 #0e5a48}
+.self-check-button.done:disabled{background:#c9d3c8;box-shadow:0 5px 0 #b5c0b4;color:#fff;cursor:default}
+.self-check-button.good{background:#fff;border-color:#d6dccd;color:var(--green);box-shadow:0 5px 0 #e4e6da}
+.self-check-button.good:disabled{color:#a9b5ab;cursor:default}
+.self-check-skip{position:relative;display:block;margin:12px auto -8px;min-height:36px;font:14px var(--sans);color:#8f978c;border:0;background:none;padding:4px 14px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.self-check-skip:disabled{opacity:.45;cursor:default}
+.self-check-reward{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;padding:4px 0 6px}
+.self-check-reward .self-check-top{justify-content:center;margin-bottom:10px}
+.self-check-picture{margin:2px 0 18px;background:#fff;padding:12px 12px 10px;border-radius:14px;box-shadow:0 10px 26px #304c4324,0 0 0 1px #ece6d4;transform:rotate(-1.5deg)}
+.self-check-picture img{display:block;width:min(340px,62vw,calc(100dvh - 420px));min-width:200px;height:auto;aspect-ratio:1;border-radius:8px;background:#f1eee2}
+.self-check-picture figcaption{font:600 20px var(--serif);letter-spacing:4px;text-align:center;margin-top:8px;color:var(--ink);max-width:min(340px,62vw)}
+.self-check-footer{min-height:62px;display:flex;align-items:center;justify-content:center}
+.self-check-listen{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:16px;margin:0}
+.self-check-dots i{display:inline-block;width:7px;height:7px;margin:0 2px;border-radius:50%;background:var(--green);animation:self-check-dot 1.2s infinite ease-in-out}
+.self-check-dots i:nth-child(2){animation-delay:.2s}.self-check-dots i:nth-child(3){animation-delay:.4s}
+@keyframes self-check-dot{0%,100%{opacity:.3}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.self-check-dots i{animation:none;opacity:.7}.self-check-box{transition:none}}
+/* Phones: a bottom sheet with smaller tiles. */
+@media (max-width:600px){
+  dialog.self-check{width:100vw;max-height:94dvh;margin:auto 0 0;border-radius:26px 26px 0 0}
+  .self-check-sheet{padding:18px 14px 22px}
+  .self-check-top{gap:8px;margin-bottom:16px}.self-check-shishi{width:78px;height:108px}
+  .self-check-bubble{padding:12px 14px;margin-bottom:22px;border-radius:18px}.self-check-bubble h2{font-size:19px}.self-check-bubble p{font-size:13px}
+  .self-check-speak{margin:6px 0 0;display:flex;width:max-content}
+  .self-check-clause{gap:6px}.self-check-tiles{gap:10px}
+  .self-check-tile,.self-check-tiles[data-size="small"] .self-check-tile{--size:44px}
+  .self-check-box{height:52px;border-radius:11px;font-size:30px}.self-check-box::before{inset:6px}
+  .self-check-pinyin{font-size:12px;height:18px}
+  .self-check-ring path{stroke-width:4.5}
+  .self-check-actions{gap:10px}.self-check-button{min-width:0;flex:1;font-size:16px;min-height:54px;padding:8px 12px}
+  .self-check-picture img{width:min(72vw,calc(100dvh - 380px))}
+  .self-check-picture figcaption{font-size:17px;letter-spacing:2px;max-width:72vw}
+}
