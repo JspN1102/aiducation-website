@@ -98,6 +98,8 @@ export function openSelfCheck({clauses,picture,caption,stillURL,waveURL,speak=()
   });
   timers.push(setTimeout(()=>{ready=true;for(const name of ['good','skip']){const button=$('[data-self-check="'+name+'"]');if(button)button.disabled=false;}updateDone();},enableAfter));
   document.body.append(dialog);
+  // Fetch the painting now so it is ready to spread in when the pupil answers.
+  if(picture){const early=new Image();early.src=picture;}
   try{dialog.showModal();}catch{dialog.setAttribute('open','');}
   return {scoreReady,close,get stage(){return stage;}};
 }

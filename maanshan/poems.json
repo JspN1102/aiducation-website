@@ -125,7 +125,7 @@
       "authorBio": "王安石是北宋政治家、文學家，字介甫，號半山。他的詩語言凝練，常把眼前景物與深切感情結合。",
       "theme": "思鄉",
       "lines": [
-        {"text": "京口瓜洲一水間", "simplified": "京口瓜洲一水间", "pinyin": ["jīng", "kǒu", "guā", "zhōu", "yī", "shuǐ", "jiān"], "punctuation": "，", "scene": 1},
+        {"text": "京口瓜洲一水間", "simplified": "京口瓜洲一水间", "pinyin": ["jīng", "kǒu", "guā", "zhōu", "yì", "shuǐ", "jiān"], "punctuation": "，", "scene": 1},
         {"text": "鍾山祇隔數重山", "simplified": "钟山只隔数重山", "pinyin": ["zhōng", "shān", "zhǐ", "gé", "shù", "chóng", "shān"], "punctuation": "。", "scene": 2},
         {"text": "春風又綠江南岸", "simplified": "春风又绿江南岸", "pinyin": ["chūn", "fēng", "yòu", "lǜ", "jiāng", "nán", "àn"], "punctuation": "，", "scene": 3},
         {"text": "明月何時照我還", "simplified": "明月何时照我还", "pinyin": ["míng", "yuè", "hé", "shí", "zhào", "wǒ", "huán"], "punctuation": "。", "scene": 4}
@@ -207,7 +207,7 @@
       "lines": [
         {"text": "天街小雨潤如酥", "simplified": "天街小雨润如酥", "pinyin": ["tiān", "jiē", "xiǎo", "yǔ", "rùn", "rú", "sū"], "punctuation": "，", "scene": 1},
         {"text": "草色遙看近卻無", "simplified": "草色遥看近却无", "pinyin": ["cǎo", "sè", "yáo", "kàn", "jìn", "què", "wú"], "punctuation": "。", "scene": 2},
-        {"text": "最是一年春好處", "simplified": "最是一年春好处", "pinyin": ["zuì", "shì", "yī", "nián", "chūn", "hǎo", "chù"], "punctuation": "，", "scene": 3},
+        {"text": "最是一年春好處", "simplified": "最是一年春好处", "pinyin": ["zuì", "shì", "yì", "nián", "chūn", "hǎo", "chù"], "punctuation": "，", "scene": 3},
         {"text": "絕勝煙柳滿皇都", "simplified": "绝胜烟柳满皇都", "pinyin": ["jué", "shèng", "yān", "liǔ", "mǎn", "huáng", "dū"], "punctuation": "。", "scene": 4}
       ],
       "dictation": [

@@ -46,7 +46,15 @@ dialog.self-check::backdrop{background:#f3f1e8f2;backdrop-filter:blur(8px)}
 .self-check-dots i{display:inline-block;width:7px;height:7px;margin:0 2px;border-radius:50%;background:var(--green);animation:self-check-dot 1.2s infinite ease-in-out}
 .self-check-dots i:nth-child(2){animation-delay:.2s}.self-check-dots i:nth-child(3){animation-delay:.4s}
 @keyframes self-check-dot{0%,100%{opacity:.3}50%{opacity:1}}
-@media (prefers-reduced-motion:reduce){.self-check-dots i{animation:none;opacity:.7}.self-check-box{transition:none}}
+/* The sheet and the painting spread like ink on paper, the same blot as the 文化村 album on aiducation.asia. */
+dialog.self-check[open]{animation:self-check-bleed 2.6s cubic-bezier(.5,.05,.4,1)}
+dialog.self-check[open]::backdrop{animation:self-check-fade .9s ease-out}
+.self-check-sheet,.self-check-reward{animation:self-check-ink 2s cubic-bezier(.4,.1,.3,1)}
+.self-check-picture img{animation:self-check-bleed 2.8s cubic-bezier(.5,.05,.4,1) .2s backwards}
+@keyframes self-check-bleed{from{-webkit-mask:url('media/ink-blot.webp') 50% 50%/0% 0% no-repeat;mask:url('media/ink-blot.webp') 50% 50%/0% 0% no-repeat}to{-webkit-mask:url('media/ink-blot.webp') 50% 50%/300% 300% no-repeat;mask:url('media/ink-blot.webp') 50% 50%/300% 300% no-repeat}}
+@keyframes self-check-fade{from{opacity:0}}
+@keyframes self-check-ink{from{opacity:0;filter:blur(8px)}}
+@media (prefers-reduced-motion:reduce){.self-check-dots i{animation:none;opacity:.7}.self-check-box{transition:none}dialog.self-check[open],dialog.self-check[open]::backdrop,.self-check-sheet,.self-check-reward,.self-check-picture img{animation:none}}
 /* Phones: a bottom sheet with smaller tiles. */
 @media (max-width:600px){
   dialog.self-check{width:100vw;max-height:94dvh;margin:auto 0 0;border-radius:26px 26px 0 0}

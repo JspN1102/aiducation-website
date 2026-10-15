@@ -8,7 +8,7 @@ import {getSpeechAudioURL, speechChunks} from './speech-audio.mjs?v=20261010-sch
 import {getRecitationAudioURL,getRecitationSequence} from './recitation-audio.mjs?v=20261005-school40';
 import {schoolTtsURL,schoolTtsRemote} from './school-audio-url.mjs?v=20260930-school29';
 import {mountShishi} from './shishi.mjs?v=20261007-school46';
-import {openSelfCheck, selfCheckClauses} from './self-check.mjs?v=20261015-school69';
+import {openSelfCheck, selfCheckClauses} from './self-check.mjs?v=20261016-school69d';
 import {mountLibraryShishi} from './library-shishi.mjs?v=20261007-school46';
 import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school9';
 import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school9';
@@ -20,10 +20,10 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
 import {requestJSON, requestChat} from './network.mjs?v=20261011-school58';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
-import {schoolSession} from './bootstrap.mjs?v=20261016-school69c';
+import {schoolSession} from './bootstrap.mjs?v=20261016-school69d';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261013-school62b';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20261013-school60';
-import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school41';
+import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261016-school69d';
 import {getPoetSuggestions, matchPoetPreset} from './poet-presets.mjs?v=20261005-school40';
 import {audioCandidates} from './audio-source.mjs?v=20261005-school40';
 import {rememberRoute,orderRoutes} from './media-route.mjs?v=20260923-school23';
@@ -253,14 +253,16 @@ function phonemeMarkup(char,pinyin){return '<phoneme alphabet="py" ph="'+pinyinN
 function lineMarkup(line,text){
   const phrase=String(text),characters=Array.from(String(line?.text||'')).filter(char=>/\p{Script=Han}/u.test(char));
   let cursor=0;
-  const out=['<speak>'];
+  const parts=[];
   for(const char of phrase){
-    if(!/\p{Script=Han}/u.test(char)){out.push(xmlText(char));continue;}
+    if(!/\p{Script=Han}/u.test(char)){parts.push({text:char});continue;}
     const index=characters.indexOf(char,cursor),p=line?.pinyin?.[index];
-    out.push(p?phonemeMarkup(char,p):xmlText(char));
+    parts.push({char,reading:p?pinyinNumbered(p):null});
     cursor=index>=0?index+1:cursor+1;
   }
-  out.push('</speak>');return out.join('');
+  // A third tone before another third tone is spoken rising (小雨 xiáo yǔ); the page keeps the book tones.
+  parts.forEach((part,i)=>{if(part.reading?.endsWith('3')&&parts[i+1]?.reading?.endsWith('3'))part.reading=part.reading.slice(0,-1)+'2';});
+  return '<speak>'+parts.map(part=>part.char===undefined?xmlText(part.text):part.reading?'<phoneme alphabet="py" ph="'+part.reading+'">'+xmlText(part.char)+'</phoneme>':xmlText(part.char)).join('')+'</speak>';
 }
 function wordMarkup(char,pinyin){return '<speak>'+phonemeMarkup(char,pinyin)+'</speak>';}
 function challengeMarkup(target){
