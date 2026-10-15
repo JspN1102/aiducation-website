@@ -20,7 +20,7 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
 import {requestJSON, requestChat} from './network.mjs?v=20261011-school58';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
-import {schoolSession} from './bootstrap.mjs?v=20261015-school69';
+import {schoolSession} from './bootstrap.mjs?v=20261016-school69b';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261013-school62b';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20261013-school60';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261005-school41';
@@ -815,7 +815,7 @@ function maybeSelfCheck(p,index,blob,audit,durationMs){
   const line=p.lines[index],pictureLine=count.gifts%p.lines.length;
   selfCheck?.handle.close();
   const handle=openSelfCheck({clauses:selfCheckClauses(line.text,line.pinyin),caption:p.lines[pictureLine].text,
-    picture:imageAsset('media/selfcheck/p'+p.id+'-l'+(pictureLine+1)+'.webp'),
+    picture:imageAsset('media/selfcheck-v2/p'+p.id+'-l'+(pictureLine+1)+'.webp'),
     stillURL:imageAsset('media/shishi/guide-still-20260919a.webp'),waveURL:imageAsset('media/shishi/guide-wave-20260919a.webp'),
     speak:(text,button)=>{if(text)void speak(text,'',button);else if(activeSpeechButton?.closest?.('.self-check'))stopTransient();},
     onAnswer:({choice,tapped,elapsedMs,selectionChanges})=>{

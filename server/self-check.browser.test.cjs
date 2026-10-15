@@ -89,7 +89,7 @@ async function eighthRecordingOpensWithPictureByTurn(){
   check('tapping again takes a character back off',(await done.innerText()).includes('2 個')&&await done.isEnabled()&&await tiles.nth(4).getAttribute('aria-pressed')==='false');
   await done.click();
   const picture=dialog(page).locator('.self-check-picture img');await picture.waitFor();
-  check('the first time for this poem shows the first line painting, whichever line was read',(await picture.getAttribute('src')).includes('media/selfcheck/p1-l1.webp')&&(await dialog(page).locator('figcaption').innerText())==='鵝鵝鵝');
+  check('the first time for this poem shows the first line painting, whichever line was read',(await picture.getAttribute('src')).includes('media/selfcheck-v2/p1-l1.webp')&&(await dialog(page).locator('figcaption').innerText())==='鵝鵝鵝');
   check('while the score is pending Shishi is listening and no score is shown',(await dialog(page).locator('.self-check-listen').count())===1&&!(await page.locator('.record-result').isVisible().catch(()=>false)));
   env.release();
   const back=dialog(page).locator('[data-self-check=close]');await back.waitFor();
