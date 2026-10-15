@@ -189,7 +189,9 @@
 .poem-rooster-game .rr-audio::before{content:'';width:0;height:0;border-style:solid;border-width:8px 0 8px 12px;border-color:transparent transparent transparent currentColor}
 .poem-rooster-game .rr-feedback{margin:0;min-height:3em;font-size:20px;line-height:1.5;text-align:center;color:#5b4a38;text-wrap:pretty}
 
-@media (min-width:701px) and (orientation:landscape){
+/* Phones held sideways use the same picture-beside-panel layout as the other games: stacked,
+   the sticky picture was taller than the visible area and covered 下一步 and the clue cards. */
+@media (min-width:701px) and (orientation:landscape),(orientation:landscape) and (max-height:500px){
   .poem-rooster-game{grid-template-columns:minmax(0,1.45fr) minmax(260px,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;align-items:start;column-gap:22px}
   .poem-rooster-game .rr-stage{grid-column:1;grid-row:1/5;align-self:start;width:min(100%,calc(100cqh * 16 / 9))}
   .poem-rooster-game .rr-head,.poem-rooster-game .rr-panel,.poem-rooster-game .rr-actionline,.poem-rooster-game .rr-feedback{grid-column:2}
@@ -239,7 +241,7 @@
   .poem-rooster-game .rr-count{gap:6px}
   .poem-rooster-game .rr-count li{min-height:36px;padding:2px 4px}
 }
-@media (min-width:560px) and (orientation:portrait),(min-width:560px) and (max-width:700px){
+@media (min-width:560px) and (orientation:portrait),(min-width:560px) and (max-width:700px) and (min-height:501px){
   .poem-rooster-game.is-dawn .rr-panel{grid-template-columns:minmax(0,1fr) auto}
   .poem-rooster-game .rr-lane,.poem-rooster-game .rr-count{grid-column:1/-1}
 }

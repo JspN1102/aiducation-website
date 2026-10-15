@@ -1527,6 +1527,8 @@ dialog h2{font-size:26px;line-height:1.4}
   }
   .workspace.view-record .record-landscape { grid-column: 1; grid-row: 1 / 3; width: 100%; margin: 0; }
   .workspace.view-record .record-practice { grid-column: 2; grid-row: 1; padding: 0; align-self: end; }
+  /* The 58% divider falls inside this grid's sentence column; hide it as <=1100px does. */
+  .workspace.view-record .record-layout::before { display: none; }
   .workspace.view-record .record-tool { width: 100%; max-width: 500px; padding: 0; }
   .workspace.view-record .record-art { max-height: min(48dvh, 390px); }
   .workspace.view-record .record-counter { min-height: 44px; gap: 8px; flex-wrap: wrap; padding: 0; }
@@ -2274,6 +2276,10 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-goose-game.is-reduced-motion .goose-ripple{display:none}
 .poem-goose-game .goose-paint{min-height:68px;font-size:25px;padding:12px 16px}
 .poem-goose-game .goose-paint i{width:35px;height:35px}
+/* The three colours follow the width they get, not the window: at 421–460px (large
+   phones) full-size buttons were wider than the game and pushed the picture off-screen. */
+.poem-goose-game .goose-palette{container-type:inline-size}
+@container (max-width:430px){.poem-goose-game .goose-paint{font-size:23px;padding:10px 8px;gap:6px;border-radius:16px}.poem-goose-game .goose-paint i{width:28px;height:28px}}
 @media(max-width:420px){.poem-goose-game{gap:12px}.poem-goose-game .goose-instruction{gap:8px}.poem-goose-game .goose-instruction p{font-size:19px}.poem-goose-game .goose-progress{font-size:16px}.poem-goose-game .goose-palette{gap:8px}.poem-goose-game .goose-paint{font-size:23px;min-height:66px;padding:10px 8px;gap:6px;border-radius:16px}.poem-goose-game .goose-paint i{width:28px;height:28px}.poem-goose-game .goose-feedback{font-size:19px}.poem-goose-game .goose-picture{border-radius:16px}.poem-goose-game .goose-caption{bottom:8px;right:8px;padding:8px 10px}}
 @media(max-width:370px){.poem-goose-game .goose-paint{flex-direction:column;gap:5px;padding:8px 5px;font-size:21px;min-height:72px}}
 @media(prefers-reduced-motion:reduce){.poem-goose-game .goose-layer,.poem-goose-game .goose-part span,.poem-goose-game .goose-paint{transition:none}.poem-goose-game .goose-ripple{display:none}}
@@ -2327,8 +2333,12 @@ dialog h2{font-size:26px;line-height:1.4}
 /* poem-games/garden-river.css */
 .poem-garden,.poem-river{--gr-ink:#294c3b;--gr-leaf:#527955;max-width:900px;width:100%;margin-inline:auto;color:var(--gr-ink)}
 .gr-instruction{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 10px}.gr-instruction p{margin:0;font-size:clamp(18px,2.3vw,23px);line-height:1.45;font-weight:650}.gr-count{flex:none;min-width:64px;text-align:center;padding:5px 10px;border-radius:18px;background:#edf3e7;font-size:18px;font-variant-numeric:tabular-nums;color:#3c6447}
-.gr-picture{position:relative;isolation:isolate;width:100%;aspect-ratio:3/2;overflow:hidden;border-radius:20px;background:#d9d8c1;border:1px solid #d2d9c4;box-shadow:0 6px 20px #2c443110}.gr-background{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;user-select:none}.gr-actionline{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px}.gr-method{font-size:clamp(16px,2vw,18px);line-height:1.5;color:#54705a}.gr-audio{font:inherit;font-size:17px;flex:none;min-height:44px;padding:8px 14px;border:1px solid #c6d6be;background:#f4f8ef;color:#355c3b;border-radius:22px;cursor:pointer;touch-action:manipulation}.gr-audio:before{content:'♪';margin-right:6px;font-size:21px}.gr-feedback{min-height:2.9em;font-size:clamp(17px,2vw,20px);line-height:1.55;margin:10px 0 0;text-align:center}.gr-loading{position:absolute;inset:0;z-index:130;background:#f7f8edd9;display:flex;align-items:center;justify-content:center;gap:14px;flex-direction:column;font-size:19px}.gr-loading[hidden]{display:none}.gr-loading button{font:inherit;color:#365c3d;min-height:44px;border:1px solid #bdceb7;border-radius:16px;padding:8px 20px;background:#fff}.poem-garden button:focus-visible,.poem-river button:focus-visible{outline:3px solid #176b50;outline-offset:3px}
-.garden-plant{position:absolute;left:var(--x);top:var(--y);width:var(--size);height:auto;aspect-ratio:800/870;min-width:44px;min-height:44px;transform:translate(-50%,calc(-100% + var(--lift,0px)));z-index:var(--depth);padding:0;border:0;border-radius:45%;background:none;touch-action:none;cursor:grab;transition:opacity .36s ease,filter .2s ease;filter:drop-shadow(0 5px 3px #24301c30);-webkit-tap-highlight-color:transparent}.garden-plant img{display:block;width:100%;height:100%;object-fit:contain;transform:rotate(var(--turn));transform-origin:50% 95%;pointer-events:none;user-select:none}.garden-plant:hover:not(:disabled){filter:drop-shadow(0 0 5px #f4f1b1)}.garden-plant.is-bean{width:calc(var(--size) * .88);z-index:20}.garden-plant.is-weed{z-index:calc(var(--depth) + 30)}.garden-plant:disabled{opacity:1}.garden-plant.is-pulled{pointer-events:none;opacity:0;transform:translate(-50%,calc(-100% - 45px)) rotate(12deg);transition:transform .48s cubic-bezier(.18,.7,.23,1),opacity .38s ease}.garden-root{position:absolute;left:45%;bottom:-1%;width:10%;height:5%;border-radius:50%;background:#5b4c3133;filter:blur(1px);pointer-events:none}.garden-plant.is-shaking img{animation:garden-careful .48s ease}.garden-moonlight{position:absolute;inset:0;z-index:110;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 74% 15%,#fffac147,transparent 56%);transition:opacity 1.2s}.poem-garden.is-done .garden-moonlight{opacity:1}.garden-end{position:absolute;left:18%;right:18%;top:20%;z-index:115;display:grid;gap:3px;text-align:center;color:#354b33;text-shadow:0 1px 8px #fffde6;background:#f7f2dcca;border:1px solid #fff9d994;border-radius:15px;padding:10px 12px;animation:gr-appear .55s ease}.garden-end[hidden]{display:none}.garden-end span{font-family:var(--serif,'Noto Serif HK',serif);font-size:clamp(22px,4vw,34px);letter-spacing:.12em}.garden-end small{font-size:clamp(15px,2vw,19px)}.poem-garden.is-readonly .garden-plant{cursor:default}
+/* overflow:clip (hidden for old Safari): a hidden frame can still be scrolled when a hotspot inside it is focused or scrolled into view, which slid the painting inside its frame. */
+.gr-picture{position:relative;isolation:isolate;width:100%;aspect-ratio:3/2;overflow:hidden;overflow:clip;border-radius:20px;background:#d9d8c1;border:1px solid #d2d9c4;box-shadow:0 6px 20px #2c443110}.gr-background{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;user-select:none}.gr-actionline{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px}.gr-method{font-size:clamp(16px,2vw,18px);line-height:1.5;color:#54705a}.gr-audio{font:inherit;font-size:17px;flex:none;min-height:44px;padding:8px 14px;border:1px solid #c6d6be;background:#f4f8ef;color:#355c3b;border-radius:22px;cursor:pointer;touch-action:manipulation}.gr-audio:before{content:'♪';margin-right:6px;font-size:21px}.gr-feedback{min-height:2.9em;font-size:clamp(17px,2vw,20px);line-height:1.55;margin:10px 0 0;text-align:center}.gr-loading{position:absolute;inset:0;z-index:130;background:#f7f8edd9;display:flex;align-items:center;justify-content:center;gap:14px;flex-direction:column;font-size:19px}.gr-loading[hidden]{display:none}.gr-loading button{font:inherit;color:#365c3d;min-height:44px;border:1px solid #bdceb7;border-radius:16px;padding:8px 20px;background:#fff}.poem-garden button:focus-visible,.poem-river button:focus-visible{outline:3px solid #176b50;outline-offset:3px}
+.garden-plant{position:absolute;left:var(--x);top:var(--y);width:var(--size);height:auto;aspect-ratio:800/870;min-width:44px;min-height:44px;transform:translate(-50%,calc(-100% + var(--lift,0px)));z-index:var(--depth);padding:0;border:0;border-radius:45%;background:none;touch-action:none;cursor:grab;transition:opacity .36s ease,filter .2s ease;filter:drop-shadow(0 5px 3px #24301c30);-webkit-tap-highlight-color:transparent}.garden-plant img{display:block;width:100%;height:100%;object-fit:contain;transform:rotate(var(--turn));transform-origin:50% 95%;pointer-events:none;user-select:none}.garden-plant:hover:not(:disabled){filter:drop-shadow(0 0 5px #f4f1b1)}.garden-plant.is-bean{width:calc(var(--size) * .88);z-index:20}.garden-plant.is-weed{z-index:calc(var(--depth) + 30)}.garden-plant:disabled{opacity:1}.garden-plant.is-pulled{pointer-events:none;opacity:0;transform:translate(-50%,calc(-100% - 45px)) rotate(12deg);transition:transform .48s cubic-bezier(.18,.7,.23,1),opacity .38s ease}.garden-root{position:absolute;left:45%;bottom:-1%;width:10%;height:5%;border-radius:50%;background:#5b4c3133;filter:blur(1px);pointer-events:none}.garden-plant.is-shaking img{animation:garden-careful .48s ease}.garden-moonlight{position:absolute;inset:0;z-index:110;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 74% 15%,#fffac147,transparent 56%);transition:opacity 1.2s}.poem-garden.is-done .garden-moonlight{opacity:1}.garden-end{position:absolute;left:18%;right:18%;top:20%;z-index:115;display:grid;gap:3px;text-align:center;color:#354b33;text-shadow:0 1px 8px #fffde6;background:#f7f2dcca;border:1px solid #fff9d994;border-radius:15px;padding:10px 12px;animation:gr-appear .55s ease}.garden-end[hidden]{display:none}.garden-end span{font-family:var(--serif,'Noto Serif HK',serif);font-size:clamp(22px,4vw,34px);letter-spacing:.12em}.garden-end small{font-size:clamp(15px,2vw,19px)}
+/* The closing line is sized by the picture, not the window: on a phone held sideways the
+   picture is small and 「帶月荷鋤歸」 wrapped and pushed its explanation out of the card. */
+.gr-picture{container-type:inline-size}.garden-end span{font-size:clamp(18px,min(4vw,9cqw),34px)}.garden-end small{font-size:clamp(13px,min(2vw,4.6cqw),19px)}.poem-garden.is-readonly .garden-plant{cursor:default}
 /* Keep transparent image margins from stealing taps from a neighbouring plant. */
 .garden-plant{pointer-events:none}.garden-plant::after{content:'';position:absolute;inset:10% 6% 0;border-radius:44%;pointer-events:auto}.garden-plant:disabled::after,.garden-plant.is-pulled::after{pointer-events:none}
 .garden-plant{transform:translate3d(calc(-50% + var(--sway,0px)),calc(-100% + var(--lift,0px)),0);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -2538,7 +2548,8 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-snow-game .sc-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
 .poem-snow-game .sc-task{margin:0;font-size:clamp(19px,2.4vw,24px);font-weight:700;line-height:1.4;text-wrap:balance}
 .poem-snow-game .sc-chip{flex:none;padding:4px 12px;border-radius:999px;background:#e8eff3;color:var(--sc-soft);font-size:17px;font-weight:700;line-height:1.4;font-variant-numeric:tabular-nums;white-space:nowrap}
-.poem-snow-game .sc-stage{position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#e7edf0;border:1px solid #7f97a640;box-shadow:0 14px 28px -20px #23404f99;user-select:none;-webkit-user-select:none;touch-action:manipulation;font-family:var(--sans);container-type:inline-size}
+/* overflow:clip (hidden for old Safari): a hidden frame can still be scrolled when a hotspot inside it is focused or scrolled into view, which slid the painting inside its frame. */
+.poem-snow-game .sc-stage{position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;overflow:clip;border-radius:20px;background:#e7edf0;border:1px solid #7f97a640;box-shadow:0 14px 28px -20px #23404f99;user-select:none;-webkit-user-select:none;touch-action:manipulation;font-family:var(--sans);container-type:inline-size}
 .poem-snow-game .sc-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.3s ease;pointer-events:none;user-select:none;-webkit-user-drag:none}
 .poem-snow-game .sc-scene.is-on{opacity:1}
 .poem-snow-game .sc-veil{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(115% 95% at 50% 42%,#fff0 28%,#f2f6f8c4 100%),#ffffff1f;opacity:0;transition:opacity 1.4s ease}
@@ -2626,7 +2637,8 @@ dialog h2{font-size:26px;line-height:1.4}
 /* Round 4: the poem board. Cells come from the stage width; the gap shrinks so four rows always fit its 16:9 height. */
 .poem-snow-game[data-stage="seek"] .sc-veil,.poem-snow-game[data-stage="done"] .sc-veil{background:radial-gradient(120% 100% at 50% 50%,#ffffffb8 30%,#f2f6f8d9 100%)}
 .poem-snow-game[data-stage="done"] .sc-fall{z-index:5}
-.poem-snow-game .sc-poem{--sc-cell:clamp(44px,11.6cqw,96px);--sc-gap:max(0px,min(1.6cqw,(56.25cqw - 4 * var(--sc-cell)) / 4));position:absolute;inset:0;z-index:4;display:grid;align-content:center;justify-content:center;gap:var(--sc-gap)}
+/* Seven tiles always fit across the picture; on the narrowest phones they go just below 44px. */
+.poem-snow-game .sc-poem{--sc-cell:clamp(min(44px,13.6cqw),11.6cqw,96px);--sc-gap:max(0px,min(1.6cqw,(56.25cqw - 4 * var(--sc-cell)) / 4));position:absolute;inset:0;z-index:4;display:grid;align-content:center;justify-content:center;gap:var(--sc-gap)}
 .poem-snow-game .sc-row{display:grid;grid-template-columns:repeat(7,var(--sc-cell));border-radius:calc(var(--sc-cell) * .28);transition:background-color .35s,box-shadow .35s}
 .poem-snow-game .sc-row.is-reading{background:#fde9b0c9;box-shadow:0 0 0 3px #e8c57a8c}
 .poem-snow-game .sc-tile{position:relative;width:var(--sc-cell);height:var(--sc-cell);margin:0;padding:0;border:0;border-radius:24%;background:transparent;color:var(--sc-ink);cursor:pointer;touch-action:manipulation}
@@ -2986,7 +2998,9 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-rooster-game .rr-audio::before{content:'';width:0;height:0;border-style:solid;border-width:8px 0 8px 12px;border-color:transparent transparent transparent currentColor}
 .poem-rooster-game .rr-feedback{margin:0;min-height:3em;font-size:20px;line-height:1.5;text-align:center;color:#5b4a38;text-wrap:pretty}
 
-@media (min-width:701px) and (orientation:landscape){
+/* Phones held sideways use the same picture-beside-panel layout as the other games: stacked,
+   the sticky picture was taller than the visible area and covered 下一步 and the clue cards. */
+@media (min-width:701px) and (orientation:landscape),(orientation:landscape) and (max-height:500px){
   .poem-rooster-game{grid-template-columns:minmax(0,1.45fr) minmax(260px,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;align-items:start;column-gap:22px}
   .poem-rooster-game .rr-stage{grid-column:1;grid-row:1/5;align-self:start;width:min(100%,calc(100cqh * 16 / 9))}
   .poem-rooster-game .rr-head,.poem-rooster-game .rr-panel,.poem-rooster-game .rr-actionline,.poem-rooster-game .rr-feedback{grid-column:2}
@@ -3036,7 +3050,7 @@ dialog h2{font-size:26px;line-height:1.4}
   .poem-rooster-game .rr-count{gap:6px}
   .poem-rooster-game .rr-count li{min-height:36px;padding:2px 4px}
 }
-@media (min-width:560px) and (orientation:portrait),(min-width:560px) and (max-width:700px){
+@media (min-width:560px) and (orientation:portrait),(min-width:560px) and (max-width:700px) and (min-height:501px){
   .poem-rooster-game.is-dawn .rr-panel{grid-template-columns:minmax(0,1fr) auto}
   .poem-rooster-game .rr-lane,.poem-rooster-game .rr-count{grid-column:1/-1}
 }
@@ -3086,7 +3100,8 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-seven-steps.is-done .ss-progress{background:#f6e5c8;color:#8a4f24}
 
 /* Stage: the three scene paintings stay 16:9; every overlay is placed in % of that box. */
-.poem-seven-steps .ss-stage{--zs:1.6;--zl:11.25;container-type:inline-size;grid-area:stage;position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#e9e2d2;border:1px solid #d6d2c1;box-shadow:0 6px 20px #2c443114;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+/* overflow:clip (hidden for old Safari): a hidden frame can still be scrolled when a hotspot inside it is focused or scrolled into view, which slid the painting inside its frame. */
+.poem-seven-steps .ss-stage{--zs:1.6;--zl:11.25;container-type:inline-size;grid-area:stage;position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;overflow:clip;border-radius:20px;background:#e9e2d2;border:1px solid #d6d2c1;box-shadow:0 6px 20px #2c443114;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 /* s6 camera: zooms into scene-3's bean plant. --zs = scale, --zl = scene % hidden on the left. Big stages (iPad
    portrait, desktop) zoom a little less (1.45×) so the 1600px painting is not blown up as far past its own resolution. */
 .poem-seven-steps .ss-cam{position:absolute;inset:0;transform-origin:0 0;transition:transform 1.6s cubic-bezier(.45,.05,.25,1)}
@@ -3350,7 +3365,9 @@ dialog h2{font-size:26px;line-height:1.4}
 
 /* Stage: one 1600×900 painting (the "world") that gains a line of the poem each round; overlays sit in % of it and 1cqw = 16 painting px. */
 .poem-couplet-game .pc-stage{grid-area:stage;position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#e9e2d2;border:1px solid #d6d2c1;box-shadow:0 6px 20px #2c443114;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-.poem-couplet-game .pc-world{position:absolute;top:0;left:0;width:100%;height:100%;container-type:inline-size;overflow:hidden}
+/* clip, not just hidden: a hidden box can still be scrolled when a bird inside it is focused or
+   scrolled into view, which slid the painting 17px up/left and cut 「兩個黃鸝」 off at the top. */
+.poem-couplet-game .pc-world{position:absolute;top:0;left:0;width:100%;height:100%;container-type:inline-size;overflow:hidden;overflow:clip}
 .poem-couplet-game.is-live[data-round="0"] .pc-world{touch-action:none;cursor:crosshair}
 .poem-couplet-game.is-live[data-round="2"] .pc-world,.poem-couplet-game.is-live[data-round="3"] .pc-world{touch-action:none}
 .poem-couplet-game.is-live[data-round="3"] .pc-world{cursor:pointer}
@@ -3379,6 +3396,9 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-couplet-game .pc-bird.is-sing img{animation:poem-couplet-sing .9s ease-out}
 .poem-couplet-game .pc-chirp{position:absolute;left:50%;bottom:92%;padding:2px 10px;border-radius:14px;background:#fffaf0f5;color:#7b4a12;font-size:clamp(14px,1.6cqw,19px);font-weight:700;line-height:1.4;white-space:nowrap;box-shadow:0 2px 6px #2a1d1033;transform:translate(-50%,0) scale(.6);opacity:0;pointer-events:none}
 .poem-couplet-game .pc-bird.is-sing .pc-chirp{animation:poem-couplet-chirp .9s ease-out}
+/* While the labels about the orioles (兩個黃鸝, 近景・黃鸝鳴柳, 鳴 ♪) are shown above them, a tapped
+   bird sings without its 「啾啾♪」 bubble, which would land under those labels. */
+.poem-couplet-game:has(.pc-tag.is-on:is([data-pc-show="r0"],[data-pc-show="final"],[data-pc-show="sound"])) .pc-chirp{visibility:hidden}
 /* How green the willow is: three leaves fill up, one per stroke (or a third of the tree each). */
 .poem-couplet-game .pc-meter{position:absolute;right:2.2%;top:3.5%;z-index:5;display:flex;align-items:center;gap:7px;padding:6px 12px 6px 14px;border-radius:999px;background:#fffaf0ed;color:#3c6447;box-shadow:0 2px 8px #2a1d1033;pointer-events:none;transition:opacity .5s ease,visibility 0s,background .4s}
 .poem-couplet-game .pc-meter-t{margin-right:2px;font-size:clamp(14px,1.6vw,18px);font-weight:700;line-height:1.3;letter-spacing:.04em;white-space:nowrap}
@@ -3885,7 +3905,8 @@ dialog h2{font-size:26px;line-height:1.4}
 .poem-guest-game.is-done .gk-progress{background:#f6e5c8;color:#8a4f24}
 
 /* Stage: three 16:9 scene paintings; every overlay sits in % of the painting. */
-.poem-guest-game .gk-stage{grid-area:stage;position:relative;isolation:isolate;container-type:inline-size;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#e9e2d2;border:1px solid #d6d2c1;box-shadow:0 6px 20px #2c443114;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+/* overflow:clip (hidden for old Safari): a hidden frame can still be scrolled when a hotspot inside it is focused or scrolled into view, which slid the painting inside its frame. */
+.poem-guest-game .gk-stage{grid-area:stage;position:relative;isolation:isolate;container-type:inline-size;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;overflow:clip;border-radius:20px;background:#e9e2d2;border:1px solid #d6d2c1;box-shadow:0 6px 20px #2c443114;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .poem-guest-game .gk-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;pointer-events:none;-webkit-user-drag:none;transition:opacity .9s ease}
 .poem-guest-game .gk-scene.is-on{opacity:1}
 .poem-guest-game .gk-layer{position:absolute;inset:0;z-index:2;visibility:hidden;opacity:0;transition:opacity .5s ease,visibility 0s linear .5s}
@@ -4291,19 +4312,18 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
    must not shift each row's characters independently. */
 .workspace.view-record .record-tool>.verse.verse-compound>.verse-clause:has(>ruby:nth-of-type(5)):not(:has(>ruby:nth-of-type(6))){display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) 18px;align-items:end;width:100%;max-width:360px}
 .workspace.view-record .record-tool>.verse.verse-compound>.verse-clause:has(>ruby:nth-of-type(5)):not(:has(>ruby:nth-of-type(6)))>ruby{width:100%;min-width:0;box-sizing:border-box;text-align:center}
-.workspace.view-record .record-tool>.verse.verse-compound>.verse-clause:has(>ruby:nth-of-type(5)):not(:has(>ruby:nth-of-type(6)))>.punct{width:18px;text-align:center}
+.workspace.view-record .record-tool>.verse.verse-compound>.verse-clause:has(>ruby:nth-of-type(5)):not(:has(>ruby:nth-of-type(6)))>.punct{width:18px}
+/* Seven-character paired clauses (客至): equal columns so pinyin width cannot shift them. */
+.workspace.view-record .record-tool>.verse.verse-compound>.verse-clause:has(>ruby:nth-of-type(7)){display:grid;grid-template-columns:repeat(7,minmax(0,1fr)) auto;align-items:end;width:100%}
+.workspace.view-record .record-tool>.verse.verse-compound>.verse-clause:has(>ruby:nth-of-type(7))>ruby{width:100%;min-width:0;box-sizing:border-box;text-align:center;padding-inline:0}
 @media(max-width:360px){
  .workspace.view-record .record-counter:has([data-action="record-feedback"]):has(.extension-entry){grid-template-columns:minmax(0,1fr) auto;gap:0 8px}
  .workspace.view-record .record-counter:has([data-action="record-feedback"])>.extension-entry{grid-column:2;grid-row:1}
  .workspace.view-record .record-counter:has(.extension-entry)>[data-action="record-feedback"]{grid-column:1/-1;grid-row:2;justify-self:center;min-height:44px}
- .workspace.view-record .record-tool>.verse:has(>ruby:nth-of-type(7)),
- .workspace.view-record .record-tool>.verse>.verse-clause:has(>ruby:nth-of-type(7)){display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px 0;width:100%;max-width:300px;margin-inline:auto}
- .workspace.view-record .record-tool>.verse:has(>ruby:nth-of-type(7))>ruby,
- .workspace.view-record .record-tool>.verse>.verse-clause:has(>ruby:nth-of-type(7))>ruby{grid-column:span 2;min-width:0;padding-inline:0}
- .workspace.view-record .record-tool>.verse:has(>ruby:nth-of-type(7))>ruby:nth-of-type(5),
- .workspace.view-record .record-tool>.verse>.verse-clause:has(>ruby:nth-of-type(7))>ruby:nth-of-type(5){grid-column:2/span 2}
- .workspace.view-record .record-tool>.verse:has(>ruby:nth-of-type(7))>.punct,
- .workspace.view-record .record-tool>.verse>.verse-clause:has(>ruby:nth-of-type(7))>.punct{grid-column:8;grid-row:2;justify-self:start;width:auto}
+ .workspace.view-record .record-tool>.verse:has(>ruby:nth-of-type(7)){display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px 0;width:100%;max-width:300px;margin-inline:auto}
+ .workspace.view-record .record-tool>.verse:has(>ruby:nth-of-type(7))>ruby{grid-column:span 2;min-width:0;padding-inline:0}
+ .workspace.view-record .record-tool>.verse:has(>ruby:nth-of-type(7))>ruby:nth-of-type(5){grid-column:2/span 2}
+ .workspace.view-record .record-tool>.verse:has(>ruby:nth-of-type(7))>.punct{grid-column:8;grid-row:2;justify-self:start;width:auto}
 }
 
 /* The sentence being recorded is the task's primary reading surface. Equal
@@ -4311,8 +4331,13 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 .workspace.view-record .record-tool[data-step="read"]>.verse{font-size:48px;line-height:1.45;min-height:90px;margin-block:12px 18px}
 .workspace.view-record .record-tool[data-step="read"]>.verse ruby{font-size:48px;line-height:1.45;min-width:0;padding-inline:0;text-align:center}
 .workspace.view-record .record-tool[data-step="read"]>.verse rt{font-size:18px;line-height:1.3;letter-spacing:0}
-.workspace.view-record .record-tool[data-step="read"]>.verse .punct{font-size:44px;line-height:1.45;width:22px;text-align:center}
-.workspace.view-record .record-tool[data-step="read"]>.verse:has(>ruby:nth-of-type(7)){display:grid;grid-template-columns:repeat(7,minmax(0,1fr)) 22px;align-items:end;width:100%;max-width:500px;margin-inline:auto;gap:0}
+/* A full-width mark draws inside half its advance: -.5em spacing keeps a half
+   cell, the indent moves the ink into it (「 sits right, 」 left, ，。centred). */
+.workspace.view-record .record-tool[data-step="read"]>.verse .punct{font-size:44px;line-height:1.45;width:.5em;letter-spacing:-.5em;text-indent:-.25em;text-align:left}
+.workspace.view-record .record-tool[data-step="read"]>.verse .punct.open{width:.54em;padding-right:.04em;text-indent:-.5em}
+.workspace.view-record .record-tool[data-step="read"]>.verse .punct.close{width:.54em;padding-left:.04em;text-indent:0}
+/* Single seven-character lines: a long syllable (chuāng) widens its own column. */
+.workspace.view-record .record-tool[data-step="read"]>.verse:has(>ruby:nth-of-type(7)){display:grid;grid-template-columns:repeat(7,minmax(min-content,1fr)) 22px;align-items:end;width:100%;max-width:500px;margin-inline:auto;gap:0}
 .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound{gap:8px;min-height:166px}
 .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound>.verse-clause{width:100%;max-width:420px}
 .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound>.verse-clause:has(>ruby:nth-of-type(5)):not(:has(>ruby:nth-of-type(6))){grid-template-columns:repeat(5,minmax(0,1fr)) 22px;max-width:420px}
@@ -4322,7 +4347,7 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace.view-record .record-tool[data-step="read"]>.verse ruby{font-size:40px;line-height:1.45}
  .workspace.view-record .record-tool[data-step="read"]>.verse rt{font-size:16px;line-height:1.3}
  .workspace.view-record .record-tool[data-step="read"]>.verse .punct{font-size:36px;width:18px}
- .workspace.view-record .record-tool[data-step="read"]>.verse:has(>ruby:nth-of-type(7)){grid-template-columns:repeat(7,minmax(0,1fr)) 18px;max-width:420px}
+ .workspace.view-record .record-tool[data-step="read"]>.verse:has(>ruby:nth-of-type(7)){grid-template-columns:repeat(7,minmax(min-content,1fr)) 18px;max-width:420px}
  .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound{min-height:142px;gap:6px}
  .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound>.verse-clause:has(>ruby:nth-of-type(5)):not(:has(>ruby:nth-of-type(6))){grid-template-columns:repeat(5,minmax(0,1fr)) 18px;max-width:360px}
  .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound>.verse-clause>.punct{width:18px}
@@ -4331,22 +4356,17 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace.view-record .record-tool[data-step="read"]>.verse ruby{font-size:36px}
  .workspace.view-record .record-tool[data-step="read"]>.verse:has(>ruby:nth-of-type(7)){grid-template-columns:repeat(8,minmax(0,1fr));gap:5px 0;max-width:300px}
 }
-/* Prose sentences (鄭人買履) have clauses of eight to ten characters. Shrink the
-   whole sentence together so each clause stays on one row inside the column. */
-.workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8))>.verse-clause{max-width:none}
-.workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8)) ruby{font-size:42px}
-.workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8)) .punct{font-size:38px;width:18px}
-@media(max-width:700px){
- .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8)) ruby{font-size:min(40px,calc((100vw - 64px) / 11))}
- .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8)) rt{font-size:13px}
- .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8)) .punct{font-size:min(36px,calc((100vw - 64px) / 12));width:14px}
-}
-@media(max-width:360px){
- .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8))>.verse-clause{display:flex;width:100%;max-width:none;gap:0}
- .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8))>.verse-clause>ruby,
- .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8))>.verse-clause>ruby:nth-of-type(5),
- .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound:has(>.verse-clause>ruby:nth-of-type(8))>.verse-clause>.punct{grid-column:auto;grid-row:auto}
-}
+/* Prose sentences (鄭人買履) wrap between clauses like a paragraph; app.js sets
+   --fit (row width in em) so the characters shrink until it takes two rows. */
+.workspace.view-record .record-tool[data-step="read"]>.verse.verse-prose{--prose-max:42px;container-type:inline-size;display:flex;flex-wrap:wrap;justify-content:center;align-content:center;align-items:flex-end;width:100%;max-width:none;gap:6px 0;font-size:16px}
+.workspace.view-record .record-tool[data-step="read"]>.verse.verse-prose>.verse-clause{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;max-width:100%}
+.workspace.view-record .record-tool[data-step="read"]>.verse.verse-prose .verse-unit{display:flex;align-items:flex-end}
+.workspace.view-record .record-tool[data-step="read"]>.verse.verse-prose :is(ruby,.punct){font-size:min(var(--prose-max),calc((100vw - 48px) / var(--fit)));line-height:1.3}
+@supports(width:1cqi){.workspace.view-record .record-tool[data-step="read"]>.verse.verse-prose :is(ruby,.punct){font-size:min(var(--prose-max),calc(100cqi / var(--fit)))}}
+.workspace.view-record .record-tool[data-step="read"]>.verse.verse-prose ruby{padding-inline:.04em}
+.workspace.view-record .record-tool[data-step="read"]>.verse.verse-prose rt{font-size:max(12px,.42em);line-height:1.25}
+.workspace.view-record .record-tool[data-step="read"]>.verse.verse-prose .punct:not(.open,.close){width:.6em;text-indent:-.2em}
+.workspace.view-record .record-tool[data-step="read"]>.verse.verse-prose .punct:is(.open,.close){width:.54em}
 @media(min-width:701px) and (max-height:560px) and (orientation:landscape){
  .workspace.view-record .record-tool[data-step="read"]>.record-counter{min-height:32px}
  .workspace.view-record .record-tool[data-step="read"] .practice-motif{width:30px;height:30px}
@@ -4355,6 +4375,8 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace.view-record .record-tool[data-step="read"]>.verse rt{font-size:16px}
  .workspace.view-record .record-tool[data-step="read"]>.verse .punct{font-size:34px;line-height:1.15}
  .workspace.view-record .record-tool[data-step="read"]>.verse.verse-compound{min-height:126px;gap:4px}
+ .workspace.view-record .record-tool[data-step="read"]>.verse.verse-prose{--prose-max:34px;gap:2px 0}
+ .workspace.view-record .record-tool[data-step="read"]>.verse.verse-prose :is(ruby,.punct){line-height:1.15}
  .workspace.view-record .record-tool[data-step="read"]>.record-model{margin-bottom:4px}
  .workspace.view-record .record-tool[data-step="read"] #record-controls,
  .workspace.view-record .record-tool[data-step="read"] .record-actions{min-height:58px}
@@ -4393,7 +4415,7 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace .shishi-touch-slot .shishi-poet-label{order:1}
  /* The reading task needs room for its microphone on a narrow phone. Keep
     pupil navigation, title and mascot in one compact header row. */
- .workspace.view-record .lesson-bar:has(.shishi-touch-slot):not(:has(.teacher-entry)){grid-template-columns:40px minmax(0,1fr) 46px 44px;grid-template-rows:auto;gap:4px;padding-block:4px;margin-bottom:6px}
+ .workspace.view-record .lesson-bar:has(.shishi-touch-slot):not(:has(.teacher-entry)){grid-template-columns:48px minmax(0,1fr) 46px 44px;grid-template-rows:auto;gap:4px;padding-block:4px;margin-bottom:6px}
  .workspace.view-record .lesson-bar:not(:has(.teacher-entry))>.lesson-title{grid-column:2;grid-row:1}
  .workspace.view-record .lesson-bar:not(:has(.teacher-entry))>.shishi-touch-slot{grid-column:3;grid-row:1;justify-self:center;--shishi-width:44px;--shishi-height:60px;width:46px;height:80px}
  .workspace.view-record .lesson-bar:not(:has(.teacher-entry))>.lesson-tools{grid-column:4;grid-row:1}
@@ -4950,6 +4972,32 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .workspace.view-quiz .river-puzzle-game.is-complete .river-puzzle-status{grid-row:2;align-self:center;font-size:clamp(27px,4vh,38px);line-height:1.6;text-wrap:balance}
  .workspace.view-quiz .river-puzzle-game.is-complete .river-puzzle-actions{grid-row:3;align-self:end}
 }
+/* The tray takes only the height left in its row beside the board. A tray sized
+   from a fixed allowance overflowed its row once the status wrapped to two lines
+   (a piece put in the wrong cell) and, centred, pushed the instruction up over
+   「拼好春江月夜圖」 and the tray down under 聽一聽古詩. Two status lines stay
+   reserved so the tray does not change size after each move. */
+@media(min-width:900px) and (min-height:620px) and (orientation:landscape){
+ .workspace.view-quiz .river-puzzle-game:not(.is-complete) .river-puzzle-side{display:grid;grid-template-rows:auto minmax(0,233px);align-content:center;justify-items:center;gap:12px;container-type:inline-size}
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-instruction{justify-self:stretch}
+ .workspace.view-quiz .river-puzzle-game .river-puzzle-tray{width:auto;min-width:0;max-width:100%;height:min(100%,calc(100cqw / 1.5));align-self:center}
+ .workspace.view-quiz .river-puzzle-game:not(.is-complete) .river-puzzle-status{min-height:2.8em}
+}
+/* 《畫雞》: the two clue cards and 下一步 sit in the row left between the heading
+   and 聽這句詩. On short landscape tablets (1024x690) fixed sizes made that panel
+   taller than its row, so it spread over the heading and the 聽這句詩 line.
+   Sizes now follow the play-area height and reach the old sizes on tall screens. */
+@media(min-width:900px) and (min-height:620px) and (orientation:landscape){
+ .workspace.view-quiz .poem-rooster-game .rr-instruction{font-size:clamp(22px,5.4cqh,27px)}
+ .workspace.view-quiz .poem-rooster-game .rr-panel{gap:clamp(8px,2cqh,12px)}
+ .workspace.view-quiz .poem-rooster-game .rr-clues{gap:clamp(6px,1.6cqh,10px)}
+ .workspace.view-quiz .poem-rooster-game .rr-clue{padding-block:clamp(5px,1.4cqh,10px)}
+ .workspace.view-quiz .poem-rooster-game .rr-thumb{width:clamp(48px,10.5cqh,72px);height:clamp(48px,10.5cqh,72px)}
+ .workspace.view-quiz .poem-rooster-game .rr-clue b{font-size:clamp(21px,5cqh,25px)}
+ .workspace.view-quiz .poem-rooster-game .rr-clue small{font-size:clamp(15px,3.6cqh,18px)}
+ .workspace.view-quiz .poem-rooster-game .rr-next{min-height:clamp(50px,12cqh,66px);font-size:clamp(20px,4.6cqh,24px)}
+ .workspace.view-quiz .poem-rooster-game .rr-feedback{font-size:clamp(19px,4.4cqh,22px)}
+}
 
 /* Each farewell chapter owns the same complete right-hand activity area.
    Hidden controls no longer leave their old rows empty between instructions. */
@@ -5286,6 +5334,34 @@ html[data-showcase] .site-header{display:none}
 .workspace.view-report .word-analysis .word-result:is(.error,.poor) .word-part{color:var(--score-error)}
 /* A narrow card keeps at least two characters of a part to a line. */
 @supports (width:1cqi){.workspace.view-report .word-analysis .word-result .word-part{font-size:min(clamp(14px,1.45vw,17px),calc(var(--cell) / 2.2));white-space:normal}}
+/* Weak-word cards turn sideways (swipe, drag, arrows or arrow keys); dots between
+   the arrows show the position. 再讀一次 and 下一句 wait for the last card (app.js). */
+.workspace.view-record .record-tool[data-step=words]{touch-action:pan-y pinch-zoom;-webkit-user-select:none;user-select:none}
+.workspace.view-record .record-tool[data-step=words]>:is(.record-review,.syllable-parts,.record-word-hint){transform:translateX(var(--card-dx,0px));transition:transform .2s ease-out}
+.workspace.view-record .record-tool[data-swiping]>:is(.record-review,.syllable-parts,.record-word-hint){transition:none}
+.workspace.view-record .record-tool[data-card-enter=next]>:is(.record-review,.syllable-parts,.record-word-hint){animation:record-card-next .24s ease-out}
+.workspace.view-record .record-tool[data-card-enter=previous]>:is(.record-review,.syllable-parts,.record-word-hint){animation:record-card-previous .24s ease-out}
+@keyframes record-card-next{from{opacity:.2;transform:translateX(44px)}}
+@keyframes record-card-previous{from{opacity:.2;transform:translateX(-44px)}}
+.workspace.view-record .record-tool[data-step=words] .record-word-pager{align-items:center;gap:18px}
+.workspace.view-record .record-card-dots{display:flex;align-items:center;justify-content:center;gap:7px}
+.workspace.view-record .record-card-dots i{width:9px;height:9px;border-radius:5px;background:#ddd6c3;transition:width .2s,background-color .2s}
+.workspace.view-record .record-card-dots i.seen{background:#9cbfa5}
+.workspace.view-record .record-card-dots i.current{width:22px;background:var(--green)}
+.workspace.view-record .record-tool[data-cards-locked=true] [data-action=record-word-step][data-value="1"]:not(:disabled){animation:record-card-hint 1.6s ease-in-out infinite}
+@keyframes record-card-hint{50%{box-shadow:0 0 0 7px rgba(60,104,86,.18);background:rgba(60,104,86,.08)}}
+.workspace.view-record .record-tool[data-step=words] .record-actions .button{white-space:nowrap}
+@media (prefers-reduced-motion:reduce){
+.workspace.view-record .record-tool[data-step=words] *{animation:none!important;transition:none!important}
+}
+.workspace.view-record .record-cards-note{margin:2px 0 6px;font-size:15px;line-height:1.45;color:#7a6a45;text-align:center}
+.workspace.view-record .record-tool[data-cards-locked=false] .record-cards-note{color:var(--green)}
+/* Phones: a shorter painting keeps both choices under the cards in view. */
+@media (max-width:700px) and (orientation:portrait){
+.workspace.view-record .record-layout:has(.record-tool[data-step=words]) .record-art{max-height:132px}
+.workspace.view-record .record-tool[data-step=words] .record-word-pager{margin:2px 0}
+.workspace.view-record .record-cards-note{margin:0 0 4px;font-size:14px}
+}
 
 /* chat-voice.css */
 /* Speech input in the poet conversation: a quiet microphone beside the send

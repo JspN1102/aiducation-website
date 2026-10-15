@@ -1,4 +1,4 @@
-import {schoolFetch} from './school-session.mjs?v=20261007-school46';
+import {schoolFetch} from './school-session.mjs?v=20261016-school69e';
 import {prepareHandwritingPayload} from './handwriting-payload.mjs?v=20260922-school22';
 // Research-only reason on the same error (message and type unchanged; never sets code).
 const tag=(error,detail,status)=>Object.assign(error,{researchDetail:detail},Number.isInteger(status)?{researchHttpStatus:status}:{});

@@ -1,6 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const {installLearningFixture,finishLearning}=require('./dictation-test-learning.cjs');
 const repo=path.resolve(__dirname,'..'),origin='https://student-responsive.invalid',evidence=process.env.STUDENT_RESPONSIVE_EVIDENCE_DIR;
 const poems=JSON.parse(fs.readFileSync(path.join(repo,'maanshan/poems.json'),'utf8')).poems;
 const key='maanshan-learning-v2:synthetic-responsive',checks=[],errors=[];let browser;
@@ -72,15 +73,21 @@ async function reports(width,height){const {page,context}=await setup(width,heig
  check(width+'px no reading does not invent a score or expose result controls',await page.locator('.score-ring,.report-line,.report-animation-next').count()===0);
  // Use the real writing component under the existing quiz layout to verify
  // the enlarged help text and real browser touch without recognition calls.
+ // Since guided tracing (759a572) free writing opens only after the stroke demonstration
+ // and tracing; the shared fixture completes the tracing quiz synthetically. The shell carries
+ // challenge-type-dictation as in challenge.mjs, so the real dictation layout applies.
+ await installLearningFixture(page);
  await page.evaluate(async()=>{
   document.querySelector('.workspace').className='workspace lesson-shell view-quiz';
-  document.querySelector('#view').innerHTML='<section class="challenge-shell"><div class="challenge-body"><div class="challenge-writing-layout"><div class="challenge-writing-heading"><p class="challenge-prompt">請寫出「滋潤」的「潤」。</p></div><div id="writing-fixture"></div></div></div></section>';
+  document.querySelector('#view').innerHTML='<section class="challenge-shell challenge-type-dictation"><div class="challenge-body"><div class="challenge-writing-layout"><div class="challenge-writing-heading"><p class="challenge-prompt">請寫出「滋潤」的「潤」。</p></div><div id="writing-fixture"></div></div></div></section>';
   const {mountChallengeWriting}=await import('/maanshan/challenge-writing.mjs');
   window.writing=mountChallengeWriting(document.querySelector('#writing-fixture'),{target:{char:'潤',pinyin:'rùn'},checkNeatness:()=>null,recognize:async()=>({candidates:['潤']})});
  });
  await page.locator('.cw-board').scrollIntoViewIfNeeded();
- const writing=await page.locator('.challenge-writing').evaluate(el=>({skip:parseFloat(getComputedStyle(el.querySelector('.cw-skip')).fontSize),status:parseFloat(getComputedStyle(el.querySelector('.cw-status')).fontSize),targets:[...el.querySelectorAll('button')].filter(b=>b.getClientRects().length).map(b=>b.getBoundingClientRect().height),white:[...el.querySelector('canvas').getContext('2d').getImageData(0,0,1,1).data],noOverflow:document.documentElement.scrollWidth<=innerWidth+1}));
- check(width+'px writing keeps readable hints, white paper and large buttons '+JSON.stringify(writing),writing.noOverflow&&writing.skip>=17&&writing.status>=17&&writing.targets.every(h=>h>=44)&&writing.white.join(',')==='255,255,255,255');
+ // 跳過 sits small beside the prompts in dictation (school65, dictation-layout.css), outside the widget.
+ const writing=await page.locator('.challenge-writing-layout').evaluate(el=>({skip:parseFloat(getComputedStyle(el.querySelector('.cw-skip')).fontSize),status:parseFloat(getComputedStyle(el.querySelector('.cw-status')).fontSize),targets:[...el.querySelectorAll('button')].filter(b=>b.getClientRects().length).map(b=>b.getBoundingClientRect().height),white:[...el.querySelector('canvas').getContext('2d').getImageData(0,0,1,1).data],noOverflow:document.documentElement.scrollWidth<=innerWidth+1}));
+ check(width+'px writing keeps readable hints, white paper and large buttons '+JSON.stringify(writing),writing.noOverflow&&writing.skip>=15&&writing.status>=17&&writing.targets.every(h=>h>=44)&&writing.white.join(',')==='255,255,255,255');
+ await finishLearning(page);
  if(width<1400){
   const cdp=await context.newCDPSession(page),box=await page.locator('.cw-board').boundingBox();
   const before=await page.evaluate(()=>({page:scrollY,view:document.querySelector('#view').scrollTop,body:document.querySelector('.challenge-body').scrollTop}));
@@ -88,9 +95,12 @@ async function reports(width,height){const {page,context}=await setup(width,heig
   for(let n=1;n<=8;n++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:box.x+box.width*(.3+n*.04),y:box.y+box.height*(.25+n*.05),id:1}]});
   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   const after=await page.evaluate(()=>({page:scrollY,view:document.querySelector('#view').scrollTop,body:document.querySelector('.challenge-body').scrollTop}));
-  check(width+'px touch writes without dragging the page',JSON.stringify(before)===JSON.stringify(after)&&await page.locator('[data-cw=undo]').isEnabled());
+  const inked=await page.locator('[data-cw=clear]').isEnabled(),phase=await page.locator('.challenge-writing').getAttribute('data-phase');
+  check(width+'px touch writes without dragging the page '+JSON.stringify({before,after,inked,phase}),JSON.stringify(before)===JSON.stringify(after)&&inked);
  }
- await page.locator('[data-cw=skip]').click();
+ // 撤銷 was removed in 759a572 (清空 above opens only once there is ink), and 跳過 no
+ // longer plays the character by itself: the pupil opens it with 看筆順.
+ await page.locator('[data-cw=skip]').click();await page.locator('[data-cw=strokes]').click();await page.locator('.cw-animation:not([hidden]) svg').waitFor();
  check(width+'px learning character fits its review square',await page.locator('.cw-animation').evaluate(el=>{const board=el.parentElement.getBoundingClientRect(),svg=el.querySelector('svg').getBoundingClientRect();return Math.abs(board.width-svg.width)<=3&&Math.abs(board.height-svg.height)<=3&&Math.abs((board.left+board.right)-(svg.left+svg.right))<=3;}));
  if(evidence)await page.screenshot({path:path.join(evidence,'writing-'+width+'x'+height+'.png'),fullPage:true});
  }finally{await context.close();}}

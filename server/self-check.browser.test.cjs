@@ -70,10 +70,10 @@ const dialog=page=>page.locator('dialog.self-check');
 async function eighthRecordingOpensWithPictureByTurn(){
  const env=await setup(),{page,state,go,record,toLine,counter,researchEvents}=env;try{
   await go('#yong-e/record');
-  // Seven recordings over different lines, plus one too short to count.
-  for(const target of [0,1,2,3,0,0,2]){await toLine(target);await record();}
-  await toLine(1);await record(600);
-  check('seven readings over mixed lines do not open it, and a very short one does not count',await dialog(page).count()===0&&JSON.stringify(await counter())==='{"reads":7,"checks":0,"gifts":0}');
+  // Seven recordings over lines 1-3 (the last line not yet read), plus one too short to count.
+  for(const target of [0,1,2,0,1,0,2]){await toLine(target);await record();}
+  await toLine(3);await record(600);
+  check('seven readings over mixed lines do not open it, and a very short one does not count',await dialog(page).count()===0&&JSON.stringify(await counter())==='{"reads":7,"checks":0,"gifts":0,"lines":7}');
   check('the count goes out with the poem progress',state.saves.filter(s=>s.section==='reading'&&s.poemId===1).at(-1)?.payload?.learningState?.selfCheck?.reads===7);
   await toLine(3);state.hold=true;await record();
   await dialog(page).waitFor();
@@ -95,7 +95,7 @@ async function eighthRecordingOpensWithPictureByTurn(){
   const back=dialog(page).locator('[data-self-check=close]');await back.waitFor();
   check('once scored the pupil can go and see the line',(await back.innerText()).includes('看看這句成果'));
   await back.click();await until(async()=>await dialog(page).count()===0,'dialog closed');
-  check('the count restarts and the turn is kept',JSON.stringify(await counter())==='{"reads":0,"checks":1,"gifts":1}');
+  check('the count restarts and the turn is kept',JSON.stringify(await counter())==='{"reads":0,"checks":1,"gifts":1,"lines":15}');
   await until(()=>state.saves.some(s=>s.section==='reading'&&s.payload?.learningState?.selfCheck?.gifts===1),'turn saved');
   const answer=(await researchEvents()).find(e=>e.type==='answer_submitted'&&e.itemId==='p1.l3.selfcheck');
   check('the answer is recorded: tapped characters, the turn, no score',answer&&answer.response.choiceId==='tapped'&&JSON.stringify(answer.response.placements)==='[{"slotId":"c1","choiceId":"tapped"},{"slotId":"c2","choiceId":"tapped"}]'&&answer.result.status==='completed'&&answer.result.score===null&&answer.context.position===1&&answer.context.total===4&&answer.metrics.selectionChanges===4);
@@ -114,7 +114,7 @@ async function countFollowsThePupil(){
  // Another device already gave four paintings and seven readings: the next reading is the 5th turn, back to line 1.
  const env=await setup({progress:{1:{reading:{updatedAt:new Date(Date.now()+60000).toISOString(),learningState:{selfCheck:{reads:7,gifts:4}}}}}}),{page,go,record,counter,researchEvents}=env;try{
   await page.waitForTimeout(800);await go('#yong-e/record');
-  check('the count from the other device is restored',JSON.stringify(await counter())==='{"reads":7,"checks":4,"gifts":4}');
+  check('the count from the other device is restored',JSON.stringify(await counter())==='{"reads":7,"checks":4,"gifts":4,"lines":0}');
   await record();await dialog(page).waitFor();
   await page.waitForTimeout(1700);await dialog(page).locator('[data-self-check=good]').click();
   check('the fifth time goes back to the first line painting',(await dialog(page).locator('.self-check-picture img').getAttribute('src')).includes('p1-l1.webp'));
@@ -128,7 +128,7 @@ async function skipGivesNoPicture(){
   await page.waitForTimeout(1700);await dialog(page).locator('[data-self-check=skip]').click();
   await until(async()=>await dialog(page).count()===0,'跳過 closes it');
   const skipped=(await researchEvents()).find(e=>e.itemId==='p1.l0.selfcheck');
-  check('跳過 closes at once with no painting, recorded as skipped with no score',skipped?.response.choiceId==='skipped'&&skipped.result.status==='skipped'&&skipped.result.score===null&&JSON.stringify(await counter())==='{"reads":0,"checks":1,"gifts":0}');
+  check('跳過 closes at once with no painting, recorded as skipped with no score',skipped?.response.choiceId==='skipped'&&skipped.result.status==='skipped'&&skipped.result.score===null&&JSON.stringify(await counter())==='{"reads":0,"checks":1,"gifts":0,"lines":1}');
   for(let i=0;i<7;i++){await toLine(i%4);await record();}
   await toLine(1);await record();await dialog(page).waitFor();
   await page.waitForTimeout(1700);await dialog(page).locator('[data-self-check=good]').click();
@@ -146,6 +146,38 @@ async function leavingSkips(){
   check('leaving the page records a skip and gives no painting',skipped?.response.choiceId==='skipped'&&(await counter()).gifts===0);
  }finally{await env.close();}
 }
+async function finishingThePoemOpensItOnce(){
+ const env=await setup(),{page,go,record,toLine,counter}=env;try{
+  await go('#yong-e/record');
+  for(const target of [0,1,2]){await toLine(target);await record();}
+  check('three of four lines read: not yet',await dialog(page).count()===0);
+  await toLine(3);await record();await dialog(page).waitFor();
+  check('reading every line for the first time opens it and the count restarts',JSON.stringify(await counter())==='{"reads":0,"checks":1,"gifts":0,"lines":15}');
+  await page.waitForTimeout(1700);await dialog(page).locator('[data-self-check=skip]').click();await until(async()=>await dialog(page).count()===0,'closed');
+  for(let i=0;i<7;i++){await toLine(i%4);await record();}
+  check('finishing the poem again does not open it; the next one waits for eight',await dialog(page).count()===0&&(await counter()).reads===7);
+  await toLine(0);await record();await dialog(page).waitFor();
+  check('the eighth reading after it opens it',(await counter()).checks===2);
+ }finally{await env.close();}
+}
+async function earlierCheckBlocksFinishing(){
+ // An eight-reading check came before the pupil had read every line: finishing the poem gives nothing extra.
+ const env=await setup({progress:{1:{reading:{updatedAt:new Date(Date.now()+60000).toISOString(),learningState:{selfCheck:{reads:0,checks:1,gifts:1,lines:1}}}}}}),{page,go,record,toLine}=env;try{
+  await page.waitForTimeout(800);await go('#yong-e/record');
+  for(const target of [1,2,3]){await toLine(target);await record();}
+  check('finishing the poem after a check has come does not open it',await dialog(page).count()===0);
+ }finally{await env.close();}
+}
+async function countCarriesOverDays(){
+ // Five readings on an earlier day, three today: the eighth opens it.
+ const env=await setup({progress:{1:{reading:{updatedAt:new Date(Date.now()+60000).toISOString(),learningState:{selfCheck:{reads:5,checks:0,gifts:0,lines:1}}}}}}),{page,go,record,toLine}=env;try{
+  await page.waitForTimeout(800);await go('#yong-e/record');
+  await toLine(0);await record();await toLine(0);await record();
+  check('five earlier and two today: not yet',await dialog(page).count()===0);
+  await toLine(0);await record();await dialog(page).waitFor();
+  check('five earlier and three today opens it',true);
+ }finally{await env.close();}
+}
 async function cardOrderIsLogged(){
  const env=await setup(),{page,state,go,record,researchEvents}=env;try{
   await go('#yong-e/record');state.score=70;state.weak=[0,2];await record();
@@ -159,6 +191,6 @@ async function cardOrderIsLogged(){
 }
 (async()=>{
  browser=await chromium.launch({channel:'msedge',headless:true,args:['--no-proxy-server','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});
- await eighthRecordingOpensWithPictureByTurn();await countFollowsThePupil();await skipGivesNoPicture();await leavingSkips();await cardOrderIsLogged();
+ await eighthRecordingOpensWithPictureByTurn();await countFollowsThePupil();await skipGivesNoPicture();await leavingSkips();await finishingThePoemOpensItOnce();await earlierCheckBlocksFinishing();await countCarriesOverDays();await cardOrderIsLogged();
  check('no browser exceptions',errors.length===0);
 })().catch(error=>{results.push({label:'suite',passed:false,error:error.stack});process.exitCode=1;}).finally(async()=>{await browser?.close();console.log(JSON.stringify({ok:results.every(r=>r.passed),syntheticOnly:true,noProductionRequests:true,checks:results},null,1));});

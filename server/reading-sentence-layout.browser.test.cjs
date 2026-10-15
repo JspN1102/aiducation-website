@@ -3,7 +3,7 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const repo=path.resolve(__dirname,'..'),origin='https://reading-layout.invalid';
-const poems=JSON.parse(fs.readFileSync(path.join(repo,'maanshan/poems.json'),'utf8')).poems;
+const poems=['poems.json','poems-preview.json'].flatMap(f=>JSON.parse(fs.readFileSync(path.join(repo,'maanshan',f),'utf8')).poems);
 const source=fs.readFileSync(path.join(repo,'scripts/build-maanshan-css.cjs'),'utf8');
 const css=[...source.match(/const files = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map(m=>fs.readFileSync(path.join(repo,'maanshan',m[1]),'utf8')).join('\n');
 const evidence=process.env.READING_LAYOUT_EVIDENCE_DIR,checks=[],errors=[];
@@ -14,7 +14,7 @@ async function setup(browser,width,height){
  await context.route('**/*',async route=>{
   const u=new URL(route.request().url()),endpoint=u.pathname.replace(/\/$/,'');
   if(endpoint.startsWith('/api/')){
-   const body=endpoint==='/api/school-auth'?(u.searchParams.get('action')==='progress'?{enabled:true,userId:'reading-layout',poems:{}}:{enabled:true,authenticated:true,user:{id:'reading-layout',role:'student',displayName:'測試同學',grade:1,cls:'A',classNo:1,isTest:true,learningScope:'all-grades',researchEnabled:false},csrfToken:'synthetic'}):endpoint==='/api/school-recordings'?{ok:true,userId:'reading-layout',recordings:[]}:{ok:true};
+   const body=endpoint==='/api/school-auth'?(u.searchParams.get('action')==='progress'?{enabled:true,userId:'reading-layout',poems:{}}:{enabled:true,authenticated:true,user:{id:'reading-layout',role:'student',displayName:'測試同學',grade:1,cls:'A',classNo:1,isTest:true,previewPoems:true,learningScope:'all-grades',researchEnabled:false},csrfToken:'synthetic'}):endpoint==='/api/school-recordings'?{ok:true,userId:'reading-layout',recordings:[]}:{ok:true};
    return route.fulfill({contentType:'application/json',body:JSON.stringify(body)});
   }
   if(endpoint==='/maanshan/app.bundle.css')return route.fulfill({contentType:'text/css',body:css});
@@ -43,16 +43,22 @@ async function setup(browser,width,height){
      const metrics=await page.locator('.record-tool[data-step="read"]>.verse').evaluate(el=>{
       const box=node=>{const b=node.getBoundingClientRect();return{x:b.x,y:b.y,width:b.width,height:b.height,bottom:b.bottom,right:b.right};};
       const verse=box(el),rubies=[...el.querySelectorAll('ruby')],clauses=[...el.querySelectorAll('.verse-clause')];
-      return{verse,rubies:rubies.map(r=>({...box(r),size:parseFloat(getComputedStyle(r).fontSize)})),paired:clauses.map(c=>[...c.querySelectorAll('ruby')].map(r=>box(r).x)),
+      // Adjacent cells (characters and punctuation) on one row must not overlap.
+      const cells=[...el.querySelectorAll('ruby,.punct')].map(n=>({t:n.firstChild.data,...box(n)}));
+      const overlaps=cells.slice(1).map((b,i)=>[cells[i],b]).filter(([a,b])=>Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)>10&&a.right>b.x+.5).map(([a,b])=>a.t+b.t);
+      const scroll=[el,...clauses].filter(n=>n.scrollWidth>n.clientWidth+1).map(n=>n.className+' '+n.scrollWidth+'>'+n.clientWidth);
+      return{verse,prose:el.classList.contains('verse-prose'),overlaps,scroll,rubies:rubies.map(r=>({...box(r),size:parseFloat(getComputedStyle(r).fontSize)})),paired:clauses.map(c=>[...c.querySelectorAll('ruby')].map(r=>box(r).x)),
        controls:box(document.querySelector('#record-controls')),demo:box(document.querySelector('.record-model')),view:box(document.querySelector('#view')),noOverflow:document.documentElement.scrollWidth<=innerWidth+1,
        pinyin:rubies.map(r=>({r:box(r),rt:box(r.querySelector('rt')),size:parseFloat(getComputedStyle(r.querySelector('rt')).fontSize)}))};
      });
      const label=`${engine} ${width}x${height} ${poem.slug} line ${line+1}`;
-     const minimum=height<=560?36:width<=360?36:width<700?40:48;
+     // Prose (鄭人買履) shrinks to fit two rows, so it has its own floor.
+     const minimum=metrics.prose?(width<=360?22:width<700?26:32):height<=560?36:width<=360?36:width<700?40:48;
      check(label+' readable large characters without horizontal overflow',metrics.noOverflow&&metrics.rubies.every(r=>r.size>=minimum&&r.x>=0&&r.right<=width),metrics);
-     check(label+' pinyin remains distinct and above its character',metrics.pinyin.every(p=>p.size>=16&&p.rt.x>=p.r.x-2&&p.rt.right<=p.r.right+2),metrics.pinyin);
+     check(label+' pinyin remains distinct and above its character',metrics.pinyin.every(p=>p.size>=(metrics.prose?12:16)&&p.rt.x>=p.r.x-2&&p.rt.right<=p.r.right+2),metrics.pinyin);
      check(label+' whole sentence and recording control fit the screen',metrics.verse.y>=metrics.view.y-1&&metrics.demo.y>=metrics.verse.bottom-1&&metrics.controls.y>=metrics.demo.bottom-1&&metrics.controls.bottom<=Math.min(height-3,metrics.view.bottom+1),metrics);
-     if(metrics.paired.length>1)check(label+' paired five-character lines have matching columns',metrics.paired.every(row=>row.every((x,i)=>Math.abs(x-metrics.paired[0][i])<=1)),metrics.paired);
+     check(label+' no clipped sentence or overlapping characters',!metrics.scroll.length&&!metrics.overlaps.length,{scroll:metrics.scroll,overlaps:metrics.overlaps});
+     if(metrics.paired.length>1&&!metrics.prose)check(label+' paired five-character lines have matching columns',metrics.paired.every(row=>row.every((x,i)=>Math.abs(x-metrics.paired[0][i])<=1)),metrics.paired);
     }
     if(evidence&&[2,5].includes(poem.grade))await page.screenshot({path:path.join(evidence,`${engine}-${width}x${height}-${poem.slug}.png`)});
    }}finally{await context.close();}

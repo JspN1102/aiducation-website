@@ -13,7 +13,9 @@
 
 /* Stage: one 1600×900 painting (the "world") that gains a line of the poem each round; overlays sit in % of it and 1cqw = 16 painting px. */
 .poem-couplet-game .pc-stage{grid-area:stage;position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#e9e2d2;border:1px solid #d6d2c1;box-shadow:0 6px 20px #2c443114;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-.poem-couplet-game .pc-world{position:absolute;top:0;left:0;width:100%;height:100%;container-type:inline-size;overflow:hidden}
+/* clip, not just hidden: a hidden box can still be scrolled when a bird inside it is focused or
+   scrolled into view, which slid the painting 17px up/left and cut 「兩個黃鸝」 off at the top. */
+.poem-couplet-game .pc-world{position:absolute;top:0;left:0;width:100%;height:100%;container-type:inline-size;overflow:hidden;overflow:clip}
 .poem-couplet-game.is-live[data-round="0"] .pc-world{touch-action:none;cursor:crosshair}
 .poem-couplet-game.is-live[data-round="2"] .pc-world,.poem-couplet-game.is-live[data-round="3"] .pc-world{touch-action:none}
 .poem-couplet-game.is-live[data-round="3"] .pc-world{cursor:pointer}
@@ -42,6 +44,9 @@
 .poem-couplet-game .pc-bird.is-sing img{animation:poem-couplet-sing .9s ease-out}
 .poem-couplet-game .pc-chirp{position:absolute;left:50%;bottom:92%;padding:2px 10px;border-radius:14px;background:#fffaf0f5;color:#7b4a12;font-size:clamp(14px,1.6cqw,19px);font-weight:700;line-height:1.4;white-space:nowrap;box-shadow:0 2px 6px #2a1d1033;transform:translate(-50%,0) scale(.6);opacity:0;pointer-events:none}
 .poem-couplet-game .pc-bird.is-sing .pc-chirp{animation:poem-couplet-chirp .9s ease-out}
+/* While the labels about the orioles (兩個黃鸝, 近景・黃鸝鳴柳, 鳴 ♪) are shown above them, a tapped
+   bird sings without its 「啾啾♪」 bubble, which would land under those labels. */
+.poem-couplet-game:has(.pc-tag.is-on:is([data-pc-show="r0"],[data-pc-show="final"],[data-pc-show="sound"])) .pc-chirp{visibility:hidden}
 /* How green the willow is: three leaves fill up, one per stroke (or a third of the tree each). */
 .poem-couplet-game .pc-meter{position:absolute;right:2.2%;top:3.5%;z-index:5;display:flex;align-items:center;gap:7px;padding:6px 12px 6px 14px;border-radius:999px;background:#fffaf0ed;color:#3c6447;box-shadow:0 2px 8px #2a1d1033;pointer-events:none;transition:opacity .5s ease,visibility 0s,background .4s}
 .poem-couplet-game .pc-meter-t{margin-right:2px;font-size:clamp(14px,1.6vw,18px);font-weight:700;line-height:1.3;letter-spacing:.04em;white-space:nowrap}

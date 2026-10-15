@@ -11,7 +11,8 @@
 .poem-seven-steps.is-done .ss-progress{background:#f6e5c8;color:#8a4f24}
 
 /* Stage: the three scene paintings stay 16:9; every overlay is placed in % of that box. */
-.poem-seven-steps .ss-stage{--zs:1.6;--zl:11.25;container-type:inline-size;grid-area:stage;position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#e9e2d2;border:1px solid #d6d2c1;box-shadow:0 6px 20px #2c443114;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+/* overflow:clip (hidden for old Safari): a hidden frame can still be scrolled when a hotspot inside it is focused or scrolled into view, which slid the painting inside its frame. */
+.poem-seven-steps .ss-stage{--zs:1.6;--zl:11.25;container-type:inline-size;grid-area:stage;position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;overflow:clip;border-radius:20px;background:#e9e2d2;border:1px solid #d6d2c1;box-shadow:0 6px 20px #2c443114;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 /* s6 camera: zooms into scene-3's bean plant. --zs = scale, --zl = scene % hidden on the left. Big stages (iPad
    portrait, desktop) zoom a little less (1.45×) so the 1600px painting is not blown up as far past its own resolution. */
 .poem-seven-steps .ss-cam{position:absolute;inset:0;transform-origin:0 0;transition:transform 1.6s cubic-bezier(.45,.05,.25,1)}

@@ -33,5 +33,5 @@ function attemptSnapshot(value,depth=0){
 export function compactLearningSnapshot(state){
   return {reading:structuredClone(state.reading||[]),challenge:attemptSnapshot(state.challenge),exploration:state.exploration?structuredClone(state.exploration):null,
     // school69 self-check counts: recordings since the last check and checks so far.
-    ...(state.selfCheck?{selfCheck:{reads:Number(state.selfCheck.reads)||0,checks:Number(state.selfCheck.checks)||0,gifts:Number(state.selfCheck.gifts)||0}}:{})};
+    ...(state.selfCheck?{selfCheck:{reads:Number(state.selfCheck.reads)||0,checks:Number(state.selfCheck.checks)||0,gifts:Number(state.selfCheck.gifts)||0,lines:Number(state.selfCheck.lines)||0}}:{})};
 }

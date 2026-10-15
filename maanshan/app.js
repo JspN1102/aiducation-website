@@ -1,6 +1,6 @@
 import {imageAsset} from './media-images.mjs?v=20261007-school46';
 import {manageAnimationSource} from './animation-source.mjs?v=20261005-school41';
-import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20260929-parts1';
+import {escapeHTML as esc, clamp, mapAssessment, mergeAssessments, migrateReadingState, createSyncQueue} from './core.mjs?v=20261016-school69e';
 import {mountStage, getScenePreview, preloadScene, addScenePreviews} from './scene-stage.mjs?v=20261007-school46';
 import {configurePronunciation, getPronunciationPractice, syllableParts, toneName} from './pronunciation.mjs?v=20260929-parts1';
 import {getWordAudioURL} from './word-audio.mjs?v=20261007-school46';
@@ -15,12 +15,12 @@ import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school9';
 import {mountLessonMap} from './lesson-map.mjs?v=20261006-school43';
 import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261006-school43';
 import {challengeSummary,practiceRecordSummary,mergeChallengeRecords} from './challenge-state.mjs?v=20261006-school43';
-import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20261015-school69';
-import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, micDeniedHelp, micNeedsReload, unsupportedHelp, prewarmAssessment} from './recording-audio.mjs?v=20261013-school62b';
+import {compactLearningSnapshot} from './learning-snapshot.mjs?v=20261016-school69e';
+import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAssessment, submitSpeech, recordingErrorMessage, micDeniedHelp, micNeedsReload, unsupportedHelp, prewarmAssessment} from './recording-audio.mjs?v=20261016-school69e';
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
-import {requestJSON, requestChat} from './network.mjs?v=20261011-school58';
-import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261007-school46';
-import {schoolSession} from './bootstrap.mjs?v=20261016-school69d';
+import {requestJSON, requestChat} from './network.mjs?v=20261016-school69e';
+import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261016-school69e';
+import {schoolSession} from './bootstrap.mjs?v=20261016-school69e';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261013-school62b';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20261013-school60';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261016-school69d';
@@ -110,6 +110,7 @@ let poems=[], poem=null, view='record', routeVersion=0, showPinyin=true, session
 let transientAudio=null, transientUrl=null, speechVersion=0, toastTimer=null;
 let currentLine=0, recorder=null, stream=null, recordContext=null, recordTimer=null, recordStarted=0, recordBusy=false, recordingVersion=0, micDenied='', recordUnsupported=false;
 let recordStep='read', recordWordIndex=0;
+let recordCards={id:'',seen:0,open:false,timer:0},cardsShown=new Map(),cardDrag=null,cardClickBlock=0;
 let reportGeneration=0;
 let chatBusy=false,chatVoice=null,chatVoiceInserted=false,recordStopReason='manual';
 let sceneStage=null, exploration=null, activeSpeechButton=null, finishTransient=null;
@@ -463,8 +464,35 @@ async function api(path,body,timeout=35000,retry=false) {
 function verseHTML(line,extra='') {
   let index=0;
   const clauses=(line.text+(line.punctuation||'')).match(/[^，。！？；」]+[，。！？；」]*/g)||[];
-  const contents=clauses.map(clause=>Array.from(clause).map(c=>/\p{Script=Han}/u.test(c)?`<ruby>${esc(c)}<rt>${esc(line.pinyin[index++])}</rt></ruby>`:`<span class="punct">${esc(c)}</span>`).join(''));
+  const han=c=>/\p{Script=Han}/u.test(c),open=c=>/[「『（《“‘]/.test(c);
+  const cell=c=>han(c)?`<ruby>${esc(c)}<rt>${esc(line.pinyin[index++])}</rt></ruby>`:`<span class="punct${open(c)?' open':/[」』）》”’]/.test(c)?' close':''}">${esc(c)}</span>`;
+  const counts=clauses.map(clause=>Array.from(clause).filter(han).length);
+  if(counts.length>1&&counts.some(n=>n!==counts[0]))return proseVerseHTML(line,extra,clauses,cell);
+  const contents=clauses.map(clause=>Array.from(clause).map(cell).join(''));
   return `<div class="verse ${extra}${contents.length>1?' verse-compound':''}" aria-label="${esc(line.text+(line.punctuation||''))}">${contents.length>1?contents.map(part=>'<span class="verse-clause">'+part+'</span>').join(''):contents.join('')}</div>`;
+}
+// Prose (鄭人買履): clauses of unequal length wrap like a paragraph. A unit keeps
+// an opening quote with the next character and closing marks with the previous
+// one. --fit is the row width in em (pinyin included) that holds the sentence in
+// two rows (three when long); CSS sizes the characters from it.
+function proseVerseHTML(line,extra,clauses,cell) {
+  let at=0;
+  const width=c=>/\p{Script=Han}/u.test(c)?Math.max(1,.23*String(line.pinyin[at++]||'').length)+.08:/[「『（《“‘」』）》”’]/.test(c)?.54:.6;
+  const parts=clauses.map(clause=>{
+    const units=[];let lead=null;
+    for(const c of clause){
+      const piece={html:cell(c),w:width(c)},last=units[units.length-1];
+      if(/[「『（《“‘]/.test(c))lead=lead?{html:lead.html+piece.html,w:lead.w+piece.w}:piece;
+      else if(!/\p{Script=Han}/u.test(c)&&last&&!lead){last.html+=piece.html;last.w+=piece.w;}
+      else{units.push(lead?{html:lead.html+piece.html,w:lead.w+piece.w}:piece);lead=null;}
+    }
+    if(lead)units.push(lead);
+    return {units,w:units.reduce((sum,u)=>sum+u.w,0)};
+  });
+  const pack=limit=>{let rows=1,x=0;for(const p of parts){if(p.w>limit&&x){rows++;x=0;}for(const u of p.w>limit?p.units:[p]){if(x&&x+u.w>limit){rows++;x=0;}x+=u.w;}}return rows;};
+  const fit=rows=>{let limit=Math.max(...parts.flatMap(p=>p.units.map(u=>u.w)),parts.reduce((sum,p)=>sum+p.w,0)/rows);while(pack(limit)>rows)limit+=.25;return limit;};
+  const limit=fit(2)>13?fit(3):fit(2);
+  return `<div class="verse verse-prose ${extra}" style="--fit:${(limit+.3).toFixed(2)}" aria-label="${esc(line.text+(line.punctuation||''))}">${parts.map(p=>'<span class="verse-clause">'+p.units.map(u=>'<span class="verse-unit">'+u.html+'</span>').join('')+'</span>').join('')}</div>`;
 }
 const GRADE_NAMES=['','一','二','三','四','五','六'];
 // Teachers can narrow the library to one grade (0: every grade); the order stays the catalogue's.
@@ -699,7 +727,7 @@ function renderRecord() {
   if(!$('#record-art')){
     $('#view').innerHTML='<div class="record-layout"><div class="record-landscape"><div class="record-art" id="record-art"></div><div class="record-line-nav"><button class="icon-button" data-action="record-step" data-value="-1" aria-label="上一句">'+icon('chevron-left')+'</button><p class="record-unfold-note" id="record-unfold-note"></p><button class="icon-button" data-action="record-step" data-value="1" aria-label="下一句">'+icon('chevron-right')+'</button></div><div class="record-progress" aria-hidden="true"></div></div><div class="record-practice"><div class="record-tool" id="record-tool"></div></div><div class="record-bottom" id="record-bottom"></div></div>';
     sceneStage=mountStage($('#record-art'),{poemSlug:poem.slug,scene:sceneNumber,alt:sceneNumber?sceneText(sceneNumber):'等待展開的古詩畫卷'});
-    poemSwipe=mountPoemSwipe($('#record-art'),{stage:sceneStage,onStep:stepRecordLine,isLocked:()=>recordBusy,getAdjacent:()=>{
+    poemSwipe=mountPoemSwipe($('#record-art'),{stage:sceneStage,onStep:stepRecordLine,isLocked:()=>recordBusy||cardsLocked(),getAdjacent:()=>{
       const painting=index=>poem.lines[index]?{scene:poem.lines[index].scene,alt:sceneText(poem.lines[index].scene)}:null;
       return {previous:painting(currentLine-1),next:painting(currentLine+1)};
     }});
@@ -716,16 +744,75 @@ function renderRecord() {
     content='<div class="record-feedback"><img class="feedback-motif" src="'+poemMotif()+'" width="64" height="64" alt=""><div class="record-result '+scoreBand(result.total_score)+'" aria-label="這次朗讀'+result.total_score+'分">'+result.total_score+'<small>分</small></div><h2 tabindex="-1" class="record-feedback-title">'+esc(result.grade)+'</h2><div class="record-actions"><button class="button" data-action="record-retry">'+icon('rotate-ccw')+'再讀一次</button>'+next+'</div></div>';
   }else{
     recordWordIndex=clamp(recordWordIndex,0,weak.length-1);const word=weak[recordWordIndex],parts=syllableParts(word,line);
-    content='<div class="record-word-heading"><span>這句 <b class="score-chip '+scoreBand(result.total_score)+'">'+result.total_score+'</b> 分</span><span>第 '+(recordWordIndex+1)+' / '+weak.length+' 個字</span></div><div class="record-review"><button class="focus-word" data-action="word-tts" data-value="'+esc(word.c)+'" data-pinyin="'+esc(word.p)+'" aria-label="聽'+esc(word.c)+'的讀音"><ruby>'+esc(word.c)+'<rt>'+esc(word.p)+'</rt></ruby>'+icon('volume-2')+'</button></div>'+syllablePartsHTML(parts,word.c)+'<p class="record-word-hint">'+syllableHint(parts)+'</p><div class="record-word-pager"><button class="icon-button" data-action="record-word-step" data-value="-1" aria-label="上一個字" '+(recordWordIndex===0?'disabled':'')+'>'+icon('chevron-left')+'</button><button class="icon-button" data-action="record-word-step" data-value="1" aria-label="下一個字" '+(recordWordIndex===weak.length-1?'disabled':'')+'>'+icon('chevron-right')+'</button></div><div class="record-actions">'+next+'</div>';
+    const cardId=result.recordingId||poem.id+'-'+currentLine+'-'+result.total_score;
+    if(recordCards.id!==cardId){clearTimeout(recordCards.timer);recordCards={id:cardId,seen:0,open:false,timer:0};}
+    recordCards.seen=Math.max(recordCards.seen,recordWordIndex);
+    const locked=cardsLocked()?' disabled':'',dots='<span class="record-card-dots" aria-hidden="true">'+weak.map((_,i)=>'<i class="'+(i===recordWordIndex?'current':i<=recordCards.seen?'seen':'')+'"></i>').join('')+'</span>';
+    content='<div class="record-word-heading"><span>這句 <b class="score-chip '+scoreBand(result.total_score)+'">'+result.total_score+'</b> 分</span><span>第 '+(recordWordIndex+1)+' / '+weak.length+' 個字</span></div><div class="record-review"><button class="focus-word" data-action="word-tts" data-value="'+esc(word.c)+'" data-pinyin="'+esc(word.p)+'" aria-label="聽'+esc(word.c)+'的讀音"><ruby>'+esc(word.c)+'<rt>'+esc(word.p)+'</rt></ruby>'+icon('volume-2')+'</button></div>'+syllablePartsHTML(parts,word.c)+'<p class="record-word-hint">'+syllableHint(parts)+'</p><div class="record-word-pager"><button class="icon-button" data-action="record-word-step" data-value="-1" aria-label="上一個字" '+(recordWordIndex===0?'disabled':'')+'>'+icon('chevron-left')+'</button>'+dots+'<button class="icon-button" data-action="record-word-step" data-value="1" aria-label="下一個字" '+(recordWordIndex===weak.length-1?'disabled':'')+'>'+icon('chevron-right')+'</button></div><p class="record-cards-note" role="status">'+(locked?cardsNote(weak.length):CARDS_DONE)+'</p><div class="record-actions"><button class="button" data-action="record-retry"'+locked+'>'+icon('rotate-ccw')+'再讀一次</button>'+next.replace('>',locked+'>')+'</div>';
   }
-  $('#record-tool').dataset.step=recordStep;
+  $('#record-tool').dataset.step=recordStep;delete $('#record-tool').dataset.cardEnter;
   const extensionEntry=poem.id===2&&recordStep!=='extension'?'<button class="text-button extension-entry" data-action="record-extension" '+(recordBusy?'disabled':'')+'>拓展字：快</button>':'';
   $('#record-tool').innerHTML='<div class="record-counter"><span>'+(recordStep==='extension'?'拓展字 · 不計分':'第 '+(currentLine+1)+' / '+poem.lines.length+' 句')+'</span>'+(result&&recordStep==='read'?'<button class="text-button" data-action="record-feedback" '+(recordBusy?'disabled':'')+'>'+icon('check')+'看看這句成果</button>':recordStep==='read'&&!extensionEntry?'<img class="practice-motif" src="'+poemMotif()+'" width="40" height="40" alt="">':'')+extensionEntry+'</div>'+content;
   $('#record-bottom').innerHTML=recordStep==='extension'||recordStep==='read'?'':recordings.has(poem.id+'-'+currentLine)?'<button class="text-button" data-action="replay" data-value="'+currentLine+'">'+icon('headphones')+'我的錄音</button>':'';
-  document.querySelectorAll('[data-action="record-step"]').forEach(b=>b.disabled=recordBusy||(Number(b.dataset.value)<0?currentLine===0:currentLine===poem.lines.length-1));
+  updateLineNav();
   setRecordingBusy();
   icons();
+  if(recordStep==='words')openCardsSoon();
 }
+function updateLineNav(){
+  const locked=cardsLocked(),tool=$('#record-tool');if(tool)tool.dataset.cardsLocked=String(locked);
+  document.querySelectorAll('[data-action="record-step"]').forEach(b=>b.disabled=recordBusy||locked||(Number(b.dataset.value)<0?currentLine===0:currentLine===poem.lines.length-1));
+}
+// Weak-word cards: 再讀一次 and 下一句 (and the line arrows and painting swipe) wait
+// until the last card has been on screen for a moment, outside the self-check.
+const CARDS_OPEN_MS=1500,CARDS_DONE='看完了，可以繼續了',cardsNote=n=>n>1?'左右滑動看完所有錯字卡，才可以繼續喔':'看完這張錯字卡，才可以繼續喔';
+function cardsLocked(){return view==='record'&&recordStep==='words'&&!recordCards.open;}
+function openCardsSoon(){
+  if(recordCards.open||recordCards.timer||selfCheck||!cardsLocked()||recordWordIndex<recordWeakWords().length-1)return;
+  const id=recordCards.id;
+  recordCards.timer=setTimeout(()=>{
+    if(recordCards.id!==id)return;recordCards.timer=0;
+    if(selfCheck||!cardsLocked()||recordWordIndex<recordWeakWords().length-1)return;
+    recordCards.open=true;$('#record-tool .record-actions')?.querySelectorAll('button').forEach(b=>b.disabled=false);
+    const note=$('#record-tool .record-cards-note');if(note)note.textContent=CARDS_DONE;updateLineNav();
+  },CARDS_OPEN_MS);
+}
+function stepRecordCard(step){
+  const weak=recordWeakWords(),next=clamp(recordWordIndex+step,0,weak.length-1);
+  if(recordBusy||recordStep!=='words'||next===recordWordIndex)return;
+  recordWordIndex=next;setRecordStep('words');
+  const tool=$('#record-tool');if(tool)tool.dataset.cardEnter=step>0?'next':'previous';
+}
+// The pupil's choice after the cards, once per recording whose cards were logged as shown.
+function cardChoice(choice){
+  const id=state(poem).reading[currentLine]?.recordingId;
+  if(recordStep!=='words'||!cardsShown.has(id))return;
+  const attemptId=cardsShown.get(id);cardsShown.delete(id);
+  research.emit('answer_submitted',timedResearch('answer_submitted',{activity:'read',poemId:poem.id,attemptId,itemId:'p'+poem.id+'.l'+currentLine+'.cards',response:{choiceId:choice},result:{status:'completed',score:null,correct:null},context:{lineIndex:currentLine,position:Math.min(200,recordCards.seen+1),total:Math.min(200,recordWeakWords().length)}}));
+}
+// Cards turn with a sideways swipe or drag (touch, pen or mouse); vertical moves still scroll.
+document.addEventListener('pointerdown',e=>{
+  cardDrag=null;
+  const tool=e.target.closest?.('#record-tool[data-step=words]');
+  if(!tool||e.button!==0||e.isPrimary===false||recordBusy||e.target.closest('.record-actions,.record-word-pager'))return;
+  cardDrag={id:e.pointerId,x:e.clientX,y:e.clientY,tool,horizontal:false};
+});
+document.addEventListener('pointermove',e=>{
+  const drag=cardDrag;if(!drag||e.pointerId!==drag.id)return;
+  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+  if(!drag.horizontal){if(Math.abs(dy)>8&&Math.abs(dy)>Math.abs(dx)){cardDrag=null;return;}if(Math.abs(dx)<8)return;drag.horizontal=true;drag.tool.dataset.swiping='true';}
+  drag.tool.style.setProperty('--card-dx',Math.max(-90,Math.min(90,dx))+'px');
+});
+function endCardDrag(e,cancelled){
+  const drag=cardDrag;if(!drag||e.pointerId!==drag.id)return;cardDrag=null;
+  delete drag.tool.dataset.swiping;drag.tool.style.removeProperty('--card-dx');
+  if(!drag.horizontal)return;
+  cardClickBlock=performance.now()+400;
+  const dx=e.clientX-drag.x;if(!cancelled&&Math.abs(dx)>=40)stepRecordCard(dx<0?1:-1);
+}
+document.addEventListener('pointerup',e=>endCardDrag(e,false));
+document.addEventListener('pointercancel',e=>endCardDrag(e,true));
+document.addEventListener('click',e=>{if(performance.now()<cardClickBlock&&e.target.closest?.('#record-tool')){e.preventDefault();e.stopImmediatePropagation();}},true);
 // Colour band of a sentence or poem score: the same 80 / 60 cut-offs as each
 // word's status (core.mjs mapAssessment), so a score and its words agree.
 function scoreBand(score){return typeof score!=='number'||!Number.isFinite(score)?'unknown':score<60?'error':score<80?'warn':'ok';}
@@ -780,7 +867,7 @@ function setRecordStep(step,focus=true){
   if(focus){const target=$('#record-tool .focus-word, #record-tool .record-feedback-title, #record-tool [data-action="record-start"]');target?.focus({preventScroll:true});}
 }
 function stepRecordLine(step){
-  if(recordBusy)return;const next=clamp(currentLine+step,0,poem.lines.length-1);if(next===currentLine)return;
+  if(recordBusy||cardsLocked())return;const next=clamp(currentLine+step,0,poem.lines.length-1);if(next===currentLine)return;
   currentLine=next;recordWordIndex=0;setRecordStep('read',false);shishi?.pause(false);
 }
 function recordControlsHTML(){
@@ -805,14 +892,18 @@ function assessmentStatus(message){const controls=$('#record-controls');if(contr
 // scored. The n-th painting given for a poem is the painting of its n-th line, round
 // and round; 跳過 gives none, so the same painting waits for the next time. The counts
 // travel with the poem's progress to the pupil's other devices.
+// It also comes once when the pupil has first read every line of the poem (count starts
+// again from there), unless the eight-recording check already came before that.
 const SELF_CHECK_EVERY=8;
 let selfCheck=null;
-function selfCheckCount(value){const n=key=>Math.max(0,Math.trunc(Number(value?.[key]))||0);return {reads:n('reads'),checks:Math.max(n('checks'),n('gifts')),gifts:n('gifts')};}
+function selfCheckCount(value){const n=key=>Math.max(0,Math.trunc(Number(value?.[key]))||0);return {reads:n('reads'),checks:Math.max(n('checks'),n('gifts')),gifts:n('gifts'),lines:n('lines')};}
 function maybeSelfCheck(p,index,blob,audit,durationMs){
   if(durationMs<1500||blob.size<100)return;
   const s=state(p),count=selfCheckCount(s.selfCheck);
   count.reads++;
-  if(count.reads<SELF_CHECK_EVERY){s.selfCheck=count;persist();return;}
+  const before=count.lines;count.lines|=1<<index;
+  const finished=!count.checks&&before!==count.lines&&count.lines===2**p.lines.length-1;
+  if(count.reads<SELF_CHECK_EVERY&&!finished){s.selfCheck=count;persist();return;}
   count.reads=0;count.checks++;s.selfCheck=count;persist();
   const line=p.lines[index],pictureLine=count.gifts%p.lines.length;
   selfCheck?.handle.close();
@@ -828,7 +919,7 @@ function maybeSelfCheck(p,index,blob,audit,durationMs){
       metrics:{elapsedMs:Math.min(21600000,elapsedMs),selectionChanges:Math.min(1000,selectionChanges)},
       context:{lineIndex:index,position:Math.min(200,count.checks),total:p.lines.length}});
     },
-    onClose:()=>{if(selfCheck?.handle!==handle)return;selfCheck=null;if(view==='record'&&poem===p)$('#record-tool .focus-word, #record-tool .record-feedback-title, #record-tool [data-action="record-start"]')?.focus({preventScroll:true});}});
+    onClose:()=>{if(selfCheck?.handle!==handle)return;selfCheck=null;if(view==='record'&&poem===p&&recordStep==='words')openCardsSoon();if(view==='record'&&poem===p)$('#record-tool .focus-word, #record-tool .record-feedback-title, #record-tool [data-action="record-start"]')?.focus({preventScroll:true});}});
   selfCheck={handle,blob};
 }
 async function startRecording() {
@@ -925,7 +1016,10 @@ async function assessRecording(blob,p,index,version,generation,context,existing=
     if(raw.researchRecorded===false)research.emit('error',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index,error:{code:'storage_unavailable',retryable:true}});
     pendingRecordings.delete(key);
     const cards=weakWordsFor(result,p.lines[index]);
-    if(cards.length)research.emit('item_presented',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index+'.cards',response:{choiceId:'order-'+cardOrderArm(result)},context:{lineIndex:index,optionOrder:cards.slice(0,30).map(w=>Number.isInteger(w.i)?'c'+w.i:'x')}});
+    if(cards.length){
+      cardsShown.set(result.recordingId,pending.researchContext?.attemptId);if(cardsShown.size>50)cardsShown.delete(cardsShown.keys().next().value);
+      research.emit('item_presented',timedResearch('item_presented',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.l'+index+'.cards',response:{choiceId:'order-'+cardOrderArm(result)},context:{lineIndex:index,optionOrder:cards.slice(0,30).map(w=>Number.isInteger(w.i)?'c'+w.i:'x')}}));
+    }
     if(state(p).reading.every(Boolean))research.emit('activity_end',{activity:'read',poemId:p.id,attemptId:pending.researchContext?.attemptId,itemId:'p'+p.id+'.reading',result:{status:'completed',score:null,correct:null}});
     committed=true;if(isCurrent()){recordStep='result';recordWordIndex=0;}
     queueReading(p,{lineIdx:index,lineScore:result.total_score});
@@ -1406,9 +1500,11 @@ document.addEventListener('click',event=>{
   if(action==='record-feedback'&&!recordBusy)setRecordStep('result');
   if(action==='record-extension'&&view==='record'&&poem.id===2&&!recordBusy)setRecordStep('extension');
   if(action==='record-extension-back'&&view==='record'&&!recordBusy)setRecordStep('read');
-  if(action==='record-retry'&&!recordBusy)setRecordStep('read');
-  if(action==='record-word-step'&&!recordBusy){recordWordIndex=clamp(recordWordIndex+Number(value),0,recordWeakWords().length-1);setRecordStep('words');}
-  if(action==='record-next'&&!recordBusy){stopMedia();if(currentLine<poem.lines.length-1){currentLine++;recordWordIndex=0;setRecordStep('read');}else location.hash=link('report');}
+  if(['record-retry','record-next'].includes(action)&&(recordBusy||cardsLocked()))return;
+  if(['record-retry','record-next'].includes(action))cardChoice(action==='record-retry'?'retry':'next');
+  if(action==='record-retry')setRecordStep('read');
+  if(action==='record-word-step')stepRecordCard(Number(value));
+  if(action==='record-next'){stopMedia();if(currentLine<poem.lines.length-1){currentLine++;recordWordIndex=0;setRecordStep('read');}else location.hash=link('report');}
   if(action==='replay')replay(Number(value),button);
   if(action==='replay-all')replay(null,button);
   if(action==='report-generate')generateReport();
@@ -1419,6 +1515,7 @@ document.addEventListener('click',event=>{
 });
 document.addEventListener('keydown',event=>{
   if(event.key==='Escape'){const menu=$('.lesson-menu');if(menu?.open){menu.open=false;menu.querySelector('summary').focus();}}
+  if(['ArrowLeft','ArrowRight'].includes(event.key)&&event.target.closest?.('#record-tool[data-step=words]')){event.preventDefault();stepRecordCard(event.key==='ArrowRight'?1:-1);}
   if(event.target.matches('.report-tabs [role="tab"]')&&['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();const tabs=[...document.querySelectorAll('.report-tabs [role="tab"]')],index=tabs.indexOf(event.target);const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(index+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;tabs[next].click();tabs[next].focus();}
 });
 document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>{if(button.dataset.close==='video-dialog')video.pause();document.getElementById(button.dataset.close).close();}));
@@ -1563,7 +1660,7 @@ async function init(){
             if(Array.isArray(snapshot.reading)&&snapshot.reading.length===p.lines.length)local.reading=snapshot.reading;
             if(snapshot.challenge&&typeof snapshot.challenge==='object')local.challenge=mergeChallengeRecords(snapshot.challenge,local.challenge,CHALLENGE_SETS[p.slug]);
             if(snapshot.exploration&&typeof snapshot.exploration==='object')local.exploration=snapshot.exploration;
-            if(snapshot.selfCheck){const remote=selfCheckCount(snapshot.selfCheck),mine=selfCheckCount(local.selfCheck);if(remote.checks>=mine.checks&&remote.gifts>=mine.gifts)local.selfCheck=remote;}
+            if(snapshot.selfCheck){const remote=selfCheckCount(snapshot.selfCheck),mine=selfCheckCount(local.selfCheck);if(remote.checks>=mine.checks&&remote.gifts>=mine.gifts)local.selfCheck={...remote,lines:remote.lines|mine.lines};}
             local.updatedAt=remoteTime;
           }
           else if(reading?.learningState?.challenge&&local.challenge)local.challenge=mergeChallengeRecords(local.challenge,reading.learningState.challenge,CHALLENGE_SETS[p.slug]);

@@ -55,3 +55,31 @@
 .workspace.view-report .word-analysis .word-result:is(.error,.poor) .word-part{color:var(--score-error)}
 /* A narrow card keeps at least two characters of a part to a line. */
 @supports (width:1cqi){.workspace.view-report .word-analysis .word-result .word-part{font-size:min(clamp(14px,1.45vw,17px),calc(var(--cell) / 2.2));white-space:normal}}
+/* Weak-word cards turn sideways (swipe, drag, arrows or arrow keys); dots between
+   the arrows show the position. 再讀一次 and 下一句 wait for the last card (app.js). */
+.workspace.view-record .record-tool[data-step=words]{touch-action:pan-y pinch-zoom;-webkit-user-select:none;user-select:none}
+.workspace.view-record .record-tool[data-step=words]>:is(.record-review,.syllable-parts,.record-word-hint){transform:translateX(var(--card-dx,0px));transition:transform .2s ease-out}
+.workspace.view-record .record-tool[data-swiping]>:is(.record-review,.syllable-parts,.record-word-hint){transition:none}
+.workspace.view-record .record-tool[data-card-enter=next]>:is(.record-review,.syllable-parts,.record-word-hint){animation:record-card-next .24s ease-out}
+.workspace.view-record .record-tool[data-card-enter=previous]>:is(.record-review,.syllable-parts,.record-word-hint){animation:record-card-previous .24s ease-out}
+@keyframes record-card-next{from{opacity:.2;transform:translateX(44px)}}
+@keyframes record-card-previous{from{opacity:.2;transform:translateX(-44px)}}
+.workspace.view-record .record-tool[data-step=words] .record-word-pager{align-items:center;gap:18px}
+.workspace.view-record .record-card-dots{display:flex;align-items:center;justify-content:center;gap:7px}
+.workspace.view-record .record-card-dots i{width:9px;height:9px;border-radius:5px;background:#ddd6c3;transition:width .2s,background-color .2s}
+.workspace.view-record .record-card-dots i.seen{background:#9cbfa5}
+.workspace.view-record .record-card-dots i.current{width:22px;background:var(--green)}
+.workspace.view-record .record-tool[data-cards-locked=true] [data-action=record-word-step][data-value="1"]:not(:disabled){animation:record-card-hint 1.6s ease-in-out infinite}
+@keyframes record-card-hint{50%{box-shadow:0 0 0 7px rgba(60,104,86,.18);background:rgba(60,104,86,.08)}}
+.workspace.view-record .record-tool[data-step=words] .record-actions .button{white-space:nowrap}
+@media (prefers-reduced-motion:reduce){
+.workspace.view-record .record-tool[data-step=words] *{animation:none!important;transition:none!important}
+}
+.workspace.view-record .record-cards-note{margin:2px 0 6px;font-size:15px;line-height:1.45;color:#7a6a45;text-align:center}
+.workspace.view-record .record-tool[data-cards-locked=false] .record-cards-note{color:var(--green)}
+/* Phones: a shorter painting keeps both choices under the cards in view. */
+@media (max-width:700px) and (orientation:portrait){
+.workspace.view-record .record-layout:has(.record-tool[data-step=words]) .record-art{max-height:132px}
+.workspace.view-record .record-tool[data-step=words] .record-word-pager{margin:2px 0}
+.workspace.view-record .record-cards-note{margin:0 0 4px;font-size:14px}
+}

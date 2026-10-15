@@ -63,6 +63,27 @@ export function migrateReadingState(state, poem) {
     state.pronunciationVersion = poem.pronunciationVersion;
     changed = true;
   }
+  // school69e: 一/不 now carry their spoken tone (一行 yì, 不見 bú); results saved
+  // earlier keep the old yī/bù, so bring them and their advice up to date.
+  let sandhi = false;
+  (Array.isArray(state.reading) ? state.reading : []).forEach((result, lineIndex) => {
+    const line = poem.lines[lineIndex];
+    if (!line || !Array.isArray(result?.words)) return;
+    const chars = verseCharacters(line.text);
+    for (const word of result.words) {
+      if (!['一', '不'].includes(word.c)) continue;
+      const at = Number.isInteger(word.i) && chars[word.i] === word.c ? word.i
+        : chars.indexOf(word.c) === chars.lastIndexOf(word.c) ? chars.indexOf(word.c) : -1;
+      if (at >= 0 && line.pinyin?.[at] && word.p !== line.pinyin[at]) { word.p = line.pinyin[at]; sandhi = true; }
+    }
+  });
+  if (sandhi) {
+    if (state.report) state.sandhiReportArchive = {report:state.report,reportVersion:state.reportVersion,reportStudentGrade:state.reportStudentGrade};
+    state.report = '';
+    delete state.reportVersion;
+    delete state.reportStudentGrade;
+    changed = true;
+  }
   return changed;
 }
 

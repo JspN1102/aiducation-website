@@ -5,7 +5,8 @@
 .poem-snow-game .sc-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
 .poem-snow-game .sc-task{margin:0;font-size:clamp(19px,2.4vw,24px);font-weight:700;line-height:1.4;text-wrap:balance}
 .poem-snow-game .sc-chip{flex:none;padding:4px 12px;border-radius:999px;background:#e8eff3;color:var(--sc-soft);font-size:17px;font-weight:700;line-height:1.4;font-variant-numeric:tabular-nums;white-space:nowrap}
-.poem-snow-game .sc-stage{position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;border-radius:20px;background:#e7edf0;border:1px solid #7f97a640;box-shadow:0 14px 28px -20px #23404f99;user-select:none;-webkit-user-select:none;touch-action:manipulation;font-family:var(--sans);container-type:inline-size}
+/* overflow:clip (hidden for old Safari): a hidden frame can still be scrolled when a hotspot inside it is focused or scrolled into view, which slid the painting inside its frame. */
+.poem-snow-game .sc-stage{position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;overflow:clip;border-radius:20px;background:#e7edf0;border:1px solid #7f97a640;box-shadow:0 14px 28px -20px #23404f99;user-select:none;-webkit-user-select:none;touch-action:manipulation;font-family:var(--sans);container-type:inline-size}
 .poem-snow-game .sc-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.3s ease;pointer-events:none;user-select:none;-webkit-user-drag:none}
 .poem-snow-game .sc-scene.is-on{opacity:1}
 .poem-snow-game .sc-veil{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(115% 95% at 50% 42%,#fff0 28%,#f2f6f8c4 100%),#ffffff1f;opacity:0;transition:opacity 1.4s ease}
@@ -93,7 +94,8 @@
 /* Round 4: the poem board. Cells come from the stage width; the gap shrinks so four rows always fit its 16:9 height. */
 .poem-snow-game[data-stage="seek"] .sc-veil,.poem-snow-game[data-stage="done"] .sc-veil{background:radial-gradient(120% 100% at 50% 50%,#ffffffb8 30%,#f2f6f8d9 100%)}
 .poem-snow-game[data-stage="done"] .sc-fall{z-index:5}
-.poem-snow-game .sc-poem{--sc-cell:clamp(44px,11.6cqw,96px);--sc-gap:max(0px,min(1.6cqw,(56.25cqw - 4 * var(--sc-cell)) / 4));position:absolute;inset:0;z-index:4;display:grid;align-content:center;justify-content:center;gap:var(--sc-gap)}
+/* Seven tiles always fit across the picture; on the narrowest phones they go just below 44px. */
+.poem-snow-game .sc-poem{--sc-cell:clamp(min(44px,13.6cqw),11.6cqw,96px);--sc-gap:max(0px,min(1.6cqw,(56.25cqw - 4 * var(--sc-cell)) / 4));position:absolute;inset:0;z-index:4;display:grid;align-content:center;justify-content:center;gap:var(--sc-gap)}
 .poem-snow-game .sc-row{display:grid;grid-template-columns:repeat(7,var(--sc-cell));border-radius:calc(var(--sc-cell) * .28);transition:background-color .35s,box-shadow .35s}
 .poem-snow-game .sc-row.is-reading{background:#fde9b0c9;box-shadow:0 0 0 3px #e8c57a8c}
 .poem-snow-game .sc-tile{position:relative;width:var(--sc-cell);height:var(--sc-cell);margin:0;padding:0;border:0;border-radius:24%;background:transparent;color:var(--sc-ink);cursor:pointer;touch-action:manipulation}

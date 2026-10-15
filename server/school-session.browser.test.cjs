@@ -30,7 +30,9 @@ const reply = (route, data, status = 200, headers = {}) => route.fulfill({ statu
   async function run(name, work) {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const page = await context.newPage(), errors = [];
-    page.setDefaultTimeout(2500);
+    // Keep the 2.5 s budget for behaviour waits; the fixture's ~1.3 s asset
+    // load alone can exceed it when other browser suites run in parallel.
+    page.setDefaultTimeout(2500); page.setDefaultNavigationTimeout(15000);
     page.on('pageerror', error => errors.push(error.message));
     try { await work(page, context); assert.deepEqual(errors, []); results.push({ name, pass: true }); }
     catch (error) { results.push({ name, pass: false, error: error.message }); }
