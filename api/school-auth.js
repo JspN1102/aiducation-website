@@ -3,6 +3,7 @@ import teacherLearning from './_lib/teacher-learning-reset.cjs';
 import teacherActivity from './_lib/teacher-activity.cjs';
 import studentStore from './_lib/student-store.js';
 import practiceProgress from './_lib/practice-progress.cjs';
+import weeklyReport from './_lib/weekly-report.cjs';
 import { get as getBlob } from '@vercel/blob';
 
 async function progress(req) {
@@ -56,6 +57,7 @@ export default async function handler(req, res) {
       if (!auth.enabled()) return res.status(200).json({ enabled: false, authenticated: false });
       if (req.query?.action === 'roster') return res.status(200).json(await auth.roster(req));
       if (req.query?.action === 'progress') return res.status(200).json(await progress(req));
+      if (req.query?.action === 'weekly-report') return res.status(200).json(await weeklyReport.handle(req));
       return res.status(200).json(await teacherLearning.withState(await auth.state(req)));
     }
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });

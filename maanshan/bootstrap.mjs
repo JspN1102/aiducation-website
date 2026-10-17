@@ -51,7 +51,7 @@ schoolSession.then(async school => {
     const resources=await classroomResources;
     if(resources.some(result=>result.status==='rejected'))throw new Error('Learning resource unavailable');
     if (invalidated || schoolState() !== school) return;
-    await import('./app.js?v=20261016-school69e');
+    await import('./app.js?v=20261017-school70');
   } catch {
     if (!invalidated) window.showLoadRecovery?.();
   } finally {

@@ -9,6 +9,7 @@ import {getRecitationAudioURL,getRecitationSequence} from './recitation-audio.mj
 import {schoolTtsURL,schoolTtsRemote} from './school-audio-url.mjs?v=20260930-school29';
 import {mountShishi} from './shishi.mjs?v=20261007-school46';
 import {openSelfCheck, selfCheckClauses} from './self-check.mjs?v=20261016-school69d';
+import {mountWeeklyReport} from './weekly-report.mjs?v=20261017-school70';
 import {mountLibraryShishi} from './library-shishi.mjs?v=20261007-school46';
 import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school9';
 import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school9';
@@ -20,7 +21,7 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
 import {requestJSON, requestChat} from './network.mjs?v=20261016-school69e';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261016-school69e';
-import {schoolSession} from './bootstrap.mjs?v=20261016-school69e';
+import {schoolSession} from './bootstrap.mjs?v=20261017-school70';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261013-school62b';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20261013-school60';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261016-school69d';
@@ -170,6 +171,8 @@ const lineLabel=index=>'第'+(['一','二','三','四','五','六','七','八'][
 const asset=(name,p=poem)=>imageAsset(`media/${p.slug}/${name}`);
 const teacherEntry = () => isTeacher ? '<a class="teacher-entry" href="teacher.html">教師後台</a>' : '';
 if(isTeacher){$('#profile-open').insertAdjacentHTML('beforebegin',teacherEntry());}
+// 上週學習報告: the bell beside the name, for pupils, teachers and demo accounts (weekly-report.mjs).
+if(school.enabled)mountWeeklyReport({anchor:$('#profile-open'),userId:school.user.id,studentName:school.user.displayName||'同學',load:()=>schoolFetch('/api/school-auth/?action=weekly-report').then(r=>r.ok?r.json():null).then(d=>d?.reports)});
 const poemMotif=(p=poem)=>'media/poetry-motifs/'+['goose','boat','mountain','moon','sprout','swallow','snow','rooster','beans','oriole','shoe','cup'][p.id-1]+'.svg';
 // Only poems with prepared AR scenes offer the exploration activity.
 const hasExplore=(p=poem)=>p.grade>=4&&p.explore!==false;
