@@ -1,12 +1,11 @@
-// 上週學習報告 (school70): a bell beside the pupil's name in the header. Every
-// Sunday 06:00 (Hong Kong) the server publishes last week's report (Sunday to
-// Saturday); the bell shows a dot until the pupil has opened the new one.
+// 上週學習報告 (school70): a 「我的週報」 button beside the pupil's name in the
+// header. Every Sunday 06:00 (Hong Kong) the server publishes last week's report
+// (Sunday to Saturday); the button shows a red dot until the pupil has opened it.
 // Only encouragement is shown: what was practised, the best line, the biggest
 // rise and the characters now read well. No ranking, no comparison.
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const svg = (body, cls = '') => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 const ICONS = {
-  bell: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
   read: '<path d="M12 19v3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><rect x="9" y="2" width="6" height="13" rx="3"/>',
   write: '<path d="M13 21h8"/><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>',
   challenge: '<path d="M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978"/><path d="M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978"/><path d="M18 9h1.5a1 1 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z"/><path d="M6 9H4.5a1 1 0 0 1 0-5H6"/>',
@@ -64,12 +63,12 @@ export function mountWeeklyReport({anchor, userId, studentName, load}) {
   if (!anchor || document.querySelector('.weekly-bell')) return;
   const SEEN = 'ms_weekly_seen:' + userId;
   const bell = document.createElement('button');
-  bell.type = 'button'; bell.className = 'weekly-bell'; bell.title = '上週學習報告'; bell.setAttribute('aria-label', '上週學習報告');
-  bell.innerHTML = svg(ICONS.bell) + '<span class="weekly-dot" hidden></span>';
+  bell.type = 'button'; bell.className = 'weekly-bell'; bell.title = '上週學習報告';
+  bell.innerHTML = '<span class="weekly-word"><span>我的</span><span>週報</span></span><span class="weekly-dot" hidden></span>';
   anchor.after(bell);
   let reports = [], index = 0;
   const seen = () => { try { return localStorage.getItem(SEEN) || ''; } catch { return ''; } };
-  const mark = () => { const dot = bell.querySelector('.weekly-dot'), fresh = reports[0] && reports[0].id !== seen(); dot.hidden = !fresh; bell.classList.toggle('has-new', !!fresh); bell.setAttribute('aria-label', fresh ? '上週學習報告（有新報告）' : '上週學習報告'); };
+  const mark = () => { const dot = bell.querySelector('.weekly-dot'), fresh = reports[0] && reports[0].id !== seen(); dot.hidden = !fresh; bell.classList.toggle('has-new', !!fresh); bell.setAttribute('aria-label', fresh ? '我的週報（有新報告）' : '我的週報'); };
   const dialog = document.createElement('dialog');
   dialog.className = 'weekly-dialog'; dialog.setAttribute('aria-labelledby', 'weekly-title');
   document.body.append(dialog);

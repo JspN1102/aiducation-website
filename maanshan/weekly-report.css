@@ -1,10 +1,17 @@
-/* 上週學習報告 (school70): header bell and the weekly card. */
-.weekly-bell{position:relative;display:grid;place-items:center;width:44px;height:44px;min-height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:#3a745f;cursor:pointer}
-.weekly-bell svg{width:24px;height:24px}
-.weekly-bell:hover,.weekly-bell:focus-visible{background:#3a745f14}
-.weekly-bell.has-new svg{animation:weekly-ring 2.6s ease-in-out 1s 3;transform-origin:50% 8%}
-.weekly-dot{position:absolute;top:8px;right:9px;width:11px;height:11px;border-radius:50%;background:#d8574a;box-shadow:0 0 0 2px #fffcf5}
-@keyframes weekly-ring{0%,30%,100%{transform:rotate(0)}5%{transform:rotate(14deg)}10%{transform:rotate(-12deg)}15%{transform:rotate(8deg)}20%{transform:rotate(-5deg)}25%{transform:rotate(2deg)}}
+/* 上週學習報告 (school70): header 「我的週報」 button and the weekly card. */
+.weekly-bell{position:relative;display:grid;place-items:center;width:56px;height:56px;padding:0;border:0;border-radius:16px;cursor:pointer;
+  background:linear-gradient(150deg,#ffd978 0%,#f6b545 55%,#e8913a 100%);color:#6b3a10;
+  box-shadow:inset 0 0 0 2px #fff4cf,inset 0 -4px 0 #d07a2a55,0 6px 14px -6px #b8661ccc;transition:transform .18s ease,box-shadow .18s ease}
+.weekly-word{display:grid;font-family:var(--serif);font-size:17px;font-weight:800;line-height:1.08;letter-spacing:.06em;text-shadow:0 1px 0 #fff3c8}
+@media (hover:hover){.weekly-bell:hover{transform:translateY(-2px) rotate(-3deg);box-shadow:inset 0 0 0 2px #fff4cf,inset 0 -4px 0 #d07a2a55,0 10px 18px -6px #b8661ccc}}
+.weekly-bell:active{transform:translateY(1px) scale(.96)}
+.weekly-bell:focus-visible{outline:3px solid #3a745f;outline-offset:3px}
+.weekly-dot{position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:#e2483b;box-shadow:0 0 0 2.5px #fffcf5,0 2px 4px #0003}
+.weekly-bell.has-new{animation:weekly-wiggle 2.4s ease-in-out 1s 3}
+.weekly-bell.has-new .weekly-dot{animation:weekly-pulse 1.6s ease-in-out infinite}
+@keyframes weekly-wiggle{0%,40%,100%{transform:rotate(0)}8%{transform:rotate(-7deg) scale(1.06)}16%{transform:rotate(6deg) scale(1.06)}24%{transform:rotate(-3deg)}32%{transform:rotate(2deg)}}
+@keyframes weekly-pulse{50%{transform:scale(1.25)}}
+@media (max-width:700px){.weekly-bell{width:50px;height:50px;border-radius:14px}.weekly-word{font-size:15px}}
 
 .weekly-dialog{width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:0;border:0;border-radius:28px;background:transparent;overflow:auto;overscroll-behavior:contain;scrollbar-width:none}
 .weekly-dialog::-webkit-scrollbar{display:none}
@@ -94,4 +101,4 @@
 .weekly-empty h2{margin:0;font-size:24px;color:#24493e}
 .weekly-empty p{margin:0;font-size:17px;line-height:1.7;color:#55665c}
 @media (max-width:420px){.weekly-card{padding:0 14px 16px}.weekly-hero{margin:0 -14px}.weekly-stats b{font-size:22px}.weekly-line{font-size:20px}.weekly-chars ul{gap:8px;grid-template-columns:repeat(auto-fill,minmax(50px,1fr))}.weekly-badges ul{grid-template-columns:repeat(2,1fr);row-gap:14px}}
-@media (prefers-reduced-motion:reduce){.weekly-dialog[open],.weekly-bell.has-new svg{animation:none}}
+@media (prefers-reduced-motion:reduce){.weekly-dialog[open],.weekly-bell,.weekly-bell.has-new,.weekly-bell.has-new .weekly-dot{animation:none;transition:none}}
