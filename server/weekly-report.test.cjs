@@ -48,7 +48,11 @@ test('a week is summarised: days, lines, best line, biggest rise, characters now
     rec(4,2,96,HK('2026-10-16','16:00'),'r3',words([92,95,95,90])),
     {poem_id:4,t:HK('2026-10-17','10:00'),li:null,ls:null,rec:null,ch:{attemptId:'a1',completed:true,completedAt:HK('2026-10-17','10:05'),
       answers:[{type:'dictation',itemId:'g4-d1',status:'correct',submittedAt:HK('2026-10-17','10:01')},{type:'dictation',itemId:'g4-d2',status:'skipped',submittedAt:HK('2026-10-17','10:02')},
-        {type:'sound',itemId:'g4-s1',status:'correct',submittedAt:HK('2026-10-17','10:03')},{type:'dictation',itemId:'g4-d3',status:'correct',submittedAt:HK('2026-10-10','10:00')}]}}
+        {type:'sound',itemId:'g4-s1',status:'correct',submittedAt:HK('2026-10-17','10:03')},{type:'dictation',itemId:'g4-d3',status:'correct',submittedAt:HK('2026-10-10','10:00')}]}},
+    // The per-item summary has no round id of its own and moves completedAt with every answer.
+    {poem_id:4,t:HK('2026-10-17','11:00'),li:null,ls:null,rec:null,ch:{completed:true,completedAt:HK('2026-10-17','10:59'),
+      answers:[{type:'sound',itemId:'g4-s2',status:'correct',attemptId:'a1',submittedAt:HK('2026-10-17','10:04')},{type:'sound',itemId:'g4-s3',status:'correct',attemptId:'a1',submittedAt:HK('2026-10-17','10:58')},
+        {type:'sound',itemId:'g4-s4',status:'correct',attemptId:'a1-review',mode:'review',submittedAt:HK('2026-10-17','10:59')}]}}
   ];
   const chat=[{t:HK('2026-10-14','19:00'),last:'好問題！'},{t:HK('2026-10-14','19:05'),last:'今天聊得夠多啦，先把詩讀熟，明天再來找我。'}];
   const r=weekly.buildReport(s,{reading,chat});

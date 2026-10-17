@@ -54,12 +54,15 @@ function buildReport(start,{reading=[],chat=[]}){
       if(!recordings.has(key))recordings.set(key,{poemId:row.poem_id,line,score:Math.round(score),t,words:Array.isArray(row.rec?.words)?row.rec.words:[]});
     }
     const ch=row.ch;if(!ch||typeof ch!=='object')continue;
+    // The saved summary keeps each item's latest answer with the round it came
+    // from; a round counts once whatever its size. 錯題重做 is not a new round.
     for(const a of Array.isArray(ch.answers)?ch.answers:[]){
       const at=num(a?.submittedAt);
-      if(a?.type==='dictation'&&at>=start&&at<end&&!['skipped','unanswered'].includes(a.status))dictation.add((a.attemptId||ch.attemptId||'')+'|'+a.itemId);
+      if(!(at>=start&&at<end)||['skipped','unanswered'].includes(a.status))continue;
+      const round=a.attemptId||ch.attemptId;
+      if(round&&a.mode!=='review')rounds.add(round);
+      if(a.type==='dictation')dictation.add((round||'')+'|'+a.itemId);
     }
-    const done=num(ch.completedAt);
-    if(ch.completed&&done>=start&&done<end)rounds.add(ch.attemptId||String(done));
   }
   let chats=0;
   for(const row of chat){mark(Number(row.t));if(row.last!==CHAT_ENOUGH)chats++;}
