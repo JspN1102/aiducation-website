@@ -45,7 +45,7 @@ function card(r, name, nav) {
   <div class="weekly-hero"><img src="media/weekly/hero-20261017.webp" width="1200" height="800" alt="" decoding="async"></div>
   <button class="weekly-close" type="button" data-weekly="close" aria-label="關閉" title="關閉">${svg(ICONS.close)}</button>
   <header class="weekly-head">
-   <p class="weekly-ribbon"><span>${r.preview ? '本週學習報告（預覽）' : '上週學習報告'}</span></p>
+   <p class="weekly-ribbon"><span>${r.preview ? '上週學習報告（預覽）' : '上週學習報告'}</span></p>
    <p class="weekly-range">${dateLabel(r.week.start)}（星期日）至 ${dateLabel(r.week.end)}（星期六）</p>
    <h2 id="weekly-title">${esc(name)}，${practised >= 3 ? '這一週你真棒！' : practised ? '這一週你有在練習！' : '新的一週，我們一起來！'}</h2>
   </header>
@@ -76,7 +76,7 @@ export function mountWeeklyReport({anchor, userId, studentName, load}) {
     const r = reports[index];
     if (!r) { dialog.innerHTML = `<article class="weekly-card weekly-empty"><button class="weekly-close" type="button" data-weekly="close" aria-label="關閉" title="關閉">${svg(ICONS.close)}</button><img src="media/weekly/reading-20261017.webp" width="640" height="640" alt="" decoding="async"><h2 id="weekly-title">第一份週報快到了</h2><p>每個星期日早上，詩詩會把上一週的學習成果送到這裏。</p></article>`; return; }
     const nav = reports.length > 1 ? `<nav class="weekly-nav"><button type="button" data-weekly="older" ${index >= reports.length - 1 ? 'disabled' : ''}>${svg(ICONS.prev)}更早</button><span>${index + 1} / ${reports.length}</span><button type="button" data-weekly="newer" ${index ? '' : 'disabled'}>較新${svg(ICONS.next)}</button></nav>` : '';
-    dialog.innerHTML = card(r, studentName, nav);
+    dialog.innerHTML = card(r, r.sampleName || studentName, nav);
     dialog.scrollTop = 0;
   };
   dialog.addEventListener('click', event => {

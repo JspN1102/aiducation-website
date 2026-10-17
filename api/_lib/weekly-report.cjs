@@ -125,12 +125,29 @@ function createWeeklyReports({pool=()=>auth.getStore().pool,now=Date.now,scope=t
     // Newest first. Earlier weeks in which nothing was practised are left out;
     // the latest week is always shown, as an invitation to come back.
     const reports=dates.map(d=>stored.get(d)).filter(Boolean).reverse().filter((r,i)=>i===0||r.days.some(Boolean));
-    // Before the first report is published, the site admin sees this week so far.
+    // Before the first report is published, the site admin sees it as it stands,
+    // plus three pupils' cards (names hidden) to see what pupils will get.
     if(auth.siteAdmin(actor)&&now()<publishAt(FIRST_WEEK)){
-      const start=weekStartOf(now());
-      reports.unshift({...buildReport(start,await weekRows(db,who,start)),id:'preview-'+isoDate(start),preview:true});
+      const own={...buildReport(FIRST_WEEK,await weekRows(db,who,FIRST_WEEK)),id:'preview-'+isoDate(FIRST_WEEK),preview:true};
+      reports.unshift(own,...await samples(db));
     }
     return reports;
+  }
+  // Pupils at about the middle, the top fifth and the top twentieth by lines read.
+  let cached=null;
+  async function samples(db){
+    if(cached&&now()-cached.at<10*60000)return cached.list;
+    const rows=(await db.query(`SELECT student_id,grade,cls,count(*)::int AS n FROM student_data WHERE left(student_id,2)='v_' AND section='reading'
+      AND updated_at>=$1::timestamptz AND updated_at<$2::timestamptz GROUP BY student_id,grade,cls ORDER BY n`,[new Date(FIRST_WEEK).toISOString(),new Date(FIRST_WEEK+WEEK).toISOString()])).rows;
+    const list=[];
+    for(const [i,q] of [.5,.8,.95].entries()){
+      const row=rows[Math.floor(q*(rows.length-1))];
+      if(!row||list.some(r=>r.key===row.student_id))continue;
+      const report=buildReport(FIRST_WEEK,await weekRows(db,{studentId:row.student_id,grade:row.grade,cls:row.cls},FIRST_WEEK));
+      list.push({key:row.student_id,report:{...report,id:'sample-'+(i+1),preview:true,sampleName:`示範同學（${row.grade}年級）`}});
+    }
+    cached={at:now(),list:list.map(r=>r.report)};
+    return cached.list;
   }
   return {list};
 }
