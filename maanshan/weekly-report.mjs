@@ -31,11 +31,12 @@ const medal = (key, value) => {
 function encouragement(r) {
   if (!r.days.some(Boolean)) return '上星期我們沒有見面呢。這星期一起讀一首詩，好嗎？';
   if (r.improved && r.improved.to - r.improved.from >= 20) return `《${r.improved.title}》那一句，你從 ${r.improved.from} 分讀到 ${r.improved.to} 分，詩詩都聽出來了！`;
+  if (!r.reading.lines && (r.writing.chars || r.challenge.count)) return '默寫、挑戰都做了，下星期也來讀一讀詩吧！';
   if (r.best?.score >= 90) return `你把「${r.best.line}」讀得又準又好聽，詩詩很喜歡！`;
   return '每一次開口讀，都是在進步。下星期我們再一起加油！';
 }
 function card(r, name, nav) {
-  const practised = r.days.filter(Boolean).length;
+  const practised = r.days.filter(Boolean).length, great = practised >= 3 || r.reading.lines >= 30;
   const stats = [
     ['read', '朗讀', r.reading.lines, '句'], ['write', '默寫', r.writing.chars, '個字'],
     ['challenge', '小挑戰', r.challenge.count, '次'], ['chat', '和詩人聊天', r.chat.count, '次']
@@ -47,7 +48,7 @@ function card(r, name, nav) {
   <header class="weekly-head">
    <p class="weekly-ribbon"><span>${r.preview ? '上週學習報告（預覽）' : '上週學習報告'}</span></p>
    <p class="weekly-range">${dateLabel(r.week.start)}（星期日）至 ${dateLabel(r.week.end)}（星期六）</p>
-   <h2 id="weekly-title">${esc(name)}，${practised >= 3 ? '這一週你真棒！' : practised ? '這一週你有在練習！' : '新的一週，我們一起來！'}</h2>
+   <h2 id="weekly-title">${esc(name)}，${great ? '這一週你真棒！' : practised ? '這一週你有在練習！' : '新的一週，我們一起來！'}</h2>
   </header>
   <section class="weekly-week" aria-label="練習的日子"><ol>${r.days.map((on, i) => `<li class="${on ? 'on' : ''}"><span>${DAYS[i]}</span><i aria-hidden="true">${on ? '<svg viewBox="0 0 24 24"><path d="M5 12.5 10 17 19 7"/></svg>' : ''}</i></li>`).join('')}</ol><p>這星期練習了 <b>${practised}</b> 天</p></section>
   <ul class="weekly-stats">${stats.map(([key, label, n, unit]) => `<li data-kind="${key}">${svg(ICONS[key])}<span>${label}</span><b>${n}<small>${unit}</small></b></li>`).join('')}</ul>

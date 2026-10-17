@@ -9,7 +9,7 @@ import {getRecitationAudioURL,getRecitationSequence} from './recitation-audio.mj
 import {schoolTtsURL,schoolTtsRemote} from './school-audio-url.mjs?v=20260930-school29';
 import {mountShishi} from './shishi.mjs?v=20261007-school46';
 import {openSelfCheck, selfCheckClauses} from './self-check.mjs?v=20261016-school69d';
-import {mountWeeklyReport} from './weekly-report.mjs?v=20261017-school70b';
+import {mountWeeklyReport} from './weekly-report.mjs?v=20261018-school70d';
 import {mountLibraryShishi} from './library-shishi.mjs?v=20261007-school46';
 import {mountTeacherLearningReset} from './teacher-learning-reset.mjs?v=20260921-school9';
 import {mountPoemSwipe} from './poem-swipe.mjs?v=20260921-school9';
@@ -21,7 +21,7 @@ import {encodeRecording, compactRecording, prepareAssessmentPayload, submitAsses
 import {createRecordingLibrary} from './recording-library.mjs?v=20261005-school40';
 import {requestJSON, requestChat} from './network.mjs?v=20261016-school69e';
 import {schoolState, schoolFetch, logoutSchoolSession, loadSchoolProgress, onSchoolSessionInvalid, onSchoolLearningReset, invalidateSchoolSession} from './school-session.mjs?v=20261016-school69e';
-import {schoolSession} from './bootstrap.mjs?v=20261017-school70b';
+import {schoolSession} from './bootstrap.mjs?v=20261018-school70d';
 import {createResearchTracker, attachResearchLifecycle, researchErrorCode, researchErrorContext, AUDIO_TRIGGERS} from './research-client.mjs?v=20261013-school62b';
 import {createAnswerOutbox} from './answer-outbox.mjs?v=20261013-school60';
 import {loadCurriculum,loadPreviewCurriculum} from './curriculum-data.mjs?v=20261016-school69d';

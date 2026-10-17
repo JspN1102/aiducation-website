@@ -1,7 +1,6 @@
 'use strict';
 // 上週學習報告 (school70). A week runs Sunday 00:00 to Saturday 24:00 Hong Kong
-// time and is published the Sunday after at 06:00 (the very first one, for
-// 10/11–10/17, at 08:00). Each report is computed once from the saved practice
+// time and is published the Sunday after at 06:00. Each report is computed once from the saved practice
 // rows of that week and stored in weekly_reports; it is never recomputed, so a
 // pupil sees the same report every time. Rows are dated by the server when
 // they arrive, so a week's rows cannot change after the week has ended.
@@ -28,7 +27,7 @@ function schema(pool){
 
 // Sunday 00:00 Hong Kong of the week containing t (1970-01-01 was a Thursday).
 function weekStartOf(t){const day=Math.floor((t+HK)/DAY);return (day-(day+4)%7)*DAY-HK;}
-function publishAt(start){return start+WEEK+(start===FIRST_WEEK?8:6)*HOUR;}
+function publishAt(start){return start+WEEK+6*HOUR;}
 const isoDate=t=>new Date(t+HK).toISOString().slice(0,10);
 function publishedWeeks(now){
   const weeks=[];

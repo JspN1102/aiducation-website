@@ -28,13 +28,13 @@ function fakePool(rowsByWeek){
 const pupil={id:'s_'+'a'.repeat(24),role:'student',grade:4,cls:'A'};
 const scope=async()=>({studentId:'v_1234567890'});
 
-test('weeks start on Sunday 00:00 Hong Kong; the first report opens 10-18 08:00, later ones Sunday 06:00',()=>{
+test('weeks start on Sunday 00:00 Hong Kong; each report opens the Sunday after at 06:00',()=>{
   assert.equal(weekly.weekStartOf(HK('2026-10-17','23:59')),HK('2026-10-11'));
   assert.equal(weekly.weekStartOf(HK('2026-10-18','00:00')),HK('2026-10-18'));
-  assert.equal(weekly.publishAt(weekly.FIRST_WEEK),HK('2026-10-18','08:00'));
+  assert.equal(weekly.publishAt(weekly.FIRST_WEEK),HK('2026-10-18','06:00'));
   assert.equal(weekly.publishAt(HK('2026-10-18')),HK('2026-10-25','06:00'));
-  assert.deepEqual(weekly.publishedWeeks(HK('2026-10-18','07:59')),[]);
-  assert.deepEqual(weekly.publishedWeeks(HK('2026-10-18','08:00')),[HK('2026-10-11')]);
+  assert.deepEqual(weekly.publishedWeeks(HK('2026-10-18','05:59')),[]);
+  assert.deepEqual(weekly.publishedWeeks(HK('2026-10-18','06:00')),[HK('2026-10-11')]);
   assert.equal(weekly.publishedWeeks(HK('2026-10-25','05:59')).length,1);
   assert.equal(weekly.publishedWeeks(HK('2026-10-25','06:00')).length,2);
 });
@@ -88,8 +88,8 @@ test('reports are stored once and never recomputed; quiet earlier weeks are left
 
 test('the site admin sees a preview of this week before the first report; nobody else does',async()=>{
   const pool=fakePool({[HK('2026-10-11')]:{reading:[rec(1,0,80,HK('2026-10-17','20:00'),'p1')],chat:[]},pupils:Array.from({length:21},(_,i)=>'v_'+i)});
-  // Early Sunday morning the preview is still last week, the one published at 08:00.
-  const reports=weekly.createWeeklyReports({pool:()=>pool,now:()=>HK('2026-10-18','07:00'),scope});
+  // Early Sunday morning the preview is still last week, the one published at 06:00.
+  const reports=weekly.createWeeklyReports({pool:()=>pool,now:()=>HK('2026-10-18','05:00'),scope});
   assert.deepEqual(await reports.list(pupil),[]);
   assert.deepEqual(await reports.list({id:'t_x',role:'teacher',login:'molly'}),[]);
   const admin=await reports.list({id:'t_j',role:'teacher',login:'jasper'});
@@ -97,7 +97,7 @@ test('the site admin sees a preview of this week before the first report; nobody
   assert.ok(admin.every(r=>r.preview));assert.equal(admin[0].reading.lines,1);
   assert.equal(admin[0].sampleName,undefined);assert.equal(admin[1].sampleName,'示範同學（4年級）','pupil names are never sent');
   assert.equal(pool.stored.size,0,'a preview is never stored');
-  const later=weekly.createWeeklyReports({pool:()=>pool,now:()=>HK('2026-10-18','08:00'),scope});
+  const later=weekly.createWeeklyReports({pool:()=>pool,now:()=>HK('2026-10-18','06:00'),scope});
   const after=await later.list({id:'t_j',role:'teacher',login:'jasper'});
   assert.equal(after.length,1);assert.equal(after[0].preview,undefined);
 });
