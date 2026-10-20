@@ -4,6 +4,7 @@
 //   node --env-file=/private/app.env deploy/chat-topics-backfill.cjs            (dry run: counts only)
 //   node --env-file=/private/app.env deploy/chat-topics-backfill.cjs --apply [--limit 500]
 // --recheck-concerns: classify again only the questions flagged ⚠ (after the concern rules changed, school63).
+// Rows set by hand (topic_model 'manual', school71) are never classified again.
 // Prints counts only: never a question, a name or a key. Safe to run again (skips done rows).
 const store=require('../api/_lib/research-store.cjs');
 const topics=require('../api/_lib/chat-topics.cjs');
@@ -13,7 +14,7 @@ const PENDING=limit=>`SELECT e.event_id,e.poem_id AS poem,e.record->'event'->'ch
   FROM research_events e WHERE ${CHAT} AND NOT EXISTS (SELECT 1 FROM chat_topics t WHERE t.event_id=e.event_id)
   ORDER BY e.received_at LIMIT ${limit}`;
 const FLAGGED=limit=>`SELECT e.event_id,e.poem_id AS poem,e.record->'event'->'chat'->>'question' AS question
-  FROM research_events e JOIN chat_topics t ON t.event_id=e.event_id WHERE ${CHAT} AND t.concern IS NOT NULL
+  FROM research_events e JOIN chat_topics t ON t.event_id=e.event_id WHERE ${CHAT} AND t.concern IS NOT NULL AND t.topic_model IS DISTINCT FROM 'manual'
   ORDER BY e.received_at LIMIT ${limit}`;
 function parseArgs(argv){
   const args={apply:false,limit:2000,recheck:false};

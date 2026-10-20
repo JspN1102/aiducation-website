@@ -1,6 +1,6 @@
 'use strict';
 // AI聊天次數: each question to the AI 詩人 gets a kind after it is answered; gibberish never
-// leaves the server; teachers get counts only, and only Jasper (網站後台) reads flagged words.
+// leaves the server; teachers get counts, plus the words and reply of ⚠ questions only (school71).
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const auth=require('../api/_lib/school-auth.cjs');
@@ -11,13 +11,13 @@ const backfill=require('../deploy/chat-topics-backfill.cjs');
 const A='r_aaaaaaaaaaaaaaaaaaaaaaaa',B='r_bbbbbbbbbbbbbbbbbbbbbbbb',RESET='2026-10-03T05:17:00.000Z';
 const NOW=Date.parse('2026-10-13T04:00:00.000Z'),AT=Date.parse('2026-10-13T02:00:00.000Z');
 const ACCOUNTS=[{role:'student',researchId:B,displayName:'測試甲',login:'t2a01',grade:2,cls:'A',classNo:1}];
-const EVENT='3f1c2d4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f',WORDS='合成測試句子';
+const EVENT='3f1c2d4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f',WORDS='合成測試句子',REPLY='合成詩人回覆';
 
 function pool(seen=[]){
  const client={async query(sql,params){if(/^(BEGIN|SET|COMMIT|ROLLBACK)/.test(sql))return {rows:[]};seen.push({sql,params});
    if(sql.includes('LEFT JOIN chat_topics'))return {rows:[{research_id:B,grade:2,cls:'A',topic:'meaning',concern:null,n:4},{research_id:B,grade:2,cls:'A',topic:'invalid',concern:null,n:2},
      {research_id:B,grade:2,cls:'A',topic:'offtopic',concern:'abuse',n:1},{research_id:B,grade:2,cls:'A',topic:null,concern:null,n:3},{research_id:A,grade:3,cls:'B',topic:'poet',concern:null,n:5}]};
-   if(sql.includes('t.concern IS NOT NULL'))return {rows:[{at:AT,research_id:B,poem:2,grade:2,cls:'A',question:WORDS,topic:'offtopic',concern:'abuse'}]};
+   if(sql.includes('t.concern IS NOT NULL'))return {rows:[{at:AT,research_id:B,poem:2,grade:2,cls:'A',question:WORDS,reply:REPLY,topic:'offtopic',concern:'abuse'}]};
    return {rows:[]};},release(){}};
  return {query:async sql=>{seen.push({sql});return {rows:[]};},connect:async()=>client};
 }
@@ -83,22 +83,24 @@ test('AI聊天次數 is for jasper, molly and llp-pslau only; ranges 今日 / 7 
  const f=filters({days:'30',grade:'2',cls:'A',q:'x',student:B},NOW);assert.equal(f.q,undefined);assert.equal(f.student,undefined);
 });
 
-test('only jasper gets ⚠ 需要關注 in the list; molly and llp-pslau get no concern count or label',async()=>{
- for(const login of ['molly','llp-pslau']){
+test('jasper, molly and llp-pslau all get ⚠ 需要關注 with the words and the poet reply',async()=>{
+ for(const login of ['jasper','molly','llp-pslau']){
   const r=await withActor({role:'teacher',login},()=>caller(createChatLog(deps([])))({days:'7',grade:'2'}));
-  assert.equal(r.statusCode,200);assert.equal(r.body.students.find(s=>s.student===B).questions,8);
-  assert.doesNotMatch(JSON.stringify(r.body),/concern|abuse|罵人|欺凌|自傷|其他不當/,login);
+  assert.equal(r.statusCode,200);const b=r.body.students.find(s=>s.student===B);
+  assert.equal(b.questions,8);assert.equal(b.concern,1);assert.equal(b.concerns.abuse,1);assert.equal(r.body.labels.concerns.abuse,'罵人粗口');
+  assert.deepEqual(b.flagged,[{at:AT,poemId:2,poemTitle:b.flagged[0].poemTitle,question:WORDS,reply:REPLY,concern:'abuse'}],login);
+  assert.deepEqual(r.body.students.find(s=>s.student===A).flagged,[]);
  }
 });
 
-test('the teacher list has counts by kind, 無效輸入 and ⚠ with its kind, and never the words',async()=>{
+test('the teacher list has counts by kind, 無效輸入 and ⚠ with its kind, and words only for ⚠',async()=>{
  const seen=[],r=await withActor({role:'teacher',login:'jasper'},()=>caller(createChatLog(deps(seen)))({days:'7',grade:'2'}));
  assert.equal(r.statusCode,200);assert.equal(r.body.available,true);
  const b=r.body.students.find(s=>s.student===B);
  assert.equal(b.name,'測試甲');assert.equal(b.questions,8);assert.equal(b.invalid,2);assert.equal(b.unclassified,3);assert.equal(b.concern,1);
  assert.equal(b.topics.meaning,4);assert.equal(b.topics.offtopic,1);assert.equal(b.topics.invalid,undefined);assert.equal(b.concerns.abuse,1);
  assert.equal(r.body.questions,13);assert.equal(r.body.invalid,2);assert.equal(r.body.concern,1);
- const text=JSON.stringify(r.body);assert.doesNotMatch(text,new RegExp(WORDS+'|t2a01|"question"|"reply"|"login"'));
+ const text=JSON.stringify({...r.body,students:r.body.students.map(({flagged,...s})=>s)});assert.doesNotMatch(text,new RegExp(WORDS+'|t2a01|"question"|"reply"|"login"'));assert.doesNotMatch(JSON.stringify(r.body),/t2a01|"login"/);
  const q=seen.find(x=>x.sql.includes('LEFT JOIN chat_topics'));assert(q.params.includes(RESET));assert(q.params.includes(2));
  assert.doesNotMatch(q.sql,/'question'|'reply'/);
 });
@@ -109,7 +111,7 @@ test('需要關注的聊天 is 網站後台 only, today or 3 days, with words, p
  assert.equal((await withActor({role:'teacher',login:'jasper'},()=>call({days:'7'}))).statusCode,400);
  const seen=[],r=await withActor({role:'teacher',login:'jasper'},()=>caller(createChatConcerns(deps(seen)))({days:'3'}));
  assert.equal(r.statusCode,200);assert.equal(r.body.days,3);
- assert.deepEqual(r.body.items,[{at:AT,student:B,name:'測試甲',grade:2,cls:'A',classNo:1,poemId:2,poemTitle:r.body.items[0].poemTitle,question:WORDS,topic:'offtopic',concern:'abuse'}]);
+ assert.deepEqual(r.body.items,[{at:AT,student:B,name:'測試甲',grade:2,cls:'A',classNo:1,poemId:2,poemTitle:r.body.items[0].poemTitle,question:WORDS,reply:REPLY,topic:'offtopic',concern:'abuse'}]);
  assert(r.body.items[0].poemTitle);assert.doesNotMatch(JSON.stringify(r.body),/t2a01/);
  assert.equal((await withActor({role:'teacher',login:'jasper'},()=>call({}))).body.days,1);
 });
