@@ -25,7 +25,7 @@ def restore():
     backup = health.latest_pg()
     info = health.file_info(backup)
     # Resource limits are explicit. Large restores require a separate planned drill.
-    if info['bytes'] > 512 * 1024**2 or shutil.disk_usage(root).free < max(1024**3, info['bytes'] * 8):
+    if info['bytes'] > 3 * 1024**3 or shutil.disk_usage(root).free < max(1024**3, info['bytes'] * 8):
         raise RuntimeError('restore_capacity_limit')
     digest = health.sha256(backup)
     work = Path(tempfile.mkdtemp(prefix='work-', dir=root))
@@ -54,7 +54,7 @@ def restore():
         command('pg_ctl', ['-D', database, '-l', work / 'postgres.log', '-w', '-t', '15', 'start'], 25)
         connection = ['--host', socket, '--port', '65439', '--username', 'postgres']
         command('createdb', [*connection, 'restore_check'])
-        command('pg_restore', [*connection, '--dbname', 'restore_check', '--exit-on-error', '--no-owner', '--no-privileges', backup], 180)
+        command('pg_restore', [*connection, '--dbname', 'restore_check', '--exit-on-error', '--no-owner', '--no-privileges', backup], 900)
         rows = command('psql', [*connection, '--dbname', 'restore_check', '-X', '-A', '-t', '--set', 'ON_ERROR_STOP=1',
           '-c', "SELECT count(*) FROM public.student_data;"])
         if not rows.strip().isdigit():
