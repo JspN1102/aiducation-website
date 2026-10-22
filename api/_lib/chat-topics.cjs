@@ -8,7 +8,8 @@ const TOPICS={meaning:'問詩句意思',poet:'問詩人生平',pronounce:'讀音
 const CONCERNS={abuse:'罵人粗口',bully:'欺凌',selfharm:'自傷',other:'其他不當'};
 const SCHEMA=`CREATE TABLE IF NOT EXISTS chat_topics (
   event_id uuid PRIMARY KEY, topic varchar(16) NOT NULL, concern varchar(16),
-  topic_model varchar(80), classified_at timestamptz NOT NULL DEFAULT clock_timestamp()
+  topic_model varchar(80), classified_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  concern_share varchar(4)
 )`;
 const MODEL_RE=/^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,79}$/,UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LOCAL='local',TIMEOUT_MS=8000,MAX_INFLIGHT=6,CACHE_LIMIT=2000;
@@ -77,7 +78,8 @@ async function classify(question,poemTitle,options={}){
 async function save(pool,eventId,r){
   await schema(pool);
   await pool.query(`INSERT INTO chat_topics(event_id,topic,concern,topic_model) VALUES($1,$2,$3,$4)
-    ON CONFLICT(event_id) DO UPDATE SET topic=EXCLUDED.topic,concern=EXCLUDED.concern,topic_model=EXCLUDED.topic_model,classified_at=clock_timestamp()`,
+    ON CONFLICT(event_id) DO UPDATE SET topic=EXCLUDED.topic,concern=EXCLUDED.concern,topic_model=EXCLUDED.topic_model,classified_at=clock_timestamp()
+    WHERE chat_topics.topic_model IS DISTINCT FROM 'manual'`,
     [eventId,r.topic,r.concern||null,r.model?String(r.model).slice(0,80):null]);
 }
 // Fire and forget after the chat is recorded: never throws, never awaited by the chat.

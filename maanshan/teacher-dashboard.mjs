@@ -449,8 +449,20 @@ function monitorList(items){return items.length?`<ul class="monitor-list">${item
 // (罵人粗口 / 欺凌 / 自傷 / 其他不當) with its words, the pupil and the time, for Jasper to check
 // before telling a teacher. Loaded on its own (not with the 10 s poll), at most once a minute.
 // Its range follows 學生端問題's 今日 / 近 3 日 (monitor.clientDays, 今日 when absent).
-const CHAT_CONCERNS_URL='/api/teacher-tools?tool=chat-concerns',chatConcerns={days:1,data:null,at:0,controller:null,generation:0,failed:''};
-function resetChatConcerns(){chatConcerns.generation++;chatConcerns.controller?.abort();Object.assign(chatConcerns,{data:null,at:0,controller:null,failed:''});}
+// 網站後台 (Jasper): each flagged question waits here until he picks 轉告老師 (ticking which parts the
+// teachers see) or 不算違規 (school72). draft: the open 轉告 choice; busy: the question being saved.
+const CHAT_CONCERNS_URL='/api/teacher-tools?tool=chat-concerns',chatConcerns={days:1,data:null,at:0,controller:null,generation:0,failed:'',draft:null,busy:'',actionError:''};
+function resetChatConcerns(){chatConcerns.generation++;chatConcerns.controller?.abort();Object.assign(chatConcerns,{data:null,at:0,controller:null,failed:'',draft:null,busy:'',actionError:''});}
+async function reviewChatConcern(eventId,action){
+ if(chatConcerns.busy)return;
+ const draft=chatConcerns.draft?.eventId===eventId?chatConcerns.draft:{question:true,reply:false},epoch=sessionEpoch;
+ chatConcerns.busy=eventId;chatConcerns.actionError='';renderMonitor();
+ try{await requestJSON(CHAT_CONCERNS_URL,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':state.auth?.csrfToken||''},body:JSON.stringify({eventId,action,question:draft.question===true,reply:draft.reply===true})});
+  if(epoch!==sessionEpoch)return;chatConcerns.draft=null;readingLog.chat=null;}
+ catch(error){if(epoch!==sessionEpoch||error.name==='AbortError')return;chatConcerns.actionError=error.message||'未能保存，請再試一次';}
+ finally{if(epoch===sessionEpoch)chatConcerns.busy='';}
+ await loadChatConcerns({force:true});
+}
 async function loadChatConcerns({force=false}={}){
  if(!siteAdmin()||!monitorOpen())return;
  if(chatConcerns.controller){if(!force)return;chatConcerns.controller.abort();chatConcerns.controller=null;}
@@ -469,8 +481,13 @@ function chatConcernsMarkup(now){
  if(!d||d.days!==chatConcerns.days)return `<div class="chat-concerns">${title}<p class="monitor-note">${chatConcerns.failed?'未能讀取（'+esc(chatConcerns.failed)+'）':'正在讀取…'}</p></div>`;
  if(!d.available)return `<div class="chat-concerns">${title}<p class="monitor-note">未能讀取聊天紀錄。</p></div>`;
  const list=rows(d.items),concern=k=>CHAT_CONCERNS[k]||'其他不當',topic=k=>CHAT_TOPICS[CHAT_TOPIC_AS[k]||k]||(k==='invalid'?'無效輸入':'');
- return `<div class="chat-concerns">${title}${list.length?`<ol class="chat-concern-list">${list.map(c=>`<li><p class="chat-concern-meta"><strong class="chat-flag">⚠ ${esc(concern(c.concern))}</strong><span>${esc(pupilName(c))} · ${esc(pupilClass(c))}${c.poemTitle?' · 《'+esc(c.poemTitle)+'》':''}${topic(c.topic)?' · '+esc(topic(c.topic)):''}</span><time>${esc(when(c.at,now))}</time></p><blockquote>${esc(c.question||'')}</blockquote></li>`).join('')}</ol>`:`<p class="monitor-note">${span}沒有需要關注的聊天。</p>`}`
-  +monitorNote([list.length>=number(d.limit)?'只列出最近 '+d.limit+' 條':'','由 AI 自動標記，請先核實；其他老師的後台也看得到這些原話和詩人的回覆'])+'</div>';
+ const shared=c=>['類別',String(c.share).includes('q')?'學生原話':'',String(c.share).includes('r')?'詩人回覆':''].filter(Boolean).join('、');
+ const actions=c=>{const id=esc(c.eventId||''),busy=chatConcerns.busy===c.eventId,off=chatConcerns.busy?' disabled':'',draft=chatConcerns.draft?.eventId===c.eventId?chatConcerns.draft:null;
+  if(draft)return `<fieldset class="chat-share"><legend>轉告老師：勾選給老師看的內容</legend><label><input type="checkbox" checked disabled> 類別：${esc(concern(c.concern))}（固定）</label><label><input type="checkbox" data-chat-share="question"${draft.question?' checked':''}> 學生原話</label><label><input type="checkbox" data-chat-share="reply"${draft.reply?' checked':''}> 詩人回覆</label><p class="chat-share-buttons"><button type="button" class="button small" data-chat-review="share" data-chat-event="${id}"${off}>${busy?'正在保存…':'確認轉告'}</button><button type="button" class="button small quiet" data-chat-review="cancel" data-chat-event="${id}"${off}>取消</button></p></fieldset>`;
+  return `<p class="chat-share-buttons">${c.share===null?'<span class="chat-pending">待核實</span>':`<span class="chat-shared">已轉告老師：${esc(shared(c))}</span>`}<button type="button" class="button small" data-chat-review="open" data-chat-event="${id}"${off}>${c.share===null?'轉告老師':'改轉告內容'}</button><button type="button" class="button small quiet" data-chat-review="dismiss" data-chat-event="${id}"${off}>${busy?'正在保存…':'不算違規'}</button></p>`;};
+ const pending=number(d.pending)||0;
+ return `<div class="chat-concerns">${title}${pending?`<p class="monitor-note"><strong class="chat-flag">${shown(pending)} 條待核實</strong>（未核實的不論日期都會列出）</p>`:''}${chatConcerns.actionError?`<p class="status-strip error" role="alert">${esc(chatConcerns.actionError)}</p>`:''}${list.length?`<ol class="chat-concern-list">${list.map(c=>`<li><p class="chat-concern-meta"><strong class="chat-flag">⚠ ${esc(concern(c.concern))}</strong><span>${esc(pupilName(c))} · ${esc(pupilClass(c))}${c.poemTitle?' · 《'+esc(c.poemTitle)+'》':''}${topic(c.topic)?' · '+esc(topic(c.topic)):''}</span><time>${esc(when(c.at,now))}</time></p><p class="chat-concern-who">學生：</p><blockquote>${esc(c.question||'')}</blockquote><p class="chat-concern-who">詩人：</p><blockquote class="chat-concern-reply">${esc(c.reply||'（沒有回覆）')}</blockquote>${actions(c)}</li>`).join('')}</ol>`:`<p class="monitor-note">${span}沒有需要關注的聊天。</p>`}`
+  +monitorNote([list.length>=number(d.limit)?'只列出最近 '+d.limit+' 條':'','由 AI 自動標記，請先核實；按「轉告老師」後，三位老師的「AI聊天次數」才會看到，而且只看到勾選的內容；「不算違規」會清除這個 ⚠'])+'</div>';
 }
 function clientErrorItems(list){return list.map(e=>['info',e.label||'其他',shown(e.count)+' 次'+(number(e.pupils)===null?'':'（'+shown(e.pupils)+' 位學生）'),number(e.topPupil)===null?'':'其中 1 位學生就有 '+shown(e.topPupil)+' 次']);}
 function jobState(job,now){
@@ -630,8 +647,8 @@ function readingLinesBody(s){
  if(!poems.length)return '<p class="helper">這段時間沒有朗讀測評。</p>'+exportBar;
  return `<p class="helper">共 ${shown(s.total)} 次測評${s.failed?'，其中 '+shown(s.failed)+' 次未能評分':''}</p>${exportBar}`+poems.map(p=>`<div class="table-area"><table class="monitor-table usage-lines"><caption>《${esc(p.title)}》 ${shown(p.total)} 次</caption><thead><tr><th scope="col">句</th><th scope="col">句子</th><th scope="col">測評次數</th><th scope="col">未能評分次數</th></tr></thead><tbody>${rows(p.lines).map(l=>`<tr><td>第 ${shown(l.line)} 句</td><th scope="row">${esc(l.text||'')}</th><td>${shown(l.count)}</td><td>${shown(l.failed)}</td></tr>`).join('')}</tbody></table></div>`).join('');
 }
-// AI聊天次數: counts per pupil. 「⚠ 需要關注」 questions come with the pupil's words and the
-// poet's reply for jasper, molly and llp-pslau (school71); pupils with one are listed first.
+// AI聊天次數: counts per pupil. 「⚠ 需要關注」 only once Jasper 轉告 it in 網站後台, with just the parts
+// he ticked, the same for jasper, molly and llp-pslau (school72); pupils with one are listed first.
 function chatConcernText(s){return Object.entries(CHAT_CONCERNS).filter(([k])=>number(s.concerns?.[k])).map(([k,label])=>label+' '+shown(s.concerns[k])+' 次').join('、');}
 function chatConcernWords(s){const words=[...new Set(rows(s.flagged).map(c=>String(c.question||'').trim()).filter(Boolean))];
  return words.slice(0,4).map(w=>'「'+([...w].length>14?[...w].slice(0,14).join('')+'…':w)+'」').join('')+(words.length>4?'…':'');}
@@ -649,7 +666,7 @@ function openChatTopics(id){
  const topics=Object.entries(CHAT_TOPICS).map(([k,label])=>[label,Object.keys(s.topics||{}).filter(t=>(CHAT_TOPIC_AS[t]||t)===k).reduce((n,t)=>n+(number(s.topics[t])||0),0)]).concat(number(s.unclassified)?[['未分類',s.unclassified]]:[]).concat(number(s.concern)?[['⚠ 需要關注',s.concern]]:[]);
  const flagged=rows(s.flagged),concern=k=>CHAT_CONCERNS[k]||'其他不當';
  const body=`<p class="helper">共 ${shown(s.questions)} 次提問${s.invalid?'，另有 '+shown(s.invalid)+' 次無效輸入':''}</p><div class="table-area"><table class="monitor-table usage-lines chat-topic-table"><caption>問題類別</caption><thead><tr><th scope="col">類別</th><th scope="col">次數</th></tr></thead><tbody>${topics.map(([label,n])=>`<tr${label==='⚠ 需要關注'?' class="chat-concern-row"':''}><th scope="row">${esc(label)}</th><td>${shown(n)}</td></tr>`).join('')}</tbody></table></div>`
-  +(flagged.length?`<div class="chat-concern-box"><p><span class="chat-flag">⚠ 需要關注</span> ${esc(chatConcernText(s))}</p><ol class="chat-concern-list">${flagged.map(c=>`<li><p class="chat-concern-meta"><strong class="chat-flag">${esc(concern(c.concern))}</strong><span>${c.poemTitle?'《'+esc(c.poemTitle)+'》':''}</span><time>${esc(when(c.at,Date.now()))}</time></p><p class="chat-concern-who">學生：</p><blockquote>${esc(c.question||'')}</blockquote><p class="chat-concern-who">詩人：</p><blockquote class="chat-concern-reply">${esc(c.reply||'（沒有回覆）')}</blockquote></li>`).join('')}</ol></div>`:'')
+  +(flagged.length?`<div class="chat-concern-box"><p><span class="chat-flag">⚠ 需要關注</span> ${esc(chatConcernText(s))}</p><ol class="chat-concern-list">${flagged.map(c=>`<li><p class="chat-concern-meta"><strong class="chat-flag">${esc(concern(c.concern))}</strong><span>${c.poemTitle?'《'+esc(c.poemTitle)+'》':''}</span><time>${esc(when(c.at,Date.now()))}</time></p>${c.question?`<p class="chat-concern-who">學生：</p><blockquote>${esc(c.question)}</blockquote>`:''}${c.reply?`<p class="chat-concern-who">詩人：</p><blockquote class="chat-concern-reply">${esc(c.reply)}</blockquote>`:''}</li>`).join('')}</ol></div>`:'')
   +'<p class="helper">類別由 AI 自動判斷，只供參考。</p>';
  document.querySelector('#student-dialog-content').innerHTML=`<header class="dialog-header"><div><h2 id="student-dialog-title">${esc(pupilName(s))}</h2><p class="helper">${esc(pupilClass(s))} · ${esc(readingRange(readingLog.days))} · AI聊天</p></div><button type="button" class="button icon-only" data-action="close-dialog" aria-label="關閉AI聊天次數">×</button></header><div class="dialog-body reading-lines-body">${body}</div>`;
  if(!dialog.open)dialog.showModal();dialog.scrollTop=0;
@@ -792,6 +809,12 @@ function click(event){const button=event.target.closest('button');if(!button||bu
  if(button.dataset.monitorClientDays){monitor.clientDays=button.dataset.monitorClientDays==='3'?3:1;renderMonitor();document.querySelector(`[data-monitor-client-days="${monitor.clientDays}"]`)?.focus();return;}
  if(button.dataset.monitorSpan){const [card,span]=button.dataset.monitorSpan.split(':');if(!(card in monitor.spans))return;monitor.spans[card]=span==='1440'?1440:60;renderMonitor();
   document.querySelector(`[data-monitor-span="${card}:${monitor.spans[card]}"]`)?.focus();return;}
+ if(button.dataset.chatReview){const id=button.dataset.chatEvent,act=button.dataset.chatReview;
+  if(act==='open'){const c=rows(chatConcerns.data?.items).find(x=>x.eventId===id);chatConcerns.draft={eventId:id,question:c?.share==null||String(c.share).includes('q'),reply:String(c?.share||'').includes('r')};renderMonitor();}
+  else if(act==='cancel'){chatConcerns.draft=null;renderMonitor();}
+  else if(act==='share')void reviewChatConcern(id,'share');
+  else if(act==='dismiss'&&confirm('確定這條不算違規？⚠ 會被清除，老師不會看到。'))void reviewChatConcern(id,'dismiss');
+  return;}
  if(button.dataset.usageDays){void loadUsageLog(Number(button.dataset.usageDays));return;}
  if(button.dataset.chatStudent){void openChatStudent(button.dataset.chatStudent);return;}
  if(button.dataset.action==='usage-back'){usageBack();return;}
@@ -815,6 +838,7 @@ function click(event){const button=event.target.closest('button');if(!button||bu
  if(button.dataset.groupGrade)applyFilters({...state.filters,grade:button.dataset.groupGrade,cls:button.dataset.groupClass||''});
 }
 root.addEventListener('click',click);dialog.addEventListener('click',click);
+root.addEventListener('change',event=>{const part=event.target.dataset?.chatShare;if(part&&chatConcerns.draft)chatConcerns.draft[part==='reply'?'reply':'question']=event.target.checked;});
 root.addEventListener('toggle',event=>{if(event.target.id==='student-list')state.studentsOpen=event.target.open;},true);
 dialog.addEventListener('close',()=>{if(dialog.open)return;readingLog.detail?.abort();readingLog.student=null;state.detailRequest?.abort();state.detailStudent=null;state.detailData=null;document.querySelector('#student-dialog-content').replaceChildren();});
 dialog.addEventListener('submit',event=>{if(event.target.id==='teacher-password-form'){event.preventDefault();void changePassword(event.target);}});document.querySelector('#teacher-logout').addEventListener('click',logout);

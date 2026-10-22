@@ -2,20 +2,24 @@
 // AI聊天次數 (teacher dashboard, beside 朗讀測評次數; jasper, molly and llp-pslau): how many
 // questions each pupil asked the AI 詩人 and of what kind. Ordinary questions are counts
 // only: their words and replies never leave here. A question flagged 罵人粗口 / 欺凌 / 自傷 /
-// 其他不當 is 「⚠ 需要關注」: all three see its kind, the pupil's words and the poet's reply
-// (school71, 2026-10-20). 網站後台 (concerns below) stays Jasper only.
+// 其他不當 waits in 網站後台 (concerns below, Jasper only) until Jasper picks 轉告老師 (with
+// which parts: the kind always, the pupil's words and the poet's reply if ticked) or 不算違規.
+// Only after 轉告 is it 「⚠ 需要關注」 here, the same for all three (school72, 2026-10-23).
 const auth=require('./school-auth.cjs');
 const log=require('./activity-log-handler.cjs');
 const topics=require('./chat-topics.cjs');
 
 const RANGES=new Set([1,7,30,400]),CONCERN_DAYS=new Set([1,3]),ROW_LIMIT=20000,CONCERN_LIMIT=200;
-const COUNTS=w=>`SELECT e.research_id,max(e.grade) AS grade,max(e.cls) AS cls,t.topic,t.concern,count(*)::int AS n
+// chat_topics.concern_share: NULL = not yet reviewed; '' = 轉告 the kind only; 'q' / 'r' / 'qr' = with
+// the pupil's words (q) and / or the poet's reply (r).
+const SHARES=new Set(['','q','r','qr']),UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const COUNTS=w=>`SELECT e.research_id,max(e.grade) AS grade,max(e.cls) AS cls,t.topic,CASE WHEN t.concern_share IS NOT NULL THEN t.concern END AS concern,count(*)::int AS n
     FROM research_events e LEFT JOIN chat_topics t ON t.event_id=e.event_id
     WHERE ${w} GROUP BY e.research_id,t.topic,t.concern LIMIT ${ROW_LIMIT}`;
-const FLAGGED=w=>`SELECT (extract(epoch FROM e.received_at)*1000)::float8 AS at,e.research_id,e.poem_id AS poem,e.grade,e.cls,
-      e.record->'event'->'chat'->>'question' AS question,e.record->'event'->'chat'->>'reply' AS reply,t.topic,t.concern
+const FLAGGED=(w,which='')=>`SELECT e.event_id::text AS id,(extract(epoch FROM e.received_at)*1000)::float8 AS at,e.research_id,e.poem_id AS poem,e.grade,e.cls,
+      e.record->'event'->'chat'->>'question' AS question,e.record->'event'->'chat'->>'reply' AS reply,t.topic,t.concern,t.concern_share AS share
     FROM research_events e JOIN chat_topics t ON t.event_id=e.event_id
-    WHERE ${w} AND t.concern IS NOT NULL ORDER BY e.received_at DESC LIMIT ${CONCERN_LIMIT}`;
+    WHERE ${w} AND t.concern IS NOT NULL${which==='shared'?' AND t.concern_share IS NOT NULL':which==='pending'?' AND t.concern_share IS NULL':''} ORDER BY e.received_at DESC LIMIT ${CONCERN_LIMIT}`;
 
 function filters(query,t,ranges=RANGES,keys=['days','grade','cls']){
   const q=query||{},pick={};
@@ -44,16 +48,29 @@ async function counts(pool,f,map=new Map()){
     return {students,questions:sum('questions'),invalid:sum('invalid'),unclassified:sum('unclassified'),concern:sum('concern'),truncated:rows.length>=ROW_LIMIT};
   });
 }
-// 網站後台 only: each flagged question with its words, the pupil and the time, for Jasper to check.
-async function flagged(pool,f,map=new Map()){
+// Each flagged question with its words, the pupil and the time. which: '' every one (網站後台, for
+// Jasper to check), 'pending' not yet reviewed, 'shared' only those Jasper 轉告 with just the ticked parts.
+async function flagged(pool,f,map=new Map(),which=''){
   if(pool)await topics.schema(pool).catch(()=>{});
   const {sql,params}=log.where(f);
   return log.readOnly(pool,async q=>{
-    const rows=await q(FLAGGED(sql),params);
-    return {items:rows.filter(r=>Object.hasOwn(topics.CONCERNS,r.concern)).map(r=>{const {login,...who}=log.identity(map,r.research_id,r);return {at:Math.round(Number(r.at)),...who,
-      poemId:Number(r.poem)||null,poemTitle:log.title(r.poem),question:typeof r.question==='string'?r.question.slice(0,1000):'',reply:typeof r.reply==='string'?r.reply.slice(0,4000):'',
-      topic:Object.hasOwn(topics.TOPICS,r.topic)?r.topic:null,concern:r.concern};}),limit:CONCERN_LIMIT};
+    const rows=await q(FLAGGED(sql,which),params);
+    return {items:rows.filter(r=>Object.hasOwn(topics.CONCERNS,r.concern)).map(r=>{const {login,...who}=log.identity(map,r.research_id,r),share=SHARES.has(r.share)?r.share:null;
+      const hide=which==='shared',words=!hide||(share||'').includes('q'),answer=!hide||(share||'').includes('r');
+      return {eventId:r.id,at:Math.round(Number(r.at)),...who,
+      poemId:Number(r.poem)||null,poemTitle:log.title(r.poem),question:words&&typeof r.question==='string'?r.question.slice(0,1000):'',reply:answer&&typeof r.reply==='string'?r.reply.slice(0,4000):'',
+      topic:Object.hasOwn(topics.TOPICS,r.topic)?r.topic:null,concern:r.concern,share};}),limit:CONCERN_LIMIT};
   });
+}
+// Jasper's decision on one flagged question: 轉告老師 with the ticked parts, or 不算違規 (the ⚠ is
+// cleared). Either way topic_model becomes 'manual', so neither the classifier nor a recheck changes it.
+async function review(pool,{eventId,action,question,reply}){
+  await topics.schema(pool);
+  const r=action==='dismiss'
+    ?await pool.query(`UPDATE chat_topics SET concern=NULL,concern_share=NULL,topic_model='manual',classified_at=clock_timestamp() WHERE event_id=$1 AND concern IS NOT NULL`,[eventId])
+    :await pool.query(`UPDATE chat_topics SET concern_share=$2,topic_model='manual',classified_at=clock_timestamp() WHERE event_id=$1 AND concern IS NOT NULL`,
+      [eventId,(question===true?'q':'')+(reply===true?'r':'')]);
+  return r.rowCount===1;
 }
 async function teacher(req,res,{roles=['teacher']}={}){
   let actor;
@@ -77,7 +94,7 @@ function createChatLog({researchPool=defaultResearch,directory=()=>auth.director
     const base={ok:true,schemaVersion:1,generatedAt:new Date(t).toISOString(),days:f.days,filters:{days:f.days,grade:f.grade||null,cls:f.cls||null},labels};
     if(!r.available)return res.status(200).json({...base,available:false});
     // Names, class and seat with counts: no login. Words and replies only for ⚠ questions.
-    const flaggedBy=new Map(),fl=r.concern?await flagged(pool,f,map):{items:[]};
+    const flaggedBy=new Map(),fl=r.concern?await flagged(pool,f,map,'shared'):{items:[]};
     for(const c of fl.items||[]){const list=flaggedBy.get(c.student)||[];list.push({at:c.at,poemId:c.poemId,poemTitle:c.poemTitle,question:c.question,reply:c.reply,concern:c.concern});flaggedBy.set(c.student,list);}
     return res.status(200).json({...base,available:true,questions:r.questions,invalid:r.invalid,unclassified:r.unclassified,concern:r.concern,truncated:r.truncated,
       students:r.students.map(s=>({student:s.student,name:s.name,grade:s.grade,cls:s.cls,classNo:s.classNo,questions:s.questions,invalid:s.invalid,
@@ -87,19 +104,29 @@ function createChatLog({researchPool=defaultResearch,directory=()=>auth.director
 function createChatConcerns({researchPool=defaultResearch,directory=()=>auth.directory(),cohort=log.cohortStart,now=Date.now}={}){
   return async function handler(req,res){
     res.setHeader('Cache-Control','private, no-store');res.setHeader('Vary','Cookie');
-    if(req.method!=='GET'){res.setHeader('Allow','GET');return res.status(405).json({ok:false,code:'GET_ONLY',error:'只供查看。'});}
+    if(req.method!=='GET'&&req.method!=='POST'){res.setHeader('Allow','GET, POST');return res.status(405).json({ok:false,code:'METHOD_NOT_ALLOWED',error:'不支援這個操作。'});}
     const actor=await teacher(req,res);if(!actor)return;
     if(!auth.siteAdmin(actor))return res.status(403).json({ok:false,code:'SITE_ADMIN_ONLY',error:'只有網站管理員可以查看。'});
+    if(req.method==='POST'){
+      const b=req.body&&typeof req.body==='object'?req.body:{};
+      if(!UUID.test(String(b.eventId||''))||!['share','dismiss'].includes(b.action))return res.status(400).json({ok:false,code:'INVALID_REVIEW',error:'操作不正確。'});
+      const pool=researchPool();if(!pool)return res.status(503).json({ok:false,code:'RESEARCH_UNAVAILABLE',error:'暫時未能保存，請稍後再試。'});
+      if(!await review(pool,b))return res.status(404).json({ok:false,code:'CONCERN_NOT_FOUND',error:'找不到這條需要關注的聊天，可能已處理。'});
+      return res.status(200).json({ok:true});
+    }
     const t=now(),f=filters({days:'1',...(req.query||{})},t,CONCERN_DAYS,['days']);
     if(f.error)return res.status(400).json({ok:false,code:f.error,error:'查詢條件不正確。'});
     f.since=await cohort();
-    const map=await log.people(directory),r=await flagged(researchPool(),f,map);
+    // The chosen days, plus every one still waiting for Jasper however old.
+    const map=await log.people(directory),pool=researchPool(),r=await flagged(pool,f,map);
     const base={ok:true,schemaVersion:1,generatedAt:new Date(t).toISOString(),days:f.days,labels};
     if(!r.available)return res.status(200).json({...base,available:false});
-    return res.status(200).json({...base,available:true,items:r.items,limit:r.limit});
+    const older=await flagged(pool,{...f,from:new Date(0).toISOString()},map,'pending'),seen=new Set(r.items.map(c=>c.eventId));
+    const items=[...r.items,...(older.items||[]).filter(c=>!seen.has(c.eventId))];
+    return res.status(200).json({...base,available:true,items,pending:items.filter(c=>c.share===null).length,limit:r.limit});
   };
 }
 function defaultResearch(){const research=require('./research-store.cjs');return research.mode()==='postgres'?research.getPool():null;}
 
 module.exports=createChatLog();
-Object.assign(module.exports,{createChatLog,createChatConcerns,concerns:createChatConcerns(),filters,counts,flagged,COUNTS,FLAGGED});
+Object.assign(module.exports,{createChatLog,createChatConcerns,concerns:createChatConcerns(),filters,counts,flagged,review,COUNTS,FLAGGED,SHARES});

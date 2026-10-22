@@ -1,6 +1,6 @@
 'use strict';
 // AI聊天次數: each question to the AI 詩人 gets a kind after it is answered; gibberish never
-// leaves the server; teachers get counts, plus the words and reply of ⚠ questions only (school71).
+// leaves the server; teachers get counts, plus a ⚠ only after Jasper 轉告 it, with just the parts he ticked (school72).
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const auth=require('../api/_lib/school-auth.cjs');
@@ -13,20 +13,23 @@ const NOW=Date.parse('2026-10-13T04:00:00.000Z'),AT=Date.parse('2026-10-13T02:00
 const ACCOUNTS=[{role:'student',researchId:B,displayName:'測試甲',login:'t2a01',grade:2,cls:'A',classNo:1}];
 const EVENT='3f1c2d4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f',WORDS='合成測試句子',REPLY='合成詩人回覆';
 
-function pool(seen=[]){
+// share: the flagged question's chat_topics.concern_share (null = Jasper has not reviewed it yet).
+function pool(seen=[],share='qr',updated=1){
  const client={async query(sql,params){if(/^(BEGIN|SET|COMMIT|ROLLBACK)/.test(sql))return {rows:[]};seen.push({sql,params});
    if(sql.includes('LEFT JOIN chat_topics'))return {rows:[{research_id:B,grade:2,cls:'A',topic:'meaning',concern:null,n:4},{research_id:B,grade:2,cls:'A',topic:'invalid',concern:null,n:2},
-     {research_id:B,grade:2,cls:'A',topic:'offtopic',concern:'abuse',n:1},{research_id:B,grade:2,cls:'A',topic:null,concern:null,n:3},{research_id:A,grade:3,cls:'B',topic:'poet',concern:null,n:5}]};
-   if(sql.includes('t.concern IS NOT NULL'))return {rows:[{at:AT,research_id:B,poem:2,grade:2,cls:'A',question:WORDS,reply:REPLY,topic:'offtopic',concern:'abuse'}]};
+     {research_id:B,grade:2,cls:'A',topic:'offtopic',concern:share===null?null:'abuse',n:1},{research_id:B,grade:2,cls:'A',topic:null,concern:null,n:3},{research_id:A,grade:3,cls:'B',topic:'poet',concern:null,n:5}]};
+   if(sql.includes('t.concern IS NOT NULL')){
+     if(sql.includes('concern_share IS NOT NULL')&&share===null||sql.includes('concern_share IS NULL')&&share!==null)return {rows:[]};
+     return {rows:[{id:EVENT,at:AT,research_id:B,poem:2,grade:2,cls:'A',question:WORDS,reply:REPLY,topic:'offtopic',concern:'abuse',share}]};}
    return {rows:[]};},release(){}};
- return {query:async sql=>{seen.push({sql});return {rows:[]};},connect:async()=>client};
+ return {query:async(sql,params)=>{seen.push({sql,params});return {rows:[],rowCount:/^UPDATE chat_topics/.test(sql)?updated:0};},connect:async()=>client};
 }
 async function withActor(who,run){const saved=auth.requireActor;auth.requireActor=async()=>who;try{return await run();}finally{auth.requireActor=saved;}}
 function caller(h){
- return async query=>{const res={statusCode:0,headers:{},body:null,setHeader(k,v){this.headers[k.toLowerCase()]=v;},json(b){this.body=b;return this;}};
-  res.status=n=>{res.statusCode=n;return res;};await h({method:'GET',query,headers:{}},res);return res;};
+ return async(query,body)=>{const res={statusCode:0,headers:{},body:null,setHeader(k,v){this.headers[k.toLowerCase()]=v;},json(b){this.body=b;return this;}};
+  res.status=n=>{res.statusCode=n;return res;};await h({method:body?'POST':'GET',query,body,headers:{}},res);return res;};
 }
-const deps=seen=>({researchPool:()=>pool(seen),directory:async()=>({accounts:ACCOUNTS}),cohort:async()=>RESET,now:()=>NOW});
+const deps=(seen,share,updated)=>({researchPool:()=>pool(seen,share,updated),directory:async()=>({accounts:ACCOUNTS}),cohort:async()=>RESET,now:()=>NOW});
 
 test('gibberish, emoji, digits and random letters are 無效輸入 without a DeepSeek call',async()=>{
  for(const s of ['Dxgbsgdx123.🎶🎶😎😎❤️','😎😎❤️','123456','asdfghjkl','qqqq','  ','。。。','啊啊啊啊'])assert.equal(topics.gibberish(s),true,s);
@@ -83,13 +86,18 @@ test('AI聊天次數 is for jasper, molly and llp-pslau only; ranges 今日 / 7 
  const f=filters({days:'30',grade:'2',cls:'A',q:'x',student:B},NOW);assert.equal(f.q,undefined);assert.equal(f.student,undefined);
 });
 
-test('jasper, molly and llp-pslau all get ⚠ 需要關注 with the words and the poet reply',async()=>{
- for(const login of ['jasper','molly','llp-pslau']){
-  const r=await withActor({role:'teacher',login},()=>caller(createChatLog(deps([])))({days:'7',grade:'2'}));
+test('jasper, molly and llp-pslau get the same ⚠ 需要關注, only once 轉告 and only the ticked parts',async()=>{
+ for(const [share,question,reply] of [['qr',WORDS,REPLY],['q',WORDS,''],['r','',REPLY],['','','']])for(const login of ['jasper','molly','llp-pslau']){
+  const seen=[],r=await withActor({role:'teacher',login},()=>caller(createChatLog(deps(seen,share)))({days:'7',grade:'2'}));
   assert.equal(r.statusCode,200);const b=r.body.students.find(s=>s.student===B);
   assert.equal(b.questions,8);assert.equal(b.concern,1);assert.equal(b.concerns.abuse,1);assert.equal(r.body.labels.concerns.abuse,'罵人粗口');
-  assert.deepEqual(b.flagged,[{at:AT,poemId:2,poemTitle:b.flagged[0].poemTitle,question:WORDS,reply:REPLY,concern:'abuse'}],login);
+  assert.deepEqual(b.flagged,[{at:AT,poemId:2,poemTitle:b.flagged[0].poemTitle,question,reply,concern:'abuse'}],login+share);
   assert.deepEqual(r.body.students.find(s=>s.student===A).flagged,[]);
+  assert.match(seen.find(x=>x.sql.includes('LEFT JOIN chat_topics')).sql,/CASE WHEN t\.concern_share IS NOT NULL THEN t\.concern END/);
+ }
+ for(const login of ['jasper','molly','llp-pslau']){
+  const r=await withActor({role:'teacher',login},()=>caller(createChatLog(deps([],null)))({days:'7',grade:'2'}));
+  const b=r.body.students.find(s=>s.student===B);assert.equal(b.concern,0);assert.deepEqual(b.flagged,[]);assert.doesNotMatch(JSON.stringify(r.body),new RegExp(WORDS+'|'+REPLY));
  }
 });
 
@@ -111,9 +119,29 @@ test('需要關注的聊天 is 網站後台 only, today or 3 days, with words, p
  assert.equal((await withActor({role:'teacher',login:'jasper'},()=>call({days:'7'}))).statusCode,400);
  const seen=[],r=await withActor({role:'teacher',login:'jasper'},()=>caller(createChatConcerns(deps(seen)))({days:'3'}));
  assert.equal(r.statusCode,200);assert.equal(r.body.days,3);
- assert.deepEqual(r.body.items,[{at:AT,student:B,name:'測試甲',grade:2,cls:'A',classNo:1,poemId:2,poemTitle:r.body.items[0].poemTitle,question:WORDS,reply:REPLY,topic:'offtopic',concern:'abuse'}]);
- assert(r.body.items[0].poemTitle);assert.doesNotMatch(JSON.stringify(r.body),/t2a01/);
+ assert.deepEqual(r.body.items,[{eventId:EVENT,at:AT,student:B,name:'測試甲',grade:2,cls:'A',classNo:1,poemId:2,poemTitle:r.body.items[0].poemTitle,question:WORDS,reply:REPLY,topic:'offtopic',concern:'abuse',share:'qr'}]);
+ assert(r.body.items[0].poemTitle);assert.doesNotMatch(JSON.stringify(r.body),/t2a01/);assert.equal(r.body.pending,0);
  assert.equal((await withActor({role:'teacher',login:'jasper'},()=>call({}))).body.days,1);
+ // Not yet reviewed: Jasper sees all the words and it stays listed however old.
+ const waiting=[],p=await withActor({role:'teacher',login:'jasper'},()=>caller(createChatConcerns(deps(waiting,null)))({days:'1'}));
+ assert.equal(p.body.items.length,1);assert.equal(p.body.items[0].share,null);assert.equal(p.body.items[0].question,WORDS);assert.equal(p.body.items[0].reply,REPLY);assert.equal(p.body.pending,1);
+ assert(waiting.some(x=>x.sql.includes('concern_share IS NULL')&&x.params.includes(new Date(0).toISOString())));
+});
+
+test('Jasper 轉告老師 with the ticked parts or 不算違規; nobody else can; the classifier never overwrites it',async()=>{
+ for(const login of ['molly','llp-pslau','chan']){const r=await withActor({role:'teacher',login},()=>caller(createChatConcerns(deps([])))({},{eventId:EVENT,action:'dismiss'}));assert.equal(r.statusCode,403);}
+ const post=async(body,seen=[],updated=1)=>({r:await withActor({role:'teacher',login:'jasper'},()=>caller(createChatConcerns(deps(seen,'qr',updated)))({},body)),seen});
+ for(const [question,reply,share] of [[true,true,'qr'],[true,false,'q'],[false,true,'r'],[false,false,''],[undefined,'yes','']]){
+  const {r,seen}=await post({eventId:EVENT,action:'share',question,reply});assert.equal(r.statusCode,200);
+  const u=seen.find(x=>/^UPDATE chat_topics SET concern_share/.test(x.sql));assert.deepEqual(u.params,[EVENT,share]);assert.match(u.sql,/topic_model='manual'/);
+ }
+ const {r:d,seen}=await post({eventId:EVENT,action:'dismiss'});assert.equal(d.statusCode,200);
+ const u=seen.find(x=>/^UPDATE chat_topics SET concern=NULL/.test(x.sql));assert.deepEqual(u.params,[EVENT]);assert.match(u.sql,/topic_model='manual'/);
+ for(const body of [{eventId:'x',action:'share'},{eventId:EVENT,action:'delete'},{}])assert.equal((await post(body)).r.statusCode,400);
+ assert.equal((await post({eventId:EVENT,action:'share'},[],0)).r.statusCode,404);
+ const saved=[];await topics.save({query:async(sql,params)=>{saved.push(sql);return {rows:[]};}},EVENT,{topic:'meaning',concern:null,model:'m'});
+ assert.match(saved.at(-1),/WHERE chat_topics\.topic_model IS DISTINCT FROM 'manual'/);
+ assert.match(topics.SCHEMA,/concern_share varchar\(4\)/);
 });
 
 test('the backfill dry run only counts; --apply classifies what has no row yet',async()=>{
