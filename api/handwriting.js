@@ -82,9 +82,10 @@ async function responseJSON(response) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 
-function validCandidates(value) {
-  return Array.isArray(value) && value.length <= 10 && value.every(candidate =>
-    typeof candidate === 'string' && candidate.trim().length > 0 && candidate.length <= 32 && !/[\u0000-\u001f\u007f]/.test(candidate));
+// One odd candidate (blank, too long, a control character) no longer fails the whole answer:
+// it is dropped and the rest are marked (2026-10-22 20:43: one pupil got four 502s for one character).
+function validCandidate(candidate) {
+  return typeof candidate === 'string' && candidate.trim().length > 0 && candidate.length <= 32 && !/[\u0000-\u001f\u007f]/.test(candidate);
 }
 
 // One reading of the ink: {candidates}, or {status, error} for the pupil when the provider fails.
@@ -124,6 +125,7 @@ async function readInk(relay, ink, pre_context) {
     }
     if (!response.ok) {
       await response.body?.cancel();
+      console.warn(JSON.stringify({ event: 'handwriting_upstream_status', status: response.status, attempt }));
       if (response.status >= 500 && again(attempt)) continue;
       return { status: response.status === 504 ? 504 : 502, error: 'Recognition service unavailable' };
     }
@@ -131,7 +133,14 @@ async function readInk(relay, ink, pre_context) {
     break;
   }
   const candidates = relay ? data?.candidates : data?.[0] === 'SUCCESS' ? data?.[1]?.[0]?.[1] : null;
-  return validCandidates(candidates) ? { candidates } : { status: 502, error: 'Invalid recognition response' };
+  if (!Array.isArray(candidates)) {
+    console.warn(JSON.stringify({ event: 'handwriting_invalid_response', relay: Boolean(relay) }));
+    return { status: 502, error: 'Invalid recognition response' };
+  }
+  const kept = candidates.filter(validCandidate).slice(0, 10);
+  // Counts only: never the pupil's ink or the candidates.
+  if (kept.length < candidates.length) console.warn(JSON.stringify({ event: 'handwriting_candidates_dropped', total: candidates.length, kept: kept.length }));
+  return { candidates: kept };
 }
 
 module.exports = withSchoolLearning('handwriting', async (req, res) => {

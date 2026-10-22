@@ -129,9 +129,16 @@ test('relay validates candidate shape and caps upstream response size', async t 
   t.after(() => previous === undefined ? delete process.env.HANDWRITING_RELAY_URL : process.env.HANDWRITING_RELAY_URL = previous);
   let response;
   t.mock.method(globalThis, 'fetch', async () => response);
-  for (const candidates of [null, {}, '雨', ['雨', {}], [''], ['a'.repeat(33)], Array(11).fill('雨')]) {
+  for (const candidates of [null, {}, '雨']) {
     response = Response.json({ candidates });
     assert.equal((await invoke()).statusCode, 502);
+  }
+  // Odd candidates are dropped and the rest still marked (school73).
+  for (const [candidates, kept] of [[['雨', {}], ['雨']], [[''], []], [['a'.repeat(33), '兩'], ['兩']], [['雨\u0000', '雨'], ['雨']], [Array(11).fill('雨'), Array(10).fill('雨')]]) {
+    response = Response.json({ candidates });
+    const result = await invoke();
+    assert.equal(result.statusCode, 200);
+    assert.deepEqual(result.value.candidates, kept);
   }
   response = Response.json({ candidates: [] });
   assert.equal((await invoke()).statusCode, 200);
