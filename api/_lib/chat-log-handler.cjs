@@ -15,7 +15,7 @@ const RANGES=new Set([1,7,30,400]),CONCERN_DAYS=new Set([1,3]),ROW_LIMIT=20000,C
 const SHARES=new Set(['','q','r','qr']),UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const COUNTS=w=>`SELECT e.research_id,max(e.grade) AS grade,max(e.cls) AS cls,t.topic,CASE WHEN t.concern_share IS NOT NULL THEN t.concern END AS concern,count(*)::int AS n
     FROM research_events e LEFT JOIN chat_topics t ON t.event_id=e.event_id
-    WHERE ${w} GROUP BY e.research_id,t.topic,t.concern LIMIT ${ROW_LIMIT}`;
+    WHERE ${w} GROUP BY e.research_id,t.topic,5 LIMIT ${ROW_LIMIT}`;
 const FLAGGED=(w,which='')=>`SELECT e.event_id::text AS id,(extract(epoch FROM e.received_at)*1000)::float8 AS at,e.research_id,e.poem_id AS poem,e.grade,e.cls,
       e.record->'event'->'chat'->>'question' AS question,e.record->'event'->'chat'->>'reply' AS reply,t.topic,t.concern,t.concern_share AS share
     FROM research_events e JOIN chat_topics t ON t.event_id=e.event_id

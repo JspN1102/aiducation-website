@@ -94,6 +94,8 @@ test('jasper, molly and llp-pslau get the same ⚠ 需要關注, only once 轉�
   assert.deepEqual(b.flagged,[{at:AT,poemId:2,poemTitle:b.flagged[0].poemTitle,question,reply,concern:'abuse'}],login+share);
   assert.deepEqual(r.body.students.find(s=>s.student===A).flagged,[]);
   assert.match(seen.find(x=>x.sql.includes('LEFT JOIN chat_topics')).sql,/CASE WHEN t\.concern_share IS NOT NULL THEN t\.concern END/);
+  // Grouped by the shown kind (column 5), not t.concern: PostgreSQL refuses the CASE otherwise (school72).
+  assert.match(seen.find(x=>x.sql.includes('LEFT JOIN chat_topics')).sql,/GROUP BY e\.research_id,t\.topic,5 /);
  }
  for(const login of ['jasper','molly','llp-pslau']){
   const r=await withActor({role:'teacher',login},()=>caller(createChatLog(deps([],null)))({days:'7',grade:'2'}));
