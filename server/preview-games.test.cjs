@@ -11,7 +11,7 @@ test('each preview bank has exactly one game with its own id and a loader',async
  const dispatcher=fs.readFileSync(path.join(root,'maanshan/poem-games/index.mjs'),'utf8');
  const ids=new Set();
  for(const poem of preview){
-  const games=data.CHALLENGE_SETS[poem.slug].bank.filter(item=>item.type==='microgame');
+  const games=data.CHALLENGE_SETS[poem.slug].bank.filter(item=>item.type==='microgame'&&!item.game);
   assert.equal(games.length,1,poem.slug);
   assert.equal(games[0].id,`p${poem.id}-play-20261005`);assert.equal(games[0].slug,poem.slug);
   assert(games[0].title&&games[0].prompt&&games[0].explanation,poem.slug);
@@ -32,7 +32,7 @@ test('new preview rounds open with the game; rounds saved before the games still
   const set=data.CHALLENGE_SETS[poem.slug],game=`p${poem.id}-play-20261005`;
   for(const seed of ['one','two','three'])assert.equal(state.newAttempt(set,{seed}).itemIds[0],game,poem.slug);
   // A round started while the bank had no game opened with the hands-on question.
-  const before={...set,bank:set.bank.filter(item=>item.type!=='microgame')};
+  const before={...set,bank:set.bank.filter(item=>item.type!=='microgame'||item.game)};
   const saved=state.newAttempt(before,{seed:'before-games'});
   assert.equal(saved.itemIds[0],`p${poem.id}-m1`);
   const restored=state.readAttempt(JSON.parse(JSON.stringify(saved)),set);

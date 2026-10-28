@@ -57,7 +57,7 @@
 
 .weekly-label{margin:0 0 6px;font-size:14px;color:#9a7a3c;letter-spacing:.06em}
 .weekly-line{margin:0;font-family:var(--serif);font-size:22px;line-height:1.45;color:#24493e;letter-spacing:.06em}
-.weekly-best,.weekly-rise,.weekly-chars,.weekly-badges{padding:16px;border-radius:20px;background:#fff;box-shadow:inset 0 0 0 1px #efe3c9}
+.weekly-best,.weekly-rise,.weekly-chars,.weekly-next,.weekly-badges{padding:16px;border-radius:20px;background:#fff;box-shadow:inset 0 0 0 1px #efe3c9}
 .weekly-best{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
 .weekly-score{--deg:calc(var(--score) * 3.6deg);display:grid;place-content:center;grid-auto-flow:column;align-items:baseline;width:92px;height:92px;border-radius:50%;
  background:radial-gradient(#fff 0 57%,transparent 58%),conic-gradient(#3a9a72 var(--deg),#e9efe9 0);color:#2f6b55}
@@ -76,6 +76,7 @@
 .weekly-chars li{display:grid;place-items:center;height:72px;border-radius:14px;background:linear-gradient(#f4faf6,#e3f1e8);box-shadow:inset 0 0 0 1.5px #b9dcc7}
 .weekly-chars ruby{display:inline-flex;flex-direction:column-reverse;align-items:center;font-family:var(--serif);font-size:32px;line-height:1;color:#2f6b55}
 .weekly-chars rt{font-family:'School Pinyin',var(--sans);font-size:13px;color:#4a8a6c;margin-bottom:4px}
+.weekly-go{margin-top:12px;min-height:44px;padding:0 22px;border:0;border-radius:999px;background:#3a9a72;color:#fff;font:inherit;font-size:16px;font-weight:700;cursor:pointer}
 .weekly-badges ul{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;margin:0;padding:0;list-style:none;text-align:center}
 .weekly-medal{display:grid;justify-items:center;gap:2px}
 .weekly-medal-disc svg{width:66px;height:66px;filter:drop-shadow(0 4px 6px #8a63202e)}

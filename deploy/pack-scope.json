@@ -841,6 +841,7 @@
    2
   ],
   "media/words/2fff02d6de45e1087c70-f403001-20260921natural1.mp3": [
+   1,
    4
   ],
   "media/words/30a14a927a77f9f1a008-f403001-20260921natural1.mp3": [
@@ -864,6 +865,7 @@
    1
   ],
   "media/words/3795db34f4d8991240e4-f403001-20260921natural1.mp3": [
+   1,
    4
   ],
   "media/words/389028326edcc1d7f51f-f403001-20260921natural1.mp3": [
@@ -924,8 +926,11 @@
    5
   ],
   "media/words/50fc7a98f74cf215d408-f403001-20260921natural1.mp3": [
+   1,
    2,
+   3,
    4,
+   5,
    6
   ],
   "media/words/510dd1d15e1551cf980d-f403001-20260921natural1.mp3": [
@@ -1033,7 +1038,8 @@
    2,
    3,
    4,
-   5
+   5,
+   6
   ],
   "media/words/6eb3aa3e90119a6439e7-f403001-20260921natural1.mp3": [
    6
@@ -1341,6 +1347,14 @@
   "media/words/c711c8ac251ec1df5dbd-f403001-20260921natural1.mp3": [
    1
   ],
+  "media/words/c7c532dfc7369dd0f8cb-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
   "media/words/c7e5e5a5d6703f6a0e2d-f403001-20260921natural1.mp3": [
    4
   ],
@@ -1459,8 +1473,11 @@
    2
   ],
   "media/words/f698af82019e60b1a5a3-f403001-20260921natural1.mp3": [
+   1,
    2,
+   3,
    4,
+   5,
    6
   ],
   "media/words/f80d0f20c651db68a6e8-f403001-20260921natural1.mp3": [
@@ -3015,8 +3032,11 @@
    2
   ],
   "media/words/2fff02d6de45e1087c70-f403001-20260921natural1.mp3": [
+   1,
    4,
-   7
+   7,
+   9,
+   10
   ],
   "media/words/30a14a927a77f9f1a008-f403001-20260921natural1.mp3": [
    2,
@@ -3044,8 +3064,11 @@
    8
   ],
   "media/words/3795db34f4d8991240e4-f403001-20260921natural1.mp3": [
+   1,
    4,
-   7
+   7,
+   9,
+   10
   ],
   "media/words/389028326edcc1d7f51f-f403001-20260921natural1.mp3": [
    1
@@ -3130,11 +3153,15 @@
    10
   ],
   "media/words/50fc7a98f74cf215d408-f403001-20260921natural1.mp3": [
+   1,
    2,
+   3,
    4,
+   5,
    6,
    7,
    8,
+   9,
    10,
    11,
    12
@@ -3277,6 +3304,7 @@
    3,
    4,
    5,
+   6,
    7,
    8,
    9,
@@ -3491,7 +3519,9 @@
    4,
    5,
    6,
+   7,
    8,
+   9,
    10,
    11,
    12
@@ -3607,7 +3637,11 @@
    5,
    6,
    7,
-   9
+   8,
+   9,
+   10,
+   11,
+   12
   ],
   "media/words/af62337bbc5055d36172-f403001-20260921natural1.mp3": [
    3,
@@ -3717,6 +3751,20 @@
   ],
   "media/words/c711c8ac251ec1df5dbd-f403001-20260921natural1.mp3": [
    1
+  ],
+  "media/words/c7c532dfc7369dd0f8cb-f403001-20260921natural1.mp3": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12
   ],
   "media/words/c7e5e5a5d6703f6a0e2d-f403001-20260921natural1.mp3": [
    4,
@@ -3880,11 +3928,15 @@
    9
   ],
   "media/words/f698af82019e60b1a5a3-f403001-20260921natural1.mp3": [
+   1,
    2,
+   3,
    4,
+   5,
    6,
    7,
    8,
+   9,
    10,
    11,
    12

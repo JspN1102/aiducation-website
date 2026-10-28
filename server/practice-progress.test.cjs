@@ -4,7 +4,8 @@ const {mergePracticePayload,restorePracticeHistory}=require('../api/_lib/practic
 async function fixture(){
  const [state,data]=await Promise.all([import('../maanshan/challenge-state.mjs'),import('../maanshan/challenge-data.mjs')]);
  const set=data.CHALLENGE_SETS['zao-chun'],first=state.newAttempt(set,{seed:'progress-full'});
- for(let index=0;index<5;index++)state.recordAnswer(first,set,index,{status:'correct',...index===0?{response:{gameCompleted:true}}:{}});
+ const game=(attempt,index)=>state.attemptItems(attempt,set)[index]?.type==='microgame'?{response:{gameCompleted:true}}:{};
+ for(let index=0;index<first.itemIds.length;index++)state.recordAnswer(first,set,index,{status:'correct',...game(first,index)});
  first.answers.forEach((answer,index)=>answer.submittedAt=1000+index);delete first.itemRecords;
  const next=state.newAttempt(set,{previous:first,seed:'progress-partial'});next.itemIds=[...first.itemIds];next.orders=structuredClone(first.orders);
  for(let index=0;index<2;index++)state.recordAnswer(next,set,index,{status:index?'incorrect':'correct',...index===0?{response:{gameCompleted:true}}:{}});
@@ -16,11 +17,11 @@ test('server payload merge retains unredone results and zero scores without over
  const {state,set,first,next,stale}=await fixture();
  const full={learningState:{challenge:first},totalScore:80};
  const partial=await mergePracticePayload({learningState:{challenge:next},totalScore:92},full,6);
- assert.equal(partial.challenge.answered,5);assert.equal(partial.challenge.correct,4);assert.equal(partial.totalScore,92);
+ assert.equal(partial.challenge.answered,7);assert.equal(partial.challenge.correct,6);assert.equal(partial.totalScore,92);
  assert.equal(partial.learningState.challenge.answers.length,2);
  const merged=await mergePracticePayload({learningState:{challenge:stale},totalScore:93},partial,6);
- assert.equal(merged.challenge.answered,5);assert.equal(merged.challenge.correct,4);assert.equal(merged.learningState.challenge.answers.length,0);
- assert.equal(state.practiceRecordSummary(merged.learningState.challenge,set,{which:'best'}).correct,5);
+ assert.equal(merged.challenge.answered,7);assert.equal(merged.challenge.correct,6);assert.equal(merged.learningState.challenge.answers.length,0);
+ assert.equal(state.practiceRecordSummary(merged.learningState.challenge,set,{which:'best'}).correct,7);
  assert.equal(merged.learningState.challenge.attemptId,stale.attemptId);assert.equal(merged.totalScore,93);
 });
 test('PostgreSQL history restoration is read-only and scoped to the authenticated learning namespace and poem',async()=>{
@@ -31,7 +32,7 @@ test('PostgreSQL history restoration is read-only and scoped to the authenticate
  assert.equal(calls.length,1);assert.match(calls[0].sql,/^SELECT/);assert.doesNotMatch(calls[0].sql,/\b(INSERT|DELETE|UPDATE)\b/);
  assert.deepEqual(calls[0].params,['teacher-epoch-synthetic',null,'T',[6]]);
  assert.match(calls[0].sql,/jsonb_array_length/,'the most complete actual attempt survives a later stale save');
- assert.equal(progress[6].reading.challenge.answered,5);assert.equal(progress[6].reading.challenge.correct,4);
+ assert.equal(progress[6].reading.challenge.answered,7);assert.equal(progress[6].reading.challenge.correct,6);
  assert.equal(progress[6].reading.totalScore,91);assert.deepEqual(progress[6].writing,{untouched:true});
  assert.equal(progress[6].reading.learningState.challenge.answers.length,0);assert.equal(progress[1],undefined);
 });

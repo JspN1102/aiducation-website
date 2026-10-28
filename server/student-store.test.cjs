@@ -74,10 +74,11 @@ test('older retry cannot overwrite newer work and CAS races preserve the newest 
 test('Blob practice merge preserves unredone items and older-device answers without rolling back newer reading progress',async()=>{
  const [state,data]=await Promise.all([import('../maanshan/challenge-state.mjs'),import('../maanshan/challenge-data.mjs')]),set=data.CHALLENGE_SETS['zao-chun'];
  const first=state.newAttempt(set,{seed:'blob-full'});
- for(let i=0;i<5;i++)state.recordAnswer(first,set,i,{status:'correct',...i===0?{response:{gameCompleted:true}}:{}});
+ const game=(attempt,i)=>state.attemptItems(attempt,set)[i]?.type==='microgame';
+ for(let i=0;i<7;i++)state.recordAnswer(first,set,i,{status:'correct',...game(first,i)?{response:{gameCompleted:true}}:{}});
  first.answers.forEach((answer,i)=>answer.submittedAt=NOW-3000+i);delete first.itemRecords;
  const partial=state.newAttempt(set,{previous:first,seed:'blob-partial'});partial.itemIds=[...first.itemIds];partial.orders=structuredClone(first.orders);
- for(let i=0;i<2;i++)state.recordAnswer(partial,set,i,{status:i?'incorrect':'correct',...i===0?{response:{gameCompleted:true}}:{}});
+ for(let i=0;i<2;i++)state.recordAnswer(partial,set,i,{status:i?'incorrect':'correct',...!i&&game(partial,i)?{response:{gameCompleted:true}}:{}});
  partial.answers.forEach((answer,i)=>answer.submittedAt=NOW-2000+i);delete partial.itemRecords;
  const opened=state.newAttempt(set,{previous:first,seed:'blob-opened'}),fake=fakeBlob();
  await fake.store.save(input({syncId:'latest-reading',queuedAt:NOW,payload:{totalScore:95,learningState:{challenge:opened}}}));
@@ -85,8 +86,8 @@ test('Blob practice merge preserves unredone items and older-device answers with
  const row=(await fake.store.readClass(6,'A',6))[0];
  assert.equal(row.payload.totalScore,95);assert.equal(row.source_at,new Date(NOW).toISOString());
  assert.equal(row.payload.learningState.challenge.attemptId,opened.attemptId);assert.equal(row.payload.learningState.challenge.answers.length,0);
- assert.equal(row.payload.challenge.answered,5);assert.equal(row.payload.challenge.correct,4);
- assert.equal(state.practiceRecordSummary(row.payload.learningState.challenge,set,{which:'best'}).correct,5);
+ assert.equal(row.payload.challenge.answered,7);assert.equal(row.payload.challenge.correct,6);
+ assert.equal(state.practiceRecordSummary(row.payload.learningState.challenge,set,{which:'best'}).correct,7);
 });
 
 test('combined practice records still obey the Blob record byte bound before writing',async()=>{

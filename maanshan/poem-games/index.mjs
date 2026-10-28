@@ -16,18 +16,24 @@ const loaders={
  'zheng-ren-mai-lu':()=>import('./shoe-market.mjs?v=20261007-school46').then(m=>m.mountShoeMarket),
  'ke-zhi':()=>import('./guest.mjs?v=20261009-school54').then(m=>m.mountGuest)
 };
-export function mountPoemGame(holder,{slug,...options}={}){
- if(!loaders[slug])throw new TypeError('Unknown poem game');
+// 小老師找錯 and 讀音小偵探 are the same two games for every poem, with each poem's words.
+const practice={
+ spot:()=>import('./teacher-spot.mjs?v=20261029-school74').then(m=>m.mountTeacherSpot),
+ rule:()=>import('./sound-rule.mjs?v=20261029-school74').then(m=>m.mountSoundRule)
+};
+export function mountPoemGame(holder,{slug,game:kind,...options}={}){
+ const loader=kind?practice[kind]:loaders[slug];
+ if(!loader)throw new TypeError('Unknown poem game');
  let dead=false,game=null,generation=0,pendingSolution=false;
- const research=createProcessResearch(options.onResearch,{prefix:`game.${slug}`,alive:()=>!dead});
+ const research=createProcessResearch(options.onResearch,{prefix:kind?`game.${kind}.${slug}`:`game.${slug}`,alive:()=>!dead});
  const events=new AbortController();
  const load=async()=>{
   if(generation)research.retry('module');
   const version=++generation;
   holder.innerHTML='<p class="poem-game-loading" role="status">小畫卷正在展開…</p>';
   try{
-   const mount=await loaders[slug]();if(dead||version!==generation)return;
-   holder.replaceChildren();game=mount(holder,{...options,reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches});
+   const mount=await loader();if(dead||version!==generation)return;
+   holder.replaceChildren();game=mount(holder,{...options,...(kind?{slug}:{}),reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches});
    if(pendingSolution)game.showSolution?.();
   }catch{
    if(dead||version!==generation)return;

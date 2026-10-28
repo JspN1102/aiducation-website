@@ -34,7 +34,7 @@ function encouragement(r) {
   if (r.best?.score >= 90) return `你把「${r.best.line}」讀得又準又好聽，詩詩很喜歡！`;
   return '每一次開口讀，都是在進步。下星期我們再一起加油！';
 }
-function card(r, name, nav) {
+function card(r, name, nav, challenge) {
   const practised = r.days.filter(Boolean).length, great = practised >= 3 || r.reading.lines >= 30;
   const stats = [
     ['read', '朗讀', r.reading.lines, '句'], ['write', '默寫', r.writing.chars, '個字'],
@@ -54,12 +54,14 @@ function card(r, name, nav) {
   ${r.best ? `<section class="weekly-best"><div class="weekly-score" style="--score:${r.best.score}"><b>${r.best.score}</b><small>分</small></div><div><p class="weekly-label">本週讀得最好的一句</p><p class="weekly-line">${esc(r.best.line)}</p><p class="weekly-from">《${esc(r.best.title)}》${esc(r.best.label)}</p></div></section>` : ''}
   ${r.improved && rise > 0 ? `<section class="weekly-rise"><p class="weekly-label">進步最多的一句</p><p class="weekly-line">${esc(r.improved.line)}<span>《${esc(r.improved.title)}》</span></p><div class="weekly-bar" style="--from:${r.improved.from};--to:${r.improved.to}"><span class="from">${r.improved.from}</span><i></i><span class="to">${r.improved.to}</span></div><p class="weekly-up">進步了 <b>${rise}</b> 分</p></section>` : ''}
   ${r.fixedChars?.length ? `<section class="weekly-chars"><p class="weekly-label">這些字，你現在讀準了</p><ul>${r.fixedChars.map(w => `<li><ruby>${esc(w.c)}<rt>${esc(w.p)}</rt></ruby></li>`).join('')}</ul></section>` : ''}
+  ${r.challengeLine && challenge ? `<section class="weekly-next"><p class="weekly-label">下週挑戰句</p><p class="weekly-line">${esc(r.challengeLine.line)}</p><p class="weekly-from">《${esc(r.challengeLine.title)}》${esc(r.challengeLine.label)}，上週最好 ${r.challengeLine.score} 分</p><button class="weekly-go" type="button" data-weekly="challenge">去挑戰</button></section>` : ''}
   ${r.badges?.length ? `<section class="weekly-badges"><p class="weekly-label">本週成就</p><ul>${r.badges.map(b => medal(b.key, b.value)).join('')}</ul></section>` : ''}
   <footer class="weekly-shishi"><img src="media/shishi-guide.webp" width="614" height="800" alt="" decoding="async"><p>${esc(encouragement(r))}</p></footer>
   ${nav}
  </article>`;
 }
-export function mountWeeklyReport({anchor, userId, studentName, load}) {
+// onChallenge({slug, lineIndex}) opens that line to read; without it the 挑戰句 is not shown.
+export function mountWeeklyReport({anchor, userId, studentName, load, onChallenge}) {
   if (!anchor || document.querySelector('.weekly-bell')) return;
   const SEEN = 'ms_weekly_seen:' + userId;
   const bell = document.createElement('button');
@@ -76,12 +78,13 @@ export function mountWeeklyReport({anchor, userId, studentName, load}) {
     const r = reports[index];
     if (!r) { dialog.innerHTML = `<article class="weekly-card weekly-empty"><button class="weekly-close" type="button" data-weekly="close" aria-label="關閉" title="關閉">${svg(ICONS.close)}</button><img src="media/weekly/reading-20261017.webp" width="640" height="640" alt="" decoding="async"><h2 id="weekly-title">第一份週報快到了</h2><p>每個星期日早上，詩詩會把上一週的學習成果送到這裏。</p></article>`; return; }
     const nav = reports.length > 1 ? `<nav class="weekly-nav"><button type="button" data-weekly="older" ${index >= reports.length - 1 ? 'disabled' : ''}>${svg(ICONS.prev)}更早</button><span>${index + 1} / ${reports.length}</span><button type="button" data-weekly="newer" ${index ? '' : 'disabled'}>較新${svg(ICONS.next)}</button></nav>` : '';
-    dialog.innerHTML = card(r, r.sampleName || studentName, nav);
+    dialog.innerHTML = card(r, r.sampleName || studentName, nav, !!onChallenge);
     dialog.scrollTop = 0;
   };
   dialog.addEventListener('click', event => {
     const action = event.target.closest('[data-weekly]')?.dataset.weekly;
     if (event.target === dialog || action === 'close') dialog.close();
+    else if (action === 'challenge' && reports[index]?.challengeLine) { const c = reports[index].challengeLine; dialog.close(); onChallenge({slug: c.slug, lineIndex: c.lineIndex}); }
     else if (action === 'older' && index < reports.length - 1) { index++; render(); }
     else if (action === 'newer' && index > 0) { index--; render(); }
   });

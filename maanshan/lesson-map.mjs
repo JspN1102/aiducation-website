@@ -46,7 +46,7 @@ export function mountLessonMap(holder, {poem, progress = {}, resume = null, onNa
     const answered = count(current.challengeAnswered,challengeTotal);
     const completed = current.challengeCompleted === true;
     const readingLabel = done ? `已讀 ${done} / ${total} 句` : '讀一讀，展開畫卷';
-    const challengeLabel = current.challengeMode==='review' ? completed?'本組錯題複習完成':`錯題複習 ${answered} / ${challengeTotal} 題` : completed ? '五題都練過了' : answered ? `已練 ${answered} / ${challengeTotal} 題` : poem.grade<=3?'玩一玩，再聽聲音':'玩一玩、聽音、寫字';
+    const challengeLabel = current.challengeMode==='review' ? completed?'本組錯題複習完成':`錯題複習 ${answered} / ${challengeTotal} 題` : completed ? '這一輪都練過了' : answered ? `已練 ${answered} / ${challengeTotal} 題` : poem.grade<=3?'玩一玩，再聽聲音':'玩一玩、聽音、寫字';
     const canResume = latestResume && allowedViews.has(latestResume.view);
     const steps = [
       {view:'record',target:done===total?'report':'record',title:done===total?'看朗讀成果':'AI讀古詩',status:readingLabel,done:done===total},

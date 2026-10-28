@@ -3,6 +3,7 @@
 // explanations and curriculum metadata must never become pre-answer captions or aria labels.
 import {DICTATION_BANK} from './challenge-dictation-bank.mjs?v=20260918c';
 import {PREVIEW_SETS} from './challenge-preview-sets.mjs?v=20261005-school40';
+import {PRACTICE_GAMES} from './practice-games-data.mjs?v=20261029-school74';
 export const CHALLENGE_VERSION = 2;
 
 const toneOptions = () => [
@@ -211,7 +212,12 @@ export const CHALLENGE_SETS = Object.freeze(Object.fromEntries(Object.entries({.
     target: {char: word.char, pinyin: word.pinyin, accept: word.accept},
     explanation: `「${word.word}」的「${word.char}」。聽清讀音，再看看這個字怎樣寫。`
   }));
-  const bank = [...set.items, ...moreSounds, ...variedSounds, ...additions, ...(POEM_GAME_ITEMS[slug] ? [POEM_GAME_ITEMS[slug]] : [])].map(item => ({difficulty: 1, ...item}));
+  // school74: every poem's two listening games, 小老師找錯 and 讀音小偵探 (a round of seven).
+  const practice = PRACTICE_GAMES[slug] ? [
+    {id: `${idPrefix}-spot-20261029`, type: 'microgame', game: 'spot', slug, title: '小老師找錯', prompt: '小墨讀詩，請你當小老師，找出讀錯的地方。', explanation: '每個字的聲母、韻母和聲調都聽清楚，才找得到讀錯的地方。'},
+    {id: `${idPrefix}-rule-20261029`, type: 'microgame', game: 'rule', slug, title: '讀音小偵探', prompt: '聽一聽，找出讀音的規律。', explanation: PRACTICE_GAMES[slug].rule.rule}
+  ] : [];
+  const bank = [...set.items, ...moreSounds, ...variedSounds, ...additions, ...(POEM_GAME_ITEMS[slug] ? [POEM_GAME_ITEMS[slug]] : []), ...practice].map(item => ({difficulty: 1, ...item}));
   const {sampled, notSampled, ...curriculum} = set.curriculum;
   return [slug, Object.freeze({...set, curriculum: {...curriculum, legacySampled: sampled, legacyNotSampled: notSampled,
     bankFocus: [...new Set(bank.filter(item => item.type === 'sound').map(item => item.focus))],

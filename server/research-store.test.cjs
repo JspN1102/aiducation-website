@@ -422,7 +422,7 @@ test('the dictionary documents the school48 fields as optional and keeps exclusi
   const field=name=>d.fields.find(item=>item.name===name);
   for(const name of ['event.providerWords','event.service','event.recognition','event.provenance']){assert.ok(field(name),name);assert.match(field(name).type,/^server-only /,name);}
   assert.equal(new Set(d.fields.map(item=>item.name)).size,d.fields.length);
-  for(const key of ['mediaRoute','audioSource','audioTrigger','lineIndex','pinyinShown','recorderFormat','stopReason','uploadPath','resend','errorDetail','httpStatus','inputMode','pointer','viewport','pageLoad','deviceAccounts','errorSource','errorKind',
+  for(const key of ['mediaRoute','audioSource','audioTrigger','lineIndex','pinyinShown','demoArm','pinyinArm','recorderFormat','stopReason','uploadPath','resend','errorDetail','httpStatus','inputMode','pointer','viewport','pageLoad','deviceAccounts','errorSource','errorKind',
     'own-module','own-page','extension','other-origin','reference','not-allowed','muted','resize-loop'])
     assert.ok(field('event.context').meaning.includes(key),key);
   for(const key of ['fallbackCount','mediaDurationMs','seekFromMs','stallCount','selectionChanges','firstResponseMs','prepareMs','pendingCount','heldCount'])assert.ok(field('event.metrics').meaning.includes(key),key);

@@ -16,7 +16,7 @@ async function draw(page){const canvas=page.locator('.cw-board canvas');await ca
 (async()=>{
  const [{newAttempt,attemptItems,recordAnswer},{CHALLENGE_SETS}]=await Promise.all([import('../maanshan/challenge-state.mjs'),import('../maanshan/challenge-data.mjs')]);
  const set=CHALLENGE_SETS['zao-chun'],saved=newAttempt(set,{seed:'app-correction-upload'}),items=attemptItems(saved,set),index=items.findIndex(item=>item.type==='dictation'),item=items[index];
- for(let i=0;i<index;i++)recordAnswer(saved,set,i,{status:i===0?'skipped':'correct'});saved.cursor=index;
+ for(let i=0;i<index;i++)recordAnswer(saved,set,i,{status:items[i].type==='microgame'?'skipped':'correct'});saved.cursor=index;
  for(const engine of ['chromium','webkit']){
   const browser=await(engine==='chromium'?chromium.launch({channel:'msedge',headless:true}):webkit.launch({headless:true}));
   const context=await browser.newContext({viewport:{width:1024,height:768},hasTouch:true}),page=await context.newPage(),saves=[],answers=[],handwriting=[],errors=[];

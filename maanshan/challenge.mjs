@@ -1,6 +1,6 @@
 import {imageAsset} from './media-images.mjs?v=20261007-school46';
-import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261006-school43';
-import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20261006-school43';
+import {CHALLENGE_SETS} from './challenge-data.mjs?v=20261029-school74';
+import {newAttempt, newReviewAttempt, prepareAttempt, recordAnswer, challengeSummary, attemptItems, safeGameState} from './challenge-state.mjs?v=20261029-school74';
 import {mountChallengeWriting} from './challenge-writing.mjs?v=20261015-school66';
 import {mountChallengeModel} from './challenge-model.mjs?v=20261006-school43';
 import {mountLivingField} from './living-field.mjs?v=20261007-school46';
@@ -180,10 +180,10 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const locked = !!answer;
     const active = () => !dead && epoch === gameEpoch && generation === renderGeneration;
     try {
-      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20261009-school54');
+      const {mountPoemGame} = await import('./poem-games/index.mjs?v=20261029-school74');
       if (!active()) return;
       let completionReceived = false;
-      const mounted = mountPoemGame(holder, {slug: poem.slug, initialState: state, readOnly: locked,
+      const mounted = mountPoemGame(holder, {slug: poem.slug, game: item.game, initialState: state, readOnly: locked,
         onResearch:(type,fields)=>{if(active())audit(type,fields);},
         // null: interrupted, or the game is gone; a game reports only a real failure (false).
         playAudio: async audio => {if (!active()) return null;const ok = await playAudio?.(audio,researchContext());return active() ? ok : null;},
@@ -208,7 +208,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     }
   }
   function header(item) {
-    return `<header class="challenge-header"><div><span class="challenge-eyebrow">${attempt.mode==='review'?'錯題重做':attempt.mode==='advanced'?'高階挑戰':item.type==='sound'?formOf(item).kind:KIND[item.type]}</span><span class="challenge-count">${screen+1}<small> / ${items.length}</small></span></div><div class="challenge-steps" aria-label="第 ${screen+1} 題，共 ${items.length} 題">${items.map((_,i)=>`<i class="${i<screen?'done':i===screen?'current':''}"></i>`).join('')}</div></header>`;
+    return `<header class="challenge-header"><div><span class="challenge-eyebrow">${attempt.mode==='review'?'錯題重做':attempt.mode==='advanced'?'高階挑戰':item.type==='sound'?formOf(item).kind:item.game?item.title:KIND[item.type]}</span><span class="challenge-count">${screen+1}<small> / ${items.length}</small></span></div><div class="challenge-steps" aria-label="第 ${screen+1} 題，共 ${items.length} 題">${items.map((_,i)=>`<i class="${i<screen?'done':i===screen?'current':''}"></i>`).join('')}</div></header>`;
   }
   function soundBody(item) {
     const form=formOf(item);
@@ -414,7 +414,7 @@ export function mountChallenge(container, {poem, saved, onChange, onComplete, pl
     const hasGuided=attempt.answers.some(answer=>answer.flow==='trace-dictation-v1');
     const allCorrect=attempt.answers.every(answer=>answer.flow==='trace-dictation-v1'?guidedDone(answer):answer.correct), pending=attempt.reviewPending?.length || 0;
     const completedN=attempt.answers.filter(answer=>answer.flow==='trace-dictation-v1'?guidedDone(answer):answer.status!=='skipped').length;
-    startPage(`<section class="challenge-shell challenge-results"><header class="challenge-results-heading"><img src="media/poetry-motifs/${['goose','boat','mountain','moon','sprout','swallow','snow','rooster','beans','oriole','shoe','cup'][poem.id-1]}.svg" alt="" width="72" height="72"><div><p class="challenge-eyebrow">${attempt.mode==='review'?'錯題複習成果':'小遊戲練習成果'}</p><h2>${hasGuided?'這一輪練習結束了！':allCorrect?pending?'這一組答對了！':'全部答對了！':'把小發現帶走。'}</h2><p class="challenge-result-detail">${hasGuided?`已完成 ${completedN} / ${items.length} 題。`:pending?`還有 ${pending} 道錯題，下次接着練。`:allCorrect?'每一題都完成得很好。':`答對 ${result.correct} / ${result.total} 題，再看看這些知識點。`}</p></div></header><div class="challenge-result-list" aria-label="每題結果與知識點">${entries}</div><div class="challenge-results-actions"><button class="challenge-primary" data-ch="new-round">再練五題 <span aria-hidden="true">→</span></button>${!allCorrect||pending?'<button class="challenge-secondary" data-ch="redo-wrong">錯題重做</button>':''}</div></section>`);
+    startPage(`<section class="challenge-shell challenge-results"><header class="challenge-results-heading"><img src="media/poetry-motifs/${['goose','boat','mountain','moon','sprout','swallow','snow','rooster','beans','oriole','shoe','cup'][poem.id-1]}.svg" alt="" width="72" height="72"><div><p class="challenge-eyebrow">${attempt.mode==='review'?'錯題複習成果':'小遊戲練習成果'}</p><h2>${hasGuided?'這一輪練習結束了！':allCorrect?pending?'這一組答對了！':'全部答對了！':'把小發現帶走。'}</h2><p class="challenge-result-detail">${hasGuided?`已完成 ${completedN} / ${items.length} 題。`:pending?`還有 ${pending} 道錯題，下次接着練。`:allCorrect?'每一題都完成得很好。':`答對 ${result.correct} / ${result.total} 題，再看看這些知識點。`}</p></div></header><div class="challenge-result-list" aria-label="每題結果與知識點">${entries}</div><div class="challenge-results-actions"><button class="challenge-primary" data-ch="new-round">再練一輪 <span aria-hidden="true">→</span></button>${!allCorrect||pending?'<button class="challenge-secondary" data-ch="redo-wrong">錯題重做</button>':''}</div></section>`);
   }
   function restart(mode='standard') {flushDraft();attempt=newAttempt(set,{previous:attempt,mode});items=attemptItems(attempt,set);screen=0;audit('attempt_started',{metrics:{itemCount:items.length}});save();showQuestion();}
   function click(event) {

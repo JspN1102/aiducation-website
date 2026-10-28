@@ -66,7 +66,19 @@ test('a week is summarised: days, lines, best line, biggest rise, characters now
   assert.deepEqual(r.fixedChars.map(c=>c.c),['春','綠']);
   assert.deepEqual(r.badges.map(b=>b.key),['days','rise','voice']);
   const empty=weekly.buildReport(s,{reading:[],chat:[]});
-  assert.equal(empty.best,null);assert.equal(empty.improved,null);assert.deepEqual(empty.badges,[]);assert.ok(!empty.days.some(Boolean));
+  assert.equal(empty.best,null);assert.equal(empty.challengeLine,null);assert.equal(r.challengeLine,null,'every line read reached 85');assert.equal(empty.improved,null);assert.deepEqual(empty.badges,[]);assert.ok(!empty.days.some(Boolean));
+});
+
+test('下週挑戰句 is the line whose best this week is still lowest, the latest on a tie',()=>{
+  const s=HK('2026-10-11');
+  const reading=[
+    rec(4,0,50,HK('2026-10-12','16:00'),'c1'),rec(4,0,70,HK('2026-10-12','16:05'),'c2'),
+    rec(4,1,70,HK('2026-10-13','16:00'),'c3'),
+    rec(4,2,90,HK('2026-10-13','16:10'),'c4'),
+    rec(4,3,12,HK('2026-10-14','16:00'),'c5') // near-silent: not a line to set as the challenge
+  ];
+  assert.deepEqual(weekly.buildReport(s,{reading,chat:[]}).challengeLine,
+    {poemId:4,slug:'bo-chuan-gua-zhou',title:'泊船瓜洲',label:'第2句',lineIndex:1,line:'鍾山祇隔數重山',score:70});
 });
 
 test('reports are stored once and never recomputed; quiet earlier weeks are left out',async()=>{

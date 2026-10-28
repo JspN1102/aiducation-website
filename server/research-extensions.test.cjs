@@ -19,7 +19,7 @@ const writing=(changes={})=>client({activity:'writing',type:'provider_result',pr
 const label=value=>{try{return JSON.stringify(value)?.slice(0,300);}catch{return String(value);}};
 const accepts=(event,server)=>assert.doesNotThrow(()=>s.validateEvent(event,server),label(event));
 const rejects=(event,server)=>assert.throws(()=>s.validateEvent(event,server),error=>error instanceof s.ResearchError&&error.code==='INVALID_EVENT',label(event));
-const ENUMS={mediaRoute:['public','local'],audioSource:['recitation','static','tts','recording'],
+const ENUMS={mediaRoute:['public','local'],demoArm:['attempt-first','open'],pinyinArm:['faded','kept','ineligible'],audioSource:['recitation','static','tts','recording'],
  audioTrigger:['poem-heading-audio','line-tts','word-tts','sentence-tts','practice-word','practice-sequence','practice-compare','report-line-tts','record-pending-play','replay','replay-all','chat-speak','challenge','other'],
  recorderFormat:['webm-opus','webm','mp4','ogg','default','other'],stopReason:['manual','time-limit'],uploadPath:['compact','pcm','pcm-fallback'],
  errorDetail:['mic-denied','mic-missing','mic-busy','unsupported','too-short','too-long','offline','network','timeout','busy','service','transcode','decode','incomplete','aborted','other'],

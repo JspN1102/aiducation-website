@@ -1,8 +1,8 @@
 {
  "schemaVersion": 1,
- "version": "2ee2b38792dcd079da63",
+ "version": "ae5de4ff65191074c0c4",
  "cache": "maanshan-pack-v1",
- "totalBytes": 353520662,
+ "totalBytes": 353527070,
  "assets": [
   {
    "path": "media/bo-chuan-gua-zhou/animation-20260917.mp4",
@@ -6326,11 +6326,15 @@
    "sha256": "daff88b4cdb0f54cc947e065f4d465031f2c21f3ad26c18a52d37529fbb01f1c",
    "type": "audio/mpeg",
    "grades": [
+    1,
     4
    ],
    "poems": [
+    1,
     4,
-    7
+    7,
+    9,
+    10
    ]
   },
   {
@@ -6427,11 +6431,15 @@
    "sha256": "f91e550a7ba7bea46fb261e3af3e0a27d22788280538ab166c30921c8c261350",
    "type": "audio/mpeg",
    "grades": [
+    1,
     4
    ],
    "poems": [
+    1,
     4,
-    7
+    7,
+    9,
+    10
    ]
   },
   {
@@ -6685,16 +6693,23 @@
    "sha256": "abfa3e7711be2e22a4c8b6e58a0ac44d6292f08ae249eecf7590095927a2f082",
    "type": "audio/mpeg",
    "grades": [
+    1,
     2,
+    3,
     4,
+    5,
     6
    ],
    "poems": [
+    1,
     2,
+    3,
     4,
+    5,
     6,
     7,
     8,
+    9,
     10,
     11,
     12
@@ -7125,7 +7140,8 @@
     2,
     3,
     4,
-    5
+    5,
+    6
    ],
    "poems": [
     1,
@@ -7133,6 +7149,7 @@
     3,
     4,
     5,
+    6,
     7,
     8,
     9,
@@ -7755,7 +7772,9 @@
     4,
     5,
     6,
+    7,
     8,
+    9,
     10,
     11,
     12
@@ -8100,7 +8119,11 @@
     5,
     6,
     7,
-    9
+    8,
+    9,
+    10,
+    11,
+    12
    ]
   },
   {
@@ -8432,7 +8455,29 @@
    "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/g-9181908b9a88540cf3bd/maanshan/media/words/c7c532dfc7369dd0f8cb-f403001-20260921natural1.mp3",
    "bytes": 11565,
    "sha256": "3eb2322419ba192eb9869303809c83633c19a5792a4d68dd690fec7b9d8bc2b3",
-   "type": "audio/mpeg"
+   "type": "audio/mpeg",
+   "grades": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "poems": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ]
   },
   {
    "path": "media/words/c7e5e5a5d6703f6a0e2d-f403001-20260921natural1.mp3",
@@ -8936,16 +8981,23 @@
    "sha256": "04489a5366f39a72736e90226f3cf172b9f6858c8f1f2f6d3250d3f848c8ff5f",
    "type": "audio/mpeg",
    "grades": [
+    1,
     2,
+    3,
     4,
+    5,
     6
    ],
    "poems": [
+    1,
     2,
+    3,
     4,
+    5,
     6,
     7,
     8,
+    9,
     10,
     11,
     12
@@ -9949,23 +10001,23 @@
   },
   {
    "path": "vendor/fonts/noto-sans-hk.woff2",
-   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/92d8bc1051d153bbc754/maanshan/vendor/fonts/noto-sans-hk.woff2",
-   "bytes": 489224,
-   "sha256": "92d8bc1051d153bbc75473f47af5a7d77889f792d2a7bb0ac2314aff10ee7324",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/f6ca600e4e3f2c7fc651/maanshan/vendor/fonts/noto-sans-hk.woff2",
+   "bytes": 491980,
+   "sha256": "f6ca600e4e3f2c7fc6517b8608b6545d52a8b155e3a6f75a18c2299edc21c3d5",
    "type": "font/woff2"
   },
   {
    "path": "vendor/fonts/noto-serif-hk-variants.woff2",
-   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ccd23ddb0e2687a3564b/maanshan/vendor/fonts/noto-serif-hk-variants.woff2",
-   "bytes": 21052,
-   "sha256": "ccd23ddb0e2687a3564bbbdd3fb1919e3ae281be7cea72f4a177ecdc794ccfe4",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/da7d76d7c2078e0a5343/maanshan/vendor/fonts/noto-serif-hk-variants.woff2",
+   "bytes": 21152,
+   "sha256": "da7d76d7c2078e0a5343c6e60f16dccd813e45171f06e96ec58917de6aa879c7",
    "type": "font/woff2"
   },
   {
    "path": "vendor/fonts/noto-serif-hk.woff2",
-   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/5e18d6199648f54f04d2/maanshan/vendor/fonts/noto-serif-hk.woff2",
-   "bytes": 670532,
-   "sha256": "5e18d6199648f54f04d23d7566a2a4583a35ecb678cd516339eb99fc1875f242",
+   "remote": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/00f2b0898b5d06f226b4/maanshan/vendor/fonts/noto-serif-hk.woff2",
+   "bytes": 674084,
+   "sha256": "00f2b0898b5d06f226b43a5a2350b6b03ee38bf8b5078db6a7c87ec230ee9b10",
    "type": "font/woff2"
   },
   {

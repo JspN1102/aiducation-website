@@ -1,18 +1,23 @@
-import {CHALLENGE_VERSION} from './challenge-data.mjs?v=20261006-school43';
+import {CHALLENGE_VERSION} from './challenge-data.mjs?v=20261029-school74';
 
-const TOTAL = 5;
+// A pupil has done a poem's practice once five items are answered (rounds of five
+// before school74); a round now holds up to seven.
+const TOTAL = 5, MAX = 7;
 const LEGACY_PLAN = ['sound', 'dictation', 'sound', 'dictation', 'other'];
-const group = item => ['sound', 'dictation'].includes(item.type) ? item.type : 'other';
+const TYPES = ['sound', 'dictation', 'other', 'spot', 'rule'];
+// 小老師找錯 and 讀音小偵探 have their own places in a round.
+const group = item => item.game || (['sound', 'dictation'].includes(item.type) ? item.type : 'other');
 const bankOf = set => set.bank || set.items;
 // A round opens with the poem's game. Poems without a game yet open with their
 // hands-on question (ordering or matching) instead.
-const opener = (set, item) => item.type === 'microgame' || group(item) === 'other' && !bankOf(set).some(value => value.type === 'microgame');
+const opener = (set, item) => !item.game && (item.type === 'microgame' || group(item) === 'other' && !bankOf(set).some(value => value.type === 'microgame' && !value.game));
 // Preview poems 7-12 got their games later. Rounds saved before then opened
 // with the poem's only hands-on question; keep reading them as they were.
 const savedOpener = (set, item) => opener(set, item) || group(item) === 'other' && /^p\d+-m1$/.test(item.id);
 const traceFlow = (value,item) => item?.type === 'dictation' && value?.flow === 'trace-dictation-v1'
   ? {flow:'trace-dictation-v1',traceCompleted:value.traceCompleted===true,dictationCompleted:value.traceCompleted===true&&value.dictationCompleted===true} : {};
-export const CHALLENGE_SCHEDULE = 'game-first-20260919';
+export const CHALLENGE_SCHEDULE = 'seven-20261029';
+const GAME_FIRST = 'game-first-20260919';
 // Existing saved rounds keep their original order. Only new, untouched rounds
 // use the game-first route; never reinterpret old answers against a new plan.
 const previousPlan = (set, variant = 'hands', mode = 'standard') => set.grade >= 4 && mode === 'advanced'
@@ -21,7 +26,15 @@ const previousPlan = (set, variant = 'hands', mode = 'standard') => set.grade >=
   : set.grade === 4 ? variant === 'hands' ? ['sound', 'sound', 'dictation', 'sound', 'other'] : ['sound', 'dictation', 'sound', 'dictation', 'sound']
   : variant === 'hands' ? LEGACY_PLAN : ['sound', 'dictation', 'sound', 'dictation', 'dictation'];
 
+// school74 rounds of seven: the poem's game first, then sounds and writing with
+// 小老師找錯 third and 讀音小偵探 fifth.
 export const challengePlan = (set, _variant = 'hands', mode = 'standard') => set.grade <= 3
+  ? ['other', 'sound', 'spot', 'sound', 'rule', 'sound', 'sound']
+  : mode === 'advanced' ? ['other', 'dictation', 'spot', 'sound', 'rule', 'dictation', 'dictation']
+  : set.grade === 4 ? ['other', 'sound', 'spot', 'dictation', 'rule', 'sound', 'sound']
+  : ['other', 'sound', 'spot', 'dictation', 'rule', 'sound', 'dictation'];
+// Rounds of five, game first (2026-09-19 to school73).
+const gameFirstPlan = (set, mode = 'standard') => set.grade <= 3
   ? ['other', 'sound', 'sound', 'sound', 'sound']
   : mode === 'advanced' ? ['other', 'dictation', 'sound', 'dictation', 'dictation']
   : set.grade === 4 ? ['other', 'sound', 'dictation', 'sound', 'sound']
@@ -115,13 +128,13 @@ function mergeItemRecords(set,...sources) {
     for(const [id,value]of Object.entries(source.itemRecords||{}).slice(0,bank.size))if(bank.has(id))for(const kind of ['latest','best'])if(value?.[kind]?.itemId===id)accept(value[kind]);
     if(source.mode==='review'){
       visit(source.sourceAttempt,depth+1);
-      for(const answer of (source.answers||[]).slice(0,TOTAL))if(answer.flow==='trace-dictation-v1'&&answer.traceCompleted===true){
+      for(const answer of (source.answers||[]).slice(0,MAX))if(answer.flow==='trace-dictation-v1'&&answer.traceCompleted===true){
         const done=answer.dictationCompleted===true||source.writingCorrections?.[answer.itemId]?.status==='corrected';
         if(done)accept({...answer,dictationCompleted:true,attemptId:source.attemptId,mode:'review'});
       }
       return;
     }
-    for(const [index,answer]of (Array.isArray(source.answers)?source.answers:[]).slice(0,TOTAL).entries())if(answer?.itemId===(source.itemIds||set.items.map(item=>item.id))[index])accept({...answer,...(answer.flow==='trace-dictation-v1'&&answer.traceCompleted===true&&source.writingCorrections?.[answer.itemId]?.status==='corrected'?{dictationCompleted:true}:{}),attemptId:source.attemptId,mode:source.mode});
+    for(const [index,answer]of (Array.isArray(source.answers)?source.answers:[]).slice(0,MAX).entries())if(answer?.itemId===(source.itemIds||set.items.map(item=>item.id))[index])accept({...answer,...(answer.flow==='trace-dictation-v1'&&answer.traceCompleted===true&&source.writingCorrections?.[answer.itemId]?.status==='corrected'?{dictationCompleted:true}:{}),attemptId:source.attemptId,mode:source.mode});
     if(depth===0)for(const record of (Array.isArray(source.resultArchive)?source.resultArchive:[]).slice(-24))visit(record,1);
   };
   sources.forEach(source=>visit(source));
@@ -157,7 +170,7 @@ export function newAttempt(set, {previous = null, seed = crypto.randomUUID(), mo
   const legacyArchive = previous?.legacyArchive || (previous?.selection === 'legacy-v1' ? previous : previous?.sourceAttempt?.selection === 'legacy-v1' ? previous.sourceAttempt : null);
   const variant = mode === 'advanced' ? 'writing' : 'hands';
   const bank = bankOf(set), random = seededRandom(seed), history = {}, picked = {}, plan = challengePlan(set, variant, mode);
-  for (const type of ['sound', 'dictation', 'other']) {
+  for (const type of TYPES) {
     const pool = bank.filter(item => group(item) === type && (type !== 'other' || opener(set, item)) && (type !== 'sound' || (item.difficulty || 1) === (mode === 'advanced' ? 2 : 1))), count = plan.filter(part => part === type).length;
     if (!count) {history[type] = validHistory(previous?.history?.[type], bank, type);picked[type] = [];continue;}
     if (pool.length < count) throw new Error('Incomplete challenge bank');
@@ -168,7 +181,7 @@ export function newAttempt(set, {previous = null, seed = crypto.randomUUID(), mo
     picked[type] = [...fresh, ...older].slice(0, count);
     history[type] = unused.length >= count ? [...(previous ? seen : []), ...picked[type].map(item => item.id)] : picked[type].map(item => item.id);
   }
-  const offsets = {sound: 0, dictation: 0, other: 0};
+  const offsets = Object.fromEntries(TYPES.map(type => [type, 0]));
   const items = plan.map(type => picked[type][offsets[type]++]);
   return {version: CHALLENGE_VERSION, attemptId: crypto.randomUUID(), seed: String(seed), startedAt: Date.now(),
     selection: 'grade-bank', schedule: CHALLENGE_SCHEDULE, mode, variant, cursor: 0, itemIds: items.map(item => item.id), history, answers: [], gameDrafts: {},
@@ -209,7 +222,7 @@ export function newReviewAttempt(set, saved, {seed = crypto.randomUUID()} = {}) 
     const item = bankOf(set).find(value => value.id === id);
     if (set.grade > 3 || item.type === 'sound') return true;
     return nonchoices++ === 0;
-  }).slice(0, TOTAL);
+  }).slice(0, MAX);
   const sourceAttempt = structuredClone(previous.mode === 'review' ? previous.sourceAttempt : previous);
   const items = attemptItems({itemIds: ids}, set), random = seededRandom(seed);
   return {version: CHALLENGE_VERSION, attemptId: crypto.randomUUID(), seed: String(seed), startedAt: Date.now(),
@@ -230,22 +243,23 @@ export function readAttempt(saved, set) {
   const mode = legacy ? 'standard' : saved.mode || 'standard';
   if (!['standard', 'advanced', 'review'].includes(mode)) return null;
   const itemIds = saved.version === 1 ? set.items.map(item => item.id) : saved.itemIds;
-  const total = mode === 'review' ? itemIds?.length : TOTAL;
-  if (!Array.isArray(itemIds) || !Number.isInteger(total) || total < 1 || total > TOTAL || itemIds.length !== total || new Set(itemIds).size !== total) return null;
+  const variant = legacy ? 'hands' : saved.variant;
+  if (!['hands', 'writing'].includes(variant)) return null;
+  const gameFirst = [CHALLENGE_SCHEDULE, GAME_FIRST].includes(saved.schedule);
+  const plan = legacy ? LEGACY_PLAN : saved.schedule === CHALLENGE_SCHEDULE ? challengePlan(set, variant, mode)
+    : gameFirst ? gameFirstPlan(set, mode) : previousPlan(set, variant, saved.schedule === 'games-20260918' ? mode : 'standard');
+  const total = mode === 'review' ? itemIds?.length : plan.length;
+  if (!Array.isArray(itemIds) || !Number.isInteger(total) || total < 1 || total > MAX || itemIds.length !== total || new Set(itemIds).size !== total) return null;
   const items = attemptItems({itemIds}, set);
   let sourceAttempt = null;
   if (mode === 'review') {
     if (!saved.sourceAttempt || saved.sourceAttempt.mode === 'review' || saved.sourceAttempt.sourceAttempt) return null;
     sourceAttempt = readAttempt(saved.sourceAttempt, set);
-    if (!sourceAttempt || sourceAttempt.answers.length !== TOTAL || !itemIds.every(id => sourceAttempt.answers.some(answer => answer.itemId === id && !answer.correct))) return null;
+    if (!sourceAttempt || sourceAttempt.answers.length !== sourceAttempt.itemIds.length || !itemIds.every(id => sourceAttempt.answers.some(answer => answer.itemId === id && !answer.correct))) return null;
     if (set.grade <= 3 && items.filter(item => item.type !== 'sound').length > 1) return null;
     if (!Array.isArray(saved.reviewPending) || new Set(saved.reviewPending).size !== saved.reviewPending.length || saved.reviewPending.some(id => itemIds.includes(id) || !sourceAttempt.answers.some(answer => answer.itemId === id && !answer.correct))) return null;
   }
   if (legacy && itemIds.some((id, index) => id !== set.items[index]?.id)) return null;
-  const variant = legacy ? 'hands' : saved.variant;
-  if (!['hands', 'writing'].includes(variant)) return null;
-  const gameFirst = saved.schedule === CHALLENGE_SCHEDULE;
-  const plan = legacy ? LEGACY_PLAN : gameFirst ? challengePlan(set, variant, mode) : previousPlan(set, variant, saved.schedule === 'games-20260918' ? mode : 'standard');
   if (items.length !== total || (mode !== 'review' && items.some((item, i) => group(item) !== plan[i]))) return null;
   if (!legacy && gameFirst && mode !== 'review' && !savedOpener(set, items[0])) return null;
   if (mode === 'advanced' && items.some(item => item.type === 'sound' && item.difficulty !== 2)) return null;
@@ -260,7 +274,7 @@ export function readAttempt(saved, set) {
     return checked && checked.answers.length === checked.itemIds.length ? [archivedResult(checked)] : [];
   }) : [];
   if (sourceAttempt) attempt.sourceAttempt = sourceAttempt;
-  for (const type of ['sound', 'dictation', 'other']) {
+  for (const type of TYPES) {
     attempt.history[type] = validHistory(saved.history?.[type] || items.filter(item => group(item) === type).map(item => item.id), bankOf(set), type);
   }
   for (const item of items) {
@@ -283,7 +297,7 @@ export function readAttempt(saved, set) {
 
 export function recordAnswer(attempt, set, index, result) {
   const items = attemptItems(attempt, set);
-  if (!attempt || !items.length || items.length > TOTAL || index !== attempt.answers.length || !items[index] ||
+  if (!attempt || !items.length || items.length > MAX || index !== attempt.answers.length || !items[index] ||
       !['correct', 'incorrect', 'skipped'].includes(result.status)) return false;
   if (items[index].type === 'microgame' && result.status === 'correct' && safeGameState(result.response)?.gameCompleted !== true) return false;
   attempt.answers.push({...result, itemId: items[index].id, correct: result.status === 'correct', submittedAt: Date.now()});
@@ -294,7 +308,7 @@ export function recordAnswer(attempt, set, index, result) {
 
 export function challengeSummary(saved, set) {
   const attempt = readAttempt(saved, set);
-  if (!attempt) return {version: CHALLENGE_VERSION, completed: false, answered: 0, total: TOTAL, correct: 0};
+  if (!attempt) return {version: CHALLENGE_VERSION, completed: false, answered: 0, total: challengePlan(set).length, correct: 0};
   const items = attemptItems(attempt, set);
   return {version: CHALLENGE_VERSION, attemptId: attempt.attemptId, mode: attempt.mode, completed: attempt.answers.length === items.length,
     answered: attempt.answers.length, total: items.length, correct: attempt.answers.filter(a => a.correct&&a.flow!=='trace-dictation-v1').length,

@@ -81,8 +81,8 @@ const fits=page=>page.evaluate(()=>{const body=document.querySelector('.challeng
     check(`${engine} ${slug} ${form.kind} wrong answer is gentle`,await page.evaluate(form=>document.querySelector('.sound-case').classList.contains('is-missed')&&document.querySelector('.challenge-feedback strong').textContent===form.wrong&&submissions[0].status==='incorrect',form));
     check(`${engine} ${slug} ${form.kind} wrong answer fades in the ${form.pictures[2]} picture only`,await pictures(page,form,'missed'));
    }
-   // The next listening question starts again on the plain scene.
-   for(const [slug,nth,form] of [['yong-xue',0,FORMS.clinic],['yong-e',2,FORMS.shop]]){
+   // The next listening question starts again on the plain scene (rounds of seven: where two listening questions follow each other).
+   for(const [slug,nth,form] of [['jue-ju',1,FORMS.shop],['yong-e',2,FORMS.shop]]){
     await mount(page,slug,nth);await answer(page,false);
     const before=await page.evaluate(()=>document.querySelector('.challenge-prompt').textContent+'|'+document.querySelector('.challenge-count').textContent);
     await page.locator('[data-ch=next]').tap();await page.waitForFunction(before=>document.querySelector('.sound-case')&&document.querySelector('.challenge-prompt').textContent+'|'+document.querySelector('.challenge-count').textContent!==before,before);

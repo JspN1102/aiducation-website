@@ -16,6 +16,7 @@ export const ERROR_SOURCES=['own-module','own-page','extension','other-origin','
 export const ERROR_KINDS=['type','reference','range','syntax','security','abort','not-allowed','network','muted','resize-loop','other'];
 const EXT_CONTEXT={mediaRoute:oneOf(['public','local']),audioSource:oneOf(['recitation','static','tts','recording']),
   audioTrigger:oneOf([...AUDIO_TRIGGERS,'challenge','other']),lineIndex:int(0,199),pinyinShown:bool,
+  demoArm:oneOf(['attempt-first','open']),pinyinArm:oneOf(['faded','kept','ineligible']),
   recorderFormat:oneOf(['webm-opus','webm','mp4','ogg','default','other']),stopReason:oneOf(['manual','time-limit']),
   uploadPath:oneOf(['compact','pcm','pcm-fallback']),resend:bool,errorDetail:oneOf(ERROR_DETAILS),httpStatus:int(400,599),
   inputMode:oneOf(['typed','voice','suggestion']),pointer:oneOf(['coarse','fine','none']),viewport:oneOf(['small','medium','large']),

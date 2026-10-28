@@ -20,7 +20,8 @@ const check=(name,ok)=>{assert(ok,name);checks.push(name);};
 (async()=>{
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));origin='http://127.0.0.1:'+server.address().port;
  const {mapAssessment}=await import('../maanshan/core.mjs'),{getWordAudioURL}=await import('../maanshan/word-audio.mjs');
- const stored=Object.fromEntries(poems.map(poem=>[poem.id,{reading:poem.lines.map(line=>mapAssessment({SuggestedScore:85,PronAccuracy:85,Words:[...line.simplified].filter(c=>/\p{Script=Han}/u.test(c)).map(Word=>({Word,PronAccuracy:85}))},line))}]));
+ // school74 先讀後聽: every line already read today, so 聽示範 plays at once.
+ const stored=Object.fromEntries(poems.map(poem=>[poem.id,{study:{tried:Object.fromEntries(poem.lines.map((_,i)=>[i,new Date(Date.now()+2*3600000).toISOString().slice(0,10)]))},reading:poem.lines.map(line=>mapAssessment({SuggestedScore:85,PronAccuracy:85,Words:[...line.simplified].filter(c=>/\p{Script=Han}/u.test(c)).map(Word=>({Word,PronAccuracy:85}))},line))}]));
  for(const engine of (process.env.AUDIO_TEST_ENGINE?[process.env.AUDIO_TEST_ENGINE]:['chromium','webkit'])){
   browser=engine==='chromium'?await chromium.launch({channel:'msedge',headless:true}):await webkit.launch({headless:true});
   const context=await browser.newContext({viewport:{width:1180,height:720},hasTouch:true,serviceWorkers:'block'}),page=await context.newPage(),tts=[];

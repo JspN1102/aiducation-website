@@ -66,12 +66,13 @@ function buildReport(start,{reading=[],chat=[]}){
   let chats=0;
   for(const row of chat){mark(Number(row.t));if(row.last!==CHAT_ENOUGH)chats++;}
   const list=[...recordings.values()].sort((a,b)=>a.t-b.t),poemOf=id=>poems.find(p=>p.id===id);
+  const lineText=(id,line)=>poemOf(id)?.lines?.[line]?.text||'';
   let best=null,improved=null;const byLine=new Map(),chars=new Map();
   for(const r of list){
     if(!best||r.score>=best.score)best=r;
     // A near-silent or cut-off recording (under 20) is not a starting point for 進步.
     const key=r.poemId+'|'+r.line,group=byLine.get(key);
-    if(!group){if(r.score>=20)byLine.set(key,{poemId:r.poemId,line:r.line,from:r.score,to:r.score});}else group.to=Math.max(group.to,r.score);
+    if(!group){if(r.score>=20)byLine.set(key,{poemId:r.poemId,line:r.line,from:r.score,to:r.score,t:r.t});}else{group.to=Math.max(group.to,r.score);group.t=r.t;}
     r.words.forEach((w,i)=>{
       if(!han(w?.c)||num(w.score)===null)return;
       const k=key+'|'+(Number.isInteger(w.i)?w.i:i),c=chars.get(k);
@@ -79,15 +80,18 @@ function buildReport(start,{reading=[],chat=[]}){
     });
   }
   for(const g of byLine.values())if(g.to>g.from&&(!improved||g.to-g.from>improved.to-improved.from))improved=g;
+  // school74 下週挑戰句: the line read this week whose best is still lowest (20..84), latest on a tie.
+  let weakest=null;
+  for(const g of byLine.values())if(g.to<85&&lineText(g.poemId,g.line)&&(!weakest||g.to<weakest.to||g.to===weakest.to&&g.t>weakest.t))weakest=g;
   const fixed=[];for(const c of chars.values())if(c.low&&c.last>=85&&!fixed.some(f=>f.c===c.c)&&fixed.length<6)fixed.push({c:c.c,p:c.p});
-  const lineText=(id,line)=>poemOf(id)?.lines?.[line]?.text||'';
   const report={
     id:'w'+isoDate(start),week:{start:isoDate(start),end:isoDate(end-DAY)},days,
     reading:{lines:list.length,poems:new Set(list.map(r=>r.poemId)).size},writing:{chars:dictation.size},
     challenge:{count:rounds.size},chat:{count:chats},
     best:best&&best.score>=60&&lineText(best.poemId,best.line)?{title:poemOf(best.poemId).title,label:`第${best.line+1}句`,line:lineText(best.poemId,best.line),score:best.score}:null,
     improved:improved&&lineText(improved.poemId,improved.line)?{title:poemOf(improved.poemId).title,line:lineText(improved.poemId,improved.line),from:improved.from,to:improved.to}:null,
-    fixedChars:fixed
+    fixedChars:fixed,
+    challengeLine:weakest?{poemId:weakest.poemId,slug:poemOf(weakest.poemId).slug,title:poemOf(weakest.poemId).title,label:`第${weakest.line+1}句`,lineIndex:weakest.line,line:lineText(weakest.poemId,weakest.line),score:weakest.to}:null
   };
   report.badges=BADGE_RULES.map(([key,value,min])=>({key,value:value(report)})).filter((b,i)=>b.value>=BADGE_RULES[i][2]);
   return report;

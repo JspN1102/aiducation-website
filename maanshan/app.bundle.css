@@ -3,7 +3,7 @@
 @font-face{font-family:'School Pinyin';src:url('vendor/fonts/school-pinyin-400.woff2?v=4c0dc07e58') format('woff2');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+41-5A,U+61-7A,U+C0-D6,U+D8-F6,U+F8-17F,U+1CD-1DC,U+1F8-1F9,U+251,U+261,U+300-30C,U+1E3E-1E3F}
 @font-face{font-family:'School Pinyin';src:url('vendor/fonts/school-pinyin-700.woff2?v=0db66e6e94') format('woff2');font-weight:700;font-style:normal;font-display:swap;unicode-range:U+41-5A,U+61-7A,U+C0-D6,U+D8-F6,U+F8-17F,U+1CD-1DC,U+1F8-1F9,U+251,U+261,U+300-30C,U+1E3E-1E3F}
 @font-face{font-family:'Noto Sans HK';src:url('vendor/fonts/noto-sans-hk-variants.woff2?v=712b7534c8') format('woff2');font-weight:400 700;font-style:normal;font-display:swap;unicode-range:U+4E3A,U+4F26,U+4FA7,U+5BF9,U+5C06,U+5C3D,U+5E26,U+5E90,U+5F00,U+5F52,U+5F84,U+626B,U+62E8,U+6570,U+65E7,U+65F6,U+6765,U+6A2A,U+6DA6,U+6EE1,U+72ED,U+76D8,U+79FD,U+7EA2,U+7EDD,U+7EFF,U+7F18,U+7F62,U+8BC6,U+8BD5,U+8BED,U+8D2B,U+8F7B,U+8FD8,U+8FDC,U+8FDD,U+9065,U+90D1,U+9504,U+95FB,U+9879,U+996E,U+9E23,U+9E25,U+9E42,U+9E45,U+9E6D}
-@font-face{font-family:'Noto Serif HK';src:url('vendor/fonts/noto-serif-hk-variants.woff2?v=ccd23ddb0e') format('woff2');font-weight:400 700;font-style:normal;font-display:swap;unicode-range:U+4E3A,U+4F26,U+4FA7,U+5BF9,U+5C06,U+5C3D,U+5E26,U+5E90,U+5F00,U+5F52,U+5F84,U+626B,U+62E8,U+6570,U+65E7,U+65F6,U+6765,U+6A2A,U+6DA6,U+6EE1,U+72ED,U+76D8,U+79FD,U+7EA2,U+7EDD,U+7EFF,U+7F18,U+7F62,U+8BC6,U+8BD5,U+8BED,U+8D2B,U+8F7B,U+8FD8,U+8FDC,U+8FDD,U+9065,U+90D1,U+9504,U+95FB,U+9879,U+996E,U+9E23,U+9E25,U+9E42,U+9E45,U+9E6D}
+@font-face{font-family:'Noto Serif HK';src:url('vendor/fonts/noto-serif-hk-variants.woff2?v=da7d76d7c2') format('woff2');font-weight:400 700;font-style:normal;font-display:swap;unicode-range:U+4E3A,U+4F26,U+4FA7,U+5BF9,U+5C06,U+5C3D,U+5E26,U+5E90,U+5F00,U+5F52,U+5F84,U+626B,U+62E8,U+6570,U+65E7,U+65F6,U+6765,U+6A2A,U+6DA6,U+6EE1,U+72ED,U+76D8,U+79FD,U+7EA2,U+7EDD,U+7EFF,U+7F18,U+7F62,U+8BC6,U+8BD5,U+8BED,U+8D2B,U+8F7B,U+8FD8,U+8FDC,U+8FDD,U+9065,U+90D1,U+9504,U+95FB,U+9879,U+996E,U+9E23,U+9E25,U+9E42,U+9E45,U+9E6D}
 :root{color-scheme:light;--white:#fff;--bg:#fff;--ink:#183f3b;--muted:#5e746b;--line:#dce8df;--green:#147a62;--green-soft:#eaf6ed;--red:#b8493f;--red-soft:#fff0ea;--blue:#24758e;--blue-soft:#ecf6f9;--gold:#8d6514;--gold-soft:#fff6ce;--serif:'School Pinyin','Noto Serif HK','Songti TC','PMingLiU',serif;--sans:'School Pinyin','Noto Sans HK','Microsoft JhengHei',sans-serif}
 *{box-sizing:border-box;letter-spacing:0}
 html{scroll-padding:20px}
@@ -77,6 +77,7 @@ body:has(.lesson-shell) .site-header{display:none}
 .record-tool>.verse{margin:15px 0 18px}
 .record-model{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 27px}
 .record-model .button,.record-model>button{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:5px;background:#f0f7f1;color:var(--green);min-height:44px;padding:9px 13px;font-size:13px;font-weight:500;line-height:1.5}.record-model>[data-action=video]{background:var(--blue-soft);color:var(--blue)}.record-model svg{width:20px;height:20px}
+.record-model .button.demo-waiting{background:#f4f1ea;color:var(--muted)}
 #record-controls{min-height:137px}.record-actions{display:flex;justify-content:center;align-items:center;gap:10px;min-height:109px;flex-wrap:wrap}
 .mic-button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-width:142px;min-height:118px;border:0;background:transparent;color:var(--red);padding:6px 14px;font-size:17px;font-weight:600;line-height:1.5}
 .mic-button svg{width:78px;height:78px;padding:23px;border-radius:50%;background:#d35c51;color:#fff;box-shadow:0 5px 0 #b84741,0 0 0 7px var(--red-soft)}.mic-button:hover svg{background:#c54f45}.mic-button.recording svg{background:#b94640;box-shadow:0 0 0 8px #fadfd8}
@@ -4062,6 +4063,115 @@ dialog h2{font-size:26px;line-height:1.4}
  .poem-guest-game.is-toast .gk-glow{animation:none;opacity:.8;transform:translate(-50%,-50%)}
 }
 
+/* poem-games/practice-games.css */
+/* school74 小老師找錯 / 讀音小偵探: a task panel beside a storybook picture of 小墨. */
+.practice-game{--pg-ink:#304c43;--pg-soft:#6b7a70;--pg-paper:#fffdf6;--pg-line:#ded9c8;--pg-coral:#d9775f;--pg-coral-soft:#fbe9e2;--pg-sage:#eaf0e4;--pg-gold:#e3a548;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:18px;width:100%;max-width:1040px;margin-inline:auto;color:var(--pg-ink);font-family:var(--sans);min-width:0;align-items:stretch}
+.practice-game *{box-sizing:border-box}
+.practice-game [hidden]{display:none!important}
+.practice-game button{font-family:inherit;color:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.practice-game button:focus-visible{outline:3px solid #de9b34;outline-offset:3px}
+.practice-game button:disabled{cursor:default}
+.practice-game svg{width:22px;height:22px;flex:none}
+.practice-game .pg-panel{display:flex;flex-direction:column;gap:12px;min-width:0;padding:18px 20px;border:1px solid var(--pg-line);border-radius:20px;background:var(--pg-paper);box-shadow:0 6px 20px #2c443110}
+.practice-game .pg-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.practice-game .pg-eyebrow{display:block;font-size:14px;font-weight:600;color:var(--pg-coral);letter-spacing:1px}
+.practice-game h3{font-size:clamp(21px,2.4vw,26px);line-height:1.4}
+.practice-game .pg-progress{flex:none;min-width:62px;padding:4px 12px;border-radius:18px;background:var(--pg-sage);color:#3c6447;font-size:17px;font-weight:600;text-align:center;font-variant-numeric:tabular-nums}
+.practice-game .pg-task{font-size:17px;line-height:1.55;color:var(--pg-soft)}
+.practice-game .pg-work{display:flex;flex-direction:column;gap:14px;min-height:0}
+.practice-game .pg-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:auto}
+.practice-game .pg-listen,.practice-game .pg-next,.practice-game .pg-hear{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:10px 20px;border-radius:100px;font-size:18px;font-weight:600;cursor:pointer;transition:background .15s,transform .15s}
+.practice-game .pg-listen{border:0;background:#3c6856;color:#fff;box-shadow:0 3px 10px #304c431f}
+.practice-game .pg-listen:hover:not(:disabled){background:#315b49}
+.practice-game .pg-listen[aria-busy=true]{background:#5b8571}
+.practice-game .pg-listen:disabled{opacity:.6}
+.practice-game .pg-next{border:2px solid var(--pg-coral);background:#fff;color:#b45a43}
+.practice-game .pg-next:hover:not(:disabled){background:var(--pg-coral-soft)}
+.practice-game .pg-feedback{min-height:1.6em;font-size:17px;font-weight:600;line-height:1.55;color:#8a4f24}
+.practice-game .pg-feedback:empty{min-height:0}
+
+/* Words and lines: big characters, the reading under them once found. */
+.practice-game .pg-phrase,.practice-game .pg-line{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:6px 0}
+.practice-game .pg-char,.practice-game .pg-tile{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-width:64px;min-height:76px;padding:6px 8px;border:2px solid var(--pg-line);border-radius:14px;background:#fff;font-family:var(--serif);font-size:38px;line-height:1.1}
+.practice-game .pg-line .pg-tile{min-width:54px;min-height:68px;font-size:32px}
+.practice-game .pg-char small,.practice-game .pg-tile small{margin-top:4px;font-family:var(--sans);font-size:16px;color:#3c6447}
+.practice-game .pg-tile{cursor:pointer;transition:border-color .15s,background .15s,transform .15s}
+.practice-game .pg-tile:hover:not(:disabled){border-color:#9fbfa6;transform:translateY(-2px)}
+.practice-game .pg-tile:disabled{opacity:1}
+.practice-game .is-caught{border-color:var(--pg-coral);background:var(--pg-coral-soft)}
+.practice-game .pg-punct{align-self:flex-end;font-family:var(--serif);font-size:30px;color:var(--pg-soft)}
+.practice-game .pg-verdicts,.practice-game .pg-options{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.practice-game .pg-verdict,.practice-game .pg-option,.practice-game .pg-take{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:132px;min-height:56px;padding:10px 20px;border:2px solid var(--pg-line);border-radius:16px;background:#fff;font-size:20px;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s}
+.practice-game .pg-verdict.is-right{border-color:#a9c9a8}
+.practice-game .pg-verdict.is-right span{color:#3c7a52}
+.practice-game .pg-verdict.is-wrong{border-color:#e6b5a6}
+.practice-game .pg-verdict.is-wrong span{color:#c0583f}
+.practice-game .pg-verdict:hover:not(:disabled),.practice-game .pg-option:hover:not(:disabled),.practice-game .pg-take:hover:not(:disabled){background:#fbf6ea}
+.practice-game .pg-verdict:disabled,.practice-game .pg-option:disabled,.practice-game .pg-take:disabled{opacity:.45}
+
+/* 讀音小偵探 */
+.practice-game .pg-word{text-align:center;font-family:var(--serif);font-size:44px;line-height:1.3}
+.practice-game .pg-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.practice-game .pg-choice{display:flex;flex-direction:column;gap:8px;padding:12px;border:2px dashed var(--pg-line);border-radius:16px;background:#fff}
+.practice-game .pg-choice.is-heard{border-style:solid;border-color:#b9d0b6}
+.practice-game .pg-hear{border:0;background:var(--pg-sage);color:#2f5a45}
+.practice-game .pg-hear:hover:not(:disabled){background:#dfe9d8}
+.practice-game .pg-hear:disabled{opacity:.6}
+.practice-game .pg-hear.is-wide{align-self:center}
+.practice-game .pg-take{min-width:0}
+.practice-game .pg-cards{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;min-height:62px}
+.practice-game .pg-card{display:inline-flex;align-items:center;gap:6px;min-height:58px;padding:8px 16px;border:2px solid var(--pg-line);border-radius:14px;background:#fff;font-family:var(--serif);font-size:28px;cursor:pointer;transition:border-color .15s,transform .15s,box-shadow .15s}
+.practice-game .pg-card svg{width:18px;height:18px;color:var(--pg-soft)}
+.practice-game .pg-card.is-heard{border-color:#b9d0b6}
+.practice-game .pg-card.is-selected{border-color:var(--pg-gold);box-shadow:0 0 0 3px #e3a54840;transform:translateY(-3px)}
+.practice-game .pg-baskets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.practice-game .pg-basket{display:flex;flex-direction:column;align-items:center;gap:6px;min-height:118px;padding:10px;border:2px solid #d8c49b;border-radius:18px 18px 28px 28px;background:repeating-linear-gradient(135deg,#f7ecd4 0 10px,#f2e3c3 10px 20px);font:inherit}
+.practice-game button.pg-basket{cursor:pointer;transition:transform .15s,box-shadow .15s}
+.practice-game button.pg-basket:not(:disabled){box-shadow:0 0 0 3px #e3a54833}
+.practice-game button.pg-basket:hover:not(:disabled){transform:translateY(-2px)}
+.practice-game button.pg-basket:disabled{opacity:1}
+.practice-game .pg-basket b{font-size:22px;color:#7a5524}
+.practice-game .pg-basket span{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.practice-game .pg-basket i{padding:2px 10px;border-radius:10px;background:#fffdf6;font-family:var(--serif);font-size:20px;font-style:normal}
+.practice-game .pg-baskets.is-done .pg-basket{min-height:0}
+.practice-game .pg-ask{text-align:center;font-size:19px;font-weight:600}
+.practice-game .pg-rule{padding:12px 16px;border-left:5px solid var(--pg-gold);border-radius:10px;background:#fff6dd}
+.practice-game .pg-rule span{display:block;font-size:14px;font-weight:600;color:#9a6a1c}
+.practice-game .pg-rule p{font-size:18px;line-height:1.6}
+
+/* The picture: poses cross-fade. */
+.practice-game .pg-stage{position:relative;align-self:start;width:100%;aspect-ratio:3/2;overflow:hidden;border-radius:20px;border:1px solid #d6d2c1;background:#efe7d6;box-shadow:0 6px 20px #2c443114}
+.practice-game .pg-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;pointer-events:none;-webkit-user-drag:none;transition:opacity .6s ease}
+.practice-game .pg-scene.is-on{opacity:1}
+.practice-game.is-reduced-motion .pg-scene{transition:none}
+.practice-game .pg-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#efe7d6;font-size:17px;color:var(--pg-soft)}
+.practice-game .pg-loading button{min-height:46px;padding:8px 18px;border:1px solid #cdbf9d;border-radius:100px;background:#fff}
+
+@media (max-width:820px){
+  .practice-game{grid-template-columns:minmax(0,1fr)}
+  .practice-game .pg-stage{order:-1;aspect-ratio:2/1}
+  .practice-game .pg-scene{object-position:65% 40%}
+}
+
+/* 每日溫故: offered once per poem to pupils who have done its practice. */
+.warmup-dialog{width:min(480px,calc(100vw - 32px));padding:0;border:0;border-radius:24px;background:#fffdf6;color:var(--ink);box-shadow:0 18px 50px #203e2533;overflow:hidden}
+.warmup-dialog::backdrop{background:#203e2552}
+.warmup-dialog img{display:block;width:100%;aspect-ratio:2/1;object-fit:cover;object-position:60% 35%}
+.warmup-dialog .warmup-body{display:flex;flex-direction:column;gap:8px;padding:18px 22px 22px}
+.warmup-dialog .eyebrow{margin:0;font-size:14px;letter-spacing:1px;color:#c0583f}
+.warmup-dialog h2{font-size:24px}
+.warmup-dialog p{font-size:17px;line-height:1.6;color:var(--muted)}
+.warmup-dialog .dialog-actions{display:flex;gap:10px;margin-top:8px}
+.warmup-dialog .dialog-actions .button{flex:1;min-height:52px;font-size:18px}
+.warmup-view{display:flex;flex-direction:column;gap:14px;width:100%;max-width:1040px;margin-inline:auto}
+.warmup-view .warmup-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.warmup-view .warmup-top p{font-size:17px;font-weight:600;color:var(--muted)}
+.warmup-view .warmup-done{display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px 20px;text-align:center}
+.warmup-view .warmup-done img{width:min(420px,100%);border-radius:20px}
+.warmup-view .warmup-done h2{font-size:26px}
+.view-warmup .lesson-title h1{font:500 22px/1.4 var(--serif)}
+.view-warmup .lesson-title p{color:var(--muted);font-size:11px}
+
 /* challenge-game-integration.css */
 /* Practice opens directly at its next question. The poem game is question one. */
 .workspace .challenge-type-microgame{padding:12px 18px;overflow:hidden}
@@ -5651,7 +5761,7 @@ dialog.self-check[open]::backdrop{animation:self-check-fade .9s ease-out}
 
 .weekly-label{margin:0 0 6px;font-size:14px;color:#9a7a3c;letter-spacing:.06em}
 .weekly-line{margin:0;font-family:var(--serif);font-size:22px;line-height:1.45;color:#24493e;letter-spacing:.06em}
-.weekly-best,.weekly-rise,.weekly-chars,.weekly-badges{padding:16px;border-radius:20px;background:#fff;box-shadow:inset 0 0 0 1px #efe3c9}
+.weekly-best,.weekly-rise,.weekly-chars,.weekly-next,.weekly-badges{padding:16px;border-radius:20px;background:#fff;box-shadow:inset 0 0 0 1px #efe3c9}
 .weekly-best{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
 .weekly-score{--deg:calc(var(--score) * 3.6deg);display:grid;place-content:center;grid-auto-flow:column;align-items:baseline;width:92px;height:92px;border-radius:50%;
  background:radial-gradient(#fff 0 57%,transparent 58%),conic-gradient(#3a9a72 var(--deg),#e9efe9 0);color:#2f6b55}
@@ -5670,6 +5780,7 @@ dialog.self-check[open]::backdrop{animation:self-check-fade .9s ease-out}
 .weekly-chars li{display:grid;place-items:center;height:72px;border-radius:14px;background:linear-gradient(#f4faf6,#e3f1e8);box-shadow:inset 0 0 0 1.5px #b9dcc7}
 .weekly-chars ruby{display:inline-flex;flex-direction:column-reverse;align-items:center;font-family:var(--serif);font-size:32px;line-height:1;color:#2f6b55}
 .weekly-chars rt{font-family:'School Pinyin',var(--sans);font-size:13px;color:#4a8a6c;margin-bottom:4px}
+.weekly-go{margin-top:12px;min-height:44px;padding:0 22px;border:0;border-radius:999px;background:#3a9a72;color:#fff;font:inherit;font-size:16px;font-weight:700;cursor:pointer}
 .weekly-badges ul{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;margin:0;padding:0;list-style:none;text-align:center}
 .weekly-medal{display:grid;justify-items:center;gap:2px}
 .weekly-medal-disc svg{width:66px;height:66px;filter:drop-shadow(0 4px 6px #8a63202e)}

@@ -8265,10 +8265,10 @@
     },
     {
       "source": "/maanshan/vendor/fonts/noto-sans-hk.woff2",
-      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/92d8bc1051d153bbc754/maanshan/vendor/fonts/noto-sans-hk.woff2",
-      "bytes": 489224,
-      "sha256": "92d8bc1051d153bbc75473f47af5a7d77889f792d2a7bb0ac2314aff10ee7324",
-      "md5": "8ac9a7d1146ed4f9991cb60403e646f3",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/f6ca600e4e3f2c7fc651/maanshan/vendor/fonts/noto-sans-hk.woff2",
+      "bytes": 491980,
+      "sha256": "f6ca600e4e3f2c7fc6517b8608b6545d52a8b155e3a6f75a18c2299edc21c3d5",
+      "md5": "4d8fb3a6a8332d2794c1439ed8fc7182",
       "contentType": "font/woff2",
       "objectCacheControl": "public, max-age=31536000, immutable"
     },
@@ -8544,19 +8544,19 @@
     },
     {
       "source": "/maanshan/vendor/fonts/noto-serif-hk-variants.woff2",
-      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/ccd23ddb0e2687a3564b/maanshan/vendor/fonts/noto-serif-hk-variants.woff2",
-      "bytes": 21052,
-      "sha256": "ccd23ddb0e2687a3564bbbdd3fb1919e3ae281be7cea72f4a177ecdc794ccfe4",
-      "md5": "60262afeb9a8956f3f137662947beb40",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/da7d76d7c2078e0a5343/maanshan/vendor/fonts/noto-serif-hk-variants.woff2",
+      "bytes": 21152,
+      "sha256": "da7d76d7c2078e0a5343c6e60f16dccd813e45171f06e96ec58917de6aa879c7",
+      "md5": "64b9dcd486e7aa91834c5ea3fa7bc277",
       "contentType": "font/woff2",
       "objectCacheControl": "public, max-age=31536000, immutable"
     },
     {
       "source": "/maanshan/vendor/fonts/noto-serif-hk.woff2",
-      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/5e18d6199648f54f04d2/maanshan/vendor/fonts/noto-serif-hk.woff2",
-      "bytes": 670532,
-      "sha256": "5e18d6199648f54f04d23d7566a2a4583a35ecb678cd516339eb99fc1875f242",
-      "md5": "89c8aae54e57380ac1c693fb9c9c36ef",
+      "destination": "https://aiducation-mandarin-media-1427410149.cos.ap-guangzhou.myqcloud.com/published/00f2b0898b5d06f226b4/maanshan/vendor/fonts/noto-serif-hk.woff2",
+      "bytes": 674084,
+      "sha256": "00f2b0898b5d06f226b43a5a2350b6b03ee38bf8b5078db6a7c87ec230ee9b10",
+      "md5": "b7965b572e3596202a09a4f1bdcd6455",
       "contentType": "font/woff2",
       "objectCacheControl": "public, max-age=31536000, immutable"
     },
