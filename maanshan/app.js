@@ -602,10 +602,13 @@ function renderLesson(){
 }
 // 每日溫故 (school74): a pupil who has done a poem's practice is offered its two sound games once,
 // the next time the poem opens. The offer is remembered (and synced), whether taken or skipped.
-let warmupDialog=null,warmupGames=null;
+// Jasper (site admin) gets the offer every time a poem is opened from the library, to try it out.
+let warmupDialog=null,warmupGames=null,warmupTried=null;
+const warmupTester=school.enabled&&school.user?.siteAdmin===true;
 const practiceArt=name=>imageAsset('media/poem-games/practice/'+name);
 function warmupDue(p){
   const s=state(p);
+  if(warmupTester)return !!PRACTICE_GAMES[p.slug]&&warmupTried!==p.id;
   if(!PRACTICE_GAMES[p.slug]||s.warmup?.offeredAt)return false;
   const {current,best}=practiceSnapshot(p);
   if(!(best.completed||current.completed))return false;
@@ -613,7 +616,8 @@ function warmupDue(p){
 }
 function offerWarmup(p){
   if(sessionLocked||warmupDialog?.open||!warmupDue(p))return;
-  const s=state(p);s.warmup={...(s.warmup||{}),offeredAt:new Date().toISOString()};persist();
+  if(warmupTester)warmupTried=p.id;
+  else{const s=state(p);s.warmup={...(s.warmup||{}),offeredAt:new Date().toISOString()};persist();}
   if(school.enabled)queueReading(p);
   if(!warmupDialog){
     warmupDialog=document.createElement('dialog');warmupDialog.className='warmup-dialog';warmupDialog.setAttribute('aria-labelledby','warmup-title');
@@ -638,7 +642,7 @@ async function renderWarmup(){
   if(!module||version!==routeVersion||poem!==p)return;
   const holder=$('#view'),attemptId=crypto.randomUUID(),order=['spot','rule'],titles={spot:'小老師找錯',rule:'讀音小偵探'};
   const s=state(p);s.warmup={...(s.warmup||{}),offeredAt:s.warmup?.offeredAt||new Date().toISOString()};
-  let at=order.findIndex(kind=>s.warmup[kind]?.completed!==true);
+  let at=warmupTester?0:order.findIndex(kind=>s.warmup[kind]?.completed!==true);
   const save=()=>{state(p).updatedAt=Date.now();persist();if(school.enabled)queueReading(p);};
   function done(){
     warmupGames?.destroy();warmupGames=null;
@@ -652,7 +656,7 @@ async function renderWarmup(){
     holder.innerHTML='<section class="warmup-view"><div class="warmup-top"><p>第 '+(at+1)+' 題，共 '+order.length+' 題 · '+titles[kind]+'</p><button type="button" class="button" data-warmup-skip>'+(at===order.length-1?'跳過，完成':'跳過這題')+'</button></div><div class="warmup-game"></div></section>';
     holder.querySelector('[data-warmup-skip]').addEventListener('click',()=>{stopMedia();at++;show();});
     const itemId='p'+p.id+'.warmup.'+kind,context={mode:'review',itemType:'microgame',position:at+1,total:order.length};
-    warmupGames=module.mountPoemGame(holder.querySelector('.warmup-game'),{slug:p.slug,game:kind,researchPrefix:'game.warmup.'+kind+'.'+p.slug,initialState:s.warmup[kind]||null,
+    warmupGames=module.mountPoemGame(holder.querySelector('.warmup-game'),{slug:p.slug,game:kind,researchPrefix:'game.warmup.'+kind+'.'+p.slug,initialState:warmupTester?null:s.warmup[kind]||null,
       onResearch:(type,fields)=>research.emit(type,timedResearch(type,{attemptId,itemId,...fields,poemId:p.id,activity:'challenge',context:{...context,...(fields?.context||{})}})),
       playAudio:audio=>version===routeVersion?playChallengeAudio(audio,{attemptId,itemId}):null,
       onState:value=>{if(version!==routeVersion)return;state(p).warmup={...state(p).warmup,[kind]:value};persist();},
@@ -1568,7 +1572,7 @@ function route() {
   if($('#video-dialog').open)$('#video-dialog').close();
   let parts;try{parts=decodeURIComponent(location.hash.slice(1)).split('/');}catch{parts=[];}
   const next=poems.find(p=>p.slug===parts[0]);
-  if(!next){research.begin('navigation',null);shishi?.destroy();shishi=null;document.body.dataset.screen='library';renderLibrary();window.scrollTo({top:0});return;}
+  if(!next){warmupTried=null;research.begin('navigation',null);shishi?.destroy();shishi=null;document.body.dataset.screen='library';renderLibrary();window.scrollTo({top:0});return;}
   if(parts[1]==='write'){parts[1]='quiz';history.replaceState(null,'','#'+next.slug+'/quiz');}
   if(parts[1]==='read'){parts[1]='record';history.replaceState(null,'','#'+next.slug+'/record');}
   if(parts[1]==='explore'&&!hasExplore(next)){parts[1]='lesson';history.replaceState(null,'','#'+next.slug+'/lesson');}

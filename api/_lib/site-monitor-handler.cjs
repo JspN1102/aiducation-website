@@ -10,7 +10,7 @@ const ops=require('./ops-metrics.cjs');
 
 const MINUTE=60000,HOUR=60*MINUTE,CACHE_MS=10000,STALE_MS=60000,HEARTBEAT_STALE_MS=3*MINUTE,STARTUP_GRACE_S=150;
 const DAILY_MS=MINUTE,UPKEEP_MS=5*MINUTE,CERT_MS=10*MINUTE;
-const MEMORY_LIMIT_MB=768,HK_RENEWAL='2026-11-07';
+const MEMORY_LIMIT_MB=768,HK_RENEWAL='2027-01-07';
 const SPEECH_LIMIT=4800; // MONTHLY_SITE_LIMIT in api/speech-to-text.js
 // Scheduled upkeep on the origin: unit, label, and the longest normal gap
 // between two runs (daily timers carry a random delay of up to 15 minutes).

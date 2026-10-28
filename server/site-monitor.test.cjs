@@ -223,7 +223,7 @@ test('payload shape: aggregates from injected systemd, database and traffic fake
   assert.deepEqual({ok:p.db.ok,latencyMs:p.db.latencyMs,pools:p.db.pools},{ok:true,latencyMs:7,pools:{auth:{total:3,idle:2,waiting:0},research:{total:2,idle:2,waiting:0}}});
   assert.deepEqual(p.hk.tunnels.map(t=>[t.port,t.state,t.upSinceS]),[[3100,'active',7200],[3101,'active',7200],[3102,'active',7200]]);
   assert.equal(p.hk.tunnels[1].lastSeenAt,T-30000);assert.equal(p.hk.lastHeartbeatAt,T-30000);
-  assert.deepEqual(p.hk.renewal,{date:'2026-11-07',daysLeft:29});assert.deepEqual(p.hk.hop15,{hop:0,total:5,ratio:0});
+  assert.deepEqual(p.hk.renewal,{date:'2027-01-07',daysLeft:90});assert.deepEqual(p.hk.hop15,{hop:0,total:5,ratio:0});
   assert.deepEqual(p.vercel,{hkg1:{lastAt:T-30000,ageS:30},iad1:{lastAt:T-25000,ageS:25}});
   assert.deepEqual(p.traffic[5].routes.map(r=>r.route),ops.STUDENT_ROUTES);
   assert.deepEqual(p.traffic[15].routes[0],{route:'soe',label:'朗讀評分',count:4,p50Ms:2750,p95Ms:3425,s5xx:0,s504:0,s408:0});
